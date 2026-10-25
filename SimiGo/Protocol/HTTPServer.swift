@@ -2,6 +2,7 @@ import Foundation
 import CryptoKit
 import LOCALBCore
 import Network
+import SimiGo2Experimental
 
 /// SimiGo 本机 / 局域网共享 OpenAI-compatible HTTP Server
 ///
@@ -548,6 +549,10 @@ public final class HTTPServer: @unchecked Sendable {
     /// contract. Absent (nil) means any request that explicitly asks to
     /// settle is refused fail-closed BEFORE generation.
     let continuationSettlement: ContinuationSettlementHandler?
+    /// Owner of the PHYSICAL execution carriers (real runtime sessions). When
+    /// present, a continuation whose settlement is refused releases the child
+    /// branch it forked instead of leaving an unreferenced carrier behind.
+    let carrierOwner: (any ExecutionCarrierReleasing)?
     private let deleteBranchHandler: DeleteBranchHandler
     private let listBranchesHandler: ListBranchesHandler
     private let checkHealthHandler: CheckHealthHandler
@@ -676,7 +681,8 @@ public final class HTTPServer: @unchecked Sendable {
         remoteBackend: RemoteOpenAIBackend? = nil,
         baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() },
         continuationAdmission: ContinuationAdmissionHandler? = nil,
-        continuationSettlement: ContinuationSettlementHandler? = nil
+        continuationSettlement: ContinuationSettlementHandler? = nil,
+        carrierOwner: (any ExecutionCarrierReleasing)? = nil
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -709,6 +715,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.baseConfigProvider = baseConfigProvider
         self.continuationAdmission = continuationAdmission
         self.continuationSettlement = continuationSettlement
+        self.carrierOwner = carrierOwner
     }
 
     // MARK: - Lifecycle

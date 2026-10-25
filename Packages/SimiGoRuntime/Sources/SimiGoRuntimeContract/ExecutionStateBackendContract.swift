@@ -43,6 +43,14 @@ public enum ExecutionStateBackendError: Error, Equatable, Sendable {
     case representationPositionMismatch(executionID: ExecutionID, bound: ExecutionPosition, logical: ExecutionPosition)
     /// The representation's payload was not produced by this backend.
     case foreignRepresentationPayload(ExecutionID)
+    /// The execution's PHYSICAL CARRIER was explicitly released (retired) on this
+    /// backend instance, so it can no longer serve the old Execution State: every
+    /// read, restore, capture, derive or re-bind for that identity is refused. A
+    /// retired carrier is never silently re-armed — recovery must adopt a NEW
+    /// backend instance, so "the old carrier is unusable" is enforced by the
+    /// backend rather than left to caller discipline. Distinct from
+    /// ``noBoundRepresentation(_:)`` (merely unbound, still re-bindable).
+    case carrierReleased(ExecutionID)
 }
 
 public protocol ExecutionStateBackend: Sendable {

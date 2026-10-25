@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import Network
+import SimiGo2Experimental
 
 /// SimiGo 本机 / 局域网共享 OpenAI-compatible HTTP Server
 ///
@@ -581,6 +582,46 @@ extension HTTPServer {
         }
     }
 
+    /// Release the runtime carrier that a REFUSED continuation forked.
+    ///
+    /// Only runs when a child branch actually exists for this request (a settle
+    /// request that forked a child identity) and a carrier owner is wired.
+    ///
+    /// Failures are traced and never surfaced as a second terminal: the refusal
+    /// is already on the wire, and a surviving branch stays visible in the trace
+    /// instead of being claimed gone.
+    func releaseRefusedContinuationBranch(
+        parsed: ResponsesParsedRequest,
+        branch: String,
+        context: ConnectionContext
+    ) async {
+        guard let owner = carrierOwner,
+              parsed.continuationSettle,
+              branch != parsed.logicalBranchId else { return }
+        let ref = ExecutionCarrierRef(
+            agentID: parsed.agentId,
+            sessionID: parsed.sessionId,
+            branchID: branch
+        )
+        do {
+            let report = try await owner.releaseExecutionCarrier(ref)
+            RuntimeTraceLogger.shared.trace(
+                "[CARRIER] continuation_branch_released r=\(context.requestId)"
+                + " branch=\(branch) wasLive=\(report.carrierWasLive)"
+                + " sessions=\(report.sessionsReleased)"
+                + " clearIssued=\(report.clearIssued)"
+                + " checkpoints=\(report.checkpointFilesDeleted)"
+                + " stillLive=\(report.stillLiveAfterwards)")
+            // The STRONGER fact, recorded separately: the release only counts if
+            // the address no longer resolves. "clear() was called" is not it.
+            try owner.verifyCarrierUnusable(ref)
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[CARRIER] continuation_branch_release_failed r=\(context.requestId)"
+                + " branch=\(branch) err=\(error)")
+        }
+    }
+
     /// Slice 8 Part 2: make the admitted child ES the EXECUTION/CACHE identity of
     /// THIS generation. The runtime keys its session (and therefore its KV cache
     /// and checkpoints) by (agent, session, branch), so the child ES becomes that
@@ -773,6 +814,15 @@ extension HTTPServer {
             case .notRequested:
                 settlementOutcome = nil
             case .refused:
+                // The child ES branch was forked for THIS request and the
+                // settlement that justified it was refused. Release that carrier
+                // now: no ES row will ever name it, so leaving it live would be an
+                // unreferenced physical carrier holding KV.
+                await releaseRefusedContinuationBranch(
+                    parsed: parsed,
+                    branch: executionBranchID,
+                    context: context
+                )
                 return
             case .settled(let settled):
                 settlementOutcome = settled

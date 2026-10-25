@@ -4,6 +4,7 @@ import XCTest
 import SQLite3
 import LOCALBCore
 import SimiGoRuntimeContract
+import SimiGo2Experimental
 
 @testable import SimiGo
 
@@ -62,6 +63,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         private var _settlement = 0
         private var _generateBranches: [String] = []
         private var _forkTargets: [String] = []
+        private var _carrierReleases: [String] = []
         nonisolated(unsafe) var text: String = ""
 
         func bumpGenerate(branch: String) {
@@ -70,11 +72,40 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         func bumpAdmission() { lock.withLock { _admission += 1 } }
         func bumpSettlement() { lock.withLock { _settlement += 1 } }
         func bumpFork(target: String) { lock.withLock { _forkTargets.append(target) } }
+        func bumpCarrierRelease(branch: String) {
+            lock.withLock { _carrierReleases.append(branch) }
+        }
         var generate: Int { lock.withLock { _generate } }
         var admission: Int { lock.withLock { _admission } }
         var settlement: Int { lock.withLock { _settlement } }
         var lastGenerateBranch: String? { lock.withLock { _generateBranches.last } }
         var forkTargets: [String] { lock.withLock { _forkTargets } }
+        var carrierReleases: [String] { lock.withLock { _carrierReleases } }
+    }
+
+    /// Records the carrier releases the product path performs. It deliberately
+    /// reports an UNOBSERVED KV, so no assertion here can be read as proof that a
+    /// real `ChatSession`'s KV was freed.
+    private final class CarrierOwnerStub: ExecutionCarrierReleasing, @unchecked Sendable {
+        private let stub: Stub
+
+        init(stub: Stub) { self.stub = stub }
+
+        func releaseExecutionCarrier(
+            _ ref: ExecutionCarrierRef
+        ) async throws -> CarrierReleaseReport {
+            stub.bumpCarrierRelease(branch: ref.branchID)
+            return CarrierReleaseReport(
+                carrierWasLive: true,
+                clearIssued: true,
+                sessionsReleased: 1,
+                bindingDetached: true,
+                checkpointFilesDeleted: 0,
+                stillLiveAfterwards: false,
+                retiredStorage: .unobservable("stub owner: no buffer identity"))
+        }
+
+        func verifyCarrierUnusable(_ ref: ExecutionCarrierRef) throws {}
     }
 
     private struct Outcome {
@@ -86,6 +117,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         let settlement: Int
         let generateBranch: String?
         let forkTargets: [String]
+        let carrierReleases: [String]
     }
 
     // MARK: - Setup / teardown
@@ -284,7 +316,10 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { true },
             continuationAdmission: admission,
-            continuationSettlement: settlement
+            continuationSettlement: settlement,
+            // Wired exactly like production: the server owns the carriers of the
+            // runtime it was built for.
+            carrierOwner: CarrierOwnerStub(stub: stub)
         )
     }
 
@@ -347,7 +382,8 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             admission: stub.admission,
             settlement: stub.settlement,
             generateBranch: stub.lastGenerateBranch,
-            forkTargets: stub.forkTargets)
+            forkTargets: stub.forkTargets,
+            carrierReleases: stub.carrierReleases)
     }
 
     private func baseJSON(_ extra: [String: Any] = [:]) -> [String: Any] {
@@ -825,5 +861,70 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         XCTAssertNotEqual(errorKind(o), "INPUT_ADMISSION_REFUSED")
         XCTAssertEqual(o.generate, 0, "an admission fault must fail closed before generation")
         XCTAssertEqual(o.settlement, 0)
+    }
+
+    // MARK: - 13) A REFUSED continuation releases the branch it forked
+
+    /// The child ES branch is forked BEFORE generation. When the settlement that
+    /// would justify it is refused, no ES row will ever name that branch, so the
+    /// product path must release the carrier — and release EXACTLY the branch this
+    /// request forked, never the client's own branch.
+    @MainActor
+    func testRefusedSettlementReleasesTheForkedChildBranch() async throws {
+        let anchor = try stageSettledAnchor(value: "HTTP-CARRIER-7112")
+        let statesBefore = try totalExecutionStates()
+
+        let o = try await dispatch(
+            body: baseJSON([
+                "previous_es_state_id": anchor,
+                "continuation_settle": true,
+            ]),
+            emit: "NOISE-OFF-CONTRACT")
+
+        XCTAssertEqual(o.status, 422, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(errorKind(o), "NATIVE_RESULT_CONTRACT_REJECTED")
+        XCTAssertEqual(o.forkTargets.count, 1, "this request forked a child branch")
+        XCTAssertEqual(try totalExecutionStates(), statesBefore,
+                       "a refused settlement still creates no ES row for the child")
+        XCTAssertEqual(o.carrierReleases, o.forkTargets,
+                       "the released branch must be the branch this request forked")
+        XCTAssertNotEqual(o.carrierReleases, ["main"],
+                          "the client's own branch must never be released")
+    }
+
+    /// Control case: a continuation that DID settle keeps its child carrier.
+    /// Releasing it here would destroy the very branch the settlement names.
+    @MainActor
+    func testSettledContinuationKeepsItsChildBranch() async throws {
+        let value = "HTTP-CARRIER-7113"
+        let anchor = try stageSettledAnchor(value: value)
+
+        let o = try await dispatch(
+            body: baseJSON([
+                "previous_es_state_id": anchor,
+                "continuation_settle": true,
+            ]),
+            emit: "RESULT=\(value)")
+
+        XCTAssertEqual(o.status, 200, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(o.forkTargets.count, 1)
+        XCTAssertTrue(o.carrierReleases.isEmpty,
+                      "a settled child branch still carries the KV its ES row names")
+    }
+
+    /// An admission-only continuation invents no child identity, so there is
+    /// nothing to release: the cleanup must not fire on a branch never forked.
+    @MainActor
+    func testAdmissionOnlyContinuationReleasesNothing() async throws {
+        let anchor = try stageSettledAnchor(value: "HTTP-CARRIER-7114")
+
+        let o = try await dispatch(
+            body: baseJSON(["previous_es_state_id": anchor]),
+            emit: "plain answer, no contract")
+
+        XCTAssertEqual(o.status, 200, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertTrue(o.forkTargets.isEmpty)
+        XCTAssertTrue(o.carrierReleases.isEmpty,
+                      "no child carrier exists, so none may be released")
     }
 }

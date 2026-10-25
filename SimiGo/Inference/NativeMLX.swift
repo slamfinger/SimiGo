@@ -12,6 +12,38 @@ import LOCALBCore
 import SimiGo2Experimental
 import SimiGoRuntimeContract
 
+/// Report of an explicit session-branch release. Each field is an OPERATION the
+/// runtime performed, plus one re-read of the pool (`stillLiveAfterwards`).
+/// `retiredStorage` states what could be shown about the KV buffers — in this
+/// runtime that is "nothing", so it is `.unobservable`, never "empty = isolated".
+public struct SessionBranchRelease: Sendable, Equatable {
+    public let carrierWasLive: Bool
+    public let clearIssued: Bool
+    public let sessionsReleased: Int
+    public let bindingDetached: Bool
+    public let checkpointFilesDeleted: Int
+    public let stillLiveAfterwards: Bool
+    public let retiredStorage: CarrierStorageEvidence
+
+    public init(
+        carrierWasLive: Bool,
+        clearIssued: Bool,
+        sessionsReleased: Int,
+        bindingDetached: Bool,
+        checkpointFilesDeleted: Int,
+        stillLiveAfterwards: Bool,
+        retiredStorage: CarrierStorageEvidence
+    ) {
+        self.carrierWasLive = carrierWasLive
+        self.clearIssued = clearIssued
+        self.sessionsReleased = sessionsReleased
+        self.bindingDetached = bindingDetached
+        self.checkpointFilesDeleted = checkpointFilesDeleted
+        self.stillLiveAfterwards = stillLiveAfterwards
+        self.retiredStorage = retiredStorage
+    }
+}
+
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
 /// SimiGo retains only service state around that API.
 public final class NativeMLX: Runtime, @unchecked Sendable {
@@ -494,7 +526,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     },
                     continuationSettlement: makeNativeMLXContinuationSettlementHandler(
                         modelPath: self.modelPath
-                    )
+                    ),
+                    // The carrier lifecycle is bound to THIS runtime, which owns
+                    // the ChatSession (and therefore the KV) each branch holds.
+                    carrierOwner: MLXRuntimeCarrierOwner(runtime: self)
                 )
             }
 
@@ -2328,6 +2363,36 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         logicalBranchId: String,
         in storeDirectory: URL? = nil
     ) async throws {
+        _ = try await releaseSessionBranch(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId,
+            in: storeDirectory
+        )
+    }
+
+    /// Release (delete) a session branch and REPORT what actually happened.
+    ///
+    /// A branch's pool identity is a PREFIX, not one key: when the first message
+    /// is a system prompt the session is stored under `storageKey#<fingerprint>`
+    /// (``sessionMapKey(storageKey:firstMessage:)``). Removing only the exact
+    /// `storageKey` therefore left that live `ChatSession` — and its KV —
+    /// resident while reporting a successful delete. This resolves EVERY live key
+    /// of the branch (exact + sharded), so a release cannot report success while a
+    /// carrier survives.
+    ///
+    /// Every field is either an OPERATION this runtime performed or a re-read of
+    /// the pool (`stillLiveAfterwards`), so a caller can refuse the handoff
+    /// instead of trusting a false release. None of these claims that the vendor
+    /// allocator returned the KV pages: `ChatSession` exposes no buffer identity
+    /// here, so `retiredStorage` is `.unobservable`.
+    @discardableResult
+    public func releaseSessionBranch(
+        agentId: String? = nil,
+        sessionId: String,
+        logicalBranchId: String,
+        in storeDirectory: URL? = nil
+    ) async throws -> SessionBranchRelease {
         let key = try AgentExecutionKey.resolve(
             agentId: agentId,
             sessionId: sessionId,
@@ -2336,11 +2401,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
         let generationKey = try generationGateKey(for: key)
         let gate = gateHolder.withLock { $0 }
-        try await gate.withExclusive(generationKey) {
-            let session: ChatSession? = state.withLock { state in
-                state.sessions.removeValue(forKey: key.storageKey)?.session
+        // Everything is computed INSIDE the exclusive section and returned as one
+        // value: the report describes one release under one gate, not a set of
+        // fields mutated from a concurrently-executing closure.
+        return try await gate.withExclusive(generationKey) { () -> SessionBranchRelease in
+            let live: (sessions: [ChatSession], wasLive: Bool) = state.withLock { state in
+                let liveKeys = Self.branchPoolKeys(
+                    in: state.sessions.keys, for: key.storageKey)
+                let removed = liveKeys.compactMap {
+                    state.sessions.removeValue(forKey: $0)?.session
+                }
+                return (removed, !liveKeys.isEmpty)
             }
-            if let session {
+            for session in live.sessions {
                 await session.clear()
             }
             // STEP-10 lifecycle: deleting the branch ENDS the execution - its
@@ -2349,11 +2422,66 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // clears, so currentBinding/activeBindings stop resolving it.
             _ = NativeMLXPrefixPool.shared.bindings.detach(executionID: key.storageKey)
             let baseName = Self.cacheFileName(for: key.storageKey)
+            var removedFiles = 0
             for suffix in [".safetensors", ".meta.json"] {
-                try? FileManager.default.removeItem(
-                    at: store.appendingPathComponent(baseName + suffix))
+                let url = store.appendingPathComponent(baseName + suffix)
+                if (try? FileManager.default.removeItem(at: url)) != nil {
+                    removedFiles += 1
+                }
             }
-            traceLogger.trace("[MLX] branchDelete session=\(key.traceKey)")
+            let stillLive = state.withLock { state in
+                !Self.branchPoolKeys(in: state.sessions.keys, for: key.storageKey).isEmpty
+            }
+            traceLogger.trace(
+                "[MLX] branchRelease session=\(key.traceKey) live=\(live.wasLive)"
+                + " sessions=\(live.sessions.count) stillLive=\(stillLive)")
+            return SessionBranchRelease(
+                carrierWasLive: live.wasLive,
+                clearIssued: !live.sessions.isEmpty,
+                sessionsReleased: live.sessions.count,
+                bindingDetached: true,
+                checkpointFilesDeleted: removedFiles,
+                stillLiveAfterwards: stillLive,
+                retiredStorage: .unobservable(
+                    "vendor ChatSession exposes no buffer identity in this runtime")
+            )
+        }
+    }
+
+    /// Which live pool keys are ONE branch.
+    ///
+    /// A branch is the exact key PLUS every `#`-suffixed client shard
+    /// (``sessionMapKey(storageKey:firstMessage:)`` appends
+    /// `#<system-prompt fingerprint>`), and nothing else. Two mistakes are both
+    /// real here and both are refused by this one rule: matching only the exact
+    /// key (leaves the live session, and its KV, resident after a "successful"
+    /// delete) and matching by bare prefix (`es-a` would swallow `es-ab#…`, a
+    /// different branch). Pure and model-free, so the rule is unit-testable.
+    nonisolated static func branchPoolKeys<S: Sequence>(
+        in keys: S,
+        for storageKey: String
+    ) -> [String] where S.Element == String {
+        let shardPrefix = storageKey + "#"
+        return keys.filter { $0 == storageKey || $0.hasPrefix(shardPrefix) }
+    }
+
+    /// Whether any live session (the exact key or a `#`-suffixed client shard)
+    /// still serves this branch. Model-free read: proves a release actually took,
+    /// as opposed to proving that `clear()` was called.
+    public func hasLiveSessionBranch(
+        agentId: String? = nil,
+        sessionId: String,
+        logicalBranchId: String
+    ) -> Bool {
+        guard let key = try? AgentExecutionKey.resolve(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId
+        ) else {
+            return false
+        }
+        return state.withLock { state in
+            !Self.branchPoolKeys(in: state.sessions.keys, for: key.storageKey).isEmpty
         }
     }
 
