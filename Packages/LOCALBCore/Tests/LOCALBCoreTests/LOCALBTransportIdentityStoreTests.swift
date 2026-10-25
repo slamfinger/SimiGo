@@ -7,10 +7,20 @@ import XCTest
 @testable import LOCALBCore
 
 final class LOCALBTransportIdentityStoreTests: XCTestCase {
+    /// Tests NEVER use the default keychain path: the default is the REAL
+    /// managed file store (~/.simigo/localb), and a default-constructed store
+    /// would pollute it (the historical source of leaked test items in user
+    /// keychains). One throwaway file keychain PER TEST (stores constructed by
+    /// different makeStore() calls inside the same test share it, so reload
+    /// semantics stay observable).
+    private lazy var scratchKeychainPath: String =
+        NSTemporaryDirectory() + "/localb-tests-\(UUID().uuidString).keychain-db"
+
     private func makeStore() -> LOCALBTransportIdentityStore {
         LOCALBTransportIdentityStore(
             service: "com.simigo.tests.localb-transport.\(UUID().uuidString)",
-            account: "tls"
+            account: "tls",
+            keychainPath: scratchKeychainPath
         )
     }
 
@@ -25,7 +35,7 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
         // A new store instance (simulating process restart) must load the
         // SAME identity bytes — no silent regeneration.
         let reloaded = try LOCALBTransportIdentityStore(
-            service: store.service, account: store.account
+            service: store.service, account: store.account, keychainPath: scratchKeychainPath
         ).loadExisting()
         XCTAssertEqual(reloaded.certificateDER, first.certificateDER)
         XCTAssertEqual(reloaded.spkiSHA256Hex, first.spkiSHA256Hex)
@@ -230,7 +240,7 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
         // (d) Restart (a fresh store instance) loads the NEW identity — not
         // the old one and not any transient identity.
         let restarted = try LOCALBTransportIdentityStore(
-            service: store.service, account: store.account
+            service: store.service, account: store.account, keychainPath: scratchKeychainPath
         ).loadExisting()
         XCTAssertEqual(restarted.spkiSHA256Hex, rotated.new.spkiSHA256Hex)
     }

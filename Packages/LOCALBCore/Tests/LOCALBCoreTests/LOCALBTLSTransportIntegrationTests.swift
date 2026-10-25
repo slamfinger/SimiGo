@@ -8,10 +8,14 @@ import XCTest
 /// REAL NWProtocolTLS local identity — real handshake, real Keychain identity,
 /// client-side SPKI pinning. No mock identities are used anywhere here.
 final class LOCALBTLSTransportIntegrationTests: XCTestCase {
+    private lazy var scratchKeychainPath: String =
+        NSTemporaryDirectory() + "/localb-tests-\(UUID().uuidString).keychain-db"
+
     private func makeStore() -> LOCALBTransportIdentityStore {
         LOCALBTransportIdentityStore(
             service: "com.simigo.tests.localb-tls.\(UUID().uuidString)",
-            account: "tls"
+            account: "tls",
+            keychainPath: scratchKeychainPath
         )
     }
 

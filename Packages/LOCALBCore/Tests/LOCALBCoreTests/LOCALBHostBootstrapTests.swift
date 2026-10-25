@@ -44,9 +44,13 @@ final class LOCALBHostBootstrapTests: XCTestCase {
     }
 
     private func makeTransportStore() -> LOCALBTransportIdentityStore {
+        // Throwaway file keychain: the default path is the REAL managed store
+        // and must never receive test identities.
         let store = LOCALBTransportIdentityStore(
             service: "com.simigo.tests.localb-bootstrap.\(UUID().uuidString)",
-            account: "tls"
+            account: "tls",
+            keychainPath: NSTemporaryDirectory()
+                + "/localb-tests-\(UUID().uuidString).keychain-db"
         )
         addTeardownBlock { store.deleteAll() }
         return store
