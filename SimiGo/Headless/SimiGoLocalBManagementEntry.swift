@@ -67,16 +67,24 @@ enum SimiGoLocalBManagementEntry {
                     + "(allowed: prepare|activate|pair-issue|pair-approve|serve|serve-service)"
             )
         }
-        // These roles create keys and registry state. They are only allowed
-        // against an isolated managed root; the real home is never a target.
-        guard let home = env["SIMIGO_HOME"], !home.isEmpty else {
+        // These roles create keys and registry state. They run against an
+        // isolated managed root by default; the real home is a target only
+        // under an explicit operator acknowledgement
+        // (SIMIGO_LOCALB_ALLOW_REAL_ROOT=1). Real-root use exists because the
+        // production identity now lives in the managed FILE keychain
+        // (<root>/localb/…): re-running the first-run ceremony there is the
+        // recovery path for a host whose login-Keychain identities are locked
+        // to a previous build's code signature (transportIdentityMismatch /
+        // AUTH_DENIED, 2026-10-26).
+        let realRootAcknowledged = env["SIMIGO_LOCALB_ALLOW_REAL_ROOT"] == "1"
+        guard realRootAcknowledged || ((env["SIMIGO_HOME"] ?? "").isEmpty == false) else {
             return Decision(
                 requested: true, role: nil,
-                error: "SIMIGO_HOME is required: management roles only run "
-                    + "against an isolated root"
+                error: "SIMIGO_HOME is required (or set "
+                    + "SIMIGO_LOCALB_ALLOW_REAL_ROOT=1 to operate on the real "
+                    + "managed root)"
             )
         }
-        _ = home
 
         func missing(_ key: String) -> Decision {
             Decision(requested: true, role: nil, error: "\(key) missing")

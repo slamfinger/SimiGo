@@ -281,6 +281,19 @@ public final class EnvManager: ObservableObject {
 
         let fm = FileManager.default
 
+        // Installed-binary short circuit: a usable `bin/llama-server` satisfies
+        // the dependency WITHOUT rebuilding. Cache pruning removes sources/build
+        // after a successful build, so without this check every re-run (or any
+        // offline re-run) would force a fresh clone of upstream.
+        let installedLlama = "\(Self.binDir)/llama-server"
+        if fm.fileExists(atPath: installedLlama), fm.isExecutableFile(atPath: installedLlama) {
+            appendCommandLog("✅ 检测到已安装的 llama-server（\(installedLlama)），跳过构建。")
+            commandStatus = "构建完成"
+            commandInput = Self.defaultCommandInput
+            checkStatus()
+            return
+        }
+
         do {
             try fm.createDirectory(atPath: Self.simigoDir, withIntermediateDirectories: true)
             try fm.createDirectory(atPath: Self.binDir, withIntermediateDirectories: true)
@@ -556,6 +569,24 @@ public final class EnvManager: ObservableObject {
         report["hf"] = await bootstrapHFTool()
         // 3) Fresh ES/IS database + work root.
         report["database"] = bootstrapFreshDatabase(workRoot: workRoot)
+        // 4) LOCALB operational status against the SAME managed root the
+        //    identities now live in (file keychain). `operational` = the ES/IS
+        //    serving path can bind TLS + auth; anything else names the recovery
+        //    step (first-run ceremony via the management entry).
+        switch try? LOCALBHostRuntime.resolveOperational(hostDirectory: LOCALBHostRuntime.defaultHostDirectory()) {
+        case .operational:
+            report["localb"] = ["status": "operational"]
+        case .notInitialized:
+            report["localb"] = [
+                "status": "not_initialized",
+                "recovery": "run first-run ceremony: SIMIGO_LOCALB_MGMT=prepare, then activate (real root: SIMIGO_LOCALB_ALLOW_REAL_ROOT=1)",
+            ]
+        default:
+            report["localb"] = [
+                "status": "unresolvable",
+                "recovery": "identities may be locked to a previous build's signature in the login keychain; re-run the first-run ceremony against the managed root",
+            ]
+        }
         report["finished_at"] = ISO8601DateFormatter().string(from: Date())
         return report
     }

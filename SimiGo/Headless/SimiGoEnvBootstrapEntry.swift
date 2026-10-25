@@ -1,4 +1,5 @@
 import Foundation
+import LOCALBCore
 import SimiGoRuntimeContract
 
 // SIMIGO_ENV_BOOTSTRAP=1 — one-shot provisioning of the full generation
@@ -44,11 +45,65 @@ enum SimiGoEnvBootstrapEntry {
         return Decision(requested: true, valid: true, error: nil)
     }
 
+    /// Opt-in first-run LOCALB ceremony (SIMIGO_ENV_BOOTSTRAP_LOCALB=1): runs
+    /// prepare → activate in-process (the checkpoint the ceremony demands is
+    /// produced and consumed by the same explicit operator command) and then
+    /// re-resolves. Idempotent in the sense that an already-operational host is
+    /// left untouched; a half-initialized registry is reported, never cleared.
+    @MainActor
+    static func bootstrapLOCALBCeremonyIfNeeded(optIn: Bool) -> [String: Any] {
+        let hostDirectory = LOCALBHostRuntime.defaultHostDirectory()
+        func resolve() -> (String, String?) {
+            switch try? LOCALBHostRuntime.resolveOperational(hostDirectory: hostDirectory) {
+            case .operational: return ("operational", nil)
+            case .notInitialized: return ("not_initialized", nil)
+            default: return ("unresolvable", nil)
+            }
+        }
+        let before = resolve().0
+        guard optIn, before != "operational" else {
+            var out: [String: Any] = ["status": before]
+            if before != "operational" {
+                out["recovery"] = "set SIMIGO_ENV_BOOTSTRAP_LOCALB=1 to run the "
+                    + "first-run ceremony against the managed root (or run "
+                    + "SIMIGO_LOCALB_MGMT=prepare/activate manually)"
+            }
+            return out
+        }
+        do {
+            let registryRoot = LOCALBHostRuntime.registryRoot(in: hostDirectory)
+            let pending = try LOCALBHostBootstrap.prepareFirstRun(rootURL: registryRoot)
+            let checkpoint = pending.checkpoint
+            _ = try LOCALBHostBootstrap.activateInitialSetup(
+                rootURL: registryRoot, operatorRecordedCheckpoint: checkpoint)
+            try LOCALBHostRuntime.persistTrustedCheckpoint(checkpoint, in: hostDirectory)
+            let after = resolve().0
+            return [
+                "status": after,
+                "ceremony": "completed",
+                "lineage_id": pending.lineageID,
+                "transport_spki_sha256": pending.transportSPKIHashHex,
+            ]
+        } catch {
+            return ["status": resolve().0, "ceremony": "failed",
+                    "detail": "\(error)"]
+        }
+    }
+
     @MainActor
     static func run() async -> Int32 {
         let env = ProcessInfo.processInfo.environment
         let workRoot = env["SIMIGO_WORKROOT"].flatMap { $0.isEmpty ? nil : $0 }
-        let report = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: workRoot)
+        var report = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: workRoot)
+        // LOCALB first-run ceremony (explicit opt-in only). The ceremony
+        // re-resolves, so its status supersedes the pre-ceremony `localb`
+        // snapshot in the report.
+        let ceremony = bootstrapLOCALBCeremonyIfNeeded(
+            optIn: env["SIMIGO_ENV_BOOTSTRAP_LOCALB"] == "1")
+        report["localb_ceremony"] = ceremony
+        if (ceremony["status"] as? String) == "operational" {
+            report["localb"] = ["status": "operational"]
+        }
 
         let encoder = JSONSerialization.jsonSerializerCompatibleDictionary(report)
         let data = (try? JSONSerialization.data(
@@ -68,6 +123,11 @@ enum SimiGoEnvBootstrapEntry {
         if let llama = report["llama_cpp"] as? [String: Any] { failed = failed || stepFailed(llama) }
         if let hf = report["hf"] as? [String: Any] { failed = failed || (hf["status"] as? String) == "install_failed" }
         if let db = report["database"] as? [String: Any] { failed = failed || stepFailed(db) }
+        if let ceremony = report["localb_ceremony"] as? [String: Any],
+            (ceremony["ceremony"] as? String) == "failed"
+        {
+            failed = true
+        }
         return failed ? 1 : 0
     }
 }
