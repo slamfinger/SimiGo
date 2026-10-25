@@ -14,14 +14,22 @@ public struct ContinuationAdmissionOutcome: Sendable {
     public let esStateID: String
     public let recoveredValue: String
     public let verifiedBindings: [String: NativeContractValue]
+    /// The VERIFIED carrier source for this anchor: the branch name that holds
+    /// the parent's KV, derived from the authoritative ES row rather than from
+    /// anything the client sent. `nil` means IS records no such relation (the
+    /// anchor was settled outside the fork path), which is a fact a `warm`
+    /// continuation must refuse on rather than guess around.
+    public let carrierSourceBranchID: String?
     public init(
         esStateID: String,
         recoveredValue: String,
-        verifiedBindings: [String: NativeContractValue]
+        verifiedBindings: [String: NativeContractValue],
+        carrierSourceBranchID: String? = nil
     ) {
         self.esStateID = esStateID
         self.recoveredValue = recoveredValue
         self.verifiedBindings = verifiedBindings
+        self.carrierSourceBranchID = carrierSourceBranchID
     }
 }
 
@@ -33,6 +41,11 @@ struct ContinuationRequestBinding: Sendable {
     let parentESStateID: String
     let childESStateID: String
     let verifiedBindings: [String: NativeContractValue]
+    /// Verified carrier source reported by the admission (see
+    /// `ContinuationAdmissionOutcome.carrierSourceBranchID`).
+    let carrierSourceBranchID: String?
+    /// The carrier mode the client declared for THIS request.
+    let carrierMode: ContinuationCarrierMode
 }
 
 /// Typed, fail-closed reasons an opt-in continuation is refused before any

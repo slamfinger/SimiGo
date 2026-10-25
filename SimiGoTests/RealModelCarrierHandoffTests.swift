@@ -33,7 +33,7 @@ import SimiGo2Experimental
 /// 让「旧分支未被访问」的推断失去排他性。
 final class RealModelCarrierHandoffTests: XCTestCase {
 
-    private let port = 18_472
+    private var port = 18_472
     private var host: LOCALBAuthorizedE2E.Host!
     private let sessionID = "handoff-" + UUID().uuidString.prefix(8).lowercased()
     private var evidence: [String: Any] = [:]
@@ -99,6 +99,17 @@ final class RealModelCarrierHandoffTests: XCTestCase {
         var settlementPayload: [String: Any] {
             json["continuation_settlement"] as? [String: Any] ?? [:]
         }
+        /// How this request's carrier was chosen and what actually happened —
+        /// published by the product, never inferred from a 200.
+        var carrier: [String: Any] {
+            json["continuation_carrier"] as? [String: Any] ?? [:]
+        }
+        var errorKind: String? {
+            (json["error"] as? [String: Any])?["error_kind"] as? String
+        }
+        var reasonCode: String? {
+            (json["error"] as? [String: Any])?["reason_code"] as? String
+        }
         var settlementID: String? {
             json["settlement_id"] as? String
                 ?? settlementPayload["settlement_id"] as? String
@@ -117,17 +128,19 @@ final class RealModelCarrierHandoffTests: XCTestCase {
                 "cached_tokens": cachedTokens,
                 "settlement_id": settlementID ?? "-",
                 "child_es_state_id": childESStateID ?? "-",
+                "carrier": carrier,
+                "error_kind": errorKind ?? "-",
+                "reason_code": reasonCode ?? "-",
                 "identity_binding_published":
                     settlementPayload["identity_binding_published"] ?? "-",
-                "error_kind": json["error_kind"] ?? "-",
-                "reason_code": json["reason_code"] ?? "-",
                 "body_prefix": String(raw.prefix(400)),
             ]
         }
     }
 
     private func requestBody(
-        input: [[String: Any]], anchor: String?, settle: Bool, branch: String = "main"
+        input: [[String: Any]], anchor: String?, settle: Bool, branch: String = "main",
+        carrier: String? = nil
     ) -> [String: Any] {
         var json: [String: Any] = [
             "model": "carrier-handoff",
@@ -140,6 +153,7 @@ final class RealModelCarrierHandoffTests: XCTestCase {
         ]
         if let anchor { json["previous_es_state_id"] = anchor }
         if settle { json["continuation_settle"] = true }
+        if let carrier { json["continuation_carrier"] = carrier }
         return json
     }
 
@@ -191,7 +205,10 @@ final class RealModelCarrierHandoffTests: XCTestCase {
             .appendingPathComponent("carrier-handoff-\(sessionID).json")
     }
 
-    private func writeEvidence() {
+    /// The artifact IS the deliverable of this experiment: a case that passes
+    /// while its evidence silently fails to land proves nothing, so the write
+    /// throws instead of printing a warning nobody reads.
+    private func writeEvidence() throws {
         evidence["session_id"] = sessionID
         evidence["port"] = port
         evidence["experiment_gates"] = [
@@ -209,14 +226,17 @@ final class RealModelCarrierHandoffTests: XCTestCase {
                 + "generation_tokens 仅作 token 粒度代理。",
         ]
         evidence["observed_at"] = ISO8601DateFormatter().string(from: Date())
-        do {
-            let data = try JSONSerialization.data(
-                withJSONObject: evidence, options: [.prettyPrinted, .sortedKeys])
-            try data.write(to: evidenceURL(), options: .atomic)
-            print("[CARRIER-HANDOFF] evidence written to \(evidenceURL().path)")
-        } catch {
-            print("[CARRIER-HANDOFF] evidence write FAILED: \(error)")
-        }
+        // The isolation root names a store path whose PARENT the harness never
+        // creates; without this the write fails with errno 2 while the model
+        // assertions still pass.
+        let url = evidenceURL()
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        let data = try JSONSerialization.data(
+            withJSONObject: evidence, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: url, options: .atomic)
+        print("[CARRIER-HANDOFF] evidence written to \(url.path)")
     }
 
     /// 追溯产品自己写的 trace（分支查找 / fork / 释放 / cold 降级都在里面）。
@@ -444,6 +464,177 @@ final class RealModelCarrierHandoffTests: XCTestCase {
         XCTAssertEqual(finalPasses, 4, "每个 HTTP 请求只应有一次生成 pass（结算不得重跑生成器）")
 
         evidence["trace_tail"] = traceTail()
-        writeEvidence()
+        try writeEvidence()
+    }
+
+    // MARK: - Carrier contract on the real model: warm / released / cold
+
+    /// The three carrier outcomes that used to be indistinguishable from a 200.
+    ///
+    ///   * `cold` on a parent whose ES row records no carrier relation (root,
+    ///     settled outside the fork path) — declared, not a silent downgrade;
+    ///   * `warm` from the VERIFIED source while the client keeps naming its own
+    ///     conversation branch — the mismatch is reported, and the fork reads
+    ///     the verified source even though the client's answer is also live;
+    ///   * `warm` after that source carrier was released — REFUSED before
+    ///     generation, with the pass count unchanged;
+    ///   * then `cold` again — the semantic result still continues and settles.
+    ///
+    /// The engine's own pass counter is recorded at each stage, so "no generation
+    /// happened" is a measurement rather than an inference from the status code.
+    func testWarmColdCarrierContractOnRealModel() async throws {
+        // A separate listener: the previous test's runtime shutdown is async, and
+        // two tests must never contend for one port.
+        port = 18_490
+        let modelPath = try Self.requireModel()
+        let modelInfo = ModelInfo(path: modelPath, kind: .mlx)
+        let value = Self.value
+        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        evidence["model"] = [
+            "path": modelPath,
+            "model_fingerprint": identity.model,
+            "tokenizer_fingerprint": identity.tokenizer,
+        ]
+
+        let runtime = NativeMLX(info: modelInfo, config: ModelConfig())
+        host = try LOCALBAuthorizedE2E.makeHost()
+        try await runtime.startWithLOCALB(
+            modelInfo,
+            port: port,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
+        defer { Task { await runtime.stop() } }
+
+        func passCount() -> Int {
+            runtime.observation.snapshot()["generate_passes"] as? Int ?? -1
+        }
+
+        // A parent ES settled OUTSIDE the fork path: IS records no carrier for
+        // it, so `warm` is not available and must not be faked.
+        let rootID = try await MainActor.run { () -> String in
+            let store = ExecutionStateGraphStore()
+            let root = try store.create()
+            try store.continueState(root, input: value)
+            let state = try XCTUnwrap(store.state(root.id))
+            _ = try store.settleProducerResult(
+                generatedText: "RESULT=\(value)",
+                boundToState: state,
+                producerIdentity: identity)
+            return state.id
+        }
+
+        let transcript: [[String: Any]] = [
+            ["role": "system", "content": Self.systemPrompt],
+            ["role": "user", "content": Self.primeUser],
+        ]
+        let prime = try await post(requestBody(input: transcript, anchor: nil, settle: false))
+        XCTAssertEqual(prime.status, 200, prime.raw)
+        XCTAssertTrue(liveBranches(runtime, contain: "main"),
+                      "the client's branch must be live, otherwise the mismatch case proves nothing")
+
+        // ---- 1) declared cold on an unverified parent ----
+        let cold1 = try await post(
+            requestBody(input: transcript, anchor: rootID, settle: true, carrier: "cold"))
+        XCTAssertEqual(cold1.status, 200, cold1.raw)
+        let esA = try XCTUnwrap(cold1.childESStateID, cold1.raw)
+        XCTAssertEqual(cold1.carrier["resolution"] as? String, "cold")
+        XCTAssertEqual(cold1.carrier["source_origin"] as? String, "none")
+        XCTAssertEqual(cold1.carrier["verified_warm_reuse"] as? Bool, false)
+        XCTAssertEqual(cold1.cachedTokens, 0, "a declared cold request must not claim a cache hit")
+        XCTAssertEqual(passCount(), 2)
+        evidence["phase_cold_unverified_parent"] = [
+            "exchange": cold1.summary,
+            "engine": engineSnapshot(runtime, label: "cold-unverified"),
+            "live_branches": liveBranches(runtime),
+        ]
+
+        // ---- 2) warm from the VERIFIED source, client names another branch ----
+        let appended: [String: Any] = ["role": "user", "content": value]
+        let warmInput = transcript + [appended,
+                                      ["role": "assistant", "content": cold1.assistantText]]
+        let warm = try await post(requestBody(
+            input: warmInput, anchor: esA, settle: true, branch: "main", carrier: "warm"))
+        XCTAssertEqual(warm.status, 200, warm.raw)
+        let esB = try XCTUnwrap(warm.childESStateID, warm.raw)
+        XCTAssertEqual(warm.carrier["resolution"] as? String, "forked")
+        XCTAssertEqual(warm.carrier["source_origin"] as? String, "es_lineage")
+        XCTAssertEqual(warm.carrier["source_branch_id"] as? String, esA)
+        XCTAssertEqual(warm.carrier["target_branch_id"] as? String, esB)
+        XCTAssertEqual(warm.carrier["client_branch_id"] as? String, "main")
+        XCTAssertEqual(warm.carrier["client_branch_mismatch"] as? Bool, true,
+                       "the client asked for main while the verified source is the parent ES")
+        XCTAssertEqual(warm.carrier["verified_warm_reuse"] as? Bool, true)
+        XCTAssertGreaterThan(warm.carrier["fork_token_count"] as? Int ?? 0, 0)
+        XCTAssertGreaterThan(warm.cachedTokens, 0,
+                             "the verified source's KV must actually be reused")
+        XCTAssertTrue(liveBranches(runtime, contain: "main"),
+                      "main was still live, so a main-fork would have been possible — it was not chosen")
+        XCTAssertEqual(passCount(), 3)
+        evidence["phase_warm_verified_source"] = [
+            "exchange": warm.summary,
+            "engine": engineSnapshot(runtime, label: "warm-verified"),
+            "source_branch": esA,
+            "live_branches": liveBranches(runtime),
+        ]
+
+        // ---- 3) warm after the source carrier was released: refuse, don't rebuild ----
+        let settlementsBefore = try await MainActor.run {
+            () -> Int in
+            try XCTUnwrap(ExecutionStateGraphStore().esis).readSettlementReceipts().count
+        }
+        let owner = MLXRuntimeCarrierOwner(runtime: runtime)
+        let releaseB = try await owner.releaseExecutionCarrier(
+            ExecutionCarrierRef(agentID: nil, sessionID: sessionID, branchID: esB))
+        try owner.verifyCarrierUnusable(
+            ExecutionCarrierRef(agentID: nil, sessionID: sessionID, branchID: esB))
+        XCTAssertFalse(liveBranches(runtime, contain: esB))
+
+        let refused = try await post(requestBody(
+            input: warmInput + [appended,
+                                ["role": "assistant", "content": warm.assistantText]],
+            anchor: esB, settle: true, branch: "main", carrier: "warm"))
+        XCTAssertEqual(refused.status, 422, refused.raw)
+        XCTAssertEqual(refused.errorKind, "CARRIER_FORK_FAILED")
+        XCTAssertEqual(refused.reasonCode, "fork_failed")
+        XCTAssertEqual(passCount(), 3, "a refused warm continuation must not generate")
+        let settlementsAfter = try await MainActor.run {
+            () -> Int in
+            try XCTUnwrap(ExecutionStateGraphStore().esis).readSettlementReceipts().count
+        }
+        XCTAssertEqual(settlementsAfter, settlementsBefore,
+                       "a refused warm continuation must not settle anything")
+        evidence["phase_warm_released_source"] = [
+            "exchange": refused.summary,
+            "released_source": esB,
+            "release_sessions": releaseB.sessionsReleased,
+            "generate_passes_after_refusal": passCount(),
+            "settlements_before": settlementsBefore,
+            "settlements_after": settlementsAfter,
+            "live_branches": liveBranches(runtime),
+        ]
+
+        // ---- 4) cold still continues the settled work ----
+        let cold2 = try await post(requestBody(
+            input: warmInput + [appended,
+                                ["role": "assistant", "content": warm.assistantText]],
+            anchor: esB, settle: true, branch: "main", carrier: "cold"))
+        XCTAssertEqual(cold2.status, 200, cold2.raw)
+        XCTAssertEqual(cold2.carrier["resolution"] as? String, "cold")
+        XCTAssertEqual(cold2.cachedTokens, 0)
+        XCTAssertEqual(passCount(), 4)
+        XCTAssertNotNil(cold2.childESStateID)
+        XCTAssertNotNil(cold2.settlementID)
+        evidence["phase_cold_after_release"] = [
+            "exchange": cold2.summary,
+            "engine": engineSnapshot(runtime, label: "cold-after-release"),
+            "live_branches": liveBranches(runtime),
+        ]
+
+        evidence["trace_tail"] = traceTail()
+        try writeEvidence()
     }
 }

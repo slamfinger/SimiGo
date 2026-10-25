@@ -94,11 +94,37 @@ enum SimiGoProducerIdentity {
         stateID: String,
         modelPath: String
     ) throws -> SimiGoISAdmission.Admitted {
+        try recoverContinuation(stateID: stateID, modelPath: modelPath).admitted
+    }
+
+    /// Everything a continuation needs from IS, resolved in ONE store read: the
+    /// admitted settlement AND the carrier source derived from the authoritative
+    /// parent row.
+    ///
+    /// `carrierSourceBranchID` is NOT taken from the request. The client's
+    /// `logical_branch_id` names the conversation lineage; it is not evidence
+    /// about which branch holds the parent's KV. Only the parent ES row can say
+    /// that (see `ExecutionStateRecord.verifiedCarrierBranchID`), and it is
+    /// `nil` when IS has no such relation — the case a `warm` continuation
+    /// refuses on instead of silently rebuilding.
+    struct RecoveredContinuation: Sendable {
+        let admitted: SimiGoISAdmission.Admitted
+        let carrierSourceBranchID: String?
+    }
+
+    @MainActor
+    static func recoverContinuation(
+        stateID: String,
+        modelPath: String
+    ) throws -> RecoveredContinuation {
         let store = ExecutionStateGraphStore()
         let consumer = identity(fromPath: modelPath)
         do {
-            return try store.admitContinuation(
+            let admitted = try store.admitContinuation(
                 stateID: stateID, consumer: consumer)
+            return RecoveredContinuation(
+                admitted: admitted,
+                carrierSourceBranchID: store.state(stateID)?.verifiedCarrierBranchID)
         } catch let refusal as SimiGoISAdmission.Refusal {
             // Known, typed IS semantic refusal -> business input refusal (422).
             throw ContinuationAdmissionFailure.refused(String(describing: refusal))

@@ -47,6 +47,23 @@ struct ExecutionStateRecord: Identifiable, Codable, Hashable {
     var prefix: [String]
     var lifecycle: ExecutionLifecycle
     var checkpointIDs: [UUID]
+
+    /// The carrier branch this ES row's KV lives (or lived) under, when IS can
+    /// actually derive that relation.
+    ///
+    /// A settle-continuation executes under its child ES id as the runtime
+    /// branch id (`continuationExecutionBranch` forks source -> child ES id), so
+    /// for a row created BY that path — `parentID != nil` — the row's own id IS
+    /// the branch name its carrier was registered under. A root row
+    /// (`parentID == nil`, `create()`) was produced outside the fork path and
+    /// this store holds no evidence about where its carrier lives, so the
+    /// answer is `nil` rather than a guess at the client's logical branch.
+    ///
+    /// Whether that carrier still EXISTS is a runtime question, answered by the
+    /// fork attempt itself — this property only names the verified source.
+    var verifiedCarrierBranchID: String? {
+        parentID == nil ? nil : id
+    }
 }
 
 struct ExecutionCheckpoint: Identifiable, Codable, Hashable {

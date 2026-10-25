@@ -445,6 +445,11 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     /// Explicit post-generation settlement opt-in (`continuation_settle`).
     /// Absent/false leaves the dispatch path unchanged.
     let continuationSettle: Bool
+
+    /// How this settle-continuation may obtain the parent's KV
+    /// (`continuation_carrier`: warm | cold | auto). Absent means `auto`: best
+    /// effort, with every deviation PUBLISHED in `continuation_carrier`.
+    let continuationCarrierMode: ContinuationCarrierMode
 }
 
 
@@ -508,11 +513,17 @@ extension HTTPServer {
             // settlement attribution and the returned child id are the same
             // identity — not a decoration added after the fact.
             let childESStateID = "es-" + UUID().uuidString.lowercased()
+            // The carrier decision is pinned here, BEFORE generation, from what
+            // admission VERIFIED: the child ES is the target branch, and the
+            // source branch comes from the parent ES row — never from the
+            // client's logical_branch_id, which only names the conversation.
             context.setContinuationBinding(
                 ContinuationRequestBinding(
                     parentESStateID: anchor,
                     childESStateID: childESStateID,
-                    verifiedBindings: outcome.verifiedBindings))
+                    verifiedBindings: outcome.verifiedBindings,
+                    carrierSourceBranchID: outcome.carrierSourceBranchID,
+                    carrierMode: parsed.continuationCarrierMode))
             RuntimeTraceLogger.shared.trace(
                 "[PROTOCOL] continuation_admitted r=\(context.requestId)"
                 + " parent=\(anchor) child=\(childESStateID)"
@@ -622,44 +633,129 @@ extension HTTPServer {
         }
     }
 
-    /// Slice 8 Part 2: make the admitted child ES the EXECUTION/CACHE identity of
-    /// THIS generation. The runtime keys its session (and therefore its KV cache
-    /// and checkpoints) by (agent, session, branch), so the child ES becomes that
-    /// branch, forked from the request's branch to carry the parent's KV lineage.
+    /// Slice 8 Part 2 + carrier contract: make the admitted child ES the
+    /// EXECUTION/CACHE identity of THIS generation, and decide its SOURCE
+    /// explicitly instead of inheriting whatever branch the client kept sending.
     ///
-    /// A fork that cannot run in this process (e.g. no live parent session after
-    /// a restart) degrades to a COLD child branch: the request messages are
-    /// replayed, so correctness is preserved, and the degradation is traced
-    /// instead of being claimed as a warm reuse. Non-continuation requests keep
-    /// the client's branch unchanged.
+    /// The runtime keys its session (and therefore its KV cache and checkpoints)
+    /// by (agent, session, branch). The TARGET is always the admitted child ES id.
+    /// The SOURCE is whichever branch the parent's KV actually lives under, and
+    /// it is resolved from the verified parent ES row
+    /// (`ExecutionStateRecord.verifiedCarrierBranchID`), falling back to the
+    /// client's branch only in `auto` mode and LABELLED as client-asserted.
+    ///
+    /// * `warm` — a verified source is required and the fork must succeed. A
+    ///   missing source or a failed fork REFUSES the request before generation:
+    ///   a warm request can no longer silently become a cold rebuild.
+    /// * `cold` — no fork is attempted; the context is rebuilt on the target.
+    /// * `auto` — best effort, and every deviation is published.
+    ///
+    /// Non-continuation requests keep the client's branch unchanged.
+    ///
+    /// Returns `nil` only after an HTTP terminal was already written (the caller
+    /// must return without generating).
     func continuationExecutionBranch(
         parsed: ResponsesParsedRequest,
         context: ConnectionContext
-    ) async -> String {
+    ) async -> ContinuationCarrierDecision? {
         // Only a continuation that will SETTLE gets a child ES identity: that
         // identity is created by the settlement commit. An admission-only
         // continuation settles nothing, so inventing a branch for it would
         // strand KV/checkpoints under an id no ES row will ever name.
         guard parsed.continuationSettle, let binding = context.continuationBinding else {
-            return parsed.logicalBranchId
+            return ContinuationCarrierDecision(
+                mode: parsed.continuationCarrierMode,
+                resolution: .notApplicable,
+                sourceBranchID: nil,
+                sourceOrigin: .none,
+                targetBranchID: parsed.logicalBranchId,
+                clientBranchID: parsed.logicalBranchId,
+                runtimeForkSource: nil,
+                forkTokenCount: nil,
+                reason: nil)
         }
-        let source = parsed.logicalBranchId
-        guard source != binding.childESStateID else { return source }
+        let target = binding.childESStateID
+        let clientBranch = parsed.logicalBranchId
+
+        // Declared cold: no fork, no claim of reuse.
+        if binding.carrierMode == .cold {
+            let decision = ContinuationCarrierDecision(
+                mode: .cold,
+                resolution: .cold,
+                sourceBranchID: nil,
+                sourceOrigin: .none,
+                targetBranchID: target,
+                clientBranchID: clientBranch,
+                runtimeForkSource: nil,
+                forkTokenCount: nil,
+                reason: nil)
+            RuntimeTraceLogger.shared.trace(decision.traceLine)
+            return decision
+        }
+
+        // Source resolution. `warm` accepts ONLY the verified relation; `auto`
+        // may fall back to the client's branch, but that is recorded as
+        // unverified rather than presented as lineage.
+        let verified = binding.carrierSourceBranchID
+        let source = verified ?? (binding.carrierMode == .auto ? clientBranch : nil)
+        guard let source else {
+            RuntimeTraceLogger.shared.trace(
+                "[CARRIER] continuation_carrier_refused mode=\(binding.carrierMode.rawValue)"
+                + " target=\(target) client=\(clientBranch) reason=source_unverified")
+            sendTerminal(
+                ContinuationCarrierFailure.sourceUnverified.terminal, context: context)
+            return nil
+        }
+        let origin: ContinuationCarrierSourceOrigin =
+            verified == nil ? .clientAsserted : .esLineage
+
         do {
-            _ = try await forkBranchHandler(
+            let metadata = try await forkBranchHandler(
                 parsed.agentId,
                 parsed.sessionId,
                 source,
-                binding.childESStateID
+                target
             )
+            let decision = ContinuationCarrierDecision(
+                mode: binding.carrierMode,
+                resolution: .forked,
+                sourceBranchID: source,
+                sourceOrigin: origin,
+                targetBranchID: target,
+                clientBranchID: clientBranch,
+                runtimeForkSource: metadata.forkPoint?.sourceStorageKey,
+                forkTokenCount: metadata.forkPoint?.atToken,
+                reason: nil)
+            RuntimeTraceLogger.shared.trace(decision.traceLine)
+            return decision
         } catch {
+            // A declared warm request must not be papered over with a rebuild.
+            if binding.carrierMode == .warm {
+                RuntimeTraceLogger.shared.trace(
+                    "[CARRIER] continuation_carrier_refused mode=warm source=\(source)"
+                    + " target=\(target) reason=fork_failed err=\(error.localizedDescription)")
+                // The target branch may exist partially: nothing will ever name
+                // it (no settlement will be written), so release it.
+                await releaseRefusedContinuationBranch(
+                    parsed: parsed, branch: target, context: context)
+                sendTerminal(
+                    ContinuationCarrierFailure.forkFailed.terminal, context: context)
+                return nil
+            }
+            let decision = ContinuationCarrierDecision(
+                mode: binding.carrierMode,
+                resolution: .degradedForkFailed,
+                sourceBranchID: source,
+                sourceOrigin: origin,
+                targetBranchID: target,
+                clientBranchID: clientBranch,
+                runtimeForkSource: nil,
+                forkTokenCount: nil,
+                reason: "fork_failed")
             RuntimeTraceLogger.shared.trace(
-                "[PROTOCOL] continuation_branch_cold child=\(binding.childESStateID)"
-                + " from=\(source) err=\(error.localizedDescription)")
+                decision.traceLine + " err=\(error.localizedDescription)")
+            return decision
         }
-        RuntimeTraceLogger.shared.trace(
-            "[PROTOCOL] continuation_branch child=\(binding.childESStateID) from=\(source)")
-        return binding.childESStateID
     }
 
     /// Success payload merged into the completed response body.
@@ -762,11 +858,17 @@ extension HTTPServer {
                 return
             }
 
-            // A verified continuation executes under its child ES identity.
-            let executionBranchID = await continuationExecutionBranch(
+            // A verified continuation executes under its child ES identity, with
+            // an EXPLICIT source/target carrier decision. `nil` means a declared
+            // `warm` request could not be honoured and its terminal is already on
+            // the wire — no generation happens.
+            guard let carrier = await continuationExecutionBranch(
                 parsed: parsed,
                 context: context
-            )
+            ) else {
+                return
+            }
+            let executionBranchID = carrier.targetBranchID
 
             let result = try await generateHandler(
                 context.requestId,
@@ -848,6 +950,10 @@ extension HTTPServer {
 
             if let settlementOutcome {
                 response["continuation_settlement"] = settlementPayload(settlementOutcome)
+                // Which carrier this request actually used, and how it was
+                // chosen. Published so a client can never mistake a rebuild for
+                // a warm reuse.
+                response["continuation_carrier"] = carrier.responsePayload
             }
 
             let currentHistory =
@@ -1133,10 +1239,15 @@ extension HTTPServer {
             }
 
             // A verified continuation executes under its child ES identity.
-            let executionBranchID = await continuationExecutionBranch(
+            // Streaming cannot settle, so this is always the not-applicable
+            // carrier decision (no fork, client branch preserved).
+            guard let carrier = await continuationExecutionBranch(
                 parsed: parsed,
                 context: context
-            )
+            ) else {
+                return
+            }
+            let executionBranchID = carrier.targetBranchID
 
             let result = try await generateHandler(
                 context.requestId,
@@ -1602,6 +1713,19 @@ extension HTTPServer {
         let esAnchorValue = (json["previous_es_state_id"] as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let esSettleRequested = (json["continuation_settle"] as? Bool) ?? false
+        // Carrier mode is a DECLARED intent. An unknown value is a malformed
+        // request (the generic 400), never a silent downgrade to auto: a client
+        // that asked for `warm` must not be quietly served a rebuild.
+        let carrierMode: ContinuationCarrierMode
+        if let raw = json["continuation_carrier"] {
+            guard let text = raw as? String,
+                  let parsedMode = ContinuationCarrierMode(rawValue: text) else {
+                return nil
+            }
+            carrierMode = parsedMode
+        } else {
+            carrierMode = .auto
+        }
 
         return ResponsesParsedRequest(
             agentId: identity.agentId,
@@ -1617,7 +1741,8 @@ extension HTTPServer {
             parent: parent,
             esStateIDPresent: esAnchorPresent,
             esStateID: esAnchorValue,
-            continuationSettle: esSettleRequested
+            continuationSettle: esSettleRequested,
+            continuationCarrierMode: carrierMode
         )
     }
 

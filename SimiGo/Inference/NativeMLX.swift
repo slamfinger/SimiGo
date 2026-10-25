@@ -514,15 +514,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         let modelPath = self.modelPath
                         // The admission's verified bindings are carried forward:
                         // the settlement gate binds THIS request's result against
-                        // exactly what this admission verified.
-                        let admitted = try await MainActor.run {
-                            try SimiGoProducerIdentity.recoverForContinuation(
+                        // exactly what this admission verified. It also reports the
+                        // VERIFIED carrier source (derived from the parent ES row),
+                        // which is the only basis on which a warm continuation may
+                        // fork: the client's logical branch never selects KV.
+                        let recovered = try await MainActor.run {
+                            try SimiGoProducerIdentity.recoverContinuation(
                                 stateID: esStateID, modelPath: modelPath)
                         }
                         return ContinuationAdmissionOutcome(
                             esStateID: esStateID,
-                            recoveredValue: admitted.recoveredValue,
-                            verifiedBindings: admitted.verifiedBindings)
+                            recoveredValue: recovered.admitted.recoveredValue,
+                            verifiedBindings: recovered.admitted.verifiedBindings,
+                            carrierSourceBranchID: recovered.carrierSourceBranchID)
                     },
                     continuationSettlement: makeNativeMLXContinuationSettlementHandler(
                         modelPath: self.modelPath
