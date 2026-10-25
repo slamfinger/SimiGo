@@ -155,8 +155,10 @@ public enum SimiGoISAdmission {
     ///   * admission runs BEFORE the child contract, so a missing/tampered/
     ///     invalidated/dependency-broken/identity-mismatched parent throws before
     ///     the child result is even processed — no generation, no settlement.
-    ///   * the native contract runs BEFORE `recordNativeSettlement`, so a contract
-    ///     failure throws with nothing written — no partially settled record.
+    ///   * the native contract runs BEFORE the store write, so a contract failure
+    ///     throws with nothing written — no partially settled record;
+    ///   * the child state, its settlement and the identity bindings commit in one
+    ///     transaction, so a failed identity write cannot leave an orphan child.
     public static func settleContinuation(
         db: SimiGoESISDatabase,
         parentStateID: String,
@@ -175,15 +177,27 @@ public enum SimiGoISAdmission {
         let settled = try SimiGoSettlementAuthority.authorize(
             generatedText: generatedText, contractJSON: contractJSON,
             verifiedBindings: admitted.verifiedBindings)
-        // (3) persist ONLY the contract-cleared settlement, linked to the parent.
-        // Each store call manages its own durable transaction; the contract gate
-        // already ran above, so a rejection here means nothing was written.
-        try db.recordExecutionState(
-            id: childStateID, parentID: parentStateID, modelIdentity: consumer.model,
-            position: 1, continuationID: UUID().uuidString, anchor: admitted.payloadDigest,
-            lifecycle: "active", createdAt: Date())
-        let sid = try db.recordNativeSettlement(settled, stateID: childStateID)
-        try db.recordIdentityBindings(settlementID: sid, identity: consumer)
+        // (3) persist the child ES, the settlement, its constraint rows and both
+        // producer identity bindings in ONE transaction. Three separate writes
+        // could leave a child state behind a failed identity binding, so this
+        // path uses the same atomic commit the product continuation uses. The
+        // contract gate ran above: a rejection writes nothing at all.
+        let parent = try db.readGraph().states.first { $0.id == parentStateID }
+        let childValue = Self.recoveredValue(from: settled.validatedPayload, field: valueField)
+            ?? admitted.recoveredValue
+        let child = SimiGoESISDatabase.ChildExecutionState(
+            id: childStateID,
+            parentID: parentStateID,
+            modelIdentity: consumer.model,
+            position: (parent?.position ?? 0) + 1,
+            continuationID: UUID().uuidString,
+            anchor: admitted.payloadDigest,
+            createdAt: Date(),
+            nextInput: childValue,
+            prefix: (parent?.prefix ?? []) + [childValue])
+        let sid = try db.recordNativeSettlementWithIdentity(
+            settled, stateID: childStateID, identity: consumer, childState: child
+        ).uuidString
         return SettledContinuation(admission: admitted, settled: settled, settlementID: sid)
     }
 

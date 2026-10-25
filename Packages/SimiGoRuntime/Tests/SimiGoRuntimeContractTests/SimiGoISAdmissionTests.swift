@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -43,6 +44,28 @@ final class SimiGoISAdmissionTests: XCTestCase {
         let db = try SimiGoESISDatabase(url: url)
         try db.runMigrations()
         return (url, db)
+    }
+
+    /// Narrow raw SQL against the same database file, used ONLY to inject a real
+    /// lower-layer write fault (the store keeps its own connection private).
+    private func execRaw(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open(url.path, &handle)
+        guard openRC == SQLITE_OK, let handle else {
+            if let handle { sqlite3_close(handle) }
+            throw NSError(domain: "SimiGoISAdmissionTests.SQLite", code: Int(openRC))
+        }
+        defer { sqlite3_close(handle) }
+        var message: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &message)
+        if rc != SQLITE_OK {
+            let detail = message.map { String(cString: $0) } ?? "SQLite error \(rc)"
+            if let message { sqlite3_free(message) }
+            throw NSError(
+                domain: "SimiGoISAdmissionTests.SQLite", code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: detail])
+        }
+        if let message { sqlite3_free(message) }
     }
 
     /// Settle a value through the real production authority and (by default)
@@ -252,6 +275,50 @@ final class SimiGoISAdmissionTests: XCTestCase {
         XCTAssertEqual(try db.latestSettlementID(forStateID: "C"), done.settlementID)
         let reAdmitted = try SimiGoISAdmission.admit(db: db, stateID: "C", consumer: producer)
         XCTAssertEqual(reAdmitted.recoveredValue, "hello")
+
+        // The child is persisted with its value and lineage, not as a bare id.
+        let child = try XCTUnwrap(try db.readGraph().states.first { $0.id == "C" })
+        XCTAssertEqual(child.parentID, "P")
+        XCTAssertEqual(child.nextInput, "hello", "the child carries the value it settled")
+        XCTAssertEqual(child.prefix, ["hello"],
+                       "the child's lineage is the parent's prefix plus its own value")
+        XCTAssertEqual(child.position, 2, "the child sits one position past its parent")
+        XCTAssertEqual(child.anchor, done.admission.payloadDigest)
+    }
+
+    /// The three writes used to be independent: a failed identity binding left the
+    /// child state behind with no settlement. They are now one transaction, so a
+    /// real lower-layer write fault must roll the child back with it.
+    func testSettleContinuationRollsBackChildWhenIdentityWriteFails() throws {
+        let (url, db) = try open("cont-atomic")
+        defer { db.close(); cleanup(url) }
+        try mkSettlement(db, stateID: "PA", value: "atomic")
+
+        let statesBefore = try db.count("execution_states")
+        let settlementsBefore = try db.count("settlements")
+        let bindingsBefore = try db.count("settlement_bindings")
+
+        let trigger = "fail_identity_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+        try execRaw(url, """
+        CREATE TRIGGER \(trigger) BEFORE INSERT ON settlement_bindings
+        WHEN NEW.name = '\(SimiGoSettlementIdentityBinding.modelKey)'
+        BEGIN
+            SELECT RAISE(ABORT, 'injected producer identity write failure');
+        END;
+        """)
+        defer { try? execRaw(url, "DROP TRIGGER IF EXISTS \(trigger)") }
+
+        XCTAssertThrowsError(try SimiGoISAdmission.settleContinuation(
+            db: db, parentStateID: "PA", consumer: producer, childStateID: "CA",
+            generatedText: "RESULT=atomic", contractJSON: Data(Self.referenceContract.utf8)))
+
+        XCTAssertEqual(try db.count("execution_states"), statesBefore,
+                       "the child ES insert must roll back with the failed identity write")
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore,
+                       "no settlement row may survive the failed commit")
+        XCTAssertEqual(try db.count("settlement_bindings"), bindingsBefore,
+                       "no binding row may survive the failed commit")
+        XCTAssertNil(try db.latestSettlementID(forStateID: "CA"))
     }
 
     // Only the recovered IS value drives the child result: a child result that
