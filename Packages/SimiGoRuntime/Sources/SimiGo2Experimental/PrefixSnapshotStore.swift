@@ -8,7 +8,7 @@ import MLXLMCommon
 /// `ChatSession.saveCache(to:)`, which takes no user metadata — a sidecar
 /// avoids re-serializing multi-GB KV arrays just to attach claims. This is
 /// the same safetensors + JSON-sidecar pattern the product already runs.
-public struct DiskPrefixArtifact: PrefixArtifactHandle {
+public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable, Sendable {
     public let snapshotURL: URL
     public let metadataURL: URL
 
@@ -148,6 +148,21 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
 
     // MARK: - Bind (admission → verified snapshot)
 
+    /// Remove one pool entry by ARTIFACT identity when it carries a
+    /// `DiskPrefixArtifact`. The pool's `==` is content-only (namespace,
+    /// tokenCount, boundaryHash), so a stale handle — an expired load or an
+    /// explicit remove of a superseded entry — is otherwise indistinguishable
+    /// from a same-content replacement and would wrongly evict the newer entry.
+    /// Every removal path funnels through here so the artifact guard cannot be
+    /// bypassed. Foreign artifact handles fall back to content-based removal.
+    private func removeFromPool(_ entry: PrefixPoolEntry) {
+        if let artifact = entry.artifact as? DiskPrefixArtifact {
+            _ = pool.remove(entry, artifact: artifact)
+        } else {
+            pool.remove(entry)
+        }
+    }
+
     /// Reconcile the admitted entry against the artifact's own claims,
     /// then load the snapshot. Any disagreement or unreadability removes
     /// the entry from the pool and throws LOUD — never a silent miss, and
@@ -161,10 +176,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
-            pool.remove(entry)
+            removeFromPool(entry)
             throw error
         } catch {
-            pool.remove(entry)
+            removeFromPool(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
@@ -176,7 +191,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             try? fileManager.removeItem(at: artifact.snapshotURL)
             try? fileManager.removeItem(at: artifact.metadataURL)
         }
-        pool.remove(entry)
+        removeFromPool(entry)
     }
 
     /// Synchronous twin of `load` for host hooks that run inside a
@@ -191,10 +206,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
-            pool.remove(entry)
+            removeFromPool(entry)
             throw error
         } catch {
-            pool.remove(entry)
+            removeFromPool(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
