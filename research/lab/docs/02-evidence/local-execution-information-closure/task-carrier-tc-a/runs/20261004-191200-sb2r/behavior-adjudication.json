@@ -1,0 +1,41 @@
+{
+  "phase": "S_B2R_BEHAVIOR_ADJUDICATION",
+  "adjudicated_at": "2026-10-04T19:24:00+08:00",
+  "raw_outputs_modified": false,
+  "observer_tool": "NOT RUN",
+  "store": "NOT RUN",
+  "hidden_understanding_claim": "FORBIDDEN / NOT MADE",
+  "condition": "S-B2R",
+  "final_answer_sha256": "ce94605080b376784255fdcf61e3951ff64611c584f39497332bb4fe9e15c27b",
+  "final_answer_json_parse": "PASS",
+  "located": "SUPPLIED",
+  "fetched": "NOT_APPLICABLE_DIRECT_INLINE",
+  "parsed": "PASS",
+  "semantic_referenced": "YES",
+  "adopted": "YES",
+  "behavioral": "VALID_BUT_OVERBLOCKS",
+  "continuation": "FAIL",
+  "expected_continuation": {
+    "release_decision": "blocked",
+    "deployment_order": ["alpha", "beta"],
+    "blocked_services": ["gamma"]
+  },
+  "observed_continuation": {
+    "release_decision": "blocked",
+    "deployment_order": [],
+    "blocked_services": ["alpha", "beta", "gamma"]
+  },
+  "observable_basis": [
+    "the output literally references all three supplied residue lines as blocker reasons;",
+    "the empty deployment order and three blockers depend on those supplied fields;",
+    "the valid output nevertheless excludes alpha and beta although alpha-beta is marked allow."
+  ],
+  "control_reading": "FAIL",
+  "attribution_reading": {
+    "representation_or_prompt_artifact_as_sole_cause": "NOT SUPPORTED",
+    "m1_b_necessity_hypothesis": "STRENGTHENED",
+    "json_validity_failure_mode": "RESTORED_RELATIVE_TO_ORIGINAL_S_B2",
+    "valid_continuation_failure_mode": "PERSISTED_AS_OVERBLOCKING"
+  },
+  "non_claim": "This does not prove universal M1.b irreducibility, general semantic necessity, or final Information minimality."
+}

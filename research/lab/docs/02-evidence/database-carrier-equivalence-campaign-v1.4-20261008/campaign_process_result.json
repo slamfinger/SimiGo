@@ -1,0 +1,17 @@
+{
+  "campaign_cwd": "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-exec2-8qYho6CO/worktree",
+  "campaign_returncode": 1,
+  "campaign_stderr_artifact": "campaign-stderr.txt",
+  "campaign_stdout": "",
+  "execution_detached_head": "a951e4e6ecb6a8b44cc355bc2405b15da7e31e97",
+  "execution_worktree_status_before": "clean",
+  "harness_argv": [
+    "python3",
+    "database-carrier-replication/campaign/run_equivalence_campaign.py",
+    "--expected-head",
+    "a951e4e6ecb6a8b44cc355bc2405b15da7e31e97",
+    "--output",
+    "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v1.4-20261008"
+  ],
+  "harness_sha256": "f09d8fd9ce896449595ba4104c1c1321bd2403e45d8363734c5bb6b2c245fec6"
+}

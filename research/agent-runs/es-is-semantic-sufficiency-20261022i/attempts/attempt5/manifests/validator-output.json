@@ -1,0 +1,21 @@
+{
+  "result": "FAIL",
+  "issue_count": 14,
+  "issues": [
+    "I0-STRUCTURED-CHAIN: terminal_state is not OBSERVED",
+    "I1-MISSING-SOURCE-B: terminal_state is not OBSERVED",
+    "I3-UNCHANGED-REUSE: terminal_state is not OBSERVED",
+    "I4-MISSING-TRANSITIVE-DEPENDENCY: terminal_state is not OBSERVED",
+    "I0: u3_generation_count expected 1, got 0",
+    "I1-MISSING-SOURCE-B: refusal_before_tokenize must be true",
+    "I1-MISSING-SOURCE-B: database_unchanged must be true",
+    "I1-MISSING-SOURCE-B: state_unchanged must be true",
+    "I4-MISSING-TRANSITIVE-DEPENDENCY: refusal_before_tokenize must be true",
+    "I4-MISSING-TRANSITIVE-DEPENDENCY: database_unchanged must be true",
+    "I4-MISSING-TRANSITIVE-DEPENDENCY: state_unchanged must be true",
+    "I3: all eligible items must be reused",
+    "guard validator must be PASS",
+    "top-level terminal_state must be OBSERVED"
+  ]
+}
+

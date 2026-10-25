@@ -1,0 +1,45 @@
+{
+ "tag": "eb1",
+ "evidence_dir": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/run_isolated_eb1",
+ "exit_code": 65,
+ "duration_s": 138,
+ "executed_skipped_failures": [
+  273,
+  14,
+  1
+ ],
+ "xctestrun_isolated_sha256": "860c654312a9678bbff9c21da018e74a431cd96cad00ea892f1c0fb8cde84803",
+ "fresh_isolation_root": true,
+ "isolation_content_bytes": {
+  "home": 350921,
+  "cache": 20346582746,
+  "state-graph": 0
+ },
+ "noninterference": {
+  "real_user_state_write_count": 2,
+  "real_user_state_write_paths": [
+   "/Users/mr.simi/.simigo/.DS_Store",
+   "/Users/mr.simi/.simigo/localb/.DS_Store"
+  ],
+  "violation_events": 2,
+  "distinct_violation_count": 2,
+  "expected_self_writes": 0,
+  "reference_changes": 0,
+  "swept_real_roots": [
+   "/Users/mr.simi/.simigo",
+   "/Users/mr.simi/Library/Application Support/SimiGo"
+  ]
+ },
+ "checks": {
+  "test_execute_succeeded": false,
+  "exit_code_zero": false,
+  "counts_parsed": true,
+  "no_failures": false,
+  "xctestrun_only_three_roots": true,
+  "isolation_home_used_by_app": true,
+  "isolation_cache_used_by_app": true,
+  "no_real_user_state_write": false,
+  "no_unexpected_write": false
+ },
+ "passed": false
+}

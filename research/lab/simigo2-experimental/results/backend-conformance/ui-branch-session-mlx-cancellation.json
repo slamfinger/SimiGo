@@ -1,0 +1,37 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ OVERSIZED_MLX_COOPERATIVE_CANCEL \/ ROOT_AND_SIBLING_RECOVERY \/ HARNESS_LEVEL \/ NOT_A_PRODUCTION_CLAIM",
+  "cancelledTokenCounts" : [
+    1,
+    1
+  ],
+  "checks" : {
+    "CANCELLED_LONG_LOGICALLY_DISCARDED" : true,
+    "CANCELLED_LONG_PHYSICAL_RELEASED" : true,
+    "CONTROL_RECOVERY_IDENTICAL" : true,
+    "COOPERATIVE_CANCEL_ONE_TOKEN" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+    "RECOVERY_LINEAGE_ISOLATED" : true,
+    "ROOT_AND_CONTROL_PREFIXES_DIVERGED" : true,
+    "ROOT_AND_CONTROL_SURVIVE_RELEASE" : true,
+    "ROOT_RECOVERY_IDENTICAL" : true
+  },
+  "controlInput" : "Now write tests for it.",
+  "controlReferenceContent" : " You should be able",
+  "cycles" : 2,
+  "longInput" : "Count from 1 to 500. Return only numbers separated by spaces.",
+  "maxSwapMiB" : 0,
+  "maxTokens" : 4,
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "peakFootprintMiB" : 7946,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.CANCELLATION.V1",
+  "recoveryContent" : "  To check if",
+  "recoveryInput" : "Continue from the root.",
+  "rootInput" : "Explain it briefly.",
+  "rootReferenceContent" : "  To check if",
+  "seedText" : "def is_palindrome(s):",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 254,
+  "status" : "PASS"
+}

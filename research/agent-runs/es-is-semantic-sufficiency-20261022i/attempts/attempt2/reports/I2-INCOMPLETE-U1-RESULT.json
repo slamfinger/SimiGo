@@ -1,0 +1,14 @@
+{
+  "id": "I2-INCOMPLETE-U1-RESULT",
+  "kind": "contract_control",
+  "notes": [
+    "--skip-real"
+  ],
+  "observations": {
+    "invalid_result_reusable": false,
+    "invalid_settlement_created": false,
+    "result_contract_rejects": false
+  },
+  "raw_log_paths": [],
+  "terminal_state": "BLOCKED_NOT_RUN"
+}

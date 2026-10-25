@@ -1,0 +1,451 @@
+import Foundation
+import CryptoKit
+
+public struct CarrierComposition: Sendable {
+    public let registry: any InformationRegistry
+    public let representations: any EntityRepresentationStore
+    public let locators: any LocatorIndex
+    public let relations: any RelationHistoryStore
+    public let sessions: any SessionInformationStore
+    public let search: any DerivedSearchIndex
+    public let availability: any AvailabilityStore
+    public let integrity: (any CarrierIntegrityReporter)?
+
+    public init(
+        registry: any InformationRegistry,
+        representations: any EntityRepresentationStore,
+        locators: any LocatorIndex,
+        relations: any RelationHistoryStore,
+        sessions: any SessionInformationStore,
+        search: any DerivedSearchIndex,
+        availability: any AvailabilityStore
+    ) {
+        self.init(
+            registry: registry,
+            representations: representations,
+            locators: locators,
+            relations: relations,
+            sessions: sessions,
+            search: search,
+            availability: availability,
+            integrity: nil
+        )
+    }
+
+    public init(
+        registry: any InformationRegistry,
+        representations: any EntityRepresentationStore,
+        locators: any LocatorIndex,
+        relations: any RelationHistoryStore,
+        sessions: any SessionInformationStore,
+        search: any DerivedSearchIndex,
+        availability: any AvailabilityStore,
+        integrity: (any CarrierIntegrityReporter)?
+    ) {
+        self.registry = registry
+        self.representations = representations
+        self.locators = locators
+        self.relations = relations
+        self.sessions = sessions
+        self.search = search
+        self.availability = availability
+        self.integrity = integrity
+    }
+}
+
+/// Dependency-injected composition root for C1-C7. It sequences carrier
+/// operations but does not define semantic identity continuity, applicability,
+/// validity, judgment, or continuation reasoning.
+public struct InformationSpaceRuntime {
+    public let composition: CarrierComposition
+
+    public init(composition: CarrierComposition) {
+        self.composition = composition
+    }
+
+    static func digest(_ payload: CarrierPayload) -> String {
+        SHA256.hash(data: payload.bytes).map { String(format: "%02x", $0) }.joined()
+    }
+
+    public func create(_ request: CarrierCreateRequest) async throws -> CarrierCreateResult {
+        let revision = CarrierRevision(
+            revisionID: request.revisionID,
+            informationID: request.informationID,
+            label: request.label,
+            provenance: request.provenance
+        )
+        let representation = CarrierRepresentation(
+            representationID: request.representationID,
+            informationID: request.informationID,
+            revisionID: request.revisionID,
+            digest: Self.digest(request.payload),
+            byteCount: request.payload.bytes.count,
+            mediaType: request.payload.mediaType,
+            createdAt: request.provenance.producedAt
+        )
+        let locator = CarrierLocatorRecord(
+            locatorID: request.locatorID,
+            informationID: request.informationID,
+            revisionID: request.revisionID,
+            representationID: request.representationID,
+            locator: request.locator,
+            createdAt: request.provenance.producedAt
+        )
+        let availability = CarrierAvailabilityRecord(
+            informationID: request.informationID,
+            revisionID: request.revisionID,
+            representationID: request.representationID,
+            state: .available,
+            reason: "created",
+            observedAt: request.provenance.producedAt
+        )
+
+        try await composition.registry.register(revision)
+        try await composition.representations.put(
+            CarrierRepresentationContent(representation: representation, payload: request.payload)
+        )
+        try await composition.locators.assign(locator)
+        try await composition.availability.record(availability)
+
+        if let text = request.searchableText {
+            try await composition.search.upsert(
+                CarrierSearchDocument(
+                    informationID: request.informationID,
+                    revisionID: request.revisionID,
+                    title: request.label,
+                    text: text
+                )
+            )
+        }
+
+        return CarrierCreateResult(
+            revision: revision,
+            representation: representation,
+            locator: locator,
+            availability: availability
+        )
+    }
+
+    public func move(_ request: CarrierMoveRequest) async throws -> CarrierLocatorRecord {
+        let current = try await composition.locators.current(
+            for: request.informationID,
+            revisionID: request.revisionID
+        )
+        guard let current else {
+            throw CarrierInterfaceError.notFound("current locator for \(request.informationID.rawValue)")
+        }
+        let representationID = request.representationID ?? current.representationID
+        let revisionID = request.revisionID ?? current.revisionID
+        try await composition.locators.retire(current.locatorID, at: request.movedAt)
+
+        let replacement = CarrierLocatorRecord(
+            locatorID: request.newLocatorID,
+            informationID: request.informationID,
+            revisionID: revisionID,
+            representationID: representationID,
+            locator: request.newLocator,
+            createdAt: request.movedAt
+        )
+        try await composition.locators.assign(replacement)
+        return replacement
+    }
+
+    public func revise(_ request: CarrierReviseRequest) async throws -> CarrierCreateResult {
+        let result = try await create(
+            CarrierCreateRequest(
+                informationID: request.informationID,
+                revisionID: request.revisionID,
+                representationID: request.representationID,
+                label: request.label,
+                payload: request.payload,
+                locatorID: request.locatorID,
+                locator: request.locator,
+                provenance: request.provenance,
+                searchableText: request.searchableText
+            )
+        )
+
+        if let predecessor = request.predecessorRevisionID {
+            try await composition.availability.record(
+                CarrierAvailabilityRecord(
+                    informationID: request.informationID,
+                    revisionID: predecessor,
+                    representationID: result.representation.representationID,
+                    state: .superseded,
+                    reason: "revised by \(request.revisionID.rawValue)",
+                    observedAt: request.provenance.producedAt
+                )
+            )
+            try await composition.relations.append(
+                CarrierRelation(
+                    relationID: CarrierRelationID(rawValue: "successor:\(predecessor.rawValue):\(request.revisionID.rawValue)"),
+                    subject: CarrierInformationID(rawValue: request.revisionID.rawValue),
+                    predicate: "successor-of",
+                    object: CarrierInformationID(rawValue: predecessor.rawValue),
+                    provenance: request.provenance
+                )
+            )
+        }
+
+        return result
+    }
+
+    public func recordAvailability(_ request: CarrierAvailabilityRequest) async throws -> CarrierAvailabilityRecord {
+        let current = try await composition.locators.current(
+            for: request.informationID,
+            revisionID: request.revisionID
+        )
+        let representationID = request.representationID ?? current?.representationID
+        let revisionID = request.revisionID ?? current?.revisionID
+
+        guard let revisionID, let representationID else {
+            throw CarrierInterfaceError.notFound("locatable representation for \(request.informationID.rawValue)")
+        }
+
+        let record = CarrierAvailabilityRecord(
+            informationID: request.informationID,
+            revisionID: revisionID,
+            representationID: representationID,
+            state: request.state,
+            reason: request.reason,
+            observedAt: request.observedAt
+        )
+        try await composition.availability.record(record)
+        return record
+    }
+
+    public func copy(_ request: CarrierCopyRequest) async throws -> CarrierCreateResult {
+        let source = try await resolve(CarrierResolveRequest(informationID: request.sourceInformationID))
+        let result = try await create(
+            CarrierCreateRequest(
+                informationID: request.targetInformationID,
+                revisionID: request.revisionID,
+                representationID: request.representationID,
+                payload: request.payload ?? source.content.payload,
+                locatorID: request.locatorID,
+                locator: request.locator,
+                provenance: request.provenance,
+                searchableText: request.searchableText
+            )
+        )
+
+        if request.recordCopyRelation {
+            _ = try await relate(
+                relationID: CarrierRelationID(rawValue: "copy:\(request.targetInformationID.rawValue):\(request.sourceInformationID.rawValue)"),
+                subject: request.targetInformationID,
+                predicate: "copy-of",
+                object: request.sourceInformationID,
+                provenance: request.provenance
+            )
+        }
+        return result
+    }
+
+    public func split(_ request: CarrierSplitRequest) async throws -> CarrierLineageOperationResult {
+        guard !request.targets.isEmpty else {
+            throw CarrierInterfaceError.invalidOperation("split requires at least one target")
+        }
+
+        var created: [CarrierCreateResult] = []
+        var relations: [CarrierRelation] = []
+        for target in request.targets {
+            let result = try await create(target)
+            created.append(result)
+            if request.recordLineage {
+                let relation = try await relate(
+                    relationID: CarrierRelationID(rawValue: "split-from:\(target.informationID.rawValue):\(request.sourceInformationID.rawValue)"),
+                    subject: target.informationID,
+                    predicate: "split-from",
+                    object: request.sourceInformationID,
+                    provenance: request.provenance
+                )
+                relations.append(relation)
+            }
+        }
+        return CarrierLineageOperationResult(created: created, relations: relations)
+    }
+
+    public func merge(_ request: CarrierMergeRequest) async throws -> CarrierLineageOperationResult {
+        guard request.sourceInformationIDs.count == request.relationIDs.count else {
+            throw CarrierInterfaceError.invalidOperation("merge source and relation counts differ")
+        }
+        guard !request.sourceInformationIDs.isEmpty else {
+            throw CarrierInterfaceError.invalidOperation("merge requires at least one source")
+        }
+
+        let created = try await create(request.target)
+        var relations: [CarrierRelation] = []
+        if request.recordLineage {
+            for (source, relationID) in zip(request.sourceInformationIDs, request.relationIDs) {
+                let relation = try await relate(
+                    relationID: relationID,
+                    subject: request.target.informationID,
+                    predicate: "merged-from",
+                    object: source,
+                    provenance: request.provenance
+                )
+                relations.append(relation)
+            }
+        }
+        return CarrierLineageOperationResult(created: [created], relations: relations)
+    }
+
+    public func rebuildSearch(with documents: [CarrierSearchDocument]) async throws -> CarrierRebuildReport {
+        try await composition.search.rebuild(with: documents)
+    }
+
+    public func integrityReport() async throws -> CarrierIntegrityReport {
+        guard let integrity = composition.integrity else {
+            throw CarrierInterfaceError.unsupported("integrity reporter")
+        }
+        return try await integrity.integrityReport()
+    }
+
+    public func relate(
+        relationID: CarrierRelationID,
+        subject: CarrierInformationID,
+        predicate: String,
+        object: CarrierInformationID,
+        provenance: CarrierProvenance
+    ) async throws -> CarrierRelation {
+        let relation = CarrierRelation(
+            relationID: relationID,
+            subject: subject,
+            predicate: predicate,
+            object: object,
+            provenance: provenance
+        )
+        try await composition.relations.append(relation)
+        return relation
+    }
+
+    public func appendSessionEvent(_ request: CarrierSessionAppendRequest) async throws -> CarrierSessionEvent {
+        let event = CarrierSessionEvent(
+            eventID: request.eventID,
+            sessionID: request.sessionID,
+            sequence: request.sequence,
+            kind: request.kind,
+            payload: request.payload,
+            occurredAt: request.occurredAt,
+            provenance: request.provenance
+        )
+        try await composition.sessions.append(event)
+        return event
+    }
+
+    public func addSessionSummary(
+        summaryID: CarrierSummaryID,
+        sessionID: CarrierSessionID,
+        throughSequence: Int,
+        payload: Data,
+        provenance: CarrierProvenance
+    ) async throws -> CarrierSessionSummary {
+        let summary = CarrierSessionSummary(
+            summaryID: summaryID,
+            sessionID: sessionID,
+            throughSequence: throughSequence,
+            payload: payload,
+            createdAt: provenance.producedAt,
+            provenance: provenance
+        )
+        try await composition.sessions.addSummary(summary)
+        return summary
+    }
+
+    public func search(_ query: String, limit: Int = 20) async throws -> [CarrierSearchResult] {
+        try await composition.search.search(query, limit: limit)
+    }
+}
+
+extension InformationSpaceRuntime: CarrierExecutionInterface {
+    public func resolve(_ request: CarrierResolveRequest) async throws -> CarrierResolvedObject {
+        let revision = try await selectedRevision(request)
+        let representations = try await composition.representations.representations(
+            for: request.informationID,
+            revisionID: revision.revisionID
+        )
+        guard let representation = representations.last else {
+            throw CarrierInterfaceError.notFound("representation for \(revision.revisionID.rawValue)")
+        }
+        guard let content = try await composition.representations.content(representation.representationID) else {
+            throw CarrierInterfaceError.notFound("payload for \(representation.representationID.rawValue)")
+        }
+        let locator = try await composition.locators.current(
+            for: request.informationID,
+            revisionID: revision.revisionID
+        )
+        let availability = try await composition.availability.current(
+            informationID: request.informationID,
+            representationID: representation.representationID
+        )
+        return CarrierResolvedObject(
+            revision: revision,
+            content: content,
+            locator: locator,
+            availability: availability
+        )
+    }
+
+    public func consume(
+        _ request: CarrierResolveRequest,
+        receiptID: CarrierReceiptID,
+        at date: Date
+    ) async throws -> CarrierConsumptionReceipt {
+        let resolved = try await resolve(request)
+        return CarrierConsumptionReceipt(
+            receiptID: receiptID,
+            informationID: resolved.revision.informationID,
+            revisionID: resolved.revision.revisionID,
+            consumedAt: date
+        )
+    }
+
+    public func produce(_ request: CarrierCreateRequest) async throws -> CarrierCreateResult {
+        try await create(request)
+    }
+
+    public func pin(
+        _ request: CarrierResolveRequest,
+        pinID: CarrierPinID,
+        label: String?,
+        at date: Date
+    ) async throws -> CarrierHistoricalPin {
+        let resolved = try await resolve(request)
+        let pin = CarrierHistoricalPin(
+            pinID: pinID,
+            informationID: resolved.revision.informationID,
+            revisionID: resolved.revision.revisionID,
+            representationID: resolved.content.representation.representationID,
+            digest: resolved.content.representation.digest,
+            locator: resolved.locator?.locator,
+            label: label,
+            pinnedAt: date
+        )
+        try await composition.relations.pin(pin)
+        return pin
+    }
+
+    public func continuationContext(_ request: CarrierResolveRequest) async throws -> CarrierContinuationContext {
+        let resolved = try await resolve(request)
+        return CarrierContinuationContext(
+            informationID: resolved.revision.informationID,
+            revisionID: resolved.revision.revisionID,
+            representationID: resolved.content.representation.representationID,
+            locator: resolved.locator?.locator,
+            availability: resolved.availability?.state ?? .detached
+        )
+    }
+
+    private func selectedRevision(_ request: CarrierResolveRequest) async throws -> CarrierRevision {
+        if let requested = request.revisionID {
+            guard let revision = try await composition.registry.revision(requested) else {
+                throw CarrierInterfaceError.notFound("revision \(requested.rawValue)")
+            }
+            return revision
+        }
+        guard let revision = try await composition.registry.latestRevision(for: request.informationID) else {
+            throw CarrierInterfaceError.notFound("information \(request.informationID.rawValue)")
+        }
+        return revision
+    }
+}

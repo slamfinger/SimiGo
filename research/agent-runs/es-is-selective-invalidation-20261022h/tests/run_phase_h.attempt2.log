@@ -1,0 +1,18 @@
+{
+  "result": "FAIL",
+  "error": "[Errno 17] File exists: '/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/manifests/postchange-snapshot.json'"
+}
+Traceback (most recent call last):
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_h.py", line 719, in <module>
+    raise SystemExit(main())
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_h.py", line 684, in main
+    _finalize(run_root, conditions, prechange_sha, args.skip_guards, lab_root)
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_h.py", line 704, in _finalize
+    ws, hist = run_guards(lab_root, run_root)
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_h.py", line 454, in run_guards
+    after_path = snapshot_after(lab_root, run_root, history_roots)
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_h.py", line 406, in snapshot_after
+    subprocess.run(cmd, check=True)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/Applications/Xcode.app/Contents/Developer/usr/bin/python3', '/Users/mr.simi/Downloads/_h_pack/simigo_h_selective_invalidation_agent_pack/snapshot_workspace.py', '--repo', '/Users/mr.simi/Documents/SimiGo-Lab', '--output', '/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/manifests/postchange-snapshot.json', '--history-root', '/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g', '--history-root', '/Users/mr.simi/SimiGo-Agent-Runs/es-is-detached-continuation-20261022f', '--history-root', '/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e']' returned non-zero exit status 1.

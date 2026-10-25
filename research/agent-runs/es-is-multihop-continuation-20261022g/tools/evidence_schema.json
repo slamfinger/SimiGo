@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SimiGo G-round multi-hop evidence summary",
+  "type": "object",
+  "required": ["schema_version", "round_id", "source_head", "terminal_state", "conditions", "identity", "costs", "guards", "claims", "artifact_manifest_sha256"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "round_id": {"const": "G"},
+    "source_head": {"type": "string", "minLength": 7},
+    "terminal_state": {"enum": ["OBSERVED", "INVALID_CONDITION", "BLOCKED_NOT_RUN", "OBSERVED_FORMAT_FAILURE"]},
+    "conditions": {
+      "type": "object",
+      "required": ["G0_CHAIN_3_HOPS", "G1_MISSING_TRANSITIVE_DEPENDENCY", "N4_NONCE_AND_PREFIX_ISOLATION_AUDIT"],
+      "properties": {
+        "G0_CHAIN_3_HOPS": {"$ref": "#/$defs/chain"},
+        "G1_MISSING_TRANSITIVE_DEPENDENCY": {"$ref": "#/$defs/negative"},
+        "N4_NONCE_AND_PREFIX_ISOLATION_AUDIT": {"$ref": "#/$defs/isolation"}
+      },
+      "additionalProperties": true
+    },
+    "identity": {
+      "type": "object",
+      "required": ["logical_lineage_id", "processes", "execution_state_ids", "settlement_ids", "signature_object_ids", "model_identity_sha256"],
+      "properties": {
+        "logical_lineage_id": {"type": "string", "minLength": 1},
+        "processes": {"type": "array", "minItems": 3, "items": {"type": "object", "required": ["stage", "pid", "start_utc", "exit_utc", "exit_code"], "properties": {"stage": {"enum": ["P1_U1", "P2_U2", "P3_U3"]}, "pid": {"type": "integer", "minimum": 1}, "start_utc": {"type": "string"}, "exit_utc": {"type": "string"}, "exit_code": {"type": "integer"}}}},
+        "execution_state_ids": {"type": "array", "minItems": 3, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "settlement_ids": {"type": "array", "minItems": 3, "items": {"type": "string", "minLength": 1}},
+        "signature_object_ids": {"type": "array", "minItems": 3, "items": {"type": "string", "minLength": 1}},
+        "model_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "costs": {"type": "object", "required": ["model_generate_calls", "tokenize_text_calls", "tokenize_seed_calls", "model_loads", "prefix_replay_tokens"], "properties": {"model_generate_calls": {"type": "integer", "minimum": 0}, "tokenize_text_calls": {"type": "integer", "minimum": 0}, "tokenize_seed_calls": {"type": "integer", "minimum": 0}, "model_loads": {"type": "integer", "minimum": 0}, "prefix_replay_tokens": {"const": 0}}},
+    "guards": {"type": "object", "required": ["workspace_guard", "artifact_guard"], "properties": {"workspace_guard": {"enum": ["PASS", "FAIL", "BLOCKED_NOT_RUN"]}, "artifact_guard": {"enum": ["PASS", "FAIL", "BLOCKED_NOT_RUN"]}}},
+    "claims": {"type": "object", "required": ["C1", "C2", "C3", "C4"], "properties": {"C1": {"type": "string"}, "C2": {"type": "string"}, "C3": {"type": "string"}, "C4": {"type": "string"}}},
+    "artifact_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "stage": {"type": "object", "required": ["stage", "pid", "execution_state_id", "state_position_start", "state_starts_empty", "model_generate_calls", "tokenize_text_calls", "tokenize_seed_calls", "input_sha256", "output_sha256", "computed_item_ids", "reused_item_ids", "harness_direct_is_reads", "prefix_replay_tokens", "old_checkpoint_reads"], "properties": {"stage": {"enum": ["P1_U1", "P2_U2", "P3_U3"]}, "pid": {"type": "integer", "minimum": 1}, "execution_state_id": {"type": "string", "minLength": 1}, "state_position_start": {"const": 0}, "state_starts_empty": {"const": true}, "model_generate_calls": {"type": "integer", "minimum": 0}, "tokenize_text_calls": {"type": "integer", "minimum": 0}, "tokenize_seed_calls": {"type": "integer", "minimum": 0}, "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "computed_item_ids": {"type": "array", "items": {"type": "string"}}, "reused_item_ids": {"type": "array", "items": {"type": "string"}}, "verified_dependency_closure_item_ids": {"type": "array", "items": {"type": "string"}}, "harness_direct_is_reads": {"const": 0}, "prefix_replay_tokens": {"const": 0}, "old_checkpoint_reads": {"const": 0}, "producer_exit_observed_before_next_process": {"type": "boolean"}}},
+    "chain": {"type": "object", "required": ["terminal_state", "stages", "full_dependency_closure_verified", "all_previous_processes_exited", "no_prior_item_regeneration"], "properties": {"terminal_state": {"enum": ["OBSERVED", "INVALID_CONDITION", "BLOCKED_NOT_RUN", "OBSERVED_FORMAT_FAILURE"]}, "stages": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"$ref": "#/$defs/stage"}}, "full_dependency_closure_verified": {"type": "boolean"}, "all_previous_processes_exited": {"type": "boolean"}, "no_prior_item_regeneration": {"type": "boolean"}, "notes": {"type": "array", "items": {"type": "string"}}}},
+    "negative": {"type": "object", "required": ["terminal_state", "refusal_observed", "refusal_stage", "tokenize_text_calls", "tokenize_seed_calls", "model_generate_calls", "database_side_effects", "state_side_effects", "fallback_reads"], "properties": {"terminal_state": {"enum": ["OBSERVED", "INVALID_CONDITION", "BLOCKED_NOT_RUN", "OBSERVED_FORMAT_FAILURE"]}, "refusal_observed": {"type": "boolean"}, "refusal_stage": {"type": "string"}, "tokenize_text_calls": {"const": 0}, "tokenize_seed_calls": {"const": 0}, "model_generate_calls": {"const": 0}, "database_side_effects": {"const": false}, "state_side_effects": {"const": false}, "fallback_reads": {"const": 0}}},
+    "isolation": {"type": "object", "required": ["terminal_state", "scan_scope_manifest", "unapproved_occurrences", "cross_stage_nonce_leakage", "unapproved_prefix_or_completion_copy"], "properties": {"terminal_state": {"enum": ["OBSERVED", "INVALID_CONDITION", "BLOCKED_NOT_RUN"]}, "scan_scope_manifest": {"type": "string", "minLength": 1}, "unapproved_occurrences": {"const": 0}, "cross_stage_nonce_leakage": {"const": 0}, "unapproved_prefix_or_completion_copy": {"const": 0}}}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,110 @@
+{
+ "checks": {
+  "all_continueTask_call_sites_pass_provenance": true,
+  "consumer_bridge_uses_verify_only": true,
+  "continueTask_calls_resolveTaskInput": true,
+  "legacy_execute_uses_required_provenance": true,
+  "producer_bridge_uses_required": true,
+  "resolveTaskInput_before_seed_tokenize": true,
+  "resolveTaskInput_before_tokenize": true
+ },
+ "non_task_direct_inference": [
+  {
+   "call_lines": [
+    347,
+    643,
+    648
+   ],
+   "entry": "SimiGo2App.send / sendSmallScale / self-test",
+   "excluded": true,
+   "path": "simigo2-experimental/Sources/SimiGo2App/SimiGo2App.swift",
+   "reason": "interactive chat/benchmark surface: calls the engine directly with user text, names no task item, never constructs ProductionRuntimeInformationIntegration and reads no IS settlement"
+  },
+  {
+   "call_lines": [
+    70,
+    88
+   ],
+   "entry": "MLXGroupResidencyBenchmark / MLXGroupInferenceGate",
+   "excluded": true,
+   "path": "simigo2-experimental/Sources/SimiGo2Experimental",
+   "reason": "measurement/instrumentation harness: direct generation for timing and residency probes, no task item and no settlement"
+  },
+  {
+   "call_lines": [
+    245,
+    349
+   ],
+   "entry": "GroupExecutionTraceProbe / MeasuredExecutionTracePilot",
+   "excluded": true,
+   "path": "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation",
+   "reason": "instrumentation-only trace generation; no task identity, no IS admission and no settlement consumption"
+  },
+  {
+   "call_lines": [
+    70
+   ],
+   "entry": "G3SwiftIsolationEntry",
+   "excluded": true,
+   "path": "simigo2-experimental/Sources/G3SwiftIsolationEntry/main.swift",
+   "reason": "isolation-gate harness with an injected generate closure; it tests cancellation/isolation, not task advancement"
+  }
+ ],
+ "not_claimed": [
+  "every inference call in the repository",
+  "semantic correctness of a signed model answer",
+  "protection when the attacker controls database, signing key and anchor",
+  "database-instance lineage: a complete, validly signed history from another instance is still a valid signed history"
+ ],
+ "production_task_entries": [
+  {
+   "admission": "continueTask -> resolveTaskInput -> bridge resolve-model-input (verify) -> Swift Ed25519 verify",
+   "continueTask_call_lines": [
+    373
+   ],
+   "covered": true,
+   "entry": "SimiGoTaskRun",
+   "path": "simigo2-experimental/Sources/SimiGoTaskRun/main.swift"
+  },
+  {
+   "admission": "same continueTask admission; handoff orchestration only chooses the item",
+   "continueTask_call_lines": [
+    450,
+    625,
+    180,
+    415
+   ],
+   "covered": true,
+   "entry": "RealModelHandoff",
+   "path": "simigo2-experimental/Sources/RealModelHandoff/main.swift"
+  },
+  {
+   "admission": "bridge execute -> open_loop(require_provenance=True) -> execute_demand -> _settlement_reuse_decision",
+   "continueWithRealInformation_call_lines": [
+    120
+   ],
+   "covered": true,
+   "entry": "ActualMLXSmokeChild (legacy advancement)",
+   "path": "simigo2-experimental/Sources/ActualMLXSmokeChild/main.swift"
+  }
+ ],
+ "schema_id": "SIMIGO-E-ROUND-COVERAGE-AUDIT-V1",
+ "source_evidence": {
+  "bridge_legacy_execute_lines": [
+   225
+  ],
+  "bridge_required_policy_lines": [
+   109,
+   1170,
+   1219
+  ],
+  "bridge_verify_policy_lines": [
+   885
+  ],
+  "continueTask_definition_line": 1089,
+  "integration_continueTask_body_lines": 367,
+  "integration_first_tokenize_line": 1130,
+  "integration_resolveTaskInput_line": 1101
+ },
+ "verdict": "PASS"
+}

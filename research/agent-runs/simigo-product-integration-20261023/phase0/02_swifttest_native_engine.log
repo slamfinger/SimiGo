@@ -1,0 +1,471 @@
+Building for debugging...
+[Computing dependencies]
+[Constructing description]
+[Pre-planning 1 / 954]
+[Planning deferred tasks]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[19 / 316] mlx-swift_Cmlx
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/arg_reduce.metal:5:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/arg_reduce.metal:5:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+7 warnings generated.
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/dot.metal:3:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/dot.h:5:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/dot.metal:3:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/dot.h:5:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+7 warnings generated.
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/random.metal:3:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/random.metal:3:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+7 warnings generated.
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/rope.metal:5:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/rope.metal:5:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+7 warnings generated.
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/searchsorted.metal:6:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/searchsorted.metal:6:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/searchsorted.metal:7:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/sort.h:43:8: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+    if constexpr (metal::is_floating_point_v<T>) {
+       ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/sort.h:49:15: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+    } else if constexpr (metal::is_same_v<T, complex64_t>) {
+              ^
+9 warnings generated.
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/rms_norm.metal:6:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/rms_norm.metal:6:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+7 warnings generated.
+[28 / 326] mlx-swift_Cmlx
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/layer_norm.metal:6:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/layer_norm.metal:6:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+7 warnings generated.
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/conv.metal:8:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/conv.metal:8:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+7 warnings generated.
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/scaled_dot_product_attention.metal:4:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/scaled_dot_product_attention.metal:4:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+7 warnings generated.
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/steel_attention.metal:4:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../utils.h:9:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../complex.h:157:54: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex32_t) == 2 * sizeof(half));
+                                                     ^
+                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../complex.h:158:55: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex64_t) == 2 * sizeof(float));
+                                                      ^
+                                                      , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../complex.h:159:70: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+static_assert(sizeof(complex_t<bfloat16_t>) == 2 * sizeof(bfloat16_t));
+                                                                     ^
+                                                                     , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../complex.h:299:78: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+    (complex_t<half>{1.0h, 2.0h} * complex_t<half>{3.0h, 4.0h}).real == -5.0h);
+                                                                             ^
+                                                                             , ""
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../complex.h:303:35: warning: 'static_assert' with no message is a C++17 extension [-Wc++17-extensions]
+        .real == bfloat16_t(-5.0f));
+                                  ^
+                                  , ""
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/steel_attention.metal:4:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../utils.h:80:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/steel_attention.metal:6:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:3:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/attn.h:6:
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/../../steel/attn/mma.h:11:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/../../steel/utils/integral_constant.h:105:6: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+  if constexpr (start < stop) {
+     ^
+In file included from /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/steel_attention.metal:6:
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:361:16: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+            if constexpr (is_bool) {
+               ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:431:14: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+          if constexpr (BD >= 128) {
+             ^
+/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:441:14: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+          if constexpr (BD >= 128) {
+             ^
+11 warnings generated.
+[29 / 326]
+[42 / 180] InternalCollectionsUtilities
+[44 / 183] Crypto
+[45 / 211]
+[49 / 211]
+[56 / 242]
+[61 / 246]
+[73 / 247]
+[78 / 247]
+[84 / 247]
+[91 / 247] MLXCXGrammar
+[93 / 247] MLXCXGrammar
+[100 / 248]
+[107 / 248]
+[108 / 248]
+[111 / 248]
+[115 / 248]
+[120 / 248]
+[126 / 248] MLXHuggingFaceMacros
+[135 / 248]
+[144 / 248] SimiGoRuntimeContractTests-product
+[153 / 251] ComplexModule
+[161 / 253] ComplexModule
+[176 / 257] Numerics
+[189 / 260]
+[192 / 261] MLXCXGrammar
+[194 / 261]
+[203 / 264] MLX
+[214 / 273] EventSource
+[222 / 277] yyjson
+[228 / 277] SimiGoRuntimeContractTests-product
+[238 / 313]
+[245 / 313] MLXCXGrammar
+[254 / 314] HuggingFace
+[270 / 341]
+[277 / 341]
+[286 / 345]
+[289 / 345]
+[290 / 345] MLXNN
+[296 / 347]
+[301 / 347]
+[301 / 347] MLXLMCommon
+[305 / 372]
+[308 / 372]
+[314 / 372]
+[315 / 372]
+[325 / 372] MLXLMCommon
+[326 / 372]
+[327 / 372]
+[328 / 372] MLXLMCommon
+[337 / 377] MLXGuidedGeneration
+[339 / 377] SimiGoRuntimeContractTests-product
+[340 / 377] SimiGoRuntimeContractTests-product
+[342 / 377]
+[350 / 400]
+[352 / 400] MLXGuidedGeneration
+[353 / 400] MLXLLM
+[356 / 400] MLXLMCommon
+[363 / 402] SimiGoRuntimeContractTests-product
+[366 / 402] MLXLMCommon
+[371 / 403] HuggingFace
+[376 / 406] MLXLLM
+[380 / 406] MLXGuidedGeneration
+[383 / 409] MLXGuidedGeneration
+[384 / 409] MLXGuidedGeneration
+[385 / 409] MLXGuidedGeneration
+[387 / 412] Hub
+[390 / 412] HuggingFace
+[394 / 424] MLXLLM
+[402 / 430]
+[414 / 430] MLXFoundationModels
+[415 / 430] MLXFoundationModels
+[420 / 435]
+[421 / 435] MLXFoundationModels
+[426 / 439] MLXHuggingFace
+[429 / 442] Tokenizers
+[431 / 443] MLXFoundationModels
+[437 / 444] MLXHuggingFace
+[444 / 449] SimiGo2Experimental
+[451 / 477]
+[454 / 477]
+[460 / 477]
+[461 / 477]
+[472 / 477] SimiGo2Experimental
+[475 / 478] SimiGo2Experimental
+Build complete! (22.71秒)
+Test Suite 'Selected tests' started at 2026-10-23 03:09:30.657.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-23 03:09:30.658.
+Test Suite 'DeclarativeNativeResultContractTests' started at 2026-10-23 03:09:30.658.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testAmbiguousRequiredFieldFailsExactlyOnePolicy]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testAmbiguousRequiredFieldFailsExactlyOnePolicy]' passed (0.002 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testBindingMismatchFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testBindingMismatchFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDerivedFieldMismatchFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDerivedFieldMismatchFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestCanonicalJSONMatchesPythonForNestedNonASCII]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestCanonicalJSONMatchesPythonForNestedNonASCII]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingMatchesCanonicalStringDigest]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingMatchesCanonicalStringDigest]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingMismatchFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingMismatchFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingRequiresVerifiedBinding]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingRequiresVerifiedBinding]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testEnumAndBooleanTypes]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testEnumAndBooleanTypes]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testEqualsFieldAndLiteralConstraints]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testEqualsFieldAndLiteralConstraints]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testFirstPolicyKeepsFirstMatch]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testFirstPolicyKeepsFirstMatch]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testIntegerRangeFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testIntegerRangeFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testMissingBindingFailsClosedWithProducerStage]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testMissingBindingFailsClosedWithProducerStage]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testMissingRequiredFieldFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testMissingRequiredFieldFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testNamedCaptureGroupWorks]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testNamedCaptureGroupWorks]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testOptionalFieldCanBeAbsent]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testOptionalFieldCanBeAbsent]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownConstraintStillFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownConstraintStillFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownKeysFailClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownKeysFailClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownSchemaVersionFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownSchemaVersionFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidatedPayloadContainsOnlyNativeContractValues]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidatedPayloadContainsOnlyNativeContractValues]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidationIsIndependentOfRuntimeTaskID]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidationIsIndependentOfRuntimeTaskID]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidDeclaredFieldsBindingsAndDerivedRoute]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidDeclaredFieldsBindingsAndDerivedRoute]' passed (0.000 seconds).
+Test Suite 'DeclarativeNativeResultContractTests' passed at 2026-10-23 03:09:30.664.
+	 Executed 21 tests, with 0 failures (0 unexpected) in 0.005 (0.006) seconds
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-23 03:09:30.664.
+	 Executed 21 tests, with 0 failures (0 unexpected) in 0.005 (0.006) seconds
+Test Suite 'Selected tests' passed at 2026-10-23 03:09:30.664.
+	 Executed 21 tests, with 0 failures (0 unexpected) in 0.005 (0.007) seconds

@@ -1,0 +1,10 @@
+{
+ "rid": "os6b",
+ "child": {
+  "pid": 14810,
+  "exit_code": 0,
+  "wall_seconds": 255.3
+ },
+ "samples": 19845,
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/os_page_return_raw_os6b.json"
+}

@@ -1,0 +1,9 @@
+{
+  "max_tokens_u1": 256,
+  "max_tokens_u2": 128,
+  "mode": "phase2",
+  "model_dir": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+  "store_base": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-1/B2/store",
+  "stride": 256,
+  "u2_prompt": "Settled record from the Information Space:\n{\"checksum\":\"2c146785\",\"secret\":\"d44be450e46a\",\"site\":\"Lisbon\"}\nUsing only that settled record, reply with exactly one line and nothing else: ANSWER=<secret>-<checksum>"
+}

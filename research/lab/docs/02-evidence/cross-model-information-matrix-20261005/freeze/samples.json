@@ -1,0 +1,137 @@
+{
+  "freeze_date": "2026-10-04",
+  "repository_root": "/Users/mr.simi/Documents/SimiGo-Lab",
+  "common_output_contract": {
+    "format": "single strict JSON object; no markdown fence and no prose",
+    "schema": {
+      "task_id": "sample_id",
+      "decision": "short normalized decision string",
+      "findings": [
+        {
+          "id": "F01",
+          "statement": "one semantic claim",
+          "evidence": "short source-grounded evidence",
+          "function": "constraint|decision|evidence|relation|uncertainty|task_rule"
+        }
+      ],
+      "missing_or_uncertain": [
+        "short string"
+      ],
+      "confidence": "high|medium|low"
+    },
+    "max_findings": 8,
+    "evaluation": {
+      "mechanical": [
+        "response contains exactly one parseable JSON object",
+        "required keys are task_id, decision, findings, missing_or_uncertain, confidence",
+        "findings count does not exceed max_findings",
+        "every finding has id, statement, evidence, and allowed function"
+      ],
+      "semantic": [
+        "statement is grounded in supplied input, not outside knowledge",
+        "decision is supported by at least one listed finding",
+        "evidence points to the relevant source relation rather than copying only",
+        "uncertainty is explicit when supplied evidence is insufficient"
+      ],
+      "expected_answer_in_prompt": "ABSENT",
+      "judge_blinding": "record model identity separately; normalization does not display it"
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "S1-release-config",
+      "origin": "TC-A source snapshot",
+      "task_nature": "constraint resolution and release decision",
+      "input_structure": "machine-readable JSON",
+      "information_complexity": "small, rule-dense",
+      "input_files": [
+        {
+          "path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/platform-baseline.json",
+          "sha256": "d41f59348520076f0f23e306c10248385eaafa8dfd761fde62e7bbf375da4739",
+          "bytes": 213
+        },
+        {
+          "path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-alpha.json",
+          "sha256": "4eaa6c261eeb5a4ceaf835ddc83a0b4efd8811e577c53df2db7d900f64786528",
+          "bytes": 156
+        },
+        {
+          "path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-beta.json",
+          "sha256": "84636005fabef77d226f3f29308fb815c100bcad7ab006360f93368e19b03e8d",
+          "bytes": 155
+        },
+        {
+          "path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-gamma.json",
+          "sha256": "d5e4147f7a150a10c9f45c8052db866bdd27f653b72189f5b787e67a373bd6c2",
+          "bytes": 157
+        }
+      ],
+      "task": "Apply only the platform baseline and deployment rules to alpha, beta, and gamma. Decide release order and blocked services. Do not use outside knowledge."
+    },
+    {
+      "sample_id": "S2-version-diff",
+      "origin": "EXP1-X1 frozen text extracts",
+      "task_nature": "version comparison and authority selection",
+      "input_structure": "two long text extracts",
+      "information_complexity": "many small deltas with one global preference",
+      "input_files": [
+        {
+          "path": "boundary-study/exp1-x1/information-space/a-deposits/extract_0307.txt",
+          "sha256": "0157af197d0ec1eec4f5c616969048f121995fdea61fb035434f9c8ef0921d72",
+          "bytes": 13509
+        },
+        {
+          "path": "boundary-study/exp1-x1/information-space/a-deposits/extract_0308.txt",
+          "sha256": "e546d118ed299da3fc6cf961c920bff75ab8319d86ef305d7597565cda355683",
+          "bytes": 13730
+        }
+      ],
+      "task": "Compare the 2026-03-07 and 2026-03-08 extracts. Report at most eight substantive differences and decide which version should be the current working basis. Do not use outside knowledge or prior reports."
+    },
+    {
+      "sample_id": "S3-column-unit-audit",
+      "origin": "Y-exp mechanical evidence, excluding the prior conclusion",
+      "task_nature": "evidence-based hypothesis adjudication",
+      "input_structure": "JSON summary plus selected spreadsheet rows",
+      "information_complexity": "medium; quantitative dimensional reasoning",
+      "input_files": [
+        {
+          "path": "boundary-study/y-exp/evidence/e_unit_summary.json",
+          "sha256": "439a6e4ab1f7386cf1cfa7ce3f53d32ffc56ba178af927a9a413c084d024d543",
+          "bytes": 824
+        },
+        {
+          "path": "boundary-study/y-exp/evidence/evidence_selected.tsv",
+          "sha256": "5d594b3049d5076729d195234cfb3585dc72925c6920e90ee77605255674ad08",
+          "bytes": 1669
+        },
+        {
+          "path": "boundary-study/y-exp/evidence/versions_compare.tsv",
+          "sha256": "21f513699f3cba7df303e0dc6be16091c962af8557eab319393be929e7f2fa82",
+          "bytes": 738
+        }
+      ],
+      "task": "Adjudicate this hypothesis only from the supplied evidence: E column in sheet 表2-分部分项清单 stores amounts in units of 万元. State whether the hypothesis is supported, rejected, or indeterminate."
+    },
+    {
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "origin": "0308 report extracts, excluding prior clarification outputs",
+      "task_nature": "internal consistency audit",
+      "input_structure": "long report paragraph stream plus table-level XML",
+      "information_complexity": "high; numeric relations embedded in narrative",
+      "input_files": [
+        {
+          "path": "palace-v0/workspace/t2-closeout/源0308_段落流.txt",
+          "sha256": "95bed3b49b5b5bdaae39afa6678dd898bc44ac5084ee914d906721e83e027385",
+          "bytes": 15111
+        },
+        {
+          "path": "palace-v0/workspace/t2-closeout/源0308_表格XML级.txt",
+          "sha256": "141a571d188a484d460ee5ffce0fe7f47663293e5ad1165fc513207e0bb274a7",
+          "bytes": 4923
+        }
+      ],
+      "task": "Audit only the supplied report text and tables. Report at most six internal arithmetic, quantity, or wording-consistency anomalies that need clarification. Do not use prior clarification letters or outside knowledge."
+    }
+  ]
+}

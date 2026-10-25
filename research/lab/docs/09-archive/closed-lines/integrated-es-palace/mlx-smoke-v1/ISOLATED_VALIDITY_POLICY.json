@@ -1,0 +1,1 @@
+{"schema_id":"SIMIGO-INFO-VALIDITY-POLICY-V1","policy_version":"actual-mlx-smoke-v1","policy_source":"ISOLATED_MLX_SMOKE_ONLY","missing_policy":"REJECT","dependency_propagation":"ALL_TRANSITIVE","default_valid_until_utc":"2030-12-31T23:59:59Z"}

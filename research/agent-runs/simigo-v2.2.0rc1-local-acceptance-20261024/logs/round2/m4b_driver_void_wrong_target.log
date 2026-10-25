@@ -1,0 +1,35 @@
+== ES1 produce (target=hello) ==
+PTY_CHILD_RC=0 bytes=412
+ES1 rc=0
+ES1 exited before ES2 - OK
+state_id_from_handoff=S-0001
+== ES2 consume (fresh empty cache root) ==
+PTY_CHILD_RC=0 bytes=296
+ES2 rc=0
+== NC1 settlement missing (state S-9999) ==
+PTY_CHILD_RC=6 bytes=212
+NC1 rc=6
+== NC2 payload digest tamper (isolated DB copy) ==
+tampered S-0001
+PTY_CHILD_RC=6 bytes=214
+NC2 rc=6
+== NC3 settlement invalidated (isolated DB copy) ==
+invalidated S-0001
+PTY_CHILD_RC=6 bytes=213
+NC3 rc=6
+== NC4 model identity mismatch (same IS, different model path) ==
+PTY_CHILD_RC=6 bytes=213
+NC4 rc=6
+== NC5 invalid role ==
+PTY_CHILD_RC=2 bytes=91
+NC5 rc=2
+== NC6 missing required param ==
+PTY_CHILD_RC=2 bytes=54
+NC6 rc=2
+== NC7 value leaked into consume env (audit-1 guard) ==
+PTY_CHILD_RC=7 bytes=212
+NC7 rc=7
+== memprobe (G3 memory tiers) ==
+PTY_CHILD_RC=0 bytes=302
+MEMPROBE rc=0
+DRIVER DONE RID=m4b

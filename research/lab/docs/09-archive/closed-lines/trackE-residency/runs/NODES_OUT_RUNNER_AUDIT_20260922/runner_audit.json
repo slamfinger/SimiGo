@@ -1,0 +1,147 @@
+{
+  "FINAL": {
+    "PASS": true,
+    "violation_count": 0
+  },
+  "assertions": {
+    "L1": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "contract": {
+        "decode_touch_mapping": "the current node must be resident in the frozen baseline state; after all Candidate unit events at that decode step, both (GDN,current)/(ATT,current) units must be decode-ready. Intra-pair intermediate states are not independent node events",
+        "logical_state": "each event completion at step t uses the frozen simulate_v3 five_tuple at the same decode step",
+        "policy_difference_boundary": "non-current unit residency may differ from node-level frozen residency; this is the allowed granularity-policy difference, not an L1 violation",
+        "state_model": "Candidate A has one unit state bit, res: resident/non-resident; it does not maintain a separate externalized state bit",
+        "terminology_boundary": "externalized is baseline historical vocabulary: a once-resident unit later capacity-evicted; cold-load is first acquisition of a never-resident unit; the runner rehydrate event is the umbrella for both acquisitions",
+        "transition_shape": "rehydrate requires prior non-resident -> now resident; externalize requires prior resident -> now non-resident"
+      },
+      "pass": true,
+      "violation_count": 0
+    },
+    "L2": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "pass": true,
+      "violation_count": 0
+    },
+    "L3": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "pass": true,
+      "violation_count": 0
+    }
+  },
+  "baseline": {
+    "blob": "ff6d4e21df40db800e64bd5c949c39b3d77d22aa",
+    "commit": "17bde28",
+    "execution_state": {
+      "by_workload": {
+        "hot": {
+          "captured_steps": 2000,
+          "terminal": {
+            "ext_count": 684,
+            "externalized_count": 20,
+            "rehy_count": 696,
+            "resident_count": 12,
+            "violations": 0
+          }
+        },
+        "tree": {
+          "captured_steps": 2000,
+          "terminal": {
+            "ext_count": 1003,
+            "externalized_count": 20,
+            "rehy_count": 1015,
+            "resident_count": 12,
+            "violations": 0
+          }
+        }
+      },
+      "capture_line": 135,
+      "capture_line_text": "if len(resident) > budget:",
+      "method": "sys.settrace direct runtime capture of frozen simulate_v3 locals after capacity enforcement",
+      "reimplementation_used": false
+    },
+    "regression": {
+      "pass": true,
+      "violation_count": 0
+    },
+    "source": "git show 17bde28:trackE-residency/residency_policy_simulator_v3.py; temp-file import",
+    "version": "v6-regression-snapshot"
+  },
+  "deterministic": {
+    "dd": 0,
+    "run_1": [
+      {
+        "ext_count": 1368,
+        "rehy_count": 1392,
+        "workload": "hot"
+      },
+      {
+        "ext_count": 2006,
+        "rehy_count": 2030,
+        "workload": "tree"
+      }
+    ],
+    "run_2": [
+      {
+        "ext_count": 1368,
+        "rehy_count": 1392,
+        "workload": "hot"
+      },
+      {
+        "ext_count": 2006,
+        "rehy_count": 2030,
+        "workload": "tree"
+      }
+    ],
+    "violation_count": 0
+  },
+  "input": {
+    "ATT": 16806,
+    "GDN": 61440,
+    "budget_nodes": 12,
+    "budget_units": 24,
+    "capacity_model": "equal unit slots; KiB disclosed, not weighted",
+    "nodes": 32,
+    "seed": 42,
+    "trace_len": 2000
+  },
+  "negative_tests": {
+    "L1": {
+      "expected_detection": true,
+      "fault": "externalize event marked was_resident=False; logical five_tuple unchanged",
+      "pass": true,
+      "propagation": "if detection fails, FINAL fails; the synthetic fault itself is not counted as an experiment violation",
+      "violation_count": 1
+    }
+  },
+  "runner": {
+    "path": "trackE-residency/nodes_out_experiment_runner.py",
+    "sha256": "ace241fc6ca22bd1dd40d2e6036662ae0b1e2e1564f49fe3a140900e26495f17"
+  }
+}

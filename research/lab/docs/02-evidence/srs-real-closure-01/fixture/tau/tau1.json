@@ -1,0 +1,8 @@
+{
+  "task": "ES1 computation and settlement",
+  "dependencies": [{"dependency_id": "D-1", "seed_path": "fixture/inputs/D.md"}],
+  "procedure": {"identity": "SRS-REAL-CLOSURE-01-R1", "version": "1.0.0", "iterations": 50000},
+  "relation_id": "rel-D-under-P",
+  "semantics_binding": "R derives from D under P@1.0.0",
+  "request_class": "R1-continuation"
+}

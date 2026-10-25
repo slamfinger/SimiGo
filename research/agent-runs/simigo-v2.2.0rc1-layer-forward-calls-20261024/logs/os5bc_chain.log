@@ -1,0 +1,7 @@
+=== os5b start 18:32:46
+run rc=0
+verify rc=1 verdict=BLOCKED 0.499
+=== os5c start 18:37:24
+run rc=0
+verify rc=1 verdict=BLOCKED 0.497
+=== all done 18:42:00

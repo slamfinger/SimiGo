@@ -1,0 +1,71 @@
+{
+ "gate": "physical_page_return",
+ "candidate": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app",
+ "candidate_exe_sha256": "60973e086f12583a20a6b578de33e678bd4a7e1846a7b6cd0084cd845eae90cd",
+ "rid": "os2",
+ "captured_at": "2026-10-24T14:07:40+0800",
+ "verdict": "BLOCKED",
+ "checks": {
+  "R1_shipped_suspend_observed": true,
+  "R2_process_stayed_alive": true,
+  "R3_resident_set_fell": true,
+  "R4_low_plateau_sustained": true,
+  "R5_kernel_pages_returned": false,
+  "R6_compressor_not_the_sink": true,
+  "R7_single_transition": true,
+  "R8_noise_floor_small": true,
+  "R9_app_and_kernel_agree": true
+ },
+ "numbers": {
+  "peak_footprint_bytes": 17469846752,
+  "trough_footprint_bytes": 0,
+  "kernel_resident_drop_bytes": 17469846752,
+  "kernel_resident_drop_gib": 16.27,
+  "host_available_pages_gain_bytes": 24854528,
+  "host_available_pages_gain_gib": 0.02,
+  "host_gain_over_drop": 0.001,
+  "compressor_growth_bytes": 2637824,
+  "wired_pages_freed_bytes": 311246848,
+  "target_wired_bytes_peak": 0,
+  "target_wired_bytes_trough": 0,
+  "wired_bytes_freed": 0,
+  "resident_bytes_peak": 6162333696,
+  "resident_bytes_trough": 6149750784,
+  "transition_seconds": 0.038,
+  "low_plateau_samples": 13,
+  "low_plateau_seconds": 0.13,
+  "baseline_swing_bytes": 136085504,
+  "baseline_swing_over_drop": 0.008,
+  "app_reported_drop_bytes": 17346162400,
+  "app_reported_suspend": true,
+  "app_observed_idle_wait_seconds": 240,
+  "samples": 22618,
+  "sample_interval_seconds": 0.01,
+  "peak_at_ms": 276179,
+  "trough_at_ms": 276217,
+  "swap_used_bytes_before": 3798267330,
+  "swap_used_bytes_after": 3789878722,
+  "host_memsize_bytes": 34359738368,
+  "page_size": 16384
+ },
+ "contradictions": [
+  "the app reports the reclaim ran, but the kernel's available page count did not rise by at least half of the resident drop"
+ ],
+ "rule_parameters": {
+  "min_low_samples": 3,
+  "low_plateau_threshold_fraction": 0.5
+ },
+ "rules": {
+  "R1": "shipped memprobe suspend returned true, resource_reclaim observed, status OK",
+  "R2": "child exit_code == 0 and alive == 1 on every sample from peak to trough",
+  "R3": "kernel resident drop >= 30% of peak and >= 1 GiB",
+  "R4": ">= 20 consecutive samples below 50% of peak",
+  "R5": "host free+inactive rises >= 50% of the drop (kernel pages; free already includes speculative)",
+  "R6": "compressor growth <= 25% of the drop",
+  "R7": "peak -> trough within 5 s",
+  "R8": "baseline available-page swing <= 10% of the drop",
+  "R9": "app-reported footprint drop within 20% of the kernel-measured drop"
+ },
+ "raw_file": "os_page_return_raw_os2.json",
+ "what_this_is_not": "not a process exit, not an RSS comparison against nothing, and not a call into a release API: the kernel's own page counters move while the process stays alive."
+}

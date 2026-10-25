@@ -1,0 +1,70 @@
+# M3 stage A round3 2026-10-23T19:00:07Z
+# app bundle: /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app
+# exe sha256 (on disk): cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f
+# exe uuid: 5AAD0DF1-3860-3B16-B25F-A6C4AD4AF9E4
+launch_env:
+  SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home
+  SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/cache
+  SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/state-graph/reference-graph-v1.json
+launcher_pid=43872
+pid=43872
+--- ps ---
+  PID  PPID STARTED                      ELAPSED COMMAND
+43872 43861 Sat Oct 24 03:00:08 2026       00:25 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+--- executable path (lsof txt) ---
+/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+/private/var/db/diagnostics/logd/.plist-cache.PGi1ZgoJ
+/System/Library/CoreServices/SystemVersion.bundle/English.lproj/SystemVersion.strings
+/private/var/db/timezone/tz/2026e.1.0/icutz/icutz44l.dat
+/usr/lib/libobjc-trampolines.dylib
+--- env SIMIGO_ (ps eww) ---
+SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/cache
+SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home
+SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/state-graph/reference-graph-v1.json
+--- running executable sha256 ---
+cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f
+--- listening sockets ---
+(no rows above = the app bound no TCP listener)
+--- isolation root: m3/home ---
+m3/home
+m3/home/bin
+m3/home/build
+m3/home/locks
+m3/home/logs
+m3/home/logs/native_mlx_trace.log
+m3/home/manifests
+m3/home/manifests/bootstrap-report.json
+m3/home/simigo.sqlite3
+m3/home/simigo.sqlite3-shm
+m3/home/simigo.sqlite3-wal
+m3/home/sources
+m3/home/staging
+--- isolation root: m3/cache ---
+m3/cache
+--- isolation root: m3/state-graph ---
+m3/state-graph
+--- bootstrap report ---
+{
+ "modelsDiscovered": 20,
+ "schemaVersion": 3,
+ "issueCount": 0,
+ "completedAt": null
+}
+--- sqlite tables ---
+agent_sessions bootstrap_runs checkpoints dependency_edges execution_states external_files install_receipts migration_receipts roots schema_migrations settlement_bindings settlements sqlite_sequence 
+--- quit (SIGTERM to test instance) ---
+quit_result=exited
+--- post-quit process check ---
+(no matching process)
+--- restart from same bundle ---
+restart_pid=43934 (first_launch_pid=43872)
+43934 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/cache
+SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home
+SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/state-graph/reference-graph-v1.json
+--- persisted files (home) ---
+4096 Oct 24 03:00 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home/simigo.sqlite3
+32768 Oct 24 03:00 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home/simigo.sqlite3-shm
+696312 Oct 24 03:00 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home/simigo.sqlite3-wal
+restart_quit=exited
+STAGE_A_DONE

@@ -1,0 +1,112 @@
++/bin/zsh:278> python3 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/driver/keychain_snapshot.py evidence/gate_installed_r2/keychain_pre.json
+snapshot items=2035 out=evidence/gate_installed_r2/keychain_pre.json
++/bin/zsh:279> python3 /Users/mr.simi/Documents/SimiGo/tools/rc_noninterference.py --phase pre-gate-r2 --out evidence/gate_installed_r2/snapshot_pre.json
+{
+ "phase": "pre-gate-r2",
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/evidence/gate_installed_r2/snapshot_pre.json",
+ "real_roots": [
+  "/Users/mr.simi/.simigo",
+  "/Users/mr.simi/Library/Application Support/SimiGo"
+ ],
+ "entries": [
+  {
+   "path": "/Users/mr.simi/.simigo",
+   "role": "real_state",
+   "exists": true,
+   "files": 8971,
+   "bytes": 32398436256
+  },
+  {
+   "path": "/Users/mr.simi/Library/Application Support/SimiGo",
+   "role": "real_state",
+   "exists": true,
+   "files": 1,
+   "bytes": 1068
+  },
+  {
+   "path": "/Users/mr.simi/.cache/huggingface",
+   "role": "reference",
+   "exists": true,
+   "files": 951,
+   "bytes": 242509940763
+  }
+ ]
+}
++/bin/zsh:280> python3 driver/run_service_http_gate.py --evidence-dir evidence/gate_installed_r2 --roots-prefix m3r2 --port-base 8110
+[gate] A1_prepare rc=0 payload=yes
+[gate] A2_activate rc=0 payload=yes
+[gate] client keygen rc=0
+[gate] A3_serve pid=2449 port=8110
+[gate] client spki rc=0
+[gate] A4_pair_issue rc=0 payload=yes
+[gate] client pair-sign rc=0
+[gate] A5_pair_approve rc=0 payload=yes
+[gate] client request rc=0
+[gate] probe rc=0
+[gate] A3_serve exited rc=-15
+[gate] B1_prepare_noactivate rc=0 payload=yes
+[gate] client keygen rc=0
+[gate] B2_serve_noauth pid=2465 port=8111
+[gate] probe rc=0
+[gate] B2_serve_noauth exited rc=-15
+[gate] C1_serve_unprepared pid=2484 port=8112
+[gate] wrote evidence/gate_installed_r2/service_http_gate_installed.json
++/bin/zsh:281> echo 'GATE2_RC=0'
+GATE2_RC=0
++/bin/zsh:282> python3 driver/verify_service_http_gate.py --source evidence/gate_installed_r2/service_http_gate_installed.json --out evidence/gate_installed_r2/service_http_gate_verdict.json
+S1_authorized_valid_proof_200                      PASS
+S2_invalid_proof_refused                           PASS
+S3_authorized_request_generated                    PASS
+S4_invalid_proof_no_generation                     PASS
+S5_missing_activation_refused_before_generation    PASS
+overall: PASS
+wrote evidence/gate_installed_r2/service_http_gate_verdict.json
++/bin/zsh:283> echo 'VERIFY2_RC=0'
+VERIFY2_RC=0
++/bin/zsh:284> python3 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/driver/keychain_snapshot.py evidence/gate_installed_r2/keychain_post.json
+snapshot items=2035 out=evidence/gate_installed_r2/keychain_post.json
++/bin/zsh:285> python3 /Users/mr.simi/Documents/SimiGo/tools/rc_noninterference.py --phase post-gate-r2 --out evidence/gate_installed_r2/snapshot_post.json
+{
+ "phase": "post-gate-r2",
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/evidence/gate_installed_r2/snapshot_post.json",
+ "real_roots": [
+  "/Users/mr.simi/.simigo",
+  "/Users/mr.simi/Library/Application Support/SimiGo"
+ ],
+ "entries": [
+  {
+   "path": "/Users/mr.simi/.simigo",
+   "role": "real_state",
+   "exists": true,
+   "files": 8971,
+   "bytes": 32398436256
+  },
+  {
+   "path": "/Users/mr.simi/Library/Application Support/SimiGo",
+   "role": "real_state",
+   "exists": true,
+   "files": 1,
+   "bytes": 1068
+  },
+  {
+   "path": "/Users/mr.simi/.cache/huggingface",
+   "role": "reference",
+   "exists": true,
+   "files": 951,
+   "bytes": 242509940763
+  }
+ ]
+}
++/bin/zsh:286> python3 /Users/mr.simi/Documents/SimiGo/tools/rc_noninterference_diff.py evidence/gate_installed_r2/snapshot_pre.json evidence/gate_installed_r2/snapshot_post.json evidence/gate_installed_r2/snapshot_diff.json --allow-prefix /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/evidence/gate_installed_r2
+{
+ "a": "pre-gate-r2",
+ "b": "post-gate-r2",
+ "violation_events": 0,
+ "distinct_violation_count": 0,
+ "real_user_state_write_count": 0,
+ "real_user_state_write_paths": [],
+ "expected_self_writes": 0,
+ "reference_changes": 0
+}
++/bin/zsh:287> echo 'DIFF_RC=0'
+DIFF_RC=0

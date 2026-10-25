@@ -1,0 +1,22 @@
+{
+  "execute_demand_calls": 0,
+  "index_entries_appended_during_phase2": [
+    "execution_state:g2-fixture-2-downstream:fixture-2-u2-restored",
+    "execution_state:g2-fixture-2-downstream:fixture-2-u2-advanced"
+  ],
+  "schema_id": "SIMIGO-G2-BATCH-PHASE2-STATES-V1",
+  "settlement_history_after": 1,
+  "settlement_history_before": 1,
+  "states": {
+    "advanced_state": {
+      "dependency_order": 6,
+      "object_id": "2ff4b5b50629a8342c08c0b2c408e90d1c20beb5e51ae3be12821cd203c41b7a",
+      "state_id": "fixture-2-u2-advanced"
+    },
+    "restored_state": {
+      "dependency_order": 5,
+      "object_id": "1a08a6a699e1c07bf121fe75fce633b89102832353dd010eae6dbc5682eea583",
+      "state_id": "fixture-2-u2-restored"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+ "a_phase": "bracket_pre",
+ "b_phase": "bracket_post",
+ "a_taken_at": "2026-10-24T03:18:08+0800",
+ "b_taken_at": "2026-10-24T03:18:49+0800",
+ "real_roots": [
+  "/Users/mr.simi/.simigo",
+  "/Users/mr.simi/Library/Application Support/SimiGo"
+ ],
+ "allowlisted_abs_prefixes": [],
+ "entries": {
+  "/Users/mr.simi/.cache/huggingface": {
+   "status": "DIR",
+   "role": "reference",
+   "a_files": 951,
+   "b_files": 951,
+   "a_bytes": 242509940763,
+   "b_bytes": 242509940763,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "reference_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": [],
+    "reference": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo": {
+   "status": "DIR",
+   "role": "real_state",
+   "a_files": 8971,
+   "b_files": 8971,
+   "a_bytes": 32398436256,
+   "b_bytes": 32398436256,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "reference_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": [],
+    "reference": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/Library/Application Support/SimiGo": {
+   "status": "DIR",
+   "role": "real_state",
+   "a_files": 1,
+   "b_files": 1,
+   "a_bytes": 1068,
+   "b_bytes": 1068,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "reference_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": [],
+    "reference": []
+   },
+   "clean": true
+  }
+ },
+ "violation_events": 0,
+ "distinct_changed_abs_paths": [],
+ "distinct_violating_abs_paths": [],
+ "distinct_expected_abs_paths": [],
+ "distinct_violation_count": 0,
+ "reference_change_paths": [],
+ "real_user_state_write_paths": [],
+ "real_user_state_write_count": 0
+}

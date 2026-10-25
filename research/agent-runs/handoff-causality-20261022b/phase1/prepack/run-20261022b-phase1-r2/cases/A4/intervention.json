@@ -1,0 +1,16 @@
+{
+  "case": "A4",
+  "changes": [
+    {
+      "state_directory": "empty"
+    }
+  ],
+  "database_after": {
+    "device": "16777233",
+    "inode": "110211991",
+    "path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022b-phase1-r2/cases/A4/carrier.sqlite",
+    "sha256": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "size_bytes": 36864
+  },
+  "state_after": []
+}

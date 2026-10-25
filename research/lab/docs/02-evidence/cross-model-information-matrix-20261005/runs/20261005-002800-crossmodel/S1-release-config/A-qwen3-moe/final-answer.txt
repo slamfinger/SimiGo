@@ -1,0 +1,50 @@
+{
+  "task_id": "task-carrier-tc-a",
+  "decision": "release alpha, beta, gamma in sequential order",
+  "findings": [
+    {
+      "id": "f1",
+      "statement": "alpha satisfies the platform baseline requirements",
+      "evidence": "alpha has metrics_v2 flag set to true",
+ "function": "constraint"
+    },
+    {
+      "id": "f2",
+ "statement": "beta satisfies the platform baseline requirements",
+ "evidence": "beta has metrics_v2 flag set to true",
+ "function": "constraint"
+    },
+    {
+ "id": "f3",
+ "statement": "gamma does not satisfy the platform baseline requirements",
+ "evidence": "gamma has metrics_v2 flag set to false",
+ "function": "constraint"
+    },
+    {
+ "id": "f4",
+ "statement": "gamma has incompatible schema version",
+ "evidence": "gamma schema_version is 2, platform baseline requires 3",
+ "function": "constraint"
+    },
+ {
+ "id": "f5",
+ "statement": "alpha and beta can be deployed together",
+ "evidence": "both services have compatible api_version and queue_protocol",
+ "function": "relation"
+    },
+ {
+ "id": "f6",
+ "statement": "gamma cannot be deployed due to incompatible schema",
+ "evidence": "gamma schema_version is 2, platform baseline requires 3",
+ "function": "constraint"
+    },
+ {
+ "id": "f7",
+ "statement": "gamma cannot be deployed due to missing metrics_v2 flag",
+ "evidence": "gamma has metrics_v2 set to false, platform baseline requires true",
+ "function": "constraint"
+    }
+  ],
+  "missing_or_uncertain": [],
+  "confidence": 1
+}

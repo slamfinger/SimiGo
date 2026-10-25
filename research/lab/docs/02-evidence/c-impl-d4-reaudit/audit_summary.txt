@@ -1,0 +1,8 @@
+audit_commit=569fe540d1ff
+failed_attempt_baseline=806dd3eea55c
+build=PASS
+tests=14/14 PASS
+protected_core_diff_bytes=0
+frozen_spec_design_tracked_diff=NONE
+r_c1_attempt4=NOT_RUN
+c_execute=NOT_AUTHORIZED

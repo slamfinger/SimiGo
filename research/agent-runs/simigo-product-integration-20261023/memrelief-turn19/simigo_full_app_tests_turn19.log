@@ -1,0 +1,1157 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test -project SimiGo.xcodeproj -scheme SimiGo -configuration Debug -destination platform=macOS,arch=arm64 "-only-testing:SimiGoTests" -enableCodeCoverage NO CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=
+
+Build settings from command line:
+    CODE_SIGN_IDENTITY = 
+    CODE_SIGNING_ALLOWED = NO
+
+2026-10-23 13:53:05.307 xcodebuild[65042:1656487]  DVTErrorPresenter: Unable to load simulator devices.
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+Failure Reason: The version of the CoreSimulator framework installed on this Mac is out-of-date and not supported by this version of Xcode.
+Recovery Suggestion: Please ensure that you have installed all available updates to your Mac's software, and that you are running the most recent version of Xcode supported by macOS.
+--
+CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+--
+
+2026-10-23 13:53:05.307 xcodebuild[65042:1656487]  iOSSimulator: [SimServiceContext sharedServiceContextForDeveloperDir:error:] returned nil (Error Domain=DVTCoreSimulatorAdditionsErrorDomain Code=3 "CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2)." UserInfo={NSLocalizedDescription=CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).}). Simulator device support disabled.
+Resolve Package Graph
+
+
+Resolved source packages:
+  swift-transformers: https://github.com/huggingface/swift-transformers.git @ 1.3.4
+  swift-huggingface: https://github.com/huggingface/swift-huggingface.git @ 0.11.0
+  Jinja: https://github.com/huggingface/swift-jinja.git @ 2.5.1
+  swift-asn1: https://github.com/apple/swift-asn1.git @ 1.7.3
+  swift-certificates: https://github.com/apple/swift-certificates.git @ 1.21.0
+  swift-collections: https://github.com/apple/swift-collections.git @ 1.7.1
+  mlx-swift: https://github.com/slamfinger/mlx-swift @ ef5f1b6
+  SimiGoRuntime: /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime @ local
+  LOCALBCore: /Users/mr.simi/Documents/SimiGo/Packages/LOCALBCore @ local
+  swift-numerics: https://github.com/apple/swift-numerics @ 1.1.1
+  EventSource: https://github.com/mattt/EventSource.git @ 1.5.1
+  mlx-swift-lm: https://github.com/slamfinger/mlx-swift-lm.git @ bc64ee6
+  swift-syntax: https://github.com/swiftlang/swift-syntax.git @ 603.0.2
+  yyjson: https://github.com/ibireme/yyjson.git @ 0.12.0
+  swift-crypto: https://github.com/apple/swift-crypto.git @ 4.5.2
+
+note: Using codesigning identity override: 
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (70 targets)
+    Target 'SimiGoTests' in project 'SimiGo'
+        ➜ Explicit dependency on target 'SimiGo' in project 'SimiGo'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+    Target 'SimiGo' in project 'SimiGo'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXVLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Transformers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'LOCALBCore-product' in project 'LOCALBCore'
+    Target 'LOCALBCore-product' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'LOCALBCore' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'LOCALBCore' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'X509' in project 'swift-certificates'
+        ➜ Explicit dependency on target '_CertificateInternals' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras-product' in project 'swift-crypto'
+    Target 'X509' in project 'swift-certificates'
+        ➜ Explicit dependency on target '_CertificateInternals' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras-product' in project 'swift-crypto'
+    Target '_CryptoExtras-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target '_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'swift-crypto_CryptoExtras' in project 'swift-crypto' (no dependencies)
+    Target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+    Target 'swift-crypto_CryptoBoringWrapper' in project 'swift-crypto' (no dependencies)
+    Target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+    Target 'swift-crypto_CCryptoBoringSSLShims' in project 'swift-crypto' (no dependencies)
+    Target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CCryptoBoringSSL' in project 'swift-crypto'
+    Target 'swift-crypto_CCryptoBoringSSL' in project 'swift-crypto' (no dependencies)
+    Target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'SwiftASN1' in project 'swift-asn1'
+    Target 'SwiftASN1' in project 'swift-asn1' (no dependencies)
+    Target '_CertificateInternals' in project 'swift-certificates' (no dependencies)
+    Target 'SimiGoRuntimeContract-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+    Target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGo2Experimental' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+    Target 'SimiGo2Experimental' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+    Target 'SimiGoRuntimeContract' in project 'SimiGoRuntime' (no dependencies)
+    Target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXCXGrammar' in project 'mlx-swift-lm' (no dependencies)
+    Target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm' (no dependencies)
+    Target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'Hub-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Transformers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Models' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Models' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'yyjson-product' in project 'yyjson'
+        ➜ Explicit dependency on target 'yyjson' in project 'yyjson'
+    Target 'yyjson' in project 'yyjson' (no dependencies)
+    Target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'swift-crypto_Crypto' in project 'swift-crypto' (no dependencies)
+    Target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'EventSource' in project 'EventSource'
+    Target 'EventSource' in project 'EventSource' (no dependencies)
+    Target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'InternalCollectionsUtilities' in project 'swift-collections' (no dependencies)
+    Target 'swift-transformers_Hub' in project 'swift-transformers' (no dependencies)
+    Target 'MLXVLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXVLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXVLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXOptimizers-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'Numerics-product' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+    Target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+    Target '_NumericsShims' in project 'swift-numerics' (no dependencies)
+    Target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'mlx-swift_Cmlx' in project 'mlx-swift'
+    Target 'mlx-swift_Cmlx' in project 'mlx-swift' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+    cd /Users/mr.simi/Documents/SimiGo/SimiGo.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -o /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SDKExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Package.swift: warning: DEFINES_MODULE was set, but no umbrella header could be found to generate the module map (in target 'Cmlx' from project 'mlx-swift')
+objc[65051]: Class _TtC10Tokenizers12BPETokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258b530) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373e4e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers13BertTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258b6d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373e688). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers14BasicTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258b7d0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373e780). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers18WordpieceTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258b878) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373e828). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers16WordPieceDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258b9d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373e988). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers15DecoderSequence is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258ba98) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373ea48). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers16ByteLevelDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258bb40) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373eaf0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers14ReplaceDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258bbf0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373eba0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers19ByteFallbackDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258bc98) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373ec48). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers11FuseDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258bd38) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373ece8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers12StripDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258bdd8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373ed88). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers16MetaspaceDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258be90) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373ee40). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers18NormalizerSequence is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c030) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373efe0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers17PrependNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c0d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f088). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers17ReplaceNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c180) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f130). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers19LowercaseNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c228) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f1d8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers13NFDNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c2c8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f278). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers13NFCNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c368) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f318). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers14NFKDNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c408) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f3b8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers14NFKCNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c4a8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f458). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers14BertNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c548) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f4f8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers21PrecompiledNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c630) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f5e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers22StripAccentsNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c6d0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f680). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers15StripNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c770) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f720). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers18TemplateProcessing is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c870) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f820). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers22ByteLevelPostProcessor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c920) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f8d0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers17RobertaProcessing is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258c9c0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373f970). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers14BertProcessing is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258ca98) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373fa48). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers18SequenceProcessing is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258cb48) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373faf8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers16BertPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258cc28) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373fbd8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers20PreTokenizerSequence is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258ccc8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373fc78). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers22WhitespacePreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258cd70) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373fd20). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers21MetaspacePreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258ce10) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373fdc0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers21ByteLevelPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258ced0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373fe80). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers23PunctuationPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258cf90) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373ff40). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers18DigitsPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258d030) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10373ffe0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers17SplitPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258d0d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103740088). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers16TokenLatticeNode is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258d278) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103740228). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers19PreTrainedTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258d4d0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103740480). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers11T5Tokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258d6c0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103740670). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers24LlamaPreTrainedTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258d7d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103740788). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC10Tokenizers16UnigramTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258da68) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103740a18). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC3HubP33_4E8177DE4B0CCDEC2313116019A1E23612BundleFinder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258db88) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103741090). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC3Hub33LanguageModelConfigurationFromHub is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258dff0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1037414f8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC3Hub22DownloadProgressBridge is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258e330) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103741838). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtCV3Hub6HubApiP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C17NetworkStateActor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258e550) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103741a58). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtCV3Hub6HubApiP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C14NetworkMonitor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258e660) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103741b68). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C16RedirectDelegate is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258b398) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103717440). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C20RedirectSessionActor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258e738) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103741c40). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C19HubRepoIDCacheActor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10258e800) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103741d08). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC21SimiGoRuntimeContract18SimiGoESISDatabase is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/SimiGo2Experimental_-B024901A205185_PackageProduct.framework/Versions/A/SimiGo2Experimental_-B024901A205185_PackageProduct (0x10ac9d288) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1037426e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[65051]: Class _TtC6CryptoP33_A42746B7D10D5535030B0E00E43C4C0312BundleFinder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Crypto_17A3B1FFC41E47_PackageProduct.framework/Versions/A/Crypto_17A3B1FFC41E47_PackageProduct (0x1004f8370) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x103747e08). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+2026-10-23 13:53:10.286297+0800 SimiGo[65051:1656635] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:53:10.286425+0800 SimiGo[65051:1656635] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:53:10.286700+0800 SimiGo[65051:1656644] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:53:10.286710+0800 SimiGo[65051:1656644] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:53:10.287015+0800 SimiGo[65051:1656635] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:53:10.287023+0800 SimiGo[65051:1656635] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:53:10.287327+0800 SimiGo[65051:1656635] [Connection] Will NOT re-try to establish the connection
+2026-10-23 13:53:10.287353+0800 SimiGo[65051:1656634] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:53:10.287367+0800 SimiGo[65051:1656634] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:53:10.361903+0800 SimiGo[65051:1656613] SimiGo bootstrap: issueCount=0 models=20 work=0 legacyMigrated=false
+Test Suite 'All tests' started at 2026-10-23 13:53:10.616.
+Test Suite 'SimiGoTests.xctest' started at 2026-10-23 13:53:10.616.
+Test Suite 'AgentExecutionKeyTests' started at 2026-10-23 13:53:10.616.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testAgentIdIsTrimmed]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testAgentIdIsTrimmed]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testBlankBranchIdThrows]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testBlankBranchIdThrows]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testBlankSessionIdThrows]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testBlankSessionIdThrows]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testKeysDifferOnlyByBranch]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testKeysDifferOnlyByBranch]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testKeysWithSameFieldsAreEqualAndHashAlike]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testKeysWithSameFieldsAreEqualAndHashAlike]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testNilAgentIdFallsBackToDefault]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testNilAgentIdFallsBackToDefault]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testStorageKeyIncludesBranchBecauseChatSessionOwnsKV]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testStorageKeyIncludesBranchBecauseChatSessionOwnsKV]' passed (0.002 seconds).
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testTraceKeyIsCompactAndKeepsBranch]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testTraceKeyIsCompactAndKeepsBranch]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testWhitespaceOnlyAgentIdFallsBackToDefault]' started.
+Test Case '-[SimiGoTests.AgentExecutionKeyTests testWhitespaceOnlyAgentIdFallsBackToDefault]' passed (0.000 seconds).
+Test Suite 'AgentExecutionKeyTests' passed at 2026-10-23 13:53:10.623.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.005 (0.007) seconds
+Test Suite 'BranchForkTests' started at 2026-10-23 13:53:10.623.
+Test Case '-[SimiGoTests.BranchForkTests testCheckpointForkRoundTrip]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/BranchFork/BranchForkTests.swift:63: -[SimiGoTests.BranchForkTests testCheckpointForkRoundTrip] : Test skipped - Branch-Fork 回归：需 SIMIGO_FORK_EXP=1 且本机存在权重
+Test Case '-[SimiGoTests.BranchForkTests testCheckpointForkRoundTrip]' skipped (0.001 seconds).
+Test Case '-[SimiGoTests.BranchForkTests testCheckpointGenerationMismatchFailsClosed]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/BranchFork/BranchForkTests.swift:63: -[SimiGoTests.BranchForkTests testCheckpointGenerationMismatchFailsClosed] : Test skipped - Branch-Fork 回归：需 SIMIGO_FORK_EXP=1 且本机存在权重
+Test Case '-[SimiGoTests.BranchForkTests testCheckpointGenerationMismatchFailsClosed]' skipped (0.001 seconds).
+Test Case '-[SimiGoTests.BranchForkTests testCheckpointPairMismatchFailsClosed]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/BranchFork/BranchForkTests.swift:63: -[SimiGoTests.BranchForkTests testCheckpointPairMismatchFailsClosed] : Test skipped - Branch-Fork 回归：需 SIMIGO_FORK_EXP=1 且本机存在权重
+Test Case '-[SimiGoTests.BranchForkTests testCheckpointPairMismatchFailsClosed]' skipped (0.001 seconds).
+Test Case '-[SimiGoTests.BranchForkTests testForkBlocksDuringSourceGeneration]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/BranchFork/BranchForkTests.swift:63: -[SimiGoTests.BranchForkTests testForkBlocksDuringSourceGeneration] : Test skipped - Branch-Fork 回归：需 SIMIGO_FORK_EXP=1 且本机存在权重
+Test Case '-[SimiGoTests.BranchForkTests testForkBlocksDuringSourceGeneration]' skipped (0.001 seconds).
+Test Case '-[SimiGoTests.BranchForkTests testForkSessionBranchProductionAPI]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/BranchFork/BranchForkTests.swift:63: -[SimiGoTests.BranchForkTests testForkSessionBranchProductionAPI] : Test skipped - Branch-Fork 回归：需 SIMIGO_FORK_EXP=1 且本机存在权重
+Test Case '-[SimiGoTests.BranchForkTests testForkSessionBranchProductionAPI]' skipped (0.001 seconds).
+Test Case '-[SimiGoTests.BranchForkTests testInMemoryForkCopyOwnership]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/BranchFork/BranchForkTests.swift:63: -[SimiGoTests.BranchForkTests testInMemoryForkCopyOwnership] : Test skipped - Branch-Fork 回归：需 SIMIGO_FORK_EXP=1 且本机存在权重
+Test Case '-[SimiGoTests.BranchForkTests testInMemoryForkCopyOwnership]' skipped (0.001 seconds).
+Test Suite 'BranchForkTests' passed at 2026-10-23 13:53:10.631.
+	 Executed 6 tests, with 6 tests skipped and 0 failures (0 unexpected) in 0.004 (0.008) seconds
+Test Suite 'CheckpointReconciliationEquivalenceTests' started at 2026-10-23 13:53:10.631.
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testEmptyContentWritesNullAndNonEmptyUnchanged]' started.
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testEmptyContentWritesNullAndNonEmptyUnchanged]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testLegacyEmptyStringCheckpointStaysStaleAgainstNullEcho]' started.
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testLegacyEmptyStringCheckpointStaysStaleAgainstNullEcho]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testLegacyPairRemainsCompatible]' started.
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testLegacyPairRemainsCompatible]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testNewCheckpointReconcilesWithNullEcho]' started.
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testNewCheckpointReconcilesWithNullEcho]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testNullFormRoundTripsToEmptyRenderContent]' started.
+Test Case '-[SimiGoTests.CheckpointReconciliationEquivalenceTests testNullFormRoundTripsToEmptyRenderContent]' passed (0.001 seconds).
+Test Suite 'CheckpointReconciliationEquivalenceTests' passed at 2026-10-23 13:53:10.635.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'CloudBackendTests' started at 2026-10-23 13:53:10.635.
+Test Case '-[SimiGoTests.CloudBackendTests testCloudConfigurationRequiresAPIKeyOutsideLoopback]' started.
+Test Case '-[SimiGoTests.CloudBackendTests testCloudConfigurationRequiresAPIKeyOutsideLoopback]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.CloudBackendTests testDefaultCloudModelOverridesLocalAlias]' started.
+Test Case '-[SimiGoTests.CloudBackendTests testDefaultCloudModelOverridesLocalAlias]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.CloudBackendTests testGLMDisablesThinkingUnlessClientChooses]' started.
+Test Case '-[SimiGoTests.CloudBackendTests testGLMDisablesThinkingUnlessClientChooses]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.CloudBackendTests testHostRootKeepsClientVersionPath]' started.
+Test Case '-[SimiGoTests.CloudBackendTests testHostRootKeepsClientVersionPath]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.CloudBackendTests testRemoteRequestUsesConfiguredKeyAndModel]' started.
+Test Case '-[SimiGoTests.CloudBackendTests testRemoteRequestUsesConfiguredKeyAndModel]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.CloudBackendTests testVersionedBaseURLDoesNotDuplicateV1]' started.
+Test Case '-[SimiGoTests.CloudBackendTests testVersionedBaseURLDoesNotDuplicateV1]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.CloudBackendTests testZAICodingBaseURLDoesNotDuplicateV4]' started.
+Test Case '-[SimiGoTests.CloudBackendTests testZAICodingBaseURLDoesNotDuplicateV4]' passed (0.000 seconds).
+Test Suite 'CloudBackendTests' passed at 2026-10-23 13:53:10.639.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'ExecutionControllingTests' started at 2026-10-23 13:53:10.639.
+Test Case '-[SimiGoTests.ExecutionControllingTests testCheckpointRestoreForkDelegationWithoutModel]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testCheckpointRestoreForkDelegationWithoutModel]' passed (0.002 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testCollidingLabelsKeepDistinctIdentities]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testCollidingLabelsKeepDistinctIdentities]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testCompactLabelMirrorsTraceKeyConvention]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testCompactLabelMirrorsTraceKeyConvention]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testContinueDelegatesAndSurfacesNotLoaded]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testContinueDelegatesAndSurfacesNotLoaded]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testExecuteDelegatesAndSurfacesNotLoaded]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testExecuteDelegatesAndSurfacesNotLoaded]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testExecuteIdentityPassthroughPinnedByLineage]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testExecuteIdentityPassthroughPinnedByLineage]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testExecutionIdentityDirectMapping]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testExecutionIdentityDirectMapping]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testExecutionStateSnapshotWithoutModel]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testExecutionStateSnapshotWithoutModel]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testForkProvenanceLabelsDistinctUnderLabelCollision]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testForkProvenanceLabelsDistinctUnderLabelCollision]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testProductionLabelBranchKeepsShardSuffix]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testProductionLabelBranchKeepsShardSuffix]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionControllingTests testProtocolExistentialDispatch]' started.
+Test Case '-[SimiGoTests.ExecutionControllingTests testProtocolExistentialDispatch]' passed (0.001 seconds).
+Test Suite 'ExecutionControllingTests' passed at 2026-10-23 13:53:10.647.
+	 Executed 11 tests, with 0 failures (0 unexpected) in 0.007 (0.008) seconds
+Test Suite 'ExecutionLineageTests' started at 2026-10-23 13:53:10.647.
+Test Case '-[SimiGoTests.ExecutionLineageTests testBeginRunningToEndFailedChain]' started.
+Test Case '-[SimiGoTests.ExecutionLineageTests testBeginRunningToEndFailedChain]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionLineageTests testBoundedCapacity]' started.
+Test Case '-[SimiGoTests.ExecutionLineageTests testBoundedCapacity]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionLineageTests testCheckpointAssociationAndTerminalStatus]' started.
+Test Case '-[SimiGoTests.ExecutionLineageTests testCheckpointAssociationAndTerminalStatus]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionLineageTests testForkRecording]' started.
+Test Case '-[SimiGoTests.ExecutionLineageTests testForkRecording]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionLineageTests testGenerateFailureProducesFailedRecord]' started.
+Test Case '-[SimiGoTests.ExecutionLineageTests testGenerateFailureProducesFailedRecord]' passed (0.001 seconds).
+Test Suite 'ExecutionLineageTests' passed at 2026-10-23 13:53:10.650.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.002 (0.003) seconds
+Test Suite 'ExecutionPolicyGateTests' started at 2026-10-23 13:53:10.650.
+Test Case '-[SimiGoTests.ExecutionPolicyGateTests testDefaultConfigurationMatchesV15ProductionValues]' started.
+Test Case '-[SimiGoTests.ExecutionPolicyGateTests testDefaultConfigurationMatchesV15ProductionValues]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ExecutionPolicyGateTests testGatePathEquivalenceWithLegacyFlags]' started.
+Test Case '-[SimiGoTests.ExecutionPolicyGateTests testGatePathEquivalenceWithLegacyFlags]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ExecutionPolicyGateTests testSnapshotIsolationFromRuntimeTuningMutation]' started.
+Test Case '-[SimiGoTests.ExecutionPolicyGateTests testSnapshotIsolationFromRuntimeTuningMutation]' passed (0.000 seconds).
+Test Suite 'ExecutionPolicyGateTests' passed at 2026-10-23 13:53:10.652.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'ExecutionStateGraphTests' started at 2026-10-23 13:53:10.652.
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testCreateContinueForkKeepsParentClosureUntouched]' started.
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testCreateContinueForkKeepsParentClosureUntouched]' passed (0.006 seconds).
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testDiscardRemovesGhostContinuationAndReleaseKeepsLogicalState]' started.
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testDiscardRemovesGhostContinuationAndReleaseKeepsLogicalState]' passed (0.005 seconds).
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testDurableGraphPersistsAcrossStoreInstances]' started.
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testDurableGraphPersistsAcrossStoreInstances]' passed (0.004 seconds).
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testSaveRestoreFailsClosedOnTamperedCheckpoint]' started.
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testSaveRestoreFailsClosedOnTamperedCheckpoint]' passed (0.004 seconds).
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testSettleProducerResultCommitsThroughNativeGateAndFailsClosed]' started.
+Test Case '-[SimiGoTests.ExecutionStateGraphTests testSettleProducerResultCommitsThroughNativeGateAndFailsClosed]' passed (0.005 seconds).
+Test Suite 'ExecutionStateGraphTests' passed at 2026-10-23 13:53:10.677.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.024 (0.025) seconds
+Test Suite 'ExternalAdoptionInferenceE2ETests' started at 2026-10-23 13:53:10.677.
+Test Case '-[SimiGoTests.ExternalAdoptionInferenceE2ETests testAdoptedEndpointConfigDispatchesInferenceThroughProductionRuntime]' started.
+2026-10-23 13:53:10.679330+0800 SimiGo[65051:1656655] [logging-persist] cannot open file at line 53009 of [8fa8248e30]
+2026-10-23 13:53:10.679338+0800 SimiGo[65051:1656655] [logging-persist] os_unix.c:53009: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+✅ [HTTPServer] 监听 127.0.0.1:57083 model=qwen2.5-coder:7b
+2026-10-23 13:53:11.100673+0800 SimiGo[65051:1656644] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C2:1][0x7b849c60e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:11.162366+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C4:1][0x7b849c60e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Remote] [EXECUTION] endpoint=/v1/chat/completions request=req-852aeee5 agent=default execution=req-852aeee5
+[SimiGo Remote] [COMPLETE] endpoint=/v1/chat/completions status=200 bytes=176 duration=0.019s agent=default execution=req-852aeee5
+Test Case '-[SimiGoTests.ExternalAdoptionInferenceE2ETests testAdoptedEndpointConfigDispatchesInferenceThroughProductionRuntime]' passed (0.569 seconds).
+Test Suite 'ExternalAdoptionInferenceE2ETests' passed at 2026-10-23 13:53:11.247.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.569 (0.570) seconds
+Test Suite 'ExternalServerAdoptionTests' started at 2026-10-23 13:53:11.247.
+Test Case '-[SimiGoTests.ExternalServerAdoptionTests testAdoptingEndpointlessOrNonExternalLeavesServiceUntouched]' started.
+Test Case '-[SimiGoTests.ExternalServerAdoptionTests testAdoptingEndpointlessOrNonExternalLeavesServiceUntouched]' passed (0.007 seconds).
+Test Case '-[SimiGoTests.ExternalServerAdoptionTests testAdoptingOllamaWiresServiceToResolvedEndpoint]' started.
+🔌 采用 ollama → 云端运行时指向 http://127.0.0.1:11434/v1
+Test Case '-[SimiGoTests.ExternalServerAdoptionTests testAdoptingOllamaWiresServiceToResolvedEndpoint]' passed (0.005 seconds).
+Test Case '-[SimiGoTests.ExternalServerAdoptionTests testUnknownEngineIDIsFailClosed]' started.
+Test Case '-[SimiGoTests.ExternalServerAdoptionTests testUnknownEngineIDIsFailClosed]' passed (0.003 seconds).
+Test Suite 'ExternalServerAdoptionTests' passed at 2026-10-23 13:53:11.263.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.014 (0.016) seconds
+Test Suite 'GenerationLifecycleRaceTests' started at 2026-10-23 13:53:11.263.
+Test Case '-[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksDeleteLifecycleUntilGenerationCompletes]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/Lifecycle/GenerationLifecycleRaceTests.swift:41: -[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksDeleteLifecycleUntilGenerationCompletes] : Test skipped - GenerationLifecycleRaceTests：需 SIMIGO_FORK_MODEL 指定本机测试权重
+Test Case '-[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksDeleteLifecycleUntilGenerationCompletes]' skipped (0.002 seconds).
+Test Case '-[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksLoadCommitUntilGenerationCompletes]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/Lifecycle/GenerationLifecycleRaceTests.swift:41: -[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksLoadCommitUntilGenerationCompletes] : Test skipped - GenerationLifecycleRaceTests：需 SIMIGO_FORK_MODEL 指定本机测试权重
+Test Case '-[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksLoadCommitUntilGenerationCompletes]' skipped (0.002 seconds).
+Test Case '-[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksSaveUntilGenerationCompletes]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/Lifecycle/GenerationLifecycleRaceTests.swift:41: -[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksSaveUntilGenerationCompletes] : Test skipped - GenerationLifecycleRaceTests：需 SIMIGO_FORK_MODEL 指定本机测试权重
+Test Case '-[SimiGoTests.GenerationLifecycleRaceTests testGenerationGateBlocksSaveUntilGenerationCompletes]' skipped (0.001 seconds).
+Test Suite 'GenerationLifecycleRaceTests' passed at 2026-10-23 13:53:11.269.
+	 Executed 3 tests, with 3 tests skipped and 0 failures (0 unexpected) in 0.005 (0.006) seconds
+Test Suite 'HTTPChatParamsTests' started at 2026-10-23 13:53:11.269.
+Test Case '-[SimiGoTests.HTTPChatParamsTests testMessagesConversionPreservesTypesAndStructure]' started.
+Test Case '-[SimiGoTests.HTTPChatParamsTests testMessagesConversionPreservesTypesAndStructure]' passed (0.002 seconds).
+Test Case '-[SimiGoTests.HTTPChatParamsTests testMessagesDegenerateInputsPreserveOldBehavior]' started.
+Test Case '-[SimiGoTests.HTTPChatParamsTests testMessagesDegenerateInputsPreserveOldBehavior]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPChatParamsTests testNullToolsDoesNotThrowAndParsesAsNil]' started.
+Test Case '-[SimiGoTests.HTTPChatParamsTests testNullToolsDoesNotThrowAndParsesAsNil]' passed (0.002 seconds).
+Test Suite 'HTTPChatParamsTests' passed at 2026-10-23 13:53:11.274.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'HTTPRequestBoundaryTests' started at 2026-10-23 13:53:11.274.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testAbsoluteFormTargetIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testAbsoluteFormTargetIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testAuthorityComesFromHost]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testAuthorityComesFromHost]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testCanonicalMethodIsPreservedVerbatim]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testCanonicalMethodIsPreservedVerbatim]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testCaseVariantDuplicateHeaderIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testCaseVariantDuplicateHeaderIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testCaseVariantDuplicateHostIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testCaseVariantDuplicateHostIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testCaseVariantDuplicateHostRejectedOnTheWire]' started.
+✅ [HTTPServer] 监听 127.0.0.1:51327 model=parser-boundary-test
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testCaseVariantDuplicateHostRejectedOnTheWire]' passed (0.003 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testConflictingDuplicateContentLengthIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testConflictingDuplicateContentLengthIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testControlCharacterInHeaderValueIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testControlCharacterInHeaderValueIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testDoubledSpaceRequestLineRejectedOnTheWire]' started.
+✅ [HTTPServer] 监听 127.0.0.1:56099 model=parser-boundary-test
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testDoubledSpaceRequestLineRejectedOnTheWire]' passed (0.002 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testEmptyQueryIsDistinctFromAbsentQuery]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testEmptyQueryIsDistinctFromAbsentQuery]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testExactCaseDuplicateHeaderIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testExactCaseDuplicateHeaderIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testHTTP10WithoutHostIsAccepted]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testHTTP10WithoutHostIsAccepted]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testHTTP11RequiresHost]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testHTTP11RequiresHost]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testLeadingZeroContentLengthIsAccepted]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testLeadingZeroContentLengthIsAccepted]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testLowercaseMethodIsRejectedNotUppercased]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testLowercaseMethodIsRejectedNotUppercased]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testLowercaseMethodRejectedOnTheWire]' started.
+✅ [HTTPServer] 监听 127.0.0.1:47283 model=parser-boundary-test
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testLowercaseMethodRejectedOnTheWire]' passed (0.002 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testMalformedHeaderNameIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testMalformedHeaderNameIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testMethodWithIllegalCharactersIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testMethodWithIllegalCharactersIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testMixedCaseMethodIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testMixedCaseMethodIsRejected]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testNonDecimalContentLengthIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testNonDecimalContentLengthIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testOverlongMethodTokenIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testOverlongMethodTokenIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testOversizedTargetIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testOversizedTargetIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testRequestLineWithNonCanonicalWhitespaceIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testRequestLineWithNonCanonicalWhitespaceIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testRouteStillServesPathWithQueryOnTheWire]' started.
+✅ [HTTPServer] 监听 127.0.0.1:53867 model=parser-boundary-test
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testRouteStillServesPathWithQueryOnTheWire]' passed (0.002 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTargetWithControlCharacterIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTargetWithControlCharacterIsRejected]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTargetWithFragmentIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTargetWithFragmentIsRejected]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTargetWithQueryIsPreservedExactlyAndPathDerivedOnce]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTargetWithQueryIsPreservedExactlyAndPathDerivedOnce]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTransferEncodingChunkedIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTransferEncodingChunkedIsRejected]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTransferEncodingIsRejectedEvenWhenEmpty]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTransferEncodingIsRejectedEvenWhenEmpty]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTransferEncodingRejectedOnTheWire]' started.
+✅ [HTTPServer] 监听 127.0.0.1:56435 model=parser-boundary-test
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testTransferEncodingRejectedOnTheWire]' passed (0.002 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testWhitespaceBeforeHeaderColonIsRejected]' started.
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testWhitespaceBeforeHeaderColonIsRejected]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testWhitespaceBeforeHeaderColonRejectedOnTheWire]' started.
+✅ [HTTPServer] 监听 127.0.0.1:57678 model=parser-boundary-test
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.HTTPRequestBoundaryTests testWhitespaceBeforeHeaderColonRejectedOnTheWire]' passed (0.001 seconds).
+Test Suite 'HTTPRequestBoundaryTests' passed at 2026-10-23 13:53:11.309.
+	 Executed 32 tests, with 0 failures (0 unexpected) in 0.028 (0.035) seconds
+Test Suite 'KVCacheSettingsTests' started at 2026-10-23 13:53:11.309.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testAffinePresetsMapToOfficialStrategies]' started.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testAffinePresetsMapToOfficialStrategies]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.KVCacheSettingsTests testCapacityMappingUsesOfficialDefaults]' started.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testCapacityMappingUsesOfficialDefaults]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.KVCacheSettingsTests testFullPrecisionIsTheDefaultStrategy]' started.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testFullPrecisionIsTheDefaultStrategy]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.KVCacheSettingsTests testModelConfigDecodesOptionalKVCache]' started.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testModelConfigDecodesOptionalKVCache]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.KVCacheSettingsTests testNilSettingsMapToNilConfiguration]' started.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testNilSettingsMapToNilConfiguration]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.KVCacheSettingsTests testPreservedPrefixRequiresCapacity]' started.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testPreservedPrefixRequiresCapacity]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.KVCacheSettingsTests testTurboPresetsMapToOfficialStrategies]' started.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testTurboPresetsMapToOfficialStrategies]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.KVCacheSettingsTests testUnknownStrategyFailsFast]' started.
+Test Case '-[SimiGoTests.KVCacheSettingsTests testUnknownStrategyFailsFast]' passed (0.000 seconds).
+Test Suite 'KVCacheSettingsTests' passed at 2026-10-23 13:53:11.314.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'LOCALBRequestAuthWiringTests' started at 2026-10-23 13:53:11.314.
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testBareChatCompletionsPathRequiresProofAndServesWithProof]' started.
+✅ [HTTPServer] 监听 127.0.0.1:53974 model=localb-b3-wiring-test
+2026-10-23 13:53:11.701427+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C20:1][0x7b849c65e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:11.753159+0800 SimiGo[65051:1656644] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C22:1][0x7b849c65e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:11.807698+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C24:1][0x7b849c65e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-ff0fe34e clientRequest=- agent=default session=openai-request:f3516cd7-792c-4c99-8121-879fa3dd37c9 branch=main
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testBareChatCompletionsPathRequiresProofAndServesWithProof]' passed (0.528 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testBranchOperationsAreDeniedForPairedInferenceClient]' started.
+✅ [HTTPServer] 监听 127.0.0.1:42129 model=localb-b3-wiring-test
+2026-10-23 13:53:12.284635+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C26:1][0x7b849c6860] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:12.335632+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C28:1][0x7b849c6860] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:12.385864+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C30:1][0x7b849c6860] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:12.437435+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C32:1][0x7b849c6860] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:12.487594+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C34:1][0x7b849c6860] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:12.539292+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C36:1][0x7b849c6860] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:12.591214+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C38:1][0x7b849c6860] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:12.645855+0800 SimiGo[65051:1656644] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C40:1][0x7b849c6860] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-ed598b96 clientRequest=- agent=default session=openai-request:af58b92f-e3c4-4a59-92e2-0a13b37a5868 branch=main
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testBranchOperationsAreDeniedForPairedInferenceClient]' passed (0.838 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testChallengeEndpointRefusesPlaintextAndUnknownRoutes]' started.
+✅ [HTTPServer] 监听 127.0.0.1:44916 model=localb-b3-wiring-test
+2026-10-23 13:53:13.131128+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C44:1][0x7b849c6ae0] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testChallengeEndpointRefusesPlaintextAndUnknownRoutes]' passed (0.487 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testChallengeIsSingleUse]' started.
+✅ [HTTPServer] 监听 127.0.0.1:45501 model=localb-b3-wiring-test
+2026-10-23 13:53:13.612136+0800 SimiGo[65051:1656644] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C46:1][0x7b849c6d60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:13.667275+0800 SimiGo[65051:1656644] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C48:1][0x7b849c6d60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:13.718669+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C50:1][0x7b849c6d60] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testChallengeIsSingleUse]' passed (0.583 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testDefaultHostResolutionFailsClosedBeforeActivation]' started.
+✅ [HTTPServer] 监听 127.0.0.1:55645 model=localb-b3-wiring-test
+2026-10-23 13:53:14.225349+0800 SimiGo[65051:1656644] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C52:1][0x7b849c7260] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:14.282952+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C54:1][0x7b849c7260] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testDefaultHostResolutionFailsClosedBeforeActivation]' passed (0.558 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testDefaultHostResolutionServesAuthorizedRequests]' started.
+✅ [HTTPServer] 监听 127.0.0.1:54948 model=localb-b3-wiring-test
+2026-10-23 13:53:14.822697+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C56:1][0x7b849c7260] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:14.878371+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C58:1][0x7b849c7260] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:14.935295+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C60:1][0x7b849c7260] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:14.989149+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C62:1][0x7b849c7260] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-7ddb1e3e clientRequest=- agent=default session=openai-request:135ed85c-7fea-4ff1-bdc5-ae4961adf400 branch=main
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testDefaultHostResolutionServesAuthorizedRequests]' passed (0.721 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testDispatchHeadersAreBuiltOnlyFromSignedContentSemantics]' started.
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testDispatchHeadersAreBuiltOnlyFromSignedContentSemantics]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testIdentitySelectionViolationPredicate]' started.
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testIdentitySelectionViolationPredicate]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testMissingProofHeadersAndUnconfiguredAuthorizationFailClosed]' started.
+✅ [HTTPServer] 监听 127.0.0.1:50085 model=localb-b3-wiring-test
+2026-10-23 13:53:15.478494+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C64:1][0x7b849c74e0] Unable to extract cached certificates from the SSL_SESSION object
+✅ [HTTPServer] 监听 127.0.0.1:53884 model=localb-b3-wiring-test
+2026-10-23 13:53:15.877667+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C66:1][0x7b849c79e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:15.971838+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C68:1][0x7b849c79e0] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testMissingProofHeadersAndUnconfiguredAuthorizationFailClosed]' passed (1.004 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testProtectedRouteServesOnlyWithVerifiedProofOverTLS]' started.
+✅ [HTTPServer] 监听 127.0.0.1:52048 model=localb-b3-wiring-test
+2026-10-23 13:53:16.479382+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C70:1][0x7b849c79e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:16.533622+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C72:1][0x7b849c79e0] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testProtectedRouteServesOnlyWithVerifiedProofOverTLS]' passed (0.528 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testQueryAlterationIsRejectedAndExactQueryServes]' started.
+✅ [HTTPServer] 监听 127.0.0.1:51738 model=localb-b3-wiring-test
+2026-10-23 13:53:17.008408+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C74:1][0x7b849c7c60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:17.065952+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C76:1][0x7b849c7c60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:17.119839+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C78:1][0x7b849c7c60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:17.175133+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C80:1][0x7b849c7c60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:17.228412+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C82:1][0x7b849c7c60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:17.281737+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C84:1][0x7b849c7c60] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testQueryAlterationIsRejectedAndExactQueryServes]' passed (0.746 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testRemoteForwardAllowlistPassesOnlySignedContentSemantics]' started.
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testRemoteForwardAllowlistPassesOnlySignedContentSemantics]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testRemoteProxyDefaultPathForwardsSignedQueryToUpstream]' started.
+✅ [HTTPServer] 监听 127.0.0.1:53850 model=cloud-openai
+2026-10-23 13:53:17.797664+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C86:1][0x7b849c7c60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:17.863529+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C88:1][0x7b849c7c60] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Remote] [EXECUTION] endpoint=/v1/chat/completions request=req-3611beca agent=default execution=req-3611beca
+2026-10-23 13:53:17.871804+0800 SimiGo[65051:1656671] [connection] nw_socket_output_finished [C89:2] shutdown(24, SHUT_WR) [57: Socket is not connected]
+2026-10-23 13:53:17.871958+0800 SimiGo[65051:1656671] [connection] nw_socket_handle_socket_event [C89:2] Socket SO_ERROR [54: Connection reset by peer]
+[SimiGo Remote] [COMPLETE] endpoint=/v1/chat/completions status=200 bytes=11 duration=0.004s agent=default execution=req-3611beca
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testRemoteProxyDefaultPathForwardsSignedQueryToUpstream]' passed (0.632 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testRoutePolicyDeniesBranchOperationsExplicitly]' started.
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testRoutePolicyDeniesBranchOperationsExplicitly]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testSignedBodyReachesInferenceEndpoint]' started.
+✅ [HTTPServer] 监听 127.0.0.1:47292 model=localb-b3-wiring-test
+2026-10-23 13:53:18.375865+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C92:1][0x7b846d02e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:18.427132+0800 SimiGo[65051:1656644] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C94:1][0x7b846d02e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-5e115b87 clientRequest=- agent=default session=openai-request:d59601a7-7147-4dc8-8fe3-82b66ccf64ee branch=main
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testSignedBodyReachesInferenceEndpoint]' passed (0.509 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testSignedJSONIdentityFieldsStillServe]' started.
+✅ [HTTPServer] 监听 127.0.0.1:43690 model=localb-b3-wiring-test
+2026-10-23 13:53:18.903358+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C96:1][0x7b846d0560] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:18.958821+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C98:1][0x7b846d0560] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-440b3f96 clientRequest=- agent=signed-agent session=signed-session branch=signed-branch
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testSignedJSONIdentityFieldsStillServe]' passed (0.533 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testTamperedBodyIsRejected]' started.
+✅ [HTTPServer] 监听 127.0.0.1:56192 model=localb-b3-wiring-test
+2026-10-23 13:53:19.454638+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C100:1][0x7b846d07e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:19.517308+0800 SimiGo[65051:1656644] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C102:1][0x7b846d07e0] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testTamperedBodyIsRejected]' passed (0.557 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testUnknownRoutesFailClosedAndOpenRoutesStayOpen]' started.
+✅ [HTTPServer] 监听 127.0.0.1:57207 model=localb-b3-wiring-test
+2026-10-23 13:53:20.011842+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C104:1][0x7b846d0ce0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.063387+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C106:1][0x7b846d0ce0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.115016+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C108:1][0x7b846d0ce0] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testUnknownRoutesFailClosedAndOpenRoutesStayOpen]' passed (0.592 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testUnsignedIdentitySelectionHeadersAreRejectedOnProtectedRoute]' started.
+✅ [HTTPServer] 监听 127.0.0.1:44081 model=localb-b3-wiring-test
+2026-10-23 13:53:20.584201+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C110:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.636174+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C112:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.687237+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C114:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.739588+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C116:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.791492+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C118:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.845243+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C120:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.897311+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C122:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.948525+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C124:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:20.997738+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C126:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.047215+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C128:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.098265+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C130:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.149291+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C132:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.197244+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C134:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.249553+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C136:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.300977+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C138:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.352415+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C140:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.401149+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C142:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.453085+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C144:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.505470+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C146:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.560562+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C148:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.613071+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C150:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.664645+0800 SimiGo[65051:1656671] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C152:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-f96f6a56 clientRequest=- agent=default session=openai-request:8a308b66-7668-4063-9eae-166d2039452f branch=main
+2026-10-23 13:53:21.716571+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C154:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:21.769633+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C156:1][0x7b846d0f60] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-c737822e clientRequest=- agent=default session=openai-request:e1bb75f2-7779-49fe-987f-8e285df99edb branch=main
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testUnsignedIdentitySelectionHeadersAreRejectedOnProtectedRoute]' passed (1.659 seconds).
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testValidProofOverPlaintextCompatibilityPortIsRefused]' started.
+✅ [HTTPServer] 监听 127.0.0.1:48287 model=localb-b3-wiring-test
+2026-10-23 13:53:22.253516+0800 SimiGo[65051:1656634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C158:1][0x7b846d11e0] Unable to extract cached certificates from the SSL_SESSION object
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBRequestAuthWiringTests testValidProofOverPlaintextCompatibilityPortIsRefused]' passed (0.487 seconds).
+Test Suite 'LOCALBRequestAuthWiringTests' passed at 2026-10-23 13:53:22.290.
+	 Executed 20 tests, with 0 failures (0 unexpected) in 10.967 (10.976) seconds
+Test Suite 'LOCALBTransportWiringTests' started at 2026-10-23 13:53:22.291.
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testConfiguredTLSServerServesHealthWithPinnedSPKIAndProtectionHeader]' started.
+✅ [HTTPServer] 监听 127.0.0.1:50458 model=localb-wiring-test
+2026-10-23 13:53:22.733583+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C162:1][0x7b846d1460] Unable to extract cached certificates from the SSL_SESSION object
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testConfiguredTLSServerServesHealthWithPinnedSPKIAndProtectionHeader]' passed (0.478 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testExplicitPlaintextCompatibilityListenerServesMarkedResponses]' started.
+✅ [HTTPServer] 监听 127.0.0.1:56564 model=localb-wiring-test
+2026-10-23 13:53:23.211135+0800 SimiGo[65051:1656655] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C164:1][0x7b846d16e0] Unable to extract cached certificates from the SSL_SESSION object
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testExplicitPlaintextCompatibilityListenerServesMarkedResponses]' passed (0.482 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testFailClosedDecisionNotBypassedByPreviouslyCachedIdentity]' started.
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testFailClosedDecisionNotBypassedByPreviouslyCachedIdentity]' passed (0.734 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testFailClosedPropagatesOriginalStatusThroughStart]' started.
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testFailClosedPropagatesOriginalStatusThroughStart]' passed (0.934 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testLegacyModeRefusesLanBindAtListenerBoundary]' started.
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testLegacyModeRefusesLanBindAtListenerBoundary]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testLegacyPlaintextCompatModeServesMarkedResponses]' started.
+✅ [HTTPServer] 监听 127.0.0.1:55403 model=localb-wiring-test
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testLegacyPlaintextCompatModeServesMarkedResponses]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testSecureModeWithoutIdentityFailsClosedInsteadOfPlaintext]' started.
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testSecureModeWithoutIdentityFailsClosedInsteadOfPlaintext]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testTransportPolicyDecisionMatrix]' started.
+2026-10-23 13:53:24.926355+0800 SimiGo[65051:1656613] [seckey] SecKeyCopyExternalRepresentation failed: Error Domain=NSOSStatusErrorDomain Code=-25293 "CSSM Exception: -2147416032 CSSMERR_CSP_OPERATION_AUTH_DENIED" (errKCAuthFailed / errSecAuthFailed: / Authorization/Authentication failed.) UserInfo={numberOfErrorsDeep=0, NSDescription=CSSM Exception: -2147416032 CSSMERR_CSP_OPERATION_AUTH_DENIED}
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testTransportPolicyDecisionMatrix]' passed (0.308 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testTransportSecurityAttributesNeverGrantPlaintextPairingEligibility]' started.
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testTransportSecurityAttributesNeverGrantPlaintextPairingEligibility]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testWrongPinYieldsNoHTTPResponse]' started.
+✅ [HTTPServer] 监听 127.0.0.1:52400 model=localb-wiring-test
+2026-10-23 13:53:25.634104+0800 SimiGo[65051:1656635] [boringssl] boringssl_context_handle_fatal_alert(2843) [C169:1][0x7b846d1460] write alert, level: fatal, description: certificate unknown
+2026-10-23 13:53:25.634189+0800 SimiGo[65051:1656635] [boringssl] boringssl_context_error_print(2833) [C169:1][0x7b846d1460] Error: 530519710720:error:1000007d:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:/AppleInternal/Library/BuildRoots/4~CXsyugBD2_zqL9xt9Kw_SSGoXcW5oXkaz5c0XCQ/Library/Caches/com.apple.xbs/TemporaryDirectory.B1lL3j/Sources/boringssl/ssl/handshake.cc:401:
+2026-10-23 13:53:25.637919+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_handshake_incomplete(260) [C169:1][0x7b846d1460] SSL library error
+2026-10-23 13:53:25.637970+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_handshake_error_print(47) [C169:1][0x7b846d1460] Error: 530519710720:error:1000007d:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:/AppleInternal/Library/BuildRoots/4~CXsyugBD2_zqL9xt9Kw_SSGoXcW5oXkaz5c0XCQ/Library/Caches/com.apple.xbs/TemporaryDirectory.B1lL3j/Sources/boringssl/ssl/handshake.cc:401:
+2026-10-23 13:53:25.637993+0800 SimiGo[65051:1656635] [boringssl] nw_protocol_boringssl_handshake_negotiate_proceed(940) [C169:1][0x7b846d1460] handshake failed at state 12288: not completed
+2026-10-23 13:53:25.638179+0800 SimiGo[65051:1656635] [connection] nw_endpoint_flow_failed_with_error [C169 127.0.0.1:52400 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] already failing, returning
+2026-10-23 13:53:25.638265+0800 SimiGo[65051:1656635] [connection] nw_endpoint_flow_failed_with_error [C169 127.0.0.1:52400 waiting parent-flow (satisfied (Path is satisfied), viable, interface: lo0)] already failing, returning
+2026-10-23 13:53:25.638344+0800 SimiGo[65051:1656635] [boringssl] boringssl_context_handle_fatal_alert(2843) [C170:1][0x7b846d16e0] read alert, level: fatal, description: certificate unknown
+2026-10-23 13:53:25.638474+0800 SimiGo[65051:1656635] [connection] nw_read_request_report [C170] Receive failed with error "misc. bad certificate"
+2026-10-23 13:53:25.638510+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_handshake_incomplete(260) [C170:1][0x7b846d16e0] SSL library error
+2026-10-23 13:53:25.638527+0800 SimiGo[65051:1656635] [boringssl] boringssl_session_handshake_error_print(47) [C170:1][0x7b846d16e0] Error: 530519710720:error:10000416:SSL routines:OPENSSL_internal:SSLV3_ALERT_CERTIFICATE_UNKNOWN:/AppleInternal/Library/BuildRoots/4~CXsyugBD2_zqL9xt9Kw_SSGoXcW5oXkaz5c0XCQ/Library/Caches/com.apple.xbs/TemporaryDirectory.B1lL3j/Sources/boringssl/ssl/tls_record.cc:579:SSL alert number 46
+2026-10-23 13:53:25.638538+0800 SimiGo[65051:1656635] [boringssl] nw_protocol_boringssl_handshake_negotiate_proceed(940) [C170:1][0x7b846d16e0] handshake failed at state 12288: not completed
+2026-10-23 13:53:25.638680+0800 SimiGo[65051:1656635] [connection] nw_endpoint_flow_failed_with_error [C170 127.0.0.1:53112 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0, scoped)] already failing, returning
+2026-10-23 13:53:25.638984+0800 SimiGo[65051:1656635] [connection] nw_connection_copy_protocol_metadata_internal_block_invoke [C170] Client called nw_connection_copy_protocol_metadata_internal on unconnected nw_connection
+2026-10-23 13:53:25.639014+0800 SimiGo[65051:1656635] [connection] nw_connection_copy_protocol_metadata_internal_block_invoke [C170] Client called nw_connection_copy_protocol_metadata_internal on unconnected nw_connection
+2026-10-23 13:53:25.639027+0800 SimiGo[65051:1656635] [connection] nw_connection_copy_protocol_metadata_internal_block_invoke [C170] Client called nw_connection_copy_protocol_metadata_internal on unconnected nw_connection
+2026-10-23 13:53:25.639038+0800 SimiGo[65051:1656635] [connection] nw_connection_copy_connected_local_endpoint_block_invoke [C170] Client called nw_connection_copy_connected_local_endpoint on unconnected nw_connection
+2026-10-23 13:53:25.639049+0800 SimiGo[65051:1656635] [connection] nw_connection_copy_connected_remote_endpoint_block_invoke [C170] Client called nw_connection_copy_connected_remote_endpoint on unconnected nw_connection
+2026-10-23 13:53:25.639166+0800 SimiGo[65051:1656635] [connection] [C170 127.0.0.1:53112 tcp, local: 127.0.0.1:52400, tls, server, prohibit joining protocols, definite, attribution: developer] is already cancelled, ignoring cancel
+2026-10-23 13:53:25.639227+0800 SimiGo[65051:1656635] [connection] [C170 127.0.0.1:53112 tcp, local: 127.0.0.1:52400, tls, server, prohibit joining protocols, definite, attribution: developer] is already cancelled, ignoring cancel
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.LOCALBTransportWiringTests testWrongPinYieldsNoHTTPResponse]' passed (0.439 seconds).
+Test Suite 'LOCALBTransportWiringTests' passed at 2026-10-23 13:53:25.672.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 3.378 (3.381) seconds
+Test Suite 'LifecycleRaceTests' started at 2026-10-23 13:53:25.672.
+Test Case '-[SimiGoTests.LifecycleRaceTests testGenerateSurvivesSuspendIfIdleHammeringAndResumeRoundtrip]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/LifecycleRaceTests.swift:19: -[SimiGoTests.LifecycleRaceTests testGenerateSurvivesSuspendIfIdleHammeringAndResumeRoundtrip] : Test skipped - 生命周期竞态：需 SIMIGO_LIFECYCLE_RACE=1 且本机存在权重
+Test Case '-[SimiGoTests.LifecycleRaceTests testGenerateSurvivesSuspendIfIdleHammeringAndResumeRoundtrip]' skipped (0.105 seconds).
+Test Case '-[SimiGoTests.LifecycleRaceTests testLoadSessionCacheWithoutModelDoesNotPoisonState]' started.
+Test Case '-[SimiGoTests.LifecycleRaceTests testLoadSessionCacheWithoutModelDoesNotPoisonState]' passed (0.002 seconds).
+Test Suite 'LifecycleRaceTests' passed at 2026-10-23 13:53:25.780.
+	 Executed 2 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.107 (0.108) seconds
+Test Suite 'MemoryReliefRealModelTests' started at 2026-10-23 13:53:25.781.
+Test Case '-[SimiGoTests.MemoryReliefRealModelTests testSuspendReleasesResidentModelMemory]' started.
+✅ [HTTPServer] 监听 127.0.0.1:0 model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[MEM-RELIEF] baseline=102MiB loaded=16631MiB afterSuspend=149MiB released=16481MiB
+🛑 [HTTPServer] listener stopped
+[MEM-RELIEF] afterStop=193MiB
+Test Case '-[SimiGoTests.MemoryReliefRealModelTests testSuspendReleasesResidentModelMemory]' passed (15.495 seconds).
+Test Suite 'MemoryReliefRealModelTests' passed at 2026-10-23 13:53:41.276.
+	 Executed 1 test, with 0 failures (0 unexpected) in 15.495 (15.495) seconds
+Test Suite 'MessagesConversionEquivalenceTests' started at 2026-10-23 13:53:41.276.
+Test Case '-[SimiGoTests.MessagesConversionEquivalenceTests testAnyConversionHandlesNSNumberVariants]' started.
+Test Case '-[SimiGoTests.MessagesConversionEquivalenceTests testAnyConversionHandlesNSNumberVariants]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.MessagesConversionEquivalenceTests testAnyConversionMatchesDecoderPathAcrossTypeCorpus]' started.
+Test Case '-[SimiGoTests.MessagesConversionEquivalenceTests testAnyConversionMatchesDecoderPathAcrossTypeCorpus]' passed (0.006 seconds).
+Test Suite 'MessagesConversionEquivalenceTests' passed at 2026-10-23 13:53:41.284.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.007 (0.008) seconds
+Test Suite 'OversizedRuntimeE2ETests' started at 2026-10-23 13:53:41.285.
+Test Case '-[SimiGoTests.OversizedRuntimeE2ETests testClientCancellationAbortsTurnAndStateStaysConsistent]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/OversizedRuntimeE2ETests.swift:28: -[SimiGoTests.OversizedRuntimeE2ETests testClientCancellationAbortsTurnAndStateStaysConsistent] : Test skipped - oversized model not present
+Test Case '-[SimiGoTests.OversizedRuntimeE2ETests testClientCancellationAbortsTurnAndStateStaysConsistent]' skipped (0.002 seconds).
+Test Case '-[SimiGoTests.OversizedRuntimeE2ETests testOversizedChatCompletionEndToEnd]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/OversizedRuntimeE2ETests.swift:96: -[SimiGoTests.OversizedRuntimeE2ETests testOversizedChatCompletionEndToEnd] : Test skipped - oversized model not present: /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/NOT-PRESENT
+Test Case '-[SimiGoTests.OversizedRuntimeE2ETests testOversizedChatCompletionEndToEnd]' skipped (0.002 seconds).
+Test Suite 'OversizedRuntimeE2ETests' passed at 2026-10-23 13:53:41.289.
+	 Executed 2 tests, with 2 tests skipped and 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'PrefixBoundaryHashEquivalenceTests' started at 2026-10-23 13:53:41.289.
+Test Case '-[SimiGoTests.PrefixBoundaryHashEquivalenceTests testDedupKeyByteIdenticalForSameCountAndHash]' started.
+Test Case '-[SimiGoTests.PrefixBoundaryHashEquivalenceTests testDedupKeyByteIdenticalForSameCountAndHash]' passed (0.004 seconds).
+Test Case '-[SimiGoTests.PrefixBoundaryHashEquivalenceTests testDegenerateTokenCountsFollowProductionGuards]' started.
+Test Case '-[SimiGoTests.PrefixBoundaryHashEquivalenceTests testDegenerateTokenCountsFollowProductionGuards]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.PrefixBoundaryHashEquivalenceTests testDuplicatePrefixesProduceIdenticalBoundaryHashes]' started.
+Test Case '-[SimiGoTests.PrefixBoundaryHashEquivalenceTests testDuplicatePrefixesProduceIdenticalBoundaryHashes]' passed (0.003 seconds).
+Test Case '-[SimiGoTests.PrefixBoundaryHashEquivalenceTests testPerBoundaryHashEquivalenceAcrossEdgeCorpus]' started.
+Test Case '-[SimiGoTests.PrefixBoundaryHashEquivalenceTests testPerBoundaryHashEquivalenceAcrossEdgeCorpus]' passed (0.287 seconds).
+Test Suite 'PrefixBoundaryHashEquivalenceTests' passed at 2026-10-23 13:53:41.584.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.294 (0.295) seconds
+Test Suite 'PrefixPoolDailyPathE2ETests' started at 2026-10-23 13:53:41.584.
+Test Case '-[SimiGoTests.PrefixPoolDailyPathE2ETests testF3DeviceAcceptanceBattery]' started.
+✅ [HTTPServer] 监听 127.0.0.1:18231 model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+2026-10-23 13:53:44.266499+0800 SimiGo[65051:1657097] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C172:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:44.315847+0800 SimiGo[65051:1657099] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C174:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:44.368272+0800 SimiGo[65051:1656752] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C176:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:44.420439+0800 SimiGo[65051:1657099] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C178:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-1e28ea58 clientRequest=- agent=default session=f3-warmup branch=main
+2026-10-23 13:53:45.411516+0800 SimiGo[65051:1656752] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C180:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:53:45.457750+0800 SimiGo[65051:1657101] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C182:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-6b1737ba clientRequest=- agent=default session=f3-parent branch=main
+2026-10-23 13:54:01.395856+0800 SimiGo[65051:1657097] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C184:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:54:01.448809+0800 SimiGo[65051:1657097] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C186:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-a4af1e8e clientRequest=- agent=default session=f3-parent branch=main
+2026-10-23 13:54:06.305121+0800 SimiGo[65051:1656752] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C188:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:54:06.356565+0800 SimiGo[65051:1657095] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C190:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-afb6fddd clientRequest=- agent=default session=f3-child branch=main
+2026-10-23 13:54:09.024550+0800 SimiGo[65051:1656752] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C192:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:54:09.073908+0800 SimiGo[65051:1656752] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C194:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-de98170b clientRequest=- agent=default session=f3-parent branch=main
+2026-10-23 13:54:12.901965+0800 SimiGo[65051:1657095] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C196:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:54:12.956961+0800 SimiGo[65051:1657099] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C198:1][0x7b846d20e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-3a0b3feb clientRequest=- agent=default session=f3-child branch=main
+Test Case '-[SimiGoTests.PrefixPoolDailyPathE2ETests testF3DeviceAcceptanceBattery]' passed (37.413 seconds).
+Test Case '-[SimiGoTests.PrefixPoolDailyPathE2ETests testNewSessionWithCommittedHistoryServesFromPool]' started.
+🛑 [HTTPServer] listener stopped
+✅ [HTTPServer] 监听 127.0.0.1:18231 model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+2026-10-23 13:54:21.998462+0800 SimiGo[65051:1657567] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C200:1][0x7b849c6fe0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:54:22.047586+0800 SimiGo[65051:1657569] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C202:1][0x7b849c6fe0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-088f760e clientRequest=- agent=default session=pool-battery-warmup branch=main
+2026-10-23 13:54:22.862708+0800 SimiGo[65051:1657569] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C204:1][0x7b849c6fe0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:54:22.911859+0800 SimiGo[65051:1657567] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C206:1][0x7b849c6fe0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-26d73489 clientRequest=- agent=default session=pool-battery-A branch=main
+2026-10-23 13:54:37.916788+0800 SimiGo[65051:1657095] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C208:1][0x7b849c6fe0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:54:37.966903+0800 SimiGo[65051:1657095] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C210:1][0x7b849c6fe0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-88c7db67 clientRequest=- agent=default session=pool-battery-B branch=main
+2026-10-23 13:54:44.427471+0800 SimiGo[65051:1657571] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C212:1][0x7b849c6fe0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-23 13:54:44.481558+0800 SimiGo[65051:1657095] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C214:1][0x7b849c6fe0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [EXECUTION] endpoint=chat.completions request=req-45144f91 clientRequest=- agent=default session=pool-battery-C branch=main
+Test Case '-[SimiGoTests.PrefixPoolDailyPathE2ETests testNewSessionWithCommittedHistoryServesFromPool]' passed (32.833 seconds).
+Test Suite 'PrefixPoolDailyPathE2ETests' passed at 2026-10-23 13:54:51.836.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 70.247 (70.251) seconds
+Test Suite 'PrefixSeedTruncationTests' started at 2026-10-23 13:54:51.836.
+Test Case '-[SimiGoTests.PrefixSeedTruncationTests testTruncateRejectsBeyondArtifact]' started.
+Test Case '-[SimiGoTests.PrefixSeedTruncationTests testTruncateRejectsBeyondArtifact]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.PrefixSeedTruncationTests testTruncateToClaimedBoundary]' started.
+Test Case '-[SimiGoTests.PrefixSeedTruncationTests testTruncateToClaimedBoundary]' passed (0.006 seconds).
+Test Suite 'PrefixSeedTruncationTests' passed at 2026-10-23 13:54:51.843.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.007 (0.007) seconds
+Test Suite 'ResponsesSplitEnvelopeTests' started at 2026-10-23 13:54:51.843.
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testEmptyInputSplitsEmpty]' started.
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testEmptyInputSplitsEmpty]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testLeadingSystemAndDeveloperGoToPreamble]' started.
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testLeadingSystemAndDeveloperGoToPreamble]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testMissingOrNonStringRoleFallsToHistory]' started.
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testMissingOrNonStringRoleFallsToHistory]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testNonObjectMessagesFallToHistory]' started.
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testNonObjectMessagesFallToHistory]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testSystemAfterHistoryStartStaysInHistory]' started.
+Test Case '-[SimiGoTests.ResponsesSplitEnvelopeTests testSystemAfterHistoryStartStaysInHistory]' passed (0.000 seconds).
+Test Suite 'ResponsesSplitEnvelopeTests' passed at 2026-10-23 13:54:51.848.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.005) seconds
+Test Suite 'RollForwardExperimentTests' started at 2026-10-23 13:54:51.848.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testCheckpointMetadataFingerprintRoundTrip]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testCheckpointMetadataFingerprintRoundTrip]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testConditionalRestoreGate]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testConditionalRestoreGate]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testEstimateDeltaTokens]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testEstimateDeltaTokens]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testEstimateDeltaTokensCJK]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testEstimateDeltaTokensCJK]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testMessageRenderCompatibleDistinguishesNullFromStringNull]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testMessageRenderCompatibleDistinguishesNullFromStringNull]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testMessageRenderCompatibleNormalizesArgumentsStringVsObject]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testMessageRenderCompatibleNormalizesArgumentsStringVsObject]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardCompatible]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardCompatible]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLineAgreesWithCompatibilityVerdict]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLineAgreesWithCompatibilityVerdict]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLineHistoryCount]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLineHistoryCount]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLinePointsAtDivergentField]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLinePointsAtDivergentField]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLineReportsMissingField]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLineReportsMissingField]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLineUnifiesNormalizationWithVerdict]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardDiffLineUnifiesNormalizationWithVerdict]' passed (0.000 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollForwardPhaseA]' started.
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/BranchFork/RollForwardExperimentTests.swift:95: -[SimiGoTests.RollForwardExperimentTests testRollForwardPhaseA] : Test skipped - roll-forward Phase A：需 SIMIGO_ROLLFWD_EXP=1 且本机存在权重
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollForwardPhaseA]' skipped (0.003 seconds).
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardRiskDetector]' started.
+Test Case '-[SimiGoTests.RollForwardExperimentTests testRollforwardRiskDetector]' passed (0.000 seconds).
+Test Suite 'RollForwardExperimentTests' passed at 2026-10-23 13:54:51.863.
+	 Executed 14 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.010 (0.015) seconds
+Test Suite 'RuntimeLifecycleGateTests' started at 2026-10-23 13:54:51.863.
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testCancelAndReleaseRaceKeepsGateUsable]' started.
+🛑 [HTTPServer] listener stopped
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testCancelAndReleaseRaceKeepsGateUsable]' passed (4.793 seconds).
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testCancelledWaiterThrowsAndGateStaysUsable]' started.
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testCancelledWaiterThrowsAndGateStaysUsable]' passed (0.206 seconds).
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testSecondOperationWaitsUntilFirstReleases]' started.
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testSecondOperationWaitsUntilFirstReleases]' passed (0.205 seconds).
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testStressRandomCancellationRounds]' started.
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testStressRandomCancellationRounds]' passed (5.598 seconds).
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testWithLockVoidSkipsOperationWhenCancelled]' started.
+Test Case '-[SimiGoTests.RuntimeLifecycleGateTests testWithLockVoidSkipsOperationWhenCancelled]' passed (0.206 seconds).
+Test Suite 'RuntimeLifecycleGateTests' passed at 2026-10-23 13:55:02.873.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 11.007 (11.010) seconds
+Test Suite 'RuntimeTransitionRuleTests' started at 2026-10-23 13:55:02.873.
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testCancelPipeReachableFromAnyNonReleasedState]' started.
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testCancelPipeReachableFromAnyNonReleasedState]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testCreatedToRunningIsLegal]' started.
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testCreatedToRunningIsLegal]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testNormalLadderIsLegal]' started.
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testNormalLadderIsLegal]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testSSEDirectDispatchEdgeIsLegal]' started.
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testSSEDirectDispatchEdgeIsLegal]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testTableShortcutsAndTerminalStickiness]' started.
+Test Case '-[SimiGoTests.RuntimeTransitionRuleTests testTableShortcutsAndTerminalStickiness]' passed (0.001 seconds).
+Test Suite 'RuntimeTransitionRuleTests' passed at 2026-10-23 13:55:02.879.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'SessionCachePersistenceTests' started at 2026-10-23 13:55:02.879.
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testAssistantToJSONContentOnly]' started.
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testAssistantToJSONContentOnly]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testAssistantToJSONWithToolCallsRoundTripsThroughReingest]' started.
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testAssistantToJSONWithToolCallsRoundTripsThroughReingest]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testCacheFileNameFlattensStorageKey]' started.
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testCacheFileNameFlattensStorageKey]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testSafetensorsSaveReceiptMatchesIndependentDigest]' started.
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testSafetensorsSaveReceiptMatchesIndependentDigest]' passed (0.003 seconds).
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testSessionCacheMetadataCodableRoundTrip]' started.
+Test Case '-[SimiGoTests.SessionCachePersistenceTests testSessionCacheMetadataCodableRoundTrip]' passed (0.001 seconds).
+Test Suite 'SessionCachePersistenceTests' passed at 2026-10-23 13:55:02.887.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.007 (0.009) seconds
+Test Suite 'SessionGenerationGateMultiKeyTests' started at 2026-10-23 13:55:02.888.
+Test Case '-[SimiGoTests.SessionGenerationGateMultiKeyTests testMultiKeyTransactionBlocksBothSingleKeys]' started.
+Test Case '-[SimiGoTests.SessionGenerationGateMultiKeyTests testMultiKeyTransactionBlocksBothSingleKeys]' passed (0.103 seconds).
+Test Case '-[SimiGoTests.SessionGenerationGateMultiKeyTests testOppositeMultiKeyOrderDoesNotDeadlock]' started.
+Test Case '-[SimiGoTests.SessionGenerationGateMultiKeyTests testOppositeMultiKeyOrderDoesNotDeadlock]' passed (0.045 seconds).
+Test Suite 'SessionGenerationGateMultiKeyTests' passed at 2026-10-23 13:55:03.037.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.148 (0.149) seconds
+Test Suite 'StorageRetentionTests' started at 2026-10-23 13:55:03.037.
+Test Case '-[SimiGoTests.StorageRetentionTests testBranchCheckpointByteBudgetKeepsActiveAndDropsOldestOrphan]' started.
+Test Case '-[SimiGoTests.StorageRetentionTests testBranchCheckpointByteBudgetKeepsActiveAndDropsOldestOrphan]' passed (0.005 seconds).
+Test Case '-[SimiGoTests.StorageRetentionTests testExactBudgetBoundaryTakesPreBudgetExit]' started.
+Test Case '-[SimiGoTests.StorageRetentionTests testExactBudgetBoundaryTakesPreBudgetExit]' passed (0.002 seconds).
+Test Case '-[SimiGoTests.StorageRetentionTests testOverBudgetStillDecodesAndRemovesMalformedPairs]' started.
+Test Case '-[SimiGoTests.StorageRetentionTests testOverBudgetStillDecodesAndRemovesMalformedPairs]' passed (0.004 seconds).
+Test Case '-[SimiGoTests.StorageRetentionTests testPrefixPoolPhysicalByteBudgetEvictsLRU]' started.
+Test Case '-[SimiGoTests.StorageRetentionTests testPrefixPoolPhysicalByteBudgetEvictsLRU]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.StorageRetentionTests testUnderBudgetSkipsMetadataDecodeAndKeepsMalformedPairs]' started.
+Test Case '-[SimiGoTests.StorageRetentionTests testUnderBudgetSkipsMetadataDecodeAndKeepsMalformedPairs]' passed (0.003 seconds).
+Test Suite 'StorageRetentionTests' passed at 2026-10-23 13:55:03.054.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.015 (0.017) seconds
+Test Suite 'ToolGovernanceTests' started at 2026-10-23 13:55:03.054.
+Test Case '-[SimiGoTests.ToolGovernanceTests testDuplicateRequestedIsAnomaly]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testDuplicateRequestedIsAnomaly]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testPostDispatchCancelFailsWithCancelledCode]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testPostDispatchCancelFailsWithCancelledCode]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testPreDispatchCancelRejectsWithCancelledCode]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testPreDispatchCancelRejectsWithCancelledCode]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testRejectedToDispatchedIsIllegal]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testRejectedToDispatchedIsIllegal]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testRequestedToFailedIsIllegal]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testRequestedToFailedIsIllegal]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testRequestedToResultIsIllegalAndStateUnchanged]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testRequestedToResultIsIllegalAndStateUnchanged]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testResultReobservationIsNoOp]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testResultReobservationIsNoOp]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testTerminalStatesAreSticky]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testTerminalStatesAreSticky]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testUnknownToolCallIdResultIsAnomaly]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testUnknownToolCallIdResultIsAnomaly]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.ToolGovernanceTests testValidatedPathRequestedValidatedDispatchedResult]' started.
+Test Case '-[SimiGoTests.ToolGovernanceTests testValidatedPathRequestedValidatedDispatchedResult]' passed (0.001 seconds).
+Test Suite 'ToolGovernanceTests' passed at 2026-10-23 13:55:03.065.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.008 (0.011) seconds
+Test Suite 'TypesBridgeTests' started at 2026-10-23 13:55:03.065.
+Test Case '-[SimiGoTests.TypesBridgeTests testArgumentsJSONEmptyArgumentsRendersEmptyObject]' started.
+Test Case '-[SimiGoTests.TypesBridgeTests testArgumentsJSONEmptyArgumentsRendersEmptyObject]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.TypesBridgeTests testArgumentsJSONMatchesOnDemandSerialization]' started.
+Test Case '-[SimiGoTests.TypesBridgeTests testArgumentsJSONMatchesOnDemandSerialization]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.TypesBridgeTests testArgumentsJSONStableAndRoundTrips]' started.
+Test Case '-[SimiGoTests.TypesBridgeTests testArgumentsJSONStableAndRoundTrips]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.TypesBridgeTests testCodableContractKeepsThreeFields]' started.
+Test Case '-[SimiGoTests.TypesBridgeTests testCodableContractKeepsThreeFields]' passed (0.001 seconds).
+Test Case '-[SimiGoTests.TypesBridgeTests testDecodesLegacyThreeFieldPayload]' started.
+Test Case '-[SimiGoTests.TypesBridgeTests testDecodesLegacyThreeFieldPayload]' passed (0.001 seconds).
+Test Suite 'TypesBridgeTests' passed at 2026-10-23 13:55:03.071.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.004 (0.006) seconds
+Test Suite 'SimiGoTests.xctest' passed at 2026-10-23 13:55:03.071.
+	 Executed 202 tests, with 13 tests skipped and 0 failures (0 unexpected) in 112.382 (112.455) seconds
+Test Suite 'All tests' passed at 2026-10-23 13:55:03.071.
+	 Executed 202 tests, with 13 tests skipped and 0 failures (0 unexpected) in 112.382 (112.456) seconds
+2026-10-23 13:55:03.426 xcodebuild[65042:1656465] [MT] IDETestOperationsObserverDebug: 113.452 elapsed -- Testing started completed.
+2026-10-23 13:55:03.427 xcodebuild[65042:1656465] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-23 13:55:03.427 xcodebuild[65042:1656465] [MT] IDETestOperationsObserverDebug: 113.452 sec, +113.452 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Logs/Test/Test-SimiGo-2026.10.23_13-53-07-+0800.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started

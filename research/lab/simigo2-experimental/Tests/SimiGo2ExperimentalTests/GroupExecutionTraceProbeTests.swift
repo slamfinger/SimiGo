@@ -1,0 +1,98 @@
+import XCTest
+@testable import SimiGo2Experimental
+
+final class GroupExecutionTraceProbeTests: XCTestCase {
+    private func event(
+        _ sequence: Int,
+        _ path: String,
+        _ layer: Int
+    ) -> ExecutionTraceEvent {
+        ExecutionTraceEvent(
+            kind: .layerEntered,
+            sequence: sequence,
+            modulePath: path,
+            decoderLayer: layer
+        )
+    }
+
+    private func syntheticTrace(passes: Int, modules: Int) -> [ExecutionTraceEvent] {
+        var events: [ExecutionTraceEvent] = []
+        var sequence = 0
+        for _ in 0..<passes {
+            for layer in 0..<modules {
+                sequence += 1
+                events.append(
+                    event(
+                        sequence,
+                        "model.layers.\(layer).mlp.switch_mlp.down_proj",
+                        layer
+                    )
+                )
+            }
+        }
+        return events
+    }
+
+    func testDecoderLayerParsing() {
+        XCTAssertEqual(
+            GroupExecutionTraceProbe.decoderLayer(
+                fromPath: "model.layers.17.mlp.switch_mlp.down_proj"
+            ),
+            17
+        )
+        XCTAssertEqual(
+            GroupExecutionTraceProbe.decoderLayer(fromPath: "model.layers.0.mlp.down_proj"),
+            0
+        )
+        XCTAssertEqual(
+            GroupExecutionTraceProbe.decoderLayer(fromPath: "model.embed_tokens"),
+            -1
+        )
+    }
+
+    func testPassCountCountsLayerZeroEvents() {
+        let trace = syntheticTrace(passes: 3, modules: 4)
+        XCTAssertEqual(GroupExecutionTraceProbe.passCount(events: trace), 3)
+        XCTAssertEqual(GroupExecutionTraceProbe.passCount(events: []), 0)
+
+        var missingLayerZero = syntheticTrace(passes: 2, modules: 4)
+        missingLayerZero.removeAll { $0.decoderLayer == 0 }
+        XCTAssertEqual(GroupExecutionTraceProbe.passCount(events: missingLayerZero), 0)
+    }
+
+    func testTraceStabilityComparesModuleAndLayerStreams() {
+        let a = syntheticTrace(passes: 2, modules: 3)
+        var b = a
+        // identical streams but different sequence numbers
+        b = b.enumerated().map { index, e in
+            ExecutionTraceEvent(
+                kind: e.kind,
+                sequence: e.sequence + 100,
+                modulePath: e.modulePath,
+                decoderLayer: e.decoderLayer
+            )
+        }
+        XCTAssertTrue(GroupExecutionTraceProbe.tracesStable(a, b))
+        XCTAssertTrue(GroupExecutionTraceProbe.tracesStable(a, a))
+
+        // module change breaks stability
+        var c = a
+        c[1] = event(c[1].sequence, "model.layers.9.mlp.down_proj", 9)
+        XCTAssertFalse(GroupExecutionTraceProbe.tracesStable(a, c))
+
+        // length change breaks stability
+        XCTAssertFalse(GroupExecutionTraceProbe.tracesStable(a, Array(a.dropLast())))
+    }
+
+    func testEventBoxAppendsAndClears() {
+        let box = ExecutionTraceEventBox()
+        box.append(modulePath: "model.layers.0.mlp.down_proj", decoderLayer: 0)
+        box.append(modulePath: "model.layers.1.mlp.down_proj", decoderLayer: 1)
+        let snapshot = box.snapshot()
+        XCTAssertEqual(snapshot.count, 2)
+        XCTAssertEqual(snapshot.map(\.sequence), [1, 2])
+        XCTAssertEqual(snapshot.map(\.kind), [.layerEntered, .layerEntered])
+        box.clear()
+        XCTAssertEqual(box.snapshot().count, 0)
+    }
+}

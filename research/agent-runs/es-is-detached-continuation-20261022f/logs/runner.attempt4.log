@@ -1,0 +1,12 @@
+{"archived_attempt": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-detached-continuation-20261022f/attempts/aborted-20261022-073805Z"}
+{
+ "terminal_state": "OBSERVED",
+ "conditions": {
+  "WORLD-A": "OBSERVED",
+  "WORLD-B": "OBSERVED",
+  "N1-MISSING-SETTLEMENT": "OBSERVED",
+  "N2-INVALID-SIGNATURE-OR-BYTE-TAMPER": "OBSERVED",
+  "N3-DEPENDENCY-MISMATCH": "OBSERVED",
+  "N4-PREFIX-AND-CROSS-WORLD-AUDIT": "OBSERVED"
+ }
+}

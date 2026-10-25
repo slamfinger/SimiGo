@@ -1,0 +1,190 @@
+tant complex_t<T> max = complex_t<T>(
+  ^
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../utils.h:83:3: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+  inline static constexpr constant complex_t<T> min = complex_t<T>(
+  ^
+In file included from /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/steel_attention.metal:6:
+In file included from /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:3:
+In file included from /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/attn.h:6:
+In file included from /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/../../steel/attn/mma.h:11:
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/../../steel/utils/integral_constant.h:105:6: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+  if constexpr (start < stop) {
+     ^
+In file included from /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/steel_attention.metal:6:
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:361:16: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+            if constexpr (is_bool) {
+               ^
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:431:14: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+          if constexpr (BD >= 128) {
+             ^
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:441:14: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+          if constexpr (BD >= 128) {
+             ^
+11 warnings generated.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift:310:22: [1;33mwarning: [1;39mno calls to throwing functions occur within 'try' expression[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker\UnnecessaryEffectMarker]8;;\]
+[0;36m308 |[0;0m         // `recordPhase(.commit, .succeeded)` would leave the window the reviewer
+[0;36m309 |[0;0m         // named: a termination landing between the two statements.
+[0;36m310 |[0;0m         let commit = try session.commitDelivery(
+    [0;36m|[0;0m                      `- [1;33mwarning: [1;39mno calls to throwing functions occur within 'try' expression[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker\UnnecessaryEffectMarker]8;;\]
+[0;36m311 |[0;0m             isCancelled: { self.isCancelled() },
+[0;36m312 |[0;0m             finalize: {}
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/MLXSmallScaleChatHost.swift:151:44: [1;33mwarning: [1;39mconverting a value of type '@Sendable (ModelContext) async throws -> T' to type '@Sendable (ModelContext) async throws -> sending T' risks causing data races; this is an error in the Swift 6 language mode[0;0m
+[0;36m149 |[0;0m             throw HostError.notActive
+[0;36m150 |[0;0m         }
+[0;36m151 |[0;0m         return try await container.perform(body)
+    [0;36m|[0;0m                                            |- [1;33mwarning: [1;39mconverting a value of type '@Sendable (ModelContext) async throws -> T' to type '@Sendable (ModelContext) async throws -> sending T' risks causing data races; this is an error in the Swift 6 language mode[0;0m
+    [0;36m|[0;0m                                            `- [1;39mnote: [1;39mconverting a function typed value without a sending result as one with risks allowing actor-isolated values to escape their isolation domain through a result of an invocation of value[0;0m
+[0;36m152 |[0;0m     }
+[0;36m153 |[0;0m 
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/MLXSmallScaleChatHost.swift:352:19: [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m350 |[0;0m             try await body()
+[0;36m351 |[0;0m         }
+[0;36m352 |[0;0m         stateLock.withLock [4;39m{ inFlightTasks.insert(task) }[0;0m
+    [0;36m|[0;0m                   `- [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m353 |[0;0m         defer { stateLock.withLock { inFlightTasks.remove(task) } }
+[0;36m354 |[0;0m         let text = try await withTaskCancellationHandler {
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/MLXSmallScaleChatHost.swift:353:27: [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m351 |[0;0m         }
+[0;36m352 |[0;0m         stateLock.withLock { inFlightTasks.insert(task) }
+[0;36m353 |[0;0m         defer { stateLock.withLock [4;39m{ inFlightTasks.remove(task) }[0;0m }
+    [0;36m|[0;0m                           `- [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m354 |[0;0m         let text = try await withTaskCancellationHandler {
+[0;36m355 |[0;0m             try await task.value
+
+[#NoUsage]: <https://docs.swift.org/compiler/documentation/diagnostics/no-usage>
+[#UnnecessaryEffectMarker]: <https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker>
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:1030:27: [1;33mwarning: [1;39mresult of call to 'restore(_:request:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1028 |[0;0m       }
+[0;36m1029 |[0;0m       if let base = current {
+[0;36m1030 |[0;0m         try await runtime.restore(
+     [0;36m|[0;0m                           `- [1;33mwarning: [1;39mresult of call to 'restore(_:request:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1031 |[0;0m           base,
+[0;36m1032 |[0;0m           request: ExecutionRestoreRequest(
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:896:9: [1;33mwarning: [1;39mvariable 'created' was written to, but never read[0;0m
+ [0;36m894 |[0;0m     }
+ [0;36m895 |[0;0m 
+ [0;36m896 |[0;0m     var created = false
+     [0;36m|[0;0m         `- [1;33mwarning: [1;39mvariable 'created' was written to, but never read[0;0m
+ [0;36m897 |[0;0m     var current: ExecutionStateHandle?
+ [0;36m898 |[0;0m     var priorRepresentation: ExecutionRepresentation?
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:1367:9: [1;33mwarning: [1;39mresult of 'try?' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1365 |[0;0m       }
+[0;36m1366 |[0;0m       if let base = current {
+[0;36m1367 |[0;0m         [4;39mtry? await runtime.restore([0;0m
+     [0;36m|[0;0m         `- [1;33mwarning: [1;39mresult of 'try?' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1368 |[0;0m           base,
+[0;36m1369 |[0;0m           request: ExecutionRestoreRequest(
+
+[#NoUsage]: <https://docs.swift.org/compiler/documentation/diagnostics/no-usage>
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/F3BenefitProtocol.swift:132:14: [1;33mwarning: [1;39mconcurrently-executed local function 'canonicalParameters()' must be marked as '@Sendable'; this is an error in the Swift 6 language mode[0;0m
+[0;36m130 |[0;0m         let runtime = MLXPrefixCrossSessionCache(store: store, namespace: namespace)
+[0;36m131 |[0;0m 
+[0;36m132 |[0;0m         func canonicalParameters() -> GenerateParameters {
+    [0;36m|[0;0m              `- [1;33mwarning: [1;39mconcurrently-executed local function 'canonicalParameters()' must be marked as '@Sendable'; this is an error in the Swift 6 language mode[0;0m
+[0;36m133 |[0;0m             var parameters = GenerateParameters(maxTokens: maxTokens, temperature: 0)
+[0;36m134 |[0;0m             parameters.prefill.chunking = .remainder
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/F3BenefitProtocol.swift:184:14: [1;33mwarning: [1;39mconcurrently-executed local function 'seconds' must be marked as '@Sendable'; this is an error in the Swift 6 language mode[0;0m
+[0;36m182 |[0;0m         }
+[0;36m183 |[0;0m 
+[0;36m184 |[0;0m         func seconds(_ d: Duration) -> Double {
+    [0;36m|[0;0m              `- [1;33mwarning: [1;39mconcurrently-executed local function 'seconds' must be marked as '@Sendable'; this is an error in the Swift 6 language mode[0;0m
+[0;36m185 |[0;0m             Double(d.components.seconds)
+[0;36m186 |[0;0m                 + Double(d.components.attoseconds) / 1e18
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/G3KVAllocationGateway.swift:353:20: [1;33mwarning: [1;39mresult of call to 'adjudicate' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m351 |[0;0m     private func refuse(_ reason: String) -> KVCacheWriteDecision {
+[0;36m352 |[0;0m         if let domain = terminationDomainSnapshot {
+[0;36m353 |[0;0m             domain.adjudicate [4;39m{ latchTerminationLocked(reason) }[0;0m
+    [0;36m|[0;0m                    `- [1;33mwarning: [1;39mresult of call to 'adjudicate' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m354 |[0;0m         } else {
+[0;36m355 |[0;0m             latchTerminationLocked(reason)
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/G3KVAllocationGateway.swift:355:13: [1;33mwarning: [1;39mresult of call to 'latchTerminationLocked' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m353 |[0;0m             domain.adjudicate { latchTerminationLocked(reason) }
+[0;36m354 |[0;0m         } else {
+[0;36m355 |[0;0m             latchTerminationLocked(reason)
+    [0;36m|[0;0m             `- [1;33mwarning: [1;39mresult of call to 'latchTerminationLocked' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m356 |[0;0m         }
+[0;36m357 |[0;0m         return .refuse(reason: reason)
+
+[#NoUsage]: <https://docs.swift.org/compiler/documentation/diagnostics/no-usage>
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ExecutionBindingRegistry.swift:164:9: [1;33mwarning: [1;39mresult of call to 'appendTransitionLocked(from:state:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m162 |[0;0m             $0.executionID == executionID && $0.state == .active
+[0;36m163 |[0;0m         }) else { return }
+[0;36m164 |[0;0m         appendTransitionLocked(from: active, state: .superseded)
+    [0;36m|[0;0m         `- [1;33mwarning: [1;39mresult of call to 'appendTransitionLocked(from:state:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m165 |[0;0m     }
+[0;36m166 |[0;0m 
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift:424:40: [1;33mwarning: [1;39mresult of call to 'reserve(token:requestedID:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m422 |[0;0m         try await operationGate.withPermit { [self] in
+[0;36m423 |[0;0m             do {
+[0;36m424 |[0;0m                 try identityAllocator?.reserve(
+    [0;36m|[0;0m                                        `- [1;33mwarning: [1;39mresult of call to 'reserve(token:requestedID:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m425 |[0;0m                     token: "create:\(id.rawValue)", requestedID: id)
+[0;36m426 |[0;0m                 try Task.checkCancellation()
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift:455:36: [1;33mwarning: [1;39mresult of call to 'reserve(token:requestedID:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m453 |[0;0m     public func attach(_ state: ExecutionStateHandle) async throws -> ExecutionStateHandle {
+[0;36m454 |[0;0m         try await operationGate.withPermit { [self] in
+[0;36m455 |[0;0m             try identityAllocator?.reserve(
+    [0;36m|[0;0m                                    `- [1;33mwarning: [1;39mresult of call to 'reserve(token:requestedID:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m456 |[0;0m                 token: "attach:\(state.id.rawValue)", requestedID: state.id)
+[0;36m457 |[0;0m             if handles[state.id] != nil {
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift:507:36: [1;33mwarning: [1;39mresult of call to 'reserve(token:requestedID:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m505 |[0;0m         try await operationGate.withPermit { [self] in
+[0;36m506 |[0;0m             let parent = try guardKnown(request.parent.id)
+[0;36m507 |[0;0m             try identityAllocator?.reserve(
+    [0;36m|[0;0m                                    `- [1;33mwarning: [1;39mresult of call to 'reserve(token:requestedID:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m508 |[0;0m                 token: "fork:\(parent.id.rawValue):\(request.childID.rawValue)",
+[0;36m509 |[0;0m                 requestedID: request.childID)
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift:650:39: [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m648 |[0;0m                             // position, so any earlier uncertainty is resolved
+[0;36m649 |[0;0m                             // and the original retry behavior is preserved.
+[0;36m650 |[0;0m                             stateLock.withLock [4;39m{ bindingUncertain.remove(current.id) }[0;0m
+    [0;36m|[0;0m                                       `- [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m651 |[0;0m                         } catch let rollbackError {
+[0;36m652 |[0;0m                             // The physical rollback failed: the backend may
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift:657:39: [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m655 |[0;0m                             // Mark the correspondence uncertain (fail-closed)
+[0;36m656 |[0;0m                             // and keep BOTH failures visible.
+[0;36m657 |[0;0m                             stateLock.withLock [4;39m{ bindingUncertain.insert(current.id) }[0;0m
+    [0;36m|[0;0m                                       `- [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m658 |[0;0m                             throw RestoreCompensationFailure(
+[0;36m659 |[0;0m                                 commitFailure: String(describing: commitError),
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift:763:19: [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m761 |[0;0m     /// physical binding but the corresponding logical commit did not finish.
+[0;36m762 |[0;0m     func markBindingUncertain(_ id: ExecutionID) {
+[0;36m763 |[0;0m         stateLock.withLock [4;39m{ bindingUncertain.insert(id) }[0;0m
+    [0;36m|[0;0m                   `- [1;33mwarning: [1;39mresult of call to 'withLock' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m764 |[0;0m     }
+[0;36m765 |[0;0m 
+
+[#NoUsage]: <https://docs.swift.org/compiler/documentation/diagnostics/no-usage>
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/F1PrefillDiagnostics.swift:281:22: [1;33mwarning: [1;39mno calls to throwing functions occur within 'try' expression[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker\UnnecessaryEffectMarker]8;;\]
+[0;36m279 |[0;0m         let divergences = pairwise.compactMap { $0.firstDivergenceIndex }
+[0;36m280 |[0;0m         if let position = divergences.min() {
+[0;36m281 |[0;0m             margin = try await container.perform { context in
+    [0;36m|[0;0m                      `- [1;33mwarning: [1;39mno calls to throwing functions occur within 'try' expression[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker\UnnecessaryEffectMarker]8;;\]
+[0;36m282 |[0;0m                 let commonText = String(
+[0;36m283 |[0;0m                     texts[0].prefix(position > texts[0].count ? texts[0].count : position))
+
+[#UnnecessaryEffectMarker]: <https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker>
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/PersistentSRSRepresentation.swift:1460:48: [1;33mwarning: [1;39mwill never be executed[0;0m
+[0;36m1458 |[0;0m             }
+[0;36m1459 |[0;0m         }
+[0;36m1460 |[0;0m         if sameKeyCount > 1 { return .failure(.persistentDuplicateRecordState) }
+     [0;36m|[0;0m                         |                      `- [1;33mwarning: [1;39mwill never be executed[0;0m
+     [0;36m|[0;0m                         `- [1;39mnote: [1;39mcondition always evaluates to false[0;0m
+[0;36m1461 |[0;0m         return .success(())
+[0;36m1462 |[0;0m     }

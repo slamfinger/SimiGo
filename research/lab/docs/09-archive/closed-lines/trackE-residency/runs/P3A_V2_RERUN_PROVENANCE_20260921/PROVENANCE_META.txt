@@ -1,0 +1,8 @@
+# P3-A v2 rerun provenance capture
+date_utc: 2026-09-21T14:15:54Z
+git_head: 301e3f1ec766d237e91d8698b84530c62c9d3833
+git_dirty: 1 files
+simulator_sha256: 5dbc8cc04ac419782cd03ee6afbe59a74a759d1840d81f818510c6aed2015375
+python: Python 3.14.5
+command: python3 trackE-residency/residency_policy_simulator_v3.py (cwd=repo root)
+---

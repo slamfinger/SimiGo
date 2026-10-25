@@ -1,0 +1,13 @@
+status=STOPPED_IMPLEMENTATION_DEFECT
+attempt=3
+authorization=AUTHORIZED
+implementation_baseline=806dd3eea55c
+arms_attempted=C-A,C-B,C-C
+arms_completed_with_evaluator=C-A,C-B
+C-A=PARTIAL_SUCCESS_X1_ONLY
+C-B=FULL_SUCCESS_X1_X5
+C-C_old=STOPPED_INVALID_CONSTRUCTION_STATE
+C-C_fresh=NOT_RUN
+protocol_change=false
+implementation_change_during_run=false
+classification=INVALID_INCONCLUSIVE_IMPLEMENTATION_DEFECT

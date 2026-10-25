@@ -1,0 +1,627 @@
+{
+  "status": "PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.O6.PREFIX.PHASE.ATTRIBUTION.V1",
+  "boundary": "SEGMENT8_PREFIX8_VS_PREFIX64 / COMBINED_N3 / SMALL_SAMPLE / NO_EXECUTION_STATE_ACTION / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "segmentSize": 8,
+  "segmentCount": 6,
+  "prefixTokenLengths": [
+    8,
+    64
+  ],
+  "combinedSamplesPerPrefix": 3,
+  "prefixes": {
+    "8": {
+      "prefixTokenLength": 8,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "samples": [
+        {
+          "sourceId": "PHASE6H_B1",
+          "sourceArtifact": "mlx-segment-phase-replicate-p8-s8-b1.json",
+          "generatedTokenID": 419,
+          "overallPass": true,
+          "embedMs": 17.622041,
+          "logitsMs": 28.847375,
+          "generationTotalMs": 9704.687916,
+          "segmentTotalsMs": {
+            "materializeMs": 8595.799041,
+            "forwardMs": 995.0314979999999,
+            "releaseMs": 67.264999
+          },
+          "perLayerMeanMs": {
+            "materializeMs": 179.0791466875,
+            "forwardMs": 20.729822875,
+            "releaseMs": 1.4013541458333334
+          },
+          "releasePerTransitionMs": 11.210833166666667,
+          "segments": [
+            {
+              "forwardMs": 176.638833,
+              "layerRange": "0-7",
+              "materializeMs": 1429.817333,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.607833,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 163.556416,
+              "layerRange": "8-15",
+              "materializeMs": 1426.715917,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.996333,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 152.851458,
+              "layerRange": "16-23",
+              "materializeMs": 1433.157833,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.805666,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 161.906791,
+              "layerRange": "24-31",
+              "materializeMs": 1437.02225,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.459125,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 156.93025,
+              "layerRange": "32-39",
+              "materializeMs": 1436.861,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.633083,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 183.14775,
+              "layerRange": "40-47",
+              "materializeMs": 1432.224708,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.762959,
+              "segmentIndex": 5
+            }
+          ]
+        },
+        {
+          "sourceId": "PHASE6H_B2",
+          "sourceArtifact": "mlx-segment-phase-replicate-p8-s8-b2.json",
+          "generatedTokenID": 419,
+          "overallPass": true,
+          "embedMs": 17.3335,
+          "logitsMs": 14.105417,
+          "generationTotalMs": 9796.959917,
+          "segmentTotalsMs": {
+            "materializeMs": 8623.092084,
+            "forwardMs": 1074.6665,
+            "releaseMs": 67.636166
+          },
+          "perLayerMeanMs": {
+            "materializeMs": 179.64775175,
+            "forwardMs": 22.388885416666668,
+            "releaseMs": 1.4090867916666667
+          },
+          "releasePerTransitionMs": 11.272694333333334,
+          "segments": [
+            {
+              "forwardMs": 203.061958,
+              "layerRange": "0-7",
+              "materializeMs": 1436.763583,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.993208,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 167.228584,
+              "layerRange": "8-15",
+              "materializeMs": 1435.688875,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.493625,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 171.696458,
+              "layerRange": "16-23",
+              "materializeMs": 1434.833459,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.088875,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 174.513375,
+              "layerRange": "24-31",
+              "materializeMs": 1440.87475,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.593416,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 203.271125,
+              "layerRange": "32-39",
+              "materializeMs": 1434.628459,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.614125,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 154.895,
+              "layerRange": "40-47",
+              "materializeMs": 1440.302958,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.852917,
+              "segmentIndex": 5
+            }
+          ]
+        },
+        {
+          "sourceId": "PHASE6H_B3",
+          "sourceArtifact": "mlx-segment-phase-replicate-p8-s8-b3.json",
+          "generatedTokenID": 419,
+          "overallPass": true,
+          "embedMs": 17.875917,
+          "logitsMs": 31.468083,
+          "generationTotalMs": 9723.215542,
+          "segmentTotalsMs": {
+            "materializeMs": 8607.349584,
+            "forwardMs": 1000.953417,
+            "releaseMs": 65.45195799999999
+          },
+          "perLayerMeanMs": {
+            "materializeMs": 179.319783,
+            "forwardMs": 20.8531961875,
+            "releaseMs": 1.3635824583333331
+          },
+          "releasePerTransitionMs": 10.908659666666665,
+          "segments": [
+            {
+              "forwardMs": 159.187,
+              "layerRange": "0-7",
+              "materializeMs": 1431.974375,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.164208,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 148.804625,
+              "layerRange": "8-15",
+              "materializeMs": 1431.620959,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.964916,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 174.7235,
+              "layerRange": "16-23",
+              "materializeMs": 1441.117125,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.782084,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 183.59825,
+              "layerRange": "24-31",
+              "materializeMs": 1432.432625,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.960708,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 185.502208,
+              "layerRange": "32-39",
+              "materializeMs": 1437.426625,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.9925,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 149.137834,
+              "layerRange": "40-47",
+              "materializeMs": 1432.777875,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 10.587542,
+              "segmentIndex": 5
+            }
+          ]
+        }
+      ],
+      "generationTotalMs": {
+        "n": 3,
+        "meanMs": 9741.621125,
+        "medianMs": 9723.215542,
+        "minMs": 9704.687916,
+        "maxMs": 9796.959917,
+        "rangeMs": 92.27200099999936,
+        "stdevMs": 48.81193149541818
+      },
+      "materializeSumMs": {
+        "n": 3,
+        "meanMs": 8608.746903,
+        "medianMs": 8607.349584,
+        "minMs": 8595.799041,
+        "maxMs": 8623.092084,
+        "rangeMs": 27.29304299999967,
+        "stdevMs": 13.700070231235282
+      },
+      "forwardSumMs": {
+        "n": 3,
+        "meanMs": 1023.5504716666666,
+        "medianMs": 1000.953417,
+        "minMs": 995.0314979999999,
+        "maxMs": 1074.6665,
+        "rangeMs": 79.6350020000001,
+        "stdevMs": 44.366694102572566
+      },
+      "releaseSumMs": {
+        "n": 3,
+        "meanMs": 66.78437433333333,
+        "medianMs": 67.264999,
+        "minMs": 65.45195799999999,
+        "maxMs": 67.636166,
+        "rangeMs": 2.1842080000000124,
+        "stdevMs": 1.1687348713341064
+      },
+      "embedMs": {
+        "n": 3,
+        "meanMs": 17.610485999999998,
+        "medianMs": 17.622041,
+        "minMs": 17.3335,
+        "maxMs": 17.875917,
+        "rangeMs": 0.5424170000000004,
+        "stdevMs": 0.2713930525842548
+      },
+      "logitsMs": {
+        "n": 3,
+        "meanMs": 24.80695833333333,
+        "medianMs": 28.847375,
+        "minMs": 14.105417,
+        "maxMs": 31.468083,
+        "rangeMs": 17.362666,
+        "stdevMs": 9.359982253567436
+      },
+      "perLayerMaterialMeanMs": 179.3488938125,
+      "perLayerForwardMeanMs": 21.323968159722224,
+      "perLayerReleaseMeanMs": 1.3913411319444444,
+      "releasePerTransitionMeanMs": 11.130729055555555
+    },
+    "64": {
+      "prefixTokenLength": 64,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "samples": [
+        {
+          "sourceId": "PHASE6F",
+          "sourceArtifact": "mlx-segment-phase-p64-s8.json",
+          "generatedTokenID": 26753,
+          "overallPass": true,
+          "embedMs": 9.705916,
+          "logitsMs": 27.509209,
+          "generationTotalMs": 10673.082208,
+          "segmentTotalsMs": {
+            "materializeMs": 8592.809749,
+            "forwardMs": 1953.800668,
+            "releaseMs": 89.09774999999999
+          },
+          "perLayerMeanMs": {
+            "materializeMs": 179.01686977083332,
+            "forwardMs": 40.70418058333333,
+            "releaseMs": 1.8562031249999997
+          },
+          "releasePerTransitionMs": 14.849624999999998,
+          "segments": [
+            {
+              "forwardMs": 343.65025,
+              "layerRange": "0-7",
+              "materializeMs": 1436.560041,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.443875,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 281.60625,
+              "layerRange": "8-15",
+              "materializeMs": 1422.913125,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.471541,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 316.233459,
+              "layerRange": "16-23",
+              "materializeMs": 1438.943666,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.2985,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 346.507542,
+              "layerRange": "24-31",
+              "materializeMs": 1429.103625,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.6065,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 293.22925,
+              "layerRange": "32-39",
+              "materializeMs": 1433.765,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.812167,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 372.573917,
+              "layerRange": "40-47",
+              "materializeMs": 1431.524292,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.465167,
+              "segmentIndex": 5
+            }
+          ]
+        },
+        {
+          "sourceId": "PHASE6G_B1",
+          "sourceArtifact": "mlx-segment-phase-replicate-p64-s8-b1.json",
+          "generatedTokenID": 26753,
+          "overallPass": true,
+          "embedMs": 11.138542,
+          "logitsMs": 7.324125,
+          "generationTotalMs": 10511.028541,
+          "segmentTotalsMs": {
+            "materializeMs": 8597.103417,
+            "forwardMs": 1805.7814589999998,
+            "releaseMs": 89.540874
+          },
+          "perLayerMeanMs": {
+            "materializeMs": 179.10632118750001,
+            "forwardMs": 37.6204470625,
+            "releaseMs": 1.865434875
+          },
+          "releasePerTransitionMs": 14.923479,
+          "segments": [
+            {
+              "forwardMs": 272.233,
+              "layerRange": "0-7",
+              "materializeMs": 1435.407459,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.537583,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 355.274,
+              "layerRange": "8-15",
+              "materializeMs": 1432.41575,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 16.270917,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 276.71525,
+              "layerRange": "16-23",
+              "materializeMs": 1430.072833,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.62325,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 338.445,
+              "layerRange": "24-31",
+              "materializeMs": 1428.556375,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.608541,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 293.223959,
+              "layerRange": "32-39",
+              "materializeMs": 1441.979125,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.121833,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 269.89025,
+              "layerRange": "40-47",
+              "materializeMs": 1428.671875,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.37875,
+              "segmentIndex": 5
+            }
+          ]
+        },
+        {
+          "sourceId": "PHASE6G_B2",
+          "sourceArtifact": "mlx-segment-phase-replicate-p64-s8-b2.json",
+          "generatedTokenID": 26753,
+          "overallPass": true,
+          "embedMs": 19.431584,
+          "logitsMs": 7.440041,
+          "generationTotalMs": 10631.050916,
+          "segmentTotalsMs": {
+            "materializeMs": 8664.515250999999,
+            "forwardMs": 1849.3026679999998,
+            "releaseMs": 90.234332
+          },
+          "perLayerMeanMs": {
+            "materializeMs": 180.5107343958333,
+            "forwardMs": 38.527138916666665,
+            "releaseMs": 1.8798819166666665
+          },
+          "releasePerTransitionMs": 15.039055333333332,
+          "segments": [
+            {
+              "forwardMs": 358.476083,
+              "layerRange": "0-7",
+              "materializeMs": 1453.237167,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 16.324208,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 272.5655,
+              "layerRange": "8-15",
+              "materializeMs": 1429.322375,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.489125,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 351.308792,
+              "layerRange": "16-23",
+              "materializeMs": 1429.639416,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.587583,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 262.669167,
+              "layerRange": "24-31",
+              "materializeMs": 1426.683375,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.5965,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 343.804334,
+              "layerRange": "32-39",
+              "materializeMs": 1456.305834,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.719375,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 260.478792,
+              "layerRange": "40-47",
+              "materializeMs": 1469.327084,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.517541,
+              "segmentIndex": 5
+            }
+          ]
+        }
+      ],
+      "generationTotalMs": {
+        "n": 3,
+        "meanMs": 10605.053888333334,
+        "medianMs": 10631.050916,
+        "minMs": 10511.028541,
+        "maxMs": 10673.082208,
+        "rangeMs": 162.05366700000013,
+        "stdevMs": 84.09656254962397
+      },
+      "materializeSumMs": {
+        "n": 3,
+        "meanMs": 8618.142805666666,
+        "medianMs": 8597.103417,
+        "minMs": 8592.809749,
+        "maxMs": 8664.515250999999,
+        "rangeMs": 71.70550199999889,
+        "stdevMs": 40.21705683995586
+      },
+      "forwardSumMs": {
+        "n": 3,
+        "meanMs": 1869.628265,
+        "medianMs": 1849.3026679999998,
+        "minMs": 1805.7814589999998,
+        "maxMs": 1953.800668,
+        "rangeMs": 148.01920900000027,
+        "stdevMs": 76.07410188954748
+      },
+      "releaseSumMs": {
+        "n": 3,
+        "meanMs": 89.62431866666667,
+        "medianMs": 89.540874,
+        "minMs": 89.09774999999999,
+        "maxMs": 90.234332,
+        "rangeMs": 1.1365820000000042,
+        "stdevMs": 0.5728672795485311
+      },
+      "embedMs": {
+        "n": 3,
+        "meanMs": 13.425347333333335,
+        "medianMs": 11.138542,
+        "minMs": 9.705916,
+        "maxMs": 19.431584,
+        "rangeMs": 9.725668,
+        "stdevMs": 5.250644102010471
+      },
+      "logitsMs": {
+        "n": 3,
+        "meanMs": 14.091125,
+        "medianMs": 7.440041,
+        "minMs": 7.324125,
+        "maxMs": 27.509209,
+        "rangeMs": 20.185083999999996,
+        "stdevMs": 11.620546149086795
+      },
+      "perLayerMaterialMeanMs": 179.54464178472222,
+      "perLayerForwardMeanMs": 38.95058885416666,
+      "perLayerReleaseMeanMs": 1.8671733055555553,
+      "releasePerTransitionMeanMs": 14.937386444444442
+    }
+  },
+  "pairedPrefix64MinusPrefix8": [
+    {
+      "sampleIndex": 0,
+      "prefix64GenerationTotalMsDelta": 968.394291999999,
+      "prefix64MaterializeSumMsDelta": -2.989292000000205,
+      "prefix64ForwardSumMsDelta": 958.7691700000001,
+      "prefix64ReleaseSumMsDelta": 21.832750999999988,
+      "prefix64LogitsMsDelta": -1.338166000000001
+    },
+    {
+      "sampleIndex": 1,
+      "prefix64GenerationTotalMsDelta": 714.0686239999995,
+      "prefix64MaterializeSumMsDelta": -25.988666999999623,
+      "prefix64ForwardSumMsDelta": 731.1149589999998,
+      "prefix64ReleaseSumMsDelta": 21.904708,
+      "prefix64LogitsMsDelta": -6.781291999999999
+    },
+    {
+      "sampleIndex": 2,
+      "prefix64GenerationTotalMsDelta": 907.8353740000002,
+      "prefix64MaterializeSumMsDelta": 57.1656669999993,
+      "prefix64ForwardSumMsDelta": 848.3492509999999,
+      "prefix64ReleaseSumMsDelta": 24.782374000000004,
+      "prefix64LogitsMsDelta": -24.028042
+    }
+  ],
+  "sourceArtifacts": [
+    "mlx-segment-phase-replicate-p8-s8-b1.json",
+    "mlx-segment-phase-replicate-p8-s8-b2.json",
+    "mlx-segment-phase-replicate-p8-s8-b3.json",
+    "mlx-segment-phase-p64-s8.json",
+    "mlx-segment-phase-replicate-p64-s8-b1.json",
+    "mlx-segment-phase-replicate-p64-s8-b2.json"
+  ],
+  "checks": {
+    "ALL_SOURCE_REPORTS_PASS": true,
+    "ALL_PREFIXES_PRESENT": true,
+    "COMBINED_N3_PER_PREFIX": true,
+    "SEGMENT_SIZE_FIXED_AT_8": true,
+    "ALL_REPORTS_ZERO_SWAP": true,
+    "ALL_REPORTS_UNDER_30GIB": true,
+    "PREFIX64_TOTAL_SLOWER_IN_ALL_PAIRED_SAMPLES": true,
+    "PREFIX64_FORWARD_SLOWER_IN_ALL_PAIRED_SAMPLES": true
+  },
+  "findings": {
+    "PREFIX64_TOTAL_SLOWER_IN_ALL_PAIRED_SAMPLES": true,
+    "PREFIX64_FORWARD_SUM_SLOWER_IN_ALL_PAIRED_SAMPLES": true,
+    "MATERIALIZE_TOTAL_APPROXIMATELY_SIMILAR": true
+  },
+  "openQuestions": [
+    "MORE_REPLICATES_AND_COUNTERBALANCING",
+    "TOKENIZER_AND_TEXT_CONTENT_CONFOUNDS_COMPARISON",
+    "GPU_KERNEL_LEVEL_ATTRIBUTION_NOT_AVAILABLE"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_PREFIX_LENGTH_RECOMMENDATION",
+    "NOT_A_WARM_KV_RETENTION_CLAIM",
+    "NOT_A_CROSS_BACKEND_OR_CROSS_HARDWARE_COMPARISON"
+  ],
+  "overallPass": true
+}

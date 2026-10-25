@@ -1,0 +1,7 @@
+{
+  "phase": "before_old_process_launch",
+  "observed": "orchestrator blocked opening FIFO write end before launching old process",
+  "resolution": "abort orchestration; preserve declared inputs; rerun under a new run id",
+  "implementation_change": false,
+  "protocol_change": false
+}

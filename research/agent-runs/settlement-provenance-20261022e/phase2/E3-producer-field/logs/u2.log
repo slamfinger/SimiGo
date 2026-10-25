@@ -1,0 +1,1 @@
+error: task did not settle: ["item_id": "TASK-U1", "reason": "SETTLEMENT_SIGNATURE_INVALID", "stage": "SETTLEMENT_SIGNATURE_INVALID", "kind": "ADMISSION_REFUSED"]

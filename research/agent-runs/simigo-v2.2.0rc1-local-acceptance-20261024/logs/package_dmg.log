@@ -1,0 +1,6 @@
+/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/tmp.WOUVGepyZx/SimiGo.app: replacing existing signature
+hdiutil: WARNING: 'hdiutil create -volname -format ...' is deprecated. Please use 'diskutil image create from/blank --volumeName --format ...' instead.
+created: /Users/mr.simi/Documents/SimiGo/SimiGo-v2.2.0rc1.dmg
+hdiutil: verify: checksum of "/Users/mr.simi/Documents/SimiGo/SimiGo-v2.2.0rc1.dmg" is VALID
+已验证CRC32 $59799F05
+完成: SimiGo-v2.2.0rc1.dmg

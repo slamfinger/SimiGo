@@ -1,0 +1,88 @@
+RUN /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff stage-a --run-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline --model-dir /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d --lab-root /Users/mr.simi/Documents/SimiGo-Lab --run-label phase1-baseline-20261022c
+RUN /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff phase1-case --run-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A0 --model-dir /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d --lab-root /Users/mr.simi/Documents/SimiGo-Lab --run-label phase1-a0-20261022c --case A0 --baseline-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline --max-tokens 32
+RUN /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff phase1-case --run-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A1 --model-dir /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d --lab-root /Users/mr.simi/Documents/SimiGo-Lab --run-label phase1-a1-20261022c --case A1 --baseline-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline --max-tokens 32
+RUN /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff phase1-case --run-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A2a --model-dir /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d --lab-root /Users/mr.simi/Documents/SimiGo-Lab --run-label phase1-a2a-20261022c --case A2a --baseline-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline --max-tokens 32
+RUN /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff phase1-case --run-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A2b --model-dir /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d --lab-root /Users/mr.simi/Documents/SimiGo-Lab --run-label phase1-a2b-20261022c --case A2b --baseline-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline --max-tokens 32
+RUN /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff phase1-case --run-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A3 --model-dir /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d --lab-root /Users/mr.simi/Documents/SimiGo-Lab --run-label phase1-a3-20261022c --case A3 --baseline-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline --max-tokens 32
+RUN /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff phase1-case --run-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A4 --model-dir /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d --lab-root /Users/mr.simi/Documents/SimiGo-Lab --run-label phase1-a4-20261022c --case A4 --baseline-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline --max-tokens 32
+{
+  "all_observed_as_expected": true,
+  "baseline_dir": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline",
+  "baseline_label": "phase1-baseline-20261022c",
+  "cases": {
+    "A0": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "answer_nonempty": true,
+        "continue_task_entered": true,
+        "failure_absent": true,
+        "matches_expected": true,
+        "model_continuation_calls": 1,
+        "prefix_tail_matches": true,
+        "recovered_position": true,
+        "recovery_succeeded": true,
+        "resumed_not_created": true,
+        "u2_settlement_actions": 1
+      }
+    },
+    "A1": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "settlementCheckpointMissing:",
+        "failure_label": "settlementCheckpointMissing:PRODUCTION-REAL-PALACE",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    },
+    "A2a": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:result_digest",
+        "failure_label": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:result_digest",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    },
+    "A2b": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
+        "failure_label": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    },
+    "A3": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "informationSpaceHasNoSettledExecution:",
+        "failure_label": "informationSpaceHasNoSettledExecution:ADVANCED",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    },
+    "A4": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "durableExecutionStateMissing:PRODUCTION-REAL-PALACE",
+        "failure_label": "durableExecutionStateMissing:PRODUCTION-REAL-PALACE",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    }
+  },
+  "completed_at_utc": "2026-10-22T02:51:34Z",
+  "schema_id": "SIMIGO-CAUSALITY-PHASE1-SUMMARY-V1"
+}
+PHASE1_EXIT=0

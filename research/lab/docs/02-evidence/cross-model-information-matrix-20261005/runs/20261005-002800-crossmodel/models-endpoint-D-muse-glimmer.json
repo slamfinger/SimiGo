@@ -1,0 +1,34 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "architecture": "muse_glimmer",
+      "contextLength": 131072,
+      "capabilities": {
+        "reasoning": "unverified",
+        "chat": "supported",
+        "streaming": "supported",
+        "vision": "unsupported",
+        "toolCalling": "unverified",
+        "structuredOutput": "unverified"
+      },
+      "runtime": {
+        "constraints": [
+          "serializeGeneration=true：并发生成跨 session 单飞（qwen3_5_moe 编译锁互堵缓解，2026-09-11 实测）"
+        ],
+        "cacheInvalidation": "kvFingerprint mismatch → 旧缓存失效，全量 prefill",
+        "concurrency": "global single-flight (serializeGeneration=true)"
+      },
+      "object": "model",
+      "id": "RadixArk/Muse-Glimmer-q4-MLX",
+      "protocolEndpoints": {
+        "chatCompletions": "supported",
+        "responses": "unverified",
+        "textCompletions": "supported"
+      },
+      "owned_by": "simigo",
+      "created": 1791134028,
+      "backend": "NativeMLX"
+    }
+  ]
+}

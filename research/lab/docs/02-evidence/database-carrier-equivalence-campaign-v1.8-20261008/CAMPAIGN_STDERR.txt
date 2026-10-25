@@ -1,0 +1,20 @@
+POST-STOP CAPTURE — NOT HARNESS-GENERATED CAMPAIGN EVIDENCE
+Traceback (most recent call last):
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 815, in <module>
+    sys.exit(main())
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 811, in main
+    return run(args.expected_head, Path(args.output).resolve())
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 785, in run
+    write_json(evidence_paths.resolve("PREFLIGHT_VERIFICATION"), preflight)
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 113, in write_json
+    payload = canonical_json_bytes(value)
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 72, in canonical_json_bytes
+    text = json.dumps(
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py", line 234, in dumps
+    return cls(
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py", line 325, in _iterencode
+    o = _default(o)
+TypeError: Object of type PosixPath is not JSON serializable
+
+The above exception was the direct cause of the following exception:
+CampaignFailure: evidence object is not canonically serializable: Object of type PosixPath is not JSON serializable

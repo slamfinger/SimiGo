@@ -1,0 +1,13 @@
+POST-STOP CAPTURE — NOT HARNESS-GENERATED CAMPAIGN EVIDENCE
+Traceback (most recent call last):
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 814, in <module>
+    sys.exit(main())
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 810, in main
+    return run(args.expected_head, Path(args.output).resolve())
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 635, in run
+    adapter_results = {"ES2": invoke_adapter(evidence_paths, "ES2")}
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 539, in invoke_adapter
+    result = json.loads(persist_exact_json(output_path, proc.stdout))
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py", line 334, in loads
+    raise TypeError(f'the JSON object must be str, bytes or bytearray, '
+TypeError: the JSON object must be str, bytes or bytearray, not dict

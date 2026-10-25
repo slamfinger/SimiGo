@@ -1,0 +1,30 @@
+Building for debugging...
+[Computing dependencies]
+[Starting]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[4 / 12] RealModelHandoff-product
+Build complete! (0.68秒)
+Test Suite 'Selected tests' started at 2026-10-22 10:53:25.081.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-22 10:53:25.083.
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-22 10:53:25.083.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 10:53:25.083.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+Test Suite 'Selected tests' started at 2026-10-22 10:53:25.206.
+Test Suite 'SimiGo2ExperimentalTests.xctest' started at 2026-10-22 10:53:25.206.
+Test Suite 'ProductionInputAdmissionTests' started at 2026-10-22 10:53:25.206.
+Test Case '-[SimiGo2ExperimentalTests.ProductionInputAdmissionTests testInadmissibleSettlementRefusesBeforeAnyGeneration]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionInputAdmissionTests testInadmissibleSettlementRefusesBeforeAnyGeneration]' passed (0.661 seconds).
+Test Suite 'ProductionInputAdmissionTests' passed at 2026-10-22 10:53:25.867.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.661 (0.661) seconds
+Test Suite 'SimiGo2ExperimentalTests.xctest' passed at 2026-10-22 10:53:25.867.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.661 (0.661) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 10:53:25.867.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.661 (0.662) seconds
+Test Suite 'Selected tests' started at 2026-10-22 10:53:25.926.
+Test Suite 'G3D1SupervisorTests.xctest' started at 2026-10-22 10:53:25.926.
+Test Suite 'G3D1SupervisorTests.xctest' passed at 2026-10-22 10:53:25.926.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 10:53:25.926.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+TEST_EXIT=0

@@ -1,0 +1,128 @@
+{
+  "status": "CONSOLIDATED_PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6.MASTER.INDEX.V1",
+  "boundary": "OBSERVATION_INDEX_ONLY / SMALL_SAMPLES / CACHELESS_GREEDY_RECOMPUTE / GPU_TIMEOUT_CELL_PARTIAL / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "profileCount": 11,
+  "entries": [
+    {
+      "id": "BASE_COST1_5",
+      "title": "COST1-COST5 baseline cost profiles",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-phase6-cost-summary.json",
+      "scope": "paired direct/state cost; prefix scale; release isolation; retain-vs-release; token-budget scaling"
+    },
+    {
+      "id": "PHASE6A",
+      "title": "factorial pilot",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-phase6a-factorial-pilot-summary.json",
+      "scope": "prefix 8/64 x tokens 1/2 x segment 8/16 x action, n=1 per cell"
+    },
+    {
+      "id": "PHASE6B",
+      "title": "targeted segment replication",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-phase6b-segment-size-replication-summary.json",
+      "scope": "2-token cells, segment 8/16, combined n=3 per strategy"
+    },
+    {
+      "id": "PHASE6C",
+      "title": "token-budget replication",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-phase6c-token-budget-replication-summary.json",
+      "scope": "prefix64/segment8, budgets 1/2/4, combined n=3 per strategy"
+    },
+    {
+      "id": "PHASE6D",
+      "title": "distribution expansion partial",
+      "status": "PARTIAL_PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-phase6d-distribution-partial-summary.json",
+      "scope": "target combined n=5; three cells completed, p8/s16 remained n=3 after GPU timeout"
+    },
+    {
+      "id": "PHASE6E",
+      "title": "post-hoc distribution analysis",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-phase6e-distribution-analysis.json",
+      "scope": "robust stats and IQR fences for PHASE6D samples; no new GPU runs"
+    },
+    {
+      "id": "PHASE6F",
+      "title": "segment phase attribution pilot",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-segment-phase-attribution-summary.json",
+      "scope": "prefix64, segment 8/16, warmed one-token embed/materialize/forward/release/logits profile, n=1"
+    },
+    {
+      "id": "PHASE6G",
+      "title": "segment phase replication",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-phase6g-segment-phase-replication-summary.json",
+      "scope": "prefix64, segment 8/16, no-action phase probe, combined n=3 per size"
+    },
+    {
+      "id": "PHASE6H",
+      "title": "prefix phase attribution",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-phase6h-prefix-phase-attribution-summary.json",
+      "scope": "segment8, prefix 8/64, warmed one-token phase profile, combined n=3 per prefix"
+    },
+    {
+      "id": "PHASE6I",
+      "title": "fixed-prefix attribution",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-fixed-prefix-phase-attribution-summary.json",
+      "scope": "same leading token IDs 1000-1063, prefix 8/64, combined n=3 per length"
+    },
+    {
+      "id": "PHASE6J",
+      "title": "fixed-prefix distribution analysis",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "summaryArtifact": "mlx-fixed-prefix-phase-distribution-analysis.json",
+      "scope": "post-hoc robust stats for PHASE6I n=3 samples; no new GPU runs"
+    }
+  ],
+  "checks": {
+    "ALL_EXPECTED_INDEX_ENTRIES_PRESENT": true,
+    "ALL_INDEXED_SUMMARIES_PASS": true,
+    "PHASE6D_PARTIAL_STATUS_EXPLICIT": true,
+    "GPU_TIMEOUT_CELL_REMAINS_N3": true,
+    "GPU_TIMEOUT_ROOT_CAUSE_NOT_CLAIMED": true,
+    "FULL_FACTORIZATION_REMAINS_OPEN": true
+  },
+  "consolidatedFindings": {
+    "LOCAL_STATE_BOOKKEEPING_IS_SMALL_VS_GENERATION": true,
+    "PREFIX64_FORWARD_SUM_HIGHER_THAN_PREFIX8_IN_CONTROLLED_N3_PROBES": true,
+    "SEGMENT16_TRANSITION_COUNT_ALONE_DOES_NOT_EXPLAIN_COST": true,
+    "PHASE6D_COMPLETED_N5_CELLS_SHOW_LONG_TAILS": true,
+    "GPU_TIMEOUT_CELL_REMAINS_PARTIAL_N3": true
+  },
+  "openItems": [
+    "FULL_N5_MATRIX_INCLUDING_P8_T2_S16_AFTER_SAFE_RETRY",
+    "STATISTICAL_FACTORIZATION_WITH_MORE_REPLICATES",
+    "KERNEL_AND_COMMAND_BUFFER_LEVEL_ATTRIBUTION",
+    "WARM_KV_OR_SEGMENT_RESIDENCY_POLICY",
+    "CROSS_BACKEND_COST_NORMALIZATION"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_WARM_KV_RETENTION_CLAIM",
+    "NOT_A_RELEASE_POLICY_RECOMMENDATION",
+    "NOT_A_CROSS_BACKEND_OR_CROSS_HARDWARE_COMPARISON",
+    "NOT_A_GPU_TIMEOUT_ROOT_CAUSE_EXPLANATION"
+  ],
+  "overallPass": true
+}

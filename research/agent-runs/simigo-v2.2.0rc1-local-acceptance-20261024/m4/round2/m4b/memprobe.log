@@ -1,0 +1,5 @@
+headless-entered role=memprobe pid=16394
+headless-task-started
+✅ [HTTPServer] 监听 127.0.0.1:0 model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+wrote evidence /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m4/m4b/memprobe_m4b_mem.json
+headless-task-done rc=0

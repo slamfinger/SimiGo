@@ -1,0 +1,106 @@
+{
+  "clock_mode": "CONTROLLED_FIXTURE_CLOCK_FOR_SYNTHETIC_OBSERVATION_AGE",
+  "observations": [
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "ff37ef1bb772bb129ee6e9f3a70bd8a36ccde2f471b61eb6edf7517fb4130da4"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "5bcfe88954d96d8a252e2c45d481b8889d6205a618e14413f1e88a4fbdbde9c0"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "6b6570f90e9e8879c358edfb91aff1327b37c11b66bae4bebb120fa7ead515d2"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "92e3e131b68e02856e9fbc2fb785e79c3036198a795d51b130953ebec3779e7d"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "dcaacd34cd0835802e3b218f2520d9d3b5377df3dfe950aed701a120c8ac6d0d"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "2e1d5dd99d7cda1b6199bac69af70b13362934dcbaad56bf626aefde31cac87e"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "4e65b9956be6e1b7d5bec71b24d99bcacf937791d06922fc3731ea1f89aec570"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "7631009e9dad2e315a882a115fd07b6a1061f4c7aa7bc74c46b4c0f3cdeb67e8"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "cfa476daa37035efb6ba801a9de65e78d4e8db0acba349687aae14796f4653f2"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "1c3aa4dcdf1b7b41b51dfde4202ca8634329766b1496a81115007d40c066750c"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "186cc4d3922d71cb824ba2a67d707759c0f0ffe41529f7a0198527cef4a4d006"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "f049c8597161d5efac46d06a8c8785c6966f13531811723c3c6c78bdf2336543"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "651f2208df861e0148d62aecd73d5ad32a46e348f10f4d9c518131152698bdd3"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "4fabc5ef13c360204f49acf7cea9e00363c227457ed3245ffedb4102dac3ec84"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "74d3547bacf8a581d4d583f5eb357b831cdd45cd6e84b05b242db9059cb559d8"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "5bbcea66ca03ac5eea3c2640c76454d2f320b9772bae79636930afa3e65b4b6a"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "0a59ce5a382aad0c0a5c6432177a1c74dcb1ad458e98f7cecbe6831e3d186685"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "b28e06ba9c4bc0ae2c70a26b5338cea0a75be9659ee77c9fd06b633f25419c56"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "e31898e2430e9c631d070411d2cb4727f918f96e5e3a67a67bd89f0f9c9cffc0"
+    },
+    {
+      "observation_age_ms": 1,
+      "pass": true,
+      "stable_object_id": "ba9466232229972f354be840584cba251215f95790064f2427f258ae34113354"
+    }
+  ],
+  "threshold_ms": 60000
+}

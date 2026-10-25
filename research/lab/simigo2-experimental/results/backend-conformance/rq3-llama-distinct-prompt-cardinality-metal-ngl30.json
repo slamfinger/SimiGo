@@ -1,0 +1,2091 @@
+{
+  "status": "COMPLETE",
+  "probeCompleted": true,
+  "protocolVersion": "RQ3.LLAMA.DISTINCT.PROMPT.CARDINALITY.PROBE.V1",
+  "boundary": "NO_CANCEL_NO_LONG_REQUEST / DISTINCT_EQUAL_LENGTH_PROMPTS / NO_EXECUTION_STATE_OBJECT / NOT_A_PERFORMANCE_OR_PRODUCTION_CLAIM",
+  "health": {
+    "status": "ok"
+  },
+  "maxCardinality": 4,
+  "expectedSlots": 4,
+  "observedSlots": 4,
+  "cyclesPerCardinality": 8,
+  "referenceRepeats": 3,
+  "prompts": [
+    "Return exactly one word: ping",
+    "Return exactly one word: alpha",
+    "Return exactly one word: beta",
+    "Return exactly one word: gamma"
+  ],
+  "promptTokenLengths": [
+    6,
+    6,
+    6,
+    6
+  ],
+  "singleLoadReferenceStable": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "finding": {
+    "batchIdentityStableAllCardinalities": true,
+    "unstableCardinalities": [],
+    "boundary": "Distinct prompts remove duplicate-prompt confounding; this does not identify llama.cpp internals or establish correctness."
+  },
+  "results": {
+    "cardinalities": [
+      {
+        "cardinality": 1,
+        "cycleCount": 8,
+        "requests": 8,
+        "cyclesAllMatchedSingleLoadReference": 8,
+        "acrossCycleStableCycles": 8,
+        "mismatchesByPrompt": [
+          0
+        ],
+        "outputGroupsByPrompt": [
+          {
+            ", pong, pingpong, or pong": 8
+          }
+        ],
+        "controlClientMean": {
+          "n": 8.0,
+          "meanMs": 799.5342238750001,
+          "medianMs": 825.8991665,
+          "p95Ms": 1013.9544039500001,
+          "minMs": 599.24225,
+          "maxMs": 1063.140458
+        },
+        "controlClientMax": {
+          "n": 8.0,
+          "meanMs": 799.5342238750001,
+          "medianMs": 825.8991665,
+          "p95Ms": 1013.9544039500001,
+          "minMs": 599.24225,
+          "maxMs": 1063.140458
+        },
+        "cycles": [
+          {
+            "cycle": 0,
+            "cardinality": 1,
+            "clientMeanMs": 819.70175,
+            "clientMaxMs": 819.70175,
+            "matchedSingleLoadReference": [
+              true
+            ],
+            "acrossCycleIdentity": [
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 1,
+            "cardinality": 1,
+            "clientMeanMs": 654.31825,
+            "clientMaxMs": 654.31825,
+            "matchedSingleLoadReference": [
+              true
+            ],
+            "acrossCycleIdentity": [
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 2,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 2,
+            "cardinality": 1,
+            "clientMeanMs": 862.29375,
+            "clientMaxMs": 862.29375,
+            "matchedSingleLoadReference": [
+              true
+            ],
+            "acrossCycleIdentity": [
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 1,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 3,
+            "cardinality": 1,
+            "clientMeanMs": 832.096583,
+            "clientMaxMs": 832.096583,
+            "matchedSingleLoadReference": [
+              true
+            ],
+            "acrossCycleIdentity": [
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 4,
+            "cardinality": 1,
+            "clientMeanMs": 599.24225,
+            "clientMaxMs": 599.24225,
+            "matchedSingleLoadReference": [
+              true
+            ],
+            "acrossCycleIdentity": [
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 5,
+            "cardinality": 1,
+            "clientMeanMs": 642.871875,
+            "clientMaxMs": 642.871875,
+            "matchedSingleLoadReference": [
+              true
+            ],
+            "acrossCycleIdentity": [
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 2,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 6,
+            "cardinality": 1,
+            "clientMeanMs": 1063.140458,
+            "clientMaxMs": 1063.140458,
+            "matchedSingleLoadReference": [
+              true
+            ],
+            "acrossCycleIdentity": [
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 1,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 7,
+            "cardinality": 1,
+            "clientMeanMs": 922.608875,
+            "clientMaxMs": 922.608875,
+            "matchedSingleLoadReference": [
+              true
+            ],
+            "acrossCycleIdentity": [
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "cardinality": 2,
+        "cycleCount": 8,
+        "requests": 16,
+        "cyclesAllMatchedSingleLoadReference": 8,
+        "acrossCycleStableCycles": 8,
+        "mismatchesByPrompt": [
+          0,
+          0
+        ],
+        "outputGroupsByPrompt": [
+          {
+            ", pong, pingpong, or pong": 8
+          },
+          {
+            ", beta, or gamma.\n\n<think>": 8
+          }
+        ],
+        "controlClientMean": {
+          "n": 8.0,
+          "meanMs": 1063.7082083125,
+          "medianMs": 1002.15953125,
+          "p95Ms": 1458.76602505,
+          "minMs": 869.232896,
+          "maxMs": 1628.1074585
+        },
+        "controlClientMax": {
+          "n": 8.0,
+          "meanMs": 1072.98848425,
+          "medianMs": 1014.8818125,
+          "p95Ms": 1458.8714524000002,
+          "minMs": 877.471541,
+          "maxMs": 1628.254084
+        },
+        "cycles": [
+          {
+            "cycle": 0,
+            "cardinality": 2,
+            "clientMeanMs": 882.9910205,
+            "clientMaxMs": 883.177916,
+            "matchedSingleLoadReference": [
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 2,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 1,
+            "cardinality": 2,
+            "clientMeanMs": 925.9533125,
+            "clientMaxMs": 926.235666,
+            "matchedSingleLoadReference": [
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 1,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 0,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 2,
+            "cardinality": 2,
+            "clientMeanMs": 1103.5168545,
+            "clientMaxMs": 1103.527959,
+            "matchedSingleLoadReference": [
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 2,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 3,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 3,
+            "cardinality": 2,
+            "clientMeanMs": 1078.36575,
+            "clientMaxMs": 1122.073375,
+            "matchedSingleLoadReference": [
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 1,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 4,
+            "cardinality": 2,
+            "clientMeanMs": 1144.2747915,
+            "clientMaxMs": 1144.303708,
+            "matchedSingleLoadReference": [
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 2,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 3,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 5,
+            "cardinality": 2,
+            "clientMeanMs": 1628.1074585,
+            "clientMaxMs": 1628.254084,
+            "matchedSingleLoadReference": [
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 1,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 6,
+            "cardinality": 2,
+            "clientMeanMs": 877.223583,
+            "clientMaxMs": 877.471541,
+            "matchedSingleLoadReference": [
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 2,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 7,
+            "cardinality": 2,
+            "clientMeanMs": 869.232896,
+            "clientMaxMs": 898.863625,
+            "matchedSingleLoadReference": [
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 1,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "cardinality": 3,
+        "cycleCount": 8,
+        "requests": 24,
+        "cyclesAllMatchedSingleLoadReference": 8,
+        "acrossCycleStableCycles": 8,
+        "mismatchesByPrompt": [
+          0,
+          0,
+          0
+        ],
+        "outputGroupsByPrompt": [
+          {
+            ", pong, pingpong, or pong": 8
+          },
+          {
+            ", beta, or gamma.\n\n<think>": 8
+          },
+          {
+            " or alpha\n\n<think>\nThe user is": 8
+          }
+        ],
+        "controlClientMean": {
+          "n": 8.0,
+          "meanMs": 1244.9685989583334,
+          "medianMs": 1244.7418054999998,
+          "p95Ms": 1471.6212804833333,
+          "minMs": 1080.644014,
+          "maxMs": 1481.992986
+        },
+        "controlClientMax": {
+          "n": 8.0,
+          "meanMs": 1257.699978875,
+          "medianMs": 1272.2255625,
+          "p95Ms": 1496.9516206,
+          "minMs": 1080.665833,
+          "maxMs": 1520.761625
+        },
+        "cycles": [
+          {
+            "cycle": 0,
+            "cardinality": 3,
+            "clientMeanMs": 1481.992986,
+            "clientMaxMs": 1520.761625,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 2,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 3,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 1,
+            "cardinality": 3,
+            "clientMeanMs": 1080.644014,
+            "clientMaxMs": 1080.665833,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 1,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 2,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 2,
+            "cardinality": 3,
+            "clientMeanMs": 1247.9181386666667,
+            "clientMaxMs": 1275.751291,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 1,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 0,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 3,
+            "cardinality": 3,
+            "clientMeanMs": 1452.3595416666667,
+            "clientMaxMs": 1452.733041,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 2,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 0,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 4,
+            "cardinality": 3,
+            "clientMeanMs": 1089.4456943333332,
+            "clientMaxMs": 1089.732041,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 1,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 2,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 0,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 5,
+            "cardinality": 3,
+            "clientMeanMs": 1241.5654723333332,
+            "clientMaxMs": 1275.204375,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 0,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 1,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 6,
+            "cardinality": 3,
+            "clientMeanMs": 1268.7118193333333,
+            "clientMaxMs": 1269.24675,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 2,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 0,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 7,
+            "cardinality": 3,
+            "clientMeanMs": 1097.1111253333333,
+            "clientMaxMs": 1097.504875,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 1,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 2,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 0,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "cardinality": 4,
+        "cycleCount": 8,
+        "requests": 32,
+        "cyclesAllMatchedSingleLoadReference": 8,
+        "acrossCycleStableCycles": 8,
+        "mismatchesByPrompt": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "outputGroupsByPrompt": [
+          {
+            ", pong, pingpong, or pong": 8
+          },
+          {
+            ", beta, or gamma.\n\n<think>": 8
+          },
+          {
+            " or alpha\n\n<think>\nThe user is": 8
+          },
+          {
+            ", beta, or alpha\n\n<think>\n": 8
+          }
+        ],
+        "controlClientMean": {
+          "n": 8.0,
+          "meanMs": 1564.53209503125,
+          "medianMs": 1587.9123331249998,
+          "p95Ms": 1698.0244577625,
+          "minMs": 1320.458177,
+          "maxMs": 1704.04257275
+        },
+        "controlClientMax": {
+          "n": 8.0,
+          "meanMs": 1599.1509115,
+          "medianMs": 1615.522479,
+          "p95Ms": 1754.3497273,
+          "minMs": 1320.870334,
+          "maxMs": 1766.282292
+        },
+        "cycles": [
+          {
+            "cycle": 0,
+            "cardinality": 4,
+            "clientMeanMs": 1704.04257275,
+            "clientMaxMs": 1766.282292,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 3,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 0,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 2,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              },
+              {
+                "promptIndex": 3,
+                "idSlot": 1,
+                "content": ", beta, or alpha\n\n<think>\n",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 1,
+            "cardinality": 4,
+            "clientMeanMs": 1541.3123335,
+            "clientMaxMs": 1583.837167,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 1,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 3,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              },
+              {
+                "promptIndex": 3,
+                "idSlot": 2,
+                "content": ", beta, or alpha\n\n<think>\n",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 2,
+            "cardinality": 4,
+            "clientMeanMs": 1686.8479585,
+            "clientMaxMs": 1732.18925,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 1,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 2,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 3,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              },
+              {
+                "promptIndex": 3,
+                "idSlot": 0,
+                "content": ", beta, or alpha\n\n<think>\n",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 3,
+            "cardinality": 4,
+            "clientMeanMs": 1609.41126025,
+            "clientMaxMs": 1635.453792,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 3,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 1,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              },
+              {
+                "promptIndex": 3,
+                "idSlot": 2,
+                "content": ", beta, or alpha\n\n<think>\n",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 4,
+            "cardinality": 4,
+            "clientMeanMs": 1566.413406,
+            "clientMaxMs": 1595.591166,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 1,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 0,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 3,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              },
+              {
+                "promptIndex": 3,
+                "idSlot": 2,
+                "content": ", beta, or alpha\n\n<think>\n",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 5,
+            "cardinality": 4,
+            "clientMeanMs": 1320.458177,
+            "clientMaxMs": 1320.870334,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 3,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 2,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              },
+              {
+                "promptIndex": 3,
+                "idSlot": 1,
+                "content": ", beta, or alpha\n\n<think>\n",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 6,
+            "cardinality": 4,
+            "clientMeanMs": 1621.7035625,
+            "clientMaxMs": 1647.311916,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 0,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 3,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 1,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              },
+              {
+                "promptIndex": 3,
+                "idSlot": 2,
+                "content": ", beta, or alpha\n\n<think>\n",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": 7,
+            "cardinality": 4,
+            "clientMeanMs": 1466.06748975,
+            "clientMaxMs": 1511.671375,
+            "matchedSingleLoadReference": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "acrossCycleIdentity": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "allMatchedSingleLoadReference": true,
+            "acrossCyclesAllIdentical": true,
+            "responses": [
+              {
+                "promptIndex": 0,
+                "idSlot": 2,
+                "content": ", pong, pingpong, or pong",
+                "tokens": [
+                  11,
+                  74966,
+                  11,
+                  29018,
+                  57104,
+                  11,
+                  466,
+                  74966
+                ]
+              },
+              {
+                "promptIndex": 1,
+                "idSlot": 3,
+                "content": ", beta, or gamma.\n\n<think>",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  20956,
+                  13,
+                  271,
+                  248068
+                ]
+              },
+              {
+                "promptIndex": 2,
+                "idSlot": 1,
+                "content": " or alpha\n\n<think>\nThe user is",
+                "tokens": [
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198,
+                  760,
+                  1156,
+                  369
+                ]
+              },
+              {
+                "promptIndex": 3,
+                "idSlot": 0,
+                "content": ", beta, or alpha\n\n<think>\n",
+                "tokens": [
+                  11,
+                  13053,
+                  11,
+                  466,
+                  8029,
+                  271,
+                  248068,
+                  198
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "summary": [
+      {
+        "cardinality": 1,
+        "batches": 8,
+        "requests": 8,
+        "cyclesAllMatchedSingleLoadReference": 8,
+        "acrossCycleStableCycles": 8,
+        "mismatchesByPrompt": [
+          0
+        ],
+        "outputGroupsByPrompt": [
+          {
+            ", pong, pingpong, or pong": 8
+          }
+        ]
+      },
+      {
+        "cardinality": 2,
+        "batches": 8,
+        "requests": 16,
+        "cyclesAllMatchedSingleLoadReference": 8,
+        "acrossCycleStableCycles": 8,
+        "mismatchesByPrompt": [
+          0,
+          0
+        ],
+        "outputGroupsByPrompt": [
+          {
+            ", pong, pingpong, or pong": 8
+          },
+          {
+            ", beta, or gamma.\n\n<think>": 8
+          }
+        ]
+      },
+      {
+        "cardinality": 3,
+        "batches": 8,
+        "requests": 24,
+        "cyclesAllMatchedSingleLoadReference": 8,
+        "acrossCycleStableCycles": 8,
+        "mismatchesByPrompt": [
+          0,
+          0,
+          0
+        ],
+        "outputGroupsByPrompt": [
+          {
+            ", pong, pingpong, or pong": 8
+          },
+          {
+            ", beta, or gamma.\n\n<think>": 8
+          },
+          {
+            " or alpha\n\n<think>\nThe user is": 8
+          }
+        ]
+      },
+      {
+        "cardinality": 4,
+        "batches": 8,
+        "requests": 32,
+        "cyclesAllMatchedSingleLoadReference": 8,
+        "acrossCycleStableCycles": 8,
+        "mismatchesByPrompt": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "outputGroupsByPrompt": [
+          {
+            ", pong, pingpong, or pong": 8
+          },
+          {
+            ", beta, or gamma.\n\n<think>": 8
+          },
+          {
+            " or alpha\n\n<think>\nThe user is": 8
+          },
+          {
+            ", beta, or alpha\n\n<think>\n": 8
+          }
+        ]
+      }
+    ]
+  }
+}

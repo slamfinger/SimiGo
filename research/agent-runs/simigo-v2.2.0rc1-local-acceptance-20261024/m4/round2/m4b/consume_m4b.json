@@ -1,0 +1,147 @@
+{
+  "branch_checkpoints_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4b\/cache_es2\/branch-checkpoints",
+  "cache_identity_differs_from_es1" : true,
+  "cache_identity_env_present" : true,
+  "cache_identity_es2" : "cache-6b48f409-e05f-4c53-a63c-de14c06f95cc",
+  "consumer_model_identity" : "9ee3438c9854506499d2505b465396e219a6eae8d4039d6ad3736d0b823b5d79",
+  "consumer_tokenizer_identity" : "5c4400cde1ce911247628648a6a912606152274906d662c8210301354a4a8706",
+  "counterfactual_baseline_value" : "hello",
+  "es1_cache_identity_from_env" : "cache-8aa9ae07-2a9d-4734-a4ef-1807366d9271",
+  "generated_text_u2" : "RESULT=delta9-U2",
+  "input_env_keys" : [
+    "SIMIGO_CACHE_ROOT",
+    "SIMIGO_COUNTERFACTUAL_BASELINE_VALUE",
+    "SIMIGO_EXPERIMENT_ROOT",
+    "SIMIGO_HEADLESS_ES1_CACHE_IDENTITY",
+    "SIMIGO_HEADLESS_MODEL_PATH",
+    "SIMIGO_HEADLESS_ROLE",
+    "SIMIGO_HEADLESS_STATE_ID",
+    "SIMIGO_HOME",
+    "SIMIGO_RUN_ID"
+  ],
+  "is_database_url" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4b\/home\/simigo.sqlite3",
+  "model_identity" : {
+    "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_repo_id" : "mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "model_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_root_id" : "huggingface-cache"
+  },
+  "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "observation" : {
+    "cache_hit_tokens_engine_reported" : 0,
+    "cache_reuse_mode_engine_reported" : "cold",
+    "definitions" : {
+      "cache_hit_tokens_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.cachedPromptTokenCount\/reportedCacheHit; tokens reused from KV, engine measured.",
+      "cache_reuse_mode_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.cacheReuseMode; cold => prior compute re-prefilled.",
+      "forward_calls" : "NOT_INSTRUMENTED (no per-forward hook in this layer; use generation_tokens as an ENGINE_RUNTIME token-granularity proxy, explicitly labelled).",
+      "generation_tokens_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.generationTokenCount; decode tokens ≈ forward passes at token granularity (approximate; per-layer forward NOT_INSTRUMENTED).",
+      "physical_page_return" : "NOT_INSTRUMENTED\/BLOCKED — malloc_zone_pressure_relief is only an allocator HINT; no independent evidence the OS reclaimed physical pages (footprint\/RSS diffs are explicitly excluded by the gate definition).",
+      "prefill_tokens_observed" : "LEVEL=ENGINE_RUNTIME; SOURCE=NativeMLX prefill.progress(total); actual tokens the engine prefilled for the executed request (not requested tokens).",
+      "reference_release" : "LEVEL=LIFECYCLE_EVENT; SOURCE=suspend path state mutation; sessions_before\/after and container_present_before\/absent_after are READ FROM RUNTIME STATE by the caller (not asserted by the recorder). model_container_ref_dropped is derived as present_before && absent_after. Proves in-process logical REFERENCE release only — NOT that ARC\/MLX freed memory back to the OS.",
+      "resource_reclaim" : "LEVEL=LIFECYCLE_EVENT; SOURCE=Memory.clearCache() returned; count of explicit MLX cache-reclaim OPERATIONS INVOKED on the production suspend path. Records invocation only — reclaimed bytes are not observable here, and this is NOT physical page return."
+    },
+    "events" : {
+      "cache_save_checkpoint" : 1,
+      "checkpoint_failed" : 0,
+      "cold_rebuild" : 1,
+      "lifecycle_resume" : 0,
+      "lifecycle_suspend" : 0,
+      "model_container_absent_after" : false,
+      "model_container_present_before" : false,
+      "model_container_ref_dropped" : false,
+      "pool_bind_failed" : 0,
+      "pool_bind_hit_cacheLoad" : 0,
+      "prefix_mismatch" : 0,
+      "reference_release" : 0,
+      "resource_reclaim" : 0,
+      "reuse_miss" : 0,
+      "sessions_after_release" : -1,
+      "sessions_released_at_release" : 0
+    },
+    "events_ordered" : [
+      {
+        "at_ms" : 3164,
+        "event" : "cold_rebuild",
+        "seq" : 1
+      },
+      {
+        "at_ms" : 4400,
+        "event" : "cache_save",
+        "seq" : 2
+      }
+    ],
+    "generate_passes" : 1,
+    "generation_tokens_engine_reported" : 6,
+    "observed_at_epoch_ms" : 1792776980900,
+    "pid" : 16347,
+    "prefill_tokens_observed" : 29,
+    "prompt_tokens_engine_reported" : 29,
+    "reused_session" : false
+  },
+  "path_class" : "restricted_production_path",
+  "pid" : 16347,
+  "prefill_forward_calls" : "PARTIAL_SEE_OBSERVATION_SNAPSHOT",
+  "prefix_pool_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4b\/cache_es2\/prefix-pool",
+  "reading_state_id" : "S-0001",
+  "real_model_continuation" : true,
+  "recovered_settlement_id" : "6ECE0365-73A8-4EEB-B404-F6C8C5EFFAFE",
+  "result_reuse_via_IS" : true,
+  "role" : "consume",
+  "run_id" : "m4b",
+  "runtime_identity" : {
+    "build_configuration" : "RELEASE",
+    "build_id_sha256" : "254f01d62791eed40406253b319bd32efb1dd103ac10d75e86526c36e15655c7",
+    "bundle_macho_images" : [
+      {
+        "bytes" : 104981040,
+        "file" : "SimiGo",
+        "sha256" : "dacf2fc353114088f7fd4079d8e75e8094c4af394c74d0809ccb2d65294dff1c"
+      }
+    ],
+    "executable_bytes" : 104981040,
+    "executable_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/install\/SimiGo.app\/Contents\/MacOS\/SimiGo",
+    "executable_sha256" : "dacf2fc353114088f7fd4079d8e75e8094c4af394c74d0809ccb2d65294dff1c",
+    "os_version" : "Version 27.0.1 (Build 26A434)"
+  },
+  "settlement_binding_code" : "",
+  "settlement_binding_detail" : "settlement bound to this model and tokenizer",
+  "settlement_binding_model_matched" : true,
+  "settlement_binding_status" : "ok",
+  "settlement_binding_tokenizer_matched" : true,
+  "settlement_digest_verified" : true,
+  "settlement_validity_valid" : true,
+  "simigo_home" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4b\/home",
+  "status" : "OK",
+  "tokenizer_identity" : [
+    {
+      "file" : "tokenizer.json",
+      "sha256" : "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    {
+      "file" : "tokenizer_config.json",
+      "sha256" : "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+    },
+    {
+      "file" : "vocab.json",
+      "sha256" : "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ],
+  "u1_payload_digest_from_is" : "03e868d4477d8579ff878bf7a7410eb865877e4d067483adabb484971270230d",
+  "u1_recovered_value" : "delta9",
+  "u1_recovery_api" : "SimiGoESISDatabase.readSettlementReceipts() filtered by stateID, then SimiGoSettlementAuthority.payloadDigestMatches + settlementValidity",
+  "u1_value_differs_from_baseline" : true,
+  "u2_expected_value" : "delta9-U2",
+  "u2_generation_tokens" : 6,
+  "u2_identity_bindings_recorded" : true,
+  "u2_output_contains_expected_u2" : true,
+  "u2_output_contains_recovered_value" : true,
+  "u2_prompt_contains_recovered_value" : true,
+  "u2_prompt_text" : "Recovered prior result: delta9. Output exactly one line and nothing else: RESULT=delta9-U2",
+  "u2_prompt_tokens" : 29,
+  "u2_settlement_payload_digest" : "176d045da58bd38ada5cafdd79fe293cf9ecb13ff8308311dd4d5a42f15c59ca",
+  "u2_state_id" : "S-0002",
+  "u2_value_derivation" : "u2_expected = u1_recovered_value + \"-U2\"",
+  "value_carrying_env_channels" : [
+
+  ]
+}

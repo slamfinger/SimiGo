@@ -1,0 +1,260 @@
+{
+ "counts": {
+  "BLOCKED": 3,
+  "FAIL": 1,
+  "INCONCLUSIVE": 0,
+  "NOT_INSTRUMENTED": 1,
+  "PASS": 10
+ },
+ "gates": {
+  "app_suite_and_isolation": {
+   "checks": {
+    "app_suite_207_executed": true,
+    "app_suite_executed": true,
+    "app_suite_no_failures": true,
+    "isolated_run_present": true,
+    "isolation_root_fresh": true,
+    "no_real_user_state_write": true,
+    "no_violation_events": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "artifact_identity_recomputed": {
+   "checks": {
+    "branch_matches_freeze": true,
+    "bundle_file_count_reproduces": true,
+    "bundle_manifest_matches_record": true,
+    "changed_file_digests_reproduce": true,
+    "codesign_verifies_now": true,
+    "dirty_set_matches_freeze": true,
+    "dmg_digest_reproduces": true,
+    "executable_digest_reproduces": true,
+    "executable_size_reproduces": true,
+    "executable_uuid_recorded": true,
+    "head_matches_freeze": true,
+    "info_plist_digest_reproduces": true,
+    "model_file_digests_reproduce": true,
+    "model_files_present": true,
+    "model_single_revision": true,
+    "model_symlinks_unchanged": true,
+    "recheck_present": true,
+    "recheck_verdict_pass": true
+   },
+   "note": "Every source, model, DMG and installed-bundle identity is re-derived from disk in evidence/recheck_artifacts.json; a mismatch fails this gate.",
+   "verdict": "PASS"
+  },
+  "build_and_package": {
+   "checks": {
+    "build_version_26": true,
+    "bundle_id_is_product": true,
+    "bundle_tree_digest_recorded": true,
+    "codesign_valid": true,
+    "dmg_present": true,
+    "executable_digest_recorded": true,
+    "gatekeeper_assessed": true,
+    "install_identity_present": true,
+    "marketing_version_2_2_0": true,
+    "release_build_succeeded": true
+   },
+   "note": "gatekeeper_assessed only records that a local, non-notarized RC is rejected by Gatekeeper; it is an environment constraint, not a build failure.",
+   "verdict": "PASS"
+  },
+  "experiment_non_interference": {
+   "checks": {
+    "diff": true,
+    "post": true,
+    "pre": true,
+    "real_user_state_write_count_zero": true,
+    "reference_changes_zero": true,
+    "violation_events_zero": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "install_and_operate": {
+   "checks": {
+    "bootstrap_models_discovered": true,
+    "bootstrap_no_issues": true,
+    "bootstrap_report_present": true,
+    "bootstrap_schema_v3": true,
+    "gui_prompt_ran_real_model": false,
+    "installed_binary_ran": true,
+    "isolation_env_seen_by_app": true
+   },
+   "note": "Installed app launches with isolated roots and completes bootstrap; the user-visible prompt could not be driven, so the GUI inference leg is unproven.",
+   "verdict": "BLOCKED"
+  },
+  "negative_controls_refuse_before_generation": {
+   "checks": {
+    "consume_m4a_ncinval.json": {
+     "blocked": true,
+     "expected_stage": "is_verify_u1",
+     "generation_call_count_zero": true,
+     "stage": "is_verify_u1",
+     "stage_matches": true
+    },
+    "consume_m4a_ncleak.json": {
+     "blocked": true,
+     "expected_stage": "input_channel_guard",
+     "generation_call_count_zero": true,
+     "stage": "input_channel_guard",
+     "stage_matches": true
+    },
+    "consume_m4a_ncmiss.json": {
+     "blocked": true,
+     "expected_stage": "is_verify_u1",
+     "generation_call_count_zero": true,
+     "stage": "is_verify_u1",
+     "stage_matches": true
+    },
+    "consume_m4a_ncmodel.json": {
+     "blocked": true,
+     "expected_stage": "is_binding_verify",
+     "generation_call_count_zero": true,
+     "stage": "is_binding_verify",
+     "stage_matches": true
+    },
+    "consume_m4a_nctamper.json": {
+     "blocked": true,
+     "expected_stage": "is_verify_u1",
+     "generation_call_count_zero": true,
+     "stage": "is_verify_u1",
+     "stage_matches": true
+    }
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "package_suite": {
+   "checks": {
+    "package_85_executed": true,
+    "package_test_log_present": true,
+    "package_zero_failures": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "per_layer_forward_calls": {
+   "checks": {
+    "instrumented": false
+   },
+   "note": "No per-layer forward-count instrumentation exists in the product.",
+   "verdict": "NOT_INSTRUMENTED"
+  },
+  "physical_page_return": {
+   "checks": {
+    "footprint_only": true,
+    "os_level_page_return_evidence": false
+   },
+   "note": "No OS-level page-return evidence was collected; footprint/exit is supporting only.",
+   "verdict": "BLOCKED"
+  },
+  "product_service_http": {
+   "checks": {
+    "authorized_request_completed": false,
+    "listening_socket_found": false,
+    "probe_present": true
+   },
+   "note": "No Service/HTTPServer evidence: the installed app bound no port (model never loaded, so HTTPServer was never constructed) and no authorized client proof existed. The authorization boundary was left unrelaxed.",
+   "verdict": "BLOCKED"
+  },
+  "research_chain_controlled_difference": {
+   "checks": {
+    "controlled_difference_observed": true,
+    "counterfactual_baseline_differs": true,
+    "diff_es1_settlement_value_a": "hello",
+    "diff_es1_settlement_value_b": "delta9",
+    "diff_es2_output_a": "RESULT=hello-U2",
+    "diff_es2_output_b": "RESULT=delta9-U2",
+    "es1_exited_before_es2": true,
+    "es1_identity_bound": true,
+    "es1_rc_zero": true,
+    "es1_readback_from_is": true,
+    "es1_real_generation": true,
+    "es1_settled": true,
+    "es1_status_ok": true,
+    "es2_binding_ok": true,
+    "es2_digest_verified": true,
+    "es2_fresh_cache": true,
+    "es2_new_pid": true,
+    "es2_no_value_channel": true,
+    "es2_output_expected": true,
+    "es2_prompt_carries_value": true,
+    "es2_rc_zero": true,
+    "es2_real_continuation": true,
+    "es2_recovered_from_is": true,
+    "es2_status_ok": true,
+    "es2_u2_settled": true,
+    "es2_validity_verified": true,
+    "u1_differs_from_baseline": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "research_chain_negative_controls": {
+   "checks": {
+    "m4a_nc1_rc_6": true,
+    "m4a_nc2_rc_6": true,
+    "m4a_nc3_rc_6": true,
+    "m4a_nc4_rc_6": true,
+    "m4a_nc5_rc_2": true,
+    "m4a_nc6_rc_2": true,
+    "m4a_nc7_rc_7": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "research_chain_primary": {
+   "checks": {
+    "counterfactual_baseline_differs": true,
+    "es1_exited_before_es2": true,
+    "es1_identity_bound": true,
+    "es1_rc_zero": true,
+    "es1_readback_from_is": true,
+    "es1_real_generation": true,
+    "es1_settled": true,
+    "es1_status_ok": true,
+    "es2_binding_ok": true,
+    "es2_digest_verified": true,
+    "es2_fresh_cache": true,
+    "es2_new_pid": true,
+    "es2_no_value_channel": true,
+    "es2_output_expected": true,
+    "es2_prompt_carries_value": true,
+    "es2_rc_zero": true,
+    "es2_real_continuation": true,
+    "es2_recovered_from_is": true,
+    "es2_status_ok": true,
+    "es2_u2_settled": true,
+    "es2_validity_verified": true,
+    "u1_differs_from_baseline": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "resource_lifecycle": {
+   "checks": {
+    "container_ref_dropped": false,
+    "memprobe_ran": true,
+    "reference_release_observed": false,
+    "resource_reclaim_observed": false,
+    "resume_generate_observed": true,
+    "suspend_returned_true": false,
+    "warm_generate_observed": true
+   },
+   "note": "Observed on the Release binary: reclaim/suspend did not take effect, so the lifecycle claim is NOT satisfied even though the probe itself completed.",
+   "verdict": "FAIL"
+  },
+  "source_and_model_frozen": {
+   "checks": {
+    "model_identity_present": true,
+    "source_freeze_present": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  }
+ },
+ "generated_at": "2026-10-24T01:15:08+0800",
+ "overall": "FAIL"
+}

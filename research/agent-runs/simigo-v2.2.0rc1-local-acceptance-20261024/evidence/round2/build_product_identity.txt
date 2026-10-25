@@ -1,0 +1,9 @@
+# round2 build product identity 2026-10-23T17:23:48Z
+path=/Users/mr.simi/Documents/SimiGo/build/release-v2.1/Build/Products/Release/SimiGo.app
+exe_sha256=603bc824d6f8df0b9bb3529d565195d3179312188720e1fb191322b0c8d57ff7
+exe_uuid=EE3B7D96-C979-33B5-B255-B708C4792C80
+exe_size=104962864
+mtime=2026-10-24T01:21:41Z
+marketing=2.2.0 build=26
+--- memprobe seam check (must be absent in Release) ---
+1

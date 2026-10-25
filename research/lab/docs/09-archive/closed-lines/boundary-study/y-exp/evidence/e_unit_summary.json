@@ -1,0 +1,47 @@
+{
+  "sheet": "表2-分部分项清单",
+  "header": {
+    "D2:D4": "计量\n单位",
+    "E2:E4": "工程数量",
+    "I2:K2": "合价（不含税）",
+    "I3:I4": "合同",
+    "J3:J4": "项目部"
+  },
+  "nonempty_E_rows": 816,
+  "cached_numeric_E_rows": 815,
+  "hardcoded_numeric_E_rows": 793,
+  "formula_E_rows": 22,
+  "unit_counts": {
+    "计量\\n单位": 1,
+    "总额": 17,
+    "m2": 31,
+    "m3": 310,
+    "m": 65,
+    "m³": 207,
+    "kg": 135,
+    "座": 2,
+    "块": 2,
+    "㎡": 2,
+    "个": 26,
+    "dm3": 2,
+    "m²": 9,
+    "套": 3,
+    "kg ": 2,
+    "t": 2
+  },
+  "E_min_max": {
+    "min": 0.16,
+    "max": 32524518.6
+  },
+  "formulas_referencing_E": 721,
+  "reference_formula_columns": {
+    "K": 27,
+    "J": 236,
+    "L": 177,
+    "G": 39,
+    "S": 117,
+    "T": 118,
+    "E": 6,
+    "M": 1
+  }
+}

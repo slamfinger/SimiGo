@@ -1,0 +1,110 @@
+{
+ "a_phase": "pre-eb1",
+ "b_phase": "post-eb1",
+ "a_taken_at": "2026-10-26T02:21:38+0800",
+ "b_taken_at": "2026-10-26T02:23:55+0800",
+ "real_roots": [
+  "/Users/mr.simi/.simigo",
+  "/Users/mr.simi/Library/Application Support/SimiGo"
+ ],
+ "allowlisted_abs_prefixes": [
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/run_isolated_eb1"
+ ],
+ "entries": {
+  "/Users/mr.simi/.cache/huggingface": {
+   "status": "DIR",
+   "role": "reference",
+   "a_files": 951,
+   "b_files": 951,
+   "a_bytes": 242509940763,
+   "b_bytes": 242509940763,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "reference_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": [],
+    "reference": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo": {
+   "status": "DIR",
+   "role": "real_state",
+   "a_files": 8993,
+   "b_files": 8994,
+   "a_bytes": 33003151881,
+   "b_bytes": 33003162125,
+   "unexpected_new": 1,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 1,
+   "expected_change_count": 0,
+   "reference_change_count": 0,
+   "unexpected_details": {
+    "new": [
+     "localb/.DS_Store"
+    ],
+    "deleted": [],
+    "modified": [
+     {
+      "rel": ".DS_Store",
+      "a": {
+       "bytes": 34820,
+       "sha256": "94f60c4a9c147415edb8695065ea6cb6aa9ab6337d5510763ed8e26d4277f99e"
+      },
+      "b": {
+       "bytes": 36868,
+       "sha256": "42c8f2f6ecd1566e9f87d13868bf845c3f49afcd663359868980b8edcb85e5e2"
+      },
+      "content_compared": true
+     }
+    ],
+    "expected": [],
+    "reference": []
+   },
+   "clean": false
+  },
+  "/Users/mr.simi/Library/Application Support/SimiGo": {
+   "status": "DIR",
+   "role": "real_state",
+   "a_files": 1,
+   "b_files": 1,
+   "a_bytes": 1068,
+   "b_bytes": 1068,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "reference_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": [],
+    "reference": []
+   },
+   "clean": true
+  }
+ },
+ "violation_events": 2,
+ "distinct_changed_abs_paths": [
+  "/Users/mr.simi/.simigo/.DS_Store",
+  "/Users/mr.simi/.simigo/localb/.DS_Store"
+ ],
+ "distinct_violating_abs_paths": [
+  "/Users/mr.simi/.simigo/.DS_Store",
+  "/Users/mr.simi/.simigo/localb/.DS_Store"
+ ],
+ "distinct_expected_abs_paths": [],
+ "distinct_violation_count": 2,
+ "reference_change_paths": [],
+ "real_user_state_write_paths": [
+  "/Users/mr.simi/.simigo/.DS_Store",
+  "/Users/mr.simi/.simigo/localb/.DS_Store"
+ ],
+ "real_user_state_write_count": 2
+}

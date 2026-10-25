@@ -1,0 +1,7 @@
+{
+  "phase": "old_process_S1_declaration",
+  "observed": "declared/s1.json was not created by orchestration before old process read it",
+  "resolution": "abort orchestration; preserve partial evidence; fix declared input creation and rerun under new run id",
+  "implementation_change": false,
+  "protocol_change": false
+}

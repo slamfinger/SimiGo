@@ -1,0 +1,23 @@
+{
+ "raw": "os_page_return_raw_os6c.json",
+ "verdict": "PASS",
+ "checks": {
+  "A1_shipped_suspend_observed": true,
+  "A2_loaded_state_before_anchor": true,
+  "A3_resident_set_fell": true,
+  "A4_low_state_sustained": true,
+  "A5_kernel_returned_the_pages": true,
+  "A6_compressor_not_the_sink": true,
+  "A7_process_alive_and_not_exiting": true,
+  "A8_noise_floor_small": true,
+  "A9_app_and_kernel_agree": true
+ },
+ "numbers": {
+  "kernel_resident_drop_gib": 16.1,
+  "kernel_returned_gib": 8.24,
+  "kernel_returned_over_drop": 0.512,
+  "compressor_delta_gib": -0.01,
+  "low_streak_seconds": 0.73,
+  "exit_teardown_free_gain_bytes": 15009284096
+ }
+}

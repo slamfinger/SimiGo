@@ -1,0 +1,296 @@
+{
+  "claim_limits": [
+    "Cost is reported honestly: each H1/H2 recompute process loads the real model and generates its own item once; reuse of V1 means V1 performs no generation, not that no FLOPs occur anywhere.",
+    "H3 reuse is shown at the model-free demand/settlement decision layer; the ordinary per-item entry computes an item it is explicitly asked to run.",
+    "Only this four-node two-branch fixture is covered; results demonstrate feasibility of selective invalidation on the production path, not universal validity across all graphs, models or backends."
+  ],
+  "conditions": [
+    {
+      "db_post_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "db_pre_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "id": "H0",
+      "kind": "preflight",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "worktree + historical roots snapshotted before edits"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/preflight/prechange-snapshot.json",
+      "state_post_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "state_pre_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    },
+    {
+      "checks": {
+        "A_baseline_all_reusable": true,
+        "B_selective_only_uchain_stale": true,
+        "C_u3_closure_has_u1_u2": true,
+        "D_stale_u1_refuses_u2": true,
+        "E_consumer_no_key_verifies": true
+      },
+      "db_post_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "db_pre_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "exit_code": 0,
+      "id": "H5",
+      "kind": "model_free_preflight",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "A_computed=[] A_reused=['TASK-SOURCE', 'TASK-SOURCE-B', 'TASK-U1', 'TASK-U2', 'TASK-U3', 'TASK-V1']",
+        "B_computed=['TASK-U1', 'TASK-U2', 'TASK-U3'] B_reused=['TASK-SOURCE', 'TASK-SOURCE-B', 'TASK-V1']",
+        "C_closure=['TASK-SOURCE', 'TASK-U1', 'TASK-U2']",
+        "D_refused=True db_unchanged=True",
+        "E_ok=True"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H5/h5.json",
+      "state_post_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "state_pre_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    },
+    {
+      "computed_item_ids": [
+        "TASK-U1",
+        "TASK-U2",
+        "TASK-U3"
+      ],
+      "db_post_sha256": "a9f4e3cbc8741a7b99438d85de3394cba11530abf7e386e35949567a76b5299a",
+      "db_pre_sha256": "e2711aaac55dd40c2b063b531fbf0d93c31ed6a3ad0be9fc43402dcace85eaf9",
+      "exit_code": 1,
+      "id": "H1",
+      "kind": "real_model_baseline",
+      "model_generate_calls": 4,
+      "model_loads": 4,
+      "notes": [
+        "H1 settle order U1,U2,U3,V1 through ordinary continueTask; each item generated exactly once on the real model"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H1",
+      "reused_item_ids": [
+        "TASK-SOURCE",
+        "TASK-U1",
+        "TASK-U2"
+      ],
+      "stages": [
+        {
+          "computed_item_ids": [
+            "TASK-U1"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-u1",
+          "execution_instance_id": "PRODUCTION-REAL-PALACE",
+          "exit_code": 0,
+          "input_sha256": "b0ce34646afc108d674c8e1607fb368967194be4a3271aed2a50e071ae988e0d",
+          "item": "TASK-U1",
+          "output_sha256": "1beb331a767a93dd75ede6a31707a6303a45cc318cb52ee4bc142730a818dabf",
+          "pid": 75724,
+          "reused_item_ids": [
+            "TASK-SOURCE"
+          ],
+          "settlement_object_ids": [
+            "ba2cfd0ac8d09a48099aad3e7e47d2b9ec3911763ccc6489a00a4a72085892f2",
+            "2bd163715dea6c87678ed81a0c52284adbee3c4e3b94e9f15e9c2aabd611c0f4"
+          ],
+          "signature_object_ids": [
+            "81bbbfb165c00b66c6ce713393389706c3266ea4a9f7d8f614bf27faaed3f84e"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        },
+        {
+          "computed_item_ids": [
+            "TASK-U2"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-u2",
+          "execution_instance_id": "PRODUCTION-REAL-PALACE",
+          "exit_code": 0,
+          "input_sha256": "50f53943a04093b6912ed827d051c71b549deb94c1955ed7133b3e0821d443f9",
+          "item": "TASK-U2",
+          "output_sha256": "e60879cc7a2a292a2af1cff7d21015a0061851d0654ca93c691b06f2d139c20b",
+          "pid": 76385,
+          "reused_item_ids": [
+            "TASK-SOURCE",
+            "TASK-U1"
+          ],
+          "settlement_object_ids": [
+            "ba2cfd0ac8d09a48099aad3e7e47d2b9ec3911763ccc6489a00a4a72085892f2",
+            "2bd163715dea6c87678ed81a0c52284adbee3c4e3b94e9f15e9c2aabd611c0f4",
+            "4796b948e53240e96de14ea37f89cd07c21b5d51dddb3cdbbbc744536b6edf47"
+          ],
+          "signature_object_ids": [
+            "39ece860f89550f6865dadb926ac4e6d450f64f863997ea861ffa002e02114ff"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        },
+        {
+          "computed_item_ids": [
+            "TASK-U3"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-u3",
+          "execution_instance_id": "PRODUCTION-REAL-PALACE",
+          "exit_code": 0,
+          "input_sha256": "b0dc430467f827c9ce3130e426f9bbe4cb6bebc081b1d1a9156672edd3033a80",
+          "item": "TASK-U3",
+          "output_sha256": "b60690b79b5dd70b920d263001b884ed78029b38ecce346b9760ab066b2e317e",
+          "pid": 76395,
+          "reused_item_ids": [
+            "TASK-SOURCE",
+            "TASK-U1",
+            "TASK-U2"
+          ],
+          "settlement_object_ids": [
+            "ba2cfd0ac8d09a48099aad3e7e47d2b9ec3911763ccc6489a00a4a72085892f2",
+            "2bd163715dea6c87678ed81a0c52284adbee3c4e3b94e9f15e9c2aabd611c0f4",
+            "4796b948e53240e96de14ea37f89cd07c21b5d51dddb3cdbbbc744536b6edf47",
+            "963309a2a6d9b77118323bb3193ee2861479884d9d9beb091d6a690b7001bb64"
+          ],
+          "signature_object_ids": [
+            "a7f397991d2810aa2254a7966aa40b90b5607e28f68045c21d1ef9ce4a408da0"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        },
+        {
+          "computed_item_ids": [],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-v1",
+          "execution_instance_id": "",
+          "exit_code": 1,
+          "input_sha256": "",
+          "item": "TASK-V1",
+          "output_sha256": "",
+          "pid": 76413,
+          "reused_item_ids": [],
+          "settlement_object_ids": [],
+          "signature_object_ids": [
+            ""
+          ],
+          "terminal_state": "TASK_FAILED"
+        }
+      ],
+      "state_post_sha256": "b97cc5fec3e469a5dd80e6b75dddd29e2b62a0376bc3ecebab466b5d13be1ae3",
+      "state_pre_sha256": "b97cc5fec3e469a5dd80e6b75dddd29e2b62a0376bc3ecebab466b5d13be1ae3",
+      "terminal_state": "FAILED",
+      "tokenize_seed_calls": 4,
+      "tokenize_text_calls": 4
+    },
+    {
+      "computed_item_ids": [],
+      "db_post_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "db_pre_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "id": "H2",
+      "kind": "H2",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "blocked: H1 did not reach OBSERVED"
+      ],
+      "raw_evidence_path": "",
+      "reused_item_ids": [],
+      "state_post_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "state_pre_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "terminal_state": "BLOCKED_NOT_RUN",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    },
+    {
+      "computed_item_ids": [
+        "TASK-V1"
+      ],
+      "db_post_sha256": "7c6810725eb2d6fda2a9ec72500ea8e4398e9656340295cf33c834bb1b3e276f",
+      "db_pre_sha256": "a9f4e3cbc8741a7b99438d85de3394cba11530abf7e386e35949567a76b5299a",
+      "exit_code": 1,
+      "id": "H3",
+      "kind": "unchanged_source_control",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "model-free demand probe over an unchanged-source copy: the ordinary path reuses every valid settlement and recomputes nothing. The ordinary per-item SimiGoTaskRun entry computes the item it is explicitly asked to run, so reuse (not regeneration) is shown at the demand/settlement decision layer rather than by suppressing an item-level call."
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H3",
+      "reused_item_ids": [
+        "TASK-SOURCE",
+        "TASK-SOURCE-B",
+        "TASK-U1",
+        "TASK-U2",
+        "TASK-U3"
+      ],
+      "state_post_sha256": "b97cc5fec3e469a5dd80e6b75dddd29e2b62a0376bc3ecebab466b5d13be1ae3",
+      "state_pre_sha256": "b97cc5fec3e469a5dd80e6b75dddd29e2b62a0376bc3ecebab466b5d13be1ae3",
+      "terminal_state": "FAILED",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    },
+    {
+      "computed_item_ids": [],
+      "db_post_sha256": "bdb808e274a7d98f69e2283a8f053f2a4336b213d263c57bbfdd6022d43cfe88",
+      "db_pre_sha256": "bdb808e274a7d98f69e2283a8f053f2a4336b213d263c57bbfdd6022d43cfe88",
+      "exit_code": 0,
+      "id": "H4",
+      "kind": "invalid_source_provenance_negative_control",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "SOURCE-A value rewritten without re-signing -> consumer verification refuses admission before tokenize/generate",
+        "refusal={\"item_id\": \"TASK-SOURCE\", \"kind\": \"ADMISSION_REFUSED\", \"reason\": \"SETTLEMENT_SIGNATURE_INVALID\", \"stage\": \"SETTLEMENT_SIGNATURE_INVALID\"}"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H4",
+      "refusal": {
+        "item_id": "TASK-SOURCE",
+        "kind": "ADMISSION_REFUSED",
+        "reason": "SETTLEMENT_SIGNATURE_INVALID",
+        "stage": "SETTLEMENT_SIGNATURE_INVALID"
+      },
+      "reused_item_ids": [],
+      "state_post_sha256": "b97cc5fec3e469a5dd80e6b75dddd29e2b62a0376bc3ecebab466b5d13be1ae3",
+      "state_pre_sha256": "b97cc5fec3e469a5dd80e6b75dddd29e2b62a0376bc3ecebab466b5d13be1ae3",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    }
+  ],
+  "graph": {
+    "affected_chain": [
+      "TASK-SOURCE",
+      "TASK-U1",
+      "TASK-U2",
+      "TASK-U3"
+    ],
+    "unaffected_branch": [
+      "TASK-SOURCE-B",
+      "TASK-V1"
+    ]
+  },
+  "guards": {
+    "historical_artifacts": "PASS",
+    "workspace": "PASS"
+  },
+  "prechange_snapshot_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+  "research_claim": "A fresh native execution instance reuses valid settled work and recomputes only the transitive dependency closure affected by an upstream source change.",
+  "round": "H",
+  "run_label": "es-is-selective-invalidation-20261022h",
+  "schema_version": "1.0",
+  "terminal_state": "FAILED"
+}

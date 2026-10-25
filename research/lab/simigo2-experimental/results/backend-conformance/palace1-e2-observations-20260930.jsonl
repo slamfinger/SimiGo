@@ -1,0 +1,7 @@
+{"ts":"2026-09-30T11:50:07Z","probe":"setup","history_entries":"17"}
+{"ts":"2026-09-30T11:50:07Z","probe":"admit","variant":"think:0 fp=none -> MISS"}
+{"ts":"2026-09-30T11:50:07Z","probe":"admit","variant":"think:0 fp=probe-fp -> MISS"}
+{"ts":"2026-09-30T11:50:07Z","probe":"admit","variant":"think:1 fp=none -> HIT coveredMessages=17 boundary=199f82cc086b805f"}
+{"ts":"2026-09-30T11:50:07Z","probe":"admit","variant":"think:1 fp=probe-fp -> MISS"}
+{"ts":"2026-09-30T11:50:07Z","probe":"setup","pool_namespaces_on_disk":"44eaa202ce92e06d,7cc94e3f614b3e35"}
+{"ts":"2026-09-30T11:50:07Z","probe":"teardown","nature":"read-only admission probe; no export; no eviction; real pool untouched"}

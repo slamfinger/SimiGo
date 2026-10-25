@@ -1,0 +1,376 @@
+{
+  "admitted_input_byte_length" : 168,
+  "admitted_input_sha256" : "02f684ce720ea9d10e81ce4aa5a05383815fd06480e2a0539a237a376602e03e",
+  "advancement_id" : "h1-task-u3",
+  "bindings" : [
+    {
+      "byte_length" : 21,
+      "byte_offset" : 44,
+      "item_id" : "TASK-U2",
+      "placeholder" : "answer",
+      "settlement_object_id" : "58440a577fda46c985040dcdf5c775b62940616577cd01e9efcb2163637b36dc",
+      "value" : "8424e7152caafb1a-b0ff",
+      "value_sha256" : "f834986e34e2fed7c46250305da3212a47f15dbca076b96e5cf50cdf1ac75395"
+    }
+  ],
+  "completed_at_utc" : "2026-10-22T12:10:47Z",
+  "consumed_prefix_length" : 24,
+  "counters" : {
+    "model_continuation_calls" : 1,
+    "tokenize_seed_calls" : 1,
+    "tokenize_text_calls" : 1
+  },
+  "database" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/runs\/H1\/carrier.sqlite",
+  "database_after" : {
+    "inode" : "110356785",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/runs\/H1\/carrier.sqlite",
+    "sha256" : "4d92926e04b23254604a6b76c369e2ec2f55806a4f9f8d54821c0f76c70d40b3",
+    "size_bytes" : 90112
+  },
+  "database_before" : {
+    "inode" : "110356785",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/runs\/H1\/carrier.sqlite",
+    "sha256" : "92c948d3adf9d5e300cc4b61c38c4fa750c5adc51589453ef6adcd7589fc4715",
+    "size_bytes" : 81920
+  },
+  "database_unchanged" : false,
+  "declared_dependencies" : [
+    "TASK-U2"
+  ],
+  "demand_id" : "handoff-u3",
+  "dependency_settlement_object_ids" : {
+    "TASK-SOURCE" : "74fd32a8635f37d16c81be031e2c37f13ac6fad7c1592da6bd684a4eabe6a9e3",
+    "TASK-U1" : "38069b366c5934153183b6b546f1f93ff76cac72fc877e462dbf5c82a358cbb7",
+    "TASK-U2" : "58440a577fda46c985040dcdf5c775b62940616577cd01e9efcb2163637b36dc"
+  },
+  "duration_seconds" : 11.170426964759827,
+  "entry" : "SimiGoTaskRun",
+  "evaluated_at_utc" : "2026-10-22T12:10:36Z",
+  "execution_state" : {
+    "advanced_lifecycle" : "active",
+    "advanced_position" : 1,
+    "advanced_state_id" : "h1-task-u3",
+    "created" : true,
+    "execution_id" : "PRODUCTION-REAL-PALACE",
+    "lifecycle_records" : [
+      {
+        "execution_id" : "PRODUCTION-REAL-PALACE",
+        "operation" : "created",
+        "related_id" : null,
+        "result_lifecycle" : "attached",
+        "result_position" : 0,
+        "sequence" : 1
+      },
+      {
+        "execution_id" : "PRODUCTION-REAL-PALACE",
+        "operation" : "continued",
+        "related_id" : null,
+        "result_lifecycle" : "active",
+        "result_position" : 1,
+        "sequence" : 2
+      }
+    ]
+  },
+  "failure" : "",
+  "generated_text" : " STAMP=8424e7152caafb1a\nYou are executing one task step in a new execution instance.\nStep 3",
+  "generated_text_sha256" : "a65fd68ebf19bec2e160859b232aec6b462400d5552a0eceb18d36aab7c062ca",
+  "generated_token_ids" : [
+    3928,
+    16024,
+    28,
+    23,
+    19,
+    17,
+    19,
+    68,
+    22,
+    16,
+    20,
+    17,
+    924,
+    96834,
+    16,
+    64,
+    198,
+    2610,
+    525,
+    30220,
+    825,
+    3383,
+    3019,
+    304,
+    264,
+    501,
+    11320,
+    2867,
+    624,
+    8304,
+    220,
+    18
+  ],
+  "generation_entered" : true,
+  "input_admission" : {
+    "bindings" : [
+      {
+        "byte_length" : 21,
+        "byte_offset" : 44,
+        "item_id" : "TASK-U2",
+        "placeholder" : "answer",
+        "result_field" : "answer",
+        "result_value_sha256" : "292bb6d309ca47010e05b32b834cd525dc781b0ac8ce02e6a664cc1985100a91",
+        "settlement_object_id" : "58440a577fda46c985040dcdf5c775b62940616577cd01e9efcb2163637b36dc",
+        "value_sha256" : "f834986e34e2fed7c46250305da3212a47f15dbca076b96e5cf50cdf1ac75395"
+      }
+    ],
+    "checks" : {
+      "all_declared_dependencies_admitted" : true,
+      "all_placeholders_bound" : true,
+      "dependency_object_sets_match" : true,
+      "object_identity_matches_bytes" : true,
+      "result_digests_match_values" : true,
+      "settlement_objects_readable" : true,
+      "settlement_signatures_valid" : true,
+      "source_versions_match_items" : true,
+      "validity_satisfied" : true
+    },
+    "declared_dependencies" : [
+      "TASK-U2"
+    ],
+    "dependency_settlement_object_ids" : {
+      "TASK-SOURCE" : "74fd32a8635f37d16c81be031e2c37f13ac6fad7c1592da6bd684a4eabe6a9e3",
+      "TASK-U1" : "38069b366c5934153183b6b546f1f93ff76cac72fc877e462dbf5c82a358cbb7",
+      "TASK-U2" : "58440a577fda46c985040dcdf5c775b62940616577cd01e9efcb2163637b36dc"
+    },
+    "input_byte_length" : 168,
+    "input_sha256" : "02f684ce720ea9d10e81ce4aa5a05383815fd06480e2a0539a237a376602e03e",
+    "settlement_signatures" : [
+      {
+        "algorithm" : "Ed25519",
+        "dependency_object_ids" : {
+
+        },
+        "evaluated_at_utc" : "2026-10-22T12:10:11Z",
+        "event_id" : "0b119ab3c7129d0c91be32fc42e6973197c358690b34695d5f68b4844d7c5621",
+        "event_sequence" : 1,
+        "item_id" : "TASK-SOURCE",
+        "key_id" : "e-round-7a3ac41abffd0656",
+        "payload_sha256" : "07f5778094a70c6e329af3cfb9f92a3c9793a3c2fa5be6c44a564f804378c32b",
+        "producer_execution_id" : "H-DEFINE",
+        "producer_kind" : "carrier_calculator",
+        "producer_run_id" : "h-definition",
+        "result_value_sha256" : "a1c5a4bdbda7054484d4b74578823dd3173cf6a70cbc33613c84ab5331ba9b13",
+        "settlement_object_id" : "74fd32a8635f37d16c81be031e2c37f13ac6fad7c1592da6bd684a4eabe6a9e3",
+        "valid_until_utc" : "2030-12-31T23:59:59Z",
+        "verified" : true
+      },
+      {
+        "algorithm" : "Ed25519",
+        "dependency_object_ids" : {
+          "TASK-SOURCE" : "74fd32a8635f37d16c81be031e2c37f13ac6fad7c1592da6bd684a4eabe6a9e3"
+        },
+        "evaluated_at_utc" : "2026-10-22T12:10:11Z",
+        "event_id" : "c7c005fcadb5d5618847a7581084f9b69b302b03240d1c5c71d02d7500e89233",
+        "event_sequence" : 1,
+        "item_id" : "TASK-U1",
+        "key_id" : "e-round-7a3ac41abffd0656",
+        "payload_sha256" : "7abd79216d8fd2a7587de8843fd2994f7d38939c535300edbf30d816847a725a",
+        "producer_execution_id" : "db485574-a867-4d5e-b4cf-dc1dbafe5a55",
+        "producer_kind" : "model_task",
+        "producer_run_id" : "e-h1-task-u1",
+        "result_value_sha256" : "91278a1e8b92c57fef4cfc77a8a0343564a3f08f8ce06f7675618abd55eec073",
+        "settlement_object_id" : "38069b366c5934153183b6b546f1f93ff76cac72fc877e462dbf5c82a358cbb7",
+        "valid_until_utc" : "2030-12-31T23:59:59Z",
+        "verified" : true
+      },
+      {
+        "algorithm" : "Ed25519",
+        "dependency_object_ids" : {
+          "TASK-SOURCE" : "74fd32a8635f37d16c81be031e2c37f13ac6fad7c1592da6bd684a4eabe6a9e3",
+          "TASK-U1" : "38069b366c5934153183b6b546f1f93ff76cac72fc877e462dbf5c82a358cbb7"
+        },
+        "evaluated_at_utc" : "2026-10-22T12:10:24Z",
+        "event_id" : "0b52c5a6ff9e2fa366e736247cec48b2dfebddb49073eb5b33e90ec6e8bed0cd",
+        "event_sequence" : 1,
+        "item_id" : "TASK-U2",
+        "key_id" : "e-round-7a3ac41abffd0656",
+        "payload_sha256" : "77766e576c89c63a97c193439575100f65e382af11a010112aee3857b925e8e3",
+        "producer_execution_id" : "13733f5b-d652-4442-9fd6-ba8faa1a0610",
+        "producer_kind" : "model_task",
+        "producer_run_id" : "e-h1-task-u2",
+        "result_value_sha256" : "292bb6d309ca47010e05b32b834cd525dc781b0ac8ce02e6a664cc1985100a91",
+        "settlement_object_id" : "58440a577fda46c985040dcdf5c775b62940616577cd01e9efcb2163637b36dc",
+        "valid_until_utc" : "2030-12-31T23:59:59Z",
+        "verified" : true
+      }
+    ],
+    "task_item_id" : "TASK-U3",
+    "template_sha256" : "5086f19bbc46aa9e36403a5600c39499f8d4a15b92e3988df8f30ca1b1193d43"
+  },
+  "input_admission_refusal" : {
+
+  },
+  "input_admission_status" : "ADMITTED",
+  "max_tokens" : 32,
+  "model" : {
+    "snapshot_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "snapshot_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "weight_files" : [
+      {
+        "content" : "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "name" : "model-00001-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "name" : "model-00002-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "name" : "model-00003-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "name" : "model-00004-of-00004.safetensors",
+        "size_bytes" : 76
+      }
+    ],
+    "weights_manifest_sha256" : "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5"
+  },
+  "model_load_seconds" : 2.4883739948272705,
+  "next_input_token_ids" : [
+    198,
+    8304,
+    220,
+    18,
+    25,
+    279,
+    23415,
+    4226,
+    504,
+    3019,
+    220,
+    17,
+    374,
+    220,
+    23,
+    19,
+    17,
+    19,
+    68,
+    22,
+    16,
+    20,
+    17,
+    924,
+    96834,
+    16,
+    64,
+    1455,
+    15,
+    542,
+    624,
+    20841,
+    448,
+    6896,
+    825,
+    1555,
+    323,
+    4302,
+    770,
+    25,
+    3928,
+    16024,
+    38698,
+    1782,
+    220,
+    16,
+    21,
+    12371,
+    5766,
+    1573,
+    279,
+    6275,
+    14769,
+    397,
+    16141,
+    25
+  ],
+  "pid" : 87269,
+  "provenance_identity" : {
+    "build_sha256" : "eab62ddbcdf2c24b8fd62457d9627f158c5e3c316bff78397a8ef692caa72c4c",
+    "execution_id" : "98a6f75c-fed7-4ba0-8fb1-c9f7ff5cd83a",
+    "process_id" : "87269",
+    "run_id" : "e-h1-task-u3"
+  },
+  "run_id" : "e-h1-task-u3",
+  "schema_id" : "SIMIGO-ORDINARY-TASK-ENTRY-V1",
+  "seed_sha256" : "7e83d01163953e25f7077cd5fe00a32c8810ec94488822603722f321c8431292",
+  "seed_source" : "builtin_cold_seed",
+  "settlement" : {
+    "actions" : [
+      {
+        "action" : "REUSE",
+        "item_id" : "TASK-SOURCE",
+        "result_digest" : "a1c5a4bdbda7054484d4b74578823dd3173cf6a70cbc33613c84ab5331ba9b13",
+        "settlement_object_id" : "74fd32a8635f37d16c81be031e2c37f13ac6fad7c1592da6bd684a4eabe6a9e3",
+        "settlement_signature_object_id" : "b441336c6d81d64a9b360d5caa29b6fb4c8edf547f2a9947c65b1a12dc49e9b6"
+      },
+      {
+        "action" : "REUSE",
+        "item_id" : "TASK-U1",
+        "result_digest" : "91278a1e8b92c57fef4cfc77a8a0343564a3f08f8ce06f7675618abd55eec073",
+        "settlement_object_id" : "38069b366c5934153183b6b546f1f93ff76cac72fc877e462dbf5c82a358cbb7",
+        "settlement_signature_object_id" : "ae7d5804e11ca18bdf3b3a3f9e0e666d532f650ff269a12b5169485489ce381e"
+      },
+      {
+        "action" : "REUSE",
+        "item_id" : "TASK-U2",
+        "result_digest" : "292bb6d309ca47010e05b32b834cd525dc781b0ac8ce02e6a664cc1985100a91",
+        "settlement_object_id" : "58440a577fda46c985040dcdf5c775b62940616577cd01e9efcb2163637b36dc",
+        "settlement_signature_object_id" : "d2a11846bfac151e80e0a5802e4d4dacd95e243eca7104f4ae15dfebc2791707"
+      },
+      {
+        "action" : "COMPUTE",
+        "item_id" : "TASK-U3",
+        "result_digest" : "f9bdcd348936365479f923b941d56bee39bb532720f4d10fd437c4c7da72428c",
+        "settlement_object_id" : "f451c5e863c92b925fd91c812c46012949979fd1c22e59037002e37f63e81c02",
+        "settlement_signature_object_id" : "0f73fb605b7fcc4163d38c63ce76ed17771391f11cfdf7a323b4d9afea28e02b"
+      }
+    ],
+    "advanced_lifecycle" : "active",
+    "advanced_position" : 1,
+    "computed_item_ids" : [
+      "TASK-U3"
+    ],
+    "generated_token_count" : 32,
+    "is_confirmation_state_id" : "h1-task-u3:runtime-applied",
+    "is_pending_state_id" : "h1-task-u3",
+    "model_continuation_calls_this_call" : 1,
+    "reused_item_ids" : [
+      "TASK-SOURCE",
+      "TASK-U1",
+      "TASK-U2"
+    ],
+    "settlement_signature_key_id" : "e-round-7a3ac41abffd0656",
+    "settlement_signature_object_id" : "0f73fb605b7fcc4163d38c63ce76ed17771391f11cfdf7a323b4d9afea28e02b",
+    "signed_settlement_object_id" : "f451c5e863c92b925fd91c812c46012949979fd1c22e59037002e37f63e81c02",
+    "tokenize_next_input_calls_this_call" : 1,
+    "tokenize_seed_calls_this_call" : 1,
+    "updated_prefix_token_count" : 112
+  },
+  "started_at_utc" : "2026-10-22T12:10:36Z",
+  "state_after" : {
+    "execution-state.json" : "fa96968eb5763c45693dde66f97e54ca08abcad24b3b15e9c4c88f53372d0baf"
+  },
+  "state_before" : {
+
+  },
+  "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/runs\/H1\/state\/h1-task-u3",
+  "state_unchanged" : false,
+  "task_item_id" : "TASK-U3",
+  "terminal_state" : "TASK_SETTLED",
+  "trust_anchor_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/trust\/settlement-trust-anchor.json",
+  "updated_prefix_token_count" : 112
+}

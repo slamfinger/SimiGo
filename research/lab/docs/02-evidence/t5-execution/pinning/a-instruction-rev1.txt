@@ -1,0 +1,43 @@
+你在完全隔离的 fresh 工作区内执行任务。只能读取/修改当前工作区；禁止访问 MEMORY、palace、git 历史、父目录、仓库文档或网络。只允许使用当前工作区的 ./t4ctl 访问 Information 边界。动作日志逐条追加，不回改。
+
+任务：建立 Workshop Dependency Plan。
+
+固定输入：
+- workshop enrollment：
+  WS-3FAB94 = 29
+  WS-C36165 = 21
+  WS-C7B0F0 = 21
+  WS-394151 = 10
+  WS-ED9D08 = 30
+  WS-70677C = 30
+- rooms and capacities：
+  RM-CDB7 = 48
+  RM-5446 = 30
+  RM-8A08 = 21
+- ordered slots：
+  SLOT-0222 = 09:30
+  SLOT-95D2 = 11:00
+  SLOT-176D = 14:00
+  SLOT-0A9332 = 16:00
+- prerequisites：
+  WS-C36165 requires WS-3FAB94
+  WS-C7B0F0 requires WS-C36165
+  WS-394151 requires WS-3FAB94
+  WS-ED9D08 requires WS-C7B0F0 and WS-394151
+  WS-70677C requires WS-C36165
+- freeze window：WIN-8B1DE7
+
+规则：
+1. dependency level：无 prerequisite 为 L1；其他为 1 + 最大 prerequisite level。
+2. eligible rooms：room capacity >= workshop enrollment。
+3. 生成 Workshop_Dependency_Plan.md，必须包含：
+   - six-workshop inventory（workshop、enrollment、prerequisites）
+   - room inventory（room、capacity）
+   - each workshop 的 eligible room set
+   - prerequisite edges
+   - dependency levels L1..L4
+   - ordered slots
+   - freeze window 标注：WIN-8B1DE7 = frozen
+4. 用 ./t4ctl store --db ./information.sqlite --file Workshop_Dependency_Plan.md 逐字存入。
+5. 创建 todo.md，内容包含「final workshop schedule pending」和 plan identity。
+6. 完成 todo 后立即停止；不要生成 final schedule。

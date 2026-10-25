@@ -1,0 +1,10 @@
+{
+  "canonical_c3_key": "C3_persisted_vs_resolved_byte_equality",
+  "canonical_c3_value": true,
+  "observer_path": "observer_verdict.json",
+  "parsed_object_exact": true,
+  "persistence_self_check": "PASS",
+  "serialized_canonicalization": "json.dumps(sort_keys=True, separators=(',', ':')) + LF",
+  "verdict_byte_length": 525,
+  "verdict_sha256": "412b8710879efa871a7051d302ed7fb484ddeafa85c26d7c8ca25ac56495bb8f"
+}

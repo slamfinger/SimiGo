@@ -1,0 +1,81 @@
+# M3 stage A round2 2026-10-23T17:25:07Z
+# app bundle: /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app
+# exe sha256 (on disk): dacf2fc353114088f7fd4079d8e75e8094c4af394c74d0809ccb2d65294dff1c
+# exe uuid: EE3B7D96-C979-33B5-B255-B708C4792C80
+launch_env:
+  SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home
+  SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/cache
+  SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/state-graph/reference-graph-v1.json
+launcher_pid=42767
+pid=42767
+--- ps ---
+  PID  PPID STARTED                      ELAPSED COMMAND
+42767 42756 Sat Oct 24 01:25:07 2026       00:25 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+--- executable path (lsof txt) ---
+/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+/private/var/db/diagnostics/logd/.plist-cache.PGi1ZgoJ
+/System/Library/CoreServices/SystemVersion.bundle/English.lproj/SystemVersion.strings
+/private/var/db/timezone/tz/2026e.1.0/icutz/icutz44l.dat
+/private/var/db/analyticsd/events.allowlist
+--- env SIMIGO_ (ps eww) ---
+SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/cache
+SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home
+SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/state-graph/reference-graph-v1.json
+--- running executable sha256 ---
+dacf2fc353114088f7fd4079d8e75e8094c4af394c74d0809ccb2d65294dff1c
+--- listening sockets ---
+WeChat    48812 mr.simi  177u  IPv4 0x84ca3a084a79a7ba       0t0                 TCP 127.0.0.1:14013 (LISTEN)
+WeChat    48812 mr.simi  186u  IPv4 0x402ced980533afaf       0t0                 TCP 127.0.0.1:14016 (LISTEN)
+WeChat    48812 mr.simi  191u  IPv4 0x90208e382ae2e638       0t0                 TCP 127.0.0.1:14019 (LISTEN)
+WeChat    48812 mr.simi  196u  IPv4 0x176c09eb497dad76       0t0                 TCP 127.0.0.1:14022 (LISTEN)
+WeChat    48812 mr.simi  204u  IPv4 0xe206bba64af03059       0t0                 TCP 127.0.0.1:14023 (LISTEN)
+--- isolation root: m3/home ---
+m3/home
+m3/home/bin
+m3/home/build
+m3/home/locks
+m3/home/logs
+m3/home/logs/native_mlx_trace.log
+m3/home/manifests
+m3/home/manifests/bootstrap-report.json
+m3/home/simigo.sqlite3
+m3/home/simigo.sqlite3-shm
+m3/home/simigo.sqlite3-wal
+m3/home/sources
+m3/home/staging
+--- isolation root: m3/cache ---
+m3/cache
+--- isolation root: m3/state-graph ---
+m3/state-graph
+--- bootstrap report ---
+{
+ "modelsDiscovered": 20,
+ "schemaVersion": 3,
+ "issueCount": 0,
+ "completedAt": null
+}
+--- sqlite tables ---
+agent_sessions bootstrap_runs checkpoints dependency_edges execution_states external_files install_receipts migration_receipts roots schema_migrations settlement_bindings settlements sqlite_sequence 
+--- quit (SIGTERM to test instance) ---
+quit_result=exited
+--- post-quit process check ---
+(no matching process)
+--- restart from same bundle ---
+restart_pid=42848 (first_launch_pid=42767)
+42848 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/cache
+SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home
+SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/state-graph/reference-graph-v1.json
+--- persisted files (home) ---
+4096 Oct 24 01:25 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home/simigo.sqlite3
+32768 Oct 24 01:25 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home/simigo.sqlite3-shm
+696312 Oct 24 01:25 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3/home/simigo.sqlite3-wal
+restart_quit=exited
+STAGE_A_DONE
+
+--- corrective note (round2) ---
+The "listening sockets" block above was produced with `lsof -nP -p PID -iTCP`,
+which ORs the two filters and therefore echoed unrelated processes (WeChat).
+The script has been corrected to `lsof -nP -a -p PID -iTCP -sTCP:LISTEN`.
+The authoritative statement that the installed RC bound no TCP port is the
+round-2 stage C probe + the corrected filter in driver/run_stage_a.sh.

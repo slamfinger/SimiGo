@@ -1,0 +1,79 @@
+{
+  "allPairsSavePromptTime" : true,
+  "boundary" : 512,
+  "coldPromptTime" : {
+    "maximum" : 0.87345290184021,
+    "mean" : 0.87345290184021,
+    "median" : 0.87345290184021,
+    "minimum" : 0.87345290184021,
+    "values" : [
+      0.87345290184021
+    ]
+  },
+  "coldWall" : {
+    "maximum" : 284.226416,
+    "mean" : 284.226416,
+    "median" : 284.226416,
+    "minimum" : 284.226416,
+    "values" : [
+      284.226416
+    ]
+  },
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "note" : "Paired canonical cold vs adopted-warm legs under one model load. PASS requires WALL-time savings (the capability verdict), submission-time savings, and stable swap. The first controlled run showed warm consistently SLOWER than cold at wall level — benefit not established; submission time alone must never decide the verdict.",
+  "pairs" : [
+    {
+      "cold" : {
+        "chunkCount" : 16,
+        "firstChunkLatencySeconds" : 881.674625,
+        "generationTokenCount" : 16,
+        "hookCalls" : 0,
+        "hookHits" : 0,
+        "kind" : "cold",
+        "lastChunkAtSeconds" : 284.146458,
+        "promptSubmissionSeconds" : 0.87345290184021,
+        "wallSeconds" : 284.226416
+      },
+      "index" : 0,
+      "promptSubmissionSavings" : 0.6178339719772339,
+      "wallSavings" : -389.54204300000004,
+      "warm" : {
+        "chunkCount" : 16,
+        "firstChunkLatencySeconds" : 292.995792,
+        "generationTokenCount" : 16,
+        "hookCalls" : 1,
+        "hookHits" : 1,
+        "kind" : "warm",
+        "lastChunkAtSeconds" : 673.706209,
+        "matchedTokenCount" : 512,
+        "promptSubmissionSeconds" : 0.2556189298629761,
+        "wallSeconds" : 673.768459
+      }
+    }
+  ],
+  "pass" : false,
+  "profileVersion" : "canonical-remainder-v1",
+  "promptTokenCount" : 648,
+  "stride" : 256,
+  "swapAtEnd" : 1557135360,
+  "swapAtStart" : 1557135360,
+  "swapStable" : true,
+  "warmPromptTime" : {
+    "maximum" : 0.2556189298629761,
+    "mean" : 0.2556189298629761,
+    "median" : 0.2556189298629761,
+    "minimum" : 0.2556189298629761,
+    "values" : [
+      0.2556189298629761
+    ]
+  },
+  "warmWall" : {
+    "maximum" : 673.768459,
+    "mean" : 673.768459,
+    "median" : 673.768459,
+    "minimum" : 673.768459,
+    "values" : [
+      673.768459
+    ]
+  }
+}

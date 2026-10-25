@@ -1,0 +1,4 @@
+{"event":"run_start","payload":{"experiment":"G-delta","cell":"I"},"runUUID":"audit-20261001-1FF4E887","wallTime":"2026-10-01T12:00:02Z","monotonicNs":266658808862000}
+{"event":"cross_swap_probe","payload":{"anchor_detects_mismatch":"YES","carrier":"B","record":"A"},"runUUID":"audit-20261001-1FF4E887","wallTime":"2026-10-01T12:00:02Z","monotonicNs":266658827218333}
+{"event":"r0_verify","payload":{"result":"ALL_PASS"},"runUUID":"audit-20261001-1FF4E887","wallTime":"2026-10-01T12:00:02Z","monotonicNs":266658827909333}
+{"event":"run_complete","payload":{"outcome":"NECESSITY_EVIDENCE(provenance conflation + model-binding uncompensated; content-mismatch sub-function compensated by A — partial subsumption registered, Layer 2 noted)","cell":"I"},"runUUID":"audit-20261001-1FF4E887","wallTime":"2026-10-01T12:00:02Z","monotonicNs":266658827993041}

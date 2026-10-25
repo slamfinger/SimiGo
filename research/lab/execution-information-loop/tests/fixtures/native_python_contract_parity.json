@@ -1,0 +1,500 @@
+{
+  "schema_id": "SIMIGO-NATIVE-PYTHON-CONTRACT-PARITY-V1",
+  "purpose": "One shared case file, two engines. Both the Python production gate (declarative_result_contract.validate_result_text) and the native Swift gate (NativeProducerResultContractGate) are run over exactly these cases with exactly these verified bindings; an agreement is recorded per case and any divergence fails the gate.",
+  "applies_to": "simigo.result-contract/v1 constructs implemented by BOTH engines: input-binding projection of the ordinary task entry, fields, types, match policies and the equals_binding / concat / equals_field / equals_literal / digest_equals_binding constraints.",
+  "declared_divergences": [
+    "bindings selectors: the Python engine resolves them from the admitted dependency value maps; the native engine does not implement them, so the ordinary task entry projects them onto IS-verified admission bindings and does not forward the selector list to the engine.",
+    "equals_binding_segment is implemented by the Python engine only; a declaration naming it is refused fail-closed by the native engine. (digest_equals_binding was Python-only until K2; the native engine now implements it with the same canonical-JSON SHA-256 convention, so it moved to the shared family above.)",
+    "binding values reaching the native engine are strings, because resolve-model-input only admits non-empty string result fields (BINDING_VALUE_INVALID otherwise)."
+  ],
+  "cases": [
+    {
+      "name": "route-synthesis-valid",
+      "expect": "VALID",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "origin_code": {"pattern": "ORIGIN=([A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"},
+          "destination_code": {"pattern": "DEST=([A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"},
+          "route_key": {"pattern": "ROUTE=([A-Z]+>[A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"},
+          "priority": {"pattern": "PRIORITY=([0-9]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "equals_binding", "field": "origin_code", "binding": "origin"},
+          {"kind": "equals_binding", "field": "destination_code", "binding": "destination"},
+          {"kind": "equals_binding", "field": "priority", "binding": "destination_priority"},
+          {"kind": "concat", "field": "route_key", "parts": ["origin_code", "destination_code"], "separator": ">"}
+        ]
+      },
+      "bindings": {"origin": "NORTH", "destination": "EAST", "destination_priority": "5", "route_key": "NORTH>EAST"},
+      "text": "ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5",
+      "values": {"destination_code": "EAST", "origin_code": "NORTH", "priority": "5", "route_key": "NORTH>EAST"}
+    },
+    {
+      "name": "route-synthesis-missing-priority-field",
+      "expect": "REJECT",
+      "error_code": "PRODUCER_RESULT_FIELD_MISSING",
+      "contract": "@route-synthesis-valid.contract",
+      "bindings": {"origin": "NORTH", "destination": "EAST", "destination_priority": "5", "route_key": "NORTH>EAST"},
+      "text": "ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST"
+    },
+    {
+      "name": "route-synthesis-binding-mismatch",
+      "expect": "REJECT",
+      "error_code": "PRODUCER_RESULT_BINDING_MISMATCH",
+      "contract": "@route-synthesis-valid.contract",
+      "bindings": {"origin": "NORTH", "destination": "EAST", "destination_priority": "3", "route_key": "NORTH>EAST"},
+      "text": "ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5"
+    },
+    {
+      "name": "route-synthesis-derived-route-wrong",
+      "expect": "REJECT",
+      "error_code": "PRODUCER_RESULT_DERIVATION_MISMATCH",
+      "contract": "@route-synthesis-valid.contract",
+      "bindings": {"origin": "NORTH", "destination": "EAST", "destination_priority": "5", "route_key": "NORTH>EAST"},
+      "text": "ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>WEST\nPRIORITY=5"
+    },
+    {
+      "name": "route-synthesis-binding-absent",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_BINDING_MISSING",
+      "contract": "@route-synthesis-valid.contract",
+      "bindings": {"origin": "NORTH", "destination": "EAST", "route_key": "NORTH>EAST"},
+      "text": "ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5"
+    },
+    {
+      "name": "carry-forward-valid",
+      "expect": "VALID",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "route_key": {"pattern": "(?:FLOW=)?([A-Z]+>[A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "equals_binding", "field": "route_key", "binding": "route_key"}
+        ]
+      },
+      "bindings": {"route_key": "NORTH>EAST"},
+      "text": "FLOW=NORTH>EAST",
+      "values": {"route_key": "NORTH>EAST"}
+    },
+    {
+      "name": "carry-forward-contradicting-upstream",
+      "expect": "REJECT",
+      "error_code": "PRODUCER_RESULT_BINDING_MISMATCH",
+      "contract": "@carry-forward-valid.contract",
+      "bindings": {"route_key": "NORTH>EAST"},
+      "text": "FLOW=NORTH>WEST"
+    },
+    {
+      "name": "exactly-one-ambiguous",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_AMBIGUOUS_FIELD",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "route_key": {"pattern": "([A-Z]+>[A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "exactly_one"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "FLOW=NORTH>EAST\nALT=NORTH>WEST"
+    },
+    {
+      "name": "integer-out-of-range",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_RANGE_VIOLATION",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "priority": {"pattern": "PRIORITY=([0-9]+)", "capture_group": 1, "type": "integer", "minimum": 0, "maximum": 9, "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "PRIORITY=42"
+    },
+    {
+      "name": "integer-typed-value",
+      "expect": "VALID",
+      "contract": "@integer-out-of-range.contract",
+      "bindings": {},
+      "text": "PRIORITY=5",
+      "values": {"priority": 5}
+    },
+    {
+      "name": "integer-type-mismatch",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_TYPE_MISMATCH",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "n": {"pattern": "N=(\\S+)", "capture_group": 1, "type": "integer", "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "N=twelve"
+    },
+    {
+      "name": "named-capture-group",
+      "class": "native-stricter",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_INVALID_PATTERN",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "sector": {"pattern": "DEST=(?P<sector>[A-Z]+)", "capture_group": "sector", "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "DEST=EAST",
+      "note": "Python's re dialect accepts (?P<name>..); the native ICU engine does not, so the SAME contract bytes are a Python-only construct. The native gate refuses fail-closed rather than mis-extracting; named capture stays covered by each engine's own unit tests."
+    },
+    {
+      "name": "enum-outside-declared-values",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_ENUM_VIOLATION",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "mode": {"pattern": "MODE=(\\w+)", "capture_group": 1, "type": "enum", "values": ["car", "bus"], "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "MODE=boat"
+    },
+    {
+      "name": "enum-inside-declared-values",
+      "expect": "VALID",
+      "contract": "@enum-outside-declared-values.contract",
+      "bindings": {},
+      "text": "MODE=bus",
+      "values": {"mode": "bus"}
+    },
+    {
+      "name": "boolean-normalization",
+      "expect": "VALID",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "flag": {"pattern": "FLAG=(\\w+)", "capture_group": 1, "type": "boolean", "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "FLAG=YES",
+      "values": {"flag": true}
+    },
+    {
+      "name": "optional-field-absent",
+      "expect": "VALID",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "required_field": {"pattern": "REQ=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"},
+          "maybe": {"pattern": "MAYBE=(\\w+)", "capture_group": 1, "type": "string", "required": false, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "REQ=present",
+      "values": {"required_field": "present", "maybe": null}
+    },
+    {
+      "name": "anchored-multiline-first-policy",
+      "expect": "VALID",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "route_key": {"pattern": "^FLOW=([A-Z]+>[A-Z]+)$", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "equals_binding", "field": "route_key", "binding": "route_key"}
+        ]
+      },
+      "bindings": {"route_key": "NORTH>EAST"},
+      "text": "header line\nFLOW=NORTH>EAST\nFLOW=NORTH>WEST\ntrailer",
+      "values": {"route_key": "NORTH>EAST"}
+    },
+    {
+      "name": "anchored-multiline-exactly-one-ambiguous",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_AMBIGUOUS_FIELD",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "route_key": {"pattern": "^FLOW=([A-Z]+>[A-Z]+)$", "capture_group": 1, "type": "string", "required": true, "match_policy": "exactly_one"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "FLOW=NORTH>EAST\nFLOW=NORTH>WEST"
+    },
+    {
+      "name": "equals-field-and-literal-constraints",
+      "expect": "VALID",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"},
+          "b": {"pattern": "B=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"},
+          "kind": {"pattern": "KIND=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "equals_field", "field": "b", "other_field": "a"},
+          {"kind": "equals_literal", "field": "kind", "value": "mirror"}
+        ]
+      },
+      "bindings": {},
+      "text": "A=same\nB=same\nKIND=mirror",
+      "values": {"a": "same", "b": "same", "kind": "mirror"}
+    },
+    {
+      "name": "equals-field-violation",
+      "expect": "REJECT",
+      "error_code": "PRODUCER_RESULT_FIELD_MISMATCH",
+      "contract": "@equals-field-and-literal-constraints.contract",
+      "bindings": {},
+      "text": "A=same\nB=other\nKIND=mirror"
+    },
+    {
+      "name": "equals-literal-violation",
+      "expect": "REJECT",
+      "error_code": "PRODUCER_RESULT_LITERAL_MISMATCH",
+      "contract": "@equals-field-and-literal-constraints.contract",
+      "bindings": {},
+      "text": "A=same\nB=same\nKIND=other"
+    },
+    {
+      "name": "unknown-schema-version",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_UNKNOWN_SCHEMA_VERSION",
+      "contract": {
+        "schema_version": "simigo.result-contract/v9",
+        "fields": {
+          "a": {"pattern": "A=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "A=x"
+    },
+    {
+      "name": "unknown-root-key",
+      "class": "native-stricter",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_UNKNOWN_KEY",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "rules_for_task": {"TASK-U1": "any"},
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "A=x"
+    },
+    {
+      "name": "unknown-field-spec-key",
+      "class": "native-stricter",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_UNKNOWN_KEY",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first", "fallback_value": "NORTH"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "A=x"
+    },
+    {
+      "name": "unknown-constraint-kind",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_UNKNOWN_CONSTRAINT",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "hashes_to", "field": "a", "binding": "a"}
+        ]
+      },
+      "bindings": {"a": "x"},
+      "text": "A=x"
+    },
+    {
+      "name": "invalid-regex-pattern",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_INVALID_PATTERN",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=([A-Z]+", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "A=X"
+    },
+    {
+      "name": "empty-field-rejected-by-nonempty",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_EMPTY_FIELD",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=( *)", "capture_group": 1, "type": "string", "nonempty": true, "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "A= "
+    },
+    {
+      "name": "missing-capture-group",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_INVALID_PATTERN",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=[A-Z]+", "capture_group": 3, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "A=X"
+    },
+    {
+      "name": "unsupported-field-type",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_UNKNOWN_FIELD_TYPE",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=(\\w+)", "capture_group": 1, "type": "decimal", "required": true, "match_policy": "first"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "A=1.5"
+    },
+    {
+      "name": "unsupported-match-policy",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_INVALID_FIELD_SPEC",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "last"}
+        },
+        "constraints": []
+      },
+      "bindings": {},
+      "text": "A=x"
+    },
+    {
+      "name": "concat-over-verified-binding-part",
+      "class": "native-stricter",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_INVALID_CONSTRAINT",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "route_key": {"pattern": "ROUTE=([A-Z]+>[A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "concat", "field": "route_key", "parts": ["origin", "destination"], "separator": ">"}
+        ]
+      },
+      "bindings": {"origin": "NORTH", "destination": "EAST"},
+      "text": "ROUTE=NORTH>EAST"
+    },
+    {
+      "name": "constraint-names-undeclared-field",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_CONSTRAINT_FIELD_MISSING",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "a": {"pattern": "A=(\\w+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "equals_binding", "field": "ghost", "binding": "a"}
+        ]
+      },
+      "bindings": {"a": "x"},
+      "text": "A=x"
+    },
+    {
+      "name": "digest-equals-binding-valid-string",
+      "expect": "VALID",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "route_key": {"pattern": "ROUTE=([A-Z]+>[A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "digest_equals_binding", "field": "route_key", "binding": "secret_commitment"}
+        ]
+      },
+      "bindings": {"secret_commitment": "2b1a5d9f0a1183c966ce8325a252424579a625c1b2314654dd6aaebaf9c334a8"},
+      "text": "ROUTE=NORTH>EAST",
+      "values": {"route_key": "NORTH>EAST"}
+    },
+    {
+      "name": "digest-equals-binding-valid-non-ascii",
+      "expect": "VALID",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "note": {"pattern": "NOTE=(\\S+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "digest_equals_binding", "field": "note", "binding": "note_commitment"}
+        ]
+      },
+      "bindings": {"note_commitment": "28380feb8724d669bc8d4cf5b5a5bb1adbdc61b81ebd06f3fabc567b4f3b0fc5"},
+      "text": "NOTE=café",
+      "values": {"note": "café"}
+    },
+    {
+      "name": "digest-equals-binding-mismatch",
+      "expect": "REJECT",
+      "error_code": "PRODUCER_RESULT_DERIVATION_MISMATCH",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "route_key": {"pattern": "ROUTE=([A-Z]+>[A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "digest_equals_binding", "field": "route_key", "binding": "secret_commitment"}
+        ]
+      },
+      "bindings": {"secret_commitment": "0000000000000000000000000000000000000000000000000000000000000000"},
+      "text": "ROUTE=NORTH>EAST"
+    },
+    {
+      "name": "digest-equals-binding-missing-binding",
+      "expect": "REJECT",
+      "error_code": "CONTRACT_BINDING_MISSING",
+      "contract": {
+        "schema_version": "simigo.result-contract/v1",
+        "fields": {
+          "route_key": {"pattern": "ROUTE=([A-Z]+>[A-Z]+)", "capture_group": 1, "type": "string", "required": true, "match_policy": "first"}
+        },
+        "constraints": [
+          {"kind": "digest_equals_binding", "field": "route_key", "binding": "absent_commitment"}
+        ]
+      },
+      "bindings": {},
+      "text": "ROUTE=NORTH>EAST"
+    }
+  ]
+}

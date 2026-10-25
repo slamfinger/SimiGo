@@ -1,0 +1,10 @@
+{
+  "authorization_id": "G2-BATCH-AUTH-20261020-01",
+  "authorization_record": "docs/01-questions/G2_BATCH_AUTHORIZATION_20261020.md",
+  "authorization_sha256": "d7b6dc234b142756a7fbd9159ae150fa02fa8e275397f1d26f53d2578c0126b2",
+  "consumption": "atomic rename before the first child launch; no second run",
+  "issued_at_utc": "2026-10-20T08:20:25Z",
+  "issued_by": "freeze step; derived from the existing authorization, not a new grant",
+  "manifest_sha256": "fd5146968f01a8b2014a288519dbec022af2abb533c3b38613fce5b622798ec0",
+  "schema_id": "SIMIGO-G2-BATCH-AUTHORIZATION-TOKEN-V1"
+}

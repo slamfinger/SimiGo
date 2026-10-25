@@ -1,0 +1,48 @@
+{
+  "gate": "G3",
+  "memprobe_dir": null,
+  "note": "old_kv_unreachable established at DISK+PROCESS level via SIMIGO_CACHE_ROOT isolation. cache_reference_release + resource_reclaim PASS at LOGICAL tier via the memprobe production suspend/resume experiment. physical_page_return stays BLOCKED: a ~4.5GB footprint drop and suspend->resume reload were recorded as SUPPORTING only; the gate definition excludes footprint/RSS/exit as sole proof and no independent OS page-reclaim source exists.",
+  "overall": "PARTIAL",
+  "run_binding": {
+    "binary_identity_file": "binary_identity_rc1.txt",
+    "driver_iso_debug_dylib_sha256": "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b",
+    "driver_src_debug_dylib_sha256": "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b",
+    "es1_prefix_pool_root": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc1/cache_es1/prefix-pool",
+    "es2_prefix_pool_root": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc1/cache_es2/prefix-pool",
+    "executable_sha256": "ef5f9d117caca57d7336af0d286f4c7032c7ad4bb915bd64a5edc7b144a58e37",
+    "is_database_url": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc1/home/simigo.sqlite3",
+    "limit_of_sha256": "SHA-256 proves a file is byte-identical to what was hashed; it does NOT prove the events described inside that file occurred. Event claims rest on the observation/rc/pid records produced at runtime by the product binary named above.",
+    "model_repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "model_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "run_id": "rc1",
+    "source_digests_file": "source_digests_rc1.txt",
+    "source_digests_sha256": "f9f7c009c543602d551cc72a235a343d1db68ae42f3bc83755895d0c89015934",
+    "tokenizer_identity": [
+      {
+        "file": "tokenizer.json",
+        "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+      },
+      {
+        "file": "tokenizer_config.json",
+        "sha256": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+      },
+      {
+        "file": "vocab.json",
+        "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      }
+    ]
+  },
+  "run_id": "rc1",
+  "sub_notes": {
+    "cache_reference_release": "",
+    "old_kv_unreachable": "",
+    "physical_page_return": "",
+    "resource_reclaim": ""
+  },
+  "sub_verdicts": {
+    "cache_reference_release": "NOT_INSTRUMENTED",
+    "old_kv_unreachable": "PASS",
+    "physical_page_return": "BLOCKED",
+    "resource_reclaim": "NOT_INSTRUMENTED"
+  }
+}

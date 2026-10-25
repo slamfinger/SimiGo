@@ -1,0 +1,96 @@
+--- dev/null
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/SettlementTrustFixture.swift
+@@ -0,0 +1,93 @@
++import CryptoKit
++import Foundation
++import XCTest
++
++/// Deployment trust root for tests that settle through the production bridge.
++///
++/// The bridge mints settlements under the `required` provenance policy: it
++/// refuses to settle without a signing key AND an out-of-band trust anchor
++/// (the E-round settlement-provenance contract). Any suite that drives a real
++/// `execute` against the production bridge therefore needs the same deployment
++/// material a production run provisions out of band, or the bridge fails closed
++/// with `TRUST_ANCHOR_MISSING` before the behaviour under test is reached.
++///
++/// This helper generates a fresh Ed25519 key pair per test process and writes
++/// the two documents in the schemas `settlement_provenance.py` and
++/// `SettlementProvenanceVerification` load, exporting them through the two
++/// deployment environment variables. The directory is a temporary path outside
++/// every Information Space database, which keeps the property the contract is
++/// about: a process that can rewrite the database cannot install its own
++/// anchor. Nothing here signs or verifies a settlement; the production code
++/// still owns both.
++enum SettlementTrustFixture {
++  static let anchorEnvironment = "SIMIGO_SETTLEMENT_TRUST_ANCHOR"
++  static let signingKeyEnvironment = "SIMIGO_SETTLEMENT_SIGNING_KEY"
++
++  private static let root = FileManager.default.temporaryDirectory
++    .appendingPathComponent(
++      "simigo-settlement-trust-\(UUID().uuidString)", isDirectory: true)
++  private static let stateLock = NSLock()
++  private static var provisioned: (anchor: String, key: String)?
++
++  /// Provision once per test process, then export both deployment variables.
++  /// The export is repeated on every call: another suite may have rewritten the
++  /// environment in the meantime, and a dangling path from a deleted fixture is
++  /// exactly the cross-test leak this helper is meant to avoid.
++  static func install() throws {
++    stateLock.lock()
++    defer { stateLock.unlock() }
++    if provisioned == nil { provisioned = try provision() }
++    guard let provisioned else { return }
++    setenv(anchorEnvironment, provisioned.anchor, 1)
++    setenv(signingKeyEnvironment, provisioned.key, 1)
++  }
++
++  private static func provision() throws -> (anchor: String, key: String) {
++    let fileManager = FileManager.default
++    try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
++
++    let privateKey = Curve25519.Signing.PrivateKey()
++    let publicRaw = privateKey.publicKey.rawRepresentation
++    let keyID = "swift-test-" + SHA256.hash(data: publicRaw)
++      .prefix(8).map { String(format: "%02x", $0) }.joined()
++
++    let anchor: [String: Any] = [
++      "schema_id": "EINFO-SETTLEMENT-TRUST-ANCHOR-V1",
++      "algorithm": "Ed25519",
++      "key_id": keyID,
++      "public_key_base64": publicRaw.base64EncodedString(),
++    ]
++    let signingKey: [String: Any] = [
++      "schema_id": "EINFO-SETTLEMENT-SIGNING-KEY-V1",
++      "algorithm": "Ed25519",
++      "key_id": keyID,
++      "private_key_base64": privateKey.rawRepresentation.base64EncodedString(),
++      "public_key_base64": publicRaw.base64EncodedString(),
++    ]
++
++    let anchorURL = root.appendingPathComponent("settlement-trust-anchor.json")
++    let keyURL = root.appendingPathComponent("settlement-signing-key.json")
++    try write(anchor, to: anchorURL, permissions: 0o444)
++    try write(signingKey, to: keyURL, permissions: 0o400)
++    return (anchorURL.path, keyURL.path)
++  }
++
++  /// Clear the exported deployment variables so one suite cannot leak a trust
++  /// root into another suite's process environment.
++  static func uninstall() {
++    stateLock.lock()
++    defer { stateLock.unlock() }
++    unsetenv(anchorEnvironment)
++    unsetenv(signingKeyEnvironment)
++  }
++
++  private static func write(
++    _ document: [String: Any], to url: URL, permissions: Int
++  ) throws {
++    let data = try JSONSerialization.data(
++      withJSONObject: document, options: [.sortedKeys, .prettyPrinted])
++    try data.write(to: url, options: .atomic)
++    try FileManager.default.setAttributes(
++      [.posixPermissions: permissions], ofItemAtPath: url.path)
++  }
++}

@@ -1,0 +1,133 @@
+{
+  "boundary": "ROW_NORM_ASSIGNMENT_ONLY / DOES_NOT_ESTABLISH_FULL_ELEMENT_MAPPING / NO_QUANTIZER_DRIFT_CLAIM",
+  "crossSegmentAssignments": [
+    {
+      "assignmentCostMax": 1.285631775856018,
+      "assignmentCostMean": 0.048547676698945,
+      "leftSegment": "q2048",
+      "matchedNormMaxAbsDiff": 1.285631775856018,
+      "matchedNormMeanAbsDiff": 0.048547676698945,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.06515778107645306,
+      "matchedPearson": 0.6513951483270877,
+      "rightSegment": "k2048",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.21000880272290998
+    },
+    {
+      "assignmentCostMax": 1.0311384201049805,
+      "assignmentCostMean": 0.35194532589957817,
+      "leftSegment": "q2048",
+      "matchedNormMaxAbsDiff": 1.0311384201049805,
+      "matchedNormMeanAbsDiff": 0.35194532589957817,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.33502077810040054,
+      "matchedPearson": 0.32691905131142746,
+      "rightSegment": "v4096",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.23555480570687282
+    },
+    {
+      "assignmentCostMax": 1.4906706809997559,
+      "assignmentCostMean": 0.0599771591660101,
+      "leftSegment": "k2048",
+      "matchedNormMaxAbsDiff": 1.4906706809997559,
+      "matchedNormMeanAbsDiff": 0.0599771591660101,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.08135031738655699,
+      "matchedPearson": 0.5675769272218506,
+      "rightSegment": "q2048",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.15147158157776938
+    },
+    {
+      "assignmentCostMax": 1.0312162637710571,
+      "assignmentCostMean": 0.34832718335383106,
+      "leftSegment": "k2048",
+      "matchedNormMaxAbsDiff": 1.0312162637710571,
+      "matchedNormMeanAbsDiff": 0.34832718335383106,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.33162741346883545,
+      "matchedPearson": 0.2699292672288237,
+      "rightSegment": "v4096",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.1840539014036495
+    },
+    {
+      "assignmentCostMax": 3.5309861302375793,
+      "assignmentCostMean": 0.34812272856436266,
+      "leftSegment": "v4096",
+      "matchedNormMaxAbsDiff": 3.5309861302375793,
+      "matchedNormMeanAbsDiff": 0.34812272856436266,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.32843914180099043,
+      "matchedPearson": 0.032426285848968395,
+      "rightSegment": "q2048",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.16043689318125237
+    },
+    {
+      "assignmentCostMax": 3.473728060722351,
+      "assignmentCostMean": 0.29566783350094283,
+      "leftSegment": "v4096",
+      "matchedNormMaxAbsDiff": 3.473728060722351,
+      "matchedNormMeanAbsDiff": 0.29566783350094283,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.2769194545347906,
+      "matchedPearson": 0.09792680465930176,
+      "rightSegment": "k2048",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.16762940995357245
+    }
+  ],
+  "gate": {
+    "sameSegmentMatchedPearsonAllAbove050": true,
+    "sameSegmentMeanCostAllBelow01": true,
+    "sameSegmentRelativeMeanAllBelow025": true
+  },
+  "interpretation": "ROW_NORM_ASSIGNMENT_SUPPORTS_PERMUTATION_HYPOTHESIS",
+  "overallPass": true,
+  "protocolVersion": "LAB.NAMED_SOURCE.QKV.ROW.ASSIGNMENT.AUDIT.V1",
+  "sameSegmentAssignments": [
+    {
+      "assignmentCostMax": 1.4587467908859253,
+      "assignmentCostMean": 0.06599001412541838,
+      "leftSegment": "q2048",
+      "matchedNormMaxAbsDiff": 1.4587467908859253,
+      "matchedNormMeanAbsDiff": 0.06599001412541838,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.08853090706023958,
+      "matchedPearson": 0.5066660046870503,
+      "rightSegment": "q2048",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.20077109259159384
+    },
+    {
+      "assignmentCostMax": 1.344123363494873,
+      "assignmentCostMean": 0.044353435820084997,
+      "leftSegment": "k2048",
+      "matchedNormMaxAbsDiff": 1.344123363494873,
+      "matchedNormMeanAbsDiff": 0.044353435820084997,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.06019268234976982,
+      "matchedPearson": 0.6598680502209766,
+      "rightSegment": "k2048",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.1581563649881085
+    },
+    {
+      "assignmentCostMax": 3.084020972251892,
+      "assignmentCostMean": 0.08667364777431885,
+      "leftSegment": "v4096",
+      "matchedNormMaxAbsDiff": 3.084020972251892,
+      "matchedNormMeanAbsDiff": 0.08667364777431885,
+      "matchedNormRelativeMax": 1.0,
+      "matchedNormRelativeMean": 0.07599158122397486,
+      "matchedPearson": 0.5719384041533415,
+      "rightSegment": "v4096",
+      "rowCount": 2048,
+      "unmatchedLeftNormPearson": 0.19254382706905945
+    }
+  ],
+  "status": "PASS_WITH_BOUNDARY"
+}

@@ -1,0 +1,16 @@
+{
+  "created": 1791159757,
+  "choices": [
+    {
+      "message": {
+        "content": "{\"release_decision\":\"blocked\",\"deployment_order\":[\"alpha\",\"beta\"],\"blocked_services\":[{\"service_id\":\"gamma\",\"reason\":\"not individually baseline compatible\"}],\"source_consumption\":{\"used_F\":true,\"used_archival_K1_K2\":false,\"used_model_prior\":false},\"continuation_admissibility\":\"AUTHORIZED_CONTINUATION\",\"provenance\":{\"accepted_sources\":[\"F\"],\"rejected_sources\":[\"archival residue\"],\"reason\":\"Authorization state AUTHZ_ALLOWED permits F as decisive source; archival residue explicitly excluded.\"}}",
+        "role": "assistant"
+      },
+      "index": 0,
+      "finish_reason": "stop"
+    }
+  ],
+  "object": "chat.completion",
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "id": "chatcmpl-374b040f-3857-4c1c-bbc1-6b3847e90110"
+}

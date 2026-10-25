@@ -1,0 +1,10 @@
+{
+ "a": "pre_m4",
+ "b": "post_m4",
+ "violation_events": 0,
+ "distinct_violation_count": 0,
+ "real_user_state_write_count": 0,
+ "real_user_state_write_paths": [],
+ "expected_self_writes": 0,
+ "reference_changes": 0
+}

@@ -1,0 +1,40 @@
+{
+  "authorization_identity": "SRS_REAL_CLOSURE_01_DATABASE_CARRIER_CORRECTION_AND_REINITIALIZATION_AUTHORIZATION_RECORD_001",
+  "campaign_state": "NOT_AUTHORIZED",
+  "created_at_utc": "2026-10-07T17:05:03.398107+00:00",
+  "database_byte_size": 24576,
+  "database_path": "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-db-fresh-init-2rK4EUxj/worktree/FRESH_EMPTY_IS.sqlite",
+  "database_sha256": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d",
+  "ended_wall_ns": 1791392703398105000,
+  "engine": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python_version": "3.9.6",
+    "sqlite_version": "3.51.0"
+  },
+  "exact_execution_repository_commit": "7392fcb79fb7e8465b73f9e1837c4634e56c0409",
+  "final_schema_sha256": "06ff8f976f436860d004b02ae032246e97021bed7280834c9a8bd904cf3d649a",
+  "implementation_artifact_sha256": {
+    "README.md": "24c112ae792b9f97ab76afa7eee22e8007480741cd73e375e4d4105f1b6d3ec0",
+    "db_is.py": "dba16601069aa56acdea1bd365bdca73f4805c40b1c343a0edb5c3adb1bf4bbe",
+    "schema.sql": "06ff8f976f436860d004b02ae032246e97021bed7280834c9a8bd904cf3d649a",
+    "selfcheck.py": "d57f3667ed5b8aa5e340c88880d9b0617383551f32e7c37698db786c8d147bd5"
+  },
+  "initialization_command_argv": [
+    "database-carrier-replication/initialization/initialize_empty_db.py",
+    "FRESH_EMPTY_IS.sqlite"
+  ],
+  "initialization_cwd": "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-db-fresh-init-2rK4EUxj/worktree",
+  "initialization_returncode": 0,
+  "logical_import": false,
+  "logical_row_counts": {
+    "dependency_entries": 0,
+    "is_index_entries": 0,
+    "is_objects": 0
+  },
+  "manifest_identity": "DATABASE_IS_EMPTY_INITIALIZATION_MANIFEST_006",
+  "request_commit": "94caee8093ee2341c60dda05e2f25e7d703dd69e",
+  "request_identity": "SRS_REAL_CLOSURE_01_DATABASE_CARRIER_IMPLEMENTATION_CORRECTION_AND_REINITIALIZATION_REQUEST_V1_1",
+  "request_sha256": "250c2bf3760e9910ff80540a32b3b439d4d5e3d7b0e8f43cf5a7fb5d97a06c78",
+  "started_at_utc": "2026-10-07T17:05:03.388780+00:00",
+  "started_wall_ns": 1791392703388778000
+}

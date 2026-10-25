@@ -1,0 +1,123 @@
+diff --git a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift
+index 86191dfc..2dd9c540 100644
+--- a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift
+@@ -3,6 +3,12 @@ import SimiGoRuntimeContract
+ @testable import SimiGo2Experimental
+ 
+ final class ControlledProductionPilotV1E2ETests: XCTestCase {
++  override func setUpWithError() throws {
++    // The pilot settles through the production bridge, which mints signed
++    // settlements under the `required` provenance policy.
++    try SettlementTrustFixture.install()
++  }
++
+   private let requiredItems = [
+     "REAL-COLLECTION",
+     "REAL-SEGMENT",
+@@ -50,7 +56,7 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
+     try Data(contentsOf: labRoot.appendingPathComponent(
+       "execution-information-loop/production_runtime_bridge.py"
+     )).write(to: bundle.appendingPathComponent("production_runtime_bridge.py"))
+-    for name in ["carrier_loop.py", "real_palace_loop.py"] {
++    for name in ["carrier_loop.py", "real_palace_loop.py", "settlement_provenance.py"] {
+       try Data(contentsOf: labRoot.appendingPathComponent(
+         "execution-information-loop/\(name)"
+       )).write(to: bundle.appendingPathComponent("lib/\(name)"))
+diff --git a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift
+index bf00ec6c..5e2d396d 100644
+--- a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift
+@@ -3,6 +3,12 @@ import SimiGoRuntimeContract
+ @testable import SimiGo2Experimental
+ 
+ final class IntegratedSimigoProofE2ETests: XCTestCase {
++  override func setUpWithError() throws {
++    // The proof run settles through the production bridge, which requires the
++    // deployment trust root under the `required` provenance policy.
++    try SettlementTrustFixture.install()
++  }
++
+   private let requiredItems = [
+     "REAL-COLLECTION",
+     "REAL-SEGMENT",
+diff --git a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift
+index 1254d8ae..034eedcf 100644
+--- a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift
+@@ -10,6 +10,13 @@ import SimiGoRuntimeContract
+ /// brand-new ES independently and continuing on a real model remains unproven,
+ /// and D1 stays NO-GO.
+ final class NativeCarrierLifecycleTests: XCTestCase {
++    override func setUpWithError() throws {
++        // The end-to-end lifecycle cases settle through the production bridge,
++        // which requires the deployment trust root under the `required`
++        // provenance policy.
++        try SettlementTrustFixture.install()
++    }
++
+     private func handle(_ id: String, position: Int64 = 0) -> ExecutionStateHandle {
+         ExecutionStateHandle(
+             id: ExecutionID(id),
+diff --git a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift
+index 3bd6b0f1..fd737e52 100644
+--- a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift
+@@ -3,6 +3,12 @@ import SimiGoRuntimeContract
+ @testable import SimiGo2Experimental
+ 
+ final class ProductionReadinessDeploymentPreparationTests: XCTestCase {
++  override func setUpWithError() throws {
++    // The packaged runtime settles through the same bridge, so the deployment
++    // bundle test needs the trust root the `required` provenance policy demands.
++    try SettlementTrustFixture.install()
++  }
++
+   private let snapshotSource = URL(fileURLWithPath: #filePath)
+     .deletingLastPathComponent().deletingLastPathComponent()
+     .deletingLastPathComponent().deletingLastPathComponent()
+@@ -28,7 +34,7 @@ final class ProductionReadinessDeploymentPreparationTests: XCTestCase {
+     try Data(contentsOf: labRoot.appendingPathComponent(
+       "execution-information-loop/production_runtime_bridge.py"
+     )).write(to: bundle.appendingPathComponent("production_runtime_bridge.py"))
+-    for name in ["carrier_loop.py", "real_palace_loop.py"] {
++    for name in ["carrier_loop.py", "real_palace_loop.py", "settlement_provenance.py"] {
+       try Data(contentsOf: labRoot.appendingPathComponent(
+         "execution-information-loop/\(name)"
+       )).write(to: bundle.appendingPathComponent("lib/\(name)"))
+diff --git a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift
+index f684cf58..73f7bbf0 100644
+--- a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift
+@@ -3,6 +3,13 @@ import SimiGoRuntimeContract
+ @testable import SimiGo2Experimental
+ 
+ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
++  override func setUpWithError() throws {
++    // The bridge settles under the `required` provenance policy, so every
++    // boundary case needs the deployment trust root before the failure mode
++    // under test is reachable.
++    try SettlementTrustFixture.install()
++  }
++
+   private func makeConfiguration() throws -> ProductionRuntimeLaunchConfiguration {
+     let labRoot = URL(fileURLWithPath: #filePath)
+       .deletingLastPathComponent().deletingLastPathComponent()
+diff --git a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift
+index 5c3642ec..992058d0 100644
+--- a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift
+@@ -3,6 +3,13 @@ import SimiGoRuntimeContract
+ @testable import SimiGo2Experimental
+ 
+ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
++  override func setUpWithError() throws {
++    // Settlements minted through the production bridge are signed under the
++    // `required` provenance policy, so the recovery cases need the deployment
++    // trust root that a production run provisions out of band.
++    try SettlementTrustFixture.install()
++  }
++
+   private func makeTemporaryDatabase() throws -> URL {
+     let directory = FileManager.default.temporaryDirectory
+       .appendingPathComponent("simigo-production-runtime-\(UUID().uuidString)", isDirectory: true)

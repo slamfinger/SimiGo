@@ -1,0 +1,36 @@
+{
+  "checks": {
+    "A_baseline_all_reusable": true,
+    "B_selective_only_uchain_stale": true,
+    "C_u3_closure_has_u1_u2": true,
+    "D_stale_u1_refuses_u2": true,
+    "E_consumer_no_key_verifies": true
+  },
+  "created_at_utc": "2026-10-22T16:58:00Z",
+  "graph": {
+    "affected_chain": [
+      "TASK-SOURCE",
+      "TASK-U1",
+      "TASK-U2",
+      "TASK-U3"
+    ],
+    "unaffected_branch": [
+      "TASK-SOURCE-B",
+      "TASK-V1"
+    ]
+  },
+  "model_generate_calls": 0,
+  "model_loads": 0,
+  "notes": [
+    "A_computed=[] A_reused=['TASK-SOURCE', 'TASK-SOURCE-B', 'TASK-U1', 'TASK-U2', 'TASK-U3', 'TASK-V1']",
+    "B_computed=['TASK-U1', 'TASK-U2', 'TASK-U3'] B_reused=['TASK-SOURCE', 'TASK-SOURCE-B', 'TASK-V1']",
+    "C_closure=['TASK-SOURCE', 'TASK-U1', 'TASK-U2']",
+    "D_refused=True db_unchanged=True",
+    "E_ok=True"
+  ],
+  "schema_id": "SIMIGO-H5-SELECTIVE-INVALIDATION-V1",
+  "terminal_state": "OBSERVED",
+  "tokenize_seed_calls": 0,
+  "tokenize_text_calls": 0,
+  "verdict": "PASS"
+}

@@ -1,0 +1,2 @@
+condition I4-MISSING-TRANSITIVE-DEPENDENCY attempt 6
+observations={"refusal_before_tokenize": false, "generation_calls": 0, "database_unchanged": false, "state_unchanged": false}

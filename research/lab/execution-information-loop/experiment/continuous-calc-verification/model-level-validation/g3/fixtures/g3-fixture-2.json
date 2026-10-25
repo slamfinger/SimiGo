@@ -1,0 +1,26 @@
+{
+  "schema_id": "SIMIGO-G3-FIXTURE-V1",
+  "fixture_id": "g3-fixture-2",
+  "u1_source": {
+    "version": "v1",
+    "payload": {"secret": "c3d4e5f6a1b2", "site": "granite-walk"}
+  },
+  "u1_source_changed": {
+    "version": "v2",
+    "payload": {"secret": "5a4b3c2d1e0f", "site": "granite-walk-north"}
+  },
+  "unit_declared_sources": {
+    "U2": {"version": "v1", "payload": {"from": "U1"}},
+    "U3": {"version": "v1", "payload": {"from": "U2"}}
+  },
+  "u_free_source": {
+    "version": "v1",
+    "payload": {"secret": "112233445566", "site": "brass-archive"}
+  },
+  "obligations": [
+    {"obligation": "settle u1 extraction", "discharged_by": "U1"},
+    {"obligation": "settle u2 transfer", "discharged_by": "U2"},
+    {"obligation": "settle u3 terminal artifact", "discharged_by": "U3"},
+    {"obligation": "report the terminal artifact", "discharged_by": null}
+  ]
+}

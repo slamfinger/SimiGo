@@ -1,0 +1,228 @@
+{
+  "authoritative_path_map": true,
+  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008",
+  "consumption_contract": {
+    "artifact_path_derivation_by_campaign": "FORBIDDEN",
+    "exact_path_identity_consumption": "REQUIRED",
+    "map_source": "THIS_MANIFEST_ONLY",
+    "permitted_resolution": "REPOSITORY_ROOT + CAMPAIGN_OUTPUT_ROOT + OUTPUT_RELATIVE_PATH",
+    "symlink_following": "FORBIDDEN"
+  },
+  "corrects_defects": [
+    "HARNESS_WORKING_DATABASE_COPY_BINDING_DEFECT",
+    "HARNESS_OBSERVATION_OUTPUT_DIRECTORY_BINDING_DEFECT",
+    "HARNESS_POST_SEQUENCE_OBSERVER_KEY_BINDING_DEFECT",
+    "HARNESS_POST_SEQUENCE_PREFLIGHT_JSON_PATH_SERIALIZATION_DEFECT",
+    "HARNESS_ADAPTER_OUTPUT_PERSISTENCE_RETURN_TYPE_BINDING_DEFECT",
+    "HARNESS_ADAPTER_BUILD_RECORD_TUPLE_UNPACK_BINDING_DEFECT"
+  ],
+  "created_directories": [
+    {
+      "directory_id": "ADAPTER_BUILD",
+      "output_relative_path": "adapter/build"
+    },
+    {
+      "directory_id": "OBSERVATIONS",
+      "output_relative_path": "observations"
+    }
+  ],
+  "destination_count": 31,
+  "destination_version": 6,
+  "governing_authorization_record_commit": "124bc805e92e5bebc826fd9e6aea7f22ae0eecce",
+  "governing_request_commit": "124bc805e92e5bebc826fd9e6aea7f22ae0eecce",
+  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_008",
+  "source_database": {
+    "accepted_commit": "32ef3b06a4af808917cf7f4e248e9539c684b35f",
+    "output_destination_id": "O0_DATABASE",
+    "repository_relative_path": "docs/02-evidence/database-carrier-fresh-initialization-v1.2-20261008/FRESH_EMPTY_IS.sqlite",
+    "sha256": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d"
+  },
+  "artifact_destinations": [
+    {
+      "destination_id": "O0_DATABASE",
+      "output_relative_path": "O0_DATABASE.sqlite",
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_DATABASE",
+      "output_relative_path": "CAMPAIGN_DATABASE.sqlite",
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "O5_DATABASE",
+      "output_relative_path": "O5_DATABASE.sqlite",
+      "required_stage": "O5",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O0",
+      "output_relative_path": "observations/O0.json",
+      "required_stage": "O0",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O1",
+      "output_relative_path": "observations/O1.json",
+      "required_stage": "O1",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O2",
+      "output_relative_path": "observations/O2.json",
+      "required_stage": "O2",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O3",
+      "output_relative_path": "observations/O3.json",
+      "required_stage": "O3",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O4",
+      "output_relative_path": "observations/O4.json",
+      "required_stage": "O4",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O5",
+      "output_relative_path": "observations/O5.json",
+      "required_stage": "O5",
+      "type": "file"
+    },
+    {
+      "destination_id": "TRANSACTION_LOG",
+      "output_relative_path": "transaction_log.jsonl",
+      "required_stage": "O1",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_BUILD_DIRECTORY",
+      "output_relative_path": "adapter/build",
+      "required_stage": "PREFLIGHT",
+      "type": "directory"
+    },
+    {
+      "destination_id": "ADAPTER_BINARY",
+      "output_relative_path": "adapter/build/srsval_adapter",
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_BUILD_COMMAND",
+      "output_relative_path": "adapter/build_command.json",
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_SOURCE_HASHES",
+      "output_relative_path": "adapter/source_sha256.json",
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_ES2_INPUT",
+      "output_relative_path": "adapter/es2-input.json",
+      "required_stage": "ES2",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_ES2_OUTPUT",
+      "output_relative_path": "adapter/es2-output.json",
+      "required_stage": "ES2",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_ESN_INPUT",
+      "output_relative_path": "adapter/esn-input.json",
+      "required_stage": "ESN",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_ESN_OUTPUT",
+      "output_relative_path": "adapter/esn-output.json",
+      "required_stage": "ESN",
+      "type": "file"
+    },
+    {
+      "destination_id": "WORKING_COPY_BINDING",
+      "output_relative_path": "working_copy_binding.json",
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "EVIDENCE_PATH_BINDING_EXECUTION",
+      "output_relative_path": "evidence_path_binding_execution.json",
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "PREFLIGHT_VERIFICATION",
+      "output_relative_path": "preflight_verification.json",
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "RUNTIME_PROVENANCE",
+      "output_relative_path": "runtime_provenance.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVER_VERDICT",
+      "output_relative_path": "observer_verdict.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVER_PERSISTENCE_BINDING",
+      "output_relative_path": "observer_persistence_binding.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "EQ_REJ_MATRIX",
+      "output_relative_path": "eq_rej_matrix.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_OUTCOME",
+      "output_relative_path": "campaign_outcome.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_DB_VALIDATION",
+      "output_relative_path": "campaign_db_validation.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_PROCESS_RESULT",
+      "output_relative_path": "campaign_process_result.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_STDERR",
+      "output_relative_path": "campaign_stderr.txt",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "EVIDENCE_SERIALIZATION_SELF_CHECK",
+      "output_relative_path": "evidence_serialization_self_check.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "SHA256SUMS",
+      "output_relative_path": "SHA256SUMS",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+$ driver J3-UNKNOWN-CONTRACT attempt (kind=fail_closed_control)
+graph declares a contract schema version this gate does not implement
+exit=1
+payload={"command": "execute-with-model-result", "error": "CONTRACT_UNKNOWN_SCHEMA_VERSION: expected 'simigo.result-contract/v1', found 'simigo.result-contract/v9'", "error_type": "ContractError", "ok": false}
+observations={"contract_dispatch_basis": "declared_contract", "expected_error_code": "CONTRACT_UNKNOWN_SCHEMA_VERSION", "generation_calls": 0, "item_id_under_test": "J-465230a5-U1", "model_loads": 0, "observed_error": "CONTRACT_UNKNOWN_SCHEMA_VERSION: expected 'simigo.result-contract/v1', found 'simigo.result-contract/v9'", "producer_contract_rejects": true, "run_token": "465230a5", "seed_tokenize_calls": 0, "signature_created": false, "test_kind": "fail_closed_control", "text_tokenize_calls": 0, "valid_settlement_created": false}

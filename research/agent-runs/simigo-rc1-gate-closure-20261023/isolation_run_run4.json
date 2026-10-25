@@ -1,0 +1,25 @@
+{
+ "tag": "run4",
+ "exit_code": 0,
+ "duration_s": 93,
+ "executed_skipped_failures": [
+  207,
+  14,
+  0
+ ],
+ "test_execute_succeeded": true,
+ "xcresult": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/derived/Logs/Test/Test-run4.xcresult",
+ "xctestrun": "e0ba24c961a4a39e0bdea96ca700da39956729730b06c3733c92c72c1f4af4fa",
+ "fresh_isolation_root": true,
+ "isolation_content_bytes": {
+  "home": 500626,
+  "cache": 20341855180,
+  "state-graph": 0
+ },
+ "noninterference": {
+  "real_user_state_write_count": 0,
+  "real_user_state_write_paths": [],
+  "violation_events": 0,
+  "expected_self_writes": 507
+ }
+}

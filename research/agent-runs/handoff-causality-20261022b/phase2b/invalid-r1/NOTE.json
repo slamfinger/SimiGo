@@ -1,0 +1,17 @@
+{
+ "contains_no_conditions": true,
+ "created_at_utc": "2026-10-21T17:52:28Z",
+ "label": "invalid-r1",
+ "original_summary": "logs/summary-invalid-r1.json",
+ "original_worlds": [
+  "phase2a/invalid-r1/world-a",
+  "phase2b/invalid-r1/world-b"
+ ],
+ "reason": "B4 audit found the raw U1 nonce in pre-U2 evidence (run/evidence/stage-a.json continuation.generated_text). The stage-A evidence surface was sanitized (generated_text replaced by generated_text_sha256) and the experiment was rerun into world-a-r2/world-b-r2. This directory is preserved, not deleted or overwritten.",
+ "replacement_worlds": [
+  "phase2a/world-a-r2",
+  "phase2b/world-b-r2"
+ ],
+ "run_id": "handoff-causality-20261022b",
+ "schema_id": "SIMIGO-CAUSALITY-INVALID-RUN-NOTE-V1"
+}

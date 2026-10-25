@@ -1,0 +1,24 @@
+{
+  "PASS": true,
+  "allowed_changes": [
+    "execution-information-loop/admission_selftest.py",
+    "execution-information-loop/declarative_result_contract.py",
+    "execution-information-loop/evidence_schema.json",
+    "execution-information-loop/example_result_contract.json",
+    "execution-information-loop/experiment_plan.json",
+    "execution-information-loop/j_contract_selftest.py",
+    "execution-information-loop/production_runtime_bridge.py",
+    "execution-information-loop/result_contract_schema.json",
+    "execution-information-loop/tests/test_declarative_result_contract.py",
+    "execution-information-loop/tests/test_production_contract_gate.py",
+    "execution-information-loop/tests/test_validate_j_evidence.py",
+    "execution-information-loop/validate_j_evidence.py",
+    "simigo2-experimental/scripts/ordinary_task/run_phase_j.py"
+  ],
+  "changed_file_count": 13,
+  "file_count_after": 5208,
+  "file_count_before": 5197,
+  "head_after": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "head_before": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "unexpected_changes": []
+}

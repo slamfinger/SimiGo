@@ -1,0 +1,150 @@
+{
+  "acceptanceGate": {
+    "maxReferenceRankPerSeed": [
+      2,
+      2
+    ],
+    "positionsPerSeed": 139,
+    "profileID": "NAMED_SOURCE.CYBER_TIEL.MATRIX_V2.TOP16_RANK2.TWO_SEEDS",
+    "profilePass": true,
+    "seeds": [
+      42,
+      43
+    ],
+    "topKContainmentPerSeed": [
+      139,
+      139
+    ],
+    "topOneAgreementPerSeed": [
+      133,
+      133
+    ],
+    "topOneAgreementRatio": 0.9568345323741008,
+    "topOneFlipsPerSeed": [
+      6,
+      6
+    ]
+  },
+  "artifacts": {
+    "f32ControlAudit": {
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-f32-control-audit.json",
+      "sha256": "87eaa2ed6c689eb0bccc18cfd73b820f4d5db5cc1e88e2a740453bc80ed757eb"
+    },
+    "lineageAudit": {
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-lineage-audit.json",
+      "sha256": "121b7ee417181fe8aa5ec8dc0173db0da92a7d4a1a7155a6ae313d584d7f255a"
+    },
+    "marginSeed42": {
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all.json",
+      "sha256": "986d399de2180a9f5fd72c2735bf5835e1d119ca54e395aad26ea14d3610d39f"
+    },
+    "marginSeed43": {
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all-seed43.json",
+      "sha256": "9144057b5d7c480df79b1c348a747fc3313dca55386a8149c755bc0ce9b00a87"
+    },
+    "profileEvaluation": {
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-matrix-v2-profile-evaluation.json",
+      "sha256": "dc9e27232ea22872e21a7d4a3a8b37926a7989c6678e17919feeaed730317113"
+    },
+    "qkvSegmentDiagnostic": {
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-segment-diagnostic.json",
+      "sha256": "fe6af0ba24b7e762cf710ab1cd05cdf553fc8e4e258b570d74d30c2ae9959303"
+    },
+    "quantizedLayoutPilot": {
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-quantized-drift-pilot-layer1.json",
+      "sha256": "11648c477d52b69d3c3ea4ab26f41654ac1ff0a61c16bade81da5716915ce674"
+    },
+    "tensorTopologyAudit": {
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-tensor-topology-audit.json",
+      "sha256": "a4fc163fe51d97f23d45e97964f08c7f129a00e1c2a4d6e3e2411862a365e2d4"
+    }
+  },
+  "checks": {
+    "DECLARED_LINEAGE_CHAIN": true,
+    "F32_CONTROL_AUDIT": true,
+    "MARGIN_SEED42": true,
+    "MARGIN_SEED43": true,
+    "PROFILE_TWO_SEED_GATE": true,
+    "QKV_LAYOUT_DIAGNOSTIC": true,
+    "QUANTIZED_LAYOUT_PILOT": true,
+    "TEXT_TOPOLOGY_MAPPED": true,
+    "TOKENIZER_SUBSTRATE_EXACT": true
+  },
+  "consolidatedStatus": "PASS_WITH_BOUNDARY",
+  "failureReasons": [],
+  "keyFindings": {
+    "controlTensorDrift": {
+      "exactTensorCount": 30,
+      "maxAbsDiff": 101.82308959960938,
+      "tensorCount": 260,
+      "zeroDriftTensorCount": false
+    },
+    "lineage": {
+      "addedTokenMismatchCount": 0,
+      "baseVocabMismatchCount": 0,
+      "chain": "Ornith 1.5 → Huihui-Ornith-1.5-abliterated → CyberTiel quantization",
+      "chatTemplateExact": true,
+      "mergeMismatchCount": 0
+    },
+    "margin": {
+      "positions": 139,
+      "seed42TopOneAgreement": 133,
+      "seed43TopOneAgreement": 133
+    },
+    "profile": {
+      "maxReferenceRankPerSeed": [
+        2,
+        2
+      ],
+      "positionsPerSeed": 139,
+      "profileID": "NAMED_SOURCE.CYBER_TIEL.MATRIX_V2.TOP16_RANK2.TWO_SEEDS",
+      "seedOutcomesIdentical": true,
+      "seeds": [
+        42,
+        43
+      ],
+      "topKContainmentPerSeed": [
+        139,
+        139
+      ],
+      "topOneFlipsPerSeed": [
+        6,
+        6
+      ]
+    },
+    "quantizedLayoutPilot": {
+      "elementwiseCorrelationNearZero": true,
+      "layoutResolved": false,
+      "tensorCount": 3
+    },
+    "topology": {
+      "ggufNextnOnly": 20,
+      "ggufTotal": 753,
+      "mlxVisionOnly": 333,
+      "textModelMapped": 733,
+      "unexplainedMlxLanguageOnly": 0
+    }
+  },
+  "nonClaims": [
+    "same checkpoint bytes",
+    "same quantization grid",
+    "dequantization equivalence",
+    "full tokenizer implementation equivalence",
+    "quantizer drift attribution",
+    "tensor element mapping established",
+    "MTP mechanism explanation",
+    "production readiness"
+  ],
+  "overallPass": true,
+  "protocolVersion": "LAB.NAMED_SOURCE.EVIDENCE.BUNDLE.V1",
+  "scope": "CYBER_TIEL_GGUF_UD_Q4_K_XL_VS_MLX_OQ4E / MATRIX_V2_12_PROMPTS_139_POSITIONS / TWO_SEEDS",
+  "verdicts": {
+    "declaredLineageChain": "PASS",
+    "largeMatrixQuantizerDriftAttribution": "BLOCKED_LAYOUT_SOURCE_UNRESOLVED",
+    "namedSourceAcceptanceGate": "PASS",
+    "qkvSegmentOrder": "UNRESOLVED",
+    "sameCheckpointClosure": "REJECTED_AT_CONTROL_TENSOR_LEVEL",
+    "textTensorTopology": "COMPLETE_WITH_KNOWN_EXTRAS",
+    "tokenizerSubstrate": "EXACT"
+  }
+}

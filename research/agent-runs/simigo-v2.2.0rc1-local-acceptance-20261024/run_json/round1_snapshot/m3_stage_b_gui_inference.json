@@ -1,0 +1,43 @@
+{
+  "stage": "M3-B",
+  "subject": "installed Release candidate SimiGo.app (v2.2.0rc1)",
+  "install_path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app",
+  "pid": 21689,
+  "isolation_roots": {
+    "SIMIGO_HOME": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3b/home",
+    "SIMIGO_CACHE_ROOT": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3b/cache",
+    "SIMIGO_STATE_GRAPH_STORE": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3b/state-graph/reference-graph-v1.json"
+  },
+  "observed_ok": {
+    "installed_binary_is_process_image": true,
+    "isolation_env_visible_in_ps_eww": true,
+    "bootstrap_ran": true,
+    "bootstrap_models_discovered": 20,
+    "bootstrap_schema_version": 3,
+    "bootstrap_issue_count": 0,
+    "saved_model_selection_restored": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+    "bootstrap_report_path": "m3b/home/manifests/bootstrap-report.json",
+    "isolated_sqlite_created": ["m3b/home/simigo.sqlite3", "m3b/home/simigo.sqlite3-wal", "m3b/home/simigo.sqlite3-shm"]
+  },
+  "real_model_output": false,
+  "model_loaded": false,
+  "verdict": "BLOCKED",
+  "blocked_leg": "user-visible prompt (status-item NSPopover) and therefore model load + plain inference",
+  "attempts": [
+    {"method": "System Events accessibility probe", "result": "ok", "detail": "process visible; menu bar 1 = '0,0 / 1920,30'; menu bar 2 = '-1,1068 / 20,24' with exactly 1 AXMenuBarItem"},
+    {"method": "AX action AXPress on status item", "result": "no effect", "detail": "item exposes actions ['AXPress'] but performing it produces no popover"},
+    {"method": "AX action AXShowMenu on status item", "result": "no effect"},
+    {"method": "System Events 'click at' sweep", "result": "no effect", "detail": "x from 1896 to 1200 step -24 at y=14; app windows/buttons/groups/textFields all 0 after every probe"},
+    {"method": "CGEvent HID left click (9,15)", "result": "no effect", "detail": "frontmost application remained Safari; status item never received the event"},
+    {"method": "CGEvent HID left click (9,1068)", "result": "missed target", "detail": "frontmost became Finder, i.e. the click landed in the Dock area at the reported AX y=1068"},
+    {"method": "CGWindowListCopyWindowInfo(owner contains SimiGo)", "result": "unavailable", "detail": "returns [] - window list ownership is not readable without Screen Recording permission"},
+    {"method": "AX geometry ground truth", "result": "inconsistent", "detail": "status item reports AXPosition [-1,1068] / AXSize [20,24] while the sole display is 1920x1080 with the menu bar at y=0..30; the reported origin cannot be mapped onto the visible menu bar, so no clickable coordinate can be derived"}
+  ],
+  "why_not_worked_around": "The only product paths that load a model are the status-item popover (GUI) and the headless SIMIGO_HEADLESS_ROLE entry, which the product itself classifies as restricted_production_path. Driving the headless entry here would substitute a non-user path for stage B instead of evidencing it, so it was not done. No product source, test assertion, authorization requirement or UI element was modified to obtain a pass.",
+  "minimal_unblock": [
+    "Run one human-in-the-loop pass: a person clicks the SimiGo status item once and submits one plain prompt, while this batch captures app log, isolated-home delta, IS rows and the listening socket - this converts the leg from BLOCKED to observed, though it is operator-attested rather than machine-driven.",
+    "Or grant the automation host Screen Recording (so CGWindowList/AX window ownership becomes readable) and re-run the coordinate derivation; the AX position defect (-1,1068) may still prevent synthetic clicks.",
+    "Or decide, as a product change (not an acceptance bypass), on a supported programmatic entry point that starts the same runtime the popover starts; until such a product entry exists, stage B cannot be driven automatically."
+  ],
+  "raw_artifacts": ["evidence/m3_stage_b_probe.txt", "logs/m3b_app_stdout.log", "m3b/home/manifests/bootstrap-report.json", "m3b/home/logs/native_mlx_trace.log"]
+}

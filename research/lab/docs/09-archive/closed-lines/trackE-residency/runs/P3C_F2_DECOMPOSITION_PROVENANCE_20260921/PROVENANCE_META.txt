@@ -1,0 +1,10 @@
+# P3-C F2 decomposition provenance capture (design v0.3 PASS 后执行)
+date_utc: 2026-09-21T15:49:58Z
+git_head: 69c4fc04e0bc7bc10d2edcff276344a0694d3b9c
+v5_sha256: 0e7a1767e046b77c2e7948fd8a51a6de608e96f38d71e2774b92abe7ab24acb4
+v4_sha256: 140fa673bae93adbc4fc5fe99e9cee8849f668cdc1ccf4c671e45052471d93ee
+v3_sha256: 5dbc8cc04ac419782cd03ee6afbe59a74a759d1840d81f818510c6aed2015375
+python: Python 3.14.5
+command: python3 trackE-residency/residency_policy_simulator_v5.py (cwd=repo root)
+gate: A≡V4(P3-B frozen+v4 seq bit-exact) / D≡lfu_aging(P3-A frozen+v4 seq bit-exact) / C≡prior diagnostic — all OK before B collection
+---

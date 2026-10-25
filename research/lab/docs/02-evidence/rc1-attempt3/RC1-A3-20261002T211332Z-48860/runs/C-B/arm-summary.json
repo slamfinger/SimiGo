@@ -1,0 +1,78 @@
+{
+  "arm": "C-B",
+  "checkpoint_staging_count": 4,
+  "checkpoint_staging_phases": [
+    "OLD_PROCESS_STARTED",
+    "S0_OBSERVED",
+    "S1_OBSERVED",
+    "POST_CHANGE_OBSERVED"
+  ],
+  "checkpoint_staging_pointer_keys": [
+    [],
+    [
+      "s0",
+      "task"
+    ],
+    [
+      "s0",
+      "s1",
+      "task"
+    ],
+    [
+      "progress",
+      "s0",
+      "s1",
+      "task"
+    ]
+  ],
+  "distinct_processes": true,
+  "evaluation": {
+    "failedAuditChecks": [],
+    "fullContinuationSuccess": true,
+    "invalidRun": false,
+    "partialSuccess": false,
+    "x1TaskIdentity": true,
+    "x2BeforeState": true,
+    "x3AfterState": true,
+    "x4DirectionalChange": true,
+    "x5NextAction": true
+  },
+  "fresh_command": "continue",
+  "fresh_lifecycle_marker": {
+    "phase": "fresh_process_started",
+    "pid": 48878,
+    "timestamp": "2026-10-02T21:13:34Z"
+  },
+  "fresh_pid": 48878,
+  "full_continuation_success": true,
+  "invalid_run": false,
+  "old_command": "old",
+  "old_lifecycle_marker": {
+    "phase": "old_process_terminated",
+    "pid": 48874,
+    "timestamp": "2026-10-02T21:13:34Z"
+  },
+  "old_pid": 48874,
+  "overwrite_reference": "RC1-A3-C-B-EXTERNAL-001",
+  "physical_after_sha256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+  "physical_before_sha256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+  "physical_evidence": {
+    "afterSHA256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+    "beforeSHA256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+    "declaredAt": "2026-10-02T21:13:34Z",
+    "observedAt": "2026-10-02T21:13:34Z",
+    "overwriteReference": "RC1-A3-C-B-EXTERNAL-001",
+    "sourcePath": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt3/RC1-A3-20261002T211332Z-48860/runs/C-B/physical/entity-E.txt"
+  },
+  "physical_source": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt3/RC1-A3-20261002T211332Z-48860/runs/C-B/physical/entity-E.txt",
+  "report": {
+    "afterState": "alpha=42;mode=active",
+    "beforeState": "alpha=17;mode=quiet",
+    "blocker": "none",
+    "directionalChange": "changed=true;before=alpha=17;mode=quiet;after=alpha=42;mode=active",
+    "nextAction": "REQUEST_HEALTH_CHECK",
+    "schemaVersion": "c-impl-report-v2",
+    "sourceLegality": true,
+    "taskID": "C-T-001"
+  }
+}

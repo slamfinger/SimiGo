@@ -1,0 +1,16 @@
+{
+  "artifact_state": "FINAL_SUCCESS",
+  "campaign_cwd": ".",
+  "campaign_returncode": 0,
+  "campaign_stderr": "",
+  "campaign_stdout": "campaign evidence complete: docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008",
+  "closure_validation": "PASS",
+  "harness_argv": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "database-carrier-replication/campaign/run_equivalence_campaign.py",
+    "--expected-head",
+    "7585cc428a7b4851666630a435ea727205a3d271",
+    "--output",
+    "docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008"
+  ]
+}

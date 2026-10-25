@@ -1,0 +1,86 @@
+{
+ "W_A": {
+  "allowlisted_occurrences": {
+   "primary_database": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-a/carrier.sqlite",
+   "same_world_u1_evidence": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-a/evidence/u1.json",
+   "same_world_u1_evidence_contains_nonce": true,
+   "source_payload_log_text": true,
+   "source_registration_value": true,
+   "u1_model_input_and_state": true,
+   "u1_settlement_result": true
+  },
+  "audited_at_utc": "2026-10-22T03:39:00Z",
+  "cross_contaminated": false,
+  "nonce_length": 16,
+  "nonce_sha256": "f07141245510d71cb86f98e9b49ab2f21f36f206e44b35adfe114a26d9fe5917",
+  "schema_id": "SIMIGO-ORDINARY-TASK-B4-V1",
+  "surface_contains_nonce": {
+   "argv": false,
+   "attempt_directories": false,
+   "environment": false,
+   "other_world_database": false,
+   "other_world_evidence": false,
+   "other_world_logs": false,
+   "other_world_state": false,
+   "u2_output_path": false,
+   "u2_process_log": false,
+   "u2_state_directory": false
+  },
+  "u2_input_surfaces": [
+   "argv",
+   "environment",
+   "state/u2",
+   "evidence/u2.json",
+   "logs/u2.log",
+   "world-b carrier.sqlite",
+   "world-b state",
+   "world-b evidence",
+   "world-b logs",
+   "worlds/attempts"
+  ],
+  "verdict": "CLEAN",
+  "world": "world-a"
+ },
+ "W_B": {
+  "allowlisted_occurrences": {
+   "primary_database": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-b/carrier.sqlite",
+   "same_world_u1_evidence": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-b/evidence/u1.json",
+   "same_world_u1_evidence_contains_nonce": true,
+   "source_payload_log_text": true,
+   "source_registration_value": true,
+   "u1_model_input_and_state": true,
+   "u1_settlement_result": true
+  },
+  "audited_at_utc": "2026-10-22T03:39:00Z",
+  "cross_contaminated": false,
+  "nonce_length": 16,
+  "nonce_sha256": "2f99d35c2460ae79cf2a82181c0ba86eeb265389ac7f9f664f5d5175244f83a1",
+  "schema_id": "SIMIGO-ORDINARY-TASK-B4-V1",
+  "surface_contains_nonce": {
+   "argv": false,
+   "attempt_directories": false,
+   "environment": false,
+   "other_world_database": false,
+   "other_world_evidence": false,
+   "other_world_logs": false,
+   "other_world_state": false,
+   "u2_output_path": false,
+   "u2_process_log": false,
+   "u2_state_directory": false
+  },
+  "u2_input_surfaces": [
+   "argv",
+   "environment",
+   "state/u2",
+   "evidence/u2.json",
+   "logs/u2.log",
+   "world-b carrier.sqlite",
+   "world-b state",
+   "world-b evidence",
+   "world-b logs",
+   "worlds/attempts"
+  ],
+  "verdict": "CLEAN",
+  "world": "world-b"
+ }
+}

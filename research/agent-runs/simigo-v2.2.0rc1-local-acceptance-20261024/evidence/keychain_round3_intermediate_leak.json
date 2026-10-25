@@ -1,0 +1,347 @@
+{
+ "baseline": {
+  "captured_at": "2026-10-24T02:11:39+0800",
+  "item_count": 1806,
+  "path": "evidence/keychain_pre_round3.json"
+ },
+ "checks": {
+  "baseline_present": true,
+  "isolated_runs_wrote_scoped_keychain_files": true,
+  "no_items_removed_or_rewritten": true,
+  "no_new_login_keychain_items": false,
+  "production_credentials_untouched": true
+ },
+ "current_item_count": 1809,
+ "generated_at": "2026-10-24T02:15:44+0800",
+ "isolation": {
+  "filesystem_roots_isolated": true,
+  "keychain_isolated_by_simigo_home": true,
+  "mechanism": "LOCALBTransportIdentityStore.defaultIsolatedKeychainPath: when SIMIGO_HOME redirects the managed root, the transport identity resolves to <SIMIGO_HOME>/localb/transport-identity.keychain-db and every SecItem call is scoped (kSecUseKeychain / kSecMatchSearchList / SecIdentityCreateWithCertificate(keychain))."
+ },
+ "legacy_round2_item_count": 45,
+ "legacy_round2_items_not_deleted": [
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a.8683CE92#tls#key#g1#ad6bad636-ab01-4e0f-8f24-0cc8c4d6c304"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a.A9F76C38#tls#key#g1#af94ab9b4-6741-4327-ad8d-9eb4d6458852"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a_mem.CE132F35#tls#key#g1#a6ea96e89-107d-480a-911c-bee6eca1783b"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.04F99D91#tls#key#g1#a63fbfcb7-128d-426e-8c56-beb41d7efb8d"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.827FE1DD#tls#key#g1#a036e480f-3953-417a-9bbd-f79167404ea7"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b_mem.AFFDA3FC#tls#key#g1#aae877655-95b7-4ff1-9863-ab090a1bce9e"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a.2EC1F803#tls#key#g1#a7aa926f0-0c31-4f1e-8e0f-bd0970fd0e1f"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a.8C77F80E#tls#key#g1#adaa36bee-5dcf-4dbe-a8b7-a4101975a1f0"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a_mem.8B2DB268#tls#key#g1#a3e5512ce-c5ca-4e8e-abef-4eb7093edebd"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.903F0B8A#tls#key#g1#ad570f63c-ad9c-4117-b282-da15f59f4b94"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.CC11EA5E#tls#key#g1#ad95388d1-5baa-49e5-bd92-4441503a4f70"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b_mem.63893473#tls#key#g1#ae8860c5b-055d-4f57-939b-7f3e20d55e7a"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.485CE59E#tls#key#g1#ae8d16e02-fde0-4069-a826-8c4d5094dc0e"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.A1724DF8#tls#key#g1#ab4a492d0-bc8f-4bd6-aa58-25cba015f377"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b_mem.357A915C#tls#key#g1#a4cfbbf32-bda2-4c03-83f7-68afca3ed80e"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a.8683CE92#tls#key#g1#ad6bad636-ab01-4e0f-8f24-0cc8c4d6c304"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a.A9F76C38#tls#key#g1#af94ab9b4-6741-4327-ad8d-9eb4d6458852"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a_mem.CE132F35#tls#key#g1#a6ea96e89-107d-480a-911c-bee6eca1783b"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.04F99D91#tls#key#g1#a63fbfcb7-128d-426e-8c56-beb41d7efb8d"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.827FE1DD#tls#key#g1#a036e480f-3953-417a-9bbd-f79167404ea7"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b_mem.AFFDA3FC#tls#key#g1#aae877655-95b7-4ff1-9863-ab090a1bce9e"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a.2EC1F803#tls#key#g1#a7aa926f0-0c31-4f1e-8e0f-bd0970fd0e1f"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a.8C77F80E#tls#key#g1#adaa36bee-5dcf-4dbe-a8b7-a4101975a1f0"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4a_mem.8B2DB268#tls#key#g1#a3e5512ce-c5ca-4e8e-abef-4eb7093edebd"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.903F0B8A#tls#key#g1#ad570f63c-ad9c-4117-b282-da15f59f4b94"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.CC11EA5E#tls#key#g1#ad95388d1-5baa-49e5-bd92-4441503a4f70"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b_mem.63893473#tls#key#g1#ae8860c5b-055d-4f57-939b-7f3e20d55e7a"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.485CE59E#tls#key#g1#ae8d16e02-fde0-4069-a826-8c4d5094dc0e"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b.A1724DF8#tls#key#g1#ab4a492d0-bc8f-4bd6-aa58-25cba015f377"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.headless.g1g3.m4b_mem.357A915C#tls#key#g1#a4cfbbf32-bda2-4c03-83f7-68afca3ed80e"
+  },
+  {
+   "account": null,
+   "created": "20261023164743",
+   "modified": "20261023164743",
+   "service": "com.simigo.headless.g1g3.m4a.8683CE92"
+  },
+  {
+   "account": null,
+   "created": "20261023164749",
+   "modified": "20261023164749",
+   "service": "com.simigo.headless.g1g3.m4a.A9F76C38"
+  },
+  {
+   "account": null,
+   "created": "20261023164755",
+   "modified": "20261023164755",
+   "service": "com.simigo.headless.g1g3.m4a_mem.CE132F35"
+  },
+  {
+   "account": null,
+   "created": "20261023165126",
+   "modified": "20261023165126",
+   "service": "com.simigo.headless.g1g3.m4b.04F99D91"
+  },
+  {
+   "account": null,
+   "created": "20261023165131",
+   "modified": "20261023165131",
+   "service": "com.simigo.headless.g1g3.m4b.827FE1DD"
+  },
+  {
+   "account": null,
+   "created": "20261023165137",
+   "modified": "20261023165137",
+   "service": "com.simigo.headless.g1g3.m4b_mem.AFFDA3FC"
+  },
+  {
+   "account": null,
+   "created": "20261023172630",
+   "modified": "20261023172630",
+   "service": "com.simigo.headless.g1g3.m4a.2EC1F803"
+  },
+  {
+   "account": null,
+   "created": "20261023172636",
+   "modified": "20261023172636",
+   "service": "com.simigo.headless.g1g3.m4a.8C77F80E"
+  },
+  {
+   "account": null,
+   "created": "20261023172643",
+   "modified": "20261023172643",
+   "service": "com.simigo.headless.g1g3.m4a_mem.8B2DB268"
+  },
+  {
+   "account": null,
+   "created": "20261023173122",
+   "modified": "20261023173122",
+   "service": "com.simigo.headless.g1g3.m4b.903F0B8A"
+  },
+  {
+   "account": null,
+   "created": "20261023173128",
+   "modified": "20261023173128",
+   "service": "com.simigo.headless.g1g3.m4b.CC11EA5E"
+  },
+  {
+   "account": null,
+   "created": "20261023173134",
+   "modified": "20261023173134",
+   "service": "com.simigo.headless.g1g3.m4b_mem.63893473"
+  },
+  {
+   "account": null,
+   "created": "20261023173611",
+   "modified": "20261023173611",
+   "service": "com.simigo.headless.g1g3.m4b.485CE59E"
+  },
+  {
+   "account": null,
+   "created": "20261023173616",
+   "modified": "20261023173616",
+   "service": "com.simigo.headless.g1g3.m4b.A1724DF8"
+  },
+  {
+   "account": null,
+   "created": "20261023173622",
+   "modified": "20261023173622",
+   "service": "com.simigo.headless.g1g3.m4b_mem.357A915C"
+  }
+ ],
+ "new_item_count": 3,
+ "new_items_since_baseline": [
+  {
+   "account": null,
+   "created": "20261023181218",
+   "modified": "20261023181218",
+   "service": "com.simigo.tests.localb-adoption.ACE98487-D4BC-456D-9F97-B0245D84D182"
+  },
+  {
+   "account": null,
+   "created": "20261023181221",
+   "modified": "20261023181221",
+   "service": "com.simigo.tests.localb-boot.3F45A80E-6EA9-4EFB-A54F-C40207ABDE2E"
+  },
+  {
+   "account": null,
+   "created": "20261023181223",
+   "modified": "20261023181223",
+   "service": "com.simigo.tests.localb-boot.3A0C2DBC-CCD4-4ADD-BBAE-B23B07729535"
+  }
+ ],
+ "production_items": [
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.localb-transport-identity#tls-identity-v1#key#g1#aef2663f2-d97d-4d4e-b19d-8e77adf83d20"
+  },
+  {
+   "account": null,
+   "created": null,
+   "modified": null,
+   "service": "com.simigo.localb-transport-identity#tls-identity-v1#key#g1#aef2663f2-d97d-4d4e-b19d-8e77adf83d20"
+  },
+  {
+   "account": null,
+   "created": "20261016142356",
+   "modified": "20261016142356",
+   "service": "com.simigo.localb-transport-identity"
+  },
+  {
+   "account": null,
+   "created": "20261016142356",
+   "modified": "20261016142356",
+   "service": "com.simigo.localb-production-signer"
+  }
+ ],
+ "removed_items_since_baseline": [],
+ "scope": "login Keychain item METADATA only; no secret values are read or stored",
+ "scoped_keychain_files": [
+  "run_isolated_r3/isolation/home/localb/transport-identity.keychain-db"
+ ],
+ "verdict": "FAIL"
+}

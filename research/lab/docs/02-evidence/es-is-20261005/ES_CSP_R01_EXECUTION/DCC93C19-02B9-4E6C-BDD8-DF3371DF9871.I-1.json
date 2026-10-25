@@ -1,0 +1,175 @@
+{
+  "c1" : {
+    "boundary_cardinality" : 1,
+    "defects" : [
+      "input reference CSP-MISSING-SLOT-00000000 does not resolve"
+    ],
+    "observed_slots" : [
+      "O1",
+      "D1",
+      "A1",
+      "B1",
+      "I1",
+      "P1"
+    ],
+    "pointer_cardinality" : 1,
+    "required_base_slots" : [
+      "O1",
+      "I1",
+      "D1",
+      "A1"
+    ],
+    "status" : "FAIL"
+  },
+  "c2" : {
+    "authority" : "NEXT_ACTION records only",
+    "boundary" : "",
+    "decision" : "BLOCK_INSUFFICIENT",
+    "invalid_pointer_targets" : [
+
+    ],
+    "pointer_target_cardinality" : 1,
+    "pointer_targets" : [
+      "B1"
+    ],
+    "reason" : "RECONSTRUCTION_INCOMPLETE"
+  },
+  "c3" : {
+    "contributes_to_pass" : false,
+    "role" : "OBSERVATION_ONLY",
+    "status" : "NOT_PERFORMED"
+  },
+  "entry_point" : {
+    "input" : "uasession:91E26A9E-AA31-47AF-94F6-8951FFC3DCA4",
+    "resolution" : "EXACT_NON_SEMANTIC",
+    "resolved_carrier_id" : "91E26A9E-AA31-47AF-94F6-8951FFC3DCA4"
+  },
+  "events" : [
+    {
+      "event_id" : "FDEE3400-3D54-468D-8BDE-E6192DF7D9E2",
+      "information_id" : "3C59592C-CA58-4CB7-BEF5-F33646AEFE18",
+      "mapping_from_version" : "1",
+      "mapping_id" : "CE87B978-A00B-4CF9-9E35-7AB445F1C304",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 116,
+      "payload_sha256" : "8a775a684dc98bc9d4eaaec977f02812df3cf3f1a9741b813b245fe52fb0dffe",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"O1\",\"content\":\"Continue the bounded research note without adding new claims.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RAW",
+      "sequence" : 0,
+      "session_id" : "91E26A9E-AA31-47AF-94F6-8951FFC3DCA4",
+      "slot" : "O1"
+    },
+    {
+      "event_id" : "F26F7820-2E24-43D5-86B6-8ABC5BB8D24F",
+      "information_id" : "C2725296-1E31-4ED1-BEE1-4F021AAB423C",
+      "mapping_from_version" : "3",
+      "mapping_id" : "468C8184-C30A-410A-8432-B86DF824EF32",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 118,
+      "payload_sha256" : "bb056822624587171d62a840b32e3efae818837eb4119146aed157542f8c62d7",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"D1\",\"content\":\"The bounded note is ready for boundary-registered continuation.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "JUDGMENT",
+      "sequence" : 1,
+      "session_id" : "91E26A9E-AA31-47AF-94F6-8951FFC3DCA4",
+      "slot" : "D1"
+    },
+    {
+      "event_id" : "C5A45E4C-E413-438F-85A4-2EC641D286E0",
+      "information_id" : "33DE141F-43A9-4A6E-BB7F-62AE33682874",
+      "mapping_from_version" : "5",
+      "mapping_id" : "A19CCDA0-A0C7-4C66-AC1A-EAADC73AFF1B",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 91,
+      "payload_sha256" : "ab6c28da3b98f642a60bd476f8e2480da0d16da02d7e4401feeed46340482c8b",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"A1\",\"content\":\"Artifact reference: bounded-note-v1.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RESULT",
+      "sequence" : 2,
+      "session_id" : "91E26A9E-AA31-47AF-94F6-8951FFC3DCA4",
+      "slot" : "A1"
+    },
+    {
+      "event_id" : "D38C21A7-91A0-4ADA-BF22-63F5E78A2E7B",
+      "information_id" : "10A8E421-A32F-450C-9F63-2B039CB16BA9",
+      "mapping_from_version" : "7",
+      "mapping_id" : "CB674E83-4253-42B6-A84D-3A6565222EE2",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 128,
+      "payload_sha256" : "d8c33d590165dcc06d59cd794166ffd0dee48a0d890e0cd66ef7266430d33069",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"B1\",\"content\":\"Boundary state: prior work complete; one registered continuation remains.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RESULT",
+      "sequence" : 3,
+      "session_id" : "91E26A9E-AA31-47AF-94F6-8951FFC3DCA4",
+      "slot" : "B1"
+    },
+    {
+      "event_id" : "79870C49-8770-4702-B937-F8D74322C180",
+      "information_id" : "AF619BE9-D79A-43B2-A4C2-84CFB47FD9BE",
+      "mapping_from_version" : "9",
+      "mapping_id" : "B760B5CD-8894-46AF-9347-D7F51F1AB8CC",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 80,
+      "payload_sha256" : "985369cc4ec8cd2a70a222acbff0601aeb654d63e55318cd5a5a088b83e927a6",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"I1\",\"content\":\"CSP-MISSING-SLOT-00000000\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "EVIDENCE_LINK",
+      "sequence" : 4,
+      "session_id" : "91E26A9E-AA31-47AF-94F6-8951FFC3DCA4",
+      "slot" : "I1"
+    },
+    {
+      "event_id" : "32E6423F-316D-4B13-B86D-026BF9C34E43",
+      "information_id" : "ECA9406D-3007-4AF4-ADBD-D2D4837709E0",
+      "mapping_from_version" : "11",
+      "mapping_id" : "6D066E5D-1AC3-47D7-90B2-B5729AB87DA9",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 110,
+      "payload_sha256" : "740a68913487c2929d2b326e41b6f8d080ffd61bb6bb03cd595da68ebaaf9f7b",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"P1\",\"content\":\"Continue at the registered boundary.\",\"target_slot\":\"B1\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "NEXT_ACTION",
+      "sequence" : 5,
+      "session_id" : "91E26A9E-AA31-47AF-94F6-8951FFC3DCA4",
+      "slot" : "P1",
+      "target_slot" : "B1"
+    }
+  ],
+  "evidence" : {
+    "EV-6_reconstruction_manifest" : true,
+    "EV-7_c1_status" : true,
+    "EV-8_c2_status" : true,
+    "EV-9_carrier_precondition" : true,
+    "EV-R3_pointer_path" : "NEXT_ACTION only",
+    "stable_addressing_only" : true
+  },
+  "interruption_kind" : "I-1",
+  "opaque_fixture_instance_id" : "DCC93C19-02B9-4E6C-BDD8-DF3371DF9871",
+  "payload_errors" : [
+
+  ],
+  "run_label" : "ES-CSP-RUN-01",
+  "schema_version" : "es-csp/reconstruction-manifest-v1",
+  "side_channel_exclusions" : {
+    "agent_notes" : true,
+    "conversation_history" : true,
+    "deficiency_description" : true,
+    "embedding" : true,
+    "expected_c1" : true,
+    "expected_c2" : true,
+    "fixture_role" : true,
+    "mcp" : true,
+    "prior_process_memory" : true,
+    "ranking" : true,
+    "remote_api" : true,
+    "semantic_search" : true
+  },
+  "snapshot" : {
+    "event_count" : 6,
+    "mapping_count" : 6,
+    "read_version" : 12
+  },
+  "source_baseline_identifier" : "39c1031"
+}

@@ -1,0 +1,5 @@
+COMMAND /Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff phase1-case --run-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A0 --model-dir /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d --lab-root /Users/mr.simi/Documents/SimiGo-Lab --run-label phase1-a0-20261022c --case A0 --baseline-dir /Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline --max-tokens 32
+RETURNCODE 0
+STDOUT
+
+STDERR

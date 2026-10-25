@@ -1,0 +1,225 @@
+{
+  "carrier_loop_semantics_changed": false,
+  "claim_limits": [],
+  "claims": {
+    "contract_violations_refused": "OBSERVED: a missing declared field and a value contradicting an admitted input binding were both refused by the declared contract with no settlement and no signature created; an unknown contract schema version failed closed before any model work",
+    "cross_process_reuse_on_unseen_ids": "OBSERVED: U2 and U3 were produced in fresh native processes on empty state directories that reused the settled U1/U2 closure through Information Space, one generation per process",
+    "declarative_dispatch_no_task_id_rules": "OBSERVED: the production gate _validate_model_value takes (source_payload, value, dependency_values) only; the graph was built on run-time ids J-<token>-U1/2/3 and settled, reused and refused exactly as the frozen H/I lineage does"
+  },
+  "conditions": {
+    "J0-UNSEEN-ID-CHAIN": {
+      "attempt": 1,
+      "driver_log_path": "logs/J0-UNSEEN-ID-CHAIN.driver.log",
+      "driver_log_sha256": "7ce2f8703838ce45cc15ad5a1a67052c764d58238e6eaf3c636a3283d9758909",
+      "evidence_path": "conditions/J0-UNSEEN-ID-CHAIN.json",
+      "evidence_sha256": "60be096584579e866e3f63d6b9a77cb2ffcb97eb1531a728fd4f50b4ba90b7af",
+      "kind": "blocked",
+      "observations": {},
+      "terminal_state": "BLOCKED_NOT_RUN"
+    },
+    "J1-INCOMPLETE-FIELD": {
+      "attempt": 1,
+      "contract_dispatch_basis": "declared_contract",
+      "driver_log_path": "logs/J1-INCOMPLETE-FIELD.driver.log",
+      "driver_log_sha256": "0d4ce064b3603e4442a6227e3c83f90ac6a7e848cc329ad9a7f9d81e3c71011d",
+      "evidence_path": "conditions/J1-INCOMPLETE-FIELD.json",
+      "evidence_sha256": "07fb0f5b813af259d702e9cf5bc6c33a1586807c079918d1875b78715d1c5555",
+      "generation_calls": 0,
+      "kind": "contract_test_model_free_candidate",
+      "model_loads": 0,
+      "observations": {
+        "contract_dispatch_basis": "declared_contract",
+        "expected_error_code": "PRODUCER_RESULT_FIELD_MISSING",
+        "generation_calls": 0,
+        "item_id_under_test": "J-e13e9d05-U1",
+        "model_loads": 0,
+        "observed_error": "PRODUCER_RESULT_FIELD_MISSING: field=priority required field was not present in generated text",
+        "producer_contract_rejects": true,
+        "run_token": "e13e9d05",
+        "seed_tokenize_calls": 0,
+        "signature_created": false,
+        "test_kind": "contract_test_model_free_candidate",
+        "text_tokenize_calls": 0,
+        "valid_settlement_created": false
+      },
+      "producer_contract_rejects": true,
+      "seed_tokenize_calls": 0,
+      "signature_created": false,
+      "terminal_state": "OBSERVED",
+      "text_tokenize_calls": 0,
+      "valid_settlement_created": false
+    },
+    "J2-BINDING-MISMATCH": {
+      "attempt": 1,
+      "contract_dispatch_basis": "declared_contract",
+      "driver_log_path": "logs/J2-BINDING-MISMATCH.driver.log",
+      "driver_log_sha256": "e9b29628878ec00f295c81cb7db91f058a7839603050b3c79533d95e75940070",
+      "evidence_path": "conditions/J2-BINDING-MISMATCH.json",
+      "evidence_sha256": "f67d3c66f7febcef92602d814c861e983a0ebb86cbf97404aad7600eabd79634",
+      "generation_calls": 0,
+      "kind": "contract_test_model_free_candidate",
+      "model_loads": 0,
+      "observations": {
+        "contract_dispatch_basis": "declared_contract",
+        "expected_error_code": "PRODUCER_RESULT_BINDING_MISMATCH",
+        "generation_calls": 0,
+        "item_id_under_test": "J-68323d24-U1",
+        "model_loads": 0,
+        "observed_error": "PRODUCER_RESULT_BINDING_MISMATCH: field=priority actual '3' != bound value '5'",
+        "producer_contract_rejects": true,
+        "run_token": "68323d24",
+        "seed_tokenize_calls": 0,
+        "signature_created": false,
+        "test_kind": "contract_test_model_free_candidate",
+        "text_tokenize_calls": 0,
+        "valid_settlement_created": false
+      },
+      "producer_contract_rejects": true,
+      "seed_tokenize_calls": 0,
+      "signature_created": false,
+      "terminal_state": "OBSERVED",
+      "text_tokenize_calls": 0,
+      "valid_settlement_created": false
+    },
+    "J3-UNKNOWN-CONTRACT": {
+      "attempt": 1,
+      "contract_dispatch_basis": "declared_contract",
+      "driver_log_path": "logs/J3-UNKNOWN-CONTRACT.driver.log",
+      "driver_log_sha256": "7bb94b6d230c2b8f39d35d6490986a5d71befadc02c25488b61e361d6d770fc7",
+      "evidence_path": "conditions/J3-UNKNOWN-CONTRACT.json",
+      "evidence_sha256": "e0926908eb98d58cba930939348826d66922010658fea31a3b34c3dabcd9d47d",
+      "fail_closed": true,
+      "generation_calls": 0,
+      "kind": "fail_closed_control",
+      "model_loads": 0,
+      "observations": {
+        "contract_dispatch_basis": "declared_contract",
+        "expected_error_code": "CONTRACT_UNKNOWN_SCHEMA_VERSION",
+        "generation_calls": 0,
+        "item_id_under_test": "J-d7a2a7aa-U1",
+        "model_loads": 0,
+        "observed_error": "CONTRACT_UNKNOWN_SCHEMA_VERSION: expected 'simigo.result-contract/v1', found 'simigo.result-contract/v9'",
+        "producer_contract_rejects": true,
+        "run_token": "d7a2a7aa",
+        "seed_tokenize_calls": 0,
+        "signature_created": false,
+        "test_kind": "fail_closed_control",
+        "text_tokenize_calls": 0,
+        "valid_settlement_created": false
+      },
+      "producer_contract_rejects": true,
+      "seed_tokenize_calls": 0,
+      "signature_created": false,
+      "terminal_state": "OBSERVED",
+      "text_tokenize_calls": 0,
+      "valid_settlement_created": false
+    },
+    "J4-UNCHANGED-REUSE": {
+      "attempt": 1,
+      "driver_log_path": "logs/J4-UNCHANGED-REUSE.driver.log",
+      "driver_log_sha256": "5f0ba8e390161e1665f4e06f3217f53d3ac0d3ce9b013f421bf74e28bf6ba26e",
+      "evidence_path": "conditions/J4-UNCHANGED-REUSE.json",
+      "evidence_sha256": "7b9ab64cbfb85613cfe1126e0aa8b8a9ce7c7412b7d16b4a9bbef70dbdeaaea0",
+      "kind": "blocked",
+      "observations": {},
+      "terminal_state": "BLOCKED_NOT_RUN"
+    },
+    "J5-MISSING-TRANSITIVE-DEPENDENCY": {
+      "attempt": 1,
+      "driver_log_path": "logs/J5-MISSING-TRANSITIVE-DEPENDENCY.driver.log",
+      "driver_log_sha256": "321c7f9b48d1a6485111d2e3d2d8cee3e858a2ff0ad3441c5e68e8bac9924ec9",
+      "evidence_path": "conditions/J5-MISSING-TRANSITIVE-DEPENDENCY.json",
+      "evidence_sha256": "4b491f287b4e66518332ece3661bcf41f4d2a9aa194a5c56c85c06e312cc105c",
+      "kind": "blocked",
+      "observations": {},
+      "terminal_state": "BLOCKED_NOT_RUN"
+    }
+  },
+  "created_at_utc": "2026-10-22T16:23:00Z",
+  "environment_notes": [],
+  "graph": {
+    "contract_dispatch_basis": "declared_contract",
+    "contract_schema_version": "simigo.result-contract/v1",
+    "expected_route_key": "NORTH>EAST",
+    "run_token": "0145e5b8",
+    "sources": [
+      "J-0145e5b8-ORIGIN",
+      "J-0145e5b8-DEST"
+    ],
+    "structured_chain": [
+      "J-0145e5b8-U1",
+      "J-0145e5b8-U2",
+      "J-0145e5b8-U3"
+    ],
+    "transitive_closure_of_u3": [
+      "J-0145e5b8-ORIGIN",
+      "J-0145e5b8-DEST",
+      "J-0145e5b8-U1",
+      "J-0145e5b8-U2",
+      "J-0145e5b8-U3"
+    ]
+  },
+  "guards": {
+    "evidence_validator": "PASS",
+    "historical": "PASS",
+    "workspace": "PASS"
+  },
+  "historical_artifacts_modified": false,
+  "implementation": {
+    "archived_prior_attempt": null,
+    "attempt": 1,
+    "binary_rebuilt_this_round": false,
+    "binary_sha256": "3fd10a2e9c25f17fbb25ff771b224069c6d17c528c396c8cc494b268b98bd7c3",
+    "contract_dispatch_basis": "declared_contract",
+    "contract_engine": "execution-information-loop/declarative_result_contract.py",
+    "gate_static_proof": {
+      "gate_arguments": [
+        "source_payload",
+        "value",
+        "dependency_values"
+      ],
+      "gate_body_single_delegation": true,
+      "gate_found": true,
+      "gate_takes_no_item_id": true,
+      "no_hardcoded_j_ids": true,
+      "no_task_id_semantic_branch": true
+    },
+    "model_free_gate_checks": {
+      "A_dispatch_basis_recorded": true,
+      "A_runtime_ids_are_unseen": true,
+      "A_unseen_id_chain_all_reusable": true,
+      "B_id_independent_validation": true,
+      "C_missing_field_rejected": true,
+      "C_missing_field_result_not_reusable": true,
+      "D_binding_mismatch_rejected": true,
+      "E_derivation_mismatch_rejected": true,
+      "F_unknown_version_fail_closed": true,
+      "G_full_signed_closure": true,
+      "H_transitive_source_removal_refuses": true,
+      "I_no_key_consumer_verifies": true,
+      "J_extraction_view_is_derived": true,
+      "K_gate_takes_no_task_item_id": true,
+      "K_no_hardcoded_j_item_ids": true,
+      "K_no_task_id_semantic_branch": true
+    },
+    "model_free_gate_verdict": "PASS",
+    "model_snapshot_id": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "prechange_workspace_sha256": "03c34d5e2cdfc4fe7cedf7e2c03fb679ed146877d1157a119192ca22d6cf6701",
+    "production_gate": "production_runtime_bridge._validate_model_value(source_payload, value, dependency_values)",
+    "runtime_run_token": "0145e5b8",
+    "source_snapshot_id": "03c34d5e2cdfc4fe7cedf7e2c03fb679ed146877d1157a119192ca22d6cf6701",
+    "task_id_semantic_branches_remaining": []
+  },
+  "label": "es-is-declarative-result-contract-20261023j",
+  "primary_entry": "native SimiGoTaskRun / ordinary continueTask",
+  "research_question": "Is production result validation driven by each task's own declared result contract, so that a task id no source file has ever seen is settled, reused across fresh processes and refused on contract violation without any task-id special case?",
+  "round": "J",
+  "run_label": "es-is-declarative-result-contract-20261023j",
+  "schema_version": "simigo-j-evidence-v1",
+  "terminal_state": "BLOCKED_NOT_RUN",
+  "validator_final": {
+    "issue_count": 0,
+    "issues": [],
+    "result": "PASS"
+  }
+}

@@ -1,0 +1,19 @@
+{
+ "capture_stage": "post-run; no model download or fallback was used during the experiments",
+ "captured_at_utc": "2026-10-21T18:09:03Z",
+ "cpu_brand": "Apple M5",
+ "disk_free_bytes_home": 605241888768,
+ "disk_free_gib_home": 563.7,
+ "machine": "arm64",
+ "memory_bytes": 34359738368,
+ "memory_gib": 32.0,
+ "model_download_fallback_used": false,
+ "model_snapshot_exists": true,
+ "model_snapshot_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+ "model_snapshot_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+ "os": "macOS-27.0.1-arm64-arm-64bit",
+ "python_version": "Python 3.9.6",
+ "schema_id": "SIMIGO-CAUSALITY-HOST-RESOURCES-V1",
+ "swift_version": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0",
+ "vm_stat": "Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                                  1400694.\nPages active:                                 192835.\nPages inactive:                               171782.\nPages speculative:                             20390.\nPages throttled:                                   0.\nPages wired down:                             169509.\nPages purgeable:                                6508.\n\"Translation faults\":                      489412520.\nPages copy-on-write:                        60676502.\nPages zero filled:                         250811488.\nPages reactivated:                           3276145.\nPages purged:                                1538519.\nFile-backed pages:                            166147.\nAnonymous pages:                              218860.\nPages stored in compressor:                   203603.\nPages occupied by compressor:                  88546.\nDecompressions:                             13671182.\nCompressions:                               24725871.\nPageins:                                    44410436.\nPageouts:                                       1979.\nSwapins:                                       80723.\nSwapouts:                                     308404.\nPages tagged:                                 110211.\nPages tagged resident:                         67118.\nPages tagged compressed:                       43093.\nPages tag-storage:                             65536.\nPages tag-storage holding tags:                 3448.\nPages tag-storage free:                        17692.\nPages tag-storage non-tag pageable:            44207.\nPages tag-storage non-tag wired:                 129.\nBytes of compressed tags:                    6879232.\nTagged compressions:                          202397.\nTagged decompressions:                        155703."
+}

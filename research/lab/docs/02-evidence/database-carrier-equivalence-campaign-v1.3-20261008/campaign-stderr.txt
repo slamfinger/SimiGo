@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-exec-10qyQvVc/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 616, in <module>
+    sys.exit(main())
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-exec-10qyQvVc/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 612, in main
+    return run(args.expected_head, Path(args.output).resolve())
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-exec-10qyQvVc/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 435, in run
+    carrier.validate_schema()
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-exec-10qyQvVc/worktree/database-carrier-replication/implementation/db_is.py", line 208, in validate_schema
+    raise DatabaseCarrierError(
+db_is.DatabaseCarrierError: schema table mismatch: []

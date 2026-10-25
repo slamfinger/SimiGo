@@ -1,0 +1,6 @@
+$ bridge execute-with-model-result --database /Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I2/carrier.sqlite --demand-id handoff-i-u1-contract --advancement iw1-missing-route-key --evaluated-at 2026-10-22T13:07:43Z --item-id TASK-IU1 --value-file /Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I2/iw1-missing-route-key-value.json --provenance-file /Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I2/iw1-missing-route-key-provenance.json --run-id i2-iw1-missing-route-key --execution-id i2-iw1-missing-route-key --build-sha256 a9902234195a2c5da0209e3a3b2527703ea0a59ce475b6556fb8f60ac23009d0 --producer-process-id 23828
+---stdout---
+{"command":"execute-with-model-result","error":"route key is not the composite of the two settled sectors","error_type":"ValueError","ok":false}
+
+---stderr---
+

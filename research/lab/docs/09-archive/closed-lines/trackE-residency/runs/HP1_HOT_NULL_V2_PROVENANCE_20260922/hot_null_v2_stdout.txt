@@ -1,0 +1,28 @@
+=== H-P1 Hot Null v2 校准(设计 v1.0 PASS / LOCKED 后执行)===
+N_perm=10000;perm_seed=20260922;invalid 披露阈=1%;sentinel=observed |ρ|>Q95_c 停机
+
+-- 事件级回归(vs 0cc6587 raw)与双源不变量 --
+  hot: n=1061 lru=681 C=377 dual=3 raw=(1061, 681, 377, 3) -> OK
+  tree: n=1752 lru=988 C=749 dual=15 raw=(1752, 988, 749, 15) -> OK
+  双源不变量 S_lru≡S_C(全部双源事件逐位)-> OK
+-- 观测 ρ 回归(raw;4 位小数精确)--
+  hot/S1: ρ=+0.0837 raw=+0.0837 -> OK
+  hot/S2: ρ=-0.1044 raw=-0.1044 -> OK
+  hot/S3: ρ=-0.2493 raw=-0.2493 -> OK
+  tree/S1: ρ=-0.5218 raw=-0.5218 -> OK
+  tree/S2: ρ=-0.4767 raw=-0.4767 -> OK
+  tree/S3: ρ=-0.3418 raw=-0.3418 -> OK
+-- permutation 校准:N=10000,seed=20260922 --
+-- invalid-rate 与 Q95/sentinel --
+  S1: invalid=0(0.00%) N_used=10000 Q95=0.2514 observed=0.0837 -> sentinel 通过
+  S2: invalid=0(0.00%) N_used=10000 Q95=0.2531 observed=0.1044 -> sentinel 通过
+  S3: invalid=0(0.00%) N_used=10000 Q95=0.4105 observed=0.2493 -> sentinel 通过
+
+*** hot calibration sentinel 三类全部通过 → 校准完成;进入 §6 完整 Tier-1 重跑(事件级回归已先行 PASS)***
+-- Tier-1 完整重跑(tree ρ 逐位回归 raw)+ L1 逐类出口 --
+  S1: tree ρ=-0.5218(raw 回归 OK,n=1752,ties_S=397150,ties_Y=24943)→ L1 PASS;hot sentinel 已通过
+  S2: tree ρ=-0.4767(raw 回归 OK,n=1752,ties_S=99895,ties_Y=24943)→ L1 PASS;hot sentinel 已通过
+  S3: tree ρ=-0.3418(raw 回归 OK,n=1752,ties_S=60604,ties_Y=24943)→ L1 PASS;hot sentinel 已通过
+  全局 L1(≥1 类 tree 过线):PASS
+
+*** Hot Null v2 校准 + Tier-1 完整重跑完成;逐类 L1 出口归因待审核方最终署名;L3 仍按门位 ***

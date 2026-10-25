@@ -1,0 +1,8 @@
+audit_commit=aca117163904
+baseline_commit=1771000b86d3
+study_source_sha256=b457bc79eb974c0665808fac5fc952ba2fe97512caf7bd91d83497ba22bf6250
+tree_sha256=28f2b1e079a7fcb909f8ae196e6c3f7f24e2d2d9
+build=PASS
+tests=8/8 PASS
+protected_core_diff_bytes=0
+r_c1=NOT_RUN

@@ -1,0 +1,4 @@
+headless-entered role=consume pid=49707
+headless-task-started
+wrote evidence /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m4/m4b/consume_m4b_ncmiss.json
+headless-task-done rc=6

@@ -1,0 +1,39 @@
+{
+  "counters": {
+    "model_generate_calls": 0,
+    "model_loads": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+  },
+  "db_post_sha256": "26df3cfcdd3a62823f975d3da2dd23a422e96c4b67fcb6b363b247c2ff33265f",
+  "db_pre_sha256": "26df3cfcdd3a62823f975d3da2dd23a422e96c4b67fcb6b363b247c2ff33265f",
+  "evidence_path_item": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I1/evidence/i1-missing-source-b-task-iu1.json",
+  "id": "I1-MISSING-SOURCE-B",
+  "kind": "negative_control",
+  "observations": {
+    "database_sha256_after": "26df3cfcdd3a62823f975d3da2dd23a422e96c4b67fcb6b363b247c2ff33265f",
+    "database_sha256_before": "26df3cfcdd3a62823f975d3da2dd23a422e96c4b67fcb6b363b247c2ff33265f",
+    "database_unchanged": true,
+    "generation_calls": 0,
+    "refusal_before_tokenize": true,
+    "refusal_stage": "SETTLEMENT_NOT_ADMITTED",
+    "removed_source": "SOURCE-B",
+    "seed_tokenize_calls": 0,
+    "state_sha256_after": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "state_sha256_before": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "state_side_effects": [],
+    "state_unchanged": true,
+    "text_tokenize_calls": 0
+  },
+  "raw_log_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I1/logs/i1-missing-source-b-task-iu1.log"
+  ],
+  "refusal": {
+    "item_id": "TASK-DEST",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "stage": "SETTLEMENT_NOT_ADMITTED"
+  },
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I1"
+}

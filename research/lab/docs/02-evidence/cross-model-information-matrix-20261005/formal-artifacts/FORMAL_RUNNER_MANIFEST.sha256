@@ -1,0 +1,17 @@
+6f28579f82a109fbea6e6121cca80dfd2ada2761232a8293fa1ddc216ab93ee8  docs/00-governance/SIMIGO_LAB_CROSS_MODEL_STABILITY_SCHEDULING_CONTRACT_20261005.md
+e75f27143e6ef46186299a7f925ad1a7d19214183a4e90b450d134e8f64dd7bd  docs/00-governance/information-structure/cross-model-stability-static-scheduling-20261005.json
+a102a1e422e26dd87e92821daed46ff5bb85d945d4bbebc5be8171d3918f2c25  docs/02-evidence/cross-model-information-matrix-20261005/formal_runner.py
+27aa7791fed9c875460a00798ed55c428fc2cf172539b34dace61c700fd14329  docs/02-evidence/cross-model-information-matrix-20261005/PROTOCOL.md
+a0c625b1fb4f17dbeb81e3a8f59a127937e61ec267a6a475a11924baac7682c6  docs/02-evidence/cross-model-information-matrix-20261005/RUNBOOK.md
+93468387486e1693d8cf8d917c38dac242d9ae0c08b879709477b22094605502  docs/02-evidence/cross-model-information-matrix-20261005/freeze/models.json
+73df810528ee3d420b584eb316a685aaedfb0bbc994665aae9c4680f047d46d9  docs/02-evidence/cross-model-information-matrix-20261005/freeze/samples.json
+a63d561ece54b76b734cb755334513916ea8e6f98da7c2d9004973a78f24c3e2  docs/02-evidence/cross-model-information-matrix-20261005/prompts/S1-release-config.prompt.txt
+fbd57f9eaa50f2c1a2f189ff53a82001b55320e9cebdb296b4f45f5cb6b6d50e  docs/02-evidence/cross-model-information-matrix-20261005/prompts/S2-version-diff.prompt.txt
+0146cf948ea4c4417e271490592fcdcfe43ee34425ecb7100d5fde9c0bcfb6e1  docs/02-evidence/cross-model-information-matrix-20261005/prompts/S3-column-unit-audit.prompt.txt
+fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63  docs/02-evidence/cross-model-information-matrix-20261005/prompts/S4-arithmetic-anomaly-audit.prompt.txt
+94566d541e348f36193fc07933b91618194348de94ec335ebe45b86ebbb04021  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/formal-cell-plan.json
+b98ba3bc66ef706c7140a894dc93f49b444c993b49a28c637a9e3f55983b9582  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/rendered-prompts.json
+a63d561ece54b76b734cb755334513916ea8e6f98da7c2d9004973a78f24c3e2  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S1-release-config.prompt.txt
+fbd57f9eaa50f2c1a2f189ff53a82001b55320e9cebdb296b4f45f5cb6b6d50e  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S2-version-diff.prompt.txt
+0146cf948ea4c4417e271490592fcdcfe43ee34425ecb7100d5fde9c0bcfb6e1  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S3-column-unit-audit.prompt.txt
+fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S4-arithmetic-anomaly-audit.prompt.txt

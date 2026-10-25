@@ -1,0 +1,412 @@
+{
+ "phase1": {
+  "A0": {
+   "database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A0/carrier.sqlite",
+    "sha256": "610bc07b10acb53ef22965d51042b3a7a51158b1826cce06f13c3575818ecb5b",
+    "size": 40960
+   },
+   "evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A0.json",
+    "sha256": "03bf77b3e27c1c24f9e02d36b84c7c26a51841e57921d62b7fa817eb8837364c",
+    "size": 12836
+   },
+   "intervention": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A0/intervention.json",
+    "sha256": "b1f328cc157c501f6efdcf697f4691b0497f5477a9984362264f008f27301f10",
+    "size": 661
+   },
+   "state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A0/state/execution-state.json",
+    "sha256": "496272ed2c32c9b430c298d5eae05fdc9c63d2f9c69b5ece9dcbf465af0d02a2",
+    "size": 5054
+   }
+  },
+  "A1": {
+   "database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A1/carrier.sqlite",
+    "sha256": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "size": 36864
+   },
+   "evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A1.json",
+    "sha256": "6bec6a8b0ad0c1863f7a361c5b116e0fffb2e596235bbc5f097ba148003d4e1b",
+    "size": 8310
+   },
+   "intervention": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A1/intervention.json",
+    "sha256": "412b0fa00094dae292a0af7bbcbacccda09b8154cd7620660e6f8542d380fc87",
+    "size": 1207
+   },
+   "state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A1/state/execution-state.json",
+    "sha256": "da3e97a99e37372594b30be204d6a05e06ed0d13d0ccf3ea3914955efb4b4730",
+    "size": 2993
+   }
+  },
+  "A2a": {
+   "database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A2a/carrier.sqlite",
+    "sha256": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "size": 36864
+   },
+   "evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A2a.json",
+    "sha256": "c5a2647ed6048635cb830c72fac79341c2ef824a961244c405f857398c62caf5",
+    "size": 8013
+   },
+   "intervention": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A2a/intervention.json",
+    "sha256": "5206440d3d7b6ca3eadc407add6f9cf39bcb036363778196f5eefe417d2370d6",
+    "size": 825
+   },
+   "state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A2a/state/execution-state.json",
+    "sha256": "dc46bccfc4785a4b742acfe52719a9a12fc2d6f1dcfb88a9d9e325bd2266f1ff",
+    "size": 3490
+   }
+  },
+  "A2b": {
+   "database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A2b/carrier.sqlite",
+    "sha256": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "size": 36864
+   },
+   "evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A2b.json",
+    "sha256": "7d84c55dd16a6a0c8eaaedc7193c1ab3342919d9e468bb7f06dbef1c627b4b28",
+    "size": 8018
+   },
+   "intervention": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A2b/intervention.json",
+    "sha256": "3358a45cb57067a447872d9f29d3d1d0584d5fbd8a4f11ca2676be503e87ea72",
+    "size": 826
+   },
+   "state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A2b/state/execution-state.json",
+    "sha256": "42fcd9a16841bfa75b3bf3c67153a33f31b3914fb2852bc96d045e4295d3fc8e",
+    "size": 3490
+   }
+  },
+  "A3": {
+   "database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A3/carrier.sqlite",
+    "sha256": "ad2a4668f8696628e830b491298743c3c630340f156b31821b1a7fd79b1508de",
+    "size": 36864
+   },
+   "evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A3.json",
+    "sha256": "20c8ee881b8c19ce329592bec325cda3b3cc16bde88244eb02aa4c15fc631377",
+    "size": 7842
+   },
+   "intervention": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A3/intervention.json",
+    "sha256": "a6ae79fb54f822a192831410bf98d7ca6df11b7d960a86a86382324bcf979da7",
+    "size": 1166
+   },
+   "state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A3/state/execution-state.json",
+    "sha256": "fb01e0b4d9bf57908558989324094097a747b79e4c3bce2477cff11012bf833f",
+    "size": 3078
+   }
+  },
+  "A4": {
+   "database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A4/carrier.sqlite",
+    "sha256": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "size": 36864
+   },
+   "evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A4.json",
+    "sha256": "39d208e5414dbd6a8114af453316c739c0f80bd6a9fe0df5f6040f112acba239",
+    "size": 7246
+   },
+   "intervention": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A4/intervention.json",
+    "sha256": "c2f80809209dbe7af7fb582e505f1f38c3bbc385ef41d58ebff49d2575c4df34",
+    "size": 497
+   },
+   "state": {
+    "exists": false,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/cases/A4/state/execution-state.json"
+   }
+  }
+ },
+ "phase2": {
+  "B0-A": {
+   "b4": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B4.json",
+    "sha256": "a809e038e5c106de3a5d6147a63621423be876658f90e5ac080c22ce0865b721",
+    "size": 1059
+   },
+   "pristine_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/pristine.sqlite",
+    "sha256": "c8998ee05ce06bb59732129c8f90ce4eac5b4085f3ed17a2a3aefb52ba4ed48a",
+    "size": 36864
+   },
+   "stage_a": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/run/evidence/stage-a.json",
+    "sha256": "2cc4bb2d721506ace7c5e93df9356142f8f2584463188298e32a288f7d6f207f",
+    "size": 6630
+   },
+   "stage_a_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/run/carrier.sqlite",
+    "sha256": "fcf35f06da6071abd4c4ca1a5e1c68c78698040b10ebdeef986a0a631a224129",
+    "size": 36864
+   },
+   "stage_a_log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/logs/stage-a.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+   },
+   "stage_a_state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/run/state/execution-state.json",
+    "sha256": "9fc558a1774962838439953deb3e024d48dbd43b29e5c897018cb1cdeccb201e",
+    "size": 3444
+   },
+   "u2_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/carrier.sqlite",
+    "sha256": "9ecc0cf17aeaf953a1f7674d7bdcb81f22be999fbe8b42fea67845c0c7e16da3",
+    "size": 45056
+   },
+   "u2_evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/evidence/phase2.json",
+    "sha256": "56d8b1e6ccdc67ccc32aeca050853ae1a4243efeda22823bf5ebd54cee33a24b",
+    "size": 17796
+   },
+   "u2_log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/logs/u2.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+   },
+   "u2_state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/state/execution-state.json",
+    "sha256": "4a824b45b7fd834b8a3090204c554f8c81ed1a5f30ebd98d180f3ccf96c0b1d6",
+    "size": 2786
+   }
+  },
+  "B0-B": {
+   "b4": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B4.json",
+    "sha256": "518abb7e4688a1e00a5e55e052baf4a56bd72deef962ad405c40ed569ba3f594",
+    "size": 1059
+   },
+   "pristine_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/pristine.sqlite",
+    "sha256": "2bd0bfb7fb6166caeb176857c800f763205c308cd749411a47381d3a77e36ed9",
+    "size": 36864
+   },
+   "stage_a": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/run/evidence/stage-a.json",
+    "sha256": "996606452338dd054eb361a72ab2a66ef838f570798e203e3ddc1d3bbf491930",
+    "size": 6623
+   },
+   "stage_a_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/run/carrier.sqlite",
+    "sha256": "0e0d1d01efbffc1d57d153c61725bfe3d5cc1f32813113acc98adb59d183a539",
+    "size": 36864
+   },
+   "stage_a_log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/logs/stage-a.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+   },
+   "stage_a_state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/run/state/execution-state.json",
+    "sha256": "3b36edd1e610def09df19a54148cb0a7ed3ed199eb49415afc92600d1e5181af",
+    "size": 3432
+   },
+   "u2_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/carrier.sqlite",
+    "sha256": "2ba08f2445f8e83c2d8a2d39f2f18871cba8e2e0f1ae72f19775b7555765fc10",
+    "size": 45056
+   },
+   "u2_evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/evidence/phase2.json",
+    "sha256": "27269f1e5069024c3654ddeac677b7debbff5f59975f048468d1f08f1414270c",
+    "size": 17776
+   },
+   "u2_log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/logs/u2.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+   },
+   "u2_state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/state/execution-state.json",
+    "sha256": "5cd136a0f0d806b203713e0010495d2b48e3056937ec5d590daa59844ae3c60c",
+    "size": 2778
+   }
+  },
+  "B1-harness": {
+   "u2_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/carrier.sqlite",
+    "sha256": "26966659eccf2cb0754330691b5146fe7c151739b122abb89d24582953037def",
+    "size": 36864
+   },
+   "u2_evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/evidence/phase2.json",
+    "sha256": "f3746e0e963dc76479f3198ed5ae1c8e0af15cf8182196c2f169832109bbee71",
+    "size": 5517
+   },
+   "u2_log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/logs/u2.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+   },
+   "u2_state": {
+    "exists": false,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/state/execution-state.json"
+   }
+  },
+  "B1-loop": {
+   "database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-loop/carrier.sqlite",
+    "sha256": "d342ef14f0211070b3ff6cb638ae4f437023fa5db9ebb5bcddf53fdceab9a0b4",
+    "size": 45056
+   },
+   "log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-loop/logs/execute-probe.log",
+    "sha256": "d262f7255e081bfedf9cd96f3bd5d76efca984ed1f5a8dc9f3506b24335376da",
+    "size": 2444
+   }
+  },
+  "B2": {
+   "exists": true,
+   "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/B2.json",
+   "sha256": "043508775afe8e18680120ca43ae3d51894c92193f31b9fa343e1fa94e503380",
+   "size": 1344
+  },
+  "B3a": {
+   "u2_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/carrier.sqlite",
+    "sha256": "a7be61e0bb2b5a478ef90d613c5ed9a2a7174561e1486dc586de317186e86327",
+    "size": 36864
+   },
+   "u2_evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/evidence/phase2.json",
+    "sha256": "30825c00bb97725cd5831860d769a8e470a9a1041c7e093909ca7e51a78aae90",
+    "size": 5555
+   },
+   "u2_log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/logs/u2.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+   },
+   "u2_state": {
+    "exists": false,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/state/execution-state.json"
+   }
+  },
+  "B3b": {
+   "u2_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/carrier.sqlite",
+    "sha256": "5d7e88a89f8567d413f696caac2d520ab4dbd85891759263a8bc5900685e7d5e",
+    "size": 49152
+   },
+   "u2_evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/evidence/phase2.json",
+    "sha256": "e87b26602722347130bcd0de8cbbc8bddb6d06fac868b540fb34979b0d00a700",
+    "size": 17796
+   },
+   "u2_log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/logs/u2.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+   },
+   "u2_state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/state/execution-state.json",
+    "sha256": "26fda3f1703ed4a1f1cacf2047adad8690fa8e558a5c0b6099fc7fc704a7913c",
+    "size": 2767
+   }
+  },
+  "B3c": {
+   "u2_database": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/carrier.sqlite",
+    "sha256": "f24b16bbd8cd093341eee92066adfa19f11a14e40c436980e84cc03b59abe9f7",
+    "size": 40960
+   },
+   "u2_evidence": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/evidence/phase2.json",
+    "sha256": "c9682c80f7b2b876f489e075db776c58da39da058d521a75654e653016fb2450",
+    "size": 13293
+   },
+   "u2_log": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/logs/u2.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+   },
+   "u2_state": {
+    "exists": true,
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/state/execution-state.json",
+    "sha256": "e3c976060c6f8349fc953410391ec63cb445d76fc9f3f5586ff804bc1ae0277d",
+    "size": 1492
+   }
+  },
+  "conditions": {
+   "exists": true,
+   "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/conditions.json",
+   "sha256": "a7025358686085b84aa8cd9b81c08e8458548414c68f28cf11da3a668785ec5e",
+   "size": 13948
+  }
+ },
+ "run_id": "handoff-causality-20261022b",
+ "schema_id": "SIMIGO-CAUSALITY-ARTIFACT-INDEX-V1"
+}

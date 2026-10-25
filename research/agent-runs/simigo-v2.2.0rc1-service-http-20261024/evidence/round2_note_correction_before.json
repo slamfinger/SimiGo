@@ -1,0 +1,32 @@
+{
+ "paths": {
+  "MANIFEST_SHA256.txt": {
+   "bytes": 14771650,
+   "sha256": "97e952cbcb4a491144cae770cbdb70ffa801fe3782d60902554998b5c6310527"
+  },
+  "REPORT.md": {
+   "bytes": 11902,
+   "sha256": "af535a34b60e6d247149879b19ed88306488695ab6ad401294e8033729bdd05e"
+  },
+  "acceptance_report.json": {
+   "bytes": 12541,
+   "sha256": "9bd75d710791a80a11b9d899a246b5e4820de580daa157065d56dc7f6592bc25"
+  },
+  "driver/verify_batch.py": {
+   "bytes": 25070,
+   "sha256": "5c58862e9bf102ac9aca4f2fc34f4897340fe76da35ba73efc8cc452bc0a958d"
+  }
+ },
+ "phase": "before",
+ "report": {
+  "counts": {
+   "BLOCKED": 3,
+   "FAIL": 0,
+   "INCONCLUSIVE": 0,
+   "NOT_INSTRUMENTED": 1,
+   "PASS": 12
+  },
+  "generated_at": "2026-10-24T03:43:27+0800",
+  "overall": "BLOCKED"
+ }
+}

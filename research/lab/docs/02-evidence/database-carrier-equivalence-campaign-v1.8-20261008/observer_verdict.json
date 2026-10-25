@@ -1,0 +1,21 @@
+{
+  "C1_object_write_once_integrity": {
+    "CR": true,
+    "D": true,
+    "D_PRIME": true,
+    "SRS": true
+  },
+  "C2_E6_ledger_rederivation": {
+    "ES1_U_entries": 1,
+    "ES2_U_entries": 0,
+    "ESN_U_entries": 0
+  },
+  "C3_persisted_vs_resolved_byte_equality": true,
+  "C4_temporal_separation": {
+    "continuation_before_n1_mutation": true,
+    "es1_transaction_before_es2_invocation": true,
+    "es2_invocation_before_continuation": true,
+    "n1_mutation_before_esn_invocation": true
+  },
+  "all_checks_pass": true
+}

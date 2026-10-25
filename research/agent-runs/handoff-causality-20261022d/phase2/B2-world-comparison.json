@@ -1,0 +1,9 @@
+{
+ "cold_seeds_identical": true,
+ "each_output_matches_its_own_world": true,
+ "outputs_differ": true,
+ "u1_settlements_differ": true,
+ "u2_inputs_differ": true,
+ "u2_templates_identical": true,
+ "world_pair_distinguished": true
+}

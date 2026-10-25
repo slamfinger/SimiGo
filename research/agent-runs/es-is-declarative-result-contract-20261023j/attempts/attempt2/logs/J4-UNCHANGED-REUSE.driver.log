@@ -1,0 +1,6 @@
+$ bridge execute-probe --demand-id J-28fb8aa8-chain (model-free)
+exit=0
+computed=[]
+reused=['J-28fb8aa8-DEST', 'J-28fb8aa8-ORIGIN', 'J-28fb8aa8-U1', 'J-28fb8aa8-U2', 'J-28fb8aa8-U3']
+database_sha256_before=592c6be0b7a856c60add30898003b4f15cd6bc8ddff905a3748fe6ea8295f082
+database_sha256_after=c9eae463ebe479ae0dcc5fa83dc34a9bf916d4983fc72da277b7ba5114ad2a40

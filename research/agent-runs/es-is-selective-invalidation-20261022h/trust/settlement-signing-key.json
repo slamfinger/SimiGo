@@ -1,0 +1,7 @@
+{
+ "algorithm": "Ed25519",
+ "key_id": "e-round-7a3ac41abffd0656",
+ "private_key_base64": "J+q0jm2bj6kcW+r3M511lcSbDCtnY6Xl2SoFqvYE2fk=",
+ "public_key_base64": "JG/jMWsRkokIjam2usMkxdoRatSpXMgwqf6vJYLv44c=",
+ "schema_id": "EINFO-SETTLEMENT-SIGNING-KEY-V1"
+}

@@ -1,0 +1,72 @@
+{
+ "rc_id": "simigo-rc1-de362ef4-20261023",
+ "checked_at": "2026-10-23T19:07:09+0800",
+ "items": [
+  {
+   "item": "manifest_rehash",
+   "ok": true,
+   "detail": "601 rows / 0 bad"
+  },
+  {
+   "item": "source_freeze_reverified",
+   "ok": true,
+   "detail": "34 files, drift 0, head_matches True, staged 0"
+  },
+  {
+   "item": "build_equals_test_equals_experiment",
+   "ok": true,
+   "detail": "newer-than-18:32 files=0, tree same=True, dylib=6e32892f UUID=DEB5F8F9"
+  },
+  {
+   "item": "g1_pass_on_rc_artifact",
+   "ok": true,
+   "detail": "ES1 63761 -> RESULT=hello; ES2 63798 recovered 'hello' -> RESULT=hello-U2"
+  },
+  {
+   "item": "negative_controls_expected",
+   "ok": true,
+   "detail": "{\"NC1_missing_settlement\": \"NC1 rc=6\", \"NC2_digest_tamper\": \"NC2 rc=6\", \"NC3_invalidated\": \"NC3 rc=6\", \"NC4_bad_role\": \"NC4 rc=2\", \"NC5_missing_param\": \"NC5 rc=2\", \"NC6_leaked_target\": \"NC6 rc=7\", \"NC7_inherited_channel\": \"NC7 rc=7\"}"
+  },
+  {
+   "item": "experiment_window_non_interference",
+   "ok": true,
+   "detail": "violations=0 (test window violations=101 are the App suite's own writes)"
+  },
+  {
+   "item": "worktrees_untouched",
+   "ok": true,
+   "detail": "product 0, lab 0"
+  },
+  {
+   "item": "cleanroom_build_succeeds",
+   "ok": true,
+   "detail": "['** TEST BUILD SUCCEEDED **']"
+  },
+  {
+   "item": "cleanroom_source_matches_freeze",
+   "ok": true,
+   "detail": "34/34"
+  },
+  {
+   "item": "cleanroom_core_path_g1",
+   "ok": true,
+   "detail": "G1 PASS, ES2 -> RESULT=hello-U2"
+  },
+  {
+   "item": "cleanroom_window_non_interference",
+   "ok": true,
+   "detail": "violations=0"
+  },
+  {
+   "item": "byte_identity_NOT_established_across_rebuild",
+   "ok": true,
+   "detail": "dylib delta +12576 B, LC_UUID differs, tree differs"
+  },
+  {
+   "item": "git_invariants",
+   "ok": true,
+   "detail": "HEAD de362ef46118, staged 0, committed 0, pushed 0"
+  }
+ ],
+ "failed": []
+}

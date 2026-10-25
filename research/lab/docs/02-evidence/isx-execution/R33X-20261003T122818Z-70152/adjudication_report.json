@@ -1,0 +1,185 @@
+{
+  "batch_flags": [],
+  "campaign_reason": "H-2/S-N4 contagion: 1 INCONCLUSIVE cell(s)",
+  "campaign_verdict": "INCONCLUSIVE",
+  "interactions": [
+    {
+      "cell_id": "cell-08-X-08",
+      "cell_op": "X-08",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "MASKING"
+      },
+      "op_class": "IS-X",
+      "resolution_expectation_met": true,
+      "verdict": "MASKING"
+    }
+  ],
+  "invalid_compositions": [],
+  "judgment_rule": {
+    "cons_version": "R2 rev.2 candidate: Cons(ES,IS) ⟺ I-condition ∧ A-condition ∧ C-condition",
+    "judgment_time": "campaign setup stage, before any ΔIS exists",
+    "spec": "SIMIGO_LAB_R3_1_JUDGMENT_SPECIFICATION_20261003.md (rev.2, RATIFIED)"
+  },
+  "n_inconclusive": 1,
+  "note": "outcome structure per design §7 rev.2; no outcome auto-opens R3-4",
+  "per_cell": [
+    {
+      "cell_id": "cell-01-X-01",
+      "cell_op": "X-01",
+      "condition_classes": {
+        "A": "BROKEN-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "BROKEN-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-02-X-02",
+      "cell_op": "X-02",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "BROKEN-MATCH",
+        "I": "BROKEN-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-03-X-03",
+      "cell_op": "X-03",
+      "condition_classes": {
+        "A": "BROKEN-MATCH",
+        "C": "BROKEN-MATCH",
+        "I": "HOLD-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-04-X-04",
+      "cell_op": "X-04",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "BROKEN-MATCH",
+        "I": "BROKEN-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-05-X-05",
+      "cell_op": "X-05",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "BROKEN-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-06-X-06",
+      "cell_op": "X-06",
+      "op_class": "IS-X",
+      "reason": "S-X2 construction integrity {'CI-2': 'R32-A-Δ3:objects/R-1.json want=differs got=absent'}",
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "cell_id": "cell-07-X-07",
+      "cell_op": "X-07",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "BROKEN-MATCH",
+        "I": "HOLD-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-08-X-08",
+      "cell_op": "X-08",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "MASKING"
+      },
+      "op_class": "IS-X",
+      "resolution_expectation_met": true,
+      "verdict": "MASKING"
+    },
+    {
+      "cell_id": "cell-09-X-09",
+      "cell_op": "X-09",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "BROKEN-MATCH"
+      },
+      "op_class": "IS-X",
+      "resolution_expectation_met": true,
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-10-X-10",
+      "cell_op": "X-10",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "HOLD-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-11-X-11",
+      "cell_op": "X-11",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "HOLD-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-12-X-12",
+      "cell_op": "X-12",
+      "condition_classes": {
+        "A": "BROKEN-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "HOLD-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-13-R32N-SANITY-A",
+      "cell_op": "R32N-SANITY-A",
+      "op_class": "SANITY",
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-14-R32N-SANITY-I",
+      "cell_op": "R32N-SANITY-I",
+      "op_class": "SANITY",
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-15-R32N-SANITY-C",
+      "cell_op": "R32N-SANITY-C",
+      "op_class": "SANITY",
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-16-R32-K-0",
+      "cell_op": "R32-K-0",
+      "op_class": "K-0",
+      "verdict": "CONTROL-HOLD"
+    }
+  ],
+  "run_uuid": "R33X-20261003T122818Z-70152",
+  "sanity_failures": []
+}

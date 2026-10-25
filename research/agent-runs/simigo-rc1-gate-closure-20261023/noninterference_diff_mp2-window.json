@@ -1,0 +1,518 @@
+{
+ "a_phase": "pre-mp2",
+ "b_phase": "post-mp2",
+ "a_taken_at": "2026-10-23T19:33:47+0800",
+ "b_taken_at": "2026-10-23T19:34:00+0800",
+ "allowlisted_abs_prefixes": [
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+ ],
+ "real_state_roots": [
+  "/Users/mr.simi/.simigo",
+  "/Users/mr.simi/Library/Application Support"
+ ],
+ "entries": {
+  "/Users/mr.simi/.cache/huggingface": {
+   "status": "DIR",
+   "a_files": 951,
+   "b_files": 951,
+   "a_bytes": 242509940763,
+   "b_bytes": 242509940763,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo": {
+   "status": "DIR",
+   "a_files": 8971,
+   "b_files": 8971,
+   "a_bytes": 32398424029,
+   "b_bytes": 32398426016,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 1,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [
+     {
+      "rel": "logs/native_mlx_trace.log",
+      "a": {
+       "bytes": 4120291,
+       "sha256": "e461facb8e138b83a78281091b21e2ca73583b8b86eea77568701a5fd9aa2d8e"
+      },
+      "b": {
+       "bytes": 4122278,
+       "sha256": "cdd858ff752221d0fa589db9c047e13779c3bc523a91f2b6fba9cd6a53e51a57"
+      },
+      "content_compared": true
+     }
+    ],
+    "expected": []
+   },
+   "clean": false
+  },
+  "/Users/mr.simi/.simigo/bin": {
+   "status": "DIR",
+   "a_files": 2,
+   "b_files": 2,
+   "a_bytes": 51316,
+   "b_bytes": 51316,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/branch-checkpoints": {
+   "status": "DIR",
+   "a_files": 37,
+   "b_files": 37,
+   "a_bytes": 14896048796,
+   "b_bytes": 14896048796,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/build": {
+   "status": "DIR",
+   "a_files": 0,
+   "b_files": 0,
+   "a_bytes": 0,
+   "b_bytes": 0,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/codex-bridge": {
+   "status": "DIR",
+   "a_files": 1,
+   "b_files": 1,
+   "a_bytes": 211,
+   "b_bytes": 211,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/harness": {
+   "status": "DIR",
+   "a_files": 3,
+   "b_files": 3,
+   "a_bytes": 1089233,
+   "b_bytes": 1089233,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/locks": {
+   "status": "DIR",
+   "a_files": 0,
+   "b_files": 0,
+   "a_bytes": 0,
+   "b_bytes": 0,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/logs": {
+   "status": "DIR",
+   "a_files": 2,
+   "b_files": 2,
+   "a_bytes": 4126439,
+   "b_bytes": 4128426,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 1,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [
+     {
+      "rel": "native_mlx_trace.log",
+      "a": {
+       "bytes": 4120291,
+       "sha256": "e461facb8e138b83a78281091b21e2ca73583b8b86eea77568701a5fd9aa2d8e"
+      },
+      "b": {
+       "bytes": 4122278,
+       "sha256": "cdd858ff752221d0fa589db9c047e13779c3bc523a91f2b6fba9cd6a53e51a57"
+      },
+      "content_compared": true
+     }
+    ],
+    "expected": []
+   },
+   "clean": false
+  },
+  "/Users/mr.simi/.simigo/manifests": {
+   "status": "DIR",
+   "a_files": 1,
+   "b_files": 1,
+   "a_bytes": 800,
+   "b_bytes": 800,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/prefix-pool": {
+   "status": "DIR",
+   "a_files": 45,
+   "b_files": 45,
+   "a_bytes": 16499561724,
+   "b_bytes": 16499561724,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/simigo.sqlite3": {
+   "status": "FILE",
+   "a_sha256": "cac32deccd917074fe4eb72bbef7a9a90abc50f41c30ba47fb767ee52820dcbe",
+   "b_sha256": "cac32deccd917074fe4eb72bbef7a9a90abc50f41c30ba47fb767ee52820dcbe",
+   "a_bytes": 90112,
+   "b_bytes": 90112,
+   "unchanged": true
+  },
+  "/Users/mr.simi/.simigo/simigo.sqlite3-shm": {
+   "status": "FILE",
+   "a_sha256": "760edbfc79c73e125cb3fa2e6eb99b030bae2374f9c2c2d0bda9dfde8d26d227",
+   "b_sha256": "760edbfc79c73e125cb3fa2e6eb99b030bae2374f9c2c2d0bda9dfde8d26d227",
+   "a_bytes": 32768,
+   "b_bytes": 32768,
+   "unchanged": true
+  },
+  "/Users/mr.simi/.simigo/simigo.sqlite3-wal": {
+   "status": "FILE",
+   "a_sha256": "62c988cbc183f791f3ed17d1e0497740a8f48c0bff92394701a0cee5cbec9b80",
+   "b_sha256": "62c988cbc183f791f3ed17d1e0497740a8f48c0bff92394701a0cee5cbec9b80",
+   "a_bytes": 3955232,
+   "b_bytes": 3955232,
+   "unchanged": true
+  },
+  "/Users/mr.simi/.simigo/sources": {
+   "status": "DIR",
+   "a_files": 0,
+   "b_files": 0,
+   "a_bytes": 0,
+   "b_bytes": 0,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/staging": {
+   "status": "DIR",
+   "a_files": 0,
+   "b_files": 0,
+   "a_bytes": 0,
+   "b_bytes": 0,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/Library/Application Support/SimiGo": {
+   "status": "DIR",
+   "a_files": 1,
+   "b_files": 1,
+   "a_bytes": 1068,
+   "b_bytes": 1068,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/SimiGo-Agent-Runs": {
+   "status": "DIR",
+   "a_files": 73321,
+   "b_files": 73347,
+   "a_bytes": 8461619396,
+   "b_bytes": 8485440104,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 28,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected": [
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/artifact_identity_identity-after.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/artifact_identity_identity-before.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/branch-checkpoints/default_memprobe_main.meta.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/branch-checkpoints/default_memprobe_main.safetensors",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/prefix-pool/7cc94e3f614b3e35/3b4947891b8872b2-4.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/prefix-pool/7cc94e3f614b3e35/3b4947891b8872b2-4.safetensors",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3-shm",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3-wal",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.err",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.txt",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.err",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.txt",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/identity_gate.txt",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/launcher.pid",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/memprobe_mp2.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp.log",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_end.txt",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_rc.txt",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_start.txt",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/os_vm_series.jsonl",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/sampler.pid",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/snapshot_post摘要.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/snapshot_pre摘要.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/run_rc1_mp2.log",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     },
+     {
+      "abs": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/noninterference_pre-mp2.json",
+      "matched_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023"
+     }
+    ]
+   },
+   "clean": true
+  }
+ },
+ "violation_events": 2,
+ "distinct_changed_abs_paths": [
+  "/Users/mr.simi/.simigo/logs/native_mlx_trace.log",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/artifact_identity_identity-after.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/artifact_identity_identity-before.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/branch-checkpoints/default_memprobe_main.meta.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/branch-checkpoints/default_memprobe_main.safetensors",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/prefix-pool/7cc94e3f614b3e35/3b4947891b8872b2-4.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/prefix-pool/7cc94e3f614b3e35/3b4947891b8872b2-4.safetensors",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3-shm",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3-wal",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.err",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.err",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/identity_gate.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/launcher.pid",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/memprobe_mp2.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp.log",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_end.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_rc.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_start.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/os_vm_series.jsonl",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/sampler.pid",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/snapshot_post摘要.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/snapshot_pre摘要.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/run_rc1_mp2.log",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/noninterference_pre-mp2.json"
+ ],
+ "distinct_violating_abs_paths": [
+  "/Users/mr.simi/.simigo/logs/native_mlx_trace.log"
+ ],
+ "distinct_expected_abs_paths": [
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/artifact_identity_identity-after.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/artifact_identity_identity-before.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/branch-checkpoints/default_memprobe_main.meta.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/branch-checkpoints/default_memprobe_main.safetensors",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/prefix-pool/7cc94e3f614b3e35/3b4947891b8872b2-4.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/cache_mp/prefix-pool/7cc94e3f614b3e35/3b4947891b8872b2-4.safetensors",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3-shm",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/home/simigo.sqlite3-wal",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.err",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-after.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.err",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/id_identity-before.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/identity_gate.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/launcher.pid",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/memprobe_mp2.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp.log",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_end.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_rc.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/mp_start.txt",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/os_vm_series.jsonl",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/sampler.pid",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/snapshot_post摘要.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/mp2/snapshot_pre摘要.json",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/memprobe/run_rc1_mp2.log",
+  "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/noninterference_pre-mp2.json"
+ ],
+ "distinct_violation_count": 1,
+ "real_user_state_write_paths": [
+  "/Users/mr.simi/.simigo/logs/native_mlx_trace.log"
+ ],
+ "real_user_state_write_count": 1
+}

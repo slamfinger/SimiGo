@@ -1,0 +1,401 @@
+{
+  "claim_limits": [
+    "Cost is reported honestly: each H1/H2 recompute process loads the real model and generates its own item once; reuse of V1 means V1 performs no generation, not that no FLOPs occur anywhere.",
+    "H3 reuse is shown at the model-free demand/settlement decision layer; the ordinary per-item entry computes an item it is explicitly asked to run.",
+    "Only this four-node two-branch fixture is covered; results demonstrate feasibility of selective invalidation on the production path, not universal validity across all graphs, models or backends."
+  ],
+  "conditions": [
+    {
+      "db_post_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "db_pre_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "id": "H0",
+      "kind": "preflight",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "worktree + historical roots snapshotted before edits"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/preflight/prechange-snapshot.json",
+      "state_post_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "state_pre_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    },
+    {
+      "checks": {
+        "A_baseline_all_reusable": true,
+        "B_selective_only_uchain_stale": true,
+        "C_u3_closure_has_u1_u2": true,
+        "D_stale_u1_refuses_u2": true,
+        "E_consumer_no_key_verifies": true
+      },
+      "db_post_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "db_pre_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "exit_code": 0,
+      "id": "H5",
+      "kind": "model_free_preflight",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "A_computed=[] A_reused=['TASK-SOURCE', 'TASK-SOURCE-B', 'TASK-U1', 'TASK-U2', 'TASK-U3', 'TASK-V1']",
+        "B_computed=['TASK-U1', 'TASK-U2', 'TASK-U3'] B_reused=['TASK-SOURCE', 'TASK-SOURCE-B', 'TASK-V1']",
+        "C_closure=['TASK-SOURCE', 'TASK-U1', 'TASK-U2']",
+        "D_refused=True db_unchanged=True",
+        "E_ok=True"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H5/h5.json",
+      "state_post_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "state_pre_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    },
+    {
+      "computed_item_ids": [
+        "TASK-U1",
+        "TASK-U2",
+        "TASK-U3",
+        "TASK-V1"
+      ],
+      "db_post_sha256": "e3d30fe536affde5230ae00fbf4cdd94c5e2dd612630442c00691bbe1b9306e0",
+      "db_pre_sha256": "906387006dc7b0b10d90a2322c7ae3a4be491cee1c0493a28c1a243c932e9fb2",
+      "exit_code": 0,
+      "id": "H1",
+      "kind": "real_model_baseline",
+      "model_generate_calls": 4,
+      "model_loads": 4,
+      "notes": [
+        "H1 settle order U1,U2,U3,V1 through ordinary continueTask; each item generated exactly once on the real model"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H1",
+      "reused_item_ids": [
+        "TASK-SOURCE",
+        "TASK-SOURCE-B",
+        "TASK-U1",
+        "TASK-U2"
+      ],
+      "stages": [
+        {
+          "computed_item_ids": [
+            "TASK-U1"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-u1",
+          "execution_instance_id": "PRODUCTION-REAL-PALACE",
+          "exit_code": 0,
+          "input_sha256": "d5c413c30ee930437be6916c8746b7cec6de4a7f414a60de66f92c8bbc3e3c06",
+          "item": "TASK-U1",
+          "output_sha256": "e7cd97528b8a95333082c77e0e6279189e31298d7be76d266bb4fb1ad5d52a09",
+          "pid": 89969,
+          "reused_item_ids": [
+            "TASK-SOURCE"
+          ],
+          "settlement_object_ids": [
+            "59ac5e26c314a21f8d7ee2958854ec159bbe6abc22d74c2d213a50520ccb2f6a",
+            "aef92e41472388e8e97284dddaba00ba804e23f04b02fa17368a6129838a46ad"
+          ],
+          "signature_object_ids": [
+            "b6de95843df76d5e92e74070d01f00a9e8fe1d1a368502ad3a9d242723ff3a2d"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        },
+        {
+          "computed_item_ids": [
+            "TASK-U2"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-u2",
+          "execution_instance_id": "PRODUCTION-REAL-PALACE",
+          "exit_code": 0,
+          "input_sha256": "588bfe2b2e2fd76c6ed78258f4967bfaf5c1f9c96d349139525aff6d0773db0d",
+          "item": "TASK-U2",
+          "output_sha256": "449eec2757d900d704d5177af10cec6c24607e6b8c273fb62fc9ab79527dc3c0",
+          "pid": 90071,
+          "reused_item_ids": [
+            "TASK-SOURCE",
+            "TASK-U1"
+          ],
+          "settlement_object_ids": [
+            "59ac5e26c314a21f8d7ee2958854ec159bbe6abc22d74c2d213a50520ccb2f6a",
+            "aef92e41472388e8e97284dddaba00ba804e23f04b02fa17368a6129838a46ad",
+            "40765d9aaaad65337ac809f3686f3a88a4675cb8a355d516c382df64e2599bee"
+          ],
+          "signature_object_ids": [
+            "e4668bce33af4d1aa828b6fee5594a3d171a6b6afd4e52168b29fc7378ab43d3"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        },
+        {
+          "computed_item_ids": [
+            "TASK-U3"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-u3",
+          "execution_instance_id": "PRODUCTION-REAL-PALACE",
+          "exit_code": 0,
+          "input_sha256": "bb2aab02c6286baeab33d961e2471647b7f5a20e100599038af681e2cead5131",
+          "item": "TASK-U3",
+          "output_sha256": "585c922268ffbd6c0504c52275a2cccea512833b6378989d5ff96ab674275130",
+          "pid": 90615,
+          "reused_item_ids": [
+            "TASK-SOURCE",
+            "TASK-U1",
+            "TASK-U2"
+          ],
+          "settlement_object_ids": [
+            "59ac5e26c314a21f8d7ee2958854ec159bbe6abc22d74c2d213a50520ccb2f6a",
+            "aef92e41472388e8e97284dddaba00ba804e23f04b02fa17368a6129838a46ad",
+            "40765d9aaaad65337ac809f3686f3a88a4675cb8a355d516c382df64e2599bee",
+            "211a4f472bf6346c1be895288bdab7b3ead14615e044c0e8ad4caa42203d728f"
+          ],
+          "signature_object_ids": [
+            "a0567073c6a316926f66a4b7b070b55db0667f787dc0ea3ee19404d2120a728a"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        },
+        {
+          "computed_item_ids": [
+            "TASK-V1"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-v1",
+          "execution_instance_id": "PRODUCTION-REAL-PALACE",
+          "exit_code": 0,
+          "input_sha256": "b642c02d4a383a55f137fed2cc3f931164f8f61ed6926b5d76cebf05d0193e2d",
+          "item": "TASK-V1",
+          "output_sha256": "e66bafd4126f8933cade628ae72db0aa7472002bd3eee7420a60d06a7c5f17d3",
+          "pid": 90620,
+          "reused_item_ids": [
+            "TASK-SOURCE-B"
+          ],
+          "settlement_object_ids": [
+            "f05821ac2f852d667904ed74f9c78b61bffb6fcede7d1eac9eb681062e9e52e1",
+            "f144f9c2f3d824fffc0899c5215e5faab01044088e3bee937a9fd3e97ad3c6ff"
+          ],
+          "signature_object_ids": [
+            "4bd00ac6928cdfca378acc6a150d5c4acb6e4f61a034e15da2c946bd7cf26af6"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        }
+      ],
+      "state_post_sha256": "d0ef1e85ae6fa8f999b30e6f279a1c8de5dc0d01e4ac4a6b439292236441a320",
+      "state_pre_sha256": "d0ef1e85ae6fa8f999b30e6f279a1c8de5dc0d01e4ac4a6b439292236441a320",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 4,
+      "tokenize_text_calls": 4
+    },
+    {
+      "computed_item_ids": [
+        "TASK-U1",
+        "TASK-U2",
+        "TASK-U3"
+      ],
+      "db_post_sha256": "4ad3fdd50604a829ba9b791c2c5ef26e9cc9875ae1b09a583f57e78646ac327b",
+      "db_pre_sha256": "e3d30fe536affde5230ae00fbf4cdd94c5e2dd612630442c00691bbe1b9306e0",
+      "exit_code": 0,
+      "id": "H2",
+      "kind": "selective_invalidation",
+      "model_generate_calls": 3,
+      "model_loads": 3,
+      "new_secret_a_sha256": "dbcbbb6c84cd5a66ef0ab629de336202ccf79e71f6f7b3c9b5f0658117525a20",
+      "notes": [
+        "SOURCE-A changed via supported update_source + re-registration; U1->U2->U3 recomputed once each (U3 admitted through handoff-graph which also reports V1 reused); V1 never generated",
+        "computed=['TASK-U1', 'TASK-U2', 'TASK-U3'] reused=['TASK-SOURCE', 'TASK-SOURCE-B', 'TASK-U1', 'TASK-U2', 'TASK-V1']"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H2",
+      "reused_item_ids": [
+        "TASK-SOURCE",
+        "TASK-SOURCE-B",
+        "TASK-U1",
+        "TASK-U2",
+        "TASK-V1"
+      ],
+      "source_update": {
+        "command": "h-source-update",
+        "ok": true,
+        "source_a_checksum": "b0ff",
+        "source_a_new_secret_sha256": "dbcbbb6c84cd5a66ef0ab629de336202ccf79e71f6f7b3c9b5f0658117525a20",
+        "source_a_registration_object_id": "7e4c7a44769de0d4c8c235ea586bda87815bd9544324a51b4af12b7d11529f83",
+        "source_a_update": {
+          "dependency_order": 21,
+          "item_id": "TASK-SOURCE",
+          "object_id": "7b6eb70496a740bd290cbee5af4b03264c6942ee0ce59c135174491fbb28b562",
+          "revision": 2
+        },
+        "source_b_settlement_unchanged_object_id": "f05821ac2f852d667904ed74f9c78b61bffb6fcede7d1eac9eb681062e9e52e1"
+      },
+      "stages": [
+        {
+          "computed_item_ids": [
+            "TASK-U1"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-u1",
+          "item": "TASK-U1",
+          "pid": 90626,
+          "reused_item_ids": [
+            "TASK-SOURCE"
+          ],
+          "signature_object_ids": [
+            "607711ba8e504ccd98f3a05ed9f17a1f58ba803d879c42c5dc6a7a745d007722"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        },
+        {
+          "computed_item_ids": [
+            "TASK-U2"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-u2",
+          "item": "TASK-U2",
+          "pid": 90638,
+          "reused_item_ids": [
+            "TASK-SOURCE",
+            "TASK-U1"
+          ],
+          "signature_object_ids": [
+            "f583f8985b7d923404f3b682708f75d2df207e5d1967abd018f894b2f04fc8ee"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        },
+        {
+          "computed_item_ids": [
+            "TASK-U3"
+          ],
+          "counters": {
+            "model_generate_calls": 1,
+            "model_loads": 1,
+            "tokenize_seed_calls": 1,
+            "tokenize_text_calls": 1
+          },
+          "demand": "handoff-graph",
+          "item": "TASK-U3",
+          "pid": 90650,
+          "reused_item_ids": [
+            "TASK-SOURCE",
+            "TASK-U1",
+            "TASK-U2",
+            "TASK-SOURCE-B",
+            "TASK-V1"
+          ],
+          "signature_object_ids": [
+            "335e7833ca8bdd8d90796b1602946efe237823b07b4924d6afc57a3aa16ea9a8"
+          ],
+          "terminal_state": "TASK_SETTLED"
+        }
+      ],
+      "state_post_sha256": "1f495d9c5576fb7f3e2f12b6a252c0fce217a144b7eba090f507856c8efddc55",
+      "state_pre_sha256": "1f495d9c5576fb7f3e2f12b6a252c0fce217a144b7eba090f507856c8efddc55",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 3,
+      "tokenize_text_calls": 3
+    },
+    {
+      "computed_item_ids": [],
+      "db_post_sha256": "3580275624058c7246b9fa3cccd9a7ec1533a5d554adde98146acee5b871c37a",
+      "db_pre_sha256": "e3d30fe536affde5230ae00fbf4cdd94c5e2dd612630442c00691bbe1b9306e0",
+      "exit_code": 0,
+      "id": "H3",
+      "kind": "unchanged_source_control",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "model-free demand probe over an unchanged-source copy: the ordinary path reuses every valid settlement and recomputes nothing. The ordinary per-item SimiGoTaskRun entry computes the item it is explicitly asked to run, so reuse (not regeneration) is shown at the demand/settlement decision layer rather than by suppressing an item-level call."
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H3",
+      "reused_item_ids": [
+        "TASK-SOURCE",
+        "TASK-SOURCE-B",
+        "TASK-U1",
+        "TASK-U2",
+        "TASK-U3",
+        "TASK-V1"
+      ],
+      "state_post_sha256": "d0ef1e85ae6fa8f999b30e6f279a1c8de5dc0d01e4ac4a6b439292236441a320",
+      "state_pre_sha256": "d0ef1e85ae6fa8f999b30e6f279a1c8de5dc0d01e4ac4a6b439292236441a320",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    },
+    {
+      "computed_item_ids": [],
+      "db_post_sha256": "7c878b81eef2c6be02ce80664e3511a299c4bd172dcdc20559a386c61741a6ad",
+      "db_pre_sha256": "7c878b81eef2c6be02ce80664e3511a299c4bd172dcdc20559a386c61741a6ad",
+      "exit_code": 0,
+      "id": "H4",
+      "kind": "invalid_source_provenance_negative_control",
+      "model_generate_calls": 0,
+      "model_loads": 0,
+      "notes": [
+        "SOURCE-A value rewritten without re-signing -> consumer verification refuses admission before tokenize/generate",
+        "refusal={\"item_id\": \"TASK-SOURCE\", \"kind\": \"ADMISSION_REFUSED\", \"reason\": \"SETTLEMENT_SIGNATURE_INVALID\", \"stage\": \"SETTLEMENT_SIGNATURE_INVALID\"}"
+      ],
+      "raw_evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/runs/H4",
+      "refusal": {
+        "item_id": "TASK-SOURCE",
+        "kind": "ADMISSION_REFUSED",
+        "reason": "SETTLEMENT_SIGNATURE_INVALID",
+        "stage": "SETTLEMENT_SIGNATURE_INVALID"
+      },
+      "reused_item_ids": [],
+      "state_post_sha256": "d0ef1e85ae6fa8f999b30e6f279a1c8de5dc0d01e4ac4a6b439292236441a320",
+      "state_pre_sha256": "d0ef1e85ae6fa8f999b30e6f279a1c8de5dc0d01e4ac4a6b439292236441a320",
+      "terminal_state": "OBSERVED",
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    }
+  ],
+  "graph": {
+    "affected_chain": [
+      "TASK-SOURCE",
+      "TASK-U1",
+      "TASK-U2",
+      "TASK-U3"
+    ],
+    "unaffected_branch": [
+      "TASK-SOURCE-B",
+      "TASK-V1"
+    ]
+  },
+  "guards": {
+    "historical_artifacts": "PASS",
+    "workspace": "PASS"
+  },
+  "prechange_snapshot_sha256": "af312ffd3b4dc0ac7af7668c01f24f87b3b164a6b8c5c0a2a7b182d5359b4d33",
+  "research_claim": "A fresh native execution instance reuses valid settled work and recomputes only the transitive dependency closure affected by an upstream source change.",
+  "round": "H",
+  "run_label": "es-is-selective-invalidation-20261022h",
+  "schema_version": "1.0",
+  "terminal_state": "OBSERVED"
+}

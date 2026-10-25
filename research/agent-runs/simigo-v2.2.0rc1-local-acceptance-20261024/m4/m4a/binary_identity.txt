@@ -1,0 +1,7 @@
+# M4 run m4a 2026-10-23T19:08:45Z
+app=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app
+exe_sha256=cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f
+exe_uuid=5AAD0DF1-3860-3B16-B25F-A6C4AD4AF9E4
+app_version=2.2.0 build=26
+codesign_designated=# designated => cdhash H"3a6b3033cbe5fcf8c93b8a7311530a2489356b82"
+model=/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d

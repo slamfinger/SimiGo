@@ -1,0 +1,16 @@
+{
+  "object": "chat.completion",
+  "id": "chatcmpl-f6522548-3157-472e-99cf-2c27f806fd51",
+  "created": 1791131251,
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "{\n  \"task_id\": \"task-carrier-tc-a\",\n  \"decision\": \"release alpha, beta, gamma in sequential order\",\n  \"findings\": [\n    {\n      \"id\": \"f1\",\n      \"statement\": \"alpha satisfies the platform baseline requirements\",\n      \"evidence\": \"alpha has metrics_v2 flag set to true\",\n \"function\": \"constraint\"\n    },\n    {\n      \"id\": \"f2\",\n \"statement\": \"beta satisfies the platform baseline requirements\",\n \"evidence\": \"beta has metrics_v2 flag set to true\",\n \"function\": \"constraint\"\n    },\n    {\n \"id\": \"f3\",\n \"statement\": \"gamma does not satisfy the platform baseline requirements\",\n \"evidence\": \"gamma has metrics_v2 flag set to false\",\n \"function\": \"constraint\"\n    },\n    {\n \"id\": \"f4\",\n \"statement\": \"gamma has incompatible schema version\",\n \"evidence\": \"gamma schema_version is 2, platform baseline requires 3\",\n \"function\": \"constraint\"\n    },\n {\n \"id\": \"f5\",\n \"statement\": \"alpha and beta can be deployed together\",\n \"evidence\": \"both services have compatible api_version and queue_protocol\",\n \"function\": \"relation\"\n    },\n {\n \"id\": \"f6\",\n \"statement\": \"gamma cannot be deployed due to incompatible schema\",\n \"evidence\": \"gamma schema_version is 2, platform baseline requires 3\",\n \"function\": \"constraint\"\n    },\n {\n \"id\": \"f7\",\n \"statement\": \"gamma cannot be deployed due to missing metrics_v2 flag\",\n \"evidence\": \"gamma has metrics_v2 set to false, platform baseline requires true\",\n \"function\": \"constraint\"\n    }\n  ],\n  \"missing_or_uncertain\": [],\n  \"confidence\": 1\n}",
+        "role": "assistant"
+      }
+    }
+  ]
+}

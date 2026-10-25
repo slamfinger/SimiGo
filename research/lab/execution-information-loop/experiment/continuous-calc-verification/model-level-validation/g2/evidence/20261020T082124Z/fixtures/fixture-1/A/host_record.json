@@ -1,0 +1,149 @@
+{
+  "checks" : {
+    "u1_generated" : true,
+    "u1_parsed" : true,
+    "u2_generated" : true
+  },
+  "engine_content_identity" : {
+    "combined_digest" : "bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+    "tokenizer_digest" : "9bada7c8fddefc7e91cf3bbe9b56305d5234c73e16732518dc4f3825b2d84ac3",
+    "weights_digest" : "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf"
+  },
+  "exit_code" : 0,
+  "finished_at_utc" : "2026-10-20T08:21:43Z",
+  "host" : {
+    "active_processor_count" : 10,
+    "operating_system" : "Version 27.0.1 (Build 26A434)",
+    "physical_memory_bytes" : 34359738368
+  },
+  "load" : {
+    "duration_seconds" : 3.4659789800643921,
+    "ok" : true
+  },
+  "mode" : "continuous",
+  "model_directory" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+  "parent_pid" : 51216,
+  "pid" : 51227,
+  "process_group" : 51227,
+  "schema_id" : "SIMIGO-G2-HOST-RECORD-V1",
+  "started_at_utc" : "2026-10-20T08:21:26Z",
+  "store_base" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/evidence\/20261020T082124Z\/fixtures\/fixture-1\/A\/store",
+  "u1" : {
+    "chunk_count" : 37,
+    "chunk_sequence" : [
+      "{\"",
+      "secret",
+      "\":",
+      " \"",
+      "d",
+      "4",
+      "4",
+      "be",
+      "4",
+      "5",
+      "0",
+      "e",
+      "4",
+      "6",
+      "a",
+      "\",",
+      " \"",
+      "site",
+      "\":",
+      " \"",
+      "L",
+      "is",
+      "bon",
+      "\",",
+      " \"",
+      "checksum",
+      "\":",
+      " \"",
+      "2",
+      "c",
+      "1",
+      "4",
+      "6",
+      "7",
+      "8",
+      "5",
+      "\"}"
+    ],
+    "completion_token_count" : 37,
+    "duration_seconds" : 4.7568650245666504,
+    "prompt_token_count" : 448,
+    "prompt_token_ids_sha256" : "4a702598a305d35732dfbd7d78ecf5acda21c29fcbb8a82bc00832a8450ab331",
+    "r1_canonical" : "{\"checksum\":\"2c146785\",\"secret\":\"d44be450e46a\",\"site\":\"Lisbon\"}",
+    "r1_parsed" : true,
+    "r1_sha256" : "3f034c72883722a2a2ff814df21ec164f269f41e3c762bb28f42d99b1dfc700c",
+    "rendered_message_count" : 2,
+    "request_messages" : [
+      {
+        "content" : "You are a deterministic field-note extractor. Context tag: d8770893b4f1267c. Never mention, repeat or encode the context tag in any output.",
+        "role" : "system"
+      },
+      {
+        "content" : "Read the field note between the markers.\n<<<NOTE\nFIELD NOTE 1 - LISBON RELAY\nsite: Lisbon\ntransfer_secret: d44be450e46a\nrecord_checksum: 2c146785\namount: 41287 EUR\nwindow: 2026-11-03 09:00-12:00 UTC\narchive tag: MARKER-B38D89\n\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nNothing in the depot inventory changed between the audit and the dispatch.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nA short delay at the weighbridge was recorded and later closed without escalation.\nThe transport docket lists the same contact as the previous quarter with no amendments.\nA short delay at the weighbridge was recorded and later closed without escalation.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nTwo sealed crates were weighed at the depot; both matched the manifest to within tolerance.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe receiving clerk will confirm the transfer_secret and the record_checksum before releasing the downstream answer.\nNOTE>>>\nExtract exactly three values from the note: the site name, the transfer_secret (12 hex characters) and the record_checksum (8 hex characters). Reply with only one JSON object and nothing else, in this form: {\"secret\": \"<transfer_secret>\", \"site\": \"<site>\", \"checksum\": \"<record_checksum>\"}",
+        "role" : "user"
+      }
+    ],
+    "request_sha256" : "358bf1c2de7d0fb635a62d1b93eb90d7f01a9060d7b64b5810667fd4a01f9066",
+    "request_text" : "Read the field note between the markers.\n<<<NOTE\nFIELD NOTE 1 - LISBON RELAY\nsite: Lisbon\ntransfer_secret: d44be450e46a\nrecord_checksum: 2c146785\namount: 41287 EUR\nwindow: 2026-11-03 09:00-12:00 UTC\narchive tag: MARKER-B38D89\n\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nNothing in the depot inventory changed between the audit and the dispatch.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nA short delay at the weighbridge was recorded and later closed without escalation.\nThe transport docket lists the same contact as the previous quarter with no amendments.\nA short delay at the weighbridge was recorded and later closed without escalation.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nTwo sealed crates were weighed at the depot; both matched the manifest to within tolerance.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe receiving clerk will confirm the transfer_secret and the record_checksum before releasing the downstream answer.\nNOTE>>>\nExtract exactly three values from the note: the site name, the transfer_secret (12 hex characters) and the record_checksum (8 hex characters). Reply with only one JSON object and nothing else, in this form: {\"secret\": \"<transfer_secret>\", \"site\": \"<site>\", \"checksum\": \"<record_checksum>\"}",
+    "text" : "{\"secret\": \"d44be450e46a\", \"site\": \"Lisbon\", \"checksum\": \"2c146785\"}",
+    "text_sha256" : "5c0cfd5f287193481f6c261eeccbbf2f00f394e62f4ed278f2fc707d7d208581"
+  },
+  "u2" : {
+    "chunk_count" : 22,
+    "chunk_sequence" : [
+      "ANS",
+      "WER",
+      "=d",
+      "4",
+      "4",
+      "be",
+      "4",
+      "5",
+      "0",
+      "e",
+      "4",
+      "6",
+      "a",
+      "-",
+      "2",
+      "c",
+      "1",
+      "4",
+      "6",
+      "7",
+      "8",
+      "5"
+    ],
+    "completion_token_count" : 22,
+    "duration_seconds" : 1.0126850605010986,
+    "prompt_token_count" : 559,
+    "prompt_token_ids_sha256" : "60353b4fa02f4777de8a9417618ff5dee4d1cce4a70332d8b5b3f4bd627222f2",
+    "rendered_message_count" : 4,
+    "request_messages" : [
+      {
+        "content" : "You are a deterministic field-note extractor. Context tag: d8770893b4f1267c. Never mention, repeat or encode the context tag in any output.",
+        "role" : "system"
+      },
+      {
+        "content" : "Read the field note between the markers.\n<<<NOTE\nFIELD NOTE 1 - LISBON RELAY\nsite: Lisbon\ntransfer_secret: d44be450e46a\nrecord_checksum: 2c146785\namount: 41287 EUR\nwindow: 2026-11-03 09:00-12:00 UTC\narchive tag: MARKER-B38D89\n\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nNothing in the depot inventory changed between the audit and the dispatch.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nA short delay at the weighbridge was recorded and later closed without escalation.\nThe transport docket lists the same contact as the previous quarter with no amendments.\nA short delay at the weighbridge was recorded and later closed without escalation.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nTwo sealed crates were weighed at the depot; both matched the manifest to within tolerance.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe receiving clerk will confirm the transfer_secret and the record_checksum before releasing the downstream answer.\nNOTE>>>\nExtract exactly three values from the note: the site name, the transfer_secret (12 hex characters) and the record_checksum (8 hex characters). Reply with only one JSON object and nothing else, in this form: {\"secret\": \"<transfer_secret>\", \"site\": \"<site>\", \"checksum\": \"<record_checksum>\"}",
+        "role" : "user"
+      },
+      {
+        "content" : "{\"secret\": \"d44be450e46a\", \"site\": \"Lisbon\", \"checksum\": \"2c146785\"}",
+        "role" : "assistant"
+      },
+      {
+        "content" : "Settled record from the Information Space:\n{\"checksum\":\"2c146785\",\"secret\":\"d44be450e46a\",\"site\":\"Lisbon\"}\nUsing only that settled record, reply with exactly one line and nothing else: ANSWER=<secret>-<checksum>",
+        "role" : "user"
+      }
+    ],
+    "request_sha256" : "4940df8d669ed5d5c385547f8a268bcfb2922f2f546e4d676bec81a8b6a4e54a",
+    "request_text" : "Settled record from the Information Space:\n{\"checksum\":\"2c146785\",\"secret\":\"d44be450e46a\",\"site\":\"Lisbon\"}\nUsing only that settled record, reply with exactly one line and nothing else: ANSWER=<secret>-<checksum>",
+    "text" : "ANSWER=d44be450e46a-2c146785",
+    "text_sha256" : "ab7eeccb4197d06234f572a66c2309388be052ddf89dda9a59aaa70ad00cfd18"
+  }
+}

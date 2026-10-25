@@ -1,0 +1,16 @@
+{
+  "id": "chatcmpl-6a7808f2-c069-48a0-ba17-938f9e0c30a7",
+  "object": "chat.completion",
+  "created": 1791106476,
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "choices": [
+    {
+      "message": {
+        "content": "{\"release_decision\":\"blocked\",\"deployment_order\":[],\"blocked_services\":[],\"error\":\"compatibility residue unavailable\"}",
+        "role": "assistant"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ]
+}

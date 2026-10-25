@@ -1,0 +1,70 @@
+{
+ "record_type": "release_decision",
+ "decided_at": "2026-10-23",
+ "decided_by": "user",
+ "recorded_by": "agent (transcription + constraint enforcement only)",
+ "candidate": {
+  "rc_id": "simigo-rc1-de362ef4-20261023",
+  "source_head": "de362ef46118402b40356c8c9e3633395a151717",
+  "dylib_sha256": "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b",
+  "bundle_tree_sha256": "842f72a68b7936fd6d5e33bb64af43b300920ec0c32fe6788574212a0df4bdc6"
+ },
+ "decision": {
+  "approved": true,
+  "release_level": "controlled_research_and_integration_build",
+  "release_level_zh": "受控研究与集成版",
+  "production_ga_approved": false,
+  "all_core_mechanisms_verified_claimed": false,
+  "statement": "批准交付 SimiGo RC1 受控研究与集成版；不批准生产级 GA，不宣称全部核心研究机制已验证"
+ },
+ "gates": {
+  "build_identity_fixed": "PASS",
+  "same_artifact_test_and_core_experiment": "PASS",
+  "test_isolation_and_user_data_protection": "PASS_WITH_OPERATIONAL_CONSTRAINT",
+  "cross_process_recovery_with_real_model": "PASS_SCOPED",
+  "reference_release_and_reclaim_operation": "PASS_SEMANTICS_LIMITED",
+  "physical_page_return": "BLOCKED",
+  "byte_reproducible_build": "NOT_PASS",
+  "full_production_call_path": "NOT_CLOSED",
+  "general_task_applicability_and_performance": "NOT_DEMONSTRATED"
+ },
+ "allowed": ["controlled deployment", "product integration", "developer use", "further research within the verified scope"],
+ "not_claimed": [
+  "production-grade GA",
+  "full-path verification",
+  "general performance benefit",
+  "complete physical memory release",
+  "all core mechanisms closed"
+ ],
+ "mandatory_constraints": [
+  {
+   "id": "C1",
+   "rule": "tests must run through the isolated runner (fresh isolation root, regenerated xctestrun, pre/post snapshot + diff)",
+   "entry": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/driver/run_isolated_tests.sh",
+   "non_equivalent": "plain xcodebuild test may write the real ~/.simigo",
+   "documented_in": ["SimiGo/README.md#源码构建与测试", "SimiGo/CONTRIBUTING.md#Release hygiene checks"]
+  },
+  {
+   "id": "C2",
+   "rule": "claim boundary: settled information can be verified via IS in a new process and participate in real-model continuation, within the tested task family only",
+   "does_not_imply": ["full production path verified", "any task self-settles", "total model compute reduced"]
+  },
+  {
+   "id": "C3",
+   "rule": "unclosed items must stay visibly unclosed",
+   "values": {
+    "physical_page_return": "BLOCKED",
+    "forward_calls": "NOT_INSTRUMENTED",
+    "byte_reproducible_build": "NOT_PASS (separate engineering improvement)",
+    "cross_artifact_transfer": "forbidden"
+   }
+  }
+ ],
+ "evidence_batch": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023",
+ "evidence_anchors": {
+  "gate_closure_report": "GATE_CLOSURE_REPORT_20261023.md",
+  "self_check": "GATE_CLOSURE_SELF_CHECK.json (17 items, failed=[])",
+  "scope_statement": "GATE_CLOSURE_REPORT_20261023.md#残余边界（不隐藏）"
+ },
+ "unchanged_by_this_decision": ["no commit", "no push", "frozen batch untouched", "RC1 artifact bytes untouched"]
+}

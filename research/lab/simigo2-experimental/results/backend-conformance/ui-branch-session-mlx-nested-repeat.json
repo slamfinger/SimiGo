@@ -1,0 +1,104 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ OVERSIZED_MLX_NESTED_BRANCH_GRAPH \/ REPEATED_RELEASE_RESTORE_SWITCH \/ HARNESS_LEVEL \/ NOT_A_UI_PRODUCT",
+  "branchAContent" : " You should",
+  "branchAInput" : "Now write tests for it.",
+  "branchBContent" : "\n   ",
+  "branchBInput" : "Add a one-line TODO.",
+  "checks" : {
+    "BRANCH_PREFIXES_DIVERGED" : true,
+    "FORK_POINT_ISOLATED" : true,
+    "NESTED_LINEAGE_ISOLATED" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+    "PARENT_BRANCH_SURVIVES_RELEASE" : true,
+    "RELEASE_NESTED_AND_DIRECT_BRANCH" : true,
+    "REPEATED_ADVANCE_RETAINED" : true,
+    "REPEATED_RELEASE_RESTORE_REPLAYS" : true,
+    "ROOT_SURVIVES_RELEASE" : true
+  },
+  "cycles" : 2,
+  "maxSwapMiB" : 0,
+  "maxTokens" : 2,
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "nestedContent" : " The first",
+  "nestedInput" : "Explain the first test.",
+  "nestedReplayContents" : [
+    " You should",
+    " You should"
+  ],
+  "overallPass" : true,
+  "peakFootprintMiB" : 7970,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.NESTED.V1",
+  "seedText" : "def is_palindrome(s):",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 64,
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 0.028708,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "fork",
+      "position" : 0
+    },
+    {
+      "clientMs" : 18437.913042,
+      "executionID" : "mlx-nested-branch-a",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 18225.981,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 18161.253417,
+      "executionID" : "mlx-nested-branch-b",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 4.309417,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.007042,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 0.011042,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 4.14625,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.003333,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 0.007709,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 8.081792,
+      "executionID" : "mlx-nested-branch-a1",
+      "operation" : "release",
+      "position" : 1
+    }
+  ]
+}

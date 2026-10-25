@@ -1,0 +1,17 @@
+{
+ "anchor_mode": "0o444",
+ "anchor_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/trust/settlement-trust-anchor.json",
+ "anchor_sha256": "634c951451607b7a3d73f901e4e0957347e17b37329a250d8eb6c714879a22b9",
+ "attacker_anchor_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/trust/attacker-anchor.json",
+ "attacker_anchor_sha256": "47d333f418033d235ac19e582797826d4abb490dc93ebf36148157ebc8e4d9c6",
+ "attacker_public_key_sha256": "94e9de8a8cbc687992437ef41c55ba325bcc909c68443a142e4510d3882fb2cb",
+ "build_sha256": "a47438fdd62ee7ef2b531fa45f489b9893d20380652c3eefe4756f341e7f6af9",
+ "key_id": "e-round-9ed3bce2269aebc9",
+ "key_mode": "0o600",
+ "key_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/trust/settlement-signing-key.json",
+ "key_sha256": "6f0b811ccc74021f75610e67862593ab7026f5b0bb985a38dccf8ffb52d7e441",
+ "private_key_location": "filesystem only; never a database row",
+ "public_key_base64": "4Sns4c31SzlyMOd8xiGgBQBsvGFUnIHiezmxuoDZd6c=",
+ "public_key_sha256": "9ed3bce2269aebc98f697df4bd306a330a2558c48686f8be7cd1fb862a005784",
+ "schema_id": "SIMIGO-E-ROUND-TRUST-ROOT-V1"
+}

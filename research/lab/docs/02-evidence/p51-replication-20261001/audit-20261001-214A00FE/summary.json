@@ -1,0 +1,91 @@
+{
+  "base" : {
+    "anchor" : "not-used-in-p5-1",
+    "key" : "default_5401315f-faa7-4984-9639-fccef06ae188_main",
+    "metaSHA" : "c9246ab1d77afe16fe272caa271a20dbc4fdcb478232ed7384500d6fd5e0cfb4",
+    "position" : 17,
+    "tensorSHA" : "5ce9dcbda52286ef2717e6212feabbc2d99eabf1415ee32510e35fd3ac7238ae"
+  },
+  "cells" : [
+    {
+      "baseline" : {
+        "cachedPromptTokens" : "0",
+        "cacheEfficiency" : "0.0000",
+        "delta" : "PALACE-1 E3 probe: 这个会话此前在做什么？用一句话概括。",
+        "generationTokens" : "24",
+        "restoredHistoryCount" : 17,
+        "restoreError" : "",
+        "streamEnd" : "NORMAL",
+        "text" : "这个会话在查看桌面文件结构，逐步浏览了\"参考文件\"目录下的\"项目部管理制度汇编\"内容。",
+        "toolCalls" : [
+
+        ]
+      },
+      "delta" : "dA1",
+      "equalBaseline" : false,
+      "id1TensorSHA" : true,
+      "sample" : "s1",
+      "treatment" : {
+        "cachedPromptTokens" : "0",
+        "cacheEfficiency" : "0.0000",
+        "delta" : "PALACE-1 E3 probe: 这个会话此前在做什么？用一句话概括。",
+        "generationTokens" : "12",
+        "restoredHistoryCount" : 0,
+        "restoreError" : "",
+        "streamEnd" : "NORMAL",
+        "text" : "该会话此前未进行任何对话，这是第一条消息。",
+        "toolCalls" : [
+
+        ]
+      }
+    },
+    {
+      "baseline" : {
+        "cachedPromptTokens" : "0",
+        "cacheEfficiency" : "0.0000",
+        "delta" : "从这个会话中找出一个文件或目录的名称，原样写出名称，不要解释。",
+        "generationTokens" : "4",
+        "restoredHistoryCount" : 17,
+        "restoreError" : "",
+        "streamEnd" : "NORMAL",
+        "text" : "经管部管理办法汇编",
+        "toolCalls" : [
+
+        ]
+      },
+      "delta" : "dB1",
+      "equalBaseline" : false,
+      "id1TensorSHA" : true,
+      "sample" : "s1",
+      "treatment" : {
+        "cachedPromptTokens" : "0",
+        "cacheEfficiency" : "0.0000",
+        "delta" : "从这个会话中找出一个文件或目录的名称，原样写出名称，不要解释。",
+        "generationTokens" : "1",
+        "restoredHistoryCount" : 0,
+        "restoreError" : "",
+        "streamEnd" : "NORMAL",
+        "text" : "没有",
+        "toolCalls" : [
+
+        ]
+      }
+    }
+  ],
+  "checkpointsAfter" : 204,
+  "checkpointsBefore" : 204,
+  "checkpointsSHA256After" : "27948cb6c2cdbfee583e18c864ef97754abebb00f55ce93564cf656e58420b91",
+  "checkpointsSHA256Before" : "27948cb6c2cdbfee583e18c864ef97754abebb00f55ce93564cf656e58420b91",
+  "id1TensorSHA" : true,
+  "poolAfter" : 2,
+  "poolBefore" : 2,
+  "poolSHA256After" : "a892e6d28aeb51c50c0de5355b51c98c1e9cdfb537f19c6b19a2faa4e8eb94b1",
+  "poolSHA256Before" : "a892e6d28aeb51c50c0de5355b51c98c1e9cdfb537f19c6b19a2faa4e8eb94b1",
+  "r0RunUUID" : "audit-20261001-214A00FE",
+  "role" : "run",
+  "sample" : "s1",
+  "surgeryChangedKeys" : "[history]",
+  "surgeryHistoryFrom" : 17,
+  "surgeryHistoryTo" : 0,
+  "surgeryRecord" : "history only; baseline computed in-run with fullHistory+delta (attempt-1 defect corrected)"
+}

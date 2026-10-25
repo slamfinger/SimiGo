@@ -1,0 +1,2 @@
+initialized empty database-backed IS: /private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-db-fresh-init-2rK4EUxj/worktree/FRESH_EMPTY_IS.sqlite
+manifest: /private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-db-fresh-init-2rK4EUxj/worktree/INITIALIZATION_MANIFEST.json

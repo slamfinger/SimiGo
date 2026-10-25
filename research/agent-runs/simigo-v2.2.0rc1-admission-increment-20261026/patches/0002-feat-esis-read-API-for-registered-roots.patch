@@ -1,0 +1,61 @@
+From f40db9c94bfdce83247b2e018531266e472de1a4 Mon Sep 17 00:00:00 2001
+From: "Mr.Simi" <mr.simi@MrSimideMacBook-Air-5.local>
+Date: Mon, 26 Oct 2026 02:05:34 +0800
+Subject: [PATCH 2/7] feat(esis): read API for registered roots
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+listRoots(category:) returns the roots table (root_id, category,
+display_name, locator_type, status) — the read side of the work-root
+registration the env-bootstrap path writes, using the same index-read
+pattern as listExternalFiles.
+---
+ .../SimiGoESISDatabase.swift                  | 31 +++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift b/Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift
+index 63e6c17..ea88014 100644
+--- a/Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift
++++ b/Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift
+@@ -479,6 +479,37 @@ public final class SimiGoESISDatabase {
+     // work folder, an agent-session store) tracked by root_id + relative path;
+     // original work files stay where they are, with no second physical copy.
+ 
++    /// A registered external root, as stored in the `roots` table.
++    public struct RootRow: Equatable, Sendable {
++        public let rootID: String
++        public let category: String
++        public let displayName: String?
++        public let locatorType: String?
++        public let status: String
++    }
++
++    /// List registered external roots (optionally one category), read-only.
++    /// Same index-read pattern as ``listExternalFiles(rootID:)``.
++    public func listRoots(category: String? = nil) throws -> [RootRow] {
++        let sql = category == nil
++            ? "SELECT root_id, category, display_name, locator_type, status FROM roots ORDER BY root_id;"
++            : "SELECT root_id, category, display_name, locator_type, status FROM roots WHERE category='"
++                + category!.replacingOccurrences(of: "'", with: "''") + "' ORDER BY root_id;"
++        let stmt = try prepare(sql)
++        defer { sqlite3_finalize(stmt) }
++        var rows: [RootRow] = []
++        while sqlite3_step(stmt) == SQLITE_ROW {
++            func col(_ i: Int32) -> String {
++                guard let c = sqlite3_column_text(stmt, i) else { return "" }
++                return String(cString: c)
++            }
++            rows.append(RootRow(
++                rootID: col(0), category: col(1), displayName: col(2),
++                locatorType: col(3), status: col(4)))
++        }
++        return rows
++    }
++
+     /// Register or refresh an external root. Idempotent upsert keyed on root_id.
+     public func upsertRoot(rootID: String, category: String, displayName: String?,
+                            locatorType: String?, status: String) throws {
+-- 
+2.54.0 (Apple Git-157)
+

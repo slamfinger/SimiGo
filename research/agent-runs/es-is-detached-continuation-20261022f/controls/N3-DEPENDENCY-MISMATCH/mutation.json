@@ -1,0 +1,10 @@
+{
+ "new_dependencies": [
+  "TASK-SOURCE"
+ ],
+ "new_item_object_id": "ecb94405ea7ffa8dd83d34976004b32c1697e878a0c607071772b3f91238c36c",
+ "previous_dependencies": [
+  "TASK-SOURCE",
+  "TASK-U1"
+ ]
+}

@@ -1,0 +1,262 @@
+{
+  "agree": 36,
+  "case_count": 36,
+  "cases_sha256": "68dab430e194a808377763ea81641c95b8c5299fc12fb8a1e46d44be4c560bb9",
+  "issue_count": 0,
+  "issues": [],
+  "per_case": [
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "route-synthesis-valid",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "route-synthesis-missing-priority-field",
+      "native": "REJECT/PRODUCER_RESULT_FIELD_MISSING",
+      "python": "REJECT/PRODUCER_RESULT_FIELD_MISSING"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "route-synthesis-binding-mismatch",
+      "native": "REJECT/PRODUCER_RESULT_BINDING_MISMATCH",
+      "python": "REJECT/PRODUCER_RESULT_BINDING_MISMATCH"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "route-synthesis-derived-route-wrong",
+      "native": "REJECT/PRODUCER_RESULT_DERIVATION_MISMATCH",
+      "python": "REJECT/PRODUCER_RESULT_DERIVATION_MISMATCH"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "route-synthesis-binding-absent",
+      "native": "REJECT/CONTRACT_BINDING_MISSING",
+      "python": "REJECT/CONTRACT_BINDING_MISSING"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "carry-forward-valid",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "carry-forward-contradicting-upstream",
+      "native": "REJECT/PRODUCER_RESULT_BINDING_MISMATCH",
+      "python": "REJECT/PRODUCER_RESULT_BINDING_MISMATCH"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "exactly-one-ambiguous",
+      "native": "REJECT/CONTRACT_AMBIGUOUS_FIELD",
+      "python": "REJECT/CONTRACT_AMBIGUOUS_FIELD"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "integer-out-of-range",
+      "native": "REJECT/CONTRACT_RANGE_VIOLATION",
+      "python": "REJECT/CONTRACT_RANGE_VIOLATION"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "integer-typed-value",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "integer-type-mismatch",
+      "native": "REJECT/CONTRACT_TYPE_MISMATCH",
+      "python": "REJECT/CONTRACT_TYPE_MISMATCH"
+    },
+    {
+      "class": "native-stricter",
+      "expect": "REJECT",
+      "name": "named-capture-group",
+      "native": "REJECT/CONTRACT_INVALID_PATTERN",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "enum-outside-declared-values",
+      "native": "REJECT/CONTRACT_ENUM_VIOLATION",
+      "python": "REJECT/CONTRACT_ENUM_VIOLATION"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "enum-inside-declared-values",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "boolean-normalization",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "optional-field-absent",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "anchored-multiline-first-policy",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "anchored-multiline-exactly-one-ambiguous",
+      "native": "REJECT/CONTRACT_AMBIGUOUS_FIELD",
+      "python": "REJECT/CONTRACT_AMBIGUOUS_FIELD"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "equals-field-and-literal-constraints",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "equals-field-violation",
+      "native": "REJECT/PRODUCER_RESULT_FIELD_MISMATCH",
+      "python": "REJECT/PRODUCER_RESULT_FIELD_MISMATCH"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "equals-literal-violation",
+      "native": "REJECT/PRODUCER_RESULT_LITERAL_MISMATCH",
+      "python": "REJECT/PRODUCER_RESULT_LITERAL_MISMATCH"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "unknown-schema-version",
+      "native": "REJECT/CONTRACT_UNKNOWN_SCHEMA_VERSION",
+      "python": "REJECT/CONTRACT_UNKNOWN_SCHEMA_VERSION"
+    },
+    {
+      "class": "native-stricter",
+      "expect": "REJECT",
+      "name": "unknown-root-key",
+      "native": "REJECT/CONTRACT_UNKNOWN_KEY",
+      "python": "VALID/-"
+    },
+    {
+      "class": "native-stricter",
+      "expect": "REJECT",
+      "name": "unknown-field-spec-key",
+      "native": "REJECT/CONTRACT_UNKNOWN_KEY",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "unknown-constraint-kind",
+      "native": "REJECT/CONTRACT_UNKNOWN_CONSTRAINT",
+      "python": "REJECT/CONTRACT_UNKNOWN_CONSTRAINT"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "invalid-regex-pattern",
+      "native": "REJECT/CONTRACT_INVALID_PATTERN",
+      "python": "REJECT/CONTRACT_INVALID_PATTERN"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "empty-field-rejected-by-nonempty",
+      "native": "REJECT/CONTRACT_EMPTY_FIELD",
+      "python": "REJECT/CONTRACT_EMPTY_FIELD"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "missing-capture-group",
+      "native": "REJECT/CONTRACT_INVALID_PATTERN",
+      "python": "REJECT/CONTRACT_INVALID_PATTERN"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "unsupported-field-type",
+      "native": "REJECT/CONTRACT_UNKNOWN_FIELD_TYPE",
+      "python": "REJECT/CONTRACT_UNKNOWN_FIELD_TYPE"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "unsupported-match-policy",
+      "native": "REJECT/CONTRACT_INVALID_FIELD_SPEC",
+      "python": "REJECT/CONTRACT_INVALID_FIELD_SPEC"
+    },
+    {
+      "class": "native-stricter",
+      "expect": "REJECT",
+      "name": "concat-over-verified-binding-part",
+      "native": "REJECT/CONTRACT_INVALID_CONSTRAINT",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "constraint-names-undeclared-field",
+      "native": "REJECT/CONTRACT_CONSTRAINT_FIELD_MISSING",
+      "python": "REJECT/CONTRACT_CONSTRAINT_FIELD_MISSING"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "digest-equals-binding-valid-string",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "VALID",
+      "name": "digest-equals-binding-valid-non-ascii",
+      "native": "VALID/-",
+      "python": "VALID/-"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "digest-equals-binding-mismatch",
+      "native": "REJECT/PRODUCER_RESULT_DERIVATION_MISMATCH",
+      "python": "REJECT/PRODUCER_RESULT_DERIVATION_MISMATCH"
+    },
+    {
+      "class": "family",
+      "expect": "REJECT",
+      "name": "digest-equals-binding-missing-binding",
+      "native": "REJECT/CONTRACT_BINDING_MISSING",
+      "python": "REJECT/CONTRACT_BINDING_MISSING"
+    }
+  ],
+  "schema_id": "SIMIGO-NATIVE-PYTHON-CONTRACT-PARITY-VERIFY-V1"
+}

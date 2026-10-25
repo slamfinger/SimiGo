@@ -1,0 +1,10 @@
+{
+  "conflation_results" : "anon-A:ACCEPTED_NO_DETECTION | anon-B:ACCEPTED_NO_DETECTION",
+  "cross_swap_detected_by_A" : "YES",
+  "outcome" : "NECESSITY_EVIDENCE(provenance conflation + model-binding uncompensated; content-mismatch sub-function compensated by A — partial subsumption registered, Layer 2 noted)",
+  "r0RunUUID" : "audit-20261001-1FF4E887",
+  "remaining_relations" : "P\/A\/C",
+  "removed_relation" : "identity(modelIdentity + executionID\/lineage binding)",
+  "role" : "gdeltaI",
+  "structural_note" : "model-binding function: without modelIdentity no remaining field references the model — wrong-model restore structurally undetectable (single-GGUF behavioral test deferred)"
+}

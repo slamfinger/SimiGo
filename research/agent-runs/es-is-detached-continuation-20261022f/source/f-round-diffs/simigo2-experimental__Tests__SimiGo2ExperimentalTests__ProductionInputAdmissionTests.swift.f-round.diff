@@ -1,0 +1,23 @@
+--- a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift
+@@ -161,12 +161,18 @@
+     let root = FileManager.default.temporaryDirectory
+       .appendingPathComponent("simigo-admission-\(UUID().uuidString)", isDirectory: true)
+     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+-    defer { try? FileManager.default.removeItem(at: root) }
++    // Each case exports its own fixture anchor. The root is deleted at the end
++    // of the test, so the export must be cleared too: a dangling anchor path in
++    // the process environment would otherwise fail closed for every later suite.
++    defer {
++      unsetenv(SettlementTrustFixture.anchorEnvironment)
++      try? FileManager.default.removeItem(at: root)
++    }
+ 
+     for expectation in expectations {
+       let fixture = try emitFixture(expectation.condition, to: root)
+       let database = fixture.database
+-      setenv("SIMIGO_SETTLEMENT_TRUST_ANCHOR", fixture.trustAnchorPath, 1)
++      setenv(SettlementTrustFixture.anchorEnvironment, fixture.trustAnchorPath, 1)
+       let stateDirectory = root.appendingPathComponent(
+         "state-\(expectation.condition)", isDirectory: true)
+       try FileManager.default.createDirectory(

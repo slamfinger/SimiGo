@@ -1,0 +1,18 @@
+--- decay ON (= 301e3f1 semantics, must match V2_RERUN_STDOUT) (LFU_DECAY_INTERVAL=200) ---
+    hot/               lru: J=  973.1 (rehy=696 ext=684)
+    hot/         lfu_aging: J=  544.4 (rehy=392 ext=380)
+    hot/ cost_aware_greedy: J=  547.3 (rehy=394 ext=382)
+    hot/     belady_greedy: J=  475.3 (rehy=343 ext=331)
+   tree/               lru: J= 1422.9 (rehy=1015 ext=1003)
+   tree/         lfu_aging: J= 1085.9 (rehy=776 ext=764)
+   tree/ cost_aware_greedy: J= 1156.4 (rehy=826 ext=814)
+   tree/     belady_greedy: J=  740.4 (rehy=531 ext=519)
+--- decay OFF (= pre-301e3f1 cumulative-freq semantics) (LFU_DECAY_INTERVAL=1000000000000000000) ---
+    hot/               lru: J=  973.1 (rehy=696 ext=684)
+    hot/         lfu_aging: J=  544.4 (rehy=392 ext=380)
+    hot/ cost_aware_greedy: J=  547.3 (rehy=394 ext=382)
+    hot/     belady_greedy: J=  475.3 (rehy=343 ext=331)
+   tree/               lru: J= 1422.9 (rehy=1015 ext=1003)
+   tree/         lfu_aging: J= 1084.5 (rehy=775 ext=763)
+   tree/ cost_aware_greedy: J= 1156.4 (rehy=826 ext=814)
+   tree/     belady_greedy: J=  740.4 (rehy=531 ext=519)

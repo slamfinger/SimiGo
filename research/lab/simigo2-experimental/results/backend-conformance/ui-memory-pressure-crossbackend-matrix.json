@@ -1,0 +1,336 @@
+{
+  "bothBackendsPass" : true,
+  "boundary" : "SAME_CONTROLLED_PRESSURE_OUTCOME_SHAPE \/ DIFFERENT_MODEL_ARTIFACTS_TOKENIZERS_ENGINES_AND_MECHANISMS \/ HARNESS_LEVEL \/ NOT_OS_MEMORY_PRESSURE \/ NOT_A_SAME_CHECKPOINT_CLOSURE",
+  "closureBlocker" : "DIFFERENT_MODEL_ARTIFACTS_TOKENIZERS_EXECUTION_ENGINES_AND_PHYSICAL_PRESSURE_MECHANISMS",
+  "commonChecks" : {
+    "ACTIVE_BRANCH_PREFIXES_DIVERGED" : true,
+    "PRESSURE_LINEAGE_ISOLATED" : true,
+    "PRESSURE_RELEASE_ACTIONS_COMPLETE" : true,
+    "PRESSURE_WORKLOAD_COMPLETE" : true,
+    "RECOVERY_FINAL_BINDINGS_EXACT" : true,
+    "RELEASE_PRESSURE_BRANCHES" : true,
+    "REPEATED_RECOVERY_OUTPUTS_EXACT" : true,
+    "ROOT_AND_CONTROL_SURVIVE" : true
+  },
+  "controlInput" : "Now write tests for it.",
+  "crossBackendClosure" : false,
+  "cycles" : 2,
+  "llama" : {
+    "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ CONTROLLED_MULTI_BRANCH_RELEASE_RESTORE_LOAD \/ LLAMA_PREFIX_REPRESENTATION \/ HARNESS_LEVEL \/ NOT_OS_MEMORY_PRESSURE \/ NOT_A_UI_PRODUCT",
+    "checks" : {
+      "ACTIVE_BRANCH_PREFIXES_DIVERGED" : true,
+      "PRESSURE_LINEAGE_ISOLATED" : true,
+      "PRESSURE_RELEASE_ACTIONS_COMPLETE" : true,
+      "PRESSURE_WORKLOAD_COMPLETE" : true,
+      "RECOVERY_FINAL_BINDINGS_EXACT" : true,
+      "RELEASE_PRESSURE_BRANCHES" : true,
+      "REPEATED_RECOVERY_OUTPUTS_EXACT" : true,
+      "ROOT_AND_CONTROL_SURVIVE" : true
+    },
+    "controlContent" : "\n",
+    "controlInput" : "Now write tests for it.",
+    "cycles" : 2,
+    "host" : "127.0.0.1",
+    "modelPath" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "overallPass" : true,
+    "port" : 18080,
+    "predictionTokens" : 1,
+    "pressureBranches" : [
+      {
+        "content" : "\n\n",
+        "executionID" : "llama-pressure-branch-0",
+        "finalBindingsExact" : [
+          true,
+          true
+        ],
+        "finalPrefixTokenCount" : 15,
+        "generatedTokenIDs" : [
+          271
+        ],
+        "input" : "List one edge case for the function.",
+        "recoveryMatches" : [
+          true,
+          true
+        ]
+      },
+      {
+        "content" : "\n\n",
+        "executionID" : "llama-pressure-branch-1",
+        "finalBindingsExact" : [
+          true,
+          true
+        ],
+        "finalPrefixTokenCount" : 17,
+        "generatedTokenIDs" : [
+          271
+        ],
+        "input" : "Add a focused unit test for that edge case.",
+        "recoveryMatches" : [
+          true,
+          true
+        ]
+      }
+    ],
+    "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.LLAMA.MEMORY.PRESSURE.V1",
+    "seedText" : "def is_palindrome(s):",
+    "status" : "PASS",
+    "steps" : [
+      {
+        "clientMs" : 220.957125,
+        "executionID" : "llama-pressure-control",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 182.619625,
+        "executionID" : "llama-pressure-branch-0",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 201.434166,
+        "executionID" : "llama-pressure-branch-1",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.034667,
+        "executionID" : "llama-pressure-branch-0",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.424458,
+        "executionID" : "llama-pressure-branch-0",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 186.231083,
+        "executionID" : "llama-pressure-branch-0",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.003708,
+        "executionID" : "llama-pressure-branch-1",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.010083,
+        "executionID" : "llama-pressure-branch-1",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 195.193542,
+        "executionID" : "llama-pressure-branch-1",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.004625,
+        "executionID" : "llama-pressure-branch-0",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.008708,
+        "executionID" : "llama-pressure-branch-0",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 180.247208,
+        "executionID" : "llama-pressure-branch-0",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.002166,
+        "executionID" : "llama-pressure-branch-1",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.004333,
+        "executionID" : "llama-pressure-branch-1",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 195.726875,
+        "executionID" : "llama-pressure-branch-1",
+        "operation" : "switch",
+        "position" : 1
+      }
+    ]
+  },
+  "llamaPressureMechanism" : "SWIFT_PREFIX_REGISTRY_RELEASE_RESTORE",
+  "mlx" : {
+    "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ CONTROLLED_MULTI_BRANCH_RELEASE_RESTORE_LOAD \/ OVERSIZED_MLX \/ HARNESS_LEVEL \/ NOT_OS_MEMORY_PRESSURE \/ NOT_A_UI_PRODUCT",
+    "checks" : {
+      "ACTIVE_BRANCH_PREFIXES_DIVERGED" : true,
+      "NO_SWAP_ON_PRESSURE_ACTION" : true,
+      "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+      "PRESSURE_LINEAGE_ISOLATED" : true,
+      "PRESSURE_RELEASE_ACTIONS_COMPLETE" : true,
+      "PRESSURE_WORKLOAD_COMPLETE" : true,
+      "RECOVERY_FINAL_BINDINGS_EXACT" : true,
+      "RELEASE_PRESSURE_BRANCHES" : true,
+      "REPEATED_RECOVERY_OUTPUTS_EXACT" : true,
+      "ROOT_AND_CONTROL_SURVIVE" : true
+    },
+    "controlContent" : " You",
+    "controlInput" : "Now write tests for it.",
+    "cycles" : 2,
+    "maxSwapMiB" : 0,
+    "maxTokens" : 1,
+    "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+    "overallPass" : true,
+    "peakFootprintMiB" : 6628,
+    "pressureBranches" : [
+      {
+        "content" : " The",
+        "executionID" : "mlx-pressure-branch-0",
+        "finalBindingsExact" : [
+          true,
+          true
+        ],
+        "finalPrefixTokenCount" : 15,
+        "generatedTokenIDs" : [
+          576
+        ],
+        "input" : "List one edge case for the function.",
+        "recoveryMatches" : [
+          true,
+          true
+        ]
+      },
+      {
+        "content" : " You",
+        "executionID" : "mlx-pressure-branch-1",
+        "finalBindingsExact" : [
+          true,
+          true
+        ],
+        "finalPrefixTokenCount" : 17,
+        "generatedTokenIDs" : [
+          1446
+        ],
+        "input" : "Add a focused unit test for that edge case.",
+        "recoveryMatches" : [
+          true,
+          true
+        ]
+      }
+    ],
+    "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.MEMORY.PRESSURE.V1",
+    "seedText" : "def is_palindrome(s):",
+    "segmentCount" : 6,
+    "segmentSize" : 8,
+    "segmentTransitions" : 48,
+    "status" : "PASS",
+    "steps" : [
+      {
+        "clientMs" : 146475.83275,
+        "executionID" : "mlx-pressure-control",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 92513.287167,
+        "executionID" : "mlx-pressure-branch-0",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 17720.592417,
+        "executionID" : "mlx-pressure-branch-1",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 7.98325,
+        "executionID" : "mlx-pressure-branch-0",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 8.282416,
+        "executionID" : "mlx-pressure-branch-0",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 14628.159083,
+        "executionID" : "mlx-pressure-branch-0",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 5.538875,
+        "executionID" : "mlx-pressure-branch-1",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 5.547583,
+        "executionID" : "mlx-pressure-branch-1",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 14428.046583,
+        "executionID" : "mlx-pressure-branch-1",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 6.025791,
+        "executionID" : "mlx-pressure-branch-0",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 6.035791,
+        "executionID" : "mlx-pressure-branch-0",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 14442.188208,
+        "executionID" : "mlx-pressure-branch-0",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 5.683792,
+        "executionID" : "mlx-pressure-branch-1",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 5.694292,
+        "executionID" : "mlx-pressure-branch-1",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 14888.003542,
+        "executionID" : "mlx-pressure-branch-1",
+        "operation" : "switch",
+        "position" : 1
+      }
+    ]
+  },
+  "mlxPressureMechanism" : "SWIFT_PREFIX_REGISTRY_RELEASE_PLUS_OVERSIZED_SEGMENT_RELEASE",
+  "overallPass" : true,
+  "predictionTokens" : 1,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MEMORY.PRESSURE.CROSSBACKEND.V1",
+  "sameOutcomeShape" : true,
+  "sameWorkloadShape" : true,
+  "seedText" : "def is_palindrome(s):",
+  "status" : "PASS_WITH_BOUNDARY"
+}

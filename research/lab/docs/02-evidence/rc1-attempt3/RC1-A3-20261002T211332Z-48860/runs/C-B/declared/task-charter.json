@@ -1,0 +1,10 @@
+{
+  "continuationRule": {
+    "action": "REQUEST_HEALTH_CHECK",
+    "alphaMinimum": 40,
+    "requiredMode": "active"
+  },
+  "objective": "Resume after interruption and produce a continuation report for entity E using only declared persistent carriers; do not rescan the physical entity.",
+  "schemaVersion": "c-impl-task-charter-v1",
+  "taskID": "C-T-001"
+}

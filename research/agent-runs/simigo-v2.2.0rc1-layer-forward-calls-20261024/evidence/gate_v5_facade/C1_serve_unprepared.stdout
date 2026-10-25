@@ -1,0 +1,2 @@
+{"binding":"Service.start(path:)","listening":false,"localb_status":"❌ The operation couldn’t be completed. (LOCALBCore.LOCALBStatus error 57.)","pid":18492,"result":"fail-closed","role":"serve-service","service_status":"❌ The operation couldn’t be completed. (LOCALBCore.LOCALBStatus error 57.)","simigo_home":"\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-layer-forward-calls-20261024\/g6C\/home"}
+❌ ❌ 启动失败: The operation couldn’t be completed. (LOCALBCore.LOCALBStatus error 57.)

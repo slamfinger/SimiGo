@@ -1,0 +1,59 @@
+# LOCALB authorization surface of the v2.2.0rc1 candidate
+# product HEAD f18d65f8f312ffbb837fdf5e07125af044833854 (branch localb-b3-closure-20261016)
+
+== [1] installed binary on the protected route (bogus proof, no relaxation) ==
+  pid=77874
+  bound_port=62566
+  listening_socket_found=1
+  http_status=000
+  http_status=200 tls_verify=18
+  http_status=503
+  authorized_request_completed=0
+  authorization_relaxed=0
+  probe_result=UNAUTHORIZED_LEG_ONLY
+
+== [2] the 503 is the unconfigured-authorization guard ==
+  SimiGo/Protocol/HTTPServer.swift:112:        case localbAuthorizationUnavailable
+  SimiGo/Protocol/HTTPServer.swift:128:            case .localbAuthorizationUnavailable:
+  SimiGo/Protocol/HTTPServer.swift:151:            case .localbAuthorizationUnavailable:
+  SimiGo/Protocol/HTTPServer.swift:1333:            throw HTTPServerError.localbAuthorizationUnavailable
+  SimiGo/Protocol/HTTPServer.swift:1435:            throw HTTPServerError.localbAuthorizationUnavailable
+
+== [3] authorization is configured only from a verified LOCALB host context ==
+  SimiGo/Protocol/HTTPServer.swift:633:    public func configureLOCALBRequestAuthorization(
+  SimiGo/Inference/LOCALBHostRuntime.swift:191:            server.configureLOCALBRequestAuthorization(
+  SimiGo/Inference/OversizedRuntime.swift:129:                server.configureLOCALBRequestAuthorization(
+  SimiGo/Inference/NativeMLX.swift:497:                    server.configureLOCALBRequestAuthorization(
+
+== [4] the activation ceremony is the only writer of the trusted checkpoint ==
+  SimiGo/Inference/LOCALBHostRuntime.swift:59:    static func persistTrustedCheckpoint(
+  SimiGoTests/LOCALBRequestAuthWiringTests.swift:1075:        try LOCALBHostRuntime.persistTrustedCheckpoint(
+  SimiGoTests/ExternalAdoptionInferenceE2ETests.swift:73:        try LOCALBHostRuntime.persistTrustedCheckpoint(
+  app_target_call_sites=0
+
+== [5] authorized lane inside the product test target (round-2 test binary) ==
+  PASS testDefaultHostResolutionServesAuthorizedRequests
+  PASS testDefaultHostResolutionFailsClosedBeforeActivation
+  PASS testProtectedRouteServesOnlyWithVerifiedProofOverTLS
+  PASS testSignedBodyReachesInferenceEndpoint
+  PASS testMissingProofHeadersAndUnconfiguredAuthorizationFailClosed
+  PASS testBareChatCompletionsPathRequiresProofAndServesWithProof
+  PASS testTamperedBodyIsRejected
+  PASS testChallengeIsSingleUse
+  PASS testUnknownRoutesFailClosedAndOpenRoutesStayOpen
+  PASS testAdoptedEndpointConfigDispatchesInferenceThroughProductionRuntime
+  Test Suite 'ExternalAdoptionInferenceE2ETests' passed at 2026-10-24 01:40:58.708.
+  Test Suite 'LOCALBRequestAuthWiringTests' passed at 2026-10-24 01:41:11.694.
+
+== [6] conclusion ==
+  installed_binary_protected_route = BLOCKED
+    reason: no product surface performs the activation ceremony, so the installed
+            app runs unactivated and the guard returns 503 before any proof is
+            evaluated. Reaching the route would require either relaxing the guard
+            (forbidden) or an activation surface the product does not ship.
+  authorized_lane_in_product_test_target = PASS (cases above)
+  authorization_relaxed = 0   proof_fabricated = 0   route_policy_changed = 0
+  minimum_unblock: a product-side activation/management surface (operator CLI or
+                   equivalent) that runs persistTrustedCheckpoint against the
+                   isolated host directory, plus a paired client whose key lives in
+                   a throwaway Keychain.

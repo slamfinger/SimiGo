@@ -1,0 +1,249 @@
+{
+  "baseline_dir": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/baseline",
+  "case": "A2b",
+  "case_dir": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A2b",
+  "completed_at_utc": "2026-10-22T02:51:28Z",
+  "execution": {
+    "bound_prefix_token_count": -1,
+    "case": "A2b",
+    "completed_at_utc": "2026-10-22T02:51:28Z",
+    "continuation": {},
+    "continue_task_entered": false,
+    "counters": {
+      "model_continuation_calls": 0,
+      "tokenize_seed_calls": 0,
+      "tokenize_text_calls": 0
+    },
+    "database_after": {
+      "device": "16777233",
+      "inode": "110251803",
+      "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A2b/carrier.sqlite",
+      "sha256": "d213871a8d01fd8038f702fec0bbb2d5ae75d178e28340617f10c6f7e59d84f0",
+      "size_bytes": 36864
+    },
+    "database_before": {
+      "device": "16777233",
+      "inode": "110251803",
+      "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A2b/carrier.sqlite",
+      "sha256": "d213871a8d01fd8038f702fec0bbb2d5ae75d178e28340617f10c6f7e59d84f0",
+      "size_bytes": 36864
+    },
+    "duration_seconds": 2.156888961791992,
+    "failure_description": "settlementCheckpointMismatch(executionID: \"PRODUCTION-REAL-PALACE\", field: \"validity_basis\")",
+    "failure_label": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
+    "generation_entered": false,
+    "input_admission": null,
+    "input_admission_refusal": null,
+    "input_admission_status": "NOT_ATTEMPTED",
+    "is_reads": {},
+    "is_status_before": {
+      "command": "status",
+      "demand": {
+        "continuation_conditions": [
+          "registered source is reusable and the model result is settled"
+        ],
+        "continuation_point": "bounded-production-runtime-integration",
+        "demand_id": "handoff-u1",
+        "pending_obligations": [
+          "execute step 1 on the real model"
+        ],
+        "required_item_ids": [
+          "TASK-U1"
+        ],
+        "schema_id": "EINFO-ES-DEMAND-V1"
+      },
+      "execution_state": {
+        "continuation_point": "bounded-production-runtime-integration",
+        "demand_digest": "c81e7b5682add59eef8bf551a03edf6b18dd12ab50f0bf527bb23e3bc57656d8",
+        "demand_id": "handoff-u1",
+        "next_continuation_point": "runtime-application-complete",
+        "pending_obligations": [],
+        "prior_state_id": "handoff-a-u1-phase1-baseline-20261022c",
+        "result_digest": "bf8fcaad0998c6f8b8210a21a078adc2dc1618f5e12f33ce246d6ac6df6e16ab",
+        "runtime_application_status": "APPLIED_SWIFT",
+        "schema_id": "EINFO-EXECUTION-STATE-V1",
+        "state_id": "handoff-a-u1-phase1-baseline-20261022c:runtime-applied",
+        "status": "ADVANCED"
+      },
+      "ok": true,
+      "required_item_ids": [
+        "TASK-U1"
+      ]
+    },
+    "model": {
+      "config_json_sha256": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+      "model_index_json_sha256": "c100efb419233c6be585014ebd9f5a8c2a4fe9de63be6271172f0f70f1c315ea",
+      "snapshot_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+      "snapshot_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+      "tokenizer_config_json_sha256": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd",
+      "tokenizer_json_sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+      "weight_files": [
+        {
+          "blob_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+          "content_sha256": "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+          "name": "model-00001-of-00004.safetensors",
+          "size_bytes": 5321473414
+        },
+        {
+          "blob_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+          "content_sha256": "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+          "name": "model-00002-of-00004.safetensors",
+          "size_bytes": 5366644780
+        },
+        {
+          "blob_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+          "content_sha256": "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+          "name": "model-00003-of-00004.safetensors",
+          "size_bytes": 5276887419
+        },
+        {
+          "blob_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+          "content_sha256": "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+          "name": "model-00004-of-00004.safetensors",
+          "size_bytes": 1216066381
+        }
+      ],
+      "weights_manifest_sha256": "c977fca8913a532bea9a593ccb13a1e02158401fe35ac917ad0036d21539f19c"
+    },
+    "model_load_seconds": 1.961387038230896,
+    "output": {},
+    "phase": "PHASE1_RECOVERY_ADMISSION",
+    "pid": 12382,
+    "production_continuation_invoked": false,
+    "prompt": {},
+    "recovered_lifecycle": "",
+    "recovered_position": -1,
+    "recovery_succeeded": false,
+    "run_label": "phase1-a2b-20261022c",
+    "schema_id": "SIMIGO-CAUSALITY-PHASE1-V1",
+    "stage_a_prefix_tail_matches": null,
+    "started_at_utc": "2026-10-22T02:51:26Z",
+    "state_after": [
+      {
+        "path": "execution-state.json",
+        "sha256": "20a2bee4c8d112ad649d17e6905a6c6b0c2595bca855cc99b19aa378c1e59a15",
+        "size_bytes": 3686
+      }
+    ],
+    "state_before": [
+      {
+        "path": "execution-state.json",
+        "sha256": "20a2bee4c8d112ad649d17e6905a6c6b0c2595bca855cc99b19aa378c1e59a15",
+        "size_bytes": 3686
+      }
+    ],
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A2b/state",
+    "terminal_state": "PHASE1_OBSERVED"
+  },
+  "implementation": {
+    "dirty_tree_fingerprint": "8a08189272c5c5729a66d62fbe9a3b7e7fddfdbf76c6f4f0edf9fd64593d1684",
+    "dirty_tree_status": [
+      " M .gitignore",
+      " M execution-information-loop/carrier_loop.py",
+      " M execution-information-loop/carrier_selftest.py",
+      " M execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm3.sqlite",
+      " M execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm4.sqlite",
+      " M execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.last_judgment.json",
+      " M execution-information-loop/experiment/continuous-calc-verification/model-level-validation/selftest.py",
+      " M execution-information-loop/production_runtime_bridge.py",
+      " M execution-information-loop/real_palace_selftest.py",
+      " M simigo2-experimental/Package.swift",
+      " M simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+      "?? .phase1-phase2-design-completion.canvas.status.json",
+      "?? docs/00-governance/SIMIGO2_G3_D1_ENTRY_BOUNDARY_DECISION_V0.1_20261021.md",
+      "?? docs/00-governance/SIMIGO2_G3_D1_EXPERIMENT_PROTOCOL_V0.1_20261021.md",
+      "?? docs/00-governance/SIMIGO2_G3_D1_EXPERIMENT_PROTOCOL_V0.1_20261021.sha256",
+      "?? docs/00-governance/SIMIGO2_G3_RUNTIME_ISOLATION_D_AUTHORIZATION_BOUNDARY_V0.1_20261021.md",
+      "?? docs/02-evidence/g3-d1-source-freeze/",
+      "?? docs/06-closure/G3_C_CLOSURE_20261021.md",
+      "?? execution-information-loop/ACCEPTANCE_REPORT_20261020.md",
+      "?? execution-information-loop/G3_AUTHORIZATION_SUBMISSION_20261020.md",
+      "?? execution-information-loop/SETTLEMENT_CONTRACT_CHANGELOG.md",
+      "?? execution-information-loop/admission_selftest.py",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm2.sqlite",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/G2_CORE_API_REPLAY_20261020.md",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/G2_CORE_API_REPLAY_RESULT.json",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/carrier_gate_v2.py",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/replay_g2_as_core_api.py",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/test_carrier_gate_v2.py",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g3/",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/logs/arm1.jsonl",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/logs/arm2.jsonl",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/logs/arm3.jsonl",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/logs/arm4.jsonl",
+      "?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/",
+      "?? g3/",
+      "?? simigo2-experimental/Sources/G3D1Supervisor/",
+      "?? simigo2-experimental/Sources/G3D1Worker/",
+      "?? simigo2-experimental/Sources/G3D1WorkerCore/",
+      "?? simigo2-experimental/Sources/G3SwiftIsolationEntry/",
+      "?? simigo2-experimental/Sources/RealModelHandoff/",
+      "?? simigo2-experimental/Tests/G3D1SupervisorTests/",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3CancellationPointTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3GatedEntryAdmissionTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3GatewayTerminationTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3KVAllocationGatewayTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3MLXArrayStorageIdentityTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3MLXDuringGenerationRegistrationTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3NativeCacheDispatchTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3ObserverBindingTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3RefusalContainmentTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3RunSettlementTests.swift",
+      "?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift",
+      "?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3CommitLinearizationTests.swift",
+      "?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3DualArmRunnerTests.swift",
+      "?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3ExecutionDispatchTests.swift",
+      "?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3IsolatedExecutionEntryTests.swift",
+      "?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3PerArmCacheWiringTests.swift",
+      "?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3SettlementAxesReportTests.swift",
+      "?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3SettlementAxesTests.swift",
+      "?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/RuntimeIsolationGateTests.swift",
+      "?? simigo2-experimental/scripts/handoff_causality/",
+      "?? tools/g3_build_stamped.py",
+      "?? tools/g3_execution_identity.py",
+      "?? tools/g3_runner_manifest.py"
+    ],
+    "head": "e7f63856298390deb8596a4a30e173d3fb466eaa"
+  },
+  "intervention": {
+    "case": "A2b",
+    "changes": [
+      {
+        "after": "029fb7461baaaaf43546dd89078f733f106bd2f0dce8f720bd3ec35987488d59",
+        "before": "c81e7b5682add59eef8bf551a03edf6b18dd12ab50f0bf527bb23e3bc57656d8",
+        "field": "validityBasis"
+      }
+    ],
+    "database_after": {
+      "device": "16777233",
+      "inode": "110251803",
+      "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A2b/carrier.sqlite",
+      "sha256": "d213871a8d01fd8038f702fec0bbb2d5ae75d178e28340617f10c6f7e59d84f0",
+      "size_bytes": 36864
+    },
+    "state_after": [
+      {
+        "path": "execution-state.json",
+        "sha256": "20a2bee4c8d112ad649d17e6905a6c6b0c2595bca855cc99b19aa378c1e59a15",
+        "size_bytes": 3686
+      }
+    ]
+  },
+  "log_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/logs/phase1-A2b.log",
+  "process": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "run_id": "handoff-causality-20261022c",
+  "run_label": "phase1-a2b-20261022c",
+  "schema_id": "SIMIGO-CAUSALITY-PHASE1-CASE-V1",
+  "terminal_state": "PHASE1_OBSERVED",
+  "verification": {
+    "continue_task_entered": false,
+    "expected_failure_prefix": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
+    "failure_label": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
+    "matches_expected": true,
+    "model_continuation_calls": 0
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SimiGo detached continuation run summary",
+  "type": "object",
+  "required": ["schema_version", "experiment_id", "terminal_state", "source_snapshot", "model_identity", "conditions", "conclusion_objects", "historical_artifact_guard"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "experiment_id": {"const": "ES_IS_DETACHED_CONTINUATION_20261022F"},
+    "terminal_state": {"enum": ["OBSERVED", "INVALID_CONDITION", "BLOCKED_NOT_RUN", "OBSERVED_FORMAT_FAILURE"]},
+    "source_snapshot": {
+      "type": "object",
+      "required": ["head", "branch", "status_before", "staged_diff_sha256", "workspace_snapshot_path"],
+      "properties": {
+        "head": {"type": "string"}, "branch": {"type": "string"}, "status_before": {"type": "string"},
+        "staged_diff_sha256": {"type": "string"}, "workspace_snapshot_path": {"type": "string"}
+      }
+    },
+    "model_identity": {
+      "type": "object",
+      "required": ["model_revision", "weights_manifest_sha256", "tokenizer_digest", "backend"],
+      "properties": {"model_revision": {"type": "string"}, "weights_manifest_sha256": {"type": "string"}, "tokenizer_digest": {"type": "string"}, "backend": {"type": "string"}}
+    },
+    "conditions": {
+      "type": "array", "minItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["condition_id", "terminal_state", "processes", "execution_state", "settlement", "counters", "inputs", "outputs", "side_effects", "claim_limit"],
+        "properties": {
+          "condition_id": {"enum": ["W-A", "W-B", "N1-MISSING-SETTLEMENT", "N2-INVALID-SIGNATURE-OR-TAMPER", "N3-DEPENDENCY-MISMATCH", "N4-ISOLATION-AUDIT"]},
+          "terminal_state": {"enum": ["OBSERVED", "INVALID_CONDITION", "BLOCKED_NOT_RUN", "OBSERVED_FORMAT_FAILURE"]},
+          "processes": {
+            "type": "object", "required": ["producer_pid", "producer_exit_before_consumer_start", "producer_exit_code", "consumer_pid", "consumer_start_utc", "producer_context_release_evidence"],
+            "properties": {"producer_pid": {"type": ["integer", "null"]}, "producer_exit_before_consumer_start": {"type": "boolean"}, "producer_exit_code": {"type": ["integer", "null"]}, "consumer_pid": {"type": ["integer", "null"]}, "consumer_start_utc": {"type": ["string", "null"]}, "producer_context_release_evidence": {"enum": ["CACHE_OWNER_RELEASE_OBSERVED", "PROCESS_ADDRESS_SPACE_DESTROYED_ONLY", "BLOCKED_NOT_OBSERVED"]}}
+          },
+          "execution_state": {
+            "type": "object", "required": ["logical_lineage_id", "source_execution_state_id", "new_execution_state_id", "consumer_initial_position", "consumer_state_empty_before_start", "old_checkpoint_reads", "prefix_replay_tokens"],
+            "properties": {"logical_lineage_id": {"type": "string"}, "source_execution_state_id": {"type": "string"}, "new_execution_state_id": {"type": "string"}, "consumer_initial_position": {"const": 0}, "consumer_state_empty_before_start": {"type": "boolean"}, "old_checkpoint_reads": {"type": "integer"}, "prefix_replay_tokens": {"type": "integer"}}
+          },
+          "settlement": {
+            "type": "object", "required": ["object_id", "signature_object_id", "result_value_sha256", "source_payload_sha256", "dependency_object_ids", "signature_valid", "read_via_production_admission"],
+            "properties": {"object_id": {"type": ["string", "null"]}, "signature_object_id": {"type": ["string", "null"]}, "result_value_sha256": {"type": ["string", "null"]}, "source_payload_sha256": {"type": ["string", "null"]}, "dependency_object_ids": {"type": "array", "items": {"type": "string"}}, "signature_valid": {"type": ["boolean", "null"]}, "read_via_production_admission": {"type": "boolean"}}
+          },
+          "counters": {
+            "type": "object", "required": ["u1_generate_calls_in_producer", "u1_generate_calls_during_consumer", "u2_generate_calls", "tokenize_text_calls", "tokenize_seed_calls", "production_admission_calls", "harness_direct_settlement_reads", "harness_direct_item_reads"],
+            "properties": {"u1_generate_calls_in_producer": {"type": "integer"}, "u1_generate_calls_during_consumer": {"type": "integer"}, "u2_generate_calls": {"type": "integer"}, "tokenize_text_calls": {"type": "integer"}, "tokenize_seed_calls": {"type": "integer"}, "production_admission_calls": {"type": "integer"}, "harness_direct_settlement_reads": {"type": "integer"}, "harness_direct_item_reads": {"type": "integer"}}
+          },
+          "inputs": {
+            "type": "object", "required": ["base_template_sha256", "base_template_nonce_free", "actual_input_sha256", "actual_input_token_ids", "cold_seed_sha256", "cold_seed_nonce_free", "argv_env_nonce_free", "cross_world_nonce_scan_clean"],
+            "properties": {"base_template_sha256": {"type": "string"}, "base_template_nonce_free": {"type": "boolean"}, "actual_input_sha256": {"type": ["string", "null"]}, "actual_input_token_ids": {"type": "array", "items": {"type": "integer"}}, "cold_seed_sha256": {"type": "string"}, "cold_seed_nonce_free": {"type": "boolean"}, "argv_env_nonce_free": {"type": "boolean"}, "cross_world_nonce_scan_clean": {"type": "boolean"}}
+          },
+          "outputs": {
+            "type": "object", "required": ["u1_output_token_ids", "u2_output_token_ids", "u2_output_sha256", "output_matches_world_settlement"],
+            "properties": {"u1_output_token_ids": {"type": "array", "items": {"type": "integer"}}, "u2_output_token_ids": {"type": "array", "items": {"type": "integer"}}, "u2_output_sha256": {"type": ["string", "null"]}, "output_matches_world_settlement": {"type": ["boolean", "null"]}}
+          },
+          "side_effects": {
+            "type": "object", "required": ["db_pre_sha256", "db_post_sha256", "state_pre_sha256", "state_post_sha256", "unexpected_effects"],
+            "properties": {"db_pre_sha256": {"type": ["string", "null"]}, "db_post_sha256": {"type": ["string", "null"]}, "state_pre_sha256": {"type": ["string", "null"]}, "state_post_sha256": {"type": ["string", "null"]}, "unexpected_effects": {"type": "array", "items": {"type": "string"}}}
+          },
+          "claim_limit": {"type": "string"},
+          "observed_error": {"type": ["string", "null"]},
+          "notes": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "conclusion_objects": {
+      "type": "object", "required": ["C1", "C2", "C3", "C4"],
+      "properties": {"C1": {"type": "string"}, "C2": {"type": "string"}, "C3": {"type": "string"}, "C4": {"type": "string"}}
+    },
+    "historical_artifact_guard": {"type": "object", "required": ["result", "changed_paths"], "properties": {"result": {"enum": ["PASS", "FAIL", "NOT_RUN"]}, "changed_paths": {"type": "array", "items": {"type": "string"}}}}
+  }
+}

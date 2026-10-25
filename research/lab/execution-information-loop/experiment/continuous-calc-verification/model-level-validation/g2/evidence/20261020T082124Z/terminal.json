@@ -1,0 +1,57 @@
+{
+  "authorization_id": "G2-BATCH-AUTH-20261020-01",
+  "budget": {
+    "gate_processes_used": 6,
+    "model_starts_max": 9,
+    "model_starts_used": 9,
+    "negative_control_processes_max": 6,
+    "process_calls_max": 15,
+    "process_calls_used": 15,
+    "record_path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z",
+    "retries": 0
+  },
+  "claims": {
+    "G2-A": "PASS",
+    "G2-B": "PASS",
+    "G2-C": "PASS"
+  },
+  "finished_at_utc": "2026-10-20T08:23:31Z",
+  "fixtures": {
+    "fixture-1": {
+      "claims": {
+        "G2-A": "PASS",
+        "G2-B": "PASS",
+        "G2-C": "PASS"
+      },
+      "failed_checks": []
+    },
+    "fixture-2": {
+      "claims": {
+        "G2-A": "PASS",
+        "G2-B": "PASS",
+        "G2-C": "PASS"
+      },
+      "failed_checks": []
+    },
+    "fixture-3": {
+      "claims": {
+        "G2-A": "PASS",
+        "G2-B": "PASS",
+        "G2-C": "PASS"
+      },
+      "failed_checks": []
+    }
+  },
+  "halted": false,
+  "manifest_sha256": "fd5146968f01a8b2014a288519dbec022af2abb533c3b38613fce5b622798ec0",
+  "notes": [
+    "A clean process exit is not a research result; G2-A, G2-B and G2-C are decided by their own evidence rows.",
+    "Peak memory was not measured. The symlink reader defect (A3) was not addressed. Tokenizer digest reproducibility across directories is reported, not proven."
+  ],
+  "run_id": "20261020T082124Z",
+  "schema_id": "SIMIGO-G2-BATCH-TERMINAL-V1",
+  "started_at_utc": "2026-10-20T08:21:24Z",
+  "stop_kind": null,
+  "stop_reason": null,
+  "terminal_state": "PASS"
+}

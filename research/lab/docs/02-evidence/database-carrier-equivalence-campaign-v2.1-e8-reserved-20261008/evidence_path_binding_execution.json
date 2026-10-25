@@ -1,0 +1,597 @@
+{
+  "authoritative_manifest": "EVIDENCE_PATH_BINDING_MANIFEST.json",
+  "campaign_output_root": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008",
+  "independent_path_derivation": false,
+  "overall_pass": true,
+  "results": [
+    {
+      "destination_id": "O0_DATABASE",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.O0_DATABASE.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "O0_DATABASE.sqlite",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_DATABASE",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.CAMPAIGN_DATABASE.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "CAMPAIGN_DATABASE.sqlite",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "O5_DATABASE",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.O5_DATABASE.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "O5_DATABASE.sqlite",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "O5",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O0",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/observations/.OBSERVATION_O0.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "observations/O0.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "O0",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O1",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/observations/.OBSERVATION_O1.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "observations/O1.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "O1",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O2",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/observations/.OBSERVATION_O2.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "observations/O2.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "O2",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O3",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/observations/.OBSERVATION_O3.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "observations/O3.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "O3",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O4",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/observations/.OBSERVATION_O4.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "observations/O4.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "O4",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVATION_O5",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/observations/.OBSERVATION_O5.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "observations/O5.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "O5",
+      "type": "file"
+    },
+    {
+      "destination_id": "TRANSACTION_LOG",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.TRANSACTION_LOG.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "transaction_log.jsonl",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "O1",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_BINARY",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/adapter/build/.ADAPTER_BINARY.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "adapter/build/srsval_adapter",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_BUILD_COMMAND",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/adapter/.ADAPTER_BUILD_COMMAND.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "adapter/build_command.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_SOURCE_HASHES",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/adapter/.ADAPTER_SOURCE_HASHES.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "adapter/source_sha256.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_ES2_INPUT",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/adapter/.ADAPTER_ES2_INPUT.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "adapter/es2-input.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "ES2",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_ES2_OUTPUT",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/adapter/.ADAPTER_ES2_OUTPUT.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "adapter/es2-output.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "ES2",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_ESN_INPUT",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/adapter/.ADAPTER_ESN_INPUT.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "adapter/esn-input.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "ESN",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_ESN_OUTPUT",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/adapter/.ADAPTER_ESN_OUTPUT.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "adapter/esn-output.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "ESN",
+      "type": "file"
+    },
+    {
+      "destination_id": "WORKING_COPY_BINDING",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.WORKING_COPY_BINDING.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "working_copy_binding.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "EVIDENCE_PATH_BINDING_EXECUTION",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.EVIDENCE_PATH_BINDING_EXECUTION.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "evidence_path_binding_execution.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "PREFLIGHT_VERIFICATION",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.PREFLIGHT_VERIFICATION.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "preflight_verification.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "file"
+    },
+    {
+      "destination_id": "RUNTIME_PROVENANCE",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.RUNTIME_PROVENANCE.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "runtime_provenance.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVER_VERDICT",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.OBSERVER_VERDICT.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "observer_verdict.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVER_PERSISTENCE_BINDING",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.OBSERVER_PERSISTENCE_BINDING.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "observer_persistence_binding.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "EQ_REJ_MATRIX",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.EQ_REJ_MATRIX.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "eq_rej_matrix.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_OUTCOME",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.CAMPAIGN_OUTCOME.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "campaign_outcome.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_DB_VALIDATION",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.CAMPAIGN_DB_VALIDATION.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "campaign_db_validation.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_PROCESS_RESULT",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.CAMPAIGN_PROCESS_RESULT.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "campaign_process_result.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "CAMPAIGN_STDERR",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.CAMPAIGN_STDERR.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "campaign_stderr.txt",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "EVIDENCE_SERIALIZATION_SELF_CHECK",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.EVIDENCE_SERIALIZATION_SELF_CHECK.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "evidence_serialization_self_check.json",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "SHA256SUMS",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/.SHA256SUMS.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": false,
+      "fresh_required_absent": true,
+      "is_directory": false,
+      "is_symlink": false,
+      "output_relative_path": "SHA256SUMS",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "ADAPTER_BUILD_DIRECTORY",
+      "exclusive_write_probe": {
+        "created_exclusively": true,
+        "probe_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008/adapter/build/.ADAPTER_BUILD_DIRECTORY.evidence-path-probe",
+        "removed": true,
+        "writable": true
+      },
+      "exists_before_campaign": true,
+      "fresh_required_absent": true,
+      "is_directory": true,
+      "is_symlink": false,
+      "output_relative_path": "adapter/build",
+      "parent_exists": true,
+      "parent_writable": true,
+      "pass": true,
+      "required_stage": "PREFLIGHT",
+      "type": "directory"
+    }
+  ]
+}

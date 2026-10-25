@@ -1,0 +1,9 @@
+[2026-10-24 16:56:13.605] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 16:56:13.605] ℹ️ [CFG] source=recommended model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 16:56:13.605] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.9 topK=20 minP=0.05 rep=1.05 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-10-24 16:56:13.606] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8501 advertised=127.0.0.1:8501 lan=false
+[2026-10-24 16:56:13.612] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=16MB swapUsed=4065MB
+[2026-10-24 16:56:16.478] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 16:56:16.493] NativeMLX ready: model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit port=8501
+[2026-10-24 16:56:16.493] [MEM] afterLoad active=16385MB cache=0MB peak=16385MB footprint=16494MB swapUsed=4065MB
+[2026-10-24 16:56:16.493] ℹ️ [READY] http://127.0.0.1:8501/v1

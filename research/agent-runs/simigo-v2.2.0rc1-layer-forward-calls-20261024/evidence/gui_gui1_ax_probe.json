@@ -1,0 +1,194 @@
+{
+ "tag": "gui1",
+ "captured_at": "2026-10-24T15:06:57+0800",
+ "candidate": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app",
+ "candidate_exe_sha256": "95224f06cf9c1387cd77c2582cec7d009584a28ce66ff4de76b405a764737fe6",
+ "launch": {
+  "argv": [
+   "open",
+   "-n",
+   "-F",
+   "--env",
+   "SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/home",
+   "--env",
+   "SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/cache",
+   "--env",
+   "SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/state-graph/reference-graph-v1.json",
+   "--stdout",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/logs/gui_stdout.log",
+   "--stderr",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/logs/gui_stderr.log",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app"
+  ],
+  "result": {
+   "argv": [
+    "open",
+    "-n",
+    "-F",
+    "--env",
+    "SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/home",
+    "--env",
+    "SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/cache",
+    "--env",
+    "SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/state-graph/reference-graph-v1.json",
+    "--stdout",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/logs/gui_stdout.log",
+    "--stderr",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/logs/gui_stderr.log",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app"
+   ],
+   "exit_code": 0,
+   "stdout": "",
+   "stderr": "",
+   "wall_seconds": 0.08
+  },
+  "isolated_roots": {
+   "SIMIGO_HOME": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/home",
+   "SIMIGO_CACHE_ROOT": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/cache",
+   "SIMIGO_STATE_GRAPH_STORE": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/state-graph/reference-graph-v1.json"
+  },
+  "pids": [
+   59972
+  ],
+  "launch_style": "LaunchServices `open -n -F --env`, i.e. the same path a user's click takes, not a pty exec",
+  "pid": 59972,
+  "ps": {
+   "argv": [
+    "ps",
+    "-o",
+    "pid,etime,stat,command",
+    "-p",
+    "59972"
+   ],
+   "exit_code": 0,
+   "stdout": "  PID ELAPSED STAT COMMAND\n59972   00:00 S    /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app/Contents/MacOS/SimiGo\n",
+   "stderr": "",
+   "wall_seconds": 0.0
+  },
+  "env_seen": {
+   "argv": [
+    "ps",
+    "eww",
+    "-p",
+    "59972"
+   ],
+   "exit_code": 0,
+   "stdout": "  PID   TT  STAT      TIME COMMAND\n59972   ??  S      0:00.05 /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app/Contents/MacOS/SimiGo OSLogRateLimit=64 PWD=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024 GIT_PAGER=cat SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk AICODING_GPU_DISABLED_BY_USER=0 ZDOTDIR=/Users/mr.simi PYTHON_BASIC_REPL=1 SECURITYSESSIONID=186b5 MANPATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/share/man:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/share/man:/Applications/Xcode.app/Contents/Developer/usr/share/man:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/man: QODERCN_ENV=prod VSCODE_GIT_ASKPASS_EXTRA_ARGS= VSCODE_GIT_ASKPASS_MAIN=/Applications/Qoder CN IDE.app/Contents/Resources/app/extensions/git/dist/askpass-main.js SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/cache VSCODE_GIT_ASKPASS_NODE=/Applications/Qoder CN IDE.app/Contents/Frameworks/Qoder CN Helper (Plugin).app/Contents/MacOS/Qoder CN Helper (Plugin) PIP_NO_INPUT=true PYDEVD_DISABLE_FILE_VALIDATION=1 USER=mr.simi VSCODE_DEBUGPY_ADAPTER_ENDPOINTS=/Users/mr.simi/.qoder-cn/extensions/ms-python.debugpy-2025.14.0-darwin-arm64/.noConfigDebugAdapterEndpoints/endpoint-610ab258dd13fa6b.txt AICODING_GPU_INFO_READY=1 MallocNanoZone=0 __CFBundleIdentifier=SwiftUI.SimiGo QODER_CN_IDE=1 COMMAND_MODE=unix2003 VSCODE_PYTHON_AUTOACTIVATE_GUARD=1 LANG=C.UTF-8 SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/home QODER_SITE=CN QODERCN_IDE=1 VSCODE_INJECTION=1 PATH=/Users/mr.simi/bin:/Users/mr.simi/bin:/Users/mr.simi/.antigravity-ide/antigravity-ide/bin:/Users/mr.simi/.mtplx/bin:/Users/mr.simi/.grok/bin:/Users/mr.simi/.local/bin:/Users/mr.simi/llama.cpp/build/bin:/Users/mr.simi/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/mr.simi/bin:/Users/mr.simi/.antigravity-ide/antigravity-ide/bin:/Users/mr.simi/.mtplx/bin:/Users/mr.simi/.grok/bin:/Users/mr.simi/.local/bin:/Users/mr.simi/llama.cpp/build/bin:/Users/mr.simi/.lmstudio/bin:/Users/mr.simi/.qoder-cn/extensions/ms-python.debugpy-2025.14.0-darwin-arm64/bundled/scripts/noConfigScripts:/Users/mr.simi/.lmstudio/bin DEBIAN_FRONTEND=noninteractive TERM=xterm-256color LOGNAME=mr.simi VSCODE_PROFILE_INITIALIZED=1 BUNDLED_DEBUGPY_PATH=/Users/mr.simi/.qoder-cn/extensions/ms-python.debugpy-2025.14.0-darwin-arm64/bundled/libs/debugpy SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui1/state-graph/reference-graph-v1.json TERM_PROGRAM_VERSION=1.106.3 SSH_AUTH_SOCK=/var/run/com.apple.launchd.qAdlNJwsm0/Listeners QODERCN_AGENT=true SHLVL=1 CPATH=/usr/local/include USER_ZDOTDIR=/Users/mr.simi COLORTERM=truecolor LIBRARY_PATH=/usr/local/lib npm_config_yes=true _=/usr/bin/python3 HOME=/Users/mr.simi FEATURE_FLAGS={\"welcomeFirstLaunchKey\":\"qodercn.firstLaunch\",\"welcomeOnboardingUseCustomStyle\":true,\"questModeSupportRemote\":false,\"questModeSupportMarketPlace\":false,\"currentPlanTitleKey\":\"application.config.general.plan.currentEdition.title\",\"enableCreditUsage\":false,\"creditUsageFromQauth\":false,\"authUserPlanLocale\":true,\"hasDedicatedUrlSetting\":true,\"showWelcomeMessage\":true,\"showModelTierSelector\":false,\"showModelSelector\":true,\"showEnterpriseModels\":false,\"preferredLanguageSupportOnlyZhAndEn\":true,\"enableSecurityFilter\":true,\"enableCodeChanges\":true,\"enableGitCommit\":true,\"defaultB",
+   "stderr": "",
+   "wall_seconds": 0.0
+  }
+ },
+ "attempts": [
+  {
+   "attempt": "A1 process + activation policy",
+   "result": {
+    "argv": [
+     "osascript",
+     "-l",
+     "JavaScript",
+     "-e",
+     "const se = Application(\"System Events\"); const p = se.processes.byName(\"SimiGo\");JSON.stringify({exists: p.exists(), frontmost: p.frontmost(), backgroundOnly: p.backgroundOnly()})"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"exists\":true,\"frontmost\":false,\"backgroundOnly\":true}\n",
+    "stderr": "",
+    "wall_seconds": 0.15
+   }
+  },
+  {
+   "attempt": "A2 AX menu bars / items / windows",
+   "result": {
+    "argv": [
+     "osascript",
+     "-l",
+     "JavaScript",
+     "-e",
+     "const se = Application(\"System Events\"); const p = se.processes.byName(\"SimiGo\");const out = {menuBars: 0, items: 0, windows: 0, itemTitles: [], windowTitles: [], error: null};try { out.menuBars = p.menuBars.length; } catch (e) { out.error = String(e); }try { out.items = p.menuBars[0].menuBarItems.length; for (let i = 0; i < out.items; i++) { out.itemTitles.push(p.menuBars[0].menuBarItems[i].title()); } } catch (e) { out.error = (out.error || \"\") + \" items:\" + e; }try { out.windows = p.windows.length; for (let i = 0; i < out.windows; i++) { out.windowTitles.push(p.windows[i].name()); } } catch (e) { out.error = (out.error || \"\") + \" windows:\" + e; }JSON.stringify(out)"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"menuBars\":2,\"items\":6,\"windows\":0,\"itemTitles\":[\"Apple\",\"SimiGo\",\"Edit\",\"View\",\"Window\",\"Help\"],\"windowTitles\":[],\"error\":null}\n",
+    "stderr": "",
+    "wall_seconds": 0.29
+   }
+  },
+  {
+   "attempt": "A3 AXPress every menu-bar item, then look for new windows",
+   "result": {
+    "argv": [
+     "osascript",
+     "-l",
+     "JavaScript",
+     "-e",
+     "const se = Application(\"System Events\"); const p = se.processes.byName(\"SimiGo\");const before = p.windows.length; const tried = [];for (let i = 0; i < p.menuBars[0].menuBarItems.length; i++) { const item = p.menuBars[0].menuBarItems[i]; try { item.actions[0].perform(); tried.push({i: i, ok: true}); } catch (e) { tried.push({i: i, ok: false, error: String(e)}); } delay(0.6); }delay(1.5); JSON.stringify({windowsBefore: before, windowsAfter: p.windows.length, titles: (() => { const t = []; for (let i = 0; i < p.windows.length; i++) t.push(p.windows[i].name()); return t; })(), tried: tried})"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"windowsBefore\":0,\"windowsAfter\":0,\"titles\":[],\"tried\":[{\"i\":0,\"ok\":true},{\"i\":1,\"ok\":true},{\"i\":2,\"ok\":true},{\"i\":3,\"ok\":true},{\"i\":4,\"ok\":true},{\"i\":5,\"ok\":true}]}\n",
+    "stderr": "",
+    "wall_seconds": 5.47
+   }
+  },
+  {
+   "attempt": "A4 CGWindowList for this pid",
+   "result": {
+    "argv": [
+     "osascript",
+     "-l",
+     "JavaScript",
+     "-e",
+     "ObjC.import(\"CoreGraphics\"); const pid = 59972;const arr = ObjC.deepUnwrap($.CGWindowListCopyWindowInfo($.kCGWindowListOptionAll, $.kCGNullWindowID));let mine = []; for (let i = 0; i < arr.length; i++) { if (arr[i].kCGWindowOwnerPID === pid) mine.push({name: arr[i].kCGWindowName, layer: arr[i].kCGWindowLayer}); }JSON.stringify({windowsVisibleToCaller: arr.length, mine: mine})"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"mine\":[]}\n",
+    "stderr": "",
+    "wall_seconds": 0.1
+   }
+  }
+ ],
+ "screen_recording": {
+  "argv": [
+   "screencapture",
+   "-x",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_gui1_shot.png"
+  ],
+  "exit_code": 1,
+  "stderr": "could not create image from display\n",
+  "file_exists": false,
+  "bytes": 0
+ },
+ "quit": {
+  "result": {
+   "argv": [
+    "osascript",
+    "-e",
+    "tell application \"SimiGo\" to quit"
+   ],
+   "exit_code": 0,
+   "stdout": "",
+   "stderr": "",
+   "wall_seconds": 0.08
+  },
+  "still_running": false
+ },
+ "noninterference": {
+  "pre": "gui_gui1_snapshot_pre.json",
+  "post": "gui_gui1_snapshot_post.json",
+  "diff": "gui_gui1_snapshot_diff.json",
+  "diff_result": {
+   "argv": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/mr.simi/Documents/SimiGo/tools/rc_noninterference_diff.py",
+    "--before",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_gui1_snapshot_pre.json",
+    "--after",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_gui1_snapshot_post.json",
+    "--out",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_gui1_snapshot_diff.json"
+   ],
+   "exit_code": 2,
+   "stdout": "",
+   "stderr": "usage: rc_noninterference_diff.py [-h] [--allow-prefix ALLOW_PREFIX] a b out\nrc_noninterference_diff.py: error: unrecognized arguments: --before --after --out\n",
+   "wall_seconds": 0.02
+  }
+ },
+ "finding": "no window or popover became reachable through accessibility on this candidate, so there is nothing to type a prompt into; recorded as a reachability finding, not as a permission excuse"
+}

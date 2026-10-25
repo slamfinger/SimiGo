@@ -1,0 +1,2 @@
+ES1 rc=0
+ES1 exited before ES2 - OK

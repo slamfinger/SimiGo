@@ -1,0 +1,9 @@
+{
+  "deficiency" : "none",
+  "expected_c1" : "PASS",
+  "expected_c2" : "CONTINUE_CERTAIN",
+  "fixture_instance_id" : "E3645CE9-F8E3-4DF5-8644-33CD96143F9C",
+  "fixture_role" : "P-POS",
+  "schema_version" : "es-csp/control-manifest-v1",
+  "sealed_at" : "2026-10-06T13:14:12Z"
+}

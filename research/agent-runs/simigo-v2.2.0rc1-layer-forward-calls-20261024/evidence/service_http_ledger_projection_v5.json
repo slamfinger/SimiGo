@@ -1,0 +1,152 @@
+{
+ "batch": "simigo-v2.2.0rc1-layer-forward-calls-20261024",
+ "candidate": {
+  "app": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install_v5/SimiGo.app",
+  "bundle_tree_sha256": "aacb6b4a9434c5526ad5bdc9ae36479a90638fa1dc87702fc99e6aa506ccd3e7",
+  "executable_sha256": "83a88048569f4470b9a82ff0ee7ed6817572e8bd777b7df8a6ce3a357c98b70d",
+  "installed_equals_built": true
+ },
+ "checks": {
+  "authorization_surface_recorded": {
+   "note": "the sealed round-3 record exists; re-measured on the CURRENT tree: app_target_code_sites=1 (textual hits incl. comments=3; was 0 when the sealed record was written). The shipped surface is the env-gated management entry, which requires an isolated SIMIGO_HOME and does not run on a normal launch; the GUI flow still does not perform the ceremony.",
+   "recomputed": {
+    "app_target_call_sites": 3,
+    "app_target_code": [
+     "SimiGo/Headless/SimiGoLocalBManagementEntry.swift:188:        try LOCALBHostRuntime.persistTrustedCheckpoint("
+    ],
+    "app_target_code_sites": 1,
+    "app_target_sites": [
+     "SimiGo/Headless/SimiGoLocalBManagementEntry.swift:9:// `activateInitialSetup` / `persistTrustedCheckpoint`. On a host that was",
+     "SimiGo/Headless/SimiGoLocalBManagementEntry.swift:19://                -> LOCALBHostRuntime.persistTrustedCheckpoint (the anchor later startups read)",
+     "SimiGo/Headless/SimiGoLocalBManagementEntry.swift:188:        try LOCALBHostRuntime.persistTrustedCheckpoint("
+    ],
+    "hits": [
+     "SimiGo/Inference/LOCALBHostRuntime.swift:59:    static func persistTrustedCheckpoint(",
+     "SimiGo/Headless/SimiGoLocalBManagementEntry.swift:9:// `activateInitialSetup` / `persistTrustedCheckpoint`. On a host that was",
+     "SimiGo/Headless/SimiGoLocalBManagementEntry.swift:19://                -> LOCALBHostRuntime.persistTrustedCheckpoint (the anchor later startups read)",
+     "SimiGo/Headless/SimiGoLocalBManagementEntry.swift:188:        try LOCALBHostRuntime.persistTrustedCheckpoint(",
+     "SimiGoTests/LOCALBRequestAuthWiringTests.swift:1075:        try LOCALBHostRuntime.persistTrustedCheckpoint(",
+     "SimiGoTests/ExternalAdoptionInferenceE2ETests.swift:73:        try LOCALBHostRuntime.persistTrustedCheckpoint("
+    ],
+    "tests_target_sites": 2
+   },
+   "source": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/evidence/localb_authorization_path.txt",
+   "value": true
+  },
+  "authorized_lane_passes_in_test_target": {
+   "cases": {
+    "testAdoptedEndpointConfigDispatchesInferenceThroughProductionRuntime": "passed",
+    "testBareChatCompletionsPathRequiresProofAndServesWithProof": "passed",
+    "testChallengeIsSingleUse": "passed",
+    "testDefaultHostResolutionFailsClosedBeforeActivation": "passed",
+    "testDefaultHostResolutionServesAuthorizedRequests": "passed",
+    "testMissingProofHeadersAndUnconfiguredAuthorizationFailClosed": "passed",
+    "testProtectedRouteServesOnlyWithVerifiedProofOverTLS": "passed",
+    "testSignedBodyReachesInferenceEndpoint": "passed",
+    "testTamperedBodyIsRejected": "passed",
+    "testUnknownRoutesFailClosedAndOpenRoutesStayOpen": "passed"
+   },
+   "note": "all 10 LOCALB cases passed in the App suite run against the v5 test host (210 executed / 14 skipped / 0 failures); the sealed round-3 log also reads all passed for the same 10 cases",
+   "sealed_reference": {
+    "testAdoptedEndpointConfigDispatchesInferenceThroughProductionRuntime": "passed",
+    "testBareChatCompletionsPathRequiresProofAndServesWithProof": "passed",
+    "testChallengeIsSingleUse": "passed",
+    "testDefaultHostResolutionFailsClosedBeforeActivation": "passed",
+    "testDefaultHostResolutionServesAuthorizedRequests": "passed",
+    "testMissingProofHeadersAndUnconfiguredAuthorizationFailClosed": "passed",
+    "testProtectedRouteServesOnlyWithVerifiedProofOverTLS": "passed",
+    "testSignedBodyReachesInferenceEndpoint": "passed",
+    "testTamperedBodyIsRejected": "passed",
+    "testUnknownRoutesFailClosedAndOpenRoutesStayOpen": "passed"
+   },
+   "source": "run_isolated_lf3/isolated_tests_lf3.log",
+   "value": true
+  },
+  "authorized_request_completed": {
+   "note": "HTTP 200 with a non-empty chatcmpl body; generation trace delta=8 (before=9 after=17); TLS without proof -> 401",
+   "source": "evidence/transport_v5/service_http_transport_probe_v5.json",
+   "value": true
+  },
+  "listening_socket_found": {
+   "note": "lsof -nP -iTCP:<port> -sTCP:LISTEN during BOTH legs; the owner pid equals the candidate pid (53757 activated, 53790 unactivated)",
+   "source": "evidence/transport_v5/service_http_transport_probe_v5.json",
+   "value": true
+  },
+  "no_authorization_relaxation": {
+   "note": "child env audited: SIMIGO_CACHE_ROOT, SIMIGO_HOME, SIMIGO_LOCALB_MGMT, SIMIGO_LOCALB_SERVE_MODEL, SIMIGO_LOCALB_SERVE_PORT, SIMIGO_PORT, SIMIGO_STATE_GRAPH_STORE; no relax/insecure/skip-proof key, no product flag; the only source delta of this candidate is the management entry (SERVICE_FACADE_LEG.patch :188 calls persistTrustedCheckpoint from the activate role, nothing touches the guard)",
+   "source": "evidence/transport_v5/service_http_transport_probe_v5.json",
+   "value": true
+  },
+  "probe_present": {
+   "note": "ledger token file produced on the activated listener of v5; the round-3 stage-C file is untouched",
+   "source": "evidence/transport_v5/service_http_transport_probe_v5.json",
+   "value": true
+  },
+  "tls_only_transport": {
+   "note": "plaintext GET -> curl rc=52 'Empty reply from server' (curl: (52) Empty reply from server); default-trust TLS -> rc=60 self-signed; the peer certificate's SPKI matches the host's prepared value (d3c3addda628dc9b)",
+   "source": "evidence/transport_v5/service_http_transport_probe_v5.json",
+   "token_not_reproduced": "tls_verify=18 is a round-2 string that no retained record contains; this projection does not assert it",
+   "value": true
+  },
+  "unconfigured_authorization_refused": {
+   "note": "observed 503 on /localb/auth/challenge with the host prepared but not activated: {\"error\":{\"message\":\"LOCALB request authorization is not configured\",\"type\":\"server_error\"",
+   "source": "evidence/transport_v5/service_http_transport_probe_v5.json",
+   "value": true
+  }
+ },
+ "facade_leg": {
+  "facade_leg_passed": true,
+  "negative_cases": {
+   "challenge_replay": {
+    "status": null,
+    "trace_delta": null
+   },
+   "fabricated_proof": {
+    "status": 401,
+    "trace_delta": 0
+   },
+   "no_proof_headers": {
+    "status": 401,
+    "trace_delta": 0
+   }
+  },
+  "serve_role": "serve",
+  "serve_role_in_facade_source": "serve-service",
+  "serve_role_note": "'serve_role' above is the direct leg that produced this verdict; the facade leg's own role is the field next to it",
+  "source": "evidence/gate_v5_facade/service_http_gate_installed.json"
+ },
+ "gate": "product_service_http",
+ "ledger": {
+  "counts_now": {
+   "BLOCKED": 3,
+   "FAIL": 0,
+   "INCONCLUSIVE": 0,
+   "NOT_INSTRUMENTED": 1,
+   "PASS": 12
+  },
+  "overall_now": "BLOCKED",
+  "path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/acceptance_report.json",
+  "sha256": "57de11e7f0a27e840829b5168dc189b79efcea0e2f81771ca8bbbcfe996cb07c"
+ },
+ "ledger_modified": false,
+ "merge_requires_authorization": true,
+ "not_claimed": [
+  "this file does not change acceptance_report.json",
+  "a projection over a rebuilt candidate is not a ledger merge",
+  "the GUI prompt leg is untouched by this gate",
+  "the round-2 'tls_verify=18' token is not reproduced and not asserted",
+  "a source-pinned status convention is not the same thing as an approved status change",
+  "the physical page-return gate and the per-layer forward_calls gate are untouched here"
+ ],
+ "projected_verdict": "PASS",
+ "rule_source": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/driver/verify_batch.py:153-178 (probe-token branch)",
+ "status_convention": {
+  "all_checks_pass": true,
+  "answer": "both statuses exist and mean different things. A configured authorization whose proof fails throws localbRequestRejected -> 401. 503 is reserved for 'this host has no request authorization configured at all', which is scenario S5. The operator table's 503 matches S5, not S2. The product was not changed.",
+  "evidence": "evidence/service_http_status_mapping_attribution.json",
+  "open_items": "the deviation itself stays open: the operator table says 503 for an invalid proof and the product answers 401. Nothing was changed to align them; what changed is that the wording is now cited to source",
+  "pinned_to_source": true,
+  "question": "the operator table says an invalid proof must answer HTTP 503; the candidate answered 401 to three proof failures and 503 only when no authorization was configured - which of those is the product's rule?",
+  "source_head": "f18d65f8f312ffbb837fdf5e07125af044833854"
+ }
+}

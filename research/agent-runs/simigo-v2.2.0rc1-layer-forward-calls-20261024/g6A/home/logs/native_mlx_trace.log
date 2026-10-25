@@ -1,0 +1,24 @@
+[2026-10-24 15:56:21.191] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 15:56:21.193] ℹ️ [CFG] source=recommended model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 15:56:21.193] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.9 topK=20 minP=0.05 rep=1.05 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-10-24 15:56:21.193] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8410 advertised=127.0.0.1:8410 lan=false
+[2026-10-24 15:56:21.198] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=16MB swapUsed=3156MB
+[2026-10-24 15:56:23.945] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 15:56:23.961] NativeMLX ready: model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit port=8410
+[2026-10-24 15:56:23.961] [MEM] afterLoad active=16385MB cache=0MB peak=16385MB footprint=16493MB swapUsed=3156MB
+[2026-10-24 15:56:23.961] ℹ️ [READY] http://127.0.0.1:8410/v1
+[2026-10-24 15:56:25.851] [PROTOCOL] arrive r=5910bc endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-24 15:56:25.851] [LC] STATE_TRANSITION r=5910bc s=openai from=QUEUED to=RUNNING
+[2026-10-24 15:56:25.851] [MLX] poolRescan entries=0
+[2026-10-24 15:56:25.852] [MLX] prefillStep=2048 est=8 reuse=false
+[2026-10-24 15:56:27.034] [MLX] prefill 17/17
+[2026-10-24 15:56:27.413] [MLX] poolExport messages=2 refHash=2a85dacea50727
+[2026-10-24 15:56:27.413] [MLX] session=4964a5/main messages=1 exec=e9b87c history=2 delta=1 reuse=false ttft=1475ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=17 promptTime=1.5s tps=63.5 rawEv=5 rawB=15 emitB=15
+[2026-10-24 15:56:27.413] [LC] RELEASED r=5910bc s=openai reason=completed
+[2026-10-24 15:56:27.721] [PROTOCOL] arrive r=bb8c22 endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-24 15:56:27.721] [LC] STATE_TRANSITION r=bb8c22 s=openai from=QUEUED to=RUNNING
+[2026-10-24 15:56:27.721] [MLX] prefillStep=2048 est=8 reuse=false
+[2026-10-24 15:56:27.863] [MLX] prefill 17/17
+[2026-10-24 15:56:27.979] [MLX] poolExport messages=2 refHash=2a85dacea50727
+[2026-10-24 15:56:27.979] [MLX] session=7b57b9/main messages=1 exec=ae4ffa history=2 delta=1 reuse=false ttft=170ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=17 promptTime=0.2s tps=62.5 rawEv=5 rawB=15 emitB=15
+[2026-10-24 15:56:27.979] [LC] RELEASED r=bb8c22 s=openai reason=completed

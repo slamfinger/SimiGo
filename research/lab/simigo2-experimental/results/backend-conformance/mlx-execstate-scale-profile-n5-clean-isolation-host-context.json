@@ -1,0 +1,34 @@
+{
+  "protocolVersion": "LAB.MLX.EXECSTATE.SCALE.N5.PROCESS_CLEAN_CONTEXT.V1",
+  "resultArtifact": "mlx-execstate-scale-profile-n5-clean-isolation.json",
+  "resultSha256": "b07b912b76d56e2cd2a5a77aa6d728f94a4454de572f9738d85c992b53101915",
+  "resultStatus": "PASS",
+  "resultChecks": {
+    "ALL_LENGTHS_OBSERVED": true,
+    "ALL_SCALE_SEMANTICS_STABLE": true,
+    "OVERSIZED_PROFILE_UNDER_30GIB": true
+  },
+  "wallClockSeconds": 392.33,
+  "boundary": "PROCESS_CLEAN_OBSERVATION_ONLY / NO_DAEMON_OR_FULL_SYSTEM_SILENCE_CLAIM",
+  "isolation": {
+    "beforeNoPort18080Listener": true,
+    "beforeNoInferenceProcess": true,
+    "afterNoPort18080Listener": true,
+    "afterNoInferenceProcess": true,
+    "processClean": true
+  },
+  "before": {
+    "capturedAt": "2026-09-29T12:29:00.204106+00:00",
+    "swapUsage": "total = 6144.00M  used = 4481.19M  free = 1662.81M  (encrypted)",
+    "memoryPressure": "0",
+    "port18080Listeners": "",
+    "inferenceProcesses": "PID  PPID STAT COMM                RSS      VSZ"
+  },
+  "after": {
+    "capturedAt": "2026-09-29T12:35:32.643314+00:00",
+    "swapUsage": "total = 5120.00M  used = 4270.44M  free = 849.56M  (encrypted)",
+    "memoryPressure": "452",
+    "port18080Listeners": "",
+    "inferenceProcesses": "PID  PPID STAT COMM                RSS      VSZ"
+  }
+}

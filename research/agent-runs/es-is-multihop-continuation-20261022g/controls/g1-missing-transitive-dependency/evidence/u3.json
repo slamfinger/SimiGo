@@ -1,0 +1,57 @@
+{
+  "advancement_id" : "g-g1-u3",
+  "completed_at_utc" : "2026-10-22T11:06:35Z",
+  "counters" : {
+    "model_continuation_calls" : 0,
+    "tokenize_seed_calls" : 0,
+    "tokenize_text_calls" : 0
+  },
+  "database" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-multihop-continuation-20261022g\/controls\/g1-missing-transitive-dependency\/carrier.sqlite",
+  "database_after" : {
+    "inode" : "110347897",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-multihop-continuation-20261022g\/controls\/g1-missing-transitive-dependency\/carrier.sqlite",
+    "sha256" : "ff1e1ec77f83a5420f671646a199db28727771df6ac75023020be3446dc8d364",
+    "size_bytes" : 73728
+  },
+  "database_before" : {
+    "inode" : "110347897",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-multihop-continuation-20261022g\/controls\/g1-missing-transitive-dependency\/carrier.sqlite",
+    "sha256" : "ff1e1ec77f83a5420f671646a199db28727771df6ac75023020be3446dc8d364",
+    "size_bytes" : 73728
+  },
+  "database_unchanged" : true,
+  "demand_id" : "task-u3",
+  "duration_seconds" : 0.055168986320495605,
+  "entry" : "SimiGoTaskRun",
+  "evaluated_at_utc" : "2026-10-22T11:06:35Z",
+  "execution_id" : "PRODUCTION-REAL-PALACE",
+  "failure" : "",
+  "generation_entered" : false,
+  "input_admission" : {
+
+  },
+  "input_admission_refusal" : {
+    "item_id" : "TASK-U1",
+    "kind" : "ADMISSION_REFUSED",
+    "reason" : "MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "stage" : "SETTLEMENT_NOT_ADMITTED"
+  },
+  "input_admission_status" : "ADMISSION_REFUSED",
+  "mode" : "admission_probe",
+  "model_loaded" : false,
+  "pid" : 28818,
+  "run_id" : "e-g-g1-u3",
+  "schema_id" : "SIMIGO-ORDINARY-TASK-ENTRY-V1",
+  "started_at_utc" : "2026-10-22T11:06:35Z",
+  "state_after" : {
+
+  },
+  "state_before" : {
+
+  },
+  "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-multihop-continuation-20261022g\/controls\/g1-missing-transitive-dependency\/state\/u3",
+  "state_unchanged" : true,
+  "task_item_id" : "TASK-U3",
+  "terminal_state" : "INPUT_ADMISSION_REFUSED",
+  "trust_anchor_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-multihop-continuation-20261022g\/trust\/settlement-trust-anchor.json"
+}

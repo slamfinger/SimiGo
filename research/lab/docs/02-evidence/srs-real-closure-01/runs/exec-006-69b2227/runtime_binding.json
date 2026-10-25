@@ -1,0 +1,31 @@
+{
+  "aligned_tauN1_sha256": "a78de04d4197841907f09e5927d070f20f7da126fa2750ddb0c2ba527a11fd39",
+  "build_command": [
+    "swiftc",
+    "-O",
+    "SRSVALInvocation.swift",
+    "SRSVALDecision.swift",
+    "SRSVALCore.swift",
+    "main.swift",
+    "-o",
+    "srsval_adapter"
+  ],
+  "build_toolchain": {
+    "driver": "1.168.6",
+    "swift": "6.4",
+    "target": "arm64-apple-macosx26.0"
+  },
+  "completion_record_v05_sha256": "e139838f216a6d02942509b163dfb1a21c4a4fc1a53d5c8bc527e6b8f67a86bf",
+  "exact_execution_repository_commit": "69b2227dbd9ec7bfc8ad744d65efe46e3a9ab33a",
+  "manifest_v05_sha256": "8b0976d54bfc064f0a8e166b9629ff81dc7aaad9017be83bfa394e99e49e6bb8",
+  "request_v09_sha256": "01f55dc164e6980b5dec8edf1a067fe57bc37219387126f6fb7565995cc06afe",
+  "run_id": "exec-006-69b2227",
+  "runtime_artifact_identity": "SRS-REAL-CLOSURE-01-ADAPTER-RUNTIME-ARTIFACT-V1",
+  "runtime_artifact_sha256": "e88c996b9a64df10dd03f7622ffa8757551baf352908e4d7bf8704295eaffcc7",
+  "source_sha256": {
+    "SRSVALCore.swift": "9725217063b9aa560752e8485dac64aae41a314c429f6b9aa1d8808a4860d56e",
+    "SRSVALDecision.swift": "e219aeeadceb74a2d37cb20fdb76ee18d23ee739a743ecf6309e7384b58b15de",
+    "SRSVALInvocation.swift": "6583a80444848a3b42b55ea82f9de6cc1350af6154f6f23c3c3ab61427226c75",
+    "srsval_adapter.swift": "61b8ad39c467ed7ff90e4d8670ea903bf7be12e20166c7cff21df4bdbf0231ac"
+  }
+}

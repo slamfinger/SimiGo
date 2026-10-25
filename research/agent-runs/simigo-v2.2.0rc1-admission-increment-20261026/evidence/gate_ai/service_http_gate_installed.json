@@ -1,0 +1,271 @@
+{
+ "batch": "simigo-v2.2.0rc1-admission-increment-20261026",
+ "candidate": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/install/SimiGo.app",
+ "candidate_equals_release_product": true,
+ "evidence_dir": "evidence/gate_ai",
+ "finished_at": "2026-10-25T17:31:14Z",
+ "fresh_root": {
+  "error": null,
+  "exited_before_listening": true,
+  "generation_trace": {
+   "exists": true,
+   "trace_file": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiC/home/logs/native_mlx_trace.log"
+  },
+  "health": {
+   "body": "URLError(ConnectionRefusedError(61, 'Connection refused'))",
+   "status": null
+  },
+  "payload": {
+   "localb_status": "LOCALB_TRANSPORT_IDENTITY_MISSING",
+   "pid": 99322,
+   "result": "fail-closed",
+   "role": "serve",
+   "simigo_home": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiC/home"
+  },
+  "rc": 3,
+  "status": "LOCALB_TRANSPORT_IDENTITY_MISSING"
+ },
+ "no_authorization": {
+  "activate": null,
+  "challenge_route": {
+   "body": "{\"error\":{\"code\":null,\"message\":\"LOCALB request authorization is not configured\",\"type\":\"server_error\",\"param\":null}}",
+   "status": 503
+  },
+  "health_after_start": {
+   "body": "{\"model\":\"mlx-community\\/Qwen3-Coder-30B-A3B-Instruct-4bit\",\"status\":\"ok\"}",
+   "status": 200
+  },
+  "listener_ready": true,
+  "prepare": {
+   "rc": 0,
+   "result": {
+    "checkpoint": "e2a37014-89f4-41f4-ba05-182a8f6acb1b:2:7922d761209c21c98d1b26c6c2fade1368c8b059da657c6121d2ef89c0bdd2c0",
+    "head_hash_hex": "7922d761209c21c98d1b26c6c2fade1368c8b059da657c6121d2ef89c0bdd2c0",
+    "host_directory": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiB/home/localb",
+    "lineage_id": "e2a37014-89f4-41f4-ba05-182a8f6acb1b",
+    "offline_record": "format=LOCALB-REGISTRY-CHECKPOINT-V1\nlineage_id=e2a37014-89f4-41f4-ba05-182a8f6acb1b\nsequence=2\nhead_hash=7922d761209c21c98d1b26c6c2fade1368c8b059da657c6121d2ef89c0bdd2c0",
+    "operational": false,
+    "pid": 99305,
+    "protocol_version": "LPS01-P1",
+    "registry_root": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiB/home/localb/registry",
+    "role": "prepare",
+    "sequence": 2,
+    "signer_generation": 1,
+    "signer_key_id": "156a951a15d86bcc3e165fb8e3929034adec9dc50fc00945b15d2dbdbb63ffcf",
+    "simigo_home": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiB/home",
+    "transport_spki_sha256": "1103e6bd6654be509bf43d7411fc16cd1e7347c3caeb5ab81054828841d754fc"
+   },
+   "role": "prepare",
+   "stderr_tail": "localb-mgmt-entered role=prepare pid=99305\nmgmt-role-done role=prepare\n"
+  },
+  "protected_route": {
+   "generation_trace": {
+    "after": 4,
+    "before": 4,
+    "delta": 0
+   },
+   "rc": 0,
+   "result": {
+    "cases": {},
+    "observed_spki_sha256": "1103e6bd6654be509bf43d7411fc16cd1e7347c3caeb5ab81054828841d754fc",
+    "refused_at_guard": {
+     "challenge_body": "{\"error\":{\"code\":null,\"message\":\"LOCALB request authorization is not configured\",\"type\":\"server_error\",\"param\":null}}",
+     "challenge_status": 503,
+     "protected_body": "{\"error\":{\"code\":null,\"message\":\"LOCALB request authorization is not configured\",\"type\":\"server_error\",\"param\":null}}",
+     "protected_status": 503,
+     "trace_delta": 0
+    }
+   },
+   "stderr_tail": ""
+  },
+  "trusted_checkpoint_present": false
+ },
+ "ports": [
+  8600,
+  8601,
+  8602
+ ],
+ "positive": {
+  "activate": {
+   "rc": 0,
+   "result": {
+    "head_hash_hex": "28bee82cbf61fda293b7dd0249d4cbc8296f719f8adfefec9e0c8db2069c3135",
+    "host_directory": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home/localb",
+    "lineage_id": "9dd8f3fb-d721-44b1-920b-d963c95f1dac",
+    "operational": true,
+    "pid": 99288,
+    "role": "activate",
+    "sequence": 2,
+    "signer_generation": 1,
+    "signer_key_id": "98bc43a088d8948b71bbb8fda2486c61b1b8050d4496fcf2725e9602ca07e021",
+    "simigo_home": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home",
+    "transport_spki_sha256": "b95f623609b1864f37969af66ad57bc02baed9070365c354fd1b5c2c9132ade3",
+    "trusted_checkpoint_path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home/localb/trusted-checkpoint.json"
+   },
+   "role": "activate",
+   "stderr_tail": "localb-mgmt-entered role=activate pid=99288\nmgmt-role-done role=activate\n"
+  },
+  "authorized_request": {
+   "generation_trace": {
+    "after": 12,
+    "before": 4,
+    "delta": 8,
+    "trace_file": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home/logs/native_mlx_trace.log"
+   },
+   "rc": 0,
+   "result": {
+    "body": "{\"model\":\"mlx-community\\/Qwen3-Coder-30B-A3B-Instruct-4bit\",\"id\":\"chatcmpl-73542fb4-2835-4376-90a4-2dcdae339646\",\"object\":\"chat.completion\",\"created\":1792949464,\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"SERVICE-HTTP-OK\"},\"index\":0,\"finish_reason\":\"stop\"}]}",
+    "body_bytes": 178,
+    "observed_spki_sha256": "b95f623609b1864f37969af66ad57bc02baed9070365c354fd1b5c2c9132ade3",
+    "signing_input_sha256": "6b3dc6831a4ae7d98c7015c5af718f7d82e41cdca08ea068ad68ae94db9725c6",
+    "stage": "request",
+    "status": 200
+   },
+   "stderr_tail": ""
+  },
+  "facade_markers": {
+   "cfg_source_lines": 0,
+   "exists": true,
+   "node_backend_lines": 0,
+   "ready_lines": 0,
+   "samples": [],
+   "trace_file": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home/logs/native_mlx_trace.log"
+  },
+  "health_after_start": {
+   "body": "{\"model\":\"mlx-community\\/Qwen3-Coder-30B-A3B-Instruct-4bit\",\"status\":\"ok\"}",
+   "status": 200
+  },
+  "keygen": {
+   "rc": 0,
+   "result": {
+    "key_file": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/client/client-key.json",
+    "public_key_hex": "923efe0a153e814ee6201a597ab6d4ef4748560736900c95879f70408c42a05b"
+   },
+   "stderr_tail": ""
+  },
+  "listener_ready": true,
+  "negative_probes": {
+   "rc": 0,
+   "result": {
+    "cases": {
+     "challenge_replay": {
+      "first_body": "{\"id\":\"chatcmpl-c9028894-d767-4283-bb4f-37daa6aba451\",\"created\":1792949464,\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"SERVICE-HTTP-OK\"},\"finish_reason\":\"stop\",\"index\":0}],\"model\":\"mlx-commun",
+      "first_status": 200,
+      "first_trace_delta": 7,
+      "replay_body": "{\"error\":{\"message\":\"LOCALB_CLIENT_CHALLENGE_INVALID\",\"type\":\"server_error\",\"param\":null,\"code\":null}}",
+      "replay_status": 401,
+      "replay_trace_delta": 0
+     },
+     "fabricated_proof": {
+      "body": "{\"error\":{\"message\":\"LOCALB_CLIENT_REQUEST_SIGNATURE_INVALID\",\"type\":\"server_error\",\"param\":null,\"code\":null}}",
+      "status": 401,
+      "trace_delta": 0
+     },
+     "no_proof_headers": {
+      "body": "{\"error\":{\"message\":\"LOCALB_CLIENT_PROOF_MISSING\",\"type\":\"server_error\",\"param\":null,\"code\":null}}",
+      "status": 401,
+      "trace_delta": 0
+     }
+    },
+    "observed_spki_sha256": "b95f623609b1864f37969af66ad57bc02baed9070365c354fd1b5c2c9132ade3"
+   },
+   "stderr_tail": ""
+  },
+  "open_route_health": {
+   "body": "{\"status\":\"ok\",\"model\":\"mlx-community\\/Qwen3-Coder-30B-A3B-Instruct-4bit\"}",
+   "status": 200
+  },
+  "pair_approve": {
+   "rc": 0,
+   "result": {
+    "client_key_fingerprint": "f8e4f24f77646e5f81f5d88bafaa6a2d8d018b2173c3e933dc6ccd488711993b",
+    "client_key_id": "f8e4f24f77646e5f81f5d88bafaa6a2d8d018b2173c3e933dc6ccd488711993b",
+    "confirmation_mode": "strictHeadless",
+    "credential_id": "087adc23-3008-49c0-aa9b-0b7dc09964f2",
+    "pid": 99295,
+    "registry_head_hash_hex": "cd2475e4e1e5a3fff5065f5928ffc29dd79b8ffe5e81373859c31917beb5cbfd",
+    "registry_sequence": 4,
+    "role": "pair-approve",
+    "scope_label": "localb-service-http",
+    "simigo_home": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home"
+   },
+   "role": "pair-approve",
+   "stderr_tail": "localb-mgmt-entered role=pair-approve pid=99295\nmgmt-role-done role=pair-approve\n"
+  },
+  "pair_issue": {
+   "rc": 0,
+   "result": {
+    "confirmation_mode": "strictHeadless",
+    "credential_id": "087adc23-3008-49c0-aa9b-0b7dc09964f2",
+    "expires_at_milliseconds": 1792949760688,
+    "host_instance_id": "9dd8f3fb-d721-44b1-920b-d963c95f1dac",
+    "pid": 99293,
+    "protocol_version": "LPS01-P1",
+    "role": "pair-issue",
+    "scope_label": "localb-service-http",
+    "secret_b64url": "CBdeiA3J32zx5WTtgB3pxFGqGL5sGHxInWiRdiSkJxk",
+    "session_nonce_hex": "fb7adcd3e04b595fe9c2511399239900",
+    "simigo_home": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home",
+    "srs_key_id": "98bc43a088d8948b71bbb8fda2486c61b1b8050d4496fcf2725e9602ca07e021",
+    "tls_spki_sha256": "b95f623609b1864f37969af66ad57bc02baed9070365c354fd1b5c2c9132ade3"
+   },
+   "role": "pair-issue",
+   "stderr_tail": "localb-mgmt-entered role=pair-issue pid=99293\nmgmt-role-done role=pair-issue\n"
+  },
+  "pair_sign": {
+   "rc": 0,
+   "result": {
+    "pairing_proof_hex": "9ca7e5f324baa3b5b4a4ffc74e98b4188c65b8619782a4f8992cddc6d5ea6c62e9a6f3d2a9e76ce1fc361b7cdb419f9d252eacdf719973e305d07b9b126b8f0d",
+    "signing_input_sha256": "79df3d38ac0eedb2c27d6f7e184ce764d743913eabfb35d82756eb2a45a8554b"
+   },
+   "stderr_tail": ""
+  },
+  "prepare": {
+   "rc": 0,
+   "result": {
+    "checkpoint": "9dd8f3fb-d721-44b1-920b-d963c95f1dac:2:28bee82cbf61fda293b7dd0249d4cbc8296f719f8adfefec9e0c8db2069c3135",
+    "head_hash_hex": "28bee82cbf61fda293b7dd0249d4cbc8296f719f8adfefec9e0c8db2069c3135",
+    "host_directory": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home/localb",
+    "lineage_id": "9dd8f3fb-d721-44b1-920b-d963c95f1dac",
+    "offline_record": "format=LOCALB-REGISTRY-CHECKPOINT-V1\nlineage_id=9dd8f3fb-d721-44b1-920b-d963c95f1dac\nsequence=2\nhead_hash=28bee82cbf61fda293b7dd0249d4cbc8296f719f8adfefec9e0c8db2069c3135",
+    "operational": false,
+    "pid": 99287,
+    "protocol_version": "LPS01-P1",
+    "registry_root": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home/localb/registry",
+    "role": "prepare",
+    "sequence": 2,
+    "signer_generation": 1,
+    "signer_key_id": "98bc43a088d8948b71bbb8fda2486c61b1b8050d4496fcf2725e9602ca07e021",
+    "simigo_home": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home",
+    "transport_spki_sha256": "b95f623609b1864f37969af66ad57bc02baed9070365c354fd1b5c2c9132ade3"
+   },
+   "role": "prepare",
+   "stderr_tail": "localb-mgmt-entered role=prepare pid=99287\nmgmt-role-done role=prepare\n"
+  },
+  "serve_payload": {
+   "binding": "NativeMLX.startWithLOCALB(default LOCALB host resolution)",
+   "listening": true,
+   "model_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+   "pid": 99290,
+   "port": 8600,
+   "role": "serve",
+   "simigo_home": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/aiA/home"
+  },
+  "serve_role": "serve",
+  "tls_spki_observation": {
+   "rc": 0,
+   "result": {
+    "certificate_der_hex": "308201683082010fa003020102021100ef11a16e2abdc54900db44aba7723f82300a06082a8648ce3d04030230363134303206035504030c2b53696d69476f204c4f43414c42205472616e73706f72742067312061373666363831346363306166386437301e170d3236313032343137333035385a170d3336313032323137333035385a30363134303206035504030c2b53696d69476f204c4f43414c42205472616e73706f727420673120613736663638313463633061663864373059301306072a8648ce3d020106082a8648ce3d030107034200048d2ebc4857d411a41a0bc4c476a4d3009181f13c0a245be64c65107d9f7ad8a8bb12acf8788573936069c7bf77bf858c83e2279c10b9ff9f8294ba223699b931300a06082a8648ce3d040302034700304402204cbd6e10a444c1879899aaf5fef39445dfd4e8de0e73928d76496eec95d8371102204128dcb7c774b12d9cef76a4c376c959bfbf138b3adbee928fc4935460b384a4",
+    "expected": "b95f623609b1864f37969af66ad57bc02baed9070365c354fd1b5c2c9132ade3",
+    "observed_spki_sha256": "b95f623609b1864f37969af66ad57bc02baed9070365c354fd1b5c2c9132ade3",
+    "verdict": "match"
+   },
+   "stderr_tail": ""
+  },
+  "trusted_checkpoint_present": true
+ },
+ "release_product": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/Build/Build/Products/Release/SimiGo.app",
+ "roots_prefix": "ai",
+ "serve_role": "serve",
+ "started_at": "2026-10-25T17:30:56Z"
+}

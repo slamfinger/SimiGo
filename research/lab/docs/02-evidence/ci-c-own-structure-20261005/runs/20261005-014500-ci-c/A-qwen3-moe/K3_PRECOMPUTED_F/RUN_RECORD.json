@@ -1,0 +1,11 @@
+{
+  "arm": "K3_PRECOMPUTED_F",
+  "model_id": "A-qwen3-moe",
+  "repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "http_status": 200,
+  "elapsed_seconds": 0.841329,
+  "prompt_sha256": "09efa070095fe666a9be4d9645e3a6e0014f8aeb8bd03df631afd7fb9e9943ae",
+  "request_sha256": "2266212351510c1075cda96097055c03335ad0accbecef6845e613a1527715d3",
+  "response_sha256": "03aa2d39c8cd9a7b332ddac1756e07c5699160e8e125f8558cdc25a45ffd2d04",
+  "created_at": "2026-10-05T01:54:10+08:00"
+}

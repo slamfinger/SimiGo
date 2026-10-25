@@ -1,0 +1,22 @@
+{
+ "verdict": "BLOCKED",
+ "checks": {
+  "R1_shipped_suspend_observed": true,
+  "R2_process_stayed_alive": true,
+  "R3_resident_set_fell": true,
+  "R4_low_plateau_sustained": false,
+  "R5_kernel_pages_returned": false,
+  "R6_compressor_not_the_sink": true,
+  "R7_single_transition": true,
+  "R8_noise_floor_small": true,
+  "R9_app_and_kernel_agree": true
+ },
+ "numbers": {
+  "kernel_resident_drop_gib": 16.26,
+  "host_available_pages_gain_gib": 3.2,
+  "host_gain_over_drop": 0.197,
+  "compressor_growth_bytes": 4112384,
+  "transition_seconds": 0.109,
+  "low_plateau_seconds": 0.1
+ }
+}

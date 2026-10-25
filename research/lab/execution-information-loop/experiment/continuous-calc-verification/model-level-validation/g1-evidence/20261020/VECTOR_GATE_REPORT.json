@@ -1,0 +1,165 @@
+{
+  "binary": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g1-swift-reference-calculator/.build/out/Products/Release/SwiftReferenceCalculator",
+  "build_identity": {
+    "build_command": "swift build -c release --package-path execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g1-swift-reference-calculator",
+    "build_id": "swift-reference-calculator/1.0.0+g1",
+    "executable_bytes": 190120,
+    "executable_path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g1-swift-reference-calculator/.build/out/Products/Release/SwiftReferenceCalculator",
+    "executable_sha256": "a1d05d24e3f5b4e96a5af6ae478785002fce773aeaab205bf3a31bb3ce59387f",
+    "source_revision": "7c9662bcb5e9a5457480618412bb38ce37bd9d1a",
+    "source_tree_clean_at_build": true,
+    "swift_version": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)"
+  },
+  "contract_id": "SIMIGO-REFERENCE-CALCULATOR-V1",
+  "contract_path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/calculator-contract-freeze.jsonl",
+  "contract_version": "1.0.0",
+  "gate": "G1.1",
+  "non_claims": [
+    "Not evidence that any existing project Calculator was executed.",
+    "Not evidence of model inference, KV-cache release, or Information-Space restoration (G2)."
+  ],
+  "result": "PASS",
+  "results": [
+    {
+      "dependencies_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "input_sha256": "e7cce63ae68c2a5abb64b4b33bcd594dbe9634bcae6b4fdfec373e1faf887f8b",
+      "result": {
+        "swift_value": "6"
+      },
+      "result_sha256": "11744678e64e0fce37e2bb265b4927c3a50742ce6f716581b641b2bbbde12fb1",
+      "status": "PASS",
+      "vector_id": "V-A-ROOT"
+    },
+    {
+      "dependencies_sha256": "47375a82f86bce6fbfe1941d1ee14d11e67743343a9d291dd6d6e6d8012e1463",
+      "input_sha256": "b5e8f4b93b7fcdd5207e2a61376fb1e15b14c5a0d36bf0b56983fa87172aac4b",
+      "result": {
+        "swift_value": "11"
+      },
+      "result_sha256": "47fb283d14be939a066a38161f9e8f0f34871597c03626e3011f5a5c8681bc35",
+      "status": "PASS",
+      "vector_id": "V-B-BRANCH"
+    },
+    {
+      "dependencies_sha256": "47375a82f86bce6fbfe1941d1ee14d11e67743343a9d291dd6d6e6d8012e1463",
+      "input_sha256": "c22315e238a2efe8d316acf7f99eba8269b8306f563eb97e740a648adb8bb165",
+      "result": {
+        "swift_value": "24"
+      },
+      "result_sha256": "b80e1eae85462b54124aba86ba352fa8d83a192633b0aad140c204670d621a65",
+      "status": "PASS",
+      "vector_id": "V-C-BRANCH"
+    },
+    {
+      "dependencies_sha256": "509992aaedd5db12677999eb291c3bce74f79ec1698abf60891e1c5b27e9c8e3",
+      "input_sha256": "c0b2834fbde94281071c5f8c8f729e50d463f59021fe527094a110bc3a806239",
+      "result": {
+        "swift_value": "42"
+      },
+      "result_sha256": "3743ee08346f9f06afbedd3b8af7c3258e7cc7198e64b168ff044d8c5e1bb979",
+      "status": "PASS",
+      "vector_id": "V-D-MERGE"
+    },
+    {
+      "dependencies_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "input_sha256": "9e9439c7a63b839ef773e03d71207a5aa4ef75b7fd51c7fac8233624f6d62dc3",
+      "result": {
+        "swift_value": "26"
+      },
+      "result_sha256": "440f7ea09d5e1a947a355eb98337b70063189c9ee5a40f89fa0672437fbba9e0",
+      "status": "PASS",
+      "vector_id": "V-E-INDEPENDENT"
+    },
+    {
+      "dependencies_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "input_sha256": "0ea4af3f51e4a85843fc0c411294ad199289abb7659fba64005acb2859e9a1f5",
+      "result": {
+        "swift_value": "8"
+      },
+      "result_sha256": "0e31150d1618f7d3d2518c34a6045d61fcdca0505ed079a8272fa83c966a8292",
+      "status": "PASS",
+      "vector_id": "V-SOURCE-SENSITIVITY-A"
+    },
+    {
+      "dependencies_sha256": "6b2e4bde85c1f11b47f874a236c5e06869957092484583826b0d414efe0022ce",
+      "input_sha256": "5b6858a84fe83f6ad4fa51c987c4e43c9008d5a2377f60fb74e11055f1160076",
+      "result": {
+        "swift_value": "13"
+      },
+      "result_sha256": "70f015f78ff3b83bf9254dab171b1fa7d2cd15c037501baffa0a98dd6bdcdf18",
+      "status": "PASS",
+      "vector_id": "V-DEPENDENCY-SENSITIVITY-B"
+    },
+    {
+      "dependencies_sha256": "6b2e4bde85c1f11b47f874a236c5e06869957092484583826b0d414efe0022ce",
+      "input_sha256": "014a353a33ba6d01615950288ceb56f14463651e2040a15f97bf2057d70b80b4",
+      "result": {
+        "swift_value": "32"
+      },
+      "result_sha256": "e1801f105729ffb2fff22792c095d5410e17ded1ede4340bc644bfdcdf2e4dbf",
+      "status": "PASS",
+      "vector_id": "V-DEPENDENCY-SENSITIVITY-C"
+    },
+    {
+      "dependencies_sha256": "5c8a0110b7838f42cc0b0ae76239b7aadf06837efb1f9e132fb9a1bab543fb9e",
+      "input_sha256": "3db0955e04f6c8471ac9aca521fd61cdff3c06f1a7c8be7074548f1db928aeaa",
+      "result": {
+        "swift_value": "52"
+      },
+      "result_sha256": "1bf26bf12665e2efe0077a429b3dcb8f6f560d2cd3461f2eeea08001339caf3c",
+      "status": "PASS",
+      "vector_id": "V-DEPENDENCY-SENSITIVITY-D"
+    },
+    {
+      "error_code": "DEPENDENCY_SET_MISMATCH",
+      "input_sha256": "175da1e83ec8829dfd28a894eedffca76950335819cf98c6d8d1c46f3a81c1e9",
+      "status": "PASS",
+      "vector_id": "V-ERR-MISSING-DEPENDENCY"
+    },
+    {
+      "error_code": "DEPENDENCY_SET_MISMATCH",
+      "input_sha256": "5df69a94837bc84dc133f9cc8dcaa0ae7b046dfb5f94fbdd7bd15e94376d7348",
+      "status": "PASS",
+      "vector_id": "V-ERR-EXTRA-DEPENDENCY"
+    },
+    {
+      "error_code": "INVALID_DEPENDENCY_VALUE",
+      "input_sha256": "798858d89437bd6cba2c9142575462613dead42235850336cae70790dd604b90",
+      "status": "PASS",
+      "vector_id": "V-ERR-NONCANONICAL-DEPENDENCY"
+    },
+    {
+      "error_code": "INVALID_PAYLOAD",
+      "input_sha256": "189179a96965d7332ce68ef5a4a331874330bed66b301babded08a3e45655c6b",
+      "status": "PASS",
+      "vector_id": "V-ERR-PAYLOAD-BOOLEAN"
+    },
+    {
+      "error_code": "ARITHMETIC_OVERFLOW",
+      "input_sha256": "63a9e082f86686bff3c924339a16414301d7be67d61a4f70da937d02ef62fd7b",
+      "status": "PASS",
+      "vector_id": "V-ERR-OVERFLOW"
+    },
+    {
+      "error_code": "UNSUPPORTED_UNIT_ID",
+      "input_sha256": "2e8e4f6e0c5c8eba79c99bfc338f7dbf3ec9916fa238b627fb5979f506d31174",
+      "status": "PASS",
+      "vector_id": "V-ERR-UNKNOWN-UNIT"
+    },
+    {
+      "canonical_sha256": "c09334f5116de97c1dedd32bce3fcda8423c7e61dcdd3f55f4a084aa16b3b5b9",
+      "canonical_utf8_text": "{\"label\":\"秦沈\",\"n\":1}",
+      "status": "PASS",
+      "vector_id": "V-CANON-UNICODE-KEY-ORDER"
+    }
+  ],
+  "schema_id": "SIMIGO-G1-SWIFT-VECTOR-GATE-REPORT-V1",
+  "vector_inventory": {
+    "canonicalization": 1,
+    "error": 6,
+    "expected_events": 32,
+    "invocations": 16,
+    "observed_events": 32,
+    "success": 9
+  }
+}

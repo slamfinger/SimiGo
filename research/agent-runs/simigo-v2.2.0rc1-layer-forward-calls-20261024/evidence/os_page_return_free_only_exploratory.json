@@ -1,0 +1,259 @@
+{
+ "binding": false,
+ "headline": {
+  "free_only_direction_if_adopted": "looser, not stricter: free-only lands at ~0.997-0.998 of the drop on the same records where free+inactive scores 0.4965-0.5173. Switching to it after seeing BLOCKED trials would move the goalpost in the passing direction.",
+  "hypothesis_result": "NOT supported by these records. The inactive component contributes 0.0033 at most of the scored gain, because inactive falls during the settle window instead of rising: the host arrives at the anchor with a nearly empty free pool (~0.13-0.25 GiB) and a large pre-existing inactive backlog (~13 GiB), and reclaiming that backlog is what fills free. free+inactive therefore nets the backlog off and is the CONSERVATIVE of the two readings.",
+  "hypothesis_tested": "free+inactive over-credits the kernel by counting pages the target released that the kernel has not reclaimed yet",
+  "inactive_share_of_gain_max": 0.0033,
+  "inactive_share_of_gain_min": 0.0,
+  "kernel_resident_drop_range_bytes": [
+   17284706040,
+   17300188920
+  ],
+  "ratio_free_only_range": [
+   0.996158,
+   0.998814
+  ],
+  "ratio_free_plus_inactive_range": [
+   0.496538,
+   0.517308
+  ],
+  "what_the_numbers_actually_track": "gain = peak(free+inactive) - anchor(free+inactive). Across the five trials the resident drop is stable (~16.1 GiB) while the gain spans ~8.00-8.34 GiB and the threshold is ~8.05 GiB, i.e. the 0.50 line sits INSIDE the trial-to-trial spread and the starting pool state of the host is in the measurement. That is why the remedy registered for future claims is repetition on the same executable, not a different numerator."
+ },
+ "not_claimed": [
+  "no verdict is re-decided here; each trial keeps what its own verifier run wrote",
+  "the free-only ratio is reported without a threshold on purpose",
+  "adopting free-only after seeing these numbers would be moving the goalposts; it can only be used if it is registered before a future run",
+  "this is a decomposition of already-recorded bytes, not a new experiment",
+  "no claim here says the product did or did not return pages; A1-A9 carry that"
+ ],
+ "pre_registered": false,
+ "purpose": "how much of the capacity A5 credits to the kernel is really just the target's own not-yet-reclaimed inactive pages",
+ "trials": [
+  {
+   "a5_ratio_as_scored": 0.508,
+   "candidate_exe_sha256_12": "60973e086f12",
+   "gain_free_only_bytes": 17266196480,
+   "gain_free_plus_inactive_bytes": 8793620480,
+   "gain_inactive_only_bytes": 0,
+   "host_state_at_anchor": {
+    "free_bytes": 215433216,
+    "free_plus_inactive_bytes": 14940405760,
+    "inactive_bytes": 14724972544
+   },
+   "host_state_in_window": {
+    "free_peak_bytes": 17481629696,
+    "free_plus_inactive_peak_bytes": 23734026240,
+    "inactive_drained_in_window_bytes": 8472576000,
+    "inactive_peak_bytes": 14724972544,
+    "inactive_trough_bytes": 6252396544
+   },
+   "kernel_resident_drop_bytes": 17299238624,
+   "ratio_free_only": 0.99809,
+   "ratio_free_plus_inactive": 0.508324,
+   "ratio_inactive_only": 0.0,
+   "raw_sha256": "98d6ddbeed289e4c81d28dbd428e34220030bc9c202320bb9796306e4c400a91",
+   "rid": "os3",
+   "settle_window_ms": 1500,
+   "share_of_gain_from_inactive": 0.0,
+   "verdict_as_written": "PASS"
+  },
+  {
+   "a5_ratio_as_scored": 0.5,
+   "candidate_exe_sha256_12": "95224f06cf9c",
+   "gain_free_only_bytes": 17264525312,
+   "gain_free_plus_inactive_bytes": 8639070208,
+   "gain_inactive_only_bytes": 163840,
+   "host_state_at_anchor": {
+    "free_bytes": 264241152,
+    "free_plus_inactive_bytes": 14985871360,
+    "inactive_bytes": 14721630208
+   },
+   "host_state_in_window": {
+    "free_peak_bytes": 17528766464,
+    "free_plus_inactive_peak_bytes": 23624941568,
+    "inactive_drained_in_window_bytes": 8625455104,
+    "inactive_peak_bytes": 14721794048,
+    "inactive_trough_bytes": 6096175104
+   },
+   "kernel_resident_drop_bytes": 17291980536,
+   "ratio_free_only": 0.998412,
+   "ratio_free_plus_inactive": 0.4996,
+   "ratio_inactive_only": 9e-06,
+   "raw_sha256": "d0a3a1404794c5f0b945de1c8f9e29cfe4ac19caf5182cf5462e4f01570ce95e",
+   "rid": "os4",
+   "settle_window_ms": 1500,
+   "share_of_gain_from_inactive": 0.0,
+   "verdict_as_written": "BLOCKED"
+  },
+  {
+   "a5_ratio_as_scored": 0.517,
+   "candidate_exe_sha256_12": "83a88048569f",
+   "gain_free_only_bytes": 17251958784,
+   "gain_free_plus_inactive_bytes": 8949530624,
+   "gain_inactive_only_bytes": 29097984,
+   "host_state_at_anchor": {
+    "free_bytes": 148340736,
+    "free_plus_inactive_bytes": 14144634880,
+    "inactive_bytes": 13996294144
+   },
+   "host_state_in_window": {
+    "free_peak_bytes": 17400299520,
+    "free_plus_inactive_peak_bytes": 23094165504,
+    "inactive_drained_in_window_bytes": 8317157376,
+    "inactive_peak_bytes": 14025392128,
+    "inactive_trough_bytes": 5679136768
+   },
+   "kernel_resident_drop_bytes": 17300188920,
+   "ratio_free_only": 0.997212,
+   "ratio_free_plus_inactive": 0.517308,
+   "ratio_inactive_only": 0.001682,
+   "raw_sha256": "e033b0a7c6a91c03facc4ebc13d5c641b4ad563c5187d42117cb2ce8057c5110",
+   "rid": "os5",
+   "settle_window_ms": 1500,
+   "share_of_gain_from_inactive": 0.0033,
+   "verdict_as_written": "PASS"
+  },
+  {
+   "a5_ratio_as_scored": 0.499,
+   "candidate_exe_sha256_12": "83a88048569f",
+   "gain_free_only_bytes": 17276796928,
+   "gain_free_plus_inactive_bytes": 8633352192,
+   "gain_inactive_only_bytes": 0,
+   "host_state_at_anchor": {
+    "free_bytes": 152961024,
+    "free_plus_inactive_bytes": 14247198720,
+    "inactive_bytes": 14094237696
+   },
+   "host_state_in_window": {
+    "free_peak_bytes": 17429757952,
+    "free_plus_inactive_peak_bytes": 22880550912,
+    "inactive_drained_in_window_bytes": 8643444736,
+    "inactive_peak_bytes": 14094237696,
+    "inactive_trough_bytes": 5450792960
+   },
+   "kernel_resident_drop_bytes": 17297305264,
+   "ratio_free_only": 0.998814,
+   "ratio_free_plus_inactive": 0.499115,
+   "ratio_inactive_only": 0.0,
+   "raw_sha256": "17c6c090e9e22652791f1fe097cf44285b0fffcf07ae59cd41a7b30636cf69b7",
+   "rid": "os5b",
+   "settle_window_ms": 1500,
+   "share_of_gain_from_inactive": 0.0,
+   "verdict_as_written": "BLOCKED"
+  },
+  {
+   "a5_ratio_as_scored": 0.497,
+   "candidate_exe_sha256_12": "83a88048569f",
+   "gain_free_only_bytes": 17264017408,
+   "gain_free_plus_inactive_bytes": 8589656064,
+   "gain_inactive_only_bytes": 4177920,
+   "host_state_at_anchor": {
+    "free_bytes": 141295616,
+    "free_plus_inactive_bytes": 14113095680,
+    "inactive_bytes": 13971800064
+   },
+   "host_state_in_window": {
+    "free_peak_bytes": 17405313024,
+    "free_plus_inactive_peak_bytes": 22702751744,
+    "inactive_drained_in_window_bytes": 8674361344,
+    "inactive_peak_bytes": 13975977984,
+    "inactive_trough_bytes": 5297438720
+   },
+   "kernel_resident_drop_bytes": 17299107528,
+   "ratio_free_only": 0.997972,
+   "ratio_free_plus_inactive": 0.496538,
+   "ratio_inactive_only": 0.000242,
+   "raw_sha256": "deaf2c26dc9048b9394048fe3fcf7daefc46eb0c96f821c9d0734b90ee4ba2c7",
+   "rid": "os5c",
+   "settle_window_ms": 1500,
+   "share_of_gain_from_inactive": 0.0005,
+   "verdict_as_written": "BLOCKED"
+  },
+  {
+   "a5_ratio_as_scored": 0.515,
+   "candidate_exe_sha256_12": "83a88048569f",
+   "gain_free_only_bytes": 17231085568,
+   "gain_free_plus_inactive_bytes": 8899739648,
+   "gain_inactive_only_bytes": 0,
+   "host_state_at_anchor": {
+    "free_bytes": 145391616,
+    "free_plus_inactive_bytes": 14156906496,
+    "inactive_bytes": 14011514880
+   },
+   "host_state_in_window": {
+    "free_peak_bytes": 17376477184,
+    "free_plus_inactive_peak_bytes": 23056646144,
+    "inactive_drained_in_window_bytes": 8331345920,
+    "inactive_peak_bytes": 14011514880,
+    "inactive_trough_bytes": 5680168960
+   },
+   "kernel_resident_drop_bytes": 17297534688,
+   "ratio_free_only": 0.996158,
+   "ratio_free_plus_inactive": 0.514509,
+   "ratio_inactive_only": 0.0,
+   "raw_sha256": "12e82cc65eb363cd2166df5897338b40168cb8bd0028ea17daff9cfa719407a5",
+   "rid": "os6a",
+   "settle_window_ms": 1500,
+   "share_of_gain_from_inactive": 0.0,
+   "verdict_as_written": "PASS"
+  },
+  {
+   "a5_ratio_as_scored": 0.516,
+   "candidate_exe_sha256_12": "83a88048569f",
+   "gain_free_only_bytes": 17264721920,
+   "gain_free_plus_inactive_bytes": 8929542144,
+   "gain_inactive_only_bytes": 0,
+   "host_state_at_anchor": {
+    "free_bytes": 167985152,
+    "free_plus_inactive_bytes": 14093533184,
+    "inactive_bytes": 13925548032
+   },
+   "host_state_in_window": {
+    "free_peak_bytes": 17432707072,
+    "free_plus_inactive_peak_bytes": 23023075328,
+    "inactive_drained_in_window_bytes": 8335179776,
+    "inactive_peak_bytes": 13925548032,
+    "inactive_trough_bytes": 5590368256
+   },
+   "kernel_resident_drop_bytes": 17297419904,
+   "ratio_free_only": 0.99811,
+   "ratio_free_plus_inactive": 0.516235,
+   "ratio_inactive_only": 0.0,
+   "raw_sha256": "1067c93efa836835e085628392369870bc3379e3a084661d87bf20f59c3e2b3a",
+   "rid": "os6b",
+   "settle_window_ms": 1500,
+   "share_of_gain_from_inactive": 0.0,
+   "verdict_as_written": "PASS"
+  },
+  {
+   "a5_ratio_as_scored": 0.512,
+   "candidate_exe_sha256_12": "83a88048569f",
+   "gain_free_only_bytes": 17244012544,
+   "gain_free_plus_inactive_bytes": 8851423232,
+   "gain_inactive_only_bytes": 0,
+   "host_state_at_anchor": {
+    "free_bytes": 172179456,
+    "free_plus_inactive_bytes": 14019166208,
+    "inactive_bytes": 13846986752
+   },
+   "host_state_in_window": {
+    "free_peak_bytes": 17416192000,
+    "free_plus_inactive_peak_bytes": 22870589440,
+    "inactive_drained_in_window_bytes": 8405434368,
+    "inactive_peak_bytes": 13846986752,
+    "inactive_trough_bytes": 5441552384
+   },
+   "kernel_resident_drop_bytes": 17284706040,
+   "ratio_free_only": 0.997646,
+   "ratio_free_plus_inactive": 0.512096,
+   "ratio_inactive_only": 0.0,
+   "raw_sha256": "7b0fdc616699c03d50a79ffeb02795b1c3fb5b3a6d866a90e7e6b0a74db37d5d",
+   "rid": "os6c",
+   "settle_window_ms": 1500,
+   "share_of_gain_from_inactive": 0.0,
+   "verdict_as_written": "PASS"
+  }
+ ],
+ "windows": "same anchor (reference_release.at_ms) and same settle window as the verifier"
+}

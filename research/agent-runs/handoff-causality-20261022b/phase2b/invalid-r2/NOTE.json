@@ -1,0 +1,23 @@
+{
+ "contains_no_valid_conditions": true,
+ "created_at_utc": "2026-10-21T17:56:19Z",
+ "fixes": [
+  "RealModelHandoff --max-tokens default raised to 64; Phase 2 evidence records decode_parameters.",
+  "phase2 runner default max_tokens 64.",
+  "mutate_remove_u1_settlement sets sqlite3.Row.",
+  "U2 evidence records generated_on_failure (text/tokens/parsed answer)."
+ ],
+ "label": "invalid-r2",
+ "original_summary": "logs/summary-invalid-r2.json",
+ "original_worlds": [
+  "phase2a/invalid-r2/world-a-r2",
+  "phase2b/invalid-r2/world-b-r2"
+ ],
+ "reason": "B0-A/B0-B used --max-tokens 32, which truncated the required 32-hex-character secret plus checksum. B0-A emitted 31 hex characters and no checksum; B0-B emitted a parsed but mismatched answer. B1-harness/B1-loop also hit a harness TypeError (sqlite row_factory missing in the settlement-removal mutation). These are implementation/decode-budget defects, not scientific outcomes.",
+ "replacement_worlds": [
+  "phase2a/world-a-r3",
+  "phase2b/world-b-r3"
+ ],
+ "run_id": "handoff-causality-20261022b",
+ "schema_id": "SIMIGO-CAUSALITY-INVALID-RUN-NOTE-V1"
+}

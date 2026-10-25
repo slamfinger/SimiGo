@@ -1,0 +1,64 @@
+{
+  "current_dependency": {
+    "append_order": 1,
+    "content_address": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+    "dependency_id": "D-1",
+    "reason": "initial materialization",
+    "revision": 1
+  },
+  "dependency_entries": [
+    {
+      "append_order": 1,
+      "content_address": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+      "dependency_id": "D-1",
+      "reason": "initial materialization",
+      "revision": 1
+    }
+  ],
+  "extra_observable_entities": [],
+  "index_entries": [
+    {
+      "append_order": 1,
+      "record_object": "26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9",
+      "srs_identity": "5e01d6ce03526c6ba6bf988a9caf6505af169c3155fe7bf4716ea717f893de8f"
+    }
+  ],
+  "integrity_check": "ok",
+  "logical_row_counts": {
+    "dependency_entries": 1,
+    "is_index_entries": 1,
+    "is_objects": 2
+  },
+  "object_reads": {
+    "D": {
+      "byte_size": 501,
+      "matches_object_id": true,
+      "sha256": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c"
+    },
+    "SRS": {
+      "byte_size": 939,
+      "matches_object_id": true,
+      "sha256": "26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9"
+    }
+  },
+  "objects": [
+    {
+      "byte_size": 501,
+      "content_sha256": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+      "created_order": 1,
+      "object_id": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c"
+    },
+    {
+      "byte_size": 939,
+      "content_sha256": "26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9",
+      "created_order": 2,
+      "object_id": "26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9"
+    }
+  ],
+  "srs_read": {
+    "append_order": 1,
+    "byte_size": 939,
+    "record_object": "26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9",
+    "sha256": "26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9"
+  }
+}

@@ -1,0 +1,180 @@
+import Foundation
+import XCTest
+
+@testable import SimiGo2Experimental
+
+final class LayerResidencyTests: XCTestCase {
+    private func inventory() -> LayerInventory {
+        func tensor(_ name: String, bytes: Int64) -> TensorEntry {
+            TensorEntry(id: name, file: "test.safetensors", dtype: "U32", shape: [1], byteCount: bytes)
+        }
+
+        return LayerGroupCatalog.qwen3CoderGroups(from: [
+            tensor("model.embed_tokens.weight", bytes: 100),
+            tensor("model.layers.0.self_attn.q_proj.weight", bytes: 50),
+            tensor("model.layers.0.mlp.switch_mlp.down_proj.weight", bytes: 200),
+            tensor("model.layers.20.mlp.switch_mlp.down_proj.weight", bytes: 300),
+            tensor("model.layers.40.mlp.switch_mlp.down_proj.weight", bytes: 400)
+        ])
+    }
+
+    func testQwen3PartitionGroupsSwitchMLPByLayerRange() {
+        let inventory = inventory()
+        let groups = Dictionary(uniqueKeysWithValues: inventory.groups.map { ($0.id, $0) })
+
+        XCTAssertEqual(groups["CORE_NON_SWITCH"]?.tensorCount, 2)
+        XCTAssertEqual(groups["SWITCH_MLP_L00_15"]?.tensorCount, 1)
+        XCTAssertEqual(groups["SWITCH_MLP_L16_31"]?.tensorCount, 1)
+        XCTAssertEqual(groups["SWITCH_MLP_L32_47"]?.tensorCount, 1)
+    }
+
+    func testDenseMLPPartitionGroupsContiguousLayerRanges() {
+        func tensor(_ name: String, bytes: Int64) -> TensorEntry {
+            TensorEntry(id: name, file: "test.safetensors", dtype: "U32", shape: [1], byteCount: bytes)
+        }
+
+        let inventory = LayerGroupCatalog.denseMLPGroups(
+            from: (0..<48).map { layer in
+                tensor("model.layers.\(layer).mlp.down_proj.weight", bytes: 10)
+            } + [
+                tensor("model.embed_tokens.weight", bytes: 100),
+                tensor("model.layers.0.self_attn.q_proj.weight", bytes: 50),
+            ],
+            layerCount: 48
+        )
+        let groups = Dictionary(uniqueKeysWithValues: inventory.groups.map { ($0.id, $0) })
+
+        XCTAssertEqual(groups["CORE_NON_SWITCH"]?.tensorCount, 2)
+        XCTAssertEqual(groups["DENSE_MLP_L00_15"]?.tensorCount, 16)
+        XCTAssertEqual(groups["DENSE_MLP_L16_31"]?.tensorCount, 16)
+        XCTAssertEqual(groups["DENSE_MLP_L32_47"]?.tensorCount, 16)
+    }
+
+    func testContiguousPolicyMapsDenseGroups() {
+        func tensor(_ name: String, bytes: Int64) -> TensorEntry {
+            TensorEntry(id: name, file: "test.safetensors", dtype: "U32", shape: [1], byteCount: bytes)
+        }
+        let inventory = LayerGroupCatalog.denseMLPGroups(
+            from: [
+                tensor("model.embed_tokens.weight", bytes: 100),
+                tensor("model.layers.0.mlp.down_proj.weight", bytes: 10),
+                tensor("model.layers.20.mlp.down_proj.weight", bytes: 20),
+                tensor("model.layers.40.mlp.down_proj.weight", bytes: 30),
+            ],
+            layerCount: 48
+        )
+        let policy = ContiguousLayerStatePolicy(inventory: inventory)
+
+        XCTAssertEqual(
+            policy.desiredGroupIDs(for: .stateA),
+            ["CORE_NON_SWITCH", "DENSE_MLP_L00_15"]
+        )
+        XCTAssertEqual(
+            policy.desiredGroupIDs(for: .stateBC),
+            ["CORE_NON_SWITCH", "DENSE_MLP_L16_31", "DENSE_MLP_L32_47"]
+        )
+    }
+
+    func testPolicyAlwaysKeepsCoreAndMapsStateGroups() throws {
+        let inventory = inventory()
+        let policy = Qwen3CoderStatePolicy(inventory: inventory)
+
+        XCTAssertEqual(
+            policy.desiredGroupIDs(for: .stateA),
+            ["CORE_NON_SWITCH", "SWITCH_MLP_L00_15"]
+        )
+        XCTAssertEqual(
+            policy.desiredGroupIDs(for: .stateAll),
+            Set(inventory.groups.map(\.id))
+        )
+    }
+
+    func testEngineLoadsAndEvictsDeltasOnly() throws {
+        var engine = LayerResidencyEngine(inventory: inventory(), policy: Qwen3CoderStatePolicy(inventory: inventory()))
+        let first = try engine.transition(to: .stateA)
+        let second = try engine.transition(to: .stateB)
+
+        XCTAssertTrue(first.loadedGroupIDs.contains("CORE_NON_SWITCH"))
+        XCTAssertTrue(first.loadedGroupIDs.contains("SWITCH_MLP_L00_15"))
+        XCTAssertTrue(second.loadedGroupIDs.contains("SWITCH_MLP_L16_31"))
+        XCTAssertTrue(second.evictedGroupIDs.contains("SWITCH_MLP_L00_15"))
+        XCTAssertTrue(second.residentGroupIDs.contains("CORE_NON_SWITCH"))
+    }
+
+    func testLlamaCppLazyPolicyKeepsCoreAndAdmitsOptionalGroups() throws {
+        let inventory = inventory()
+        let policy = AnyLayerResidencyPolicy(
+            kind: .llamaCppLazy,
+            inventory: inventory,
+            llamaOptions: LlamaCppControlOptions(
+                maxOptionalResidentGroups: 2,
+                usesMemoryMap: true,
+                allowsLazyMaterialization: true,
+                placement: "METAL_PREFERRED"
+            )
+        )
+
+        XCTAssertEqual(
+            policy.desiredGroupIDs(for: .stateA),
+            ["CORE_NON_SWITCH", "SWITCH_MLP_L00_15"]
+        )
+        XCTAssertTrue(policy.desiredGroupIDs(for: .stateAB).contains("CORE_NON_SWITCH"))
+        XCTAssertTrue(policy.desiredGroupIDs(for: .stateAB).contains("SWITCH_MLP_L00_15"))
+        XCTAssertTrue(policy.desiredGroupIDs(for: .stateAB).contains("SWITCH_MLP_L16_31"))
+    }
+
+    func testExecutionPlannerMatchesLegacyReactivePolicy() throws {
+        let states: [ExecutionStateLabel] = ExecutionStateLabel.allCases
+        let inventory = inventory()
+
+        var legacy = LayerResidencyEngine(
+            inventory: inventory,
+            policy: AnyLayerResidencyPolicy(kind: .reactive, inventory: inventory)
+        )
+        var planner = LayerResidencyEngine(
+            inventory: inventory,
+            policy: AnyLayerResidencyPolicy(kind: .executionPlanner, inventory: inventory)
+        )
+
+        for state in states {
+            let expected = try legacy.transition(to: state)
+            let actual = try planner.transition(to: state)
+
+            XCTAssertEqual(actual.executionState, expected.executionState)
+            XCTAssertEqual(actual.desiredGroupIDs, expected.desiredGroupIDs)
+            XCTAssertEqual(actual.loadedGroupIDs, expected.loadedGroupIDs)
+            XCTAssertEqual(actual.keptGroupIDs, expected.keptGroupIDs)
+            XCTAssertEqual(actual.evictedGroupIDs, expected.evictedGroupIDs)
+            XCTAssertEqual(actual.residentGroupIDs, expected.residentGroupIDs)
+            XCTAssertEqual(actual.loadedBytes, expected.loadedBytes)
+            XCTAssertEqual(actual.evictedBytes, expected.evictedBytes)
+            XCTAssertEqual(actual.residentBytes, expected.residentBytes)
+            XCTAssertEqual(actual.peakResidentBytes, expected.peakResidentBytes)
+            XCTAssertEqual(actual.cumulativeLoadedBytes, expected.cumulativeLoadedBytes)
+            XCTAssertEqual(actual.cumulativeEvictedBytes, expected.cumulativeEvictedBytes)
+            XCTAssertEqual(
+                actual.events.map { "\($0.groupID):\($0.action.rawValue):\($0.byteCount)" },
+                expected.events.map { "\($0.groupID):\($0.action.rawValue):\($0.byteCount)" }
+            )
+        }
+    }
+
+    func testResidencyBenchmarkReportsAllPolicies() throws {
+        let reports = try ResidencyBenchmark.run(
+            kinds: ResidencyPolicyKind.allCases,
+            inventory: inventory(),
+            states: [.stateA, .stateB, .stateAB]
+        )
+
+        XCTAssertEqual(reports.count, ResidencyPolicyKind.allCases.count)
+        XCTAssertEqual(Set(reports.map(\.policy)), Set(ResidencyPolicyKind.allCases))
+
+        let byPolicy = Dictionary(uniqueKeysWithValues: reports.map { ($0.policy, $0) })
+        let reactive = try XCTUnwrap(byPolicy[.reactive])
+        let planner = try XCTUnwrap(byPolicy[.executionPlanner])
+        XCTAssertEqual(planner.cumulativeLoadedBytes, reactive.cumulativeLoadedBytes)
+        XCTAssertEqual(planner.cumulativeEvictedBytes, reactive.cumulativeEvictedBytes)
+        XCTAssertEqual(planner.peakResidentBytes, reactive.peakResidentBytes)
+        XCTAssertEqual(planner.controlDecisionCount, reactive.controlDecisionCount)
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"release_decision\":\"BLOCKED\",\"deployment_order\":[],\"blocked_services\":[{\"service_id\":\"alpha\",\"reason\":\"Missing baseline compatibility record\"}],\"transition_status\":\"BLOCKED\",\"information_dependency\":{\"compatibility_info_available\":false,\"compatibility_info_current\":true,\"compatibility_info_consistent\":true,\"deployment_metadata_available\":false,\"dependency_declared\":true,\"reason\":\"Baseline compatibility record and deployment metadata are not available, which is required to evaluate baseline compatibility and pair/order executability.\"}}]"
+      },
+      "index": 0,
+      "finish_reason": "stop"
+    }
+  ],
+  "id": "chatcmpl-762e8656-ba9a-42e2-a643-5f90f3797c9a",
+  "object": "chat.completion",
+  "created": 1791173841
+}

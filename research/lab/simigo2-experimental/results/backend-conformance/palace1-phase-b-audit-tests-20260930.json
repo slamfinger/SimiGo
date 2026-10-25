@@ -1,0 +1,41 @@
+{
+  "artifact": "PALACE1_PHASE_B_MINIMAL_DURABLE_UNIT_AUDIT_TESTS",
+  "date": "2026-09-30",
+  "status": "PASS",
+  "audited_head": "db188ac",
+  "evidence_kind": "CLEAN_HEAD_WORKTREE_TARGETED_UNIT_TEST_SUMMARY",
+  "worktree_note": "Run in a temporary clean HEAD worktree because the main worktree contained unrelated uncommitted Swift changes.",
+  "command": "swift test --filter 'ExecutionContinuityContractTests|ExecutionContinuityLifecycleTreeTests|ExecutionContinuityCoordinatorTests|Fork3StructuralBattery|ExecutionStatePrefixPoolTests|PrefixSnapshotStoreTests|MaterializationCoordinatorTests|OversizedBackendAtomicityTests|PrefixPoolSessionLifecycleTests|BackendConformanceMatrixTests'",
+  "working_directory": "simigo2-experimental",
+  "bundles": [
+    {
+      "bundle": "SimiGoRuntimeContractTests",
+      "passed": 15,
+      "failed": 0,
+      "suites": [
+        {"name": "ExecutionContinuityContractTests", "passed": 6, "failed": 0},
+        {"name": "ExecutionContinuityLifecycleTreeTests", "passed": 9, "failed": 0}
+      ]
+    },
+    {
+      "bundle": "SimiGo2ExperimentalTests",
+      "passed": 42,
+      "failed": 0,
+      "suites": [
+        {"name": "BackendConformanceMatrixTests", "passed": 3, "failed": 0},
+        {"name": "ExecutionContinuityCoordinatorTests", "passed": 8, "failed": 0},
+        {"name": "ExecutionStatePrefixPoolTests", "passed": 10, "failed": 0},
+        {"name": "Fork3StructuralBattery", "passed": 5, "failed": 0},
+        {"name": "MaterializationCoordinatorTests", "passed": 3, "failed": 0},
+        {"name": "OversizedBackendAtomicityTests", "passed": 2, "failed": 0},
+        {"name": "PrefixPoolSessionLifecycleTests", "passed": 4, "failed": 0},
+        {"name": "PrefixSnapshotStoreTests", "passed": 7, "failed": 0}
+      ]
+    }
+  ],
+  "totals": {
+    "passed": 57,
+    "failed": 0
+  },
+  "boundary": "PHASE_B_AUDIT_ONLY / NO_STORAGE_SELECTION / NO_ADAPTER_IMPLEMENTATION"
+}

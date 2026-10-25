@@ -1,0 +1,245 @@
+{
+ "artifact_manifest_sha256": "b50e64024ffd647d340d6da7d639c6daf990a1aaf3a841eea0d001cd12f6bcfc",
+ "claim_limits": [
+  "Old execution context release is evidenced as full OS process exit and an empty downstream state directory, not as an observed internal MLX/KV deallocation.",
+  "Reusing U1/U2 does not mean a stage performs no model computation; each producer stage loads the model and generates its own item once. Three model loads are reported; this is not a claim that all FLOPs or all prefill tokens avoided recomputation.",
+  "Only the tested ordinary entry and this three-stage fixture are covered; a single successful G0 chain supports multi-hop feasibility, not universal validity across models, backends or dependency graphs."
+ ],
+ "claims": {
+  "C1": "Admission across two process boundaries is exercised through the ordinary production continueTask in fresh execution states; the G1 transitive-closure refusal occurs before tokenization and generation.",
+  "C2": "Each downstream stage's actual input is materialized by the production admission from the verified Information Space; P2 reuses U1 and P3 reuses U2 with its verified transitive U1 closure. No harness pre-read or template concat supplies a settled value.",
+  "C3": "Recompute policy is unchanged; a stage either reuses a verified settlement through the ordinary path or refuses. No new no-recompute or anti-rollback strategy was introduced.",
+  "C4": "The signed settlement provenance from the E round is a prerequisite; a valid signature is required for admission but does not by itself prove semantic correctness, and this round does not extend into store-wide anti-rollback."
+ },
+ "conditions": {
+  "G0_CHAIN_3_HOPS": {
+   "all_previous_processes_exited": true,
+   "full_dependency_closure_verified": true,
+   "no_prior_item_regeneration": true,
+   "notes": [
+    "driver_checks={\"consumer_created_new_state\": true, \"consumer_did_not_recompute_u1\": true, \"consumer_did_not_remint_u1_object\": true, \"consumer_exited_before_third_start\": true, \"consumer_generated_once\": true, \"consumer_reused_u1\": true, \"consumer_settled\": true, \"consumer_started_at_position_zero\": true, \"consumer_state_empty_before_start\": true, \"consumer_verifies_u1_signature\": true, \"distinct_execution_state_ids\": true, \"distinct_processes\": true, \"full_dependency_closure_verified\": true, \"no_prior_item_regeneration\": true, \"producer_exited_before_consumer_start\": true, \"producer_generated_once\": true, \"producer_settled\": true, \"third_closure_includes_u1\": true, \"third_closure_includes_u2\": true, \"third_computed_only_u3\": true, \"third_created_new_state\": true, \"third_did_not_recompute_u1\": true, \"third_did_not_recompute_u2\": true, \"third_did_not_remint_u2_object\": true, \"third_generated_once\": true, \"third_reused_u2\": true, \"third_settled\": true, \"third_started_at_position_zero\": true, \"third_state_empty_before_start\": true, \"third_verifies_u2_signature\": true}",
+    "u3_dependency_closure=[\"TASK-SOURCE\", \"TASK-U1\", \"TASK-U2\"]",
+    "u2_computed=[\"TASK-U2\"] u2_reused=[\"TASK-SOURCE\", \"TASK-U1\"]",
+    "u3_computed=[\"TASK-U3\"] u3_reused=[\"TASK-SOURCE\", \"TASK-U1\", \"TASK-U2\"]"
+   ],
+   "stages": [
+    {
+     "computed_item_ids": [
+      "TASK-U1"
+     ],
+     "execution_state_id": "G-CHAIN-PRODUCER",
+     "exit_code": 0,
+     "exit_utc": "2026-10-22T11:06:05.218Z",
+     "harness_direct_is_reads": 0,
+     "input_sha256": "66d5c7645f83dde43bebd6bf516399f8ae32320a11ab3b23b5d4a8e6130e8c6d",
+     "model_generate_calls": 1,
+     "model_load_seconds": 3.8869630098342896,
+     "old_checkpoint_reads": 0,
+     "output_sha256": "422e095cf5fd5eafd08e13a2f74309ae2a032a2c078bf80968b7718f22930c7d",
+     "pid": 28775,
+     "prefix_replay_tokens": 0,
+     "producer_exit_observed_before_next_process": true,
+     "reused_item_ids": [
+      "TASK-SOURCE"
+     ],
+     "settlement_signature_object_id": "c9880b1ddeea8555cdd7fc9050e1561c7afbceeb6032fdee9418a176e6cd8fb3",
+     "stage": "P1_U1",
+     "start_utc": "2026-10-22T11:05:42.789Z",
+     "state_position_start": 0,
+     "state_starts_empty": true,
+     "tokenize_seed_calls": 1,
+     "tokenize_text_calls": 1,
+     "verified_dependency_closure_item_ids": [
+      "TASK-SOURCE"
+     ]
+    },
+    {
+     "computed_item_ids": [
+      "TASK-U2"
+     ],
+     "execution_state_id": "G-CHAIN-CONSUMER",
+     "exit_code": 0,
+     "exit_utc": "2026-10-22T11:06:19.697Z",
+     "harness_direct_is_reads": 0,
+     "input_sha256": "f93bf7674ae7e203bd9beaa0d0f55add739c336f9ea5abc0c42dfbc0e541bfb4",
+     "model_generate_calls": 1,
+     "model_load_seconds": 2.68441104888916,
+     "old_checkpoint_reads": 0,
+     "output_sha256": "ce6d8efc952ea887d3c39a0c9efd6e0fcb7ff4a44cfa7d378a119ebf0812fe7a",
+     "pid": 28794,
+     "prefix_replay_tokens": 0,
+     "producer_exit_observed_before_next_process": true,
+     "reused_item_ids": [
+      "TASK-SOURCE",
+      "TASK-U1"
+     ],
+     "settlement_signature_object_id": "974b130fb6bced78c4c6f4cc7a631b1167e7db822812af9700b4ce2e23f9d37c",
+     "stage": "P2_U2",
+     "start_utc": "2026-10-22T11:06:05.222Z",
+     "state_position_start": 0,
+     "state_starts_empty": true,
+     "tokenize_seed_calls": 1,
+     "tokenize_text_calls": 1,
+     "verified_dependency_closure_item_ids": [
+      "TASK-SOURCE",
+      "TASK-U1"
+     ]
+    },
+    {
+     "computed_item_ids": [
+      "TASK-U3"
+     ],
+     "execution_state_id": "G-CHAIN-THIRD",
+     "exit_code": 0,
+     "exit_utc": "2026-10-22T11:06:35.090Z",
+     "harness_direct_is_reads": 0,
+     "input_sha256": "ff13b7f14821a4e0c6a14192dfc3d3d1a1f3778ec13f37730f37c6a569fa2f28",
+     "model_generate_calls": 1,
+     "model_load_seconds": 2.913316011428833,
+     "old_checkpoint_reads": 0,
+     "output_sha256": "cbd78c10b1c083517a9a44e9c8fd1ab5b86d967ef3617967d03ff0b5210e4309",
+     "pid": 28806,
+     "prefix_replay_tokens": 0,
+     "producer_exit_observed_before_next_process": true,
+     "reused_item_ids": [
+      "TASK-SOURCE",
+      "TASK-U1",
+      "TASK-U2"
+     ],
+     "settlement_signature_object_id": "63622bf83fafc4c9d15d2943591d77ed643d510d658943518d35e592b8a75152",
+     "stage": "P3_U3",
+     "start_utc": "2026-10-22T11:06:19.699Z",
+     "state_position_start": 0,
+     "state_starts_empty": true,
+     "tokenize_seed_calls": 1,
+     "tokenize_text_calls": 1,
+     "verified_dependency_closure_item_ids": [
+      "TASK-SOURCE",
+      "TASK-U1",
+      "TASK-U2"
+     ]
+    }
+   ],
+   "terminal_state": "OBSERVED"
+  },
+  "G1_MISSING_TRANSITIVE_DEPENDENCY": {
+   "database_side_effects": false,
+   "fallback_reads": 0,
+   "model_generate_calls": 0,
+   "notes": [
+    "refusal={\"item_id\": \"TASK-U1\", \"kind\": \"ADMISSION_REFUSED\", \"reason\": \"MISSING_OR_SUPERSEDED_SETTLEMENT\", \"stage\": \"SETTLEMENT_NOT_ADMITTED\"}",
+    "aggregation-only from persisted evidence"
+   ],
+   "refusal_observed": true,
+   "refusal_stage": "SETTLEMENT_NOT_ADMITTED",
+   "state_side_effects": false,
+   "terminal_state": "OBSERVED",
+   "tokenize_seed_calls": 0,
+   "tokenize_text_calls": 0
+  },
+  "N4_NONCE_AND_PREFIX_ISOLATION_AUDIT": {
+   "cross_stage_nonce_leakage": 0,
+   "notes": [
+    "scanned_files=15",
+    "hits=[]",
+    "template_leaks=[]",
+    "chain_ok=True"
+   ],
+   "scan_scope_manifest": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g/controls/n4-scan-scope.json",
+   "terminal_state": "OBSERVED",
+   "unapproved_occurrences": 0,
+   "unapproved_prefix_or_completion_copy": 0
+  }
+ },
+ "costs": {
+  "consumer_model_load_seconds": 2.68441104888916,
+  "model_generate_calls": 3,
+  "model_loads": 3,
+  "note": "each of the three OS processes performs its own model load and one generation for its own item; task-level reuse of U1/U2 does not remove those loads or the prefill of each stage's own input",
+  "prefix_replay_tokens": 0,
+  "producer_model_load_seconds": 3.8869630098342896,
+  "third_model_load_seconds": 2.913316011428833,
+  "tokenize_seed_calls": 3,
+  "tokenize_text_calls": 3
+ },
+ "guards": {
+  "artifact_guard": "PASS",
+  "workspace_guard": "PASS"
+ },
+ "identity": {
+  "execution_state_ids": [
+   "G-CHAIN-PRODUCER",
+   "G-CHAIN-CONSUMER",
+   "G-CHAIN-THIRD"
+  ],
+  "logical_lineage_id": "chain",
+  "model_identity_sha256": "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5",
+  "model_snapshot_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "model_snapshot_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "processes": [
+   {
+    "exit_code": 0,
+    "exit_utc": "2026-10-22T11:06:05.218Z",
+    "pid": 28775,
+    "stage": "P1_U1",
+    "start_utc": "2026-10-22T11:05:42.789Z"
+   },
+   {
+    "exit_code": 0,
+    "exit_utc": "2026-10-22T11:06:19.697Z",
+    "pid": 28794,
+    "stage": "P2_U2",
+    "start_utc": "2026-10-22T11:06:05.222Z"
+   },
+   {
+    "exit_code": 0,
+    "exit_utc": "2026-10-22T11:06:35.090Z",
+    "pid": 28806,
+    "stage": "P3_U3",
+    "start_utc": "2026-10-22T11:06:19.699Z"
+   }
+  ],
+  "settlement_ids": [
+   "9e6900971abb52ec74c1f417ddf9c16e0032c647877569c9ffad6e753d31a4fe",
+   "c07ea527e8459affaa1bf6c0fd429080e0d7c4feff816d677b5aa4f80d607d9b",
+   "288055d98d97ef6e252d6bc90822c1d056a4205f831933b821631ba45aa4543b"
+  ],
+  "signature_object_ids": [
+   "c9880b1ddeea8555cdd7fc9050e1561c7afbceeb6032fdee9418a176e6cd8fb3",
+   "974b130fb6bced78c4c6f4cc7a631b1167e7db822812af9700b4ce2e23f9d37c",
+   "63622bf83fafc4c9d15d2943591d77ed643d510d658943518d35e592b8a75152"
+  ],
+  "tokenizer_digest": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+ },
+ "model_identity": "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5",
+ "round_id": "G",
+ "schema_version": "1.0",
+ "source_head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+ "terminal_state": "OBSERVED",
+ "trust_root": {
+  "anchor_mode": "0o444",
+  "anchor_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g/trust/settlement-trust-anchor.json",
+  "anchor_sha256": "a3a9e62299bc60e2ed5c97011d33a7de53182bee4a2baba35e1791475c7ca1e8",
+  "attacker_anchor_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g/trust/attacker-anchor.json",
+  "attacker_anchor_sha256": "d5737e2197bbbe5defaecac97cb8d9222e5aff76a1f20f7f803142bd1a0236ff",
+  "attacker_public_key_sha256": "b8ddfb742076a85a6eb3c062e1e055ddf90a80ad25fbaeaadb48f900eba7a6b8",
+  "build_sha256": "d36ba7028b1c1a92beb74caa3b0e3896bbb20f9980c946410b243c431f3cac93",
+  "key_id": "e-round-d8a2fc6da73c0a12",
+  "key_mode": "0o600",
+  "key_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g/trust/settlement-signing-key.json",
+  "key_sha256": "ad8727969092ec828d583f9d9f1e4c46ef153702185ed38ea71fe1ec25bbf90c",
+  "private_key_location": "filesystem only; never a database row",
+  "public_key_base64": "cXPnHgdGQrruL/U3zHDGyYI/G2T5nFIXnQyEmo55l4k=",
+  "public_key_sha256": "d8a2fc6da73c0a1298ea1ba09fcef8eea9ede863630008fcdfb12ead64b64f64",
+  "reused_for_this_invocation": false,
+  "schema_id": "SIMIGO-E-ROUND-TRUST-ROOT-V1"
+ },
+ "world_definition": {
+  "checksum": "b54e",
+  "secret_sha256": "70df8b7eaf66cb0e7e4d5a22971fdcd8886ae0ee1cd5f280ab09b66d88a32579",
+  "source_payload_sha256": "adfb2694888954cc248d8bc7616968f37a2326e64a6cc8e93747a6918e42e3ba",
+  "u2_template_sha256": "7610b37592df3b6f096128ee4f0b22d663ebc743ee6542381a4c1e01cf8446fc",
+  "u3_template_sha256": "7081f827c07bfebdcd5d542eb593d63ea3e50796dc5a44855957c6c6cabbcfa9",
+  "world_nonce_sha256": "d9bb24138e9661c5ff54abf59c1e01d76501cabe043159b576015cfed3ba516b"
+ }
+}

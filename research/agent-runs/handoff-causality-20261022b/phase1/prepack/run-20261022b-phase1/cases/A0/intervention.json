@@ -1,0 +1,22 @@
+{
+  "case": "A0",
+  "changes": [
+    {
+      "copy": "baseline unchanged"
+    }
+  ],
+  "database_after": {
+    "device": "16777233",
+    "inode": "110211259",
+    "path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022b-phase1/cases/A0/carrier.sqlite",
+    "sha256": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "size_bytes": 36864
+  },
+  "state_after": [
+    {
+      "path": "execution-state.json",
+      "sha256": "fb01e0b4d9bf57908558989324094097a747b79e4c3bce2477cff11012bf833f",
+      "size_bytes": 3078
+    }
+  ]
+}

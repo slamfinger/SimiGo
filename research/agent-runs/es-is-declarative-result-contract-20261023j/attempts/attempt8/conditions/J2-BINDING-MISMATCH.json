@@ -1,0 +1,25 @@
+{
+  "id": "J2-BINDING-MISMATCH",
+  "kind": "contract_test_model_free_candidate",
+  "observations": {
+    "contract_dispatch_basis": "declared_contract",
+    "expected_error_code": "PRODUCER_RESULT_BINDING_MISMATCH",
+    "generation_calls": 0,
+    "item_id_under_test": "J-53644fb4-U1",
+    "model_loads": 0,
+    "observed_error": "PRODUCER_RESULT_BINDING_MISMATCH: field=priority actual '3' != bound value '5'",
+    "producer_contract_rejects": true,
+    "run_token": "53644fb4",
+    "seed_tokenize_calls": 0,
+    "signature_created": false,
+    "test_kind": "contract_test_model_free_candidate",
+    "text_tokenize_calls": 0,
+    "valid_settlement_created": false
+  },
+  "raw_log_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J2/logs/j2-binding-mismatch.settle.log",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/logs/J2-BINDING-MISMATCH.driver.log"
+  ],
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J2"
+}

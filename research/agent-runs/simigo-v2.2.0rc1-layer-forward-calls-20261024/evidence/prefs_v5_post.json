@@ -1,0 +1,20 @@
+{
+ "domain": "SwiftUI.SimiGo",
+ "export_bytes": 8644,
+ "export_rc": 0,
+ "export_sha256": "3a6882bc8fc4cfa03e89e1422ca62d9861e4376d5e38b527cc4f5b3de061bd37",
+ "key_count": 20,
+ "plist_exists": true,
+ "plist_mtime_ns": 1792824126238618119,
+ "plist_path": "/Users/mr.simi/Library/Preferences/SwiftUI.SimiGo.plist",
+ "plist_sha256": "944f27ca47607f1674cace9aadd674f47a1ce9b337f8bbbd890a886d69e72ce5",
+ "plist_size": 6346,
+ "tracked": {
+  "BackendSelection": "mlx",
+  "CloudModel": "glm-5.3-flash",
+  "LLaMAModelPath": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/blobs/0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
+  "MLXModelPath": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+  "SelectedModelPath": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81"
+ },
+ "values_sha256": "4dfab48c9da6fa170da70ac72122f3ecdeea22b3d534cd3d228d94d66110673a"
+}

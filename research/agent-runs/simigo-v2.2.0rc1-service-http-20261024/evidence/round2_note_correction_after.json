@@ -1,0 +1,47 @@
+{
+ "check_set_changes": [],
+ "manifest_verify": "manifest_ok=89349 manifest_failed=0",
+ "note_generator": "driver/verify_batch.py::service_http_note (composed from evidence/m3_stage_c_probe.txt)",
+ "paths": {
+  "MANIFEST_SHA256.txt": {
+   "bytes_after": 14771650,
+   "bytes_before": 14771650,
+   "sha256_after": "750e74639ebb30a526404dbf8e9c1ce9c7c988d27f9adfd4fe4d595933e15ee9",
+   "sha256_before": "97e952cbcb4a491144cae770cbdb70ffa801fe3782d60902554998b5c6310527"
+  },
+  "REPORT.md": {
+   "bytes_after": 15715,
+   "bytes_before": 11902,
+   "sha256_after": "02b48f6a2926d1bed03046dd6599b0a2b501bff85cb2966e7ba215bd5af4fc3f",
+   "sha256_before": "af535a34b60e6d247149879b19ed88306488695ab6ad401294e8033729bdd05e"
+  },
+  "acceptance_report.json": {
+   "bytes_after": 13195,
+   "bytes_before": 12541,
+   "sha256_after": "57de11e7f0a27e840829b5168dc189b79efcea0e2f81771ca8bbbcfe996cb07c",
+   "sha256_before": "9bd75d710791a80a11b9d899a246b5e4820de580daa157065d56dc7f6592bc25"
+  },
+  "driver/verify_batch.py": {
+   "bytes_after": 27022,
+   "bytes_before": 25070,
+   "sha256_after": "ada9756dace719f524283a36c3fb0b4870ca42c0fbdd2ccaa73b44a67b9af412",
+   "sha256_before": "5c58862e9bf102ac9aca4f2fc34f4897340fe76da35ba73efc8cc452bc0a958d"
+  }
+ },
+ "phase": "after",
+ "report": {
+  "counts": {
+   "BLOCKED": 3,
+   "FAIL": 0,
+   "INCONCLUSIVE": 0,
+   "NOT_INSTRUMENTED": 1,
+   "PASS": 12
+  },
+  "gate_count": 16,
+  "generated_at": "2026-10-24T13:24:16+0800",
+  "overall": "BLOCKED",
+  "product_service_http_note": "CORRECTED 2026-10-24: no retained evidence supports (\u65e0\u7559\u5b58\u8bc1\u636e\u652f\u6301) the earlier round-2 note - 'Round 2 reached the installed app's real HTTPServer (ephemeral port observed via lsof on the running pid, TLS-only: plaintext gets an empty reply)' and 'a POST carrying a fabricated LOCALB proof returns 503'. The retained stage-C record reads: listening_socket_found=0; authorized_request_completed=0; probe_result=NO_SOCKET_WINDOW OBSERVED. There is no lsof/bound-port line, no tls_verify line and no http_status line for the installed binary anywhere in this batch, so those three observations were recalled, not recorded. What the batch does support: the product ships no surface that runs the activation ceremony (app_target_call_sites=0 in evidence/localb_authorization_path.txt), so an unactivated host refuses protected traffic at the guard, and the same product code serves authorized requests once activated - proven only in the product's own test target, not through the installed listener. The correction does not flip this gate: an absence of evidence is not evidence that the server never listened, so product_service_http stays BLOCKED until a rebuilt candidate that ships the activation path is observed end-to-end (an authorized request served through the real listener plus a negative proof refused before generation).",
+  "product_service_http_verdict": "BLOCKED"
+ },
+ "verdict_changes": {}
+}

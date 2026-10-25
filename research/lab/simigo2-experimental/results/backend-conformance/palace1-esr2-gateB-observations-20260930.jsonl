@@ -1,0 +1,17 @@
+{"ts":"2026-09-30T14:15:26Z","case":"sideA","model":"loaded (live state held: P + History)"}
+{"ts":"2026-09-30T14:15:27Z","case":"sideA","formation_position":"17"}
+{"ts":"2026-09-30T14:15:27Z","case":"sideA","formation_identity":"default/5401315f-faa7-4984-9639-fccef06ae188/main"}
+{"ts":"2026-09-30T14:15:27Z","case":"sideA","carrier_written":"{\"continuationAnchor\":{\"afterMessageIndex\":17,\"tailContentSHA256\":\"825ec6e1704d7c92105fb3b0582e6b1837ee5c62c8bda58c2a7a38f81c3fddb7\",\"tailRole\":\"assistant\"},\"format\":\"ESR2-TIER1-v1\",\"formedAt\":\"2026-09-30T14:15:27Z\",\"formedBy\":\"process-A (Palace1ESR2GateBStateSurvivalTests)\",\"position\":17,\"storageKey\":\"default\\/5401315f-faa7-4984-9639-fccef06ae188\\/main\"}"}
+{"ts":"2026-09-30T14:15:27Z","case":"sideA","carrier_bytes":"357"}
+{"ts":"2026-09-30T14:15:27Z","case":"sideA","ploss_space":"meta.json + state-carrier.json staged; NO safetensors (representation lost)"}
+{"ts":"2026-09-30T14:15:27Z","case":"sideA","note":"process A exits NOW; runtime object dies; carrier + meta persist in the P-loss space"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","ploss_space_contents":"default_5401315f-faa7-4984-9639-fccef06ae188_main.meta.json,state-carrier.json"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","identity_from_carrier":"default/5401315f-faa7-4984-9639-fccef06ae188/main"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","identity_verdict":"SURVIVED (matches process-A formation record; not re-created)"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","position_from_carrier":"17"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","position_verdict":"SURVIVED as authoritative assertion (no P reload, no history recount)"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","anchor_from_carrier":"afterMessageIndex=17 tailSHA256=825ec6e1704d7c92…"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","anchor_verdict":"SURVIVED as authoritative assertion"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","consistency":"carrier anchor == surviving transcript tail (agreement, authority stays with carrier)"}
+{"ts":"2026-09-30T14:17:35Z","case":"sideB","model_compatibility":"carried by meta.json (remaining payload), not part of Tier-1 carrier"}
+{"ts":"2026-09-30T14:17:35Z","case":"gateB","verdict":"STATE-SURVIVES (Tier-1 carrier holds identity+position+anchor independently of P and runtime; verification of anchor against context requires H — the Tier-1/Tier-2 boundary is empirically visible)"}

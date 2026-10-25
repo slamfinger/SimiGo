@@ -1,0 +1,403 @@
+{
+ "artifact": "which recorded ledger REASONS are contradicted by this batch's evidence",
+ "candidate_exe_sha256": "83a88048569f4470b9a82ff0ee7ed6817572e8bd777b7df8a6ce3a357c98b70d",
+ "gates": [
+  {
+   "coverage_boundary_declared": "The observer sits on the decoder MLP down-projection (and the MoE switch_mlp down-projection); the decoder core itself is NOT directly observed. Expert-level demand is not instrumented.",
+   "current_evidence": [
+    {
+     "pointer": "evidence/layer_forward_calls_verdict_v5.json",
+     "present": true,
+     "sha256": "bb4d2d948ecf19a6a7823827b1670ed38955823fdcdbe98075b2992d4642edfc"
+    }
+   ],
+   "gate": "per_layer_forward_calls",
+   "ledger_checks": {
+    "instrumented": false
+   },
+   "ledger_reason": "No per-layer forward-count instrumentation exists in the product.",
+   "ledger_verdict": "NOT_INSTRUMENTED",
+   "measured_now": {
+    "all_L_checks_true": true,
+    "candidate_exe_sha256_matches_current_candidate": true,
+    "estimated_values": 0,
+    "layer_entered_events_total": 3264,
+    "layers_observed": 48,
+    "verdict_on_current_candidate": "PASS"
+   },
+   "open_question_for_the_operator": "the recorded reason says no instrumentation exists; on this candidate the shipped pilot did instrument and did emit real counts. Whether that closes the gate depends on what the gate is required to cover: the observer sits on the down-projections, the decoder core is not directly observed and expert-level demand is not instrumented.",
+   "reason_still_true": false,
+   "this_script_does_not": [
+    "set the gate to PASS",
+    "decide the coverage scope",
+    "write the ledger"
+   ]
+  },
+  {
+   "current_evidence": [
+    {
+     "pointer": "evidence/os_page_return_verdict_os5.json",
+     "present": true,
+     "sha256": "05b5113bec22f3efb29ac458990b964dbcbaea92d2a79b76b7e8fbc46941ba07"
+    },
+    {
+     "pointer": "evidence/os_page_return_verdict_os5b.json",
+     "present": true,
+     "sha256": "b2b35eacf9f8fa2fc0d979af5599df3ff1925c5101ee139d2bd57b9294a88c62"
+    },
+    {
+     "pointer": "evidence/os_page_return_verdict_os5c.json",
+     "present": true,
+     "sha256": "d75736d738b98ca1ecb8ea419205de4ba7a499edc418dc7f5cb4b7ae35308a96"
+    },
+    {
+     "pointer": "evidence/os_page_return_verdict_os6a.json",
+     "present": true,
+     "sha256": "330a730e1b3741f2864ca29552a86cea0b25e84e628d57efa792a82b836def69"
+    },
+    {
+     "pointer": "evidence/os_page_return_verdict_os6b.json",
+     "present": true,
+     "sha256": "534bd497028659739e265cf36d3a2156f12d738fc1bdb387ba71480dbcd1f8b8"
+    },
+    {
+     "pointer": "evidence/os_page_return_verdict_os6c.json",
+     "present": true,
+     "sha256": "97a0a4e062418d8e7fa6c6ea6841037649b21d68b1e336963c60dab1d37b288c"
+    },
+    {
+     "pointer": "evidence/os_page_return_trial_dispersion.json",
+     "present": true,
+     "sha256": "676b9bd4cced58b1839ef97c4337b3af9a1589046f441aef019a422e9e7fb46c"
+    },
+    {
+     "pointer": "evidence/os_page_return_preregistration_next.json",
+     "present": true,
+     "sha256": "877ba09e4477ff8eefe78bc603fb662f2deaeec14e640106bb9dd09e152ca536"
+    },
+    {
+     "pointer": "evidence/os_page_return_free_only_exploratory.json",
+     "present": true,
+     "sha256": "5eceb80eabab0d389293b76086c19477bee0cc8d5777eba709f3f44ff76d2c43"
+    }
+   ],
+   "gate": "physical_page_return",
+   "ledger_checks": {
+    "footprint_only": true,
+    "os_level_page_return_evidence": false
+   },
+   "ledger_reason": "No OS-level page-return evidence was collected; footprint/exit is supporting only.",
+   "ledger_verdict": "BLOCKED",
+   "measured_now": {
+    "rule_changed": false,
+    "same_binary_margin_spread_bytes": 359333864,
+    "same_binary_ratio_range": [
+     0.496538,
+     0.517308
+    ],
+    "same_binary_ratio_spread": 0.020771,
+    "same_binary_trials": [
+     "os5",
+     "os5b",
+     "os5c",
+     "os6a",
+     "os6b",
+     "os6c"
+    ],
+    "threshold_changed": false,
+    "trials_on_current_candidate": {
+     "os5": {
+      "a5_threshold_bytes": 8650094460,
+      "a5_verdict_field_as_written": 0.517,
+      "all_a_checks_true": true,
+      "candidate_binds_current_exe": true,
+      "exit_teardown_used_for_verdict": false,
+      "host_gain_bytes": 8949530624,
+      "kernel_resident_drop_bytes": 17300188920,
+      "margin_bytes_to_threshold": 299436164,
+      "ratio_recomputed_from_bytes": 0.517308,
+      "verdict_as_written": "PASS"
+     },
+     "os5b": {
+      "a5_threshold_bytes": 8648652632,
+      "a5_verdict_field_as_written": 0.499,
+      "all_a_checks_true": false,
+      "candidate_binds_current_exe": true,
+      "exit_teardown_used_for_verdict": false,
+      "host_gain_bytes": 8633352192,
+      "kernel_resident_drop_bytes": 17297305264,
+      "margin_bytes_to_threshold": -15300440,
+      "ratio_recomputed_from_bytes": 0.499115,
+      "verdict_as_written": "BLOCKED"
+     },
+     "os5c": {
+      "a5_threshold_bytes": 8649553764,
+      "a5_verdict_field_as_written": 0.497,
+      "all_a_checks_true": false,
+      "candidate_binds_current_exe": true,
+      "exit_teardown_used_for_verdict": false,
+      "host_gain_bytes": 8589656064,
+      "kernel_resident_drop_bytes": 17299107528,
+      "margin_bytes_to_threshold": -59897700,
+      "ratio_recomputed_from_bytes": 0.496538,
+      "verdict_as_written": "BLOCKED"
+     },
+     "os6a": {
+      "a5_threshold_bytes": 8648767344,
+      "a5_verdict_field_as_written": 0.515,
+      "all_a_checks_true": true,
+      "candidate_binds_current_exe": true,
+      "exit_teardown_used_for_verdict": false,
+      "host_gain_bytes": 8899739648,
+      "kernel_resident_drop_bytes": 17297534688,
+      "margin_bytes_to_threshold": 250972304,
+      "ratio_recomputed_from_bytes": 0.514509,
+      "verdict_as_written": "PASS"
+     },
+     "os6b": {
+      "a5_threshold_bytes": 8648709952,
+      "a5_verdict_field_as_written": 0.516,
+      "all_a_checks_true": true,
+      "candidate_binds_current_exe": true,
+      "exit_teardown_used_for_verdict": false,
+      "host_gain_bytes": 8929542144,
+      "kernel_resident_drop_bytes": 17297419904,
+      "margin_bytes_to_threshold": 280832192,
+      "ratio_recomputed_from_bytes": 0.516235,
+      "verdict_as_written": "PASS"
+     },
+     "os6c": {
+      "a5_threshold_bytes": 8642353020,
+      "a5_verdict_field_as_written": 0.512,
+      "all_a_checks_true": true,
+      "candidate_binds_current_exe": true,
+      "exit_teardown_used_for_verdict": false,
+      "host_gain_bytes": 8851423232,
+      "kernel_resident_drop_bytes": 17284706040,
+      "margin_bytes_to_threshold": 209070212,
+      "ratio_recomputed_from_bytes": 0.512096,
+      "verdict_as_written": "PASS"
+     }
+    },
+    "trials_passing": [
+     "os5",
+     "os6a",
+     "os6b",
+     "os6c"
+    ]
+   },
+   "open_question_for_the_operator": "OS-level page-return evidence now exists on this candidate, so the recorded reason ('no OS-level evidence was collected') is stale. That does not make the gate PASS: repeats of the same executable straddle the 0.50 line, and the registered rule for a future claim asks for three trials all passing A5 on that exact executable.",
+   "reason_still_true": false,
+   "this_script_does_not": [
+    "average trials",
+    "re-decide a trial",
+    "relax A5",
+    "write the ledger"
+   ]
+  },
+  {
+   "current_evidence": [
+    {
+     "pointer": "evidence/service_http_ledger_projection_v5.json",
+     "present": true,
+     "sha256": "4337ef3d6371973dfc39bca7692d30064f7cc965bc00b6d4fcc9552b289e31be"
+    },
+    {
+     "pointer": "evidence/gate_v5/service_http_gate_verdict.json",
+     "present": true,
+     "sha256": "3cb4fb9ae41d95f5880fc8e2216a20397077c37bbdd6ec8f08103d973e7d0785"
+    },
+    {
+     "pointer": "evidence/service_http_status_mapping_attribution.json",
+     "present": true,
+     "sha256": "1a0f7744b5c75b8ebc3cdd8abffff1fcb710eab68787467954d7f5ef9fcefe72"
+    }
+   ],
+   "deviations_kept_public": [
+    {
+     "explanation": "503 is HTTPServerError.localbAuthorizationUnavailable, i.e. 'no LOCALB authorization configured at all' - that is scenario S5, measured there at 503. A request that reaches a configured authorization and fails its proof is rejected by the proof gate with 401 before dispatch. The product was NOT changed to return 503 for an unverifiable proof: doing so would blur 'not activated' with 'bad proof'.",
+     "observed": "HTTP 401 at the proof gate (LOCALB_CLIENT_REQUEST_SIGNATURE_INVALID)",
+     "operator_table_expected": "HTTP 503",
+     "scenario": "S2_invalid_proof",
+     "status_mapping": {
+      "all_checks_pass": true,
+      "anchors": {
+       "proof_gate_throw": [
+        1401
+       ],
+       "proof_missing_throw": [
+        1345
+       ],
+       "spki_never_read_comment": {
+        "first_line": [
+         1326
+        ],
+        "tail_line": [
+         1327
+        ]
+       },
+       "transport_trust_guard": [
+        1328,
+        1431
+       ],
+       "trusted_checkpoint_argument": [
+        1398,
+        1486
+       ],
+       "unavailable_throws": [
+        {
+         "guard": {
+          "line": 1332,
+          "text": "guard let authorization = localbRequestAuthorization else {"
+         },
+         "message": "LOCALB request authorization is not configured",
+         "throw_line": 1333
+        },
+        {
+         "guard": {
+          "line": 1434,
+          "text": "guard let authorization = localbRequestAuthorization else {"
+         },
+         "message": "LOCALB request authorization is not configured",
+         "throw_line": 1435
+        }
+       ]
+      },
+      "answer": "both statuses exist and mean different things. A configured authorization whose proof fails throws localbRequestRejected -> 401. 503 is reserved for 'this host has no request authorization configured at all', which is scenario S5. The operator table's 503 matches S5, not S2. The product was not changed.",
+      "checks": {
+       "auth_checks_run_before_dispatch": true,
+       "both_unavailable_throws_are_behind_the_nil_authorization_guard": true,
+       "client_supplied_spki_is_never_read": true,
+       "proof_failures_generated_nothing": true,
+       "proof_failures_observed_with_the_rejected_case_status": true,
+       "proof_gate_status_is_401": true,
+       "status_map_read_from_source": true,
+       "transport_trust_comes_from_the_accepting_listener": true,
+       "trusted_checkpoint_is_passed_to_authorize": true,
+       "unactivated_status_and_message_match_the_unavailable_case": true,
+       "unconfigured_authorization_status_is_503": true
+      },
+      "evidence": "evidence/service_http_status_mapping_attribution.json",
+      "product_changed_to_match_the_table": false,
+      "question": "the operator table says an invalid proof must answer HTTP 503; the candidate answered 401 to three proof failures and 503 only when no authorization was configured - which of those is the product's rule?",
+      "source_head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+      "source_sha256": {
+       "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift": "5ab94dff66e3b48528d3c03ec8126bef637ff6b5947a4e0e35dcd250a01e279c",
+       "SimiGo/Protocol/HTTPServer.swift": "d478e0e8fb0709ce27a10ef48c1aeb0a4bb761b0a0c37d0c7bdb253068f32af0"
+      },
+      "source_worktree_clean": {
+       "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift": false,
+       "SimiGo/Protocol/HTTPServer.swift": true
+      },
+      "status_code_map": {
+       "badRequest": 400,
+       "clientDisconnected": 400,
+       "expectationFailed": 417,
+       "localbAuthorizationUnavailable": 503,
+       "localbRequestRejected": 401,
+       "localbRouteDenied": 403,
+       "localbTransportNotTrusted": 403,
+       "payloadTooLarge": 413,
+       "unsupportedTransferEncoding": 501
+      }
+     }
+    },
+    {
+     "evidence": "evidence/gate_v5_facade/service_http_gate_installed.json",
+     "note": "no configuration is injected by the driver: the node port comes from the product's SIMIGO_PORT rule and LOCALB from the isolated managed root. The earlier note blamed Service.start for a defaults write that lives in selectModel(path), which this leg never calls; a prefs snapshot before/after the run is kept beside the evidence.",
+     "observed": "the serving leg was started by Service.shared.start(path:) - the product's own Start surface - and the facade's own trace lines ([NODE] backend=/[READY] ) are present in the run that served HTTP 200",
+     "operator_authorized": "path 1: prepare/activate + pair prepare/approve calling existing package APIs only",
+     "scenario": "activation_and_pairing_surface",
+     "status": "closed_on_this_candidate"
+    }
+   ],
+   "gate": "product_service_http",
+   "ledger_checks": {
+    "authorization_surface_recorded": true,
+    "authorized_lane_passes_in_test_target": true,
+    "authorized_request_completed": false,
+    "listening_socket_found": false,
+    "no_authorization_relaxation": false,
+    "probe_present": true,
+    "tls_only_transport": false,
+    "unconfigured_authorization_refused": false
+   },
+   "ledger_reason": "CORRECTED 2026-10-24: no retained evidence supports (\u65e0\u7559\u5b58\u8bc1\u636e\u652f\u6301) the earlier round-2 note - 'Round 2 reached the installed app's real HTTPServer (ephemeral port observed via lsof on the running pid, TLS-only: plaintext gets an empty reply)' and 'a POST carrying a fabricated LOCALB proof returns 503'. The retained stage-C record reads: listening_socket_found=0; authorized_request_completed=0; probe_result=NO_SOCKET_WINDOW OBSERVED. There is no lsof/bound-port line, no tls_verify line and no http_status line for the installed binary anywhere in this batch, so those three observations were recalled, not recorded. What the batch does support: the product ships no surface that runs the activation ceremony (app_target_call_sites=0 in evidence/localb_authorization_path.txt), so an unactivated host refuses protected traffic at the guard, and the same product code serves authorized requests once activated - proven only in the product's own test target, not through the installed listener. The correction does not flip this gate: an absence of evidence is not evidence that the server never listened, so product_service_http stays BLOCKED until a rebuilt candidate that ships the activation path is observed end-to-end (an authorized request served through the real listener plus a negative proof refused before generation).",
+   "ledger_verdict": "BLOCKED",
+   "measured_now": {
+    "gate_overall": "PASS",
+    "ledger_checks_recorded_false_now_measured_true": [
+     "authorized_request_completed",
+     "listening_socket_found",
+     "no_authorization_relaxation",
+     "tls_only_transport",
+     "unconfigured_authorization_refused"
+    ],
+    "projection_verdict": "PASS",
+    "status_mapping_attribution_all_checks": true
+   },
+   "open_question_for_the_operator": "the four recorded-false checks are measured true on this candidate, but the activation entry used is a controlled management role in an isolated root, not the GUI flow. The merge decision is yours; nothing here changes the ledger.",
+   "reason_still_true": false,
+   "this_script_does_not": [
+    "write the ledger",
+    "claim GUI activation works"
+   ]
+  },
+  {
+   "current_evidence": [
+    {
+     "pointer": "evidence/gui_prerequisite_recheck_os5.json",
+     "present": true,
+     "sha256": "7b66eff9a7f76c4ab29ef922a7d67fea4a630665c3f0709feb7b655c29ad0019"
+    }
+   ],
+   "gate": "install_and_operate",
+   "ledger_checks": {
+    "bootstrap_models_discovered": true,
+    "bootstrap_no_issues": true,
+    "bootstrap_report_present": true,
+    "bootstrap_schema_v3": true,
+    "gui_prompt_ran_real_model": false,
+    "installed_binary_ran": true,
+    "isolation_env_seen_by_app": true
+   },
+   "ledger_reason": "The installed, independently path'd app resolves the three isolated roots, completes bootstrap (20 models, schema v3, 0 issues), creates its sqlite database, quits and restarts from the same bundle. Two blockers used to hide this: (1) round 3 found Service.init() blocking forever inside SecItemCopyMatching because CloudKeychain read the real login Keychain and the item's ACL answered the new binary with an interactive SecurityAgent prompt (securityd: 'QueryKeychainUse::queryUser'); that isolation gap is fixed in this build - CloudKeychain is inert when SIMIGO_HOME is set - and is covered by testIsolatedManagedRootNeverReadsOrWritesTheLoginKeychain. (2) The user-visible prompt leg is still unproven: this host grants the driver no Screen Recording, so although the 8 GUI attempts now reach the AX tree (2 menu bars, 6 items) and AXPress succeeds, no window appears, screencapture fails ('could not create image from display') and no keystroke can be typed into a prompt field. An unproven leg stays BLOCKED rather than being inferred from stage A.",
+   "ledger_verdict": "BLOCKED",
+   "measured_now": {
+    "accessibility_granted": true,
+    "real_user_walkthrough_recorded": false,
+    "screen_recording_granted": true,
+    "screenshot_bytes_observed": 5249809
+   },
+   "open_question_for_the_operator": "this is the one gate whose missing input cannot be produced headlessly: it needs the operator to click the menu-bar item and submit one prompt in the installed candidate. The machine-side prerequisite (screen recording) is now granted and re-checked.",
+   "reason_still_true": true,
+   "this_script_does_not": [
+    "simulate the click",
+    "synthesise an event",
+    "write the ledger"
+   ]
+  }
+ ],
+ "generated_by": "driver/project_ledger_staleness.py",
+ "ledger": {
+  "counts": {
+   "BLOCKED": 3,
+   "FAIL": 0,
+   "INCONCLUSIVE": 0,
+   "NOT_INSTRUMENTED": 1,
+   "PASS": 12
+  },
+  "overall": "BLOCKED",
+  "path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/acceptance_report.json",
+  "sha256": "57de11e7f0a27e840829b5168dc189b79efcea0e2f81771ca8bbbcfe996cb07c"
+ },
+ "ledger_modified": false,
+ "merge_requires_authorization": true,
+ "not_claimed": [
+  "no gate status is changed here; the counts above are read from the untouched ledger",
+  "a stale reason does not automatically become PASS - it means the recorded 'why' no longer holds",
+  "every 'measured_now' value is read out of the named evidence file, not typed here",
+  "if an evidence file is absent the row reports it as absent rather than assuming a result"
+ ],
+ "purpose": "input for the separate authorisation that decides whether new evidence may close gates; a staleness list, not a merge"
+}

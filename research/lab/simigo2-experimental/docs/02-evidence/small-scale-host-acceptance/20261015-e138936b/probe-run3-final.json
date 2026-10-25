@@ -1,0 +1,26 @@
+{
+  "baselineOutput" : "## Tradeoff Between Durable Write-A Ahead Logs and Atomic Rename Publication\n\n**Durable Write-A Ahead Logs** provide",
+  "boundaryRespected" : true,
+  "coldSeconds" : 188.557084,
+  "crossSessionHitObserved" : true,
+  "hookCalls" : 3,
+  "hookHits" : 1,
+  "identityDigest" : "188a16c59bd1407be74e57c04e46e20b7dd9f54b2582d91391d0b01d727c0938",
+  "matchedTokenCount" : 900,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "outputsMatch" : false,
+  "pass" : false,
+  "prefixTokenCount" : 900,
+  "promptTokenCount" : 968,
+  "savingsRatio" : -0.9836605555482604,
+  "savingsSeconds" : -185.476166,
+  "switchLeg" : {
+    "reAdoptedHitObserved" : true,
+    "reAdoptedMatchedTokenCount" : 900,
+    "switchTarget" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+    "switchedAway" : true,
+    "switchedBack" : true
+  },
+  "warmOutput" : "## Tradeoff Between Durable Write-A ahead Logs and Atomic Rename Publication\n\n**Durable Write-Aahead Logs** provide",
+  "warmSeconds" : 374.03325
+}

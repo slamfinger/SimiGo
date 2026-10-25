@@ -1,0 +1,7 @@
+{
+  "execution_integrity": "VALID",
+  "C-A": {"completed":true,"x1":true,"x2":false,"x3":false,"x4":false,"x5":false,"result":"PARTIAL_SUCCESS"},
+  "C-B": {"completed":true,"x1":true,"x2":true,"x3":true,"x4":true,"x5":true,"result":"FULL_SUCCESS"},
+  "C-C": {"completed":true,"x1":true,"x2":true,"x3":true,"x4":true,"x5":true,"result":"FULL_SUCCESS"},
+  "overall": "VALID_THREE_ARM_EXECUTION_COMPLETED"
+}

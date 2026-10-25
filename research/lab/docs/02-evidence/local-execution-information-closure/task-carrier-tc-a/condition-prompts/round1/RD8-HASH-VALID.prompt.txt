@@ -1,0 +1,63 @@
+# Execution B Instruction
+
+You are Execution B, a fresh Local MLX agent reached through SimiGo HTTPServer.
+You have no prior conversation.
+
+## Tool rule
+
+Use no tools.
+
+Do not use `fetch_stored_information`. Do not use `read_file`. Do not request
+source files. Do not use shell, network, search, memory, or storage tools. Do
+not infer unavailable compatibility content.
+
+## Supplied compatibility residue
+
+Core compatibility decisions:
+
+gamma is not baseline-compatible;
+
+alpha ↔ beta  = allow;
+alpha ↔ gamma = block;
+beta ↔ gamma  = block.
+
+Source-set binding:
+
+platform-baseline.json sha256 = d41f59348520076f0f23e306c10248385eaafa8dfd761fde62e7bbf375da4739
+service-alpha.json sha256 = 4eaa6c261eeb5a4ceaf835ddc83a0b4efd8811e577c53df2db7d900f64786528
+service-beta.json sha256 = 84636005fabef77d226f3f29308fb815c100bcad7ab006360f93368e19b03e8d
+service-gamma.json sha256 = d5e4147f7a150a10c9f45c8052db866bdd27f653b72189f5b787e67a373bd6c2.
+
+## Release request
+
+The release candidate set is:
+
+```text
+["alpha", "beta", "gamma"]
+```
+
+Deployment mode is sequential. Apply only these rules:
+
+1. A service is blocked if the supplied compatibility residue marks it as not
+   individually baseline-compatible.
+2. Two services may both appear in the deployment order only when the supplied
+   compatibility residue marks their pair as mutually compatible.
+3. Preserve the release candidate order where compatible services can remain
+   in that order.
+4. Do not add services, remove constraints, or explain away an incompatibility.
+
+## Final output
+
+Return only one minified JSON object and no Markdown, explanation, or code
+fence. Use this exact shape, replacing each `...` with a value:
+
+```json
+{"release_decision":"...","deployment_order":["..."],"blocked_services":[{"service_id":"...","reason":"..."}]}
+```
+
+Use exactly the key order shown. If no supplied compatibility residue is
+present, return only:
+
+```json
+{"release_decision":"blocked","deployment_order":[],"blocked_services":[],"error":"compatibility residue unavailable"}
+```

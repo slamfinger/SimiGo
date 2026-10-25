@@ -1,0 +1,3141 @@
+{
+  "boundary": "POLICYRESIDENCY_RETENTION_STRUCTURE / BYTE_VALIDATED_BOOKKEEPING / NOT_DEMAND / NOT_PREDICTION / NOT_RESIDENCY_LOCALITY / PER_MODEL_PER_WORKLOAD_NO_POOLING / C_MODEL_OFFSET_SEALED_AS_ACCOUNTING_ITEM",
+  "models": {
+    "cyber-tiel-35b": {
+      "T1_DOCUMENT_SESSION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5853444591453045,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.29160422657770063,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5853444591453045,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_A->STATE_B",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_B->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "4->5"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.692458628973662,
+            "minByteOverlapRatio": 0.29160422657770063
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7192371714307513,
+            "minByteOverlapRatio": 0.29160422657770063
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7638680755259002,
+            "minByteOverlapRatio": 0.29160422657770063
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 32614907904,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 90596966400,
+          "measuredPolicyCumulativeReloadBytes": 57982058496,
+          "measuredReloadSecondsNaive": 14.768895709,
+          "measuredReloadSecondsPolicy": 9.923809748000002,
+          "measuredSavingsBytes": 32614907904,
+          "perTransitionRetainedOptionalBytes": [
+            7247757312,
+            14495514624,
+            7247757312,
+            7247757312,
+            14495514624
+          ],
+          "predictedSavingsBytes": 32614907904,
+          "retainedBytesIntegral": 50734301184,
+          "savingsAsFractionOfNaive": 0.36,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 2983468768,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5853444591453045,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.29160422657770063,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5853444591453045,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6155732862170774,
+            "minByteOverlapRatio": 0.29160422657770063
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6256495619076684,
+            "minByteOverlapRatio": 0.29160422657770063
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 1.0,
+            "minByteOverlapRatio": 1.0
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 18119393280,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 72477573120,
+          "measuredPolicyCumulativeReloadBytes": 54358179840,
+          "measuredReloadSecondsNaive": 11.505650208999999,
+          "measuredReloadSecondsPolicy": 8.906720083,
+          "measuredSavingsBytes": 18119393280,
+          "perTransitionRetainedOptionalBytes": [
+            7247757312,
+            14495514624,
+            7247757312,
+            7247757312
+          ],
+          "predictedSavingsBytes": 18119393280,
+          "retainedBytesIntegral": 36238786560,
+          "savingsAsFractionOfNaive": 0.25,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 2983468768,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5853444591453045,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.29160422657770063,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5853444591453045,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          },
+          {
+            "byteRatio": 0.29160422657770063,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "5->6"
+          },
+          {
+            "byteRatio": 0.5853444591453045,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "6->7"
+          },
+          {
+            "byteRatio": 0.8282754894688112,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.8,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "7->8"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "4->5"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "5->6"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "6->7"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "7->8"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6459396650075158,
+            "minByteOverlapRatio": 0.29160422657770063
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6055319771217776,
+            "minByteOverlapRatio": 0.29160422657770063
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.9141377447344056,
+            "minByteOverlapRatio": 0.4848264684064337
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 1,
+          "identityAlternativeBytes": 61605937152,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 144955146240,
+          "measuredPolicyCumulativeReloadBytes": 83349209088,
+          "measuredReloadSecondsNaive": 22.857182292,
+          "measuredReloadSecondsPolicy": 15.477179249999999,
+          "measuredSavingsBytes": 61605937152,
+          "perTransitionRetainedOptionalBytes": [
+            7247757312,
+            14495514624,
+            7247757312,
+            7247757312,
+            14495514624,
+            7247757312,
+            7247757312,
+            14495514624
+          ],
+          "predictedSavingsBytes": 61605937152,
+          "retainedBytesIntegral": 79725330432,
+          "savingsAsFractionOfNaive": 0.425,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 2983468768,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 0.7384445137694267,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.6666666666666666,
+            "optionalGroupRatio": 0.5,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.5853444591453045,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.8282754894688112,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.8,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 0,
+            "removed": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "states": "STATE_ALL->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_BC",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 7247757312,
+            "removed": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "states": "STATE_BC->STATE_AB",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7880161155958856,
+            "minByteOverlapRatio": 0.5853444591453045
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.8855169929792076,
+            "minByteOverlapRatio": 0.6565509789376225
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.9141377447344057,
+            "minByteOverlapRatio": 0.8282754894688112
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 2,
+          "identityAlternativeBytes": 39862665216,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 72477573120,
+          "measuredPolicyCumulativeReloadBytes": 32614907904,
+          "measuredReloadSecondsNaive": 12.186889333,
+          "measuredReloadSecondsPolicy": 4.988053168,
+          "measuredSavingsBytes": 39862665216,
+          "perTransitionRetainedOptionalBytes": [
+            18119393280,
+            14495514624,
+            10871635968,
+            14495514624
+          ],
+          "predictedSavingsBytes": 39862665216,
+          "retainedBytesIntegral": 57982058496,
+          "savingsAsFractionOfNaive": 0.55,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 2983468768,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    },
+    "gemma4-12b-coder": {
+      "T1_DOCUMENT_SESSION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.5467981596506897,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "DENSE_MLP_L16_31"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [
+              "DENSE_MLP_L16_31"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L16_31"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [
+              "DENSE_MLP_L00_15"
+            ],
+            "states": "STATE_A->STATE_B",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_15"
+            ],
+            "kept": [
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [],
+            "states": "STATE_B->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [
+              "DENSE_MLP_L16_31"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "4->5"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.784613893859679,
+            "minByteOverlapRatio": 0.5467981596506897
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.8087334536186355,
+            "minByteOverlapRatio": 0.5467981596506897
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.8489327198835633,
+            "minByteOverlapRatio": 0.5467981596506897
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 6370099200,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 23887872000,
+          "measuredPolicyCumulativeReloadBytes": 17517772800,
+          "measuredReloadSecondsNaive": 0.878705376,
+          "measuredReloadSecondsPolicy": 0.682997457,
+          "measuredSavingsBytes": 6370099200,
+          "perTransitionRetainedOptionalBytes": [
+            1592524800,
+            3185049600,
+            1592524800,
+            1592524800,
+            3185049600
+          ],
+          "predictedSavingsBytes": 6370099200,
+          "retainedBytesIntegral": 11147673600,
+          "savingsAsFractionOfNaive": 0.26666666666666666,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 1921416800,
+        "optionalTotalBytes": 4777574400,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.5467981596506897,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "DENSE_MLP_L16_31"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [
+              "DENSE_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [
+              "DENSE_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L16_31"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7307673673245987,
+            "minByteOverlapRatio": 0.5467981596506897
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7449779381581806,
+            "minByteOverlapRatio": 0.5467981596506897
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 1.0,
+            "minByteOverlapRatio": 1.0
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 3185049600,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 19110297600,
+          "measuredPolicyCumulativeReloadBytes": 15925248000,
+          "measuredReloadSecondsNaive": 0.7082742929999999,
+          "measuredReloadSecondsPolicy": 0.621930167,
+          "measuredSavingsBytes": 3185049600,
+          "perTransitionRetainedOptionalBytes": [
+            1592524800,
+            3185049600,
+            1592524800,
+            1592524800
+          ],
+          "predictedSavingsBytes": 3185049600,
+          "retainedBytesIntegral": 7962624000,
+          "savingsAsFractionOfNaive": 0.16666666666666666,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 1921416800,
+        "optionalTotalBytes": 4777574400,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.5467981596506897,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          },
+          {
+            "byteRatio": 0.5467981596506897,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "5->6"
+          },
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "6->7"
+          },
+          {
+            "byteRatio": 0.7622739376042171,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.6666666666666666,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "7->8"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "DENSE_MLP_L16_31"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [
+              "DENSE_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [
+              "DENSE_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L16_31"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [
+              "DENSE_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "4->5"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [
+              "DENSE_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "5->6"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L16_31"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3185049600,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "6->7"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L32_47"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_15",
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "7->8"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7400346526721442,
+            "minByteOverlapRatio": 0.5467981596506897
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7134879291653597,
+            "minByteOverlapRatio": 0.5245478752084344
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.9207579792014058,
+            "minByteOverlapRatio": 0.5245478752084344
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 1,
+          "identityAlternativeBytes": 12740198400,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 38220595200,
+          "measuredPolicyCumulativeReloadBytes": 25480396800,
+          "measuredReloadSecondsNaive": 1.3971687070000003,
+          "measuredReloadSecondsPolicy": 0.999271165,
+          "measuredSavingsBytes": 12740198400,
+          "perTransitionRetainedOptionalBytes": [
+            1592524800,
+            3185049600,
+            1592524800,
+            1592524800,
+            3185049600,
+            1592524800,
+            1592524800,
+            3185049600
+          ],
+          "predictedSavingsBytes": 12740198400,
+          "retainedBytesIntegral": 17517772800,
+          "savingsAsFractionOfNaive": 0.3333333333333333,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 1921416800,
+        "optionalTotalBytes": 4777574400,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.6881356548238524,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.7622739376042171,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.6666666666666666,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L00_15",
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 0,
+            "removed": [
+              "DENSE_MLP_L32_47"
+            ],
+            "states": "STATE_ALL->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L32_47"
+            ],
+            "kept": [
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [
+              "DENSE_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_BC",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_15"
+            ],
+            "kept": [
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [
+              "DENSE_MLP_L32_47"
+            ],
+            "states": "STATE_BC->STATE_AB",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L32_47"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_15",
+              "DENSE_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 1592524800,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7846363118129804,
+            "minByteOverlapRatio": 0.6881356548238524
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.9207579792014057,
+            "minByteOverlapRatio": 0.7622739376042171
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.8811369688021086,
+            "minByteOverlapRatio": 0.7622739376042171
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 2,
+          "identityAlternativeBytes": 9555148800,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 19110297600,
+          "measuredPolicyCumulativeReloadBytes": 9555148800,
+          "measuredReloadSecondsNaive": 0.6988499989999999,
+          "measuredReloadSecondsPolicy": 0.386105958,
+          "measuredSavingsBytes": 9555148800,
+          "perTransitionRetainedOptionalBytes": [
+            4777574400,
+            3185049600,
+            3185049600,
+            3185049600
+          ],
+          "predictedSavingsBytes": 9555148800,
+          "retainedBytesIntegral": 14332723200,
+          "savingsAsFractionOfNaive": 0.5,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 1921416800,
+        "optionalTotalBytes": 4777574400,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    },
+    "muse-glimmer-30b": {
+      "T1_DOCUMENT_SESSION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.6658575632802953,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.4981773052579324,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.6658575632802953,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "DENSE_MLP_L18_35"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_17"
+            ],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L00_17"
+            ],
+            "predictedReloadBytesAtNextLoad": 3588489216,
+            "removed": [
+              "DENSE_MLP_L18_35"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L18_35"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [
+              "DENSE_MLP_L00_17"
+            ],
+            "states": "STATE_A->STATE_B",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_17"
+            ],
+            "kept": [
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [],
+            "states": "STATE_B->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L00_17"
+            ],
+            "predictedReloadBytesAtNextLoad": 3588489216,
+            "removed": [
+              "DENSE_MLP_L18_35"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "4->5"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7659784863637047,
+            "minByteOverlapRatio": 0.4981773052579324
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7910087171345569,
+            "minByteOverlapRatio": 0.4981773052579324
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.8327257684193108,
+            "minByteOverlapRatio": 0.4981773052579324
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 16596762624,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 58312949760,
+          "measuredPolicyCumulativeReloadBytes": 41716187136,
+          "measuredReloadSecondsNaive": 4.9882617499999995,
+          "measuredReloadSecondsPolicy": 2.9171481669999997,
+          "measuredSavingsBytes": 16596762624,
+          "perTransitionRetainedOptionalBytes": [
+            4037050368,
+            8074100736,
+            4037050368,
+            4037050368,
+            8074100736
+          ],
+          "predictedSavingsBytes": 16596762624,
+          "retainedBytesIntegral": 28259352576,
+          "savingsAsFractionOfNaive": 0.2846153846153846,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 4007724032,
+        "optionalTotalBytes": 11662589952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.6658575632802953,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.4981773052579324,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.6658575632802953,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "DENSE_MLP_L18_35"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_17"
+            ],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 3588489216,
+            "removed": [
+              "DENSE_MLP_L00_17"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_17"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [
+              "DENSE_MLP_L18_35"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L18_35"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_17"
+            ],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7074731079546308,
+            "minByteOverlapRatio": 0.4981773052579324
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7213449561794092,
+            "minByteOverlapRatio": 0.4981773052579324
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 1.0,
+            "minByteOverlapRatio": 1.0
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 8522661888,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 46650359808,
+          "measuredPolicyCumulativeReloadBytes": 38127697920,
+          "measuredReloadSecondsNaive": 4.2604509980000005,
+          "measuredReloadSecondsPolicy": 2.949642,
+          "measuredSavingsBytes": 8522661888,
+          "perTransitionRetainedOptionalBytes": [
+            4037050368,
+            8074100736,
+            4037050368,
+            4037050368
+          ],
+          "predictedSavingsBytes": 8522661888,
+          "retainedBytesIntegral": 20185251840,
+          "savingsAsFractionOfNaive": 0.18269230769230768,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 4007724032,
+        "optionalTotalBytes": 11662589952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.6658575632802953,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.4981773052579324,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.6658575632802953,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          },
+          {
+            "byteRatio": 0.4981773052579324,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "5->6"
+          },
+          {
+            "byteRatio": 0.6658575632802953,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "6->7"
+          },
+          {
+            "byteRatio": 0.7710008095776519,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.6923076923076923,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "7->8"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "DENSE_MLP_L18_35"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_17"
+            ],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 3588489216,
+            "removed": [
+              "DENSE_MLP_L00_17"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_17"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [
+              "DENSE_MLP_L18_35"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L18_35"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_17"
+            ],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 3588489216,
+            "removed": [
+              "DENSE_MLP_L00_17"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "4->5"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_17"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [
+              "DENSE_MLP_L18_35"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "5->6"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L18_35"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_17"
+            ],
+            "predictedReloadBytesAtNextLoad": 7625539584,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "6->7"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L36_51"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_17",
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 3588489216,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "7->8"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7206160137418003,
+            "minByteOverlapRatio": 0.4981773052579324
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.691635208204138,
+            "minByteOverlapRatio": 0.4981773052579324
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.9188961200587517,
+            "minByteOverlapRatio": 0.5133767203525104
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 1,
+          "identityAlternativeBytes": 32744964096,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 93300719616,
+          "measuredPolicyCumulativeReloadBytes": 60555755520,
+          "measuredReloadSecondsNaive": 8.552413334,
+          "measuredReloadSecondsPolicy": 4.325674916,
+          "measuredSavingsBytes": 32744964096,
+          "perTransitionRetainedOptionalBytes": [
+            4037050368,
+            8074100736,
+            4037050368,
+            4037050368,
+            8074100736,
+            4037050368,
+            4037050368,
+            8074100736
+          ],
+          "predictedSavingsBytes": 32744964096,
+          "retainedBytesIntegral": 44407554048,
+          "savingsAsFractionOfNaive": 0.35096153846153844,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 4007724032,
+        "optionalTotalBytes": 11662589952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 0.691532029664959,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5294117647058824,
+            "optionalGroupRatio": 0.5,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.6658575632802953,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.7710008095776519,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.6923076923076923,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [],
+            "kept": [
+              "DENSE_MLP_L00_17",
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 0,
+            "removed": [
+              "DENSE_MLP_L36_51"
+            ],
+            "states": "STATE_ALL->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L36_51"
+            ],
+            "kept": [
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 3588489216,
+            "removed": [
+              "DENSE_MLP_L00_17"
+            ],
+            "states": "STATE_AB->STATE_BC",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L00_17"
+            ],
+            "kept": [
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 4037050368,
+            "removed": [
+              "DENSE_MLP_L36_51"
+            ],
+            "states": "STATE_BC->STATE_AB",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "DENSE_MLP_L36_51"
+            ],
+            "kept": [
+              "DENSE_MLP_L00_17",
+              "DENSE_MLP_L18_35"
+            ],
+            "predictedReloadBytesAtNextLoad": 3588489216,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7820976006307265,
+            "minByteOverlapRatio": 0.6658575632802953
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.9141253035916194,
+            "minByteOverlapRatio": 0.7423759107748584
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.885500404788826,
+            "minByteOverlapRatio": 0.7710008095776519
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 2,
+          "identityAlternativeBytes": 23773741056,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 46650359808,
+          "measuredPolicyCumulativeReloadBytes": 22876618752,
+          "measuredReloadSecondsNaive": 4.78791225,
+          "measuredReloadSecondsPolicy": 2.472420333,
+          "measuredSavingsBytes": 23773741056,
+          "perTransitionRetainedOptionalBytes": [
+            11662589952,
+            8074100736,
+            7625539584,
+            8074100736
+          ],
+          "predictedSavingsBytes": 23773741056,
+          "retainedBytesIntegral": 35436331008,
+          "savingsAsFractionOfNaive": 0.5096153846153846,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 4007724032,
+        "optionalTotalBytes": 11662589952,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    },
+    "nail-qwen36-35b": {
+      "T1_DOCUMENT_SESSION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5975896093255436,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.32661079711772756,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5975896093255436,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_A->STATE_B",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_B->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "4->5"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.704358003153763,
+            "minByteOverlapRatio": 0.32661079711772756
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7310501016108177,
+            "minByteOverlapRatio": 0.32661079711772756
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7755369323725758,
+            "minByteOverlapRatio": 0.32661079711772756
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 32614907904,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 90596966400,
+          "measuredPolicyCumulativeReloadBytes": 57982058496,
+          "measuredReloadSecondsNaive": 14.996434417,
+          "measuredReloadSecondsPolicy": 10.623718084,
+          "measuredSavingsBytes": 32614907904,
+          "perTransitionRetainedOptionalBytes": [
+            7247757312,
+            14495514624,
+            7247757312,
+            7247757312,
+            14495514624
+          ],
+          "predictedSavingsBytes": 32614907904,
+          "retainedBytesIntegral": 50734301184,
+          "savingsAsFractionOfNaive": 0.36,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 3515345632,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5975896093255436,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.32661079711772756,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5975896093255436,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6304475039422037,
+            "minByteOverlapRatio": 0.32661079711772756
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6414001354810904,
+            "minByteOverlapRatio": 0.32661079711772756
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 1.0,
+            "minByteOverlapRatio": 1.0
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 18119393280,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 72477573120,
+          "measuredPolicyCumulativeReloadBytes": 54358179840,
+          "measuredReloadSecondsNaive": 11.279422333000001,
+          "measuredReloadSecondsPolicy": 9.775894542999998,
+          "measuredSavingsBytes": 18119393280,
+          "perTransitionRetainedOptionalBytes": [
+            7247757312,
+            14495514624,
+            7247757312,
+            7247757312
+          ],
+          "predictedSavingsBytes": 18119393280,
+          "retainedBytesIntegral": 36238786560,
+          "savingsAsFractionOfNaive": 0.25,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 3515345632,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5975896093255436,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.32661079711772756,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5975896093255436,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          },
+          {
+            "byteRatio": 0.32661079711772756,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "5->6"
+          },
+          {
+            "byteRatio": 0.5975896093255436,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "6->7"
+          },
+          {
+            "byteRatio": 0.8324972318482675,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.8,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "7->8"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "4->5"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "5->6"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "6->7"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "7->8"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6598109567575442,
+            "minByteOverlapRatio": 0.32661079711772756
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6208417869187636,
+            "minByteOverlapRatio": 0.32661079711772756
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.9162486159241338,
+            "minByteOverlapRatio": 0.4974916955448027
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 1,
+          "identityAlternativeBytes": 61605937152,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 144955146240,
+          "measuredPolicyCumulativeReloadBytes": 83349209088,
+          "measuredReloadSecondsNaive": 22.386064501,
+          "measuredReloadSecondsPolicy": 15.603358292,
+          "measuredSavingsBytes": 61605937152,
+          "perTransitionRetainedOptionalBytes": [
+            7247757312,
+            14495514624,
+            7247757312,
+            7247757312,
+            14495514624,
+            7247757312,
+            7247757312,
+            14495514624
+          ],
+          "predictedSavingsBytes": 61605937152,
+          "retainedBytesIntegral": 79725330432,
+          "savingsAsFractionOfNaive": 0.425,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 3515345632,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 0.7481140410994895,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.6666666666666666,
+            "optionalGroupRatio": 0.5,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.5975896093255436,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.8324972318482675,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.8,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 0,
+            "removed": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "states": "STATE_ALL->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_BC",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 7247757312,
+            "removed": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "states": "STATE_BC->STATE_AB",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 3623878656,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7945502205683251,
+            "minByteOverlapRatio": 0.5975896093255436
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.888331487898845,
+            "minByteOverlapRatio": 0.6649944636965351
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.9162486159241338,
+            "minByteOverlapRatio": 0.8324972318482675
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 2,
+          "identityAlternativeBytes": 39862665216,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 72477573120,
+          "measuredPolicyCumulativeReloadBytes": 32614907904,
+          "measuredReloadSecondsNaive": 11.379412918,
+          "measuredReloadSecondsPolicy": 5.9905181249999995,
+          "measuredSavingsBytes": 39862665216,
+          "perTransitionRetainedOptionalBytes": [
+            18119393280,
+            14495514624,
+            10871635968,
+            14495514624
+          ],
+          "predictedSavingsBytes": 39862665216,
+          "retainedBytesIntegral": 57982058496,
+          "savingsAsFractionOfNaive": 0.55,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 3515345632,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    },
+    "qwen3-coder-30b": {
+      "T1_DOCUMENT_SESSION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.13844052427011766,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_A->STATE_B",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_B->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_AB->STATE_A",
+            "transition": "4->5"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6425617122863982,
+            "minByteOverlapRatio": 0.13844052427011766
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6689061357127636,
+            "minByteOverlapRatio": 0.13844052427011766
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.7128135080900392,
+            "minByteOverlapRatio": 0.13844052427011766
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 21743271936,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 81537269760,
+          "measuredPolicyCumulativeReloadBytes": 59793997824,
+          "measuredReloadSecondsNaive": 11.782456000000002,
+          "measuredReloadSecondsPolicy": 7.577753375999999,
+          "measuredSavingsBytes": 21743271936,
+          "perTransitionRetainedOptionalBytes": [
+            5435817984,
+            10871635968,
+            5435817984,
+            5435817984,
+            10871635968
+          ],
+          "predictedSavingsBytes": 21743271936,
+          "retainedBytesIntegral": 38050725888,
+          "savingsAsFractionOfNaive": 0.26666666666666666,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 873459712,
+        "optionalTotalBytes": 16307453952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.13844052427011766,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.5532021403579979,
+            "minByteOverlapRatio": 0.13844052427011766
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.5585415142836848,
+            "minByteOverlapRatio": 0.13844052427011766
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 1.0,
+            "minByteOverlapRatio": 1.0
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 0,
+          "identityAlternativeBytes": 10871635968,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 65229815808,
+          "measuredPolicyCumulativeReloadBytes": 54358179840,
+          "measuredReloadSecondsNaive": 8.991723583999999,
+          "measuredReloadSecondsPolicy": 7.5787798760000005,
+          "measuredSavingsBytes": 10871635968,
+          "perTransitionRetainedOptionalBytes": [
+            5435817984,
+            10871635968,
+            5435817984,
+            5435817984
+          ],
+          "predictedSavingsBytes": 10871635968,
+          "retainedBytesIntegral": 27179089920,
+          "savingsAsFractionOfNaive": 0.16666666666666666,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 873459712,
+        "optionalTotalBytes": 16307453952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.13844052427011766,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "3->4"
+          },
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "4->5"
+          },
+          {
+            "byteRatio": 0.13844052427011766,
+            "groupRatio": 0.5,
+            "optionalByteRatio": 0.0,
+            "optionalGroupRatio": 0.0,
+            "transition": "5->6"
+          },
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "6->7"
+          },
+          {
+            "byteRatio": 0.6836129852983353,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.6666666666666666,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "7->8"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "3->4"
+          },
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_B",
+            "transition": "4->5"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "states": "STATE_B->STATE_A",
+            "transition": "5->6"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "predictedReloadBytesAtNextLoad": 10871635968,
+            "removed": [],
+            "states": "STATE_A->STATE_AB",
+            "transition": "6->7"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "7->8"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.5715057611976726,
+            "minByteOverlapRatio": 0.13844052427011766
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.5312107223283971,
+            "minByteOverlapRatio": 0.13844052427011766
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.8945376617661118,
+            "minByteOverlapRatio": 0.3672259705966706
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 1,
+          "identityAlternativeBytes": 43486543872,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 130459631616,
+          "measuredPolicyCumulativeReloadBytes": 86973087744,
+          "measuredReloadSecondsNaive": 18.255682625000002,
+          "measuredReloadSecondsPolicy": 11.328758793,
+          "measuredSavingsBytes": 43486543872,
+          "perTransitionRetainedOptionalBytes": [
+            5435817984,
+            10871635968,
+            5435817984,
+            5435817984,
+            10871635968,
+            5435817984,
+            5435817984,
+            10871635968
+          ],
+          "predictedSavingsBytes": 43486543872,
+          "retainedBytesIntegral": 59793997824,
+          "savingsAsFractionOfNaive": 0.3333333333333333,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 873459712,
+        "optionalTotalBytes": 16307453952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "D1_retentionRecurrence": [
+          {
+            "byteRatio": 1.0,
+            "groupRatio": 1.0,
+            "optionalByteRatio": 1.0,
+            "optionalGroupRatio": 1.0,
+            "transition": "0->1"
+          },
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "1->2"
+          },
+          {
+            "byteRatio": 0.5371840185809368,
+            "groupRatio": 0.6666666666666666,
+            "optionalByteRatio": 0.5,
+            "optionalGroupRatio": 0.5,
+            "transition": "2->3"
+          },
+          {
+            "byteRatio": 0.6836129852983353,
+            "groupRatio": 0.75,
+            "optionalByteRatio": 0.6666666666666666,
+            "optionalGroupRatio": 0.6666666666666666,
+            "transition": "3->4"
+          }
+        ],
+        "D2_transitionRetention": [
+          {
+            "added": [],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 0,
+            "removed": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "states": "STATE_ALL->STATE_AB",
+            "transition": "0->1"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "states": "STATE_AB->STATE_BC",
+            "transition": "1->2"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L00_15"
+            ],
+            "kept": [
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "states": "STATE_BC->STATE_AB",
+            "transition": "2->3"
+          },
+          {
+            "added": [
+              "SWITCH_MLP_L32_47"
+            ],
+            "kept": [
+              "SWITCH_MLP_L00_15",
+              "SWITCH_MLP_L16_31"
+            ],
+            "predictedReloadBytesAtNextLoad": 5435817984,
+            "removed": [],
+            "states": "STATE_AB->STATE_ALL",
+            "transition": "3->4"
+          }
+        ],
+        "D3_retentionStability": {
+          "lag1": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.6894952556150522,
+            "minByteOverlapRatio": 0.5371840185809368
+          },
+          "lag2": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.8945376617661118,
+            "minByteOverlapRatio": 0.6836129852983353
+          },
+          "lag3": {
+            "maxByteOverlapRatio": 1.0,
+            "meanByteOverlapRatio": 0.8418064926491676,
+            "minByteOverlapRatio": 0.6836129852983353
+          }
+        },
+        "D4_reloadEconomics": {
+          "fullRetentionSteps": 2,
+          "identityAlternativeBytes": 32614907904,
+          "identityHolds": true,
+          "measuredNaiveCumulativeReloadBytes": 65229815808,
+          "measuredPolicyCumulativeReloadBytes": 32614907904,
+          "measuredReloadSecondsNaive": 7.842335417,
+          "measuredReloadSecondsPolicy": 4.002595498,
+          "measuredSavingsBytes": 32614907904,
+          "perTransitionRetainedOptionalBytes": [
+            16307453952,
+            10871635968,
+            10871635968,
+            10871635968
+          ],
+          "predictedSavingsBytes": 32614907904,
+          "retainedBytesIntegral": 48922361856,
+          "savingsAsFractionOfNaive": 0.5,
+          "zeroRetentionSteps": 0
+        },
+        "coreBytes": 873459712,
+        "optionalTotalBytes": 16307453952,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    }
+  },
+  "protocol": "G1.9-D.RETENTION.V1",
+  "verdict": {
+    "d4IdentityHoldsAllPairs": true,
+    "pairsChecked": 20,
+    "result": "POLICY_RETENTION_STRUCTURE_EMPIRICALLY_CHARACTERIZED"
+  }
+}

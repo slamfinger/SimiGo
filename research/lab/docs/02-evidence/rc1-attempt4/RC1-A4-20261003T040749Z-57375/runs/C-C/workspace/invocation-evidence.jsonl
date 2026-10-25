@@ -1,0 +1,177 @@
+{
+  "auditObservations" : [
+    {
+      "check" : "old_process_memory",
+      "method" : "separate OS process; no IPC endpoint opened; only declared persistence\/declared source paths opened",
+      "observed" : "pid=57407; declared_reads=3",
+      "passed" : true
+    },
+    {
+      "check" : "old_model_context",
+      "method" : "no model context argument\/environment\/path is declared",
+      "observed" : "model_context_paths=0",
+      "passed" : true
+    },
+    {
+      "check" : "old_execution_core_runtime",
+      "method" : "fresh SQLite\/Relation handles opened from declared paths",
+      "observed" : "runtime_state_paths=0",
+      "passed" : true
+    },
+    {
+      "check" : "undeclared_filesystem_scan",
+      "method" : "all source\/persistence file access is recorded in declaredReadPaths; no directory enumeration is called",
+      "observed" : "declared_reads=[\"\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/task-charter.json\", \"\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/s0.json\", \"\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/s1.json\"]",
+      "passed" : true
+    },
+    {
+      "check" : "environment_as_answer_input",
+      "method" : "only PATH\/TMPDIR\/HOME\/SWIFT_VERSION are declared; environment values are not parsed as task input",
+      "observed" : "environment_names=[\"BROWSER_USE_ACCESS_VERIFYING_IDENTITY\", \"CODEX_APP_TOOLS_PIPE_PATH\", \"CODEX_CI\", \"CODEX_CLI_PATH\", \"CODEX_INTERNAL_ORIGINATOR_OVERRIDE\", \"CODEX_MCP_NODE_PATH\", \"CODEX_PERMISSION_PROFILE\", \"CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE\", \"CODEX_SESSION_ID\", \"CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY\", \"CODEX_TECTONIC_PATH\", \"CODEX_THREAD_ID\", \"CODEX_VERSION\", \"COLORTERM\", \"COMMAND_MODE\", \"CPATH\", \"GH_PAGER\", \"GIT_PAGER\", \"HOME\", \"LANG\", \"LC_ALL\", \"LC_CTYPE\", \"LIBRARY_PATH\", \"LOGNAME\", \"LOG_FORMAT\", \"MANPATH\", \"MallocNanoZone\", \"NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S\", \"NO_COLOR\", \"OLDPWD\", \"OSLogRateLimit\", \"PAGER\", \"PATH\", \"PWD\", \"RUST_LOG\", \"SDKROOT\", \"SHELL\", \"SHLVL\", \"SSH_AUTH_SOCK\", \"TERM\", \"TMPDIR\", \"USER\", \"XPC_FLAGS\", \"XPC_SERVICE_NAME\", \"_\", \"__CF_USER_TEXT_ENCODING\"]",
+      "passed" : true
+    },
+    {
+      "check" : "harness_answer_injection",
+      "method" : "no answer value is accepted by the old-process CLI; task rule and states enter only through declared Information formation",
+      "observed" : "argv_count=18",
+      "passed" : true
+    },
+    {
+      "check" : "implicit_cache",
+      "method" : "no cache path is declared or opened; Core handles are constructed inside this process",
+      "observed" : "cache_paths=0",
+      "passed" : true
+    }
+  ],
+  "carrierReads" : [
+    {
+      "carrier" : "INFORMATION:task",
+      "found" : true,
+      "identity" : "c309c7ec00588a5c99d4597c",
+      "method" : "ExecutionScope.form write-acknowledgement",
+      "sequence" : 1
+    },
+    {
+      "carrier" : "INFORMATION:s0",
+      "found" : true,
+      "identity" : "673e81d9dae07e94d48adf4a",
+      "method" : "ExecutionScope.form write-acknowledgement",
+      "sequence" : 2
+    },
+    {
+      "carrier" : "INFORMATION:s1",
+      "found" : true,
+      "identity" : "14b71e7168cef99af79227b9",
+      "method" : "ExecutionScope.form write-acknowledgement",
+      "sequence" : 3
+    },
+    {
+      "carrier" : "INFORMATION:progress",
+      "found" : true,
+      "identity" : "4dd3879657f77c47a55dcb79",
+      "method" : "ExecutionScope.form write-acknowledgement",
+      "sequence" : 4
+    },
+    {
+      "carrier" : "RELATION",
+      "found" : true,
+      "identity" : "df05e39ce28da168ccba1c70",
+      "method" : "ExecutionScope.form write-acknowledgement",
+      "sequence" : 5
+    }
+  ],
+  "declaredReadPaths" : [
+    "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/task-charter.json",
+    "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/s0.json",
+    "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/s1.json"
+  ],
+  "invocation" : {
+    "arguments" : [
+      "\/private\/tmp\/simigo-rc1-attempt4-569fe54\/trackD-memory\/.build\/release\/CContinuationStudy",
+      "old",
+      "--arm",
+      "C-C",
+      "--workspace",
+      "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/workspace",
+      "--task-id",
+      "C-T-001",
+      "--entity-source",
+      "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/physical\/entity-E.txt",
+      "--s0",
+      "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/s0.json",
+      "--s1",
+      "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/s1.json",
+      "--task-charter",
+      "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/declared\/task-charter.json",
+      "--overwrite-reference",
+      "RC1-A4-C-C-EXTERNAL-001"
+    ],
+    "arm" : "C-C",
+    "command" : "old",
+    "declaredEnvironmentValues" : {
+      "HOME" : "\/Users\/mr.simi",
+      "PATH" : "\/Applications\/ChatGPT.app\/Contents\/Resources\/codex-cli\/codex-path:\/Users\/mr.simi\/bin:\/Users\/mr.simi\/bin:\/Users\/mr.simi\/.antigravity-ide\/antigravity-ide\/bin:\/Users\/mr.simi\/.mtplx\/bin:\/Users\/mr.simi\/.grok\/bin:\/Users\/mr.simi\/.local\/bin:\/Users\/mr.simi\/llama.cpp\/build\/bin:\/Users\/mr.simi\/.local\/bin:\/usr\/local\/bin:\/System\/Cryptexes\/App\/usr\/bin:\/usr\/bin:\/bin:\/usr\/sbin:\/sbin:\/var\/run\/com.apple.security.cryptexd\/codex.system\/bootstrap\/usr\/local\/bin:\/var\/run\/com.apple.security.cryptexd\/codex.system\/bootstrap\/usr\/bin:\/var\/run\/com.apple.security.cryptexd\/codex.system\/bootstrap\/usr\/appleinternal\/bin:\/pkg\/env\/global\/bin:\/Library\/Apple\/usr\/bin:\/opt\/homebrew\/bin:\/Users\/mr.simi\/.codex\/tmp\/arg0\/codex-arg0D9tObK:\/Applications\/ChatGPT.app\/Contents\/Resources\/codex-cli\/codex-path:\/Users\/mr.simi\/.cache\/codex-runtimes\/codex-primary-runtime\/dependencies\/bin\/override:\/Users\/mr.simi\/.cache\/codex-runtimes\/codex-primary-runtime\/dependencies\/bin\/fallback:\/Applications\/ChatGPT.app\/Contents\/Resources:\/Applications\/ChatGPT.app\/Contents\/Resources\/codex-cli\/CodexCLI.app\/Contents\/MacOS:\/Users\/mr.simi\/.lmstudio\/bin",
+      "TMPDIR" : "\/var\/folders\/sn\/h53_ytcn1svgzylg7_3b4j8m0000gn\/T\/"
+    },
+    "environmentNames" : [
+      "BROWSER_USE_ACCESS_VERIFYING_IDENTITY",
+      "CODEX_APP_TOOLS_PIPE_PATH",
+      "CODEX_CI",
+      "CODEX_CLI_PATH",
+      "CODEX_INTERNAL_ORIGINATOR_OVERRIDE",
+      "CODEX_MCP_NODE_PATH",
+      "CODEX_PERMISSION_PROFILE",
+      "CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE",
+      "CODEX_SESSION_ID",
+      "CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY",
+      "CODEX_TECTONIC_PATH",
+      "CODEX_THREAD_ID",
+      "CODEX_VERSION",
+      "COLORTERM",
+      "COMMAND_MODE",
+      "CPATH",
+      "GH_PAGER",
+      "GIT_PAGER",
+      "HOME",
+      "LANG",
+      "LC_ALL",
+      "LC_CTYPE",
+      "LIBRARY_PATH",
+      "LOGNAME",
+      "LOG_FORMAT",
+      "MANPATH",
+      "MallocNanoZone",
+      "NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S",
+      "NO_COLOR",
+      "OLDPWD",
+      "OSLogRateLimit",
+      "PAGER",
+      "PATH",
+      "PWD",
+      "RUST_LOG",
+      "SDKROOT",
+      "SHELL",
+      "SHLVL",
+      "SSH_AUTH_SOCK",
+      "TERM",
+      "TMPDIR",
+      "USER",
+      "XPC_FLAGS",
+      "XPC_SERVICE_NAME",
+      "_",
+      "__CF_USER_TEXT_ENCODING"
+    ],
+    "parentProcessID" : 57375,
+    "processID" : 57407,
+    "root" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/workspace",
+    "timestamp" : "2026-10-03T04:07:51Z",
+    "workingDirectory" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab"
+  },
+  "persistenceSources" : [
+    "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/workspace\/execution-state.json",
+    "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/workspace\/information.sqlite",
+    "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/workspace\/relation.json"
+  ],
+  "schemaVersion" : "c-impl-evidence-v2",
+  "sourceLegality" : true
+}

@@ -1,0 +1,16 @@
+{
+  "branch": "main",
+  "created_at_utc": "2026-10-22T04:00:39Z",
+  "d_round_root": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d",
+  "head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "protected_files": {
+    "execution-information-loop/carrier_loop.py": "464e5c557275417a6724f1d96baa0dd7323a5a691bbfb0205d1f29f3f6db5b4f",
+    "execution-information-loop/production_runtime_bridge.py": "269f1088b4335f77960f9d9519fa5dd84ca8c21b9762bcb0ff41d5686a67e4f6",
+    "simigo2-experimental/Package.swift": "3ad5fe3d5b87432e31ed993558ad12f732f9ac6c705a6eb1d4fa0db15cf85362",
+    "simigo2-experimental/Sources/RealModelHandoff/Causality.swift": "160c070bbace50c8114d1edbe1c4970e3500b538f3a206ae8cfad485c16432f1",
+    "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift": "de1c2b384b5915863aafe807d60c634ffafbd1e0517c1f180115b501de46050f",
+    "simigo2-experimental/Sources/SimiGoTaskRun/main.swift": "fd5832478a1dfd32793934542df9bd07de7b4717afd96a045a38ce35e2e55cfd"
+  },
+  "repo": "/Users/mr.simi/Documents/SimiGo-Lab",
+  "schema_id": "SIMIGO-E-ROUND-PRE-SNAPSHOT-V1"
+}

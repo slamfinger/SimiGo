@@ -1,0 +1,1 @@
+error: task did not settle: ["kind": "ADMISSION_REFUSED", "stage": "SETTLEMENT_OBJECT_UNREADABLE", "reason": "ObjectByteMismatch: 97485cca2351163967493a4d276662c14b4c247660a31af6b291e5ccd29cf4ba", "item_id": "TASK-U1"]

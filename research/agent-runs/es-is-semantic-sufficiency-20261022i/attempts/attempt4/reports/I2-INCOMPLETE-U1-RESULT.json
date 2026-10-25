@@ -1,0 +1,17 @@
+{
+  "id": "I2-INCOMPLETE-U1-RESULT",
+  "kind": "contract_control",
+  "observations": {
+    "error": "route key is not the composite of the two settled sectors",
+    "invalid_result_reusable": false,
+    "invalid_settlement_created": false,
+    "rejection_stage": "producer_settlement_validation_before_signing",
+    "result_contract_rejects": true
+  },
+  "raw_log_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I2/logs/iw1-missing-route-key.log",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I2/logs/iw2-cannot-reuse.log"
+  ],
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I2"
+}

@@ -1,0 +1,375 @@
+{
+  "admitted_input_byte_length" : 156,
+  "admitted_input_sha256" : "72eb8710d2daebf471d353355e6db94061bdc8ccacdf22ac12779bb8e9676d12",
+  "advancement_id" : "i0-p2",
+  "bindings" : [
+    {
+      "byte_length" : 10,
+      "byte_offset" : 31,
+      "item_id" : "TASK-IU1",
+      "placeholder" : "route_key",
+      "settlement_object_id" : "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+      "value" : "NORTH>EAST",
+      "value_sha256" : "724c97744735c424675f6bf7cb61c0a3239463525302aebe1f56b12f972e42db"
+    }
+  ],
+  "completed_at_utc" : "2026-10-22T13:22:53Z",
+  "consumed_prefix_length" : 24,
+  "counters" : {
+    "model_continuation_calls" : 1,
+    "tokenize_seed_calls" : 1,
+    "tokenize_text_calls" : 1
+  },
+  "database" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/runs\/I0\/carrier.sqlite",
+  "database_after" : {
+    "inode" : "110388433",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/runs\/I0\/carrier.sqlite",
+    "sha256" : "e851e97c962cc36d00a2c701e78f3bfd9d7a4a53a92f4bc7f06bc073a9082c85",
+    "size_bytes" : 81920
+  },
+  "database_before" : {
+    "inode" : "110388433",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/runs\/I0\/carrier.sqlite",
+    "sha256" : "19d7cc3c8d3ea3f1a23903d5e913b814f7e42af6d4e2f0d4476fefda7cc5cb7a",
+    "size_bytes" : 69632
+  },
+  "database_unchanged" : false,
+  "declared_dependencies" : [
+    "TASK-IU1"
+  ],
+  "demand_id" : "handoff-i-u2",
+  "dependency_settlement_object_ids" : {
+    "TASK-DEST" : "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+    "TASK-IU1" : "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+    "TASK-ORIGIN" : "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e"
+  },
+  "duration_seconds" : 14.379783034324646,
+  "entry" : "SimiGoTaskRun",
+  "evaluated_at_utc" : "2026-10-22T13:22:38Z",
+  "execution_state" : {
+    "advanced_lifecycle" : "active",
+    "advanced_position" : 1,
+    "advanced_state_id" : "i0-p2",
+    "created" : true,
+    "execution_id" : "PRODUCTION-REAL-PALACE",
+    "lifecycle_records" : [
+      {
+        "execution_id" : "PRODUCTION-REAL-PALACE",
+        "operation" : "created",
+        "related_id" : null,
+        "result_lifecycle" : "attached",
+        "result_position" : 0,
+        "sequence" : 1
+      },
+      {
+        "execution_id" : "PRODUCTION-REAL-PALACE",
+        "operation" : "continued",
+        "related_id" : null,
+        "result_lifecycle" : "active",
+        "result_position" : 1,
+        "sequence" : 2
+      }
+    ]
+  },
+  "failure" : "",
+  "generated_text" : " FLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST",
+  "generated_text_sha256" : "03709419d6f23ec8bb7de62fb77718994c952ab2b2b65b1db8dee72cbfb17f89",
+  "generated_token_ids" : [
+    434,
+    9441,
+    51995,
+    35941,
+    59384,
+    6349,
+    198,
+    46060,
+    51995,
+    35941,
+    59384,
+    6349,
+    198,
+    46060,
+    51995,
+    35941,
+    59384,
+    6349,
+    198,
+    46060,
+    51995,
+    35941,
+    59384,
+    6349,
+    198,
+    46060,
+    51995,
+    35941,
+    59384,
+    6349,
+    198,
+    46060,
+    51995,
+    35941,
+    59384,
+    6349,
+    198,
+    46060,
+    51995,
+    35941,
+    59384,
+    6349,
+    198,
+    46060,
+    51995,
+    35941,
+    59384,
+    6349
+  ],
+  "generation_entered" : true,
+  "input_admission" : {
+    "bindings" : [
+      {
+        "byte_length" : 10,
+        "byte_offset" : 31,
+        "item_id" : "TASK-IU1",
+        "placeholder" : "route_key",
+        "result_field" : "route_key",
+        "result_value_sha256" : "173093b12abe77ddd75e7a19a075539134fc5afd2c2d8f36cb179d0076ca9b1e",
+        "settlement_object_id" : "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+        "value_sha256" : "724c97744735c424675f6bf7cb61c0a3239463525302aebe1f56b12f972e42db"
+      }
+    ],
+    "checks" : {
+      "all_declared_dependencies_admitted" : true,
+      "all_placeholders_bound" : true,
+      "dependency_object_sets_match" : true,
+      "object_identity_matches_bytes" : true,
+      "result_digests_match_values" : true,
+      "settlement_objects_readable" : true,
+      "settlement_signatures_valid" : true,
+      "source_versions_match_items" : true,
+      "validity_satisfied" : true
+    },
+    "declared_dependencies" : [
+      "TASK-IU1"
+    ],
+    "dependency_settlement_object_ids" : {
+      "TASK-DEST" : "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+      "TASK-IU1" : "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+      "TASK-ORIGIN" : "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e"
+    },
+    "input_byte_length" : 156,
+    "input_sha256" : "72eb8710d2daebf471d353355e6db94061bdc8ccacdf22ac12779bb8e9676d12",
+    "settlement_signatures" : [
+      {
+        "algorithm" : "Ed25519",
+        "dependency_object_ids" : {
+
+        },
+        "evaluated_at_utc" : "2026-10-22T13:22:21Z",
+        "event_id" : "186d2a7e715f47e6614c179b7c6d7a66ae556e2ef600b7197c980b651b4139e4",
+        "event_sequence" : 1,
+        "item_id" : "TASK-DEST",
+        "key_id" : "e-round-3a5b0e76ffc24d34",
+        "payload_sha256" : "52651711eb9c98c255050b8cf506e1c30998f635a80323494f72a9d50e976689",
+        "producer_execution_id" : "I-DEFINE",
+        "producer_kind" : "carrier_calculator",
+        "producer_run_id" : "i-definition",
+        "result_value_sha256" : "5eb82e8c315ea0b63239e79f4a4d24db6286e82ffaca4c614bb2a419b07ebe9a",
+        "settlement_object_id" : "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+        "valid_until_utc" : "2030-12-31T23:59:59Z",
+        "verified" : true
+      },
+      {
+        "algorithm" : "Ed25519",
+        "dependency_object_ids" : {
+          "TASK-DEST" : "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+          "TASK-ORIGIN" : "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e"
+        },
+        "evaluated_at_utc" : "2026-10-22T13:22:21Z",
+        "event_id" : "5c328dba1a3bf0a14b30b2bcaf9e69ea19b587a70b91bd9968571f185fdad187",
+        "event_sequence" : 1,
+        "item_id" : "TASK-IU1",
+        "key_id" : "e-round-3a5b0e76ffc24d34",
+        "payload_sha256" : "05584d4b1347b181081c3061c6c413fbbf614c37eb0ea122e23ab6c86e0cd157",
+        "producer_execution_id" : "dbf156a0-01cb-48d9-a947-4bc494d175be",
+        "producer_kind" : "model_task",
+        "producer_run_id" : "e-i0-p1",
+        "result_value_sha256" : "173093b12abe77ddd75e7a19a075539134fc5afd2c2d8f36cb179d0076ca9b1e",
+        "settlement_object_id" : "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+        "valid_until_utc" : "2030-12-31T23:59:59Z",
+        "verified" : true
+      },
+      {
+        "algorithm" : "Ed25519",
+        "dependency_object_ids" : {
+
+        },
+        "evaluated_at_utc" : "2026-10-22T13:22:21Z",
+        "event_id" : "6afa91fd0bcb8c9b3d17946af4557b16410720611767cbfa2454f94c738249d0",
+        "event_sequence" : 1,
+        "item_id" : "TASK-ORIGIN",
+        "key_id" : "e-round-3a5b0e76ffc24d34",
+        "payload_sha256" : "5a7467bb466d01e00a1cbf264e6c819ddac4b33f0349eeda01726f6fff5d3a7b",
+        "producer_execution_id" : "I-DEFINE",
+        "producer_kind" : "carrier_calculator",
+        "producer_run_id" : "i-definition",
+        "result_value_sha256" : "9e7ebb0dffc3a405d65b1d45758a767f90c4e752fd4e0edeea67a7920435c412",
+        "settlement_object_id" : "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e",
+        "valid_until_utc" : "2030-12-31T23:59:59Z",
+        "verified" : true
+      }
+    ],
+    "task_item_id" : "TASK-IU2",
+    "template_sha256" : "c49243cf54da6d56c31889dd2d5f441932a51baf77878302c83a170e2aab02d2"
+  },
+  "input_admission_refusal" : {
+
+  },
+  "input_admission_status" : "ADMITTED",
+  "max_tokens" : 48,
+  "model" : {
+    "snapshot_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "snapshot_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "weight_files" : [
+      {
+        "content" : "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "name" : "model-00001-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "name" : "model-00002-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "name" : "model-00003-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "name" : "model-00004-of-00004.safetensors",
+        "size_bytes" : 76
+      }
+    ],
+    "weights_manifest_sha256" : "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5"
+  },
+  "model_load_seconds" : 2.5415470600128174,
+  "next_input_token_ids" : [
+    198,
+    8304,
+    220,
+    16,
+    9555,
+    279,
+    6021,
+    25,
+    74759,
+    59384,
+    6349,
+    624,
+    12416,
+    349,
+    429,
+    22378,
+    6021,
+    6896,
+    11,
+    34857,
+    11,
+    389,
+    825,
+    1555,
+    304,
+    279,
+    1352,
+    434,
+    9441,
+    38698,
+    8966,
+    29,
+    323,
+    912,
+    4302,
+    770,
+    624,
+    16141,
+    25
+  ],
+  "pid" : 35994,
+  "provenance_identity" : {
+    "build_sha256" : "c374f3596df6d4b9e9ea10e56d1bd1432d6168d433e63dec318f7abf7136ca33",
+    "execution_id" : "9d7ca291-57a7-4f02-a610-3d6e818c6c36",
+    "process_id" : "35994",
+    "run_id" : "e-i0-p2"
+  },
+  "run_id" : "e-i0-p2",
+  "schema_id" : "SIMIGO-ORDINARY-TASK-ENTRY-V1",
+  "seed_sha256" : "7e83d01163953e25f7077cd5fe00a32c8810ec94488822603722f321c8431292",
+  "seed_source" : "builtin_cold_seed",
+  "settlement" : {
+    "actions" : [
+      {
+        "action" : "REUSE",
+        "item_id" : "TASK-ORIGIN",
+        "result_digest" : "9e7ebb0dffc3a405d65b1d45758a767f90c4e752fd4e0edeea67a7920435c412",
+        "settlement_object_id" : "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e",
+        "settlement_signature_object_id" : "f05bd7e852b1b9a205785033fc40ad7c080fa297d6211b353f56a454102408b5"
+      },
+      {
+        "action" : "REUSE",
+        "item_id" : "TASK-DEST",
+        "result_digest" : "5eb82e8c315ea0b63239e79f4a4d24db6286e82ffaca4c614bb2a419b07ebe9a",
+        "settlement_object_id" : "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+        "settlement_signature_object_id" : "fcc1dc6e84ef21bc7fb95a0e8063b628bcdb54417552291d4e33a47f31991d2e"
+      },
+      {
+        "action" : "REUSE",
+        "item_id" : "TASK-IU1",
+        "result_digest" : "173093b12abe77ddd75e7a19a075539134fc5afd2c2d8f36cb179d0076ca9b1e",
+        "settlement_object_id" : "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+        "settlement_signature_object_id" : "39efbfb5dac30eff7226b658861bbfcedc086d2b0b57729c3a10066240c77803"
+      },
+      {
+        "action" : "COMPUTE",
+        "item_id" : "TASK-IU2",
+        "result_digest" : "d2f232ef92e9a8611f1a36c8393fe50bcc07353c97f408985903b9b874bda02b",
+        "settlement_object_id" : "d273b793c413883b967986261a162a53fe4f29a3b321eb48455ef4f963dbfc8d",
+        "settlement_signature_object_id" : "862aed4d3aae3391d6527ff7c80508b00b3590683db08837f598718f0628d4f4"
+      }
+    ],
+    "advanced_lifecycle" : "active",
+    "advanced_position" : 1,
+    "computed_item_ids" : [
+      "TASK-IU2"
+    ],
+    "generated_token_count" : 48,
+    "is_confirmation_state_id" : "i0-p2:runtime-applied",
+    "is_pending_state_id" : "i0-p2",
+    "model_continuation_calls_this_call" : 1,
+    "reused_item_ids" : [
+      "TASK-ORIGIN",
+      "TASK-DEST",
+      "TASK-IU1"
+    ],
+    "settlement_signature_key_id" : "e-round-3a5b0e76ffc24d34",
+    "settlement_signature_object_id" : "862aed4d3aae3391d6527ff7c80508b00b3590683db08837f598718f0628d4f4",
+    "signed_settlement_object_id" : "d273b793c413883b967986261a162a53fe4f29a3b321eb48455ef4f963dbfc8d",
+    "tokenize_next_input_calls_this_call" : 1,
+    "tokenize_seed_calls_this_call" : 1,
+    "updated_prefix_token_count" : 111
+  },
+  "started_at_utc" : "2026-10-22T13:22:38Z",
+  "state_after" : {
+    "execution-state.json" : "0e9e6f95fe90092a8de969d5546dc259ed7f2f302e3cbb1c46cea02d27fb7704"
+  },
+  "state_before" : {
+
+  },
+  "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/runs\/I0\/state\/i0-p2-task-iu2",
+  "state_unchanged" : false,
+  "task_item_id" : "TASK-IU2",
+  "terminal_state" : "TASK_SETTLED",
+  "trust_anchor_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/trust\/settlement-trust-anchor.json",
+  "updated_prefix_token_count" : 111
+}

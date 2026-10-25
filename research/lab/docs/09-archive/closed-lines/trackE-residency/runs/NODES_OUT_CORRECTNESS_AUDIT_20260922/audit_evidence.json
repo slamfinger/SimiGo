@@ -1,0 +1,121 @@
+{
+  "schema": "nodes-out-correctness-audit-evidence-v0.1",
+  "status": "AUDIT_READY_EXTERNAL_SIGNATURE_REQUIRED",
+  "boundary": "correctness audit evidence only; Candidate A effect interpretation and Tier-1 data collection remain LOCKED",
+  "object": {
+    "commit": "f4d880efd4cac21e60a55688dd686b801f3b7044",
+    "runner_path": "trackE-residency/nodes_out_experiment_runner.py",
+    "runner_sha256": "ace241fc6ca22bd1dd40d2e6036662ae0b1e2e1564f49fe3a140900e26495f17",
+    "baseline_commit": "17bde28",
+    "baseline_path": "trackE-residency/residency_policy_simulator_v3.py",
+    "baseline_blob_sha": "ff6d4e21df40db800e64bd5c949c39b3d77d22aa",
+    "official_artifact_path": "trackE-residency/runs/NODES_OUT_RUNNER_AUDIT_20260922/runner_audit.json",
+    "official_artifact_sha256": "556ab61f2fe39fdf0db0a392d2bc99496d6ba83b09fc9e427f481aac68216521"
+  },
+  "reproduction": {
+    "invocations": 3,
+    "stdout_pair_files": [
+      "audit_run_1_stdout.txt",
+      "audit_run_2_stdout.txt"
+    ],
+    "third_invocation_overwrote_official_artifact": true,
+    "stdout_diff_count": 0,
+    "committed_artifact_sha256_before_rerun": "556ab61f2fe39fdf0db0a392d2bc99496d6ba83b09fc9e427f481aac68216521",
+    "post_rerun_artifact_sha256": "556ab61f2fe39fdf0db0a392d2bc99496d6ba83b09fc9e427f481aac68216521"
+  },
+  "gates": {
+    "baseline_regression": {
+      "pass": true,
+      "violation_count": 0
+    },
+    "L1": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "contract": {
+        "decode_touch_mapping": "the current node must be resident in the frozen baseline state; after all Candidate unit events at that decode step, both (GDN,current)/(ATT,current) units must be decode-ready. Intra-pair intermediate states are not independent node events",
+        "logical_state": "each event completion at step t uses the frozen simulate_v3 five_tuple at the same decode step",
+        "policy_difference_boundary": "non-current unit residency may differ from node-level frozen residency; this is the allowed granularity-policy difference, not an L1 violation",
+        "state_model": "Candidate A has one unit state bit, res: resident/non-resident; it does not maintain a separate externalized state bit",
+        "terminology_boundary": "externalized is baseline historical vocabulary: a once-resident unit later capacity-evicted; cold-load is first acquisition of a never-resident unit; the runner rehydrate event is the umbrella for both acquisitions",
+        "transition_shape": "rehydrate requires prior non-resident -> now resident; externalize requires prior resident -> now non-resident"
+      },
+      "pass": true,
+      "violation_count": 0
+    },
+    "L2": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "pass": true,
+      "violation_count": 0
+    },
+    "L3": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "pass": true,
+      "violation_count": 0
+    },
+    "L1_negative_test": {
+      "expected_detection": true,
+      "fault": "externalize event marked was_resident=False; logical five_tuple unchanged",
+      "pass": true,
+      "propagation": "if detection fails, FINAL fails; the synthetic fault itself is not counted as an experiment violation",
+      "violation_count": 1
+    },
+    "deterministic": {
+      "dd": 0,
+      "run_1": [
+        {
+          "ext_count": 1368,
+          "rehy_count": 1392,
+          "workload": "hot"
+        },
+        {
+          "ext_count": 2006,
+          "rehy_count": 2030,
+          "workload": "tree"
+        }
+      ],
+      "run_2": [
+        {
+          "ext_count": 1368,
+          "rehy_count": 1392,
+          "workload": "hot"
+        },
+        {
+          "ext_count": 2006,
+          "rehy_count": 2030,
+          "workload": "tree"
+        }
+      ],
+      "violation_count": 0
+    },
+    "FINAL": {
+      "PASS": true,
+      "violation_count": 0
+    }
+  }
+}

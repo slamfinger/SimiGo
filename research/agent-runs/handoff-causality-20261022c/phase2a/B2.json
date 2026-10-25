@@ -1,0 +1,36 @@
+{
+ "checks": {
+  "cold_seed_identical": true,
+  "outputs_differ": true,
+  "settlements_differ": true,
+  "u2_inputs_differ": true,
+  "u2_template_identical": true,
+  "world_a_output_follows_its_settlement": true,
+  "world_a_reused_u1_and_generated_u2": true,
+  "world_b_output_follows_its_settlement": true,
+  "world_b_reused_u1_and_generated_u2": true
+ },
+ "compared_at_utc": "2026-10-22T02:48:36Z",
+ "schema_id": "SIMIGO-CAUSALITY-PHASE2-B2-V1",
+ "terminal_state": "C2_DIFFERENTIAL_ESTABLISHED",
+ "world_a": {
+  "answer_sha256": "249ffe3cc6b6b06fbe8afa637c746fc57cb35a2632d4b0e5832d0e52ec86ed8a",
+  "generation_calls": 1,
+  "matches_settled_expected": true,
+  "next_input_sha256": "31c52016a05770dafb2815a1d7900ff7377fc520cdc40b89e5ed9be015a7d651",
+  "settlement_object_id": "abc6c05001bc01c7da05bdddfe8712e220b9262adacc8710c06b73dfd980dfa3",
+  "u1_recomputed": false,
+  "u1_reused": true,
+  "u2_action": "COMPUTE"
+ },
+ "world_b": {
+  "answer_sha256": "5bf5177fc7605d7454c390867d7832e9e186b9374635c369fd52f128630dd0d2",
+  "generation_calls": 1,
+  "matches_settled_expected": true,
+  "next_input_sha256": "d45fd4395f9f487839ee428f0a1a5438c4060390dbeef25fa6558c1cf3c75aea",
+  "settlement_object_id": "271bd0d6797d132537ab64aa20fa0ac195c346e603d7aeb10d9147e0f793acaf",
+  "u1_recomputed": false,
+  "u1_reused": true,
+  "u2_action": "COMPUTE"
+ }
+}

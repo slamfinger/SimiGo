@@ -1,0 +1,545 @@
+{
+  "status": "PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6B.SEGMENT.REPLICATION.V1",
+  "boundary": "TARGETED_SEGMENT_SIZE_REPLICATION / COMBINED_N3 / SMALL_SAMPLE / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "prefixTokenLengths": [
+    8,
+    64
+  ],
+  "maxTokens": 2,
+  "segmentSizes": [
+    8,
+    16
+  ],
+  "phase6ACyclesPerStrategy": 1,
+  "phase6BCyclesPerStrategy": 2,
+  "combinedSamplesPerStrategy": 3,
+  "cells": [
+    {
+      "prefixTokenLength": 8,
+      "maxTokens": 2,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "samplesPerStrategy": 3,
+      "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "retainActionMs": {
+        "n": 3,
+        "meanMs": 0.0021393333333333334,
+        "medianMs": 0.002709,
+        "minMs": 0.000917,
+        "maxMs": 0.002792,
+        "iqrMs": 0.0018750000000000004
+      },
+      "releaseActionMs": {
+        "n": 3,
+        "meanMs": 4.048125,
+        "medianMs": 4.021125,
+        "minMs": 3.966542,
+        "maxMs": 4.156708,
+        "iqrMs": 0.19016600000000006
+      },
+      "retainGenerationMs": {
+        "n": 3,
+        "meanMs": 18632.776222666667,
+        "medianMs": 18665.924209,
+        "minMs": 18520.063542,
+        "maxMs": 18712.340917,
+        "iqrMs": 192.27737500000148
+      },
+      "releaseGenerationMs": {
+        "n": 3,
+        "meanMs": 18638.999778,
+        "medianMs": 18673.739125,
+        "minMs": 18519.438209,
+        "maxMs": 18723.822,
+        "iqrMs": 204.3837910000002
+      },
+      "generationTransitionsPerStrategy": 12,
+      "allPairedOutputsExact": true,
+      "allRetainActionTransitionsZero": true,
+      "allReleaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "source": "PHASE6A",
+            "actionMs": 0.002709,
+            "actionTransitionDelta": 0,
+            "generationMs": 18520.063542,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 0.002792,
+            "actionTransitionDelta": 0,
+            "generationMs": 18665.924209,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 0.000917,
+            "actionTransitionDelta": 0,
+            "generationMs": 18712.340917,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "source": "PHASE6A",
+            "actionMs": 3.966542,
+            "actionTransitionDelta": 1,
+            "generationMs": 18519.438209,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 4.156708,
+            "actionTransitionDelta": 1,
+            "generationMs": 18673.739125,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 4.021125,
+            "actionTransitionDelta": 1,
+            "generationMs": 18723.822,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          }
+        ]
+      },
+      "replicatePeakFootprintMiB": 8066,
+      "replicateMaxSwapMiB": 0,
+      "replicateSegmentTransitions": 61
+    },
+    {
+      "prefixTokenLength": 8,
+      "maxTokens": 2,
+      "segmentSize": 16,
+      "segmentCount": 3,
+      "samplesPerStrategy": 3,
+      "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "retainActionMs": {
+        "n": 3,
+        "meanMs": 0.006000000000000001,
+        "medianMs": 0.004667,
+        "minMs": 0.002958,
+        "maxMs": 0.010375,
+        "iqrMs": 0.007417
+      },
+      "releaseActionMs": {
+        "n": 3,
+        "meanMs": 5.2897636666666665,
+        "medianMs": 4.798833,
+        "minMs": 4.689583,
+        "maxMs": 6.380875,
+        "iqrMs": 1.6912919999999998
+      },
+      "retainGenerationMs": {
+        "n": 3,
+        "meanMs": 30012.94809733333,
+        "medianMs": 27638.235542,
+        "minMs": 26270.583833,
+        "maxMs": 36130.024917,
+        "iqrMs": 9859.441084000002
+      },
+      "releaseGenerationMs": {
+        "n": 3,
+        "meanMs": 31446.576944666667,
+        "medianMs": 31111.494208,
+        "minMs": 28594.859292,
+        "maxMs": 34633.377334,
+        "iqrMs": 6038.518041999996
+      },
+      "generationTransitionsPerStrategy": 6,
+      "allPairedOutputsExact": true,
+      "allRetainActionTransitionsZero": true,
+      "allReleaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "source": "PHASE6A",
+            "actionMs": 0.004667,
+            "actionTransitionDelta": 0,
+            "generationMs": 26270.583833,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 0.010375,
+            "actionTransitionDelta": 0,
+            "generationMs": 27638.235542,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 0.002958,
+            "actionTransitionDelta": 0,
+            "generationMs": 36130.024917,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "source": "PHASE6A",
+            "actionMs": 4.798833,
+            "actionTransitionDelta": 1,
+            "generationMs": 28594.859292,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 4.689583,
+            "actionTransitionDelta": 1,
+            "generationMs": 31111.494208,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 6.380875,
+            "actionTransitionDelta": 1,
+            "generationMs": 34633.377334,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          }
+        ]
+      },
+      "replicatePeakFootprintMiB": 10683,
+      "replicateMaxSwapMiB": 0,
+      "replicateSegmentTransitions": 34
+    },
+    {
+      "prefixTokenLength": 64,
+      "maxTokens": 2,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "samplesPerStrategy": 3,
+      "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "retainActionMs": {
+        "n": 3,
+        "meanMs": 0.004597333333333333,
+        "medianMs": 0.004709,
+        "minMs": 0.003541,
+        "maxMs": 0.005542,
+        "iqrMs": 0.002001
+      },
+      "releaseActionMs": {
+        "n": 3,
+        "meanMs": 7.456139,
+        "medianMs": 7.6055,
+        "minMs": 7.108417,
+        "maxMs": 7.6545,
+        "iqrMs": 0.5460829999999994
+      },
+      "retainGenerationMs": {
+        "n": 3,
+        "meanMs": 27126.588514000003,
+        "medianMs": 26230.057042,
+        "minMs": 24673.299917,
+        "maxMs": 30476.408583,
+        "iqrMs": 5803.108666
+      },
+      "releaseGenerationMs": {
+        "n": 3,
+        "meanMs": 28228.989583,
+        "medianMs": 29864.8475,
+        "minMs": 24697.140333,
+        "maxMs": 30124.980916,
+        "iqrMs": 5427.840583000001
+      },
+      "generationTransitionsPerStrategy": 12,
+      "allPairedOutputsExact": true,
+      "allRetainActionTransitionsZero": true,
+      "allReleaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "source": "PHASE6A",
+            "actionMs": 0.004709,
+            "actionTransitionDelta": 0,
+            "generationMs": 24673.299917,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 0.005542,
+            "actionTransitionDelta": 0,
+            "generationMs": 26230.057042,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 0.003541,
+            "actionTransitionDelta": 0,
+            "generationMs": 30476.408583,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "source": "PHASE6A",
+            "actionMs": 7.108417,
+            "actionTransitionDelta": 1,
+            "generationMs": 24697.140333,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 7.6055,
+            "actionTransitionDelta": 1,
+            "generationMs": 29864.8475,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 7.6545,
+            "actionTransitionDelta": 1,
+            "generationMs": 30124.980916,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ]
+      },
+      "replicatePeakFootprintMiB": 7255,
+      "replicateMaxSwapMiB": 0,
+      "replicateSegmentTransitions": 61
+    },
+    {
+      "prefixTokenLength": 64,
+      "maxTokens": 2,
+      "segmentSize": 16,
+      "segmentCount": 3,
+      "samplesPerStrategy": 3,
+      "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "retainActionMs": {
+        "n": 3,
+        "meanMs": 0.009916666666666666,
+        "medianMs": 0.004916,
+        "minMs": 0.002709,
+        "maxMs": 0.022125,
+        "iqrMs": 0.019416
+      },
+      "releaseActionMs": {
+        "n": 3,
+        "meanMs": 6.552847,
+        "medianMs": 7.227375,
+        "minMs": 5.191625,
+        "maxMs": 7.239541,
+        "iqrMs": 2.047916
+      },
+      "retainGenerationMs": {
+        "n": 3,
+        "meanMs": 44287.753124999996,
+        "medianMs": 47111.706083,
+        "minMs": 36916.891667,
+        "maxMs": 48834.661625,
+        "iqrMs": 11917.769957999997
+      },
+      "releaseGenerationMs": {
+        "n": 3,
+        "meanMs": 43010.64487533333,
+        "medianMs": 45780.321792,
+        "minMs": 37051.432792,
+        "maxMs": 46200.180042,
+        "iqrMs": 9148.74725
+      },
+      "generationTransitionsPerStrategy": 6,
+      "allPairedOutputsExact": true,
+      "allRetainActionTransitionsZero": true,
+      "allReleaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "source": "PHASE6A",
+            "actionMs": 0.004916,
+            "actionTransitionDelta": 0,
+            "generationMs": 36916.891667,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 0.022125,
+            "actionTransitionDelta": 0,
+            "generationMs": 48834.661625,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 0.002709,
+            "actionTransitionDelta": 0,
+            "generationMs": 47111.706083,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "source": "PHASE6A",
+            "actionMs": 5.191625,
+            "actionTransitionDelta": 1,
+            "generationMs": 37051.432792,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 7.239541,
+            "actionTransitionDelta": 1,
+            "generationMs": 45780.321792,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6B",
+            "actionMs": 7.227375,
+            "actionTransitionDelta": 1,
+            "generationMs": 46200.180042,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ]
+      },
+      "replicatePeakFootprintMiB": 4853,
+      "replicateMaxSwapMiB": 0,
+      "replicateSegmentTransitions": 34
+    }
+  ],
+  "checks": {
+    "ALL_REPLICATE_REPORTS_PASS": true,
+    "ALL_REPLICATE_PAIRED_OUTPUTS_EXACT": true,
+    "ALL_CELLS_PRESENT": true,
+    "COMBINED_SAMPLES_PER_STRATEGY": true,
+    "ALL_COMBINED_PAIRED_OUTPUTS_EXACT": true,
+    "RETAIN_NEVER_RELEASES_SEGMENTS": true,
+    "RELEASE_ALWAYS_RELEASES_SEGMENTS": true,
+    "GENERATION_TRANSITIONS_MATCH_STRUCTURE": true,
+    "OVERSIZED_PROFILE_UNDER_30GIB": true,
+    "ALL_RUNS_ZERO_SWAP": true
+  },
+  "openQuestions": [
+    "MORE_REPLICATES_AND_COUNTERBALANCING",
+    "FULL_PREFIX_LENGTH_BY_TOKEN_BUDGET_MATRIX_AT_N3",
+    "SEGMENT_RESIDENCY_POLICY_IS_NOT_IMPLEMENTED_IN_THIS_CACHELESS_PATH"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_WARM_KV_RETENTION_CLAIM",
+    "NOT_A_RELEASE_POLICY_RECOMMENDATION",
+    "NOT_A_CROSS_BACKEND_OR_CROSS_HARDWARE_COMPARISON"
+  ],
+  "overallPass": true
+}

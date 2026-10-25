@@ -1,0 +1,19 @@
+POST-STOP CAPTURE — NOT HARNESS-GENERATED CAMPAIGN EVIDENCE
+Traceback (most recent call last):
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 682, in <module>
+    sys.exit(main())
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 678, in main
+    return run(args.expected_head, Path(args.output).resolve())
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 660, in run
+    write_json(evidence_paths.resolve("PREFLIGHT_VERIFICATION"), preflight)
+  File "database-carrier-replication/campaign/run_equivalence_campaign.py", line 78, in write_json
+    json.dumps(value, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py", line 234, in dumps
+    return cls(
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py", line 430, in encode
+    _iterencode = _make_iterencode(
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/encoder.py", line 374, in _iterencode_dict
+    chunks = chunks + _iterencode(value, _current_indent_level)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/encoder.py", line 485, in _iterencode
+    o = _default(o)
+TypeError: Object of type PosixPath is not JSON serializable

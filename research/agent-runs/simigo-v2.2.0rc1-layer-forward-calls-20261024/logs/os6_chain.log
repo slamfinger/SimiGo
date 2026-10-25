@@ -1,0 +1,10 @@
+=== os6a start 18:50:39
+run rc=0
+verify rc=0 verdict=PASS 0.515
+=== os6b start 18:55:16
+run rc=0
+verify rc=0 verdict=PASS 0.516
+=== os6c start 18:59:51
+run rc=0
+verify rc=0 verdict=PASS 0.512
+=== all done 19:04:29

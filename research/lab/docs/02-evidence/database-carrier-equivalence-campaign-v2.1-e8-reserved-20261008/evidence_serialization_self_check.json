@@ -1,0 +1,209 @@
+{
+  "all_canonical_artifacts_pass": true,
+  "artifact_count": 20,
+  "checks": [
+    {
+      "artifact_path": "observer_verdict.json",
+      "byte_length": 525,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "412b8710879efa871a7051d302ed7fb484ddeafa85c26d7c8ca25ac56495bb8f"
+    },
+    {
+      "artifact_path": "build_command.json",
+      "byte_length": 229,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "b341b89fe8b83707a9a0921eddbefd059bc31116ce96c601c2c52bc55ef28c28"
+    },
+    {
+      "artifact_path": "source_sha256.json",
+      "byte_length": 367,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "b8ad69bd1fb53dbfd6db6992bdf7f0516d2fade821e874d8ad9903cefe7e9487"
+    },
+    {
+      "artifact_path": "es2-input.json",
+      "byte_length": 4157,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "REFERENCE_EXACT_BYTES",
+      "sha256": "0c3c547af76ef386dfce65bc2d31cf2348eea2873b300cd23041eeae1c4df5e1"
+    },
+    {
+      "artifact_path": "esn-input.json",
+      "byte_length": 4151,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "REFERENCE_EXACT_BYTES",
+      "sha256": "315816a7d10c776641fa011210cc301ff483899a5e1bf54ac7e8a7b42287049c"
+    },
+    {
+      "artifact_path": "working_copy_binding.json",
+      "byte_length": 569,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "0c290d90c7d079f37f72db4cdd598bbedc6b51f6d7391d395d140c8975fe89da"
+    },
+    {
+      "artifact_path": "O0.json",
+      "byte_length": 312,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "4a032a960559d584a64465c9a8b9bd4cf7175013a46d7c4e3e5e933b1585a779"
+    },
+    {
+      "artifact_path": "O1.json",
+      "byte_length": 1143,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "defbe8d2eaed00260ea45018ca107cd7edb7584ad1f0de2ce1ee88624ee4d8f9"
+    },
+    {
+      "artifact_path": "O2.json",
+      "byte_length": 1980,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "22f619674e93c8aab9dba24787b976eb0f000398996045fab989e0543dfa79d3"
+    },
+    {
+      "artifact_path": "es2-output.json",
+      "byte_length": 1164,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "REFERENCE_EXACT_BYTES",
+      "sha256": "370396506039ff1b92845e5f902375f784ee7af7e4729cfae3f80be1d8409ee7"
+    },
+    {
+      "artifact_path": "O3.json",
+      "byte_length": 2546,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "bf1e74458e1c76885b0d2c1660c607ca7d0fe9d22c55f6a1e06eec404e3eae5c"
+    },
+    {
+      "artifact_path": "O4.json",
+      "byte_length": 3195,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "649c85817a9fe1da47926e11c209d8a4b0051065dd51a4319042f9c8d83c5af0"
+    },
+    {
+      "artifact_path": "esn-output.json",
+      "byte_length": 846,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "REFERENCE_EXACT_BYTES",
+      "sha256": "c35ea6826e14cd79c5fa61c09dba0660d3af73ac0fc686baa2467a923b502bf4"
+    },
+    {
+      "artifact_path": "O5.json",
+      "byte_length": 3195,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "649c85817a9fe1da47926e11c209d8a4b0051065dd51a4319042f9c8d83c5af0"
+    },
+    {
+      "artifact_path": "observer_persistence_binding.json",
+      "byte_length": 417,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "cb2c08921ff998cb702fd4b086ead86ee3f90552a58f7ed99e3d6df803dbd2cb"
+    },
+    {
+      "artifact_path": "campaign_db_validation.json",
+      "byte_length": 291,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "03a217c8d94f516bc8700251c209d229d393f5fcd35e4070b558f189d4e56964"
+    },
+    {
+      "artifact_path": "runtime_provenance.json",
+      "byte_length": 481,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "04f4c0c19d33f11343afbc3a9677a5641bccd92733b18a3123ccf5bc0f2f2eb2"
+    },
+    {
+      "artifact_path": "preflight_verification.json",
+      "byte_length": 1398,
+      "byte_persistence_exact": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+      "sha256": "c096daa3b516dfe350708492ece60a3ee9c7c665d963d19f8bd8b27c13bfc012"
+    },
+    {
+      "artifact_path": "evidence_path_binding_execution.json",
+      "byte_persistence_exact": true,
+      "independent_path_preflight": true,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF"
+    },
+    {
+      "artifact_path": "transaction_log.jsonl",
+      "canonical_jsonl_record_count": 8,
+      "parsed_object_exact": true,
+      "pass": true,
+      "pre_write_serialization_check": "PASS",
+      "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF"
+    }
+  ],
+  "path_like_json_boundary": "FORBIDDEN",
+  "self_check": {
+    "post_write_byte_and_parse_equality": "ENFORCED",
+    "pre_write_recursive_serialization_check": "PASS"
+  },
+  "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF"
+}

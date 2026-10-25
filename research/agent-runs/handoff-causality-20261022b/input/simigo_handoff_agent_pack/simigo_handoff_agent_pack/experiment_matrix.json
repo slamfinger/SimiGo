@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "run_id": "handoff-causality-20261022b",
+  "research_question": "Can a settled result detach from the old execution context and be restored from physical Information Space in a new execution instance for incremental continuation?",
+  "claims": {
+    "C1": "Production recovery/admission contract behavior",
+    "C2": "U2's actual input value came from the corresponding IS settlement object in the tested handoff path",
+    "C3": "Observed recompute-versus-refuse behavior when settlement is missing",
+    "C4": "Byte/digest/dependency integrity; not proof of genuine U1 execution provenance"
+  },
+  "phase1": [
+    {"id":"A0","intervention":"none; valid stage-A-only baseline at position 1","expected":"restore succeeds; U2 generation exactly 1","required_generation_calls":1},
+    {"id":"A1","intervention":"remove settlement checkpoint only","expected_error":"settlementCheckpointMissing","required_generation_calls":0},
+    {"id":"A2a","intervention":"change checkpoint result_digest only","expected_error":"settlementCheckpointMismatch(field: result_digest)","required_generation_calls":0},
+    {"id":"A2b","intervention":"change checkpoint validity_basis only","expected_error":"settlementCheckpointMismatch(field: validity_basis)","required_generation_calls":0},
+    {"id":"A3","intervention":"remove latest :runtime-applied IS index entry in a DB copy","expected_error":"informationSpaceHasNoSettledExecution","required_generation_calls":0},
+    {"id":"A4","intervention":"point to an empty state directory with no durable handle","expected_error":"durableExecutionStateMissing","required_generation_calls":0}
+  ],
+  "phase2": [
+    {"id":"B0-A","intervention":"world A: nonce in U1 source and authentic U1 settlement; cold U2 process","expected":"U2 follows nonce A; U1/U2 generation during U2 phase 0/1"},
+    {"id":"B0-B","intervention":"world B: distinct nonce in U1 source and authentic U1 settlement; byte-identical U2 template","expected":"U2 follows nonce B; U1/U2 generation during U2 phase 0/1"},
+    {"id":"B2","intervention":"differential comparison of B0 worlds; same U2 template/seed, different legitimate IS settlements","expected":"U2 output follows corresponding IS settlement"},
+    {"id":"B1-harness","intervention":"remove U1 settlement but retain U1 item/source","expected":"observe actual handoff refusal; expected generation 0/0; no fallback source"},
+    {"id":"B1-loop","optional":true,"intervention":"separately exercise existing generic loop without semantic changes","expected":"observe and report recompute or refusal; count per-item generations"},
+    {"id":"B3a","intervention":"tamper object bytes","expected":"read/integrity refusal; tampered value not used"},
+    {"id":"B3b","intervention":"change result value and recompute digest while retaining original source/dependency/validity metadata","expected":"observe accept/reject and output; authenticity limitation, not lineage-authentic input"},
+    {"id":"B3c","intervention":"mismatch dependency pointer","expected":"observe bridge rejection/blocked state and whether generation happened first"},
+    {"id":"B4","intervention":"nonce leakage/cross-world audit before U2 starts","expected":"only explicitly allowed U1 payload and corresponding IS settlement contain nonce"}
+  ],
+  "run_policy": {
+    "no_silent_retries": true,
+    "no_commit_or_push": true,
+    "do_not_touch_run_20261022a": true,
+    "do_not_touch_frozen_g2_or_existing_evidence": true,
+    "no_model_weight_copy": true,
+    "no_no_recompute_policy_change": true,
+    "fresh_u2_os_process": true,
+    "terminal_state_default": "OBSERVED"
+  }
+}

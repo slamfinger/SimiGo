@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-exec2-8qYho6CO/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 630, in <module>
+    sys.exit(main())
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-exec2-8qYho6CO/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 626, in main
+    return run(args.expected_head, Path(args.output).resolve())
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-exec2-8qYho6CO/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 501, in run
+    (output / "observations" / f"{point}.json").write_text(
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1275, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors) as f:
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1242, in open
+    return io.open(self, mode='w', buffering=buffering, encoding=encoding, errors=errors, newline=newline, opener=self._opener)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1212, in _opener
+    return self._accessor.open(self, flags)
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v1.4-20261008/observations/O0.json'

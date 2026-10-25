@@ -1,0 +1,24 @@
+{
+  "attempt": 3,
+  "authorization": "AUTHORIZED",
+  "authorization_text": "授权新建 R-C1 #3 Run ID执行",
+  "authorization_time_local": "2026-10-03T05:11:51+0800",
+  "authorization_type": "NEW_EXPLICIT",
+  "authorized_by": "human repository owner via chat instruction",
+  "branch": "codex/execution-state-research-20260929",
+  "executor": "external orchestration",
+  "experiment": "R-C1",
+  "implementation_baseline": "806dd3eea55c",
+  "implementation_changes_since_audit": false,
+  "prior_attempts": [
+    {
+      "attempt": 1,
+      "state": "STOPPED_INVALID_INCONCLUSIVE"
+    },
+    {
+      "attempt": 2,
+      "state": "STOPPED_INVALID_INCONCLUSIVE"
+    }
+  ],
+  "run_id": "RC1-A3-20261002T211332Z-48860"
+}

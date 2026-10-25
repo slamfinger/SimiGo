@@ -1,0 +1,168 @@
+{
+  "candidate_equivalence_pending_human_audit": false,
+  "experiment_id": "MINIMAL-PIR-EXP-002",
+  "is_mutations": 0,
+  "overall_outcome": "FAIL_CLOSED",
+  "pir_equivalence_established": false,
+  "repair_performed": false,
+  "rerun_performed": false,
+  "results": {
+    "E-L": {
+      "accepted_scope": 20,
+      "artifact_state": "FAILURE",
+      "closure_complete": true,
+      "execution_commit": "ff051483343a24025cd25347d03b4f1a4e3d8e32",
+      "false_negative_changes": 1,
+      "false_positive_changes": 0,
+      "fixture_dir": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/fixtures/E-L",
+      "observations": 20,
+      "oracle_changes": 5,
+      "outcome": "FAIL_CLOSED",
+      "phase_vectors": {
+        "S1_information_scope_resolution": {
+          "blockers": {
+            "typed_blocker_count": 0
+          },
+          "bytes": {
+            "digest_bytes_read": 0,
+            "payload_bytes_read": 0
+          },
+          "latency_ms": {
+            "elapsed_ms": 0
+          },
+          "objects": {
+            "changed_found": 0,
+            "closure_references": 0,
+            "index_candidates": 20,
+            "information_scope_accepted": 20,
+            "physical_candidates": 0,
+            "physical_checks": 0,
+            "total_registered_n": 10000,
+            "unrelated_object_touches": 0
+          },
+          "syscalls": {
+            "open": 0,
+            "read": 0,
+            "stat": 0
+          }
+        },
+        "S2_physical_scope_assembly": {
+          "blockers": {
+            "typed_blocker_count": 0
+          },
+          "bytes": {
+            "digest_bytes_read": 0,
+            "payload_bytes_read": 0
+          },
+          "latency_ms": {
+            "elapsed_ms": 0
+          },
+          "objects": {
+            "changed_found": 0,
+            "closure_references": 0,
+            "index_candidates": 0,
+            "information_scope_accepted": 20,
+            "physical_candidates": 0,
+            "physical_checks": 0,
+            "total_registered_n": 0,
+            "unrelated_object_touches": 0
+          },
+          "syscalls": {
+            "open": 0,
+            "read": 0,
+            "stat": 0
+          }
+        },
+        "S3_candidate_retrieval": {
+          "blockers": {
+            "typed_blocker_count": 0
+          },
+          "bytes": {
+            "digest_bytes_read": 0,
+            "payload_bytes_read": 0
+          },
+          "latency_ms": {
+            "elapsed_ms": 0
+          },
+          "objects": {
+            "changed_found": 0,
+            "closure_references": 0,
+            "index_candidates": 0,
+            "information_scope_accepted": 0,
+            "physical_candidates": 0,
+            "physical_checks": 0,
+            "total_registered_n": 0,
+            "unrelated_object_touches": 0
+          },
+          "syscalls": {
+            "open": 9999,
+            "read": 0,
+            "stat": 0
+          }
+        },
+        "S4_physical_reconciliation": {
+          "blockers": {
+            "typed_blocker_count": 0
+          },
+          "bytes": {
+            "digest_bytes_read": 0,
+            "payload_bytes_read": 1766
+          },
+          "latency_ms": {
+            "elapsed_ms": 0
+          },
+          "objects": {
+            "changed_found": 0,
+            "closure_references": 0,
+            "index_candidates": 0,
+            "information_scope_accepted": 20,
+            "physical_candidates": 19,
+            "physical_checks": 20,
+            "total_registered_n": 0,
+            "unrelated_object_touches": 0
+          },
+          "syscalls": {
+            "open": 0,
+            "read": 0,
+            "stat": 20
+          }
+        },
+        "S5_fresh_closure_reconstruction": {
+          "blockers": {
+            "typed_blocker_count": 0
+          },
+          "bytes": {
+            "digest_bytes_read": 0,
+            "payload_bytes_read": 0
+          },
+          "latency_ms": {
+            "elapsed_ms": 0
+          },
+          "objects": {
+            "changed_found": 0,
+            "closure_references": 20,
+            "index_candidates": 0,
+            "information_scope_accepted": 0,
+            "physical_candidates": 0,
+            "physical_checks": 0,
+            "total_registered_n": 0,
+            "unrelated_object_touches": 0
+          },
+          "syscalls": {
+            "open": 0,
+            "read": 0,
+            "stat": 0
+          }
+        }
+      },
+      "shape": "E-L",
+      "stop_code": "MINIMAL_PIR_EXPERIMENT_ASSERTION_FAILURE",
+      "true_positive_changes": 4,
+      "w_latency_ms": 5000,
+      "w_latency_observed_ms": 140,
+      "w_latency_pass": true,
+      "w_obs_age_ms": 60000,
+      "w_obs_age_pass": true
+    }
+  }
+}

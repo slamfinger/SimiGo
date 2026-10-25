@@ -1,0 +1,24 @@
+[2026-10-24 03:08:46.640] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=131MB swapUsed=4650MB
+[2026-10-24 03:08:49.148] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 03:08:49.149] NativeMLX ready: model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit port=0
+[2026-10-24 03:08:49.149] [MEM] afterLoad active=16385MB cache=0MB peak=16385MB footprint=16493MB swapUsed=4650MB
+[2026-10-24 03:08:49.151] [LC] STATE_TRANSITION r=g1-pro s=es1-pr from=CREATED to=RUNNING
+[2026-10-24 03:08:49.152] [MLX] poolRescan entries=0
+[2026-10-24 03:08:49.154] [MLX] prefillStep=2048 est=13 reuse=false
+[2026-10-24 03:08:49.819] [MLX] prefill 19/19
+[2026-10-24 03:08:49.910] [MLX] poolExport messages=2 refHash=3b4947891b8872b2
+[2026-10-24 03:08:49.914] [MLX] cacheSave session=roduce/main history=2
+[2026-10-24 03:08:49.914] [MLX] session=roduce/main messages=1 exec=6e8f92 history=2 delta=1 reuse=false ttft=700ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=19 promptTime=0.7s tps=62.0 rawEv=3 rawB=12 emitB=12
+[2026-10-24 03:08:49.914] [LC] RELEASED r=g1-pro s=es1-pr reason=g1g3-produce
+[2026-10-24 03:08:50.532] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=131MB swapUsed=4634MB
+[2026-10-24 03:08:52.473] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 03:08:52.473] NativeMLX ready: model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit port=0
+[2026-10-24 03:08:52.473] [MEM] afterLoad active=16385MB cache=0MB peak=16385MB footprint=16495MB swapUsed=4634MB
+[2026-10-24 03:08:52.474] [LC] STATE_TRANSITION r=g1-con s=es2-co from=CREATED to=RUNNING
+[2026-10-24 03:08:52.474] [MLX] poolRescan entries=0
+[2026-10-24 03:08:52.474] [MLX] prefillStep=2048 est=22 reuse=false
+[2026-10-24 03:08:53.149] [MLX] prefill 27/27
+[2026-10-24 03:08:53.295] [MLX] poolExport messages=2 refHash=6eed00164a7fcba6
+[2026-10-24 03:08:53.300] [MLX] cacheSave session=onsume/main history=2
+[2026-10-24 03:08:53.300] [MLX] session=onsume/main messages=1 exec=70f52c history=2 delta=1 reuse=false ttft=733ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=27 promptTime=0.7s tps=62.1 rawEv=5 rawB=15 emitB=15
+[2026-10-24 03:08:53.300] [LC] RELEASED r=g1-con s=es2-co reason=g1g3-consume

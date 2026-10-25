@@ -1,0 +1,1532 @@
+{
+  "carrier_loop_semantics_changed": false,
+  "claim_limits": [
+    "Only J0 is real-model evidence. J1/J2/J3 settle a MODEL-FREE candidate text through the production execute-with-model-result path, so they prove the declared-contract gate refuses those shapes and creates no settlement/signature; they prove nothing about what the model would produce.",
+    "The native child's stdout and stderr are genuinely 0 bytes (recorded as bytes=0 with the real empty-stream hash, never synthesised from the evidence JSON). The authoritative model output is the generated_text and output token ids inside each stage's Information Space settlement evidence, plus the driver's independent re-extraction from the item's own declared contract (declared_contract_audit).",
+    "Native rebuild: `swift build --product SimiGoTaskRun` succeeded and left the binary byte-identical (e91b70128cbb), so the run binary is the shipped binary and the rebuild claim is a no-op.",
+    "Cost is honest: each J0 process loads the real model and generates its own item exactly once; reuse means no regeneration of that item, not zero FLOPs or zero prefill. Model reload cost recurs per fresh process.",
+    "This validates ONE model/backend snapshot and ONE route-synthesis task contract family. It does not establish that every production task's declaration is semantically sufficient, only that validation dispatches on the declaration instead of the task id.",
+    "Logical ES identity is the per-stage pending state id (j0-p1/p2/p3) and runtime instance identity is the per-process provenance execution id; the three are distinct dimensions. No prefix, KV cache, prompt or state directory was copied between stages.",
+    "P2 (J-8a014a51-U2): the declared match_policy is \"first\", and the real model text carried extra repeated/contradicting matches for ['route_key']; the settled value is the first declared match ({\"route_key\": [\"NORTH>EAST\", \"NORTH>WEST\"]}). This is the item's own declaration at work, not an id-specific exception, but it means \"first\" tolerates trailing noise and a stricter exactly_one policy was NOT what this chain declared.",
+    "P3 (J-8a014a51-U3): the declared match_policy is \"first\", and the real model text carried extra repeated/contradicting matches for ['route_key']; the settled value is the first declared match ({\"route_key\": [\"NORTH>EAST\"]}). This is the item's own declaration at work, not an id-specific exception, but it means \"first\" tolerates trailing noise and a stricter exactly_one policy was NOT what this chain declared."
+  ],
+  "claims": {
+    "contract_violations_refused": "OBSERVED: a missing declared field and a value contradicting an admitted input binding were both refused by the declared contract with no settlement and no signature created; an unknown contract schema version failed closed before any model work",
+    "cross_process_reuse_on_unseen_ids": "OBSERVED: U2 and U3 were produced in fresh native processes on empty state directories that reused the settled U1/U2 closure through Information Space, one generation per process",
+    "declarative_dispatch_no_task_id_rules": "OBSERVED: the production gate _validate_model_value takes (source_payload, value, dependency_values) only; the graph was built on run-time ids J-<token>-U1/2/3 and settled, reused and refused exactly as the frozen H/I lineage does"
+  },
+  "conditions": {
+    "J0-UNSEEN-ID-CHAIN": {
+      "attempt": 7,
+      "child_stdout": {
+        "bytes": 0,
+        "exists": true,
+        "path": "runs/J0/stdout/j0-p1.stdout.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "contract_dispatch_basis": "declared_contract",
+      "driver_log_path": "logs/J0-UNSEEN-ID-CHAIN.driver.log",
+      "driver_log_sha256": "0e63e8a6ff705d8c18197a4be673303ceb3e22ec76db56f5c639d938bc5c5729",
+      "evidence_path": "conditions/J0-UNSEEN-ID-CHAIN.json",
+      "evidence_sha256": "0cb6efb5a78ad5f218f2d20c87292748c0c8ea29a4a8ebcf52cc1076279feceb",
+      "harness_direct_result_reads": 0,
+      "kind": "real_model",
+      "observations": {
+        "closure_signature_verified": true,
+        "contract_dispatch_basis": "declared_contract",
+        "expected_route_key": "NORTH>EAST",
+        "harness_direct_result_reads": 0,
+        "ids_unseen": true,
+        "item_ids": [
+          "J-8a014a51-U1",
+          "J-8a014a51-U2",
+          "J-8a014a51-U3"
+        ],
+        "observed_route_keys": {
+          "u1": "NORTH>EAST",
+          "u2": "NORTH>EAST",
+          "u3": "NORTH>EAST"
+        },
+        "old_state_or_prefix_copied": false,
+        "p2_u1_regeneration_count": 0,
+        "p3_u1_regeneration_count": 0,
+        "p3_u2_regeneration_count": 0,
+        "process_count": 3,
+        "run_token": "8a014a51",
+        "semantic_trace": {
+          "contract_validation_reports": [
+            {
+              "contract_dispatch_basis": "declared_contract",
+              "contract_read": true,
+              "declared_contract_schema_version": "simigo.result-contract/v1",
+              "declared_fields": [
+                "destination_code",
+                "origin_code",
+                "priority",
+                "route_key"
+              ],
+              "declared_match_audit": {
+                "destination_code": {
+                  "distinct_values": [
+                    "EAST"
+                  ],
+                  "matches": 1
+                },
+                "origin_code": {
+                  "distinct_values": [
+                    "NORTH"
+                  ],
+                  "matches": 1
+                },
+                "priority": {
+                  "distinct_values": [
+                    "5"
+                  ],
+                  "matches": 1
+                },
+                "route_key": {
+                  "distinct_values": [
+                    "NORTH>EAST"
+                  ],
+                  "matches": 1
+                }
+              },
+              "declared_match_policy": {
+                "destination_code": "first",
+                "origin_code": "first",
+                "priority": "first",
+                "route_key": "first"
+              },
+              "redeclared_extraction_matches_settled_value": true,
+              "reextracted_fields": {
+                "destination_code": "EAST",
+                "origin_code": "NORTH",
+                "priority": "5",
+                "route_key": "NORTH>EAST"
+              },
+              "stage": "P1",
+              "task_item_id": "J-8a014a51-U1"
+            },
+            {
+              "contract_dispatch_basis": "declared_contract",
+              "contract_read": true,
+              "declared_contract_schema_version": "simigo.result-contract/v1",
+              "declared_fields": [
+                "route_key"
+              ],
+              "declared_match_audit": {
+                "route_key": {
+                  "distinct_values": [
+                    "NORTH>EAST",
+                    "NORTH>WEST"
+                  ],
+                  "matches": 8
+                }
+              },
+              "declared_match_policy": {
+                "route_key": "first"
+              },
+              "redeclared_extraction_matches_settled_value": true,
+              "reextracted_fields": {
+                "route_key": "NORTH>EAST"
+              },
+              "stage": "P2",
+              "task_item_id": "J-8a014a51-U2"
+            },
+            {
+              "contract_dispatch_basis": "declared_contract",
+              "contract_read": true,
+              "declared_contract_schema_version": "simigo.result-contract/v1",
+              "declared_fields": [
+                "route_key"
+              ],
+              "declared_match_audit": {
+                "route_key": {
+                  "distinct_values": [
+                    "NORTH>EAST"
+                  ],
+                  "matches": 6
+                }
+              },
+              "declared_match_policy": {
+                "route_key": "first"
+              },
+              "redeclared_extraction_matches_settled_value": true,
+              "reextracted_fields": {
+                "route_key": "NORTH>EAST"
+              },
+              "stage": "P3",
+              "task_item_id": "J-8a014a51-U3"
+            }
+          ],
+          "source_a": {
+            "object_id": "0c8605053b4e8898e2ba4e15b9a207d80bab00ecb4667953ac36ded6f4ba5fe8",
+            "payload": {
+              "origin_code": "NORTH"
+            }
+          },
+          "source_b": {
+            "object_id": "b505ce3da457c857b7f195f0d73fbbd30720d636a28c4cb788fa36502846001a",
+            "payload": {
+              "destination_code": "EAST",
+              "priority": "5"
+            }
+          },
+          "u1_settlement": {
+            "object_id": "c79f628b6e71a2a345405a80fcf9d9d656de1b09d1fcce7d1dc5a8f568d4691a",
+            "result": {
+              "destination_code": "EAST",
+              "origin_code": "NORTH",
+              "priority": "5",
+              "route_key": "NORTH>EAST"
+            },
+            "signature_envelope_id": "75de6464cc3a7a3ec5b320dcbed5216218409c569f7c1cf6193fc553fdc0fbf9",
+            "signature_verified": true
+          },
+          "u2_input": {
+            "constructed_by_harness": false,
+            "fields_used": [
+              "priority",
+              "route_key"
+            ],
+            "source_settlement_object_id": "c79f628b6e71a2a345405a80fcf9d9d656de1b09d1fcce7d1dc5a8f568d4691a",
+            "values": {
+              "priority": "5",
+              "route_key": "NORTH>EAST"
+            }
+          },
+          "u2_settlement": {
+            "object_id": "4578749bc61219d8df7dd60910e85ae822ca4540c6901912f02469736795091d",
+            "result": {
+              "route_key": "NORTH>EAST"
+            },
+            "signature_envelope_id": "891e61cde5cbecdff0299e52e962f2de62450748979917793e5c1925738e3345",
+            "signature_verified": true
+          },
+          "u3_input": {
+            "constructed_by_harness": false,
+            "fields_used": [
+              "route_key"
+            ],
+            "source_settlement_object_id": "4578749bc61219d8df7dd60910e85ae822ca4540c6901912f02469736795091d",
+            "values": {
+              "route_key": "NORTH>EAST"
+            }
+          },
+          "u3_settlement": {
+            "object_id": "3be5bd6b3185c4f1e25408cb766e5213581565291941eaa5343febcd693a9ee7",
+            "result": {
+              "route_key": "NORTH>EAST"
+            },
+            "signature_envelope_id": "59e17f37c2b051682a8ceb03cd43c69025e6e2de5c1abab14b85bccc7083f467",
+            "signature_verified": true
+          }
+        },
+        "stage_records": [
+          {
+            "child_stderr": {
+              "bytes": 0,
+              "exists": true,
+              "path": "runs/J0/stderr/j0-p1.stderr.bin",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "child_stdout": {
+              "bytes": 0,
+              "exists": true,
+              "path": "runs/J0/stdout/j0-p1.stdout.bin",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "computed_item_ids": [
+              "J-8a014a51-U1"
+            ],
+            "contract_dispatch_basis": "declared_contract",
+            "counters": {
+              "generation_calls": 1,
+              "model_loads": 1,
+              "seed_tokenize_calls": 1,
+              "text_tokenize_calls": 1
+            },
+            "declared_contract_audit": {
+              "contract_dispatch_basis": "declared_contract",
+              "contract_read": true,
+              "declared_contract_fields": [
+                "destination_code",
+                "origin_code",
+                "priority",
+                "route_key"
+              ],
+              "declared_contract_schema_version": "simigo.result-contract/v1",
+              "declared_match_audit": {
+                "destination_code": {
+                  "distinct_values": [
+                    "EAST"
+                  ],
+                  "matches": 1
+                },
+                "origin_code": {
+                  "distinct_values": [
+                    "NORTH"
+                  ],
+                  "matches": 1
+                },
+                "priority": {
+                  "distinct_values": [
+                    "5"
+                  ],
+                  "matches": 1
+                },
+                "route_key": {
+                  "distinct_values": [
+                    "NORTH>EAST"
+                  ],
+                  "matches": 1
+                }
+              },
+              "declared_match_policy": {
+                "destination_code": "first",
+                "origin_code": "first",
+                "priority": "first",
+                "route_key": "first"
+              },
+              "redeclared_extraction_matches_settled_value": true,
+              "reextracted_fields": {
+                "destination_code": "EAST",
+                "origin_code": "NORTH",
+                "priority": "5",
+                "route_key": "NORTH>EAST"
+              }
+            },
+            "declared_dependencies": [
+              "J-8a014a51-ORIGIN",
+              "J-8a014a51-DEST"
+            ],
+            "demand_id": "J-8a014a51-u1",
+            "generated_text": " ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5\nYou are executing one task step in a new execution instance.\nThe origin sector is SOUTH (route priority 2).\nThe destination sector is WEST",
+            "generation_calls": 1,
+            "initial_position": 0,
+            "input_text_sha256": "ddae3ba92aedfd78cc5e0a312358cfe15e760c2f446f2671412f1a49b699ad0a",
+            "logical_es_id": "j0-p1",
+            "model_load_count": 1,
+            "old_state_or_prefix_copied": false,
+            "output_text_sha256": "b42f33cab704b20254d9c43a091d461ac24ddb4e674a3be078926f13c5acf260",
+            "output_token_ids": [
+              2726,
+              55529,
+              51995,
+              35941,
+              198,
+              62571,
+              85234,
+              6349,
+              198,
+              99111,
+              51995,
+              35941,
+              59384,
+              6349,
+              198,
+              47,
+              34886,
+              28,
+              20,
+              198,
+              2610,
+              525,
+              30220,
+              825,
+              3383,
+              3019,
+              304,
+              264,
+              501,
+              11320,
+              2867,
+              624,
+              785,
+              6238,
+              10486,
+              374,
+              79615,
+              320,
+              8966,
+              10619,
+              220,
+              17,
+              4292,
+              785,
+              9106,
+              10486,
+              374,
+              65090
+            ],
+            "pid": 16435,
+            "recomputed_upstream_item_ids": [],
+            "result_digest": "5c6496a74b8862fb29b7e18a83f3f9d7062df3f6c74864596be495a5277f11a6",
+            "reused_item_ids": [
+              "J-8a014a51-ORIGIN",
+              "J-8a014a51-DEST"
+            ],
+            "runtime_execution_instance_id": "974cfd62-b9a3-4782-8001-ad44a550bbf4",
+            "seed_tokenize_calls": 1,
+            "settlement_object_id": "c79f628b6e71a2a345405a80fcf9d9d656de1b09d1fcce7d1dc5a8f568d4691a",
+            "signature_envelope_id": "75de6464cc3a7a3ec5b320dcbed5216218409c569f7c1cf6193fc553fdc0fbf9",
+            "stage": "P1",
+            "state_empty_at_start": true,
+            "task_item_id": "J-8a014a51-U1",
+            "terminal_state": "TASK_SETTLED",
+            "text_tokenize_calls": 1,
+            "wall_seconds": 16.455
+          },
+          {
+            "child_stderr": {
+              "bytes": 0,
+              "exists": true,
+              "path": "runs/J0/stderr/j0-p2.stderr.bin",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "child_stdout": {
+              "bytes": 0,
+              "exists": true,
+              "path": "runs/J0/stdout/j0-p2.stdout.bin",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "computed_item_ids": [
+              "J-8a014a51-U2"
+            ],
+            "contract_dispatch_basis": "declared_contract",
+            "counters": {
+              "generation_calls": 1,
+              "model_loads": 1,
+              "seed_tokenize_calls": 1,
+              "text_tokenize_calls": 1
+            },
+            "declared_contract_audit": {
+              "contract_dispatch_basis": "declared_contract",
+              "contract_read": true,
+              "declared_contract_fields": [
+                "route_key"
+              ],
+              "declared_contract_schema_version": "simigo.result-contract/v1",
+              "declared_match_audit": {
+                "route_key": {
+                  "distinct_values": [
+                    "NORTH>EAST",
+                    "NORTH>WEST"
+                  ],
+                  "matches": 8
+                }
+              },
+              "declared_match_policy": {
+                "route_key": "first"
+              },
+              "redeclared_extraction_matches_settled_value": true,
+              "reextracted_fields": {
+                "route_key": "NORTH>EAST"
+              }
+            },
+            "declared_dependencies": [
+              "J-8a014a51-U1"
+            ],
+            "demand_id": "J-8a014a51-u2",
+            "generated_text": " FLOW=NORTH>EAST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST",
+            "generation_calls": 1,
+            "initial_position": 0,
+            "input_text_sha256": "a6bdef8c257fe20050cb1906fdb64b1c9f4e85b1559e286591a85bc3855d964b",
+            "logical_es_id": "j0-p2",
+            "model_load_count": 1,
+            "old_state_or_prefix_copied": false,
+            "output_text_sha256": "5bf91453cdc87e97ab591395dd5fe3268f8521660073b415d04d5138d84763d6",
+            "output_token_ids": [
+              434,
+              9441,
+              51995,
+              35941,
+              59384,
+              6349,
+              198,
+              46060,
+              51995,
+              35941,
+              29,
+              94225,
+              198,
+              46060,
+              51995,
+              35941,
+              29,
+              94225,
+              198,
+              46060,
+              51995,
+              35941,
+              29,
+              94225,
+              198,
+              46060,
+              51995,
+              35941,
+              29,
+              94225,
+              198,
+              46060,
+              51995,
+              35941,
+              29,
+              94225,
+              198,
+              46060,
+              51995,
+              35941,
+              29,
+              94225,
+              198,
+              46060,
+              51995,
+              35941,
+              29,
+              94225
+            ],
+            "pid": 16798,
+            "recomputed_upstream_item_ids": [],
+            "result_digest": "d6fc668107a435fd7e54857a118c7fa204d1236502ad73f1f03de71a4cfc56a2",
+            "reused_item_ids": [
+              "J-8a014a51-ORIGIN",
+              "J-8a014a51-DEST",
+              "J-8a014a51-U1"
+            ],
+            "runtime_execution_instance_id": "eed70290-925c-49a5-8b62-020ff484bda4",
+            "seed_tokenize_calls": 1,
+            "settlement_object_id": "4578749bc61219d8df7dd60910e85ae822ca4540c6901912f02469736795091d",
+            "signature_envelope_id": "891e61cde5cbecdff0299e52e962f2de62450748979917793e5c1925738e3345",
+            "stage": "P2",
+            "state_empty_at_start": true,
+            "task_item_id": "J-8a014a51-U2",
+            "terminal_state": "TASK_SETTLED",
+            "text_tokenize_calls": 1,
+            "wall_seconds": 14.857
+          },
+          {
+            "child_stderr": {
+              "bytes": 0,
+              "exists": true,
+              "path": "runs/J0/stderr/j0-p3.stderr.bin",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "child_stdout": {
+              "bytes": 0,
+              "exists": true,
+              "path": "runs/J0/stdout/j0-p3.stdout.bin",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "computed_item_ids": [
+              "J-8a014a51-U3"
+            ],
+            "contract_dispatch_basis": "declared_contract",
+            "counters": {
+              "generation_calls": 1,
+              "model_loads": 1,
+              "seed_tokenize_calls": 1,
+              "text_tokenize_calls": 1
+            },
+            "declared_contract_audit": {
+              "contract_dispatch_basis": "declared_contract",
+              "contract_read": true,
+              "declared_contract_fields": [
+                "route_key"
+              ],
+              "declared_contract_schema_version": "simigo.result-contract/v1",
+              "declared_match_audit": {
+                "route_key": {
+                  "distinct_values": [
+                    "NORTH>EAST"
+                  ],
+                  "matches": 6
+                }
+              },
+              "declared_match_policy": {
+                "route_key": "first"
+              },
+              "redeclared_extraction_matches_settled_value": true,
+              "reextracted_fields": {
+                "route_key": "NORTH>EAST"
+              }
+            },
+            "declared_dependencies": [
+              "J-8a014a51-U2"
+            ],
+            "demand_id": "J-8a014a51-u3",
+            "generated_text": " CONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\n",
+            "generation_calls": 1,
+            "initial_position": 0,
+            "input_text_sha256": "14b5a02b6bf440e8acdf1371fbc43bd3a2ddf12346a36fe2c9706dd464c358d5",
+            "logical_es_id": "j0-p3",
+            "model_load_count": 1,
+            "old_state_or_prefix_copied": false,
+            "output_text_sha256": "35a77041ce4f0539c54bd7fa2c6b4e89b32e31c1e5252d65aa4d3af9682bcc19",
+            "output_token_ids": [
+              45189,
+              32432,
+              1479,
+              51995,
+              35941,
+              59384,
+              6349,
+              198,
+              38634,
+              32432,
+              1479,
+              51995,
+              35941,
+              59384,
+              6349,
+              198,
+              38634,
+              32432,
+              1479,
+              51995,
+              35941,
+              59384,
+              6349,
+              198,
+              38634,
+              32432,
+              1479,
+              51995,
+              35941,
+              59384,
+              6349,
+              198,
+              38634,
+              32432,
+              1479,
+              51995,
+              35941,
+              59384,
+              6349,
+              198,
+              38634,
+              32432,
+              1479,
+              51995,
+              35941,
+              59384,
+              6349,
+              198
+            ],
+            "pid": 17114,
+            "recomputed_upstream_item_ids": [],
+            "result_digest": "7d8adef3985058139e436600b317ae6c2afa0a95e673fd05f20d346941bf2b85",
+            "reused_item_ids": [
+              "J-8a014a51-ORIGIN",
+              "J-8a014a51-DEST",
+              "J-8a014a51-U1",
+              "J-8a014a51-U2"
+            ],
+            "runtime_execution_instance_id": "428cb12f-1f3f-4a26-8fd1-da308da46804",
+            "seed_tokenize_calls": 1,
+            "settlement_object_id": "3be5bd6b3185c4f1e25408cb766e5213581565291941eaa5343febcd693a9ee7",
+            "signature_envelope_id": "59e17f37c2b051682a8ceb03cd43c69025e6e2de5c1abab14b85bccc7083f467",
+            "stage": "P3",
+            "state_empty_at_start": true,
+            "task_item_id": "J-8a014a51-U3",
+            "terminal_state": "TASK_SETTLED",
+            "text_tokenize_calls": 1,
+            "wall_seconds": 14.568
+          }
+        ],
+        "u1_generation_count": 1,
+        "u2_generation_count": 1,
+        "u3_generation_count": 1
+      },
+      "old_state_or_prefix_copied": false,
+      "semantic_trace": {
+        "contract_validation_reports": [
+          {
+            "contract_dispatch_basis": "declared_contract",
+            "contract_read": true,
+            "declared_contract_schema_version": "simigo.result-contract/v1",
+            "declared_fields": [
+              "destination_code",
+              "origin_code",
+              "priority",
+              "route_key"
+            ],
+            "declared_match_audit": {
+              "destination_code": {
+                "distinct_values": [
+                  "EAST"
+                ],
+                "matches": 1
+              },
+              "origin_code": {
+                "distinct_values": [
+                  "NORTH"
+                ],
+                "matches": 1
+              },
+              "priority": {
+                "distinct_values": [
+                  "5"
+                ],
+                "matches": 1
+              },
+              "route_key": {
+                "distinct_values": [
+                  "NORTH>EAST"
+                ],
+                "matches": 1
+              }
+            },
+            "declared_match_policy": {
+              "destination_code": "first",
+              "origin_code": "first",
+              "priority": "first",
+              "route_key": "first"
+            },
+            "redeclared_extraction_matches_settled_value": true,
+            "reextracted_fields": {
+              "destination_code": "EAST",
+              "origin_code": "NORTH",
+              "priority": "5",
+              "route_key": "NORTH>EAST"
+            },
+            "stage": "P1",
+            "task_item_id": "J-8a014a51-U1"
+          },
+          {
+            "contract_dispatch_basis": "declared_contract",
+            "contract_read": true,
+            "declared_contract_schema_version": "simigo.result-contract/v1",
+            "declared_fields": [
+              "route_key"
+            ],
+            "declared_match_audit": {
+              "route_key": {
+                "distinct_values": [
+                  "NORTH>EAST",
+                  "NORTH>WEST"
+                ],
+                "matches": 8
+              }
+            },
+            "declared_match_policy": {
+              "route_key": "first"
+            },
+            "redeclared_extraction_matches_settled_value": true,
+            "reextracted_fields": {
+              "route_key": "NORTH>EAST"
+            },
+            "stage": "P2",
+            "task_item_id": "J-8a014a51-U2"
+          },
+          {
+            "contract_dispatch_basis": "declared_contract",
+            "contract_read": true,
+            "declared_contract_schema_version": "simigo.result-contract/v1",
+            "declared_fields": [
+              "route_key"
+            ],
+            "declared_match_audit": {
+              "route_key": {
+                "distinct_values": [
+                  "NORTH>EAST"
+                ],
+                "matches": 6
+              }
+            },
+            "declared_match_policy": {
+              "route_key": "first"
+            },
+            "redeclared_extraction_matches_settled_value": true,
+            "reextracted_fields": {
+              "route_key": "NORTH>EAST"
+            },
+            "stage": "P3",
+            "task_item_id": "J-8a014a51-U3"
+          }
+        ],
+        "source_a": {
+          "object_id": "0c8605053b4e8898e2ba4e15b9a207d80bab00ecb4667953ac36ded6f4ba5fe8",
+          "payload": {
+            "origin_code": "NORTH"
+          }
+        },
+        "source_b": {
+          "object_id": "b505ce3da457c857b7f195f0d73fbbd30720d636a28c4cb788fa36502846001a",
+          "payload": {
+            "destination_code": "EAST",
+            "priority": "5"
+          }
+        },
+        "u1_settlement": {
+          "object_id": "c79f628b6e71a2a345405a80fcf9d9d656de1b09d1fcce7d1dc5a8f568d4691a",
+          "result": {
+            "destination_code": "EAST",
+            "origin_code": "NORTH",
+            "priority": "5",
+            "route_key": "NORTH>EAST"
+          },
+          "signature_envelope_id": "75de6464cc3a7a3ec5b320dcbed5216218409c569f7c1cf6193fc553fdc0fbf9",
+          "signature_verified": true
+        },
+        "u2_input": {
+          "constructed_by_harness": false,
+          "fields_used": [
+            "priority",
+            "route_key"
+          ],
+          "source_settlement_object_id": "c79f628b6e71a2a345405a80fcf9d9d656de1b09d1fcce7d1dc5a8f568d4691a",
+          "values": {
+            "priority": "5",
+            "route_key": "NORTH>EAST"
+          }
+        },
+        "u2_settlement": {
+          "object_id": "4578749bc61219d8df7dd60910e85ae822ca4540c6901912f02469736795091d",
+          "result": {
+            "route_key": "NORTH>EAST"
+          },
+          "signature_envelope_id": "891e61cde5cbecdff0299e52e962f2de62450748979917793e5c1925738e3345",
+          "signature_verified": true
+        },
+        "u3_input": {
+          "constructed_by_harness": false,
+          "fields_used": [
+            "route_key"
+          ],
+          "source_settlement_object_id": "4578749bc61219d8df7dd60910e85ae822ca4540c6901912f02469736795091d",
+          "values": {
+            "route_key": "NORTH>EAST"
+          }
+        },
+        "u3_settlement": {
+          "object_id": "3be5bd6b3185c4f1e25408cb766e5213581565291941eaa5343febcd693a9ee7",
+          "result": {
+            "route_key": "NORTH>EAST"
+          },
+          "signature_envelope_id": "59e17f37c2b051682a8ceb03cd43c69025e6e2de5c1abab14b85bccc7083f467",
+          "signature_verified": true
+        }
+      },
+      "stage_records": [
+        {
+          "child_stderr": {
+            "bytes": 0,
+            "exists": true,
+            "path": "runs/J0/stderr/j0-p1.stderr.bin",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "child_stdout": {
+            "bytes": 0,
+            "exists": true,
+            "path": "runs/J0/stdout/j0-p1.stdout.bin",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "computed_item_ids": [
+            "J-8a014a51-U1"
+          ],
+          "contract_dispatch_basis": "declared_contract",
+          "counters": {
+            "generation_calls": 1,
+            "model_loads": 1,
+            "seed_tokenize_calls": 1,
+            "text_tokenize_calls": 1
+          },
+          "declared_contract_audit": {
+            "contract_dispatch_basis": "declared_contract",
+            "contract_read": true,
+            "declared_contract_fields": [
+              "destination_code",
+              "origin_code",
+              "priority",
+              "route_key"
+            ],
+            "declared_contract_schema_version": "simigo.result-contract/v1",
+            "declared_match_audit": {
+              "destination_code": {
+                "distinct_values": [
+                  "EAST"
+                ],
+                "matches": 1
+              },
+              "origin_code": {
+                "distinct_values": [
+                  "NORTH"
+                ],
+                "matches": 1
+              },
+              "priority": {
+                "distinct_values": [
+                  "5"
+                ],
+                "matches": 1
+              },
+              "route_key": {
+                "distinct_values": [
+                  "NORTH>EAST"
+                ],
+                "matches": 1
+              }
+            },
+            "declared_match_policy": {
+              "destination_code": "first",
+              "origin_code": "first",
+              "priority": "first",
+              "route_key": "first"
+            },
+            "redeclared_extraction_matches_settled_value": true,
+            "reextracted_fields": {
+              "destination_code": "EAST",
+              "origin_code": "NORTH",
+              "priority": "5",
+              "route_key": "NORTH>EAST"
+            }
+          },
+          "declared_dependencies": [
+            "J-8a014a51-ORIGIN",
+            "J-8a014a51-DEST"
+          ],
+          "demand_id": "J-8a014a51-u1",
+          "generated_text": " ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5\nYou are executing one task step in a new execution instance.\nThe origin sector is SOUTH (route priority 2).\nThe destination sector is WEST",
+          "generation_calls": 1,
+          "initial_position": 0,
+          "input_text_sha256": "ddae3ba92aedfd78cc5e0a312358cfe15e760c2f446f2671412f1a49b699ad0a",
+          "logical_es_id": "j0-p1",
+          "model_load_count": 1,
+          "old_state_or_prefix_copied": false,
+          "output_text_sha256": "b42f33cab704b20254d9c43a091d461ac24ddb4e674a3be078926f13c5acf260",
+          "output_token_ids": [
+            2726,
+            55529,
+            51995,
+            35941,
+            198,
+            62571,
+            85234,
+            6349,
+            198,
+            99111,
+            51995,
+            35941,
+            59384,
+            6349,
+            198,
+            47,
+            34886,
+            28,
+            20,
+            198,
+            2610,
+            525,
+            30220,
+            825,
+            3383,
+            3019,
+            304,
+            264,
+            501,
+            11320,
+            2867,
+            624,
+            785,
+            6238,
+            10486,
+            374,
+            79615,
+            320,
+            8966,
+            10619,
+            220,
+            17,
+            4292,
+            785,
+            9106,
+            10486,
+            374,
+            65090
+          ],
+          "pid": 16435,
+          "recomputed_upstream_item_ids": [],
+          "result_digest": "5c6496a74b8862fb29b7e18a83f3f9d7062df3f6c74864596be495a5277f11a6",
+          "reused_item_ids": [
+            "J-8a014a51-ORIGIN",
+            "J-8a014a51-DEST"
+          ],
+          "runtime_execution_instance_id": "974cfd62-b9a3-4782-8001-ad44a550bbf4",
+          "seed_tokenize_calls": 1,
+          "settlement_object_id": "c79f628b6e71a2a345405a80fcf9d9d656de1b09d1fcce7d1dc5a8f568d4691a",
+          "signature_envelope_id": "75de6464cc3a7a3ec5b320dcbed5216218409c569f7c1cf6193fc553fdc0fbf9",
+          "stage": "P1",
+          "state_empty_at_start": true,
+          "task_item_id": "J-8a014a51-U1",
+          "terminal_state": "TASK_SETTLED",
+          "text_tokenize_calls": 1,
+          "wall_seconds": 16.455
+        },
+        {
+          "child_stderr": {
+            "bytes": 0,
+            "exists": true,
+            "path": "runs/J0/stderr/j0-p2.stderr.bin",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "child_stdout": {
+            "bytes": 0,
+            "exists": true,
+            "path": "runs/J0/stdout/j0-p2.stdout.bin",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "computed_item_ids": [
+            "J-8a014a51-U2"
+          ],
+          "contract_dispatch_basis": "declared_contract",
+          "counters": {
+            "generation_calls": 1,
+            "model_loads": 1,
+            "seed_tokenize_calls": 1,
+            "text_tokenize_calls": 1
+          },
+          "declared_contract_audit": {
+            "contract_dispatch_basis": "declared_contract",
+            "contract_read": true,
+            "declared_contract_fields": [
+              "route_key"
+            ],
+            "declared_contract_schema_version": "simigo.result-contract/v1",
+            "declared_match_audit": {
+              "route_key": {
+                "distinct_values": [
+                  "NORTH>EAST",
+                  "NORTH>WEST"
+                ],
+                "matches": 8
+              }
+            },
+            "declared_match_policy": {
+              "route_key": "first"
+            },
+            "redeclared_extraction_matches_settled_value": true,
+            "reextracted_fields": {
+              "route_key": "NORTH>EAST"
+            }
+          },
+          "declared_dependencies": [
+            "J-8a014a51-U1"
+          ],
+          "demand_id": "J-8a014a51-u2",
+          "generated_text": " FLOW=NORTH>EAST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST",
+          "generation_calls": 1,
+          "initial_position": 0,
+          "input_text_sha256": "a6bdef8c257fe20050cb1906fdb64b1c9f4e85b1559e286591a85bc3855d964b",
+          "logical_es_id": "j0-p2",
+          "model_load_count": 1,
+          "old_state_or_prefix_copied": false,
+          "output_text_sha256": "5bf91453cdc87e97ab591395dd5fe3268f8521660073b415d04d5138d84763d6",
+          "output_token_ids": [
+            434,
+            9441,
+            51995,
+            35941,
+            59384,
+            6349,
+            198,
+            46060,
+            51995,
+            35941,
+            29,
+            94225,
+            198,
+            46060,
+            51995,
+            35941,
+            29,
+            94225,
+            198,
+            46060,
+            51995,
+            35941,
+            29,
+            94225,
+            198,
+            46060,
+            51995,
+            35941,
+            29,
+            94225,
+            198,
+            46060,
+            51995,
+            35941,
+            29,
+            94225,
+            198,
+            46060,
+            51995,
+            35941,
+            29,
+            94225,
+            198,
+            46060,
+            51995,
+            35941,
+            29,
+            94225
+          ],
+          "pid": 16798,
+          "recomputed_upstream_item_ids": [],
+          "result_digest": "d6fc668107a435fd7e54857a118c7fa204d1236502ad73f1f03de71a4cfc56a2",
+          "reused_item_ids": [
+            "J-8a014a51-ORIGIN",
+            "J-8a014a51-DEST",
+            "J-8a014a51-U1"
+          ],
+          "runtime_execution_instance_id": "eed70290-925c-49a5-8b62-020ff484bda4",
+          "seed_tokenize_calls": 1,
+          "settlement_object_id": "4578749bc61219d8df7dd60910e85ae822ca4540c6901912f02469736795091d",
+          "signature_envelope_id": "891e61cde5cbecdff0299e52e962f2de62450748979917793e5c1925738e3345",
+          "stage": "P2",
+          "state_empty_at_start": true,
+          "task_item_id": "J-8a014a51-U2",
+          "terminal_state": "TASK_SETTLED",
+          "text_tokenize_calls": 1,
+          "wall_seconds": 14.857
+        },
+        {
+          "child_stderr": {
+            "bytes": 0,
+            "exists": true,
+            "path": "runs/J0/stderr/j0-p3.stderr.bin",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "child_stdout": {
+            "bytes": 0,
+            "exists": true,
+            "path": "runs/J0/stdout/j0-p3.stdout.bin",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "computed_item_ids": [
+            "J-8a014a51-U3"
+          ],
+          "contract_dispatch_basis": "declared_contract",
+          "counters": {
+            "generation_calls": 1,
+            "model_loads": 1,
+            "seed_tokenize_calls": 1,
+            "text_tokenize_calls": 1
+          },
+          "declared_contract_audit": {
+            "contract_dispatch_basis": "declared_contract",
+            "contract_read": true,
+            "declared_contract_fields": [
+              "route_key"
+            ],
+            "declared_contract_schema_version": "simigo.result-contract/v1",
+            "declared_match_audit": {
+              "route_key": {
+                "distinct_values": [
+                  "NORTH>EAST"
+                ],
+                "matches": 6
+              }
+            },
+            "declared_match_policy": {
+              "route_key": "first"
+            },
+            "redeclared_extraction_matches_settled_value": true,
+            "reextracted_fields": {
+              "route_key": "NORTH>EAST"
+            }
+          },
+          "declared_dependencies": [
+            "J-8a014a51-U2"
+          ],
+          "demand_id": "J-8a014a51-u3",
+          "generated_text": " CONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\n",
+          "generation_calls": 1,
+          "initial_position": 0,
+          "input_text_sha256": "14b5a02b6bf440e8acdf1371fbc43bd3a2ddf12346a36fe2c9706dd464c358d5",
+          "logical_es_id": "j0-p3",
+          "model_load_count": 1,
+          "old_state_or_prefix_copied": false,
+          "output_text_sha256": "35a77041ce4f0539c54bd7fa2c6b4e89b32e31c1e5252d65aa4d3af9682bcc19",
+          "output_token_ids": [
+            45189,
+            32432,
+            1479,
+            51995,
+            35941,
+            59384,
+            6349,
+            198,
+            38634,
+            32432,
+            1479,
+            51995,
+            35941,
+            59384,
+            6349,
+            198,
+            38634,
+            32432,
+            1479,
+            51995,
+            35941,
+            59384,
+            6349,
+            198,
+            38634,
+            32432,
+            1479,
+            51995,
+            35941,
+            59384,
+            6349,
+            198,
+            38634,
+            32432,
+            1479,
+            51995,
+            35941,
+            59384,
+            6349,
+            198,
+            38634,
+            32432,
+            1479,
+            51995,
+            35941,
+            59384,
+            6349,
+            198
+          ],
+          "pid": 17114,
+          "recomputed_upstream_item_ids": [],
+          "result_digest": "7d8adef3985058139e436600b317ae6c2afa0a95e673fd05f20d346941bf2b85",
+          "reused_item_ids": [
+            "J-8a014a51-ORIGIN",
+            "J-8a014a51-DEST",
+            "J-8a014a51-U1",
+            "J-8a014a51-U2"
+          ],
+          "runtime_execution_instance_id": "428cb12f-1f3f-4a26-8fd1-da308da46804",
+          "seed_tokenize_calls": 1,
+          "settlement_object_id": "3be5bd6b3185c4f1e25408cb766e5213581565291941eaa5343febcd693a9ee7",
+          "signature_envelope_id": "59e17f37c2b051682a8ceb03cd43c69025e6e2de5c1abab14b85bccc7083f467",
+          "stage": "P3",
+          "state_empty_at_start": true,
+          "task_item_id": "J-8a014a51-U3",
+          "terminal_state": "TASK_SETTLED",
+          "text_tokenize_calls": 1,
+          "wall_seconds": 14.568
+        }
+      ],
+      "terminal_state": "OBSERVED"
+    },
+    "J1-INCOMPLETE-FIELD": {
+      "attempt": 7,
+      "contract_dispatch_basis": "declared_contract",
+      "driver_log_path": "logs/J1-INCOMPLETE-FIELD.driver.log",
+      "driver_log_sha256": "1eac97f0a1de9dac312a4f2a9de22745ed5c5e3f9bfb9fa7e8ab969a82317aa6",
+      "evidence_path": "conditions/J1-INCOMPLETE-FIELD.json",
+      "evidence_sha256": "8cbc45946826dfc2b68f0565f353932d25ca7da626dc6c34da469a4ba8b67b4c",
+      "generation_calls": 0,
+      "kind": "contract_test_model_free_candidate",
+      "model_loads": 0,
+      "observations": {
+        "contract_dispatch_basis": "declared_contract",
+        "expected_error_code": "PRODUCER_RESULT_FIELD_MISSING",
+        "generation_calls": 0,
+        "item_id_under_test": "J-4ec06a71-U1",
+        "model_loads": 0,
+        "observed_error": "PRODUCER_RESULT_FIELD_MISSING: field=priority required field was not present in generated text",
+        "producer_contract_rejects": true,
+        "run_token": "4ec06a71",
+        "seed_tokenize_calls": 0,
+        "signature_created": false,
+        "test_kind": "contract_test_model_free_candidate",
+        "text_tokenize_calls": 0,
+        "valid_settlement_created": false
+      },
+      "producer_contract_rejects": true,
+      "seed_tokenize_calls": 0,
+      "signature_created": false,
+      "terminal_state": "OBSERVED",
+      "text_tokenize_calls": 0,
+      "valid_settlement_created": false
+    },
+    "J2-BINDING-MISMATCH": {
+      "attempt": 7,
+      "contract_dispatch_basis": "declared_contract",
+      "driver_log_path": "logs/J2-BINDING-MISMATCH.driver.log",
+      "driver_log_sha256": "2faa12b0061d967c67ec7eca4ded2734aea3d61bdfce065433d8a436968648b3",
+      "evidence_path": "conditions/J2-BINDING-MISMATCH.json",
+      "evidence_sha256": "18624694daa7df5271e685209ef215d693cb3998860d0f5fd3199c73778d5a18",
+      "generation_calls": 0,
+      "kind": "contract_test_model_free_candidate",
+      "model_loads": 0,
+      "observations": {
+        "contract_dispatch_basis": "declared_contract",
+        "expected_error_code": "PRODUCER_RESULT_BINDING_MISMATCH",
+        "generation_calls": 0,
+        "item_id_under_test": "J-a56c0729-U1",
+        "model_loads": 0,
+        "observed_error": "PRODUCER_RESULT_BINDING_MISMATCH: field=priority actual '3' != bound value '5'",
+        "producer_contract_rejects": true,
+        "run_token": "a56c0729",
+        "seed_tokenize_calls": 0,
+        "signature_created": false,
+        "test_kind": "contract_test_model_free_candidate",
+        "text_tokenize_calls": 0,
+        "valid_settlement_created": false
+      },
+      "producer_contract_rejects": true,
+      "seed_tokenize_calls": 0,
+      "signature_created": false,
+      "terminal_state": "OBSERVED",
+      "text_tokenize_calls": 0,
+      "valid_settlement_created": false
+    },
+    "J3-UNKNOWN-CONTRACT": {
+      "attempt": 7,
+      "contract_dispatch_basis": "declared_contract",
+      "driver_log_path": "logs/J3-UNKNOWN-CONTRACT.driver.log",
+      "driver_log_sha256": "a8a9df6db91469ef796e3a8b5fceb19eb1e4ce47faf20a97b7ab99fd625f836a",
+      "evidence_path": "conditions/J3-UNKNOWN-CONTRACT.json",
+      "evidence_sha256": "b613f76f8c55cc0789c986e2b648c6f0259ce6afa02155a398cb65dbaa1ce931",
+      "fail_closed": true,
+      "generation_calls": 0,
+      "kind": "fail_closed_control",
+      "model_loads": 0,
+      "observations": {
+        "contract_dispatch_basis": "declared_contract",
+        "expected_error_code": "CONTRACT_UNKNOWN_SCHEMA_VERSION",
+        "generation_calls": 0,
+        "item_id_under_test": "J-78ead5ce-U1",
+        "model_loads": 0,
+        "observed_error": "CONTRACT_UNKNOWN_SCHEMA_VERSION: expected 'simigo.result-contract/v1', found 'simigo.result-contract/v9'",
+        "producer_contract_rejects": true,
+        "run_token": "78ead5ce",
+        "seed_tokenize_calls": 0,
+        "signature_created": false,
+        "test_kind": "fail_closed_control",
+        "text_tokenize_calls": 0,
+        "valid_settlement_created": false
+      },
+      "producer_contract_rejects": true,
+      "seed_tokenize_calls": 0,
+      "signature_created": false,
+      "terminal_state": "OBSERVED",
+      "text_tokenize_calls": 0,
+      "valid_settlement_created": false
+    },
+    "J4-UNCHANGED-REUSE": {
+      "all_eligible_items_reused": true,
+      "attempt": 7,
+      "driver_log_path": "logs/J4-UNCHANGED-REUSE.driver.log",
+      "driver_log_sha256": "bfdf19807ddeabe147b8d40a4dfad707ab6b3dc2ad45a91c290c7f48492510b5",
+      "evidence_path": "conditions/J4-UNCHANGED-REUSE.json",
+      "evidence_sha256": "f2f16c512940b9123e14d502eda264cc0dc678c55821ee4e0391b4e866179b6d",
+      "generation_calls": 0,
+      "kind": "model_free_control",
+      "model_loads": 0,
+      "observations": {
+        "all_eligible_items_reused": true,
+        "computed_item_ids": [],
+        "database_sha256_after": "4b75bfe01a9ce7f744fde74faa9c87c10c9660c9ddc0e0ca242f43f134853148",
+        "database_sha256_before": "3dfdc31c73493ec4595b50890b84ad530c6bed009dab39d430b876804afc183e",
+        "generation_calls": 0,
+        "model_loads": 0,
+        "probe_uses_production_reuse_decision": true,
+        "reused_item_ids": [
+          "J-8a014a51-DEST",
+          "J-8a014a51-ORIGIN",
+          "J-8a014a51-U1",
+          "J-8a014a51-U2",
+          "J-8a014a51-U3"
+        ],
+        "seed_tokenize_calls": 0,
+        "text_tokenize_calls": 0
+      },
+      "seed_tokenize_calls": 0,
+      "terminal_state": "OBSERVED",
+      "text_tokenize_calls": 0
+    },
+    "J5-MISSING-TRANSITIVE-DEPENDENCY": {
+      "attempt": 7,
+      "child_stdout": {
+        "bytes": 0,
+        "exists": true,
+        "path": "runs/J5/stdout/j5-u3-transitive-missing.stdout.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "database_unchanged": true,
+      "driver_log_path": "logs/J5-MISSING-TRANSITIVE-DEPENDENCY.driver.log",
+      "driver_log_sha256": "e221374bd92409c4dc44317010eec1214bcbcdef4c988c64cd2e45fe14592d17",
+      "evidence_path": "conditions/J5-MISSING-TRANSITIVE-DEPENDENCY.json",
+      "evidence_sha256": "2a0501af18512f1741b47d6e08afef14b6da04e166347aca5aced07d88e54247",
+      "generation_calls": 0,
+      "kind": "negative_control",
+      "model_loads": 0,
+      "observations": {
+        "database_sha256_after": "dfd4cc2728a66d1f09f56020be0a33ad7b411c7c5b132adbc664ca434cb36d58",
+        "database_sha256_before": "dfd4cc2728a66d1f09f56020be0a33ad7b411c7c5b132adbc664ca434cb36d58",
+        "database_unchanged": true,
+        "generation_calls": 0,
+        "item_under_test": "J-8a014a51-U3",
+        "model_loads": 0,
+        "refusal_before_tokenize": true,
+        "refusal_stage": "SETTLEMENT_NOT_ADMITTED",
+        "removed_transitive_source": "J-8a014a51-ORIGIN",
+        "seed_tokenize_calls": 0,
+        "state_unchanged": true,
+        "text_tokenize_calls": 0
+      },
+      "refusal_before_tokenize": true,
+      "seed_tokenize_calls": 0,
+      "state_unchanged": true,
+      "terminal_state": "OBSERVED",
+      "text_tokenize_calls": 0
+    }
+  },
+  "created_at_utc": "2026-10-22T16:46:23Z",
+  "environment_notes": [
+    "summary.validator_final is written after the in-driver validation pass (it is that pass's own transcript); the closing independent run of validate_j_evidence.py in this round's artifacts re-checks the final on-disk summary.json, so the accepted evidence is the re-checked file."
+  ],
+  "graph": {
+    "contract_dispatch_basis": "declared_contract",
+    "contract_schema_version": "simigo.result-contract/v1",
+    "expected_route_key": "NORTH>EAST",
+    "run_token": "8a014a51",
+    "sources": [
+      "J-8a014a51-ORIGIN",
+      "J-8a014a51-DEST"
+    ],
+    "structured_chain": [
+      "J-8a014a51-U1",
+      "J-8a014a51-U2",
+      "J-8a014a51-U3"
+    ],
+    "transitive_closure_of_u3": [
+      "J-8a014a51-ORIGIN",
+      "J-8a014a51-DEST",
+      "J-8a014a51-U1",
+      "J-8a014a51-U2",
+      "J-8a014a51-U3"
+    ]
+  },
+  "guards": {
+    "evidence_validator": "PASS",
+    "historical": "PASS",
+    "workspace": "PASS"
+  },
+  "historical_artifacts_modified": false,
+  "implementation": {
+    "archived_prior_attempt": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/attempts/attempt6",
+    "attempt": 7,
+    "binary_rebuilt_this_round": true,
+    "binary_sha256": "e91b70128cbb9eec528fbd4e5730064bf6d53e0a0d10562135290affe9a02ce1",
+    "contract_dispatch_basis": "declared_contract",
+    "contract_engine": "execution-information-loop/declarative_result_contract.py",
+    "gate_static_proof": {
+      "gate_arguments": [
+        "source_payload",
+        "value",
+        "dependency_values"
+      ],
+      "gate_body_single_delegation": true,
+      "gate_found": true,
+      "gate_takes_no_item_id": true,
+      "no_hardcoded_j_ids": true,
+      "no_task_id_semantic_branch": true
+    },
+    "model_free_gate_checks": {
+      "A_dispatch_basis_recorded": true,
+      "A_runtime_ids_are_unseen": true,
+      "A_unseen_id_chain_all_reusable": true,
+      "B_id_independent_validation": true,
+      "C_missing_field_rejected": true,
+      "C_missing_field_result_not_reusable": true,
+      "D_binding_mismatch_rejected": true,
+      "E_derivation_mismatch_rejected": true,
+      "F_unknown_version_fail_closed": true,
+      "G_full_signed_closure": true,
+      "H_transitive_source_removal_refuses": true,
+      "I_no_key_consumer_verifies": true,
+      "J_extraction_view_is_derived": true,
+      "K_gate_takes_no_task_item_id": true,
+      "K_no_hardcoded_j_item_ids": true,
+      "K_no_task_id_semantic_branch": true
+    },
+    "model_free_gate_verdict": "PASS",
+    "model_snapshot_id": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "prechange_workspace_sha256": "03c34d5e2cdfc4fe7cedf7e2c03fb679ed146877d1157a119192ca22d6cf6701",
+    "production_gate": "production_runtime_bridge._validate_model_value(source_payload, value, dependency_values)",
+    "regression_suite": {
+      "artifact": "tests/regression-attempt7",
+      "members": {
+        "<unit>": {
+          "check_count": 0,
+          "condition_count": 0,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        },
+        "admission_selftest": {
+          "check_count": 0,
+          "condition_count": 7,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        },
+        "h_selective_invalidation_selftest": {
+          "check_count": 5,
+          "condition_count": 0,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        },
+        "i_semantic_sufficiency_selftest": {
+          "check_count": 7,
+          "condition_count": 0,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        },
+        "j_contract_selftest": {
+          "check_count": 16,
+          "condition_count": 0,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        }
+      },
+      "verdict": "PASS"
+    },
+    "run_binary_matches_recorded_sha256": true,
+    "runtime_run_token": "8a014a51",
+    "source_snapshot_id": "03c34d5e2cdfc4fe7cedf7e2c03fb679ed146877d1157a119192ca22d6cf6701",
+    "swift_rebuild_attempt": {
+      "attempted": true,
+      "binary_sha256_after": "e91b70128cbb9eec528fbd4e5730064bf6d53e0a0d10562135290affe9a02ce1",
+      "binary_sha256_before": "e91b70128cbb9eec528fbd4e5730064bf6d53e0a0d10562135290affe9a02ce1",
+      "binary_unchanged": true,
+      "error_excerpt": "",
+      "exit_code": 0,
+      "log": "manifests/swift-rebuild-attempt.log",
+      "succeeded": true
+    },
+    "task_id_semantic_branches_remaining": []
+  },
+  "label": "es-is-declarative-result-contract-20261023j",
+  "primary_entry": "native SimiGoTaskRun / ordinary continueTask",
+  "research_question": "Is production result validation driven by each task's own declared result contract, so that a task id no source file has ever seen is settled, reused across fresh processes and refused on contract violation without any task-id special case?",
+  "round": "J",
+  "run_label": "es-is-declarative-result-contract-20261023j",
+  "schema_version": "simigo-j-evidence-v1",
+  "terminal_state": "OBSERVED",
+  "validator_final": {
+    "issue_count": 0,
+    "issues": [],
+    "result": "PASS"
+  }
+}

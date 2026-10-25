@@ -1,0 +1,41 @@
+{
+ "schema_id": "SIMIGO-ORDINARY-TASK-SUMMARY-V1",
+ "terminal_state": "BLOCKED_NOT_RUN",
+ "u1": {
+  "argv": [
+   "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+   "--database",
+   "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-a/carrier.sqlite",
+   "--item",
+   "TASK-U1",
+   "--demand",
+   "task-u1",
+   "--advancement",
+   "d-world-a-u1",
+   "--evaluated-at",
+   "2026-10-22T03:36:37Z",
+   "--model-dir",
+   "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+   "--lab-root",
+   "/Users/mr.simi/Documents/SimiGo-Lab",
+   "--state-dir",
+   "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-a/state/u1",
+   "--out",
+   "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-a/evidence/u1.json",
+   "--max-tokens",
+   "64"
+  ],
+  "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-a/evidence/u1.json",
+  "evidence_sha256": "c8860c12e92362a27f148ca72beaa983b368a27a2bb7ce05d9e028cce4d62f4c",
+  "exit_code": 1,
+  "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-a/logs/u1.log",
+  "log_sha256": "6d64c1f90c2cf9330cc62aefe09a2e00b3d02c4c30c475b7bfa9a66f78b903b7",
+  "pid": 18847,
+  "started_at_utc": "2026-10-22T03:36:57Z",
+  "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d/worlds/world-a/state/u1",
+  "terminal_state": "TASK_FAILED",
+  "timed_out": false,
+  "wall_seconds": 20.338
+ },
+ "world": "world-a"
+}

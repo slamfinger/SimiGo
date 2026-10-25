@@ -1,0 +1,59 @@
+# SimiGo release-candidate source freeze
+# rc_id: simigo-rc1-de362ef4-20261023
+# head: de362ef46118402b40356c8c9e3633395a151717
+# branch: localb-b3-closure-20261016
+# staged: 0 ; committed: 0 ; pushed: 0
+# tracked modified: 11 ; untracked entries: 16 (23 files)
+
+[per-file sha256]
+e9afb4c66871262b6099f43231274eafa70197712259eec34ac2a152422e5949       2008  Packages/SimiGoRuntime/Package.swift  (tracked)
+58418e9fd18db328deb9188f902df96e977cd7b65b6472668995708ea152a331       9110  SimiGo/App/Config.swift  (tracked)
+c06cd59c3ccf5b6387c127ac8e91c0c877bf9bac4f09c91e982b1dfe31011007      45317  SimiGo/App/ExecutionStateGraph.swift  (tracked)
+cf2dbc19680eb90f710fea89d8983446fc84b6b6aa14c6aa169b6f91fa091733      19431  SimiGo/App/Settings.swift  (tracked)
+4537cf64eada127f1c6f1422b6d43383ce3eaa45c9d951a7ca25a021c8323c86       7439  SimiGo/App/StatusBarCoordinator.swift  (tracked)
+24bd5a083306d98fd585ae8388890388ac62f7e1244f4b17008afbea9166a71b     137934  SimiGo/Inference/NativeMLX.swift  (tracked)
+976e8aa5f16414213b42b20abf3de0f89a57d64d0cf1e1ea3a0d12aaa4047ada      14058  SimiGo/Inference/NativeMLXPrefixPool.swift  (tracked)
+879490c1e1c2af80f4f447848f872a553baeaa502a0f4feb27ddde626cd0cc49      15287  SimiGo/Lifecycle/RuntimeTuning.swift  (tracked)
+c774534fc0a554bd7a2be0043a7d3a4b4751a10350db487d83df65f319fb6cbb      31999  SimiGo/System/EnvManager.swift  (tracked)
+41d855837d534f517d35f70e6e332f63eea8663ea6f49dbc10f0b8554fe8a022      43275  SimiGo/System/Service.swift  (tracked)
+14bbb876da96b9481c0f088184a4ac9fdb0ee6f05ba55a36ab83ca47a70cb4b2       6848  SimiGoTests/ExecutionStateGraphTests.swift  (tracked)
+5f8aa0a6f6328fb83188e841272db7f15289616c38eb16fadff98d0bdddec152       3247  Packages/SimiGoRuntime/Package.resolved  (untracked)
+4a6cefed94faefe34deea566c02e29b1bc4153c6e802fb2c45d7ef9d19f0b639      35937  Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/NativeDeclarativeResultContract.swift  (untracked)
+5061b8f7b0496407d237f371996ace6f971d341636fea5e773c81216d7840e1b       7679  Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoBootstrap.swift  (untracked)
+0de632007c97181e95c7f58400099d6edf0d634ad28c1b91510ecd813ed6b55c      54426  Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift  (untracked)
+dedcbcd3d24bf3ac504079b743ca8876df407714ae80345cf219a77a56b2794f      12526  Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift  (untracked)
+74d0b59eedb0fa2acedce1bab20ff9b362a271ce7b6d6a1cb8e08caef7739522       6595  Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoModelDiscovery.swift  (untracked)
+2d1242324a0303ee9ea8dd414c2ae296a1256edce73e63e9255d659e33361202       6179  Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoPaths.swift  (untracked)
+ea190d32ffce169be7898106fabcc74db367345dce2c537ef23ca09a15d685e1       3475  Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementAuthority.swift  (untracked)
+a94717848d09ab8a576099596acab1b92b00038f6dd5c81407c6e7dbee690f44      15261  Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/NativeDeclarativeResultContractTests.swift  (untracked)
+b91fc01e88c8ea6f9fbf91fe079447a0201b67269431be16c73c7229d461326a      10774  Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoBootstrapTests.swift  (untracked)
+6cc353805fb14a9882434d65c4973735155259475795b9c06182dfa464f0ede0      12081  Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseG2Tests.swift  (untracked)
+18ce01e6c7920c749dff333ad1c8a7345d46e09b7a9f2200287acd5ba155bf8f      14759  Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseTests.swift  (untracked)
+f22a2e0080542b639bc42e54b519bfa29ff7ed005bac09b63a1fce6be8f62352      10912  Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoEngineRecipeTests.swift  (untracked)
+5721a5e7387ad5372162238224a535ebb0d82aae660613015aa98f8903f89d89       3891  Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoModelDiscoveryTests.swift  (untracked)
+4caadb59a0b7caad5ad3a791039a889ad9e167494693accf43163fd25f06edaa       3454  Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoPathsTests.swift  (untracked)
+ea76fa656769b83fd98630ec99118a74d905cd19ccc173fc233c3b24514184ef       5540  Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementAuthorityTests.swift  (untracked)
+22cf07921cacf2df787dd1ea9d3bea1c1274af0abe3c7038ecb7f19a5e3e450d       1608  SimiGo/App/SimiGoBootstrapRunner.swift  (untracked)
+55b416403e0f5cf91a1d107138d6cf14d4fa705130368f0430b43cb3ee6498c3      35595  SimiGo/Headless/SimiGoG1G3Entry.swift  (untracked)
+82bcad5323a97e3502f6253a7b9f4e6ef0ef85a83564b3963f5c2bab8ea84f68       9498  SimiGo/Inference/NativeMLXObservation.swift  (untracked)
+bcb15d459a72e256c74d23df653db1f13a3f07a50d4fc71df0454adae01afc4c      20900  SimiGoTests/ExternalAdoptionInferenceE2ETests.swift  (untracked)
+93927b9460cef099465920e24ca0178de8bbd2a29244adac917230e97e1fed7e       3255  SimiGoTests/ExternalServerAdoptionTests.swift  (untracked)
+a45da7a21e6108d0ddea5690b91531287b5c17b7a524dc9ec71266930dde1d72       7871  SimiGoTests/MemoryReliefRealModelTests.swift  (untracked)
+ee3ddc9cc21562fffd1c6d85db5b300a41ce6ed924fb8940b2e98b4ba33865f9       2136  SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift  (untracked)
+
+[build configuration]
+xcodebuild build-for-testing -project SimiGo.xcodeproj -scheme SimiGo -configuration Debug -destination platform=macOS,arch=arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY= -enableCodeCoverage NO -derivedDataPath /Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/derived
+
+[toolchain]
+xcodebuild = Xcode 27.1 | Build version 27A9275
+swift = swift-driver version: 1.168.6 Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1) | Target: arm64-apple-macosx27.0.0
+macos = 27.0.1
+arch = arm64
+
+[model snapshot: /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d]
+{"file": "config.json", "kind": "symlink", "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/b93d7f977ca0601b7cb4f0ceb1acfc27b071a2d1", "target_sha256": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13", "target_bytes": 10897}
+{"file": "generation_config.json", "kind": "symlink", "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/ba3e8d9206508daab666e1aaa9dcc9c435bfa541", "target_sha256": "c99723ab3ba28630d26ae23def77603b540a46924895af5cf234740d3b27b51d", "target_bytes": 180}
+{"file": "merges.txt", "kind": "symlink", "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/31349551d90c7606f325fe0f11bbb8bd5fa0d7c7", "target_sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5", "target_bytes": 1671853}
+{"file": "tokenizer.json", "kind": "symlink", "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4", "target_sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4", "target_bytes": 11422654}
+{"file": "tokenizer_config.json", "kind": "symlink", "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/0574f0fc0029433f5b6be5bb3cabac20c036398f", "target_sha256": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd", "target_bytes": 5405}
+{"file": "vocab.json", "kind": "symlink", "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/4783fe10ac3adce15ac8f358ef5462739852c569", "target_sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910", "target_bytes": 2776833}

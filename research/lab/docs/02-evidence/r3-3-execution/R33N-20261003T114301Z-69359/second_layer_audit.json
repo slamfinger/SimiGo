@@ -1,0 +1,63 @@
+{
+  "checks": [
+    {
+      "detail": "",
+      "name": "hygiene run_uuid uniform",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "hygiene monotonic non-decreasing",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "hygiene per-cell event sequences complete & ordered (14 cells)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "chain closure (all 14 cells: lock+integrity+hash pins+t0 replication)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "replay purity (14/14 frozen-op replays byte-identical)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "N-probe HOLD evidence (10/10 cells all-SATISFIED raw t1)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "per-condition evaluator liveness (SANITY-A/I/C all predicted BROKEN)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "H-3(c) not applicable (no counterexample candidates)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "H-2 zero-INCONCLUSIVE requirement for NO-COUNTEREXAMPLE",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "final verdict within pre-registered outcome structure",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "adjudicator verdict consistent with audit recomputation",
+      "pass": true
+    }
+  ],
+  "failed": [],
+  "final_campaign_verdict": "NO-COUNTEREXAMPLE",
+  "run_uuid": "R33N-20261003T114301Z-69359",
+  "verdict": "AUDIT PASS"
+}

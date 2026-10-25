@@ -1,0 +1,23 @@
+captured_at: 2026-10-24T00:14:36+08:00
+[product]
+path: /Users/mr.simi/Documents/SimiGo
+branch: localb-b3-closure-20261016
+head: f18d65f8f312ffbb837fdf5e07125af044833854
+ahead: 3
+dirty: 0
+f18d65f fix(tools): report an unreadable xctestrun instead of raising
+3a89817 chore(tools): in-repo isolated test runner and documented entry point
+7329f59 feat(runtime): three-root path redirection and contract build closure
+de362ef security(localb): default host-resolution wiring, strict parser, challenge hardening, signed-query forwarding
+
+[lab]
+path: /Users/mr.simi/Documents/SimiGo-Lab
+branch: main
+head: e7f63856298390deb8596a4a30e173d3fb466eaa
+origin_main: 69178b7f140741a7885d6f4724b7875376526de9
+ahead: 4
+dirty: 96
+e7f63856 Test real MLX carrier ES->IS->fresh-ES handoff end-to-end
+89799911 Test native MLX carrier release against the real runtime
+920cab7a Add G3 execution-isolation implementation layer
+51d27c07 Add native execution-carrier release & ES-recovery lifecycle

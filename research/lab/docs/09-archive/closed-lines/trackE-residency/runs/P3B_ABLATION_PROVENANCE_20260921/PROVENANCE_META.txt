@@ -1,0 +1,8 @@
+# P3-B ablation provenance capture (design v0.3 PASS 后执行)
+date_utc: 2026-09-21T15:06:31Z
+git_head: 767e8017b06e3f2d2dfc9317c1d6426633bdb494
+v4_sha256: 140fa673bae93adbc4fc5fe99e9cee8849f668cdc1ccf4c671e45052471d93ee
+v3_sha256: 5dbc8cc04ac419782cd03ee6afbe59a74a759d1840d81f818510c6aed2015375
+python: Python 3.14.5
+command: python3 trackE-residency/residency_policy_simulator_v4.py (cwd=repo root)
+---

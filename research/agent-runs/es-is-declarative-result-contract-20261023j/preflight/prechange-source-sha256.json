@@ -1,0 +1,14 @@
+{
+  "files": {
+    "execution-information-loop/admission_selftest.py": "e152d542d68203d50fa74b5e57eb9c6c1adab824072c8ebbd5668f73466ce1c7",
+    "execution-information-loop/carrier_loop.py": "cf724a996a871ec9ce5e3bfa89e5348c67bd57acd27ea7d45b021898ee8d8750",
+    "execution-information-loop/h_selective_invalidation_selftest.py": "f76b67d6bbeb24271352d5c12fc0e734a4966408fcdb59149e528b9b6e800e9f",
+    "execution-information-loop/i_semantic_sufficiency_selftest.py": "3aea0f9dbe6f3ec2c716164326ee4dd14985c160892899c1edcdd25ad712ee61",
+    "execution-information-loop/production_runtime_bridge.py": "8d8cf3c7997dc31ca02fc941755b4758aecabe2a53dae0dbad37d3067d087c8a",
+    "execution-information-loop/settlement_provenance.py": "1d385e77da2123df9361734ce55934a466c8ef019f3cc4d30d36265d044b6e16",
+    "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift": "af0f68c7531b8766350b1f568643d37171b08be06d021ec3c37e9fa72b786dc5",
+    "simigo2-experimental/Sources/SimiGoTaskRun/TaskResultContract.swift": "1bf89ac51d24921b90587b188a39eb17011eb52d906dbc5ac80c36e8b3f7a2e8",
+    "simigo2-experimental/Sources/SimiGoTaskRun/main.swift": "ac946ee2fc7e36da80a50da9cdee57c02fab4bd6ff5f3d67fc6d1b8e1b4ff97e",
+    "simigo2-experimental/scripts/ordinary_task/run_phase_i.py": "0fab763dfa5aba0030022b98f86a6da2c39f9f40763eb570e3ce3ed50370c08b"
+  }
+}

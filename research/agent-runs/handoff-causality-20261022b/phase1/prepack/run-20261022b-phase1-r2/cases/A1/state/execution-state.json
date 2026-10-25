@@ -1,0 +1,52 @@
+{
+  "handles": [
+    {
+      "continuationID": "bounded-production-runtime-integration:handoff-a-u1-phase1-baseline-20261022b:cont",
+      "continuationNextInput": "bounded-production-runtime-integration:handoff-a-u1-phase1-baseline-20261022b",
+      "executionID": "PRODUCTION-REAL-PALACE",
+      "lifecycle": "active",
+      "position": 1,
+      "rootExecutionID": "PRODUCTION-REAL-PALACE"
+    }
+  ],
+  "lifecycle": [
+    {
+      "executionID": "PRODUCTION-REAL-PALACE",
+      "operation": "created",
+      "resultContinuationID": "bounded-production-runtime-integration-initial-cont",
+      "resultContinuationNextInput": "bounded-production-runtime-integration-initial",
+      "resultLifecycle": "attached",
+      "resultPosition": 0,
+      "sequence": 1
+    },
+    {
+      "executionID": "PRODUCTION-REAL-PALACE",
+      "operation": "continued",
+      "resultContinuationID": "bounded-production-runtime-integration:handoff-a-u1-phase1-baseline-20261022b:cont",
+      "resultContinuationNextInput": "bounded-production-runtime-integration:handoff-a-u1-phase1-baseline-20261022b",
+      "resultLifecycle": "active",
+      "resultPosition": 1,
+      "sequence": 2
+    }
+  ],
+  "representations": [
+    {
+      "executionID": "PRODUCTION-REAL-PALACE",
+      "payload": {
+        "backendIdentity": "mlx-production-prefix-v1",
+        "data": "eyJ0b2tlblByZWZpeCI6WzQ2NjE2LDYwNDg5LDk1MjYyLDUyNTEsMjg4MCw0MywxMTI3OCwzOTc2LDI3MDY4LDE5NjI1LDE2LDE5OCwyNjEwLDUyNSwzMDIyMCwzMDE5LDIyMCwxNiwzMTUsMjY0LDEzNzgsMjkyMDgsMzM4Myw2MjQsNjMwMiw4MDgxLDUxMCw0NjYxNiw2MDQ4OSwxMiw2MzAyLDEyLDcyNDMsMTk2MjUsMTYsMTk4LDYxMDgsMjgsMjUxNDEsMTYsMTQ1NSw0OTMxNCwxMiwxNywxNSwxNywyMSwxNiwxNSwxNywxNyw2NSwxOTgsOTUxMywyOCwxNDM4MCw1Mjc5LDIzNjQsMTk4LDIwNDc0LDI4LDQyLDIwLDE5LDE1LDUwNDksMTk4LDcwNzQwLDE5NTM1LDE1LDI0LDY2LDI3MSw0NDE4LDI3OSwzNzk3LDE0ODcsMzIzLDg2NDksMjc5LDg5NywzMTUsNjIzNCw2MjQsMjA4NDEsNDQ4LDY4OTYsODI1LDE1NTUsMzIzLDQzMDIsNzcwLDI1LDY5OTU2LDM4Njk4LDIwNDc0LDM5NywxNjE0MSwyNV19"
+      },
+      "position": 0
+    },
+    {
+      "executionID": "PRODUCTION-REAL-PALACE",
+      "payload": {
+        "backendIdentity": "mlx-production-prefix-v1",
+        "data": "eyJ0b2tlblByZWZpeCI6WzQ2NjE2LDYwNDg5LDk1MjYyLDUyNTEsMjg4MCw0MywxMTI3OCwzOTc2LDI3MDY4LDE5NjI1LDE2LDE5OCwyNjEwLDUyNSwzMDIyMCwzMDE5LDIyMCwxNiwzMTUsMjY0LDEzNzgsMjkyMDgsMzM4Myw2MjQsNjMwMiw4MDgxLDUxMCw0NjYxNiw2MDQ4OSwxMiw2MzAyLDEyLDcyNDMsMTk2MjUsMTYsMTk4LDYxMDgsMjgsMjUxNDEsMTYsMTQ1NSw0OTMxNCwxMiwxNywxNSwxNywyMSwxNiwxNSwxNywxNyw2NSwxOTgsOTUxMywyOCwxNDM4MCw1Mjc5LDIzNjQsMTk4LDIwNDc0LDI4LDQyLDIwLDE5LDE1LDUwNDksMTk4LDcwNzQwLDE5NTM1LDE1LDI0LDY2LDI3MSw0NDE4LDI3OSwzNzk3LDE0ODcsMzIzLDg2NDksMjc5LDg5NywzMTUsNjIzNCw2MjQsMjA4NDEsNDQ4LDY4OTYsODI1LDE1NTUsMzIzLDQzMDIsNzcwLDI1LDY5OTU2LDM4Njk4LDIwNDc0LDM5NywxNjE0MSwyNSwyMjAsNjk5NTYsMjgsNDIsMjAsMTksMTUsNTA0OSwxOTgsNjUzMTAsMjgsNDIsMjAsMTksMTUsNTA0OSwxOTgsNjUzMTAsMjgsNDIsMjAsMTksMTUsNTA0OSwxOTgsNjUzMTAsMjgsNDIsMjAsMTksMTUsNTA0OSwxOThdfQ=="
+      },
+      "position": 1
+    }
+  ],
+  "settlementCheckpoints": [],
+  "version": 1
+}

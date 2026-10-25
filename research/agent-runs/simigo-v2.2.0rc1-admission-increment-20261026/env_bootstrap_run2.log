@@ -1,0 +1,502 @@
+objc[5081]: Class _TtC10Tokenizers12BPETokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873530) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105996c78). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers13BertTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068736d8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105996e20). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers14BasicTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068737d0) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105996f18). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers18WordpieceTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873878) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105996fc0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers16WordPieceDecoder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068739d8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997120). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers15DecoderSequence is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873a98) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059971e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers16ByteLevelDecoder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873b40) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997288). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers14ReplaceDecoder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873bf0) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997338). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers19ByteFallbackDecoder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873c98) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059973e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers11FuseDecoder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873d38) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997480). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers12StripDecoder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873dd8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997520). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers16MetaspaceDecoder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873e90) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059975d8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers18NormalizerSequence is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874030) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997778). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers17PrependNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068740d8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997820). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers17ReplaceNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874180) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059978c8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers19LowercaseNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874228) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997970). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers13NFDNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068742c8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997a10). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers13NFCNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874368) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997ab0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers14NFKDNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874408) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997b50). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers14NFKCNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068744a8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997bf0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers14BertNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874548) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997c90). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers21PrecompiledNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874630) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997d78). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers22StripAccentsNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068746d0) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997e18). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers15StripNormalizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874770) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997eb8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers18TemplateProcessing is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874870) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105997fb8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers22ByteLevelPostProcessor is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874920) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998068). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers17RobertaProcessing is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068749c0) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998108). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers14BertProcessing is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874a98) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059981e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers18SequenceProcessing is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874b48) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998290). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers16BertPreTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874c28) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998370). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers20PreTokenizerSequence is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874cc8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998410). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers22WhitespacePreTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874d70) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059984b8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers21MetaspacePreTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874e10) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998558). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers21ByteLevelPreTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874ed0) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998618). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers23PunctuationPreTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106874f90) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059986d8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers18DigitsPreTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106875030) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998778). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers17SplitPreTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068750d8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998820). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers16TokenLatticeNode is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106875278) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059989c0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers19PreTrainedTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068754d0) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998c18). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers11T5Tokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068756c0) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998e08). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers24LlamaPreTrainedTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x1068757d8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105998f20). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC10Tokenizers16UnigramTokenizer is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106875a68) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059991b0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC3HubP33_4E8177DE4B0CCDEC2313116019A1E23612BundleFinder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106875b88) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105999828). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC3Hub33LanguageModelConfigurationFromHub is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106875ff0) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105999c90). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC3Hub22DownloadProgressBridge is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106876330) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x105999fd0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtCV3Hub6HubApiP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C17NetworkStateActor is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106876550) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10599a1f0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtCV3Hub6HubApiP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C14NetworkMonitor is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106876660) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10599a300). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C16RedirectDelegate is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106873398) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10596f8f0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C20RedirectSessionActor is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106876738) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10599a3d8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C19HubRepoIDCacheActor is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x106876800) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10599a4a0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC21SimiGoRuntimeContract18SimiGoESISDatabase is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/SimiGo2Experimental_-B024901A205185_PackageProduct.framework/Versions/A/SimiGo2Experimental_-B024901A205185_PackageProduct (0x10c2492c8) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10599aeb0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[5081]: Class _TtC6CryptoP33_A42746B7D10D5535030B0E00E43C4C0312BundleFinder is implemented in both /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/PackageFrameworks/Crypto_17A3B1FFC41E47_PackageProduct.framework/Versions/A/Crypto_17A3B1FFC41E47_PackageProduct (0x102c98370) and /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/build/test/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1059a0740). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+env-bootstrap-entered
+🚀 开始准备 SimiGo 外部依赖：llama.cpp
+📥 锁定检出 llama.cpp @ 0878f7c304cc13915c831ae17694534c94940176 …
+Cloning into '/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/envtest-root2/sources/llama.cpp'...
+From https://github.com/ggml-org/llama.cpp
+ * branch            0878f7c304cc13915c831ae17694534c94940176 -> FETCH_HEAD
+HEAD is now at 0878f7c ggml: support non-contiguous SUM (CPU, CUDA, Vulkan, WebGPU) (#28851)
+🛠️ 配置 Metal 构建...
+-- The C compiler identification is AppleClang 21.0.0.21000334
+-- The CXX compiler identification is AppleClang 21.0.0.21000334
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- llama.cpp version: 0.7.0-dev
+CMAKE_BUILD_TYPE=Release
+-- Found Git: /usr/bin/git (found version "2.54.0 (Apple Git-157)")
+-- The ASM compiler identification is AppleClang
+-- Found assembler: /usr/bin/cc
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- CMAKE_SYSTEM_PROCESSOR: arm64
+-- GGML_SYSTEM_ARCH: ARM
+-- Could NOT find OpenMP_C (missing: OpenMP_C_FLAGS OpenMP_C_LIB_NAMES)
+-- Could NOT find OpenMP_CXX (missing: OpenMP_CXX_FLAGS OpenMP_CXX_LIB_NAMES)
+-- Could NOT find OpenMP (missing: OpenMP_C_FOUND OpenMP_CXX_FOUND)
+CMake Warning at ggml/src/CMakeLists.txt:347 (message):
+  OpenMP not found
+-- Including CPU backend
+-- Accelerate framework found
+-- ARM detected
+-- Performing Test GGML_COMPILER_SUPPORTS_FP16_FORMAT_I3E
+-- Performing Test GGML_COMPILER_SUPPORTS_FP16_FORMAT_I3E - Failed
+CMake Warning at ggml/src/ggml-cpu/CMakeLists.txt:155 (message):
+  ARM -march/-mcpu not found, -mcpu=native will be used
+Call Stack (most recent call first):
+  ggml/src/CMakeLists.txt:596 (ggml_add_cpu_backend_variant_impl)
+-- Performing Test GGML_MACHINE_SUPPORTS_dotprod
+-- Performing Test GGML_MACHINE_SUPPORTS_dotprod - Success
+-- Performing Test GGML_MACHINE_SUPPORTS_i8mm
+-- Performing Test GGML_MACHINE_SUPPORTS_i8mm - Success
+-- Performing Test GGML_MACHINE_SUPPORTS_sve
+-- Performing Test GGML_MACHINE_SUPPORTS_sve - Failed
+-- Performing Test GGML_MACHINE_SUPPORTS_nosve
+-- Performing Test GGML_MACHINE_SUPPORTS_nosve - Success
+-- Performing Test GGML_MACHINE_SUPPORTS_sme
+-- Performing Test GGML_MACHINE_SUPPORTS_sme - Success
+-- Checking for ARM features using flags:
+--   -U__ARM_FEATURE_SVE
+--   -mcpu=native+dotprod+i8mm+nosve+sme
+-- Performing Test HAVE_DOTPROD
+-- Performing Test HAVE_DOTPROD - Success
+-- Performing Test HAVE_SVE
+-- Performing Test HAVE_SVE - Failed
+-- Performing Test HAVE_MATMUL_INT8
+-- Performing Test HAVE_MATMUL_INT8 - Success
+-- Performing Test HAVE_FMA
+-- Performing Test HAVE_FMA - Success
+-- Performing Test HAVE_FP16_VECTOR_ARITHMETIC
+-- Performing Test HAVE_FP16_VECTOR_ARITHMETIC - Success
+-- Performing Test HAVE_SME
+-- Performing Test HAVE_SME - Success
+-- Adding CPU backend variant ggml-cpu: -U__ARM_FEATURE_SVE;-mcpu=native+dotprod+i8mm+nosve+sme
+-- Looking for dgemm_
+-- Looking for dgemm_ - found
+-- Found BLAS: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- BLAS found, Libraries: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- BLAS found, Includes:
+-- Including BLAS backend
+-- Metal framework found
+-- Including METAL backend
+-- ggml version: 0.27.0
+-- ggml commit:  0878f7c
+-- Found OpenSSL: /opt/homebrew/lib/libcrypto.dylib (found version "3.6.3")
+-- Performing Test OPENSSL_VERSION_SUPPORTED
+-- Performing Test OPENSSL_VERSION_SUPPORTED - Success
+-- OpenSSL found: 3.6.3
+-- Generating embedded license file for target: llama-app
+-- Configuring done (5.1s)
+-- Generating done (0.6s)
+-- Build files have been written to: /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/envtest-root2/build/llama.cpp
+🔨 编译 llama-server...
+[  0%] Building CXX object vendor/hash/CMakeFiles/vendor-hash.dir/hash.cpp.o
+[  0%] Provisioning UI assets
+[  0%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[  0%] Building CXX object vendor/hash/CMakeFiles/vendor-hash.dir/sha1/sha1.c.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[  0%] Building C object vendor/hash/CMakeFiles/vendor-hash.dir/xxhash/xxhash.c.o
+[  1%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  1%] Building C object vendor/hash/CMakeFiles/vendor-hash.dir/sha256/sha256.c.o
+[  1%] Building CXX object vendor/cpp-httplib/CMakeFiles/cpp-httplib.dir/httplib.cpp.o
+[  1%] Building CXX object common/CMakeFiles/llama-common-base.dir/build-info.cpp.o
+[  1%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[  3%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[  3%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[  3%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[  3%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[  3%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+-- UI: downloading from b1: https://huggingface.co/buckets/ggml-org/llama-ui/resolve/b1/dist.tar.gz
+[  5%] Linking CXX static library libllama-common-base.a
+[  7%] Linking CXX static library libvendor-hash.a
+[  7%] Built target llama-common-base
+[  7%] Built target vendor-hash
+[  7%] Linking CXX shared library ../../bin/libggml-base.dylib
+[  7%] Built target ggml-base
+[  7%] Generate embedded Metal library for argsort
+[  7%] Generate embedded Metal library for wkv
+[  9%] Generate embedded Metal library for binbcast
+[  9%] Generate embedded Metal library for fa_f16
+[  9%] Generate embedded Metal library for conv
+[  9%] Generate embedded Metal library for fa_q4_0
+[  9%] Generate embedded Metal library for fa_aux
+[  9%] Generate embedded Metal library for fa_q5_0
+[  9%] Generate embedded Metal library for fa_tensor
+[  9%] Generate embedded Metal library for fa_vec_q8_0
+[  9%] Generate embedded Metal library for fa_vec_f16
+[ 10%] Generate embedded Metal library for gated_delta_net
+[ 12%] Generate embedded Metal library for fa_vec_q4_1
+[ 14%] Generate embedded Metal library for fa_f32
+[ 14%] Generate embedded Metal library for fa_vec_q5_0
+[ 14%] Generate embedded Metal library for fa_vec_q5_1
+[ 14%] Generate embedded Metal library for misc
+[ 14%] Generate embedded Metal library for fa_vec_f32
+[ 16%] Generate embedded Metal library for mul_mm
+[ 16%] Generate embedded Metal library for fa_q5_1
+[ 16%] Generate embedded Metal library for fa_q4_1
+[ 16%] Generate embedded Metal library for fa_vec_q4_0
+[ 16%] Generate embedded Metal library for mul_mv_mma
+[ 16%] Generate embedded Metal library for mul_mv
+[ 18%] Generate embedded Metal library for fa_q8_0
+[ 18%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[ 20%] Building CXX object ggml/src/ggml-blas/CMakeFiles/ggml-blas.dir/ggml-blas.cpp.o
+[ 20%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[ 21%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 21%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[ 21%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[ 21%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 21%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o
+[ 23%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o
+[ 23%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 23%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 25%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[ 27%] Generate embedded Metal library for pool
+[ 27%] Generate embedded Metal library for solve_tri
+[ 27%] Generate embedded Metal library for tri
+[ 27%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 27%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[ 27%] Generate embedded Metal library for norm
+[ 27%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[ 27%] Generate embedded Metal library for ssm
+[ 27%] Generate embedded Metal library for quantize
+[ 27%] Generate embedded Metal library for unary
+[ 27%] Generate embedded Metal library for upscale
+[ 27%] Generate embedded Metal library for reduce
+[ 27%] Generate embedded Metal library for rope
+[ 27%] Generate embedded Metal library for softmax
+[ 27%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/arm/quants.c.o
+[ 27%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[ 27%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/arm/repack.cpp.o
+[ 27%] Building C object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/ggml-metal-context.m.o
+[ 27%] Building CXX object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/ggml-metal.cpp.o
+[ 29%] Building CXX object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/ggml-metal-common.cpp.o
+[ 29%] Building CXX object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/ggml-metal-fusion.cpp.o
+[ 30%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_aux.s.o
+[ 30%] Building CXX object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/ggml-metal-device.cpp.o
+[ 30%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_q5_0.s.o
+[ 30%] Building CXX object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/ggml-metal-ops.cpp.o
+[ 30%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_q4_0.s.o
+[ 30%] Building C object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/ggml-metal-device.m.o
+[ 30%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_f32.s.o
+[ 30%] Building CXX object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/ggml-metal-tuning.cpp.o
+[ 30%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_q4_1.s.o
+[ 30%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_vec_f16.s.o
+[ 30%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_f16.s.o
+[ 30%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_q8_0.s.o
+[ 32%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_q5_1.s.o
+[ 32%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_tensor.s.o
+[ 32%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_vec_f32.s.o
+[ 32%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_vec_q4_1.s.o
+[ 32%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_vec_q5_0.s.o
+[ 34%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_vec_q4_0.s.o
+[ 34%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_vec_q5_1.s.o
+[ 36%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-mul_mv.s.o
+[ 36%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-mul_mv_mma.s.o
+[ 36%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-fa_vec_q8_0.s.o
+[ 36%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-quantize.s.o
+[ 36%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-mul_mm.s.o
+[ 36%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-softmax.s.o
+[ 36%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-norm.s.o
+[ 38%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-unary.s.o
+[ 38%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-binbcast.s.o
+[ 38%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-tri.s.o
+[ 38%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-reduce.s.o
+[ 38%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-ssm.s.o
+[ 38%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-solve_tri.s.o
+[ 38%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-gated_delta_net.s.o
+[ 40%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-wkv.s.o
+[ 40%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-rope.s.o
+[ 40%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-conv.s.o
+[ 41%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-upscale.s.o
+[ 41%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-argsort.s.o
+[ 41%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-pool.s.o
+[ 41%] Building ASM object ggml/src/ggml-metal/CMakeFiles/ggml-metal.dir/autogenerated/ggml-metal-embed-misc.s.o
+[ 41%] Linking CXX shared library ../../../bin/libggml-metal.dylib
+[ 41%] Linking CXX shared library ../../../bin/libggml-blas.dylib
+[ 41%] Built target ggml-blas
+[ 41%] Built target ggml-metal
+[ 41%] Linking CXX shared library ../../bin/libggml-cpu.dylib
+[ 41%] Built target ggml-cpu
+[ 41%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[ 41%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[ 41%] Linking CXX static library libcpp-httplib.a
+[ 41%] Built target cpp-httplib
+[ 41%] Linking CXX shared library ../../bin/libggml.dylib
+[ 41%] Built target ggml
+[ 41%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_9_cxx.cxx.o
+[ 41%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_8_cxx.cxx.o
+[ 43%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_10_cxx.cxx.o
+[ 43%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_7_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_5_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_2_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_3_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_1_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_4_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_6_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/llama-adapter.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/llama-arch.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_0_cxx.cxx.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama-batch.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama-chat.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama-cparams.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsa-iswa.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama-memory.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama-graph.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama-grammar.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/llama.dir/llama-hparams.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/llama.dir/llama-context.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/llama.dir/llama-impl.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-msa.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama-io.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsa.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsv4.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama-moe-cache.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-recurrent.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid-iswa.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-iswa.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid-idx.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/llama.dir/llama-model-loader.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/llama.dir/unicode.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/llama.dir/unicode-data.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/llama.dir/llama-mmap.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/llama.dir/llama-vocab.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/llama.dir/llama-model-saver.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/llama.dir/llama-sampler.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/llama.dir/llama-model.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/llama.dir/llama-quant.cpp.o
+[ 58%] Linking CXX shared library ../bin/libllama.dylib
+[ 58%] Built target llama
+[ 58%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/cohere2moe.cpp.o
+[ 58%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-image.cpp.o
+[ 60%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-helper-gen.cpp.o
+[ 60%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd.cpp.o
+[ 60%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/cogvlm.cpp.o
+[ 60%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-helper.cpp.o
+[ 60%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-audio.cpp.o
+[ 60%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/deepseek4v.cpp.o
+[ 60%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/parsers.cpp.o
+[ 60%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/deepseek.cpp.o
+[ 60%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/clip.cpp.o
+[ 60%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/gigachat-v3.cpp.o
+[ 60%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/functionary-v3-2.cpp.o
+[ 60%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/harmony-xml.cpp.o
+[ 60%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/gpt-oss.cpp.o
+[ 61%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/conformer.cpp.o
+[ 61%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/gemma4.cpp.o
+[ 61%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/dots3note.cpp.o
+[ 61%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/kimi-k2.cpp.o
+[ 61%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/k2-horizon.cpp.o
+[ 63%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/dotsocr.cpp.o
+[ 65%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/kimi-k3.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/gemma4uv.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/gemma4v.cpp.o
+[ 67%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/ling3.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/gemma4ua.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/gemma4a.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/exaone4_5.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/glm4v.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/kimik25.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/granite4-vision.cpp.o
+[ 67%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/granite-speech.cpp.o
+[ 67%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/llm-jp-harmony.cpp.o
+[ 67%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/minicpm5.cpp.o
+[ 69%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/minimax-m3.cpp.o
+[ 69%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/nemotron-omni.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/internvl.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/hunyuanvl.cpp.o
+[ 70%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/lfm2.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/nemotron-v2-vl.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/kimivl.cpp.o
+[ 70%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/ministral3.cpp.o
+[ 70%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/muse-glimmer.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/mobilenetv5.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/siglip.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/parakeet.cpp.o
+[ 70%] Building CXX object common/CMakeFiles/llama-common.dir/console.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pockettts-seanet.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/step3vl.cpp.o
+[ 70%] Building CXX object common/CMakeFiles/llama-common.dir/log.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pockettts-gen.cpp.o
+[ 70%] Building CXX object common/CMakeFiles/llama-common.dir/json-schema.cpp.o
+[ 70%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3vl.cpp.o
+[ 70%] Building CXX object common/CMakeFiles/llama-common.dir/chat-auto-parser-helpers.cpp.o
+[ 70%] Building CXX object common/CMakeFiles/llama-common.dir/download.cpp.o
+[ 72%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/mimovl.cpp.o
+[ 72%] Building CXX object common/CMakeFiles/llama-common.dir/json-schema-to-grammar.cpp.o
+[ 72%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/paddleocr.cpp.o
+[ 72%] Building CXX object common/CMakeFiles/llama-common.dir/llguidance.cpp.o
+[ 72%] Building CXX object common/CMakeFiles/llama-common.dir/jinja/caps.cpp.o
+[ 72%] Building CXX object common/CMakeFiles/llama-common.dir/chat-auto-parser-generator.cpp.o
+[ 72%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/youtuvl.cpp.o
+[ 74%] Building CXX object common/CMakeFiles/llama-common.dir/chat.cpp.o
+[ 74%] Building CXX object common/CMakeFiles/llama-common.dir/jinja/lexer.cpp.o
+[ 76%] Building CXX object common/CMakeFiles/llama-common.dir/fit.cpp.o
+[ 76%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen2vl.cpp.o
+[ 76%] Building CXX object common/CMakeFiles/llama-common.dir/common.cpp.o
+[ 78%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pixtral.cpp.o
+[ 78%] Building CXX object common/CMakeFiles/llama-common.dir/ngram-map.cpp.o
+[ 78%] Building CXX object common/CMakeFiles/llama-common.dir/trie.cpp.o
+[ 78%] Building CXX object common/CMakeFiles/llama-common.dir/imatrix-loader.cpp.o
+[ 78%] Building CXX object common/CMakeFiles/llama-common.dir/chat-diff-analyzer.cpp.o
+[ 78%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/ling3vl.cpp.o
+[ 78%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/muse-glimmer.cpp.o
+[ 78%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/muse-spark.cpp.o
+[ 78%] Building CXX object common/CMakeFiles/llama-common.dir/debug.cpp.o
+[ 80%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/translate-gemma.cpp.o
+[ 80%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/deepseekocr.cpp.o
+[ 81%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pockettts-spkenc.cpp.o
+[ 81%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/minimax-m3.cpp.o
+[ 81%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/llama4.cpp.o
+[ 81%] Building CXX object common/CMakeFiles/llama-common.dir/reasoning-budget.cpp.o
+[ 81%] Building CXX object common/CMakeFiles/llama-common.dir/ngram-mod.cpp.o
+[ 81%] Building CXX object common/CMakeFiles/llama-common.dir/parsers/qwen3-coder.cpp.o
+[ 83%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/yasa2.cpp.o
+[ 83%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/llava.cpp.o
+[ 83%] Building CXX object common/CMakeFiles/llama-common.dir/arg.cpp.o
+[ 83%] Building CXX object common/CMakeFiles/llama-common.dir/unicode.cpp.o
+[ 83%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/minicpmv.cpp.o
+[ 83%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/mimo-audio.cpp.o
+[ 83%] Building CXX object common/CMakeFiles/llama-common.dir/speculative.cpp.o
+[ 83%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3a.cpp.o
+[ 85%] Building CXX object common/CMakeFiles/llama-common.dir/subproc.cpp.o
+[ 85%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/deepseekocr2.cpp.o
+[ 85%] Building CXX object common/CMakeFiles/llama-common.dir/chat-peg-parser.cpp.o
+[ 85%] Building CXX object common/CMakeFiles/llama-common.dir/sampling.cpp.o
+[ 85%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/whisper-enc.cpp.o
+[ 87%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/muse-spark-audio.cpp.o
+[ 89%] Building CXX object common/CMakeFiles/llama-common.dir/peg-parser.cpp.o
+[ 89%] Building CXX object common/CMakeFiles/llama-common.dir/hf-cache.cpp.o
+[ 89%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3tts-gen.cpp.o
+[ 90%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/voxtral-rt.cpp.o
+[ 90%] Building CXX object common/CMakeFiles/llama-common.dir/jinja/string.cpp.o
+[ 90%] Building CXX object common/CMakeFiles/llama-common.dir/ngram-cache.cpp.o
+[ 90%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3tts-spkenc.cpp.o
+[ 90%] Building CXX object common/CMakeFiles/llama-common.dir/preset.cpp.o
+[ 92%] Building CXX object common/CMakeFiles/llama-common.dir/json.cpp.o
+[ 92%] Building CXX object common/CMakeFiles/llama-common.dir/jinja/parser.cpp.o
+[ 94%] Building CXX object common/CMakeFiles/llama-common.dir/jinja/runtime.cpp.o
+[ 94%] Building CXX object common/CMakeFiles/llama-common.dir/jinja/value.cpp.o
+-- UI: download dist.tar.gz.sha256 from b1 failed: "Timeout was reached"
+-- UI: downloading from latest: https://huggingface.co/buckets/ggml-org/llama-ui/resolve/latest/dist.tar.gz
+[ 94%] Linking CXX shared library ../../bin/libmtmd.dylib
+[ 94%] Built target mtmd
+[ 94%] Linking CXX shared library ../bin/libllama-common.dylib
+[ 94%] Built target llama-common
+[ 94%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-chat.cpp.o
+[ 94%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-context.cpp.o
+[ 94%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-stream.cpp.o
+[ 96%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-common.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-queue.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-mcp.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-decision.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-tools.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-task.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-schema.cpp.o
+[ 98%] Linking CXX static library libserver-context.a
+[ 98%] Built target server-context
+-- UI: download dist.tar.gz.sha256 from latest failed: "Timeout was reached"
+-- UI: HF download failed
+CMake Warning at /Users/mr.si{
+  "database" : {
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/simigo.sqlite3",
+    "schema_version" : 3,
+    "status" : "created",
+    "work_root" : {
+      "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/workdir",
+      "registered" : true,
+      "root_id" : "work-00000000f64f456a"
+    }
+  },
+  "engine_manifest" : {
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/manifests\/engine-recipes.json",
+    "pinned_ref" : "0878f7c304cc13915c831ae17694534c94940176",
+    "status" : "created"
+  },
+  "finished_at" : "2026-10-25T18:06:40Z",
+  "hf" : {
+    "path" : "\/opt\/homebrew\/bin\/hf",
+    "status" : "already_present"
+  },
+  "llama_cpp" : {
+    "llama_server" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/bin\/llama-server",
+    "status" : "构建完成"
+  },
+  "managed_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2",
+  "started_at" : "2026-10-25T18:05:12Z"
+}
+mi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/envtest-root2/sources/llama.cpp/scripts/ui-assets.cmake:584 (message):
+  UI: no assets available - building without an embedded UI.  In a
+  disconnected environment, download the pre-built UI from a llama.cpp
+  release at https://github.com/ggml-org/llama.cpp/releases and extract to
+  tools/ui/dist.
+-- UI: embedded 0 assets
+[ 98%] Built target llama-ui-assets
+[ 98%] Building CXX object tools/ui/CMakeFiles/llama-ui.dir/ui.cpp.o
+[ 98%] Linking CXX static library libllama-ui.a
+[ 98%] Built target llama-ui
+[ 98%] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-models.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-http.cpp.o
+[ 98%] Linking CXX shared library ../../bin/libllama-server-impl.dylib
+[ 98%] Built target llama-server-impl
+[ 98%] Building CXX object tools/server/CMakeFiles/llama-server.dir/main.cpp.o
+[100%] Linking CXX executable ../../bin/llama-server
+[100%] Built target llama-server
+📌 已将 llama-server 安装到全局路径: /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-admission-increment-20261026/envtest-root2/bin/llama-server
+🧹 构建完成，清理缓存仅保留二进制…
+✅ 已清理引擎缓存：sources, build, staging（仅保留二进制）
+⚡ 已检测到官方 hf 工具，模型下载可用。
+🎉 llama-server 就绪。Native MLX 无需安装外部运行时。

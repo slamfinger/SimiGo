@@ -1,0 +1,33 @@
+{
+ "phase": "post-iso-run4",
+ "captured_at": "2026-10-23T20:05:57+0800",
+ "app_bundle": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/derived/Build/Products/Debug/SimiGo.app",
+ "bundle_tree_sha256": "a64e66a4f6eae84b8e9edba5bbe2f9d326d8f44f7264b89bed984bb35525e968",
+ "files_in_bundle": 129,
+ "key_binaries": {
+  "SimiGo": {
+   "sha256": "f30ad77331ed4533f0b897dd181d5e869aba2f9aba7f2238874e70994c101326",
+   "bytes": 40216,
+   "uuid": "B133950B-775E-31F6-977B-31991B3A5B6E",
+   "mtime": "2026-10-23T19:47:21"
+  },
+  "SimiGo.debug.dylib": {
+   "sha256": "86edda5904a8391827a66ef65ce8d360909321692c6c9634ba2491da6ecded8a",
+   "bytes": 28466656,
+   "uuid": "84D5EAB9-63BA-3DBF-AE63-62E301C465C2",
+   "mtime": "2026-10-23T19:47:21"
+  },
+  "__preview.dylib": {
+   "sha256": "fccc7dea36533fb75faf21d350ae6709480528f5845490b6b3785fdd15b745b5",
+   "bytes": 16752,
+   "uuid": "3613837A-12AE-3130-809D-F36762B30B7C",
+   "mtime": "2026-10-23T19:47:13"
+  }
+ },
+ "frameworks_bytes": 207614856,
+ "xctestrun": {
+  "path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023/derived/Build/Products/SimiGo_SimiGo_macosx27.0-arm64.xctestrun",
+  "sha256": "c5f53628ffc3d709ae1608149014397e9ba14117b8d43f6659b7da18586c50d3",
+  "bytes": 4470
+ }
+}

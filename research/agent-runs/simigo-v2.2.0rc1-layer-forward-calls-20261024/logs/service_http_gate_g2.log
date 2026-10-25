@@ -1,0 +1,18 @@
+[gate] A1_prepare rc=0 payload=yes
+[gate] A2_activate rc=0 payload=yes
+[gate] client keygen rc=0
+[gate] A3_serve pid=28684 port=8200
+[gate] client spki rc=0
+[gate] A4_pair_issue rc=0 payload=yes
+[gate] client pair-sign rc=0
+[gate] A5_pair_approve rc=0 payload=yes
+[gate] client request rc=0
+[gate] probe rc=0
+[gate] A3_serve exited rc=-15
+[gate] B1_prepare_noactivate rc=0 payload=yes
+[gate] client keygen rc=0
+[gate] B2_serve_noauth pid=28806 port=8201
+[gate] probe rc=0
+[gate] B2_serve_noauth exited rc=-15
+[gate] C1_serve_unprepared pid=28956 port=8202
+[gate] wrote /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gate_installed_g2/service_http_gate_installed.json

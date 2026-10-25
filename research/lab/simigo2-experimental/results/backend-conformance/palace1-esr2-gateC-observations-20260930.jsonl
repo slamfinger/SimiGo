@@ -1,0 +1,16 @@
+{"ts":"2026-09-30T14:25:10Z","case":"c-space","contents":"state-carrier.json"}
+{"ts":"2026-09-30T14:25:10Z","case":"c-space","carrier_position":"17"}
+{"ts":"2026-09-30T14:25:10Z","case":"c-space","carrier_anchor":"{\n    afterMessageIndex = 17;\n    tailContentSHA256 = 825ec6e1704d7c92105fb3b0582e6b1837ee5c62c8bda58c2a7a38f81c3fddb7;\n    tailRole = assistant;\n}"}
+{"ts":"2026-09-30T14:25:10Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T14:25:15Z","case":"setup","model":"loaded (environment constant — weights only)"}
+{"ts":"2026-09-30T14:25:15Z","case":"attempt1","verdict":"FAILED (expected)"}
+{"ts":"2026-09-30T14:25:15Z","case":"attempt1","error":"Error Domain=NSCocoaErrorDomain Code=260 \"The file “default_5401315f-faa7-4984-9639-fccef06ae188_main.meta.json” couldn’t be opened because there is no such file.\" UserInfo={NSFilePath=/tmp/simigo-palace1-e1/esr2/gateC/default_5401315f-faa7-4984-9639-fccef06ae188_main.meta.json, NSURL=file:///tmp/simigo-palace1-e1/esr2/gateC/default_5401315f-faa7-4984-9639-fccef06ae188_main.meta.json, NSUnderlyingError=0xb0464c5a0 {Error Domain=NSPOSIXErrorDomain Code=2 \"No such file or directory\"}}"}
+{"ts":"2026-09-30T14:25:15Z","case":"attempt1","reading":"the only P->R seam requires meta+safetensors; the carrier cannot substitute either input"}
+{"ts":"2026-09-30T14:25:29Z","case":"attempt2","verdict":"SESSION CREATED AT WRONG POSITION (not a rematerialization of the state)"}
+{"ts":"2026-09-30T14:25:29Z","case":"attempt2","resulting_position":"2"}
+{"ts":"2026-09-30T14:25:29Z","case":"attempt2","state_position":"17"}
+{"ts":"2026-09-30T14:25:29Z","case":"attempt2","response":"请提供具体的上下文或任务指令，以便我继续执行。"}
+{"ts":"2026-09-30T14:25:29Z","case":"attempt2","reading":"without History or old P, the system can only create a NEW execution at position ~1 — the State's position (17) and continuation cannot be honored; R' at position 17 was never formed"}
+{"ts":"2026-09-30T14:25:29Z","case":"r-prime","artifacts_after":"gateC-observations.jsonl,state-carrier.json"}
+{"ts":"2026-09-30T14:25:29Z","case":"teardown","durability_writes":"ZERO"}
+{"ts":"2026-09-30T14:25:29Z","case":"teardown","real_branch_checkpoints_after":"204"}

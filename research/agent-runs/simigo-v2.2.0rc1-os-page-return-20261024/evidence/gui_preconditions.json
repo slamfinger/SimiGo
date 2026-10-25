@@ -1,0 +1,71 @@
+{
+ "captured_at": "2026-10-24T13:56:02+0800",
+ "verdict": "BLOCKED_PREREQUISITE",
+ "blockers": [
+  "screen_capture: screencapture could not create an image (Screen Recording not granted to the driving process, or no capturable display)"
+ ],
+ "checks": {
+  "screen_capture": {
+   "result": {
+    "cmd": "screencapture -x /tmp/simigo_gui_probe.png",
+    "rc": 1,
+    "stdout": "",
+    "stderr": "could not create image from display",
+    "seconds": 0.04
+   },
+   "file_written": false,
+   "file_bytes": 0,
+   "usable": false
+  },
+  "accessibility_ui_tree": {
+   "result": {
+    "cmd": "osascript -e tell application \"System Events\" to get name of first process",
+    "rc": 0,
+    "stdout": "loginwindow",
+    "stderr": "",
+    "seconds": 0.26
+   },
+   "usable": true,
+   "denied_code_1743": false
+  },
+  "frontmost_process": {
+   "result": {
+    "cmd": "osascript -e tell application \"System Events\" to get name of first process whose frontmost is true",
+    "rc": 0,
+    "stdout": "Qoder CN",
+    "stderr": "",
+    "seconds": 0.09
+   },
+   "name": "Qoder CN"
+  },
+  "session_is_interactive": {
+   "frontmost": "Qoder CN",
+   "locked_or_loginwindow": false,
+   "usable": true
+  },
+  "console_user": {
+   "result": {
+    "cmd": "stat -f %Su /dev/console",
+    "rc": 0,
+    "stdout": "mr.simi",
+    "stderr": "",
+    "seconds": 0.0
+   }
+  },
+  "who": {
+   "result": {
+    "cmd": "who",
+    "rc": 0,
+    "stdout": "mr.simi          console      Oct 22 21:46",
+    "stderr": "",
+    "seconds": 0.0
+   }
+  },
+  "candidate": {
+   "app": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app",
+   "exists": true,
+   "exe_sha256": "60973e086f12583a20a6b578de33e678bd4a7e1846a7b6cd0084cd845eae90cd"
+  }
+ },
+ "note": "This probe does not close the GUI gate and does not stand in for a typed user operation. It records whether the preconditions for that operation exist on this machine right now."
+}

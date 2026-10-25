@@ -1,0 +1,31 @@
+{
+ "phase": "post_m4",
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/evidence/noninterference_post_m4.json",
+ "real_roots": [
+  "/Users/mr.simi/.simigo",
+  "/Users/mr.simi/Library/Application Support/SimiGo"
+ ],
+ "entries": [
+  {
+   "path": "/Users/mr.simi/.simigo",
+   "role": "real_state",
+   "exists": true,
+   "files": 8971,
+   "bytes": 32398436256
+  },
+  {
+   "path": "/Users/mr.simi/Library/Application Support/SimiGo",
+   "role": "real_state",
+   "exists": true,
+   "files": 1,
+   "bytes": 1068
+  },
+  {
+   "path": "/Users/mr.simi/.cache/huggingface",
+   "role": "reference",
+   "exists": true,
+   "files": 951,
+   "bytes": 242509940763
+  }
+ ]
+}

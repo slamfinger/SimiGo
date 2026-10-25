@@ -1,0 +1,2 @@
+condition I2-INCOMPLETE-U1-RESULT attempt 99
+observations={"result_contract_rejects": false, "invalid_settlement_created": false, "invalid_result_reusable": false}

@@ -1,0 +1,27 @@
+{
+ "added_files": {
+  "SimiGo/Headless/SimiGoLocalBManagementEntry.swift": "f20f2b2ec616d985a566a4f2524ef0813da7787faacb775997c6ee6c6987c268"
+ },
+ "base": {
+  "branch": "localb-b3-closure-20261016",
+  "freeze_generated_at": "2026-10-24T03:19:50+0800",
+  "frozen_changed_path_count": 13,
+  "head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+  "installed_binary_of_that_tree": "cc6fe63c20d52637 (round-3 acceptance)"
+ },
+ "delta_count": 1,
+ "delta_vs_frozen_rc_tree": {
+  "SimiGo/App/StatusBarCoordinator.swift": {
+   "after": "937edb912fef2a18d67f4ec90251b128950aea736096efaf22d4b7f0c2c7584e",
+   "before": "4537cf64eada127f1c6f1422b6d43383ce3eaa45c9d951a7ca25a021c8323c86",
+   "before_basis": "git HEAD:SimiGo/App/StatusBarCoordinator.swift (path was pristine in the frozen RC tree)",
+   "changed": true
+  }
+ },
+ "note": "The tree that produced cc6fe63c is f18d65f + the 13 frozen paths. This batch's tree differs from it in exactly the paths under delta_vs_frozen_rc_tree plus added_files: the new management entry (new file) and the four-line call site added to StatusBarCoordinator.applicationDidFinishLaunching. Every other frozen path is byte-identical, so no package source, project file, or existing test changed for this round.",
+ "now": {
+  "checked_path_count": 14,
+  "head": "f18d65f8f312ffbb837fdf5e07125af044833854"
+ },
+ "unchanged_frozen_paths": 13
+}

@@ -1,0 +1,133 @@
+{
+  "boundary" : "REAL_RUNTIME_RECONCILIATION \/ RESOURCE_STATE_CORRECTNESS \/ NOT_A_PERFORMANCE_TEST \/ NOT_DEMAND \/ NOT_PREDICTION",
+  "cModelBytesSupplied" : false,
+  "cModelBytesUsed" : -892398288,
+  "epsilonBytes" : 5242880,
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+  "modelType" : "Qwen35MoEModel",
+  "overallPass" : true,
+  "protocolVersion" : "G1.9-L4B.RECONCILIATION.V1",
+  "status" : "PASS",
+  "transitions" : [
+    {
+      "bookkeepingBytes" : 21634738912,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 0,
+      "label" : "T0_START_CALIBRATION",
+      "observedIdleBytes" : 20742340624,
+      "path" : "CALIBRATION",
+      "predictedIdleBytes" : 20742340624,
+      "transferLogCount" : 0,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 3515345632,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 960,
+      "label" : "T1_PRESSURE_RELEASE_ALL",
+      "observedIdleBytes" : 2622948304,
+      "path" : "PRESSURE_RESPONSE+RELEASE_COMMITTED",
+      "predictedIdleBytes" : 2622947344,
+      "transferLogCount" : 3,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 10763102944,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 576,
+      "label" : "T2_LOAD_COMMITTED",
+      "observedIdleBytes" : 9870705232,
+      "path" : "LOAD_COMMITTED",
+      "predictedIdleBytes" : 9870704656,
+      "transferLogCount" : 4,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 18010860256,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 192,
+      "label" : "T3_MULTI_GROUP_CONTINUOUS",
+      "observedIdleBytes" : 17118462160,
+      "path" : "MULTI_GROUP_CONTINUOUS+LOAD_COMMITTED",
+      "predictedIdleBytes" : 17118461968,
+      "transferLogCount" : 5,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 10763102944,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 576,
+      "label" : "T4_RELEASE_COMMITTED",
+      "observedIdleBytes" : 9870705232,
+      "path" : "RELEASE_COMMITTED",
+      "predictedIdleBytes" : 9870704656,
+      "transferLogCount" : 6,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 18010860256,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 192,
+      "label" : "T5_LOAD_FAILURE",
+      "observedIdleBytes" : 17118462160,
+      "path" : "LOAD_FAILURE",
+      "predictedIdleBytes" : 17118461968,
+      "transferLogCount" : 7,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 21634738912,
+      "cModelBytes" : -892398288,
+      "controllerState" : "DIRTY",
+      "deviationBytes" : 0,
+      "label" : "T6_RELEASE_FAILURE_DIRTY",
+      "observedIdleBytes" : 20742340624,
+      "path" : "RELEASE_FAILURE+DIRTY",
+      "predictedIdleBytes" : 20742340624,
+      "transferLogCount" : 8,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 21634738912,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 0,
+      "label" : "T7_RECOVERY",
+      "observedIdleBytes" : 20742340624,
+      "path" : "RECOVERY",
+      "predictedIdleBytes" : 20742340624,
+      "transferLogCount" : 8,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 21634738912,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 0,
+      "label" : "T8_FULL_AFTER_RECOVERY",
+      "observedIdleBytes" : 20742340624,
+      "path" : "LOAD_COMMITTED+RECOVERY",
+      "predictedIdleBytes" : 20742340624,
+      "transferLogCount" : 8,
+      "withinEpsilon" : true
+    },
+    {
+      "bookkeepingBytes" : 3515345632,
+      "cModelBytes" : -892398288,
+      "controllerState" : "CLEAN",
+      "deviationBytes" : 960,
+      "label" : "T9_PRESSURE_RESPONSE",
+      "observedIdleBytes" : 2622948304,
+      "path" : "PRESSURE_RESPONSE",
+      "predictedIdleBytes" : 2622947344,
+      "transferLogCount" : 11,
+      "withinEpsilon" : true
+    }
+  ]
+}

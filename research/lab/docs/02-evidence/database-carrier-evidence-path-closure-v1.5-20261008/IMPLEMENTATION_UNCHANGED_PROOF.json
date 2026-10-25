@@ -1,0 +1,6 @@
+{
+  "accepted_implementation_commit": "7392fcb79fb7e8465b73f9e1837c4634e56c0409",
+  "git_diff_exit_code": 0,
+  "implementation_tree_unchanged": true,
+  "verification_scope": "database-carrier-replication/implementation"
+}

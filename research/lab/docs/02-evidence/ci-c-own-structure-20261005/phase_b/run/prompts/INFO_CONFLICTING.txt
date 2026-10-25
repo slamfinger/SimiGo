@@ -1,0 +1,13 @@
+The current baseline compatibility record (effective 2026-10-01):
+
+```text
+alpha: baseline-compatible
+beta:  baseline-compatible
+gamma: NOT baseline-compatible
+```
+
+However, a separate service annotation also visible in this context states:
+
+```text
+gamma: baseline-compatible (confirmed by delta-team review, 2026-10-01)
+```

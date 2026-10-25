@@ -1,0 +1,230 @@
+Building for debugging...
+[Computing dependencies]
+[Constructing description]
+[Pre-planning 1 / 954]
+[Planning deferred tasks]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[1 / 2] mlx-swift_Cmlx
+[2 / 2]
+[7 / 76] MLXOptimizers
+[11 / 38] SimiGoRuntimeContract
+[14 / 41] SimiGoRuntimeContract
+[20 / 41] SimiGoRuntimeContract
+[22 / 57]
+[29 / 57]
+[40 / 67] SimiGoRuntimeContractTests-product
+[45 / 67] SimiGoRuntimeContractTests-product
+[57 / 67] SimiGo2Experimental
+[58 / 67]
+[60 / 65] SimiGo2Experimental
+[62 / 65] SimiGo2Experimental
+[64 / 64] SimiGo2Experimental-product
+Build complete! (4.92秒)
+Test Suite 'All tests' started at 2026-10-24 01:34:12.909.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-24 01:34:12.910.
+Test Suite 'DeclarativeNativeResultContractTests' started at 2026-10-24 01:34:12.910.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testAmbiguousRequiredFieldFailsExactlyOnePolicy]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testAmbiguousRequiredFieldFailsExactlyOnePolicy]' passed (0.002 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testBindingMismatchFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testBindingMismatchFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDerivedFieldMismatchFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDerivedFieldMismatchFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestCanonicalJSONMatchesPythonForNestedNonASCII]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestCanonicalJSONMatchesPythonForNestedNonASCII]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingMatchesCanonicalStringDigest]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingMatchesCanonicalStringDigest]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingMismatchFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingMismatchFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingRequiresVerifiedBinding]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testDigestEqualsBindingRequiresVerifiedBinding]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testEnumAndBooleanTypes]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testEnumAndBooleanTypes]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testEqualsFieldAndLiteralConstraints]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testEqualsFieldAndLiteralConstraints]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testFirstPolicyKeepsFirstMatch]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testFirstPolicyKeepsFirstMatch]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testIntegerRangeFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testIntegerRangeFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testMissingBindingFailsClosedWithProducerStage]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testMissingBindingFailsClosedWithProducerStage]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testMissingRequiredFieldFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testMissingRequiredFieldFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testNamedCaptureGroupWorks]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testNamedCaptureGroupWorks]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testOptionalFieldCanBeAbsent]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testOptionalFieldCanBeAbsent]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownConstraintStillFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownConstraintStillFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownKeysFailClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownKeysFailClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownSchemaVersionFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testUnknownSchemaVersionFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidatedPayloadContainsOnlyNativeContractValues]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidatedPayloadContainsOnlyNativeContractValues]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidationIsIndependentOfRuntimeTaskID]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidationIsIndependentOfRuntimeTaskID]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidDeclaredFieldsBindingsAndDerivedRoute]' started.
+Test Case '-[SimiGoRuntimeContractTests.DeclarativeNativeResultContractTests testValidDeclaredFieldsBindingsAndDerivedRoute]' passed (0.000 seconds).
+Test Suite 'DeclarativeNativeResultContractTests' passed at 2026-10-24 01:34:12.916.
+	 Executed 21 tests, with 0 failures (0 unexpected) in 0.005 (0.006) seconds
+Test Suite 'SimiGoBootstrapTests' started at 2026-10-24 01:34:12.916.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testBootstrapMigratesLegacyOnceAndSkipsOnReRun]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testBootstrapMigratesLegacyOnceAndSkipsOnReRun]' passed (0.013 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testBootstrapNeverCreatesWorkOrModelsDirectories]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testBootstrapNeverCreatesWorkOrModelsDirectories]' passed (0.012 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testBootstrapProducesMachineReadableReportAndIsIdempotent]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testBootstrapProducesMachineReadableReportAndIsIdempotent]' passed (0.009 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testBootstrapRecordsFailureThenRecoversOnReRun]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testBootstrapRecordsFailureThenRecoversOnReRun]' passed (0.018 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testDiscoveryReadsHFStyleLayoutAsRootRelativeRefs]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testDiscoveryReadsHFStyleLayoutAsRootRelativeRefs]' passed (0.001 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testWorkFilesAreIndexedByRootRelativeAndNeverCopied]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoBootstrapTests testWorkFilesAreIndexedByRootRelativeAndNeverCopied]' passed (0.019 seconds).
+Test Suite 'SimiGoBootstrapTests' passed at 2026-10-24 01:34:12.989.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.072 (0.073) seconds
+Test Suite 'SimiGoESISDatabaseG2Tests' started at 2026-10-24 01:34:12.989.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2DualSourceCoexistenceWorkAndSession]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2DualSourceCoexistenceWorkAndSession]' passed (0.008 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2ExternalFileIndexStoresNoBytes]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2ExternalFileIndexStoresNoBytes]' passed (0.004 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2LocalInvalidationOnlyAffectsClosurePreservesUnrelated]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2LocalInvalidationOnlyAffectsClosurePreservesUnrelated]' passed (0.005 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2LocalUpdateWritesAreAtomicUnderFailure]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2LocalUpdateWritesAreAtomicUnderFailure]' passed (0.005 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2ReconcileMissingWatcherEventInvalidatesRemovedFile]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2ReconcileMissingWatcherEventInvalidatesRemovedFile]' passed (0.004 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2RepeatScanIdempotentNoInvalidationWhenUnchanged]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2RepeatScanIdempotentNoInvalidationWhenUnchanged]' passed (0.005 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2TransitiveDependencyClosureInvalidatesDownstream]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseG2Tests testG2TransitiveDependencyClosureInvalidatesDownstream]' passed (0.005 seconds).
+Test Suite 'SimiGoESISDatabaseG2Tests' passed at 2026-10-24 01:34:13.024.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.035 (0.035) seconds
+Test Suite 'SimiGoESISDatabaseTests' started at 2026-10-24 01:34:13.024.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testContractVersionMismatchRollsBackEntirely]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testContractVersionMismatchRollsBackEntirely]' passed (0.005 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testCorruptFileFailsClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testCorruptFileFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testForeignKeyViolationRollsBackEntirely]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testForeignKeyViolationRollsBackEntirely]' passed (0.006 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testFreshDatabaseMigratesAndPassesIntegrity]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testFreshDatabaseMigratesAndPassesIntegrity]' passed (0.004 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testLegacyImportIsLosslessForGraphRebuild]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testLegacyImportIsLosslessForGraphRebuild]' passed (0.006 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testLegacyImportWithReadBackAndReceipt]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testLegacyImportWithReadBackAndReceipt]' passed (0.008 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testRecordNativeSettlementAsWriteAuthority]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testRecordNativeSettlementAsWriteAuthority]' passed (0.005 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testSettlementGateCommitsToAuthorityAndFailsClosedOnReadBack]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testSettlementGateCommitsToAuthorityAndFailsClosedOnReadBack]' passed (0.004 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testWriteGraphIdempotentAndReconcilesRemovals]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testWriteGraphIdempotentAndReconcilesRemovals]' passed (0.004 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testWriteGraphKeepsStatesReferencedBySettlements]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testWriteGraphKeepsStatesReferencedBySettlements]' passed (0.004 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testWriteGraphThenReadBackPreservesFullRepresentation]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoESISDatabaseTests testWriteGraphThenReadBackPreservesFullRepresentation]' passed (0.004 seconds).
+Test Suite 'SimiGoESISDatabaseTests' passed at 2026-10-24 01:34:13.074.
+	 Executed 11 tests, with 0 failures (0 unexpected) in 0.050 (0.050) seconds
+Test Suite 'SimiGoEngineRecipeTests' started at 2026-10-24 01:34:13.074.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testAutomatedDownloadIsFailClosedWithoutChecksum]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testAutomatedDownloadIsFailClosedWithoutChecksum]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testCacheCleanupKeepsOnlyBinary]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testCacheCleanupKeepsOnlyBinary]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testExternalServersResolveConcreteAdoptEndpoint]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testExternalServersResolveConcreteAdoptEndpoint]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testExternalServerWithoutEndpointIsFailClosed]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testExternalServerWithoutEndpointIsFailClosed]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testFloatingBranchIsNotLocked]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testFloatingBranchIsNotLocked]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testImmutableRefsAreLocked]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testImmutableRefsAreLocked]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testLockedCheckoutNeverPullsFloatingBranch]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testLockedCheckoutNeverPullsFloatingBranch]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testManifestOverridesAndExtensibility]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testManifestOverridesAndExtensibility]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testManifestSuppliesAdoptEndpoint]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testManifestSuppliesAdoptEndpoint]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testPruneCacheKeepingBinaryRunsAndIsFailSafe]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testPruneCacheKeepingBinaryRunsAndIsFailSafe]' passed (0.001 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testRecipeDecodesWithoutEndpointKeys]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testRecipeDecodesWithoutEndpointKeys]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testRegistryIsNotHardcodedToLlama_ExternalServersSelectable]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testRegistryIsNotHardcodedToLlama_ExternalServersSelectable]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testSourceBuildAndNativeNeverAdoptOverEndpoint]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testSourceBuildAndNativeNeverAdoptOverEndpoint]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testThreeDistinctStagesNeverCollapse]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoEngineRecipeTests testThreeDistinctStagesNeverCollapse]' passed (0.000 seconds).
+Test Suite 'SimiGoEngineRecipeTests' passed at 2026-10-24 01:34:13.077.
+	 Executed 14 tests, with 0 failures (0 unexpected) in 0.003 (0.003) seconds
+Test Suite 'SimiGoModelDiscoveryTests' started at 2026-10-24 01:34:13.077.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testAbsoluteOutsideAnyRootYieldsNoReference]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testAbsoluteOutsideAnyRootYieldsNoReference]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testAbsoluteToReferenceRoundTrips]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testAbsoluteToReferenceRoundTrips]' passed (0.001 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testResolveFailsClosedWhenAbsent]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testResolveFailsClosedWhenAbsent]' passed (0.001 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testResolveFindsModelUnderExternalCache]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testResolveFindsModelUnderExternalCache]' passed (0.001 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testResolveRejectsPathEscape]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testResolveRejectsPathEscape]' passed (0.002 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testResolveRejectsUnknownRoot]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoModelDiscoveryTests testResolveRejectsUnknownRoot]' passed (0.001 seconds).
+Test Suite 'SimiGoModelDiscoveryTests' passed at 2026-10-24 01:34:13.082.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.005 (0.005) seconds
+Test Suite 'SimiGoPathsTests' started at 2026-10-24 01:34:13.082.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testAbsoluteInputRejected]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testAbsoluteInputRejected]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testHFCacheCandidatesPrecedeEnvironment]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testHFCacheCandidatesPrecedeEnvironment]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testManagedRootHonorsSimigoHomeOverride]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testManagedRootHonorsSimigoHomeOverride]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testNoWorkOrModelsUnderManagedRoot]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testNoWorkOrModelsUnderManagedRoot]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testRelativeEscapeRejected]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testRelativeEscapeRejected]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testUnicodeAndSpacePathsResolve]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testUnicodeAndSpacePathsResolve]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testValidAndContainedDotDotResolveWithinRoot]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoPathsTests testValidAndContainedDotDotResolveWithinRoot]' passed (0.000 seconds).
+Test Suite 'SimiGoPathsTests' passed at 2026-10-24 01:34:13.083.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'SimiGoSettlementAuthorityTests' started at 2026-10-24 01:34:13.083.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testAuthorizeProducesCanonicalValidatedSettlement]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testAuthorizeProducesCanonicalValidatedSettlement]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testBindingMismatchRefusesBeforeSettlement]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testBindingMismatchRefusesBeforeSettlement]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testDigestBindingAuthorizeAndRefuse]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testDigestBindingAuthorizeAndRefuse]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testMissingBindingRefusesBeforeSettlement]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testMissingBindingRefusesBeforeSettlement]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testUnknownConstraintRefusesBeforeSettlement]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementAuthorityTests testUnknownConstraintRefusesBeforeSettlement]' passed (0.000 seconds).
+Test Suite 'SimiGoSettlementAuthorityTests' passed at 2026-10-24 01:34:13.084.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'SimiGoSettlementIdentityBindingTests' started at 2026-10-24 01:34:13.084.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testBindingsPublishBothKeys]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testBindingsPublishBothKeys]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testDigestIsTheProductionSettlementDigest]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testDigestIsTheProductionSettlementDigest]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testEvaluateAcceptsMatchingIdentity]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testEvaluateAcceptsMatchingIdentity]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testEvaluateRefusesAbsentBindings]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testEvaluateRefusesAbsentBindings]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testEvaluateRefusesModelMismatch]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testEvaluateRefusesModelMismatch]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testEvaluateRefusesTokenizerMismatch]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testEvaluateRefusesTokenizerMismatch]' passed (0.000 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testIdentityBindingsAreScopedToTheirSettlement]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testIdentityBindingsAreScopedToTheirSettlement]' passed (0.005 seconds).
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testIdentityBindingsRoundTripThroughStore]' started.
+Test Case '-[SimiGoRuntimeContractTests.SimiGoSettlementIdentityBindingTests testIdentityBindingsRoundTripThroughStore]' passed (0.003 seconds).
+Test Suite 'SimiGoSettlementIdentityBindingTests' passed at 2026-10-24 01:34:13.094.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.009 (0.009) seconds
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-24 01:34:13.094.
+	 Executed 85 tests, with 0 failures (0 unexpected) in 0.180 (0.184) seconds
+Test Suite 'All tests' passed at 2026-10-24 01:34:13.094.
+	 Executed 85 tests, with 0 failures (0 unexpected) in 0.180 (0.185) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+pkg_rc=0

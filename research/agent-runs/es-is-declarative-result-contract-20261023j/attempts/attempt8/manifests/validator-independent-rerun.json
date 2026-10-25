@@ -1,0 +1,16 @@
+{
+  "checked_at_utc": "2026-10-22T16:57:09Z",
+  "exit_code": 0,
+  "note": "executed after the driver finished, so the file checked here is this attempt's final on-disk summary.json including its validator_final field",
+  "result": {
+    "issue_count": 0,
+    "issues": [],
+    "result": "PASS"
+  },
+  "run_root": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j",
+  "schema_id": "SIMIGO-J-INDEPENDENT-REVALIDATION-V1",
+  "stderr": "",
+  "summary_sha256": "50651c808b8a52a8a8ea62661556e15630ff57262ad79fe140b3525c6e83fcc4",
+  "validator": "execution-information-loop/validate_j_evidence.py",
+  "validator_sha256": "88c5659e88b2d3a7851ee96d9b46f2f21cf695624f02c2b4eb51123ae8161e26"
+}

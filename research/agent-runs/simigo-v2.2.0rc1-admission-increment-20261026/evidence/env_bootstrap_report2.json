@@ -1,0 +1,28 @@
+{
+  "database" : {
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/simigo.sqlite3",
+    "schema_version" : 3,
+    "status" : "created",
+    "work_root" : {
+      "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/workdir",
+      "registered" : true,
+      "root_id" : "work-00000000f64f456a"
+    }
+  },
+  "engine_manifest" : {
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/manifests\/engine-recipes.json",
+    "pinned_ref" : "0878f7c304cc13915c831ae17694534c94940176",
+    "status" : "created"
+  },
+  "finished_at" : "2026-10-25T18:06:40Z",
+  "hf" : {
+    "path" : "\/opt\/homebrew\/bin\/hf",
+    "status" : "already_present"
+  },
+  "llama_cpp" : {
+    "llama_server" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/bin\/llama-server",
+    "status" : "构建完成"
+  },
+  "managed_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2",
+  "started_at" : "2026-10-25T18:05:12Z"
+}

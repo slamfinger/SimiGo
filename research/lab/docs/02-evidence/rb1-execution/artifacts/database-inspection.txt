@@ -1,0 +1,9 @@
+[experimental.sqlite]
+information_count = 2
+information = ('7973612eca7d5e62f6866f18', 'alpha=17;mode=quiet', 'E-run-cold-start', '/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/workspace/entity-E.txt', 'declared-baseline')
+information = ('59d5fe62d9bc85d2045e57bf', 'alpha=42;mode=active', 'X-run-cold-start', '/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/workspace/entity-E.txt', 'observation')
+relation_count = 1
+relation = ('869c145eb01dc7fdc4d9ee50', '59d5fe62d9bc85d2045e57bf', 'observed-change-of', '7973612eca7d5e62f6866f18', 'X-run-cold-start')
+[negative.sqlite]
+information_count = 0
+relation_count = 0

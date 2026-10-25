@@ -1,0 +1,1031 @@
+{
+ "lab_branch": "main",
+ "lab_dirty_count": 96,
+ "lab_head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+ "lab_repo": "/Users/mr.simi/Documents/SimiGo-Lab",
+ "modules": {
+  "Packages/SimiGoRuntime/Sources/SimiGo2Experimental": {
+   "committed_match": 59,
+   "diverged": 10,
+   "files": 69,
+   "identical": 59,
+   "identical_but_lab_uncommitted": 0,
+   "product_only": 0,
+   "rows": [
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/AsyncLock.swift"
+     ],
+     "product_lines": 53,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/AsyncLock.swift",
+     "product_sha256": "f2da1cb65f8e3d5478642a527e305d8ecbf9b7a238278222ebab16e6eafa1926"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ChatTemplateGeneration.swift"
+     ],
+     "product_lines": 104,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ChatTemplateGeneration.swift",
+     "product_sha256": "61299813f1037cc7a32bc3482c64ea2f771d01cdc37ec67ded7e4df3b1596aa4"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/CrossBackendLogitProbe.swift"
+     ],
+     "product_lines": 457,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/CrossBackendLogitProbe.swift",
+     "product_sha256": "476794df5080bd2856a776c776b9d064638441ff1fd2a328f63dfb4fd85c4ece"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/CrossBackendMarginProbe.swift"
+     ],
+     "product_lines": 630,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/CrossBackendMarginProbe.swift",
+     "product_sha256": "c5d577e0c26749c221e6ad877a85fa95a1500e7a691e1d1178ec7c729938dec8"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/CrossBackendTokenProbe.swift"
+     ],
+     "product_lines": 385,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/CrossBackendTokenProbe.swift",
+     "product_sha256": "bb1fd3f75b029af59fda82505e9f1ed95b2220ee0efa6decda62961164725e91"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/E5ExecutionStateScenario.swift"
+     ],
+     "product_lines": 450,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/E5ExecutionStateScenario.swift",
+     "product_sha256": "8db2971cff5a04d03755d695aa9a23e54f2c3b65c800e84c4dc9b895d8761402"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionBindingRegistry.swift"
+     ],
+     "product_lines": 221,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionBindingRegistry.swift",
+     "product_sha256": "fb08546e751144310c629f4aff1985b5a007cbc99a2c6db99b8f72ee283b824e"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift"
+     ],
+     "product_lines": 280,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift",
+     "product_sha256": "5e19a7080e39a46d1253ab5758540159f1c6a357df245a7d2969cf5eb35c670b"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionResidencyPlanner.swift"
+     ],
+     "product_lines": 158,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionResidencyPlanner.swift",
+     "product_sha256": "a387fa0e60211c8b36e2c6ebfca09a830c764444defea32641455b24f22a08bd"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionState.swift"
+     ],
+     "product_lines": 52,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionState.swift",
+     "product_sha256": "7894c4c202a9599cee0f58154348afbf8d306a548e48e0a44b567aebc90463ca"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionStateMaterializationExperiment.swift"
+     ],
+     "product_lines": 60,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionStateMaterializationExperiment.swift",
+     "product_sha256": "22d22bb8c1b9168a10965081c40b06625ea465fbd8d4ec77daa897fc8817fcb5"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionStatePrefixPool.swift"
+     ],
+     "product_lines": 324,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionStatePrefixPool.swift",
+     "product_sha256": "33427d5c74c166b3b5f9094ffd674662e5b95ecead18a0c172a2109b08a417ee"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ExperimentSchema.swift"
+     ],
+     "product_lines": 163,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExperimentSchema.swift",
+     "product_sha256": "6da19b578eb57ab96cd74e8ab13addb387c212bda630a825ea5e9e4cad9a1fdf"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/L4Identity.swift"
+     ],
+     "product_lines": 285,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/L4Identity.swift",
+     "product_sha256": "1ffd3b6aebe49c5e7a4f755b13f67a55b35df7159d646cb21141527182e17a52"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/L4Reconciliation.swift"
+     ],
+     "product_lines": 276,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/L4Reconciliation.swift",
+     "product_sha256": "7f92cbac9ca659525a189b5b4fda0435dd3cb5f325ad0926390bb4f07b385dd3"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateAB.swift"
+     ],
+     "product_lines": 215,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateAB.swift",
+     "product_sha256": "b8c8b328879004886c21e002eac396458040853bcd8e26a7399e1272394ef651"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateAdapter.swift"
+     ],
+     "product_lines": 294,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateAdapter.swift",
+     "product_sha256": "e17ccea7f91cdd0166b462ac645f1ef7d2dcfcce890cfc77fde263514c9d34b6"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateBackend.swift"
+     ],
+     "product_lines": 106,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateBackend.swift",
+     "product_sha256": "d8cbe38aea0d6c4c340f953f88af61dd9bbf958f4804764b812e583691a59ee8"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateCancellation.swift"
+     ],
+     "product_lines": 436,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateCancellation.swift",
+     "product_sha256": "378227ef154a2b40532e8f8856a8b441e465750246afdda32462fc228a3d05c3"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateExecutor.swift"
+     ],
+     "product_lines": 125,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateExecutor.swift",
+     "product_sha256": "64bdb329590292e02f87f67315a447e22b2d863febbbe18c7f628a90ef81ccab"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateForkRestore.swift"
+     ],
+     "product_lines": 298,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateForkRestore.swift",
+     "product_sha256": "9a44bc356ec85e42043e3402739fef436558a6f786b0f3f5dac65d99a63095b3"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LayerDemandCSV.swift"
+     ],
+     "product_lines": 82,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandCSV.swift",
+     "product_sha256": "6582e64471dbb15b9dfd75d075871ca9274aca98559b6367e891dd4e6d9699db"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LayerDemandExperimentRunner.swift"
+     ],
+     "product_lines": 87,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandExperimentRunner.swift",
+     "product_sha256": "e0f1ca36321dfc6f6ef1a6707e6364055222bd3abab3ee50db4075ee10113116"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LayerGroup.swift"
+     ],
+     "product_lines": 93,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerGroup.swift",
+     "product_sha256": "fe2ddd6fbc36b7762dff3082025c34cd33b37131b54cdf2b3e411b5c391444e9"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LayerPolicy.swift"
+     ],
+     "product_lines": 78,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerPolicy.swift",
+     "product_sha256": "163128b9aa4cf51e84334a3a69624507fa83fc3d96b25712839f33e508124a42"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/LayerResidencyEngine.swift"
+     ],
+     "product_lines": 127,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerResidencyEngine.swift",
+     "product_sha256": "402b46a2695e6b2e16d833e30b1285ac5cbbdb2e22b567650d4cb3d463910096"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXExecutionStateBackend.swift"
+     ],
+     "product_lines": 130,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXExecutionStateBackend.swift",
+     "product_sha256": "5d9fdba716939946f01a995938ddc32c0de3cf6f0d36bc4f311c74c0bc36e911"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXExecutionStateCostProfile.swift"
+     ],
+     "product_lines": 1179,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXExecutionStateCostProfile.swift",
+     "product_sha256": "f517698a9716e9b1c9f0318f1c82ca1014215bfbdd84fbc7e8741a0efbd771ca"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupGate.swift"
+     ],
+     "product_lines": 97,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXGroupGate.swift",
+     "product_sha256": "5e533e9bcf56989740b58828b178340f6fda0fe563997c797be8ae5270e80360"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupInferenceGate.swift"
+     ],
+     "product_lines": 186,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXGroupInferenceGate.swift",
+     "product_sha256": "e05b0f56a69ed233822295dbfe9d94d1a5754bf59a6465d029ca2b0742534f81"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupLifecycleExperiment.swift"
+     ],
+     "product_lines": 169,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXGroupLifecycleExperiment.swift",
+     "product_sha256": "5adff031ee68220d1dc1cbdd787768b403f9e33af69d59b6e77d23f9db418ca7"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupResidencyBenchmark.swift"
+     ],
+     "product_lines": 449,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXGroupResidencyBenchmark.swift",
+     "product_sha256": "e328a383f85a143c7fe40df4e049d1c26bf9e774f2ce8be7125e925ea9e8d12b"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXParameterSwapGate.swift"
+     ],
+     "product_lines": 113,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXParameterSwapGate.swift",
+     "product_sha256": "7d2d42c32881e7a2e892694bf8ff6fd40136e175a9723f72aa8c2b477b1ef056"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift"
+     ],
+     "product_lines": 116,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift",
+     "product_sha256": "d966535f60ba847e03ff694ff998c09ab15b6bed00c674365e91968cad4a2fe2"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MLXResidencyBackend.swift"
+     ],
+     "product_lines": 52,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXResidencyBackend.swift",
+     "product_sha256": "80d0940c79454cea14eff98a8dbac4c1fcacd47919707a68c3791dea0349854d"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/MaterializationCoordinator.swift"
+     ],
+     "product_lines": 119,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MaterializationCoordinator.swift",
+     "product_sha256": "15eaf18a91ffadd06c602271fbd5e2cb1e59cbea0eb1da482d3acf3d551faf80"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ModelInventoryReference.swift"
+     ],
+     "product_lines": 52,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ModelInventoryReference.swift",
+     "product_sha256": "1291cbf24fc33243298cae2e371f0d1da3df75a0853407a61d9b0fe312a04b9f"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/NamedSourceConformanceProfile.swift"
+     ],
+     "product_lines": 266,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/NamedSourceConformanceProfile.swift",
+     "product_sha256": "31c48af352ebe85ff92c580dd1c3754e538249cf0f31248b882b87e53e63a6f7"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O2BaselineProbe.swift"
+     ],
+     "product_lines": 324,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O2BaselineProbe.swift",
+     "product_sha256": "111febfb576f8eef7460e6eceaa1125f754aef725d06b070235b4d8bdd1e273b"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O3CSegmentWiseProbe.swift"
+     ],
+     "product_lines": 336,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O3CSegmentWiseProbe.swift",
+     "product_sha256": "207665fbae1b8790bfd4f36230aec091c5ff46373d9ec805ac2cf02c6e192a23"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O3CStreamingForward.swift"
+     ],
+     "product_lines": 366,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O3CStreamingForward.swift",
+     "product_sha256": "68a5f4dc5a63fa9b64aae7f28ec89c8b0bb146b959d8061b0118ebca9aade987"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O3SkeletonProbe.swift"
+     ],
+     "product_lines": 275,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O3SkeletonProbe.swift",
+     "product_sha256": "209c8f53bffaacee26b13aab7a433fcd6e368aaf1f58a2955bc02d4640a46985"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O4GenerationProbe.swift"
+     ],
+     "product_lines": 439,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O4GenerationProbe.swift",
+     "product_sha256": "954ff15a828f7050e3a9039b52754e2b783bb8b02a0cecbfe5fa42b79c7ccc38"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O4OversizedGenerationProbe.swift"
+     ],
+     "product_lines": 355,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O4OversizedGenerationProbe.swift",
+     "product_sha256": "7ad08232b2960d13ed7460359015a92d19a10aa4bb768f10f5864d2bc52f58a8"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O6CancellationAB.swift"
+     ],
+     "product_lines": 433,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O6CancellationAB.swift",
+     "product_sha256": "5c81ff135c7d795c4d8021d51f308568588ffc4f53cdc178d0882cf2a258f119"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O6ExecutionStateOversized.swift"
+     ],
+     "product_lines": 942,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O6ExecutionStateOversized.swift",
+     "product_sha256": "fe34e98313a3f471ef4097c4b3006d9e59bec546afdae5172c91218ed628821e"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O6FixedPrefixPhaseStudy.swift"
+     ],
+     "product_lines": 75,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O6FixedPrefixPhaseStudy.swift",
+     "product_sha256": "9b309493f0ab9a5d0f4996780bf4340559e8182851a36c6c01491adb49eedfc3"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/O6SegmentPhaseProfiler.swift"
+     ],
+     "product_lines": 169,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O6SegmentPhaseProfiler.swift",
+     "product_sha256": "75ae5b7768dc7e5234fa0f215268b924e109f7ea977114d630b18c55908a33f9"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/OversizedSegmentMaterializer.swift"
+     ],
+     "product_lines": 43,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentMaterializer.swift",
+     "product_sha256": "df6e189aa3e055ae0218eae7023eb936019f460d589646dda659b4ff7d95d1c7"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/OversizedSegmentedEngine.swift"
+     ],
+     "product_lines": 906,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentedEngine.swift",
+     "product_sha256": "6ca728894103e043b7dd619f3b53e46692fc304d63e63a82e2d45b4c38f46662"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/OversizedTokenLedger.swift"
+     ],
+     "product_lines": 159,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedTokenLedger.swift",
+     "product_sha256": "e4b403a080efa62bab666bf70aa7433e50a425d8898090e0c2cf4ef647a09195"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/PerTensorSafetensorsReader.swift"
+     ],
+     "product_lines": 141,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/PerTensorSafetensorsReader.swift",
+     "product_sha256": "5df739791a2c12b6ec01f9dc52163f210b1bf9c1daee4578d07925416d5143dd"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/PlannerBudgetSweep.swift"
+     ],
+     "product_lines": 143,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/PlannerBudgetSweep.swift",
+     "product_sha256": "6a3e8547c53b57aafa555778b920a45ac92cf7eeedc58ae60260ae727630e241"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/PrefixSnapshotStore.swift"
+     ],
+     "product_lines": 289,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/PrefixSnapshotStore.swift",
+     "product_sha256": "38d05d18ae18425bfe5156c339b5056fb490249862dbdc413b847e5731ab12d5"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/RepresentationCaptureAudit.swift"
+     ],
+     "product_lines": 100,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/RepresentationCaptureAudit.swift",
+     "product_sha256": "b8db3846673e0d5df1ed46c2008f198c79170b0761b91308dbcca5090352df03"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ResidencyBenchmark.swift"
+     ],
+     "product_lines": 43,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ResidencyBenchmark.swift",
+     "product_sha256": "73f6256229a3ecfdefc07f967fd34a2e0ba88cc18299a834d8f6be230352a66e"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ResidencyContractStateMachine.swift"
+     ],
+     "product_lines": 200,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ResidencyContractStateMachine.swift",
+     "product_sha256": "2c087a860067c6ef3bc609ed1297eb8491518fb0db6545b2c4eaf447200aedf1"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ResidencyController.swift"
+     ],
+     "product_lines": 333,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ResidencyController.swift",
+     "product_sha256": "116ace13f65545fca6f41d58ce66d48a8130a65d7cb562c8dc982e9fcd0d8d0c"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/ResidencyPolicyKind.swift"
+     ],
+     "product_lines": 146,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ResidencyPolicyKind.swift",
+     "product_sha256": "84593e3762bbe3d1afb119f08e905c32c528d54d429463fcabdda3a24f84ee42"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/SafetensorsGroupMaterializer.swift"
+     ],
+     "product_lines": 152,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/SafetensorsGroupMaterializer.swift",
+     "product_sha256": "fc55685af01fb8a0522f543748d42f2ef60c234e277a7eb06af793ec3ea32957"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/SafetensorsInventory.swift"
+     ],
+     "product_lines": 222,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/SafetensorsInventory.swift",
+     "product_sha256": "c7cc2fb894d59cd1e257e66acdbe98903a67264712bc2a20294fd1e9dbf193be"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/StateSequenceSweep.swift"
+     ],
+     "product_lines": 77,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/StateSequenceSweep.swift",
+     "product_sha256": "97e45aa47eb6abcfde0d0ee69d468dfb611d8bb68bd12981807c113bad34d44c"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/UIBranchSessions.swift"
+     ],
+     "product_lines": 3228,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/UIBranchSessions.swift",
+     "product_sha256": "f318f197d25f5803de678f265bbc7304368bbbd44bb76195d984e19aa01b1280"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/UnsafeSendableBox.swift"
+     ],
+     "product_lines": 8,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/UnsafeSendableBox.swift",
+     "product_sha256": "0e9ce7b58db83ff2e241de38f3b4dd0e798749beacaaf8e03d840767cf423a72"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/WorkloadTrace.swift"
+     ],
+     "product_lines": 420,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/WorkloadTrace.swift",
+     "product_sha256": "2b9deebf699951ed32e7856dc5a3dc8ee1e6f1a2c9cc2a4ebf7ba0adaf73066c"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/GroupExecutionTraceProbe.swift"
+     ],
+     "product_lines": 594,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/GroupExecutionTraceProbe.swift",
+     "product_sha256": "d8e57129d52c27746a76f6ca4231271875542992051fbe89895809c24a1883b5"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/InstrumentationIdentityProbe.swift"
+     ],
+     "product_lines": 532,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/InstrumentationIdentityProbe.swift",
+     "product_sha256": "9964f589794616d96e050a8a7d62cc471984407049f5c4e6171a045f4f1b5c50"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/MeasuredExecutionTracePilot.swift"
+     ],
+     "product_lines": 442,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/MeasuredExecutionTracePilot.swift",
+     "product_sha256": "a1dcb410c6733f3a3ee294edaaa5939a8c0df33e1d8b6e4a1995f8f4c71141db"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/MeasuredTraceCollection.swift"
+     ],
+     "product_lines": 270,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/MeasuredTraceCollection.swift",
+     "product_sha256": "3193eb26dbd8031bc3ccc433aea277f60c16c15d0456a1749af11b40ff3c6d63"
+    }
+   ]
+  },
+  "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract": {
+   "committed_match": 2,
+   "diverged": 1,
+   "files": 11,
+   "identical": 3,
+   "identical_but_lab_uncommitted": 1,
+   "product_only": 7,
+   "rows": [
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionContinuityContract.swift"
+     ],
+     "product_lines": 165,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ExecutionContinuityContract.swift",
+     "product_sha256": "ea173a63ad975592fc815d5739de233b70e9056fe2ecad38969eca280275e051"
+    },
+    {
+     "class": "SAME_NAME_DIVERGED",
+     "lab_candidates": [
+      "simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionStateBackendContract.swift"
+     ],
+     "product_lines": 72,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ExecutionStateBackendContract.swift",
+     "product_sha256": "c19b91e475b217568a3f2d1f54a0ad3161d1b93d2330eed76892575fff10c4b5"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "NOT_TRACKED_AT_HEAD",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGo2Experimental/NativeDeclarativeResultContract.swift"
+     ],
+     "product_lines": 681,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/NativeDeclarativeResultContract.swift",
+     "product_sha256": "4a6cefed94faefe34deea566c02e29b1bc4153c6e802fb2c45d7ef9d19f0b639"
+    },
+    {
+     "class": "IDENTICAL",
+     "lab_head_state": "committed_match",
+     "lab_paths": [
+      "simigo2-experimental/Sources/SimiGoRuntimeContract/RuntimeBackendContract.swift"
+     ],
+     "product_lines": 67,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/RuntimeBackendContract.swift",
+     "product_sha256": "00156bc5d2afa2548c0b6f7cd7dccea40342e82efd91ec473fe4b1ce06b0038f"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 160,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoBootstrap.swift",
+     "product_sha256": "5061b8f7b0496407d237f371996ace6f971d341636fea5e773c81216d7840e1b"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 1131,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
+     "product_sha256": "d9b705a80c57a7b090047e94c0a60e09bcf9c622f5e31112bdd96979d7c979a2"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 240,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift",
+     "product_sha256": "dedcbcd3d24bf3ac504079b743ca8876df407714ae80345cf219a77a56b2794f"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 124,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoModelDiscovery.swift",
+     "product_sha256": "74d0b59eedb0fa2acedce1bab20ff9b362a271ce7b6d6a1cb8e08caef7739522"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 115,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoPaths.swift",
+     "product_sha256": "2d1242324a0303ee9ea8dd414c2ae296a1256edce73e63e9255d659e33361202"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 74,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementAuthority.swift",
+     "product_sha256": "ea190d32ffce169be7898106fabcc74db367345dce2c537ef23ca09a15d685e1"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 106,
+     "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift",
+     "product_sha256": "6e5e7db8baad6f53be44cafbe6e707cf44b72f7b3e291448d5ea23358928dfa0"
+    }
+   ]
+  },
+  "SimiGo": {
+   "committed_match": 0,
+   "diverged": 0,
+   "files": 38,
+   "identical": 0,
+   "identical_but_lab_uncommitted": 0,
+   "product_only": 38,
+   "rows": [
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 136,
+     "product_path": "SimiGo/App/CloudBackend.swift",
+     "product_sha256": "af84a34544acc97adaffd6e1a22927ecefc36ab361215ab5dc12fbb7a5ce9d24"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 282,
+     "product_path": "SimiGo/App/Config.swift",
+     "product_sha256": "58418e9fd18db328deb9188f902df96e977cd7b65b6472668995708ea152a331"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 1102,
+     "product_path": "SimiGo/App/ExecutionStateGraph.swift",
+     "product_sha256": "abee553d5f0140fed24fe044f2285ebb3679cbc848118b9dd6124aae3231c79a"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 359,
+     "product_path": "SimiGo/App/MenuApp.swift",
+     "product_sha256": "e56ed032e7e8376678aa48e96ae641e508e2c81340b340f40b58a4a3c02092d3"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 449,
+     "product_path": "SimiGo/App/Settings.swift",
+     "product_sha256": "cf2dbc19680eb90f710fea89d8983446fc84b6b6aa14c6aa169b6f91fa091733"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 34,
+     "product_path": "SimiGo/App/SimiGoBootstrapRunner.swift",
+     "product_sha256": "22cf07921cacf2df787dd1ea9d3bea1c1274af0abe3c7038ecb7f19a5e3e450d"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 194,
+     "product_path": "SimiGo/App/StatusBarCoordinator.swift",
+     "product_sha256": "4537cf64eada127f1c6f1422b6d43383ce3eaa45c9d951a7ca25a021c8323c86"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 437,
+     "product_path": "SimiGo/Lifecycle/RuntimeLifecycle.swift",
+     "product_sha256": "32b4c0c6ed4a873a3d69e0519a135b644c0b5aeafade69cb5bab719756c78026"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 254,
+     "product_path": "SimiGo/Lifecycle/RuntimeTuning.swift",
+     "product_sha256": "879490c1e1c2af80f4f447848f872a553baeaa502a0f4feb27ddde626cd0cc49"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 3294,
+     "product_path": "SimiGo/Protocol/HTTPServer.swift",
+     "product_sha256": "d478e0e8fb0709ce27a10ef48c1aeb0a4bb761b0a0c37d0c7bdb253068f32af0"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 1039,
+     "product_path": "SimiGo/Protocol/HTTPServerChat.swift",
+     "product_sha256": "b8421abc8d4f1ee71b2de00cc62c9f5d097696350757766a848b7f7dd923d5fa"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 742,
+     "product_path": "SimiGo/Protocol/HTTPServerCompletions.swift",
+     "product_sha256": "3c3b021e4f0ff3441a82ee35ccdfd9e9c624c9e156e110989171af2eb537eb68"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 2351,
+     "product_path": "SimiGo/Protocol/HTTPServerResponses.swift",
+     "product_sha256": "39976d9f1a3ce683d4105521cf20f8b0926132f814c32db11eb0f55936eac33f"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 132,
+     "product_path": "SimiGo/Protocol/RemoteOpenAIBackend.swift",
+     "product_sha256": "d5b7338d6490ffdbbffb8a29bdb17f6ed0d3052c7ee99f20a0a964a28f3025d9"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 128,
+     "product_path": "SimiGo/Observability/TraceLogger.swift",
+     "product_sha256": "a38e3b2be57255000aef82cba44b9ba36ed2fe4618b0cd3a6ce160b0601f8aba"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 340,
+     "product_path": "SimiGo/System/Detector.swift",
+     "product_sha256": "82a781015507086bb3c71ff23f9a4c227a72e0c3aa1aa0e6f89e0b4462a3f715"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 711,
+     "product_path": "SimiGo/System/EnvManager.swift",
+     "product_sha256": "c774534fc0a554bd7a2be0043a7d3a4b4751a10350db487d83df65f319fb6cbb"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 100,
+     "product_path": "SimiGo/System/ProcessRunner.swift",
+     "product_sha256": "b1c07f6aa0811a00a7761ad680b6c08ff2a99267544b01a02911e88ab0e57d29"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 1245,
+     "product_path": "SimiGo/System/Service.swift",
+     "product_sha256": "41d855837d534f517d35f70e6e332f63eea8663ea6f49dbc10f0b8554fe8a022"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 193,
+     "product_path": "SimiGo/Model/InferenceNodeCfg.swift",
+     "product_sha256": "df8b357d30b4bd0c31f923237d495709ff0c007563628174cdb36bd0ca65b39f"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 316,
+     "product_path": "SimiGo/Model/ModelTypes.swift",
+     "product_sha256": "223bc27356534d5a9c794a4657d2bd25a4c2b4790ae1544f83b367c4d6d29b61"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 161,
+     "product_path": "SimiGo/Model/TypesBridge.swift",
+     "product_sha256": "862093d081c79a511b23066785e240993a5056633f2cc83038eec639416e4995"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 136,
+     "product_path": "SimiGo/Inference/BranchCheckpointRetention.swift",
+     "product_sha256": "c3ea05b18f4b2bb1d8f3db6dbc7a65e9b66e655c94d050850acee128f2fd0368"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 143,
+     "product_path": "SimiGo/Inference/ExecutionControlling.swift",
+     "product_sha256": "d7430fd65f238a6d148f6d3565f57f313f8ffb6459084b1ff20aedf88c1a06c4"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 95,
+     "product_path": "SimiGo/Inference/ExecutionLineage.swift",
+     "product_sha256": "22d134db3cbe8a3fd207a6911645a8710c7b32a46e401d160122f21b58f5a047"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 312,
+     "product_path": "SimiGo/Inference/ExecutionPolicy.swift",
+     "product_sha256": "7c9f0c5d5737b936ae6de33e20fb2b0130285a9950cdd319506424dcfd3c96c4"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 88,
+     "product_path": "SimiGo/Inference/ExecutionStateProjection.swift",
+     "product_sha256": "e01c215ea1bfa55797e663c938691ce4c21c158a33b4f5468fca9461683a9817"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 205,
+     "product_path": "SimiGo/Inference/LOCALBHostRuntime.swift",
+     "product_sha256": "41505471419686f6d1ec9aeacc2acd003e259efc08c4499499a60d6ac604948d"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 78,
+     "product_path": "SimiGo/Inference/LOCALBTransportPolicy.swift",
+     "product_sha256": "29c569f21a2c672aa6c2abda5a4f8ab8906d5d155494443c27c40a22e722d252"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 308,
+     "product_path": "SimiGo/Inference/LifecycleGates.swift",
+     "product_sha256": "426a5cfd6390dfc56d28848d2a8ea233c45679cf6da27dcbbb7c47b115d0dcca"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 2840,
+     "product_path": "SimiGo/Inference/NativeMLX.swift",
+     "product_sha256": "24bd5a083306d98fd585ae8388890388ac62f7e1244f4b17008afbea9166a71b"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 148,
+     "product_path": "SimiGo/Inference/NativeMLXObservation.swift",
+     "product_sha256": "82bcad5323a97e3502f6253a7b9f4e6ef0ef85a83564b3963f5c2bab8ea84f68"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 270,
+     "product_path": "SimiGo/Inference/NativeMLXPrefixPool.swift",
+     "product_sha256": "976e8aa5f16414213b42b20abf3de0f89a57d64d0cf1e1ea3a0d12aaa4047ada"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 261,
+     "product_path": "SimiGo/Inference/OversizedRuntime.swift",
+     "product_sha256": "779e7b901a55005a192a1e10ac2b335b11e290dc621e99f676eefe5cce5fcb25"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 110,
+     "product_path": "SimiGo/Inference/RemoteOpenAIRuntime.swift",
+     "product_sha256": "665e93e94845f9e029c520218bf7b5d241b41f3176e96305e2bd55d85a145418"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 208,
+     "product_path": "SimiGo/Inference/StreamTokenFilter.swift",
+     "product_sha256": "0e0d684237d813ec83006a0698c408136d862a4d26b3d00b8a7a495d075e1c54"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 360,
+     "product_path": "SimiGo/Inference/ToolGovernance.swift",
+     "product_sha256": "1d0fa5dc4342f9aaae16fad746b270eb6fcb193eda470db080d91358cd2e6db8"
+    },
+    {
+     "class": "PRODUCT_ONLY",
+     "product_lines": 777,
+     "product_path": "SimiGo/Headless/SimiGoG1G3Entry.swift",
+     "product_sha256": "9a1e2b1670995b4b4f941ece79eb6f196769aeea22ae501668b5ceacbe55bfa4"
+    }
+   ]
+  }
+ },
+ "product_branch": "localb-b3-closure-20261016",
+ "product_head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+ "product_repo": "/Users/mr.simi/Documents/SimiGo",
+ "property": "lab_head_state: committed_match = product file equals the Lab HEAD blob"
+}

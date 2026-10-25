@@ -1,0 +1,9 @@
+{
+  "durable_acknowledgement" : true,
+  "fixture_instance_id" : "E3645CE9-F8E3-4DF5-8644-33CD96143F9C",
+  "schema_version" : "es-csp/durable-ack-v1",
+  "session_locator" : "uasession:BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+  "snapshot_event_count" : 6,
+  "snapshot_mapping_count" : 6,
+  "snapshot_read_version" : 12
+}

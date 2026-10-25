@@ -1,0 +1,11 @@
+{
+  "artifact_state": "FAILURE_POST_STOP_CAPTURE",
+  "campaign_returncode": 1,
+  "experiment_id": "MINIMAL-PIR-EXP-001",
+  "stop_code": "MINIMAL_PIR_OBSERVATION_JSONL_BYTES_TO_TEXT_PERSISTENCE_DEFECT",
+  "root_cause_class": "HARNESS_EXPERIMENT_EVIDENCE_BYTES_TO_TEXT_PERSISTENCE_DEFECT",
+  "failure_message": "TypeError: data must be str, not bytes while writing EV-P08 physical reconciliation observations",
+  "post_stop_capture": true,
+  "rerun_performed": false,
+  "repair_performed": false
+}

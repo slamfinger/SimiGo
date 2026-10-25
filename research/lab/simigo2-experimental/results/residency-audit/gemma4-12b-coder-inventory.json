@@ -1,0 +1,38 @@
+{
+  "groups" : [
+    {
+      "alwaysResident" : true,
+      "byteCount" : 1921416800,
+      "id" : "CORE_NON_SWITCH",
+      "layerRangeDescription" : "all",
+      "tensorCount" : 892,
+      "title" : "Non-MLP tensors"
+    },
+    {
+      "alwaysResident" : false,
+      "byteCount" : 1592524800,
+      "id" : "DENSE_MLP_L00_15",
+      "layerRangeDescription" : "0-15",
+      "tensorCount" : 144,
+      "title" : "Dense MLP layers 0-15"
+    },
+    {
+      "alwaysResident" : false,
+      "byteCount" : 1592524800,
+      "id" : "DENSE_MLP_L16_31",
+      "layerRangeDescription" : "16-31",
+      "tensorCount" : 144,
+      "title" : "Dense MLP layers 16-31"
+    },
+    {
+      "alwaysResident" : false,
+      "byteCount" : 1592524800,
+      "id" : "DENSE_MLP_L32_47",
+      "layerRangeDescription" : "32-47",
+      "tensorCount" : 144,
+      "title" : "Dense MLP layers 32-47"
+    }
+  ],
+  "tensorCount" : 1324,
+  "totalBytes" : 6698991200
+}

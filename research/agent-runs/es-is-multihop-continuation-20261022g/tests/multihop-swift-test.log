@@ -1,0 +1,58 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 1389]
+[Planning deferred tasks]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[7 / 110]
+[20 / 36] SimiGoRuntimeContractTests-product
+[22 / 35] SimiGoDetachedDriver-product
+[24 / 37] SimiGoDetachedDriver-product
+[25 / 37] RealModelHandoff-product
+[25 / 37] MaterializationQuarantineCrashChild-product
+[26 / 43] SimiGo2App-product
+[28 / 43] SimiGoDetachedDriver-product
+[31 / 43] SimiGoDetachedDriver-product
+[36 / 47]
+[41 / 50] ExecutionStateChaosChild-product
+[44 / 53] EngineBaselineCrashChild-product
+[48 / 57] ActualMLXSmokeChild-product
+[49 / 60] SimiGo2ExperimentalTests-product/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeModelExecutorStub.swift:5:7: [1;33mwarning: [1;39mstored property 'seedTokenError' of 'Sendable'-conforming class 'ProductionRuntimeModelExecutorStub' is mutable; this is an error in the Swift 6 language mode[0;0m
+  [0;36m3 |[0;0m 
+  [0;36m4 |[0;0m final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuationExecutor {
+  [0;36m5 |[0;0m   var seedTokenError: Error?
+    [0;36m|[0;0m       `- [1;33mwarning: [1;39mstored property 'seedTokenError' of 'Sendable'-conforming class 'ProductionRuntimeModelExecutorStub' is mutable; this is an error in the Swift 6 language mode[0;0m
+  [0;36m6 |[0;0m   var continuationError: Error?
+  [0;36m7 |[0;0m   var nextInputError: Error?
+
+[56 / 60] SimiGo2ExperimentalTests-product
+[58 / 60] SimiGo2ExperimentalTests-product
+Build complete! (4.21秒)
+Test Suite 'Selected tests' started at 2026-10-22 19:03:10.477.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-22 19:03:10.478.
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-22 19:03:10.478.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 19:03:10.478.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-22 19:03:10.602.
+Test Suite 'SimiGo2ExperimentalTests.xctest' started at 2026-10-22 19:03:10.602.
+Test Suite 'MultihopContinuationEntryTests' started at 2026-10-22 19:03:10.602.
+Test Case '-[SimiGo2ExperimentalTests.MultihopContinuationEntryTests testDetachedDriverRefusesNonEmptyThirdStateDirectory]' started.
+Test Case '-[SimiGo2ExperimentalTests.MultihopContinuationEntryTests testDetachedDriverRefusesNonEmptyThirdStateDirectory]' passed (0.495 seconds).
+Test Case '-[SimiGo2ExperimentalTests.MultihopContinuationEntryTests testMultihopU3AdmitsFullTransitiveClosureAndReachesModel]' started.
+Test Case '-[SimiGo2ExperimentalTests.MultihopContinuationEntryTests testMultihopU3AdmitsFullTransitiveClosureAndReachesModel]' passed (0.540 seconds).
+Test Case '-[SimiGo2ExperimentalTests.MultihopContinuationEntryTests testMultihopU3RefusesBeforeModelWhenTransitiveU1Missing]' started.
+Test Case '-[SimiGo2ExperimentalTests.MultihopContinuationEntryTests testMultihopU3RefusesBeforeModelWhenTransitiveU1Missing]' passed (0.342 seconds).
+Test Case '-[SimiGo2ExperimentalTests.MultihopContinuationEntryTests testOrdinaryExecutableProbeOnU3AdmitsAndRefusesWithoutModelWork]' started.
+Test Case '-[SimiGo2ExperimentalTests.MultihopContinuationEntryTests testOrdinaryExecutableProbeOnU3AdmitsAndRefusesWithoutModelWork]' passed (2.049 seconds).
+Test Suite 'MultihopContinuationEntryTests' passed at 2026-10-22 19:03:14.029.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 3.426 (3.427) seconds
+Test Suite 'SimiGo2ExperimentalTests.xctest' passed at 2026-10-22 19:03:14.029.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 3.426 (3.427) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 19:03:14.029.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 3.426 (3.427) seconds
+Test Suite 'Selected tests' started at 2026-10-22 19:03:14.099.
+Test Suite 'G3D1SupervisorTests.xctest' started at 2026-10-22 19:03:14.101.
+Test Suite 'G3D1SupervisorTests.xctest' passed at 2026-10-22 19:03:14.101.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 19:03:14.101.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds

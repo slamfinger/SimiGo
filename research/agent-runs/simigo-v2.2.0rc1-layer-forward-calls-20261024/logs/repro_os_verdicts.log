@@ -1,0 +1,9 @@
+# verdict 复现检查（从留存 raw 重新生成，与在盘判定文件逐字节比较）
+# generated_at: 2026-10-24T19:35:18+0800  cmd: python3 driver/verify_os_page_return.py evidence/os_page_return_raw_<rid>.json /tmp/repro_<rid>.json 20 1500
+os4 rc=1 IDENTICAL sha=5ccc40349eb6311f
+os5 rc=0 IDENTICAL sha=05b5113bec22f3ef
+os5b rc=1 IDENTICAL sha=b2b35eacf9f8fa2f
+os5c rc=1 IDENTICAL sha=d75736d738b98ca1
+os6a rc=0 IDENTICAL sha=330a730e1b3741f2
+os6b rc=0 IDENTICAL sha=534bd49702865973
+os6c rc=0 IDENTICAL sha=97a0a4e062418d8e

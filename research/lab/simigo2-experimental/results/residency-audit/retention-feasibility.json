@@ -1,0 +1,1508 @@
+{
+  "boundary": "OFFLINE_FEASIBILITY_AUDIT / CANDIDATE_POLICIES_NOT_OPTIMA / NOT_DEMAND / NOT_PREDICTION / NO_NEW_RUNTIME_OBSERVATION / PER_MODEL_PER_WORKLOAD_NO_POOLING",
+  "models": {
+    "cyber-tiel-35b": {
+      "T1_DOCUMENT_SESSION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 4831838208.0,
+              "reloadReductionBytes": 21743271936
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21102862048.0,
+            "peakResidentBytes": 21102862048,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 108716359680,
+            "retainedLeadingIntegralBytes": 90596966400
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 2983468768.0,
+            "peakResidentBytes": 2983468768,
+            "reloadTotalBytes": 108716359680,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 17478983392.0,
+            "peakResidentBytes": 17478983392,
+            "reloadTotalBytes": 36238786560,
+            "retainedIntegralBytes": 86973087744,
+            "retainedLeadingIntegralBytes": 72477573120
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 5,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 12647145184.0,
+            "peakResidentBytes": 17478983392,
+            "reloadTotalBytes": 57982058496,
+            "retainedIntegralBytes": 57982058496,
+            "retainedLeadingIntegralBytes": 50734301184
+          }
+        },
+        "currentPeakOptionalBytes": 14495514624,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 4348654387.200001,
+              "reloadReductionBytes": 21743271936
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21102862048.0,
+            "peakResidentBytes": 21102862048,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 90596966400,
+            "retainedLeadingIntegralBytes": 72477573120
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 2983468768.0,
+            "peakResidentBytes": 2983468768,
+            "reloadTotalBytes": 90596966400,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 17478983392.0,
+            "peakResidentBytes": 17478983392,
+            "reloadTotalBytes": 32614907904,
+            "retainedIntegralBytes": 72477573120,
+            "retainedLeadingIntegralBytes": 57982058496
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 13130329004.8,
+            "peakResidentBytes": 17478983392,
+            "reloadTotalBytes": 54358179840,
+            "retainedIntegralBytes": 50734301184,
+            "retainedLeadingIntegralBytes": 36238786560
+          }
+        },
+        "currentPeakOptionalBytes": 14495514624,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 7247757312.0,
+              "reloadReductionBytes": 65229815808
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 7247757312.0,
+              "reloadReductionBytes": 65229815808
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21102862048.0,
+            "peakResidentBytes": 21102862048,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 163074539520,
+            "retainedLeadingIntegralBytes": 144955146240
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 2983468768.0,
+            "peakResidentBytes": 2983468768,
+            "reloadTotalBytes": 163074539520,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21102862048.0,
+            "peakResidentBytes": 21102862048,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 163074539520,
+            "retainedLeadingIntegralBytes": 144955146240
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 8,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 13855104736.0,
+            "peakResidentBytes": 21102862048,
+            "reloadTotalBytes": 83349209088,
+            "retainedIntegralBytes": 97844723712,
+            "retainedLeadingIntegralBytes": 79725330432
+          }
+        },
+        "currentPeakOptionalBytes": 18119393280,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 2899102924.799999,
+              "reloadReductionBytes": 14495514624
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 2899102924.799999,
+              "reloadReductionBytes": 14495514624
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21102862048.0,
+            "peakResidentBytes": 21102862048,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 90596966400,
+            "retainedLeadingIntegralBytes": 72477573120
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 2983468768.0,
+            "peakResidentBytes": 2983468768,
+            "reloadTotalBytes": 90596966400,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21102862048.0,
+            "peakResidentBytes": 21102862048,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 90596966400,
+            "retainedLeadingIntegralBytes": 72477573120
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 4,
+            "meanResidentBytes": 18203759123.2,
+            "peakResidentBytes": 21102862048,
+            "reloadTotalBytes": 32614907904,
+            "retainedIntegralBytes": 76101451776,
+            "retainedLeadingIntegralBytes": 57982058496
+          }
+        },
+        "currentPeakOptionalBytes": 18119393280,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    },
+    "gemma4-12b-coder": {
+      "T1_DOCUMENT_SESSION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 1061683200.0,
+              "reloadReductionBytes": 4777574400
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 6698991200.0,
+            "peakResidentBytes": 6698991200,
+            "reloadTotalBytes": 4777574400,
+            "retainedIntegralBytes": 28665446400,
+            "retainedLeadingIntegralBytes": 23887872000
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 1921416800.0,
+            "peakResidentBytes": 1921416800,
+            "reloadTotalBytes": 28665446400,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 5106466400.0,
+            "peakResidentBytes": 5106466400,
+            "reloadTotalBytes": 12740198400,
+            "retainedIntegralBytes": 19110297600,
+            "retainedLeadingIntegralBytes": 15925248000
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 5,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 4044783200.0,
+            "peakResidentBytes": 5106466400,
+            "reloadTotalBytes": 17517772800,
+            "retainedIntegralBytes": 12740198400,
+            "retainedLeadingIntegralBytes": 11147673600
+          }
+        },
+        "currentPeakOptionalBytes": 3185049600,
+        "optionalTotalBytes": 4777574400,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 955514880.0,
+              "reloadReductionBytes": 4777574400
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 6698991200.0,
+            "peakResidentBytes": 6698991200,
+            "reloadTotalBytes": 4777574400,
+            "retainedIntegralBytes": 23887872000,
+            "retainedLeadingIntegralBytes": 19110297600
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 1921416800.0,
+            "peakResidentBytes": 1921416800,
+            "reloadTotalBytes": 23887872000,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 5106466400.0,
+            "peakResidentBytes": 5106466400,
+            "reloadTotalBytes": 11147673600,
+            "retainedIntegralBytes": 15925248000,
+            "retainedLeadingIntegralBytes": 12740198400
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 4150951520.0,
+            "peakResidentBytes": 5106466400,
+            "reloadTotalBytes": 15925248000,
+            "retainedIntegralBytes": 11147673600,
+            "retainedLeadingIntegralBytes": 7962624000
+          }
+        },
+        "currentPeakOptionalBytes": 3185049600,
+        "optionalTotalBytes": 4777574400,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 2300313600.0,
+              "reloadReductionBytes": 20702822400
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 2300313600.0,
+              "reloadReductionBytes": 20702822400
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 6698991200.0,
+            "peakResidentBytes": 6698991200,
+            "reloadTotalBytes": 4777574400,
+            "retainedIntegralBytes": 42998169600,
+            "retainedLeadingIntegralBytes": 38220595200
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 1921416800.0,
+            "peakResidentBytes": 1921416800,
+            "reloadTotalBytes": 42998169600,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 6698991200.0,
+            "peakResidentBytes": 6698991200,
+            "reloadTotalBytes": 4777574400,
+            "retainedIntegralBytes": 42998169600,
+            "retainedLeadingIntegralBytes": 38220595200
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 8,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 4398677600.0,
+            "peakResidentBytes": 6698991200,
+            "reloadTotalBytes": 25480396800,
+            "retainedIntegralBytes": 22295347200,
+            "retainedLeadingIntegralBytes": 17517772800
+          }
+        },
+        "currentPeakOptionalBytes": 4777574400,
+        "optionalTotalBytes": 4777574400,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 955514880.0,
+              "reloadReductionBytes": 4777574400
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 955514880.0,
+              "reloadReductionBytes": 4777574400
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 6698991200.0,
+            "peakResidentBytes": 6698991200,
+            "reloadTotalBytes": 4777574400,
+            "retainedIntegralBytes": 23887872000,
+            "retainedLeadingIntegralBytes": 19110297600
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 1921416800.0,
+            "peakResidentBytes": 1921416800,
+            "reloadTotalBytes": 23887872000,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 6698991200.0,
+            "peakResidentBytes": 6698991200,
+            "reloadTotalBytes": 4777574400,
+            "retainedIntegralBytes": 23887872000,
+            "retainedLeadingIntegralBytes": 19110297600
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 4,
+            "meanResidentBytes": 5743476320.0,
+            "peakResidentBytes": 6698991200,
+            "reloadTotalBytes": 9555148800,
+            "retainedIntegralBytes": 19110297600,
+            "retainedLeadingIntegralBytes": 14332723200
+          }
+        },
+        "currentPeakOptionalBytes": 4777574400,
+        "optionalTotalBytes": 4777574400,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    },
+    "muse-glimmer-30b": {
+      "T1_DOCUMENT_SESSION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 2691366912.0,
+              "reloadReductionBytes": 12111151104
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 15670313984.0,
+            "peakResidentBytes": 15670313984,
+            "reloadTotalBytes": 11662589952,
+            "retainedIntegralBytes": 69975539712,
+            "retainedLeadingIntegralBytes": 58312949760
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 4007724032.0,
+            "peakResidentBytes": 4007724032,
+            "reloadTotalBytes": 69975539712,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 12081824768.0,
+            "peakResidentBytes": 12081824768,
+            "reloadTotalBytes": 29605036032,
+            "retainedIntegralBytes": 48444604416,
+            "retainedLeadingIntegralBytes": 40370503680
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 5,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 9390457856.0,
+            "peakResidentBytes": 12081824768,
+            "reloadTotalBytes": 41716187136,
+            "retainedIntegralBytes": 32296402944,
+            "retainedLeadingIntegralBytes": 28259352576
+          }
+        },
+        "currentPeakOptionalBytes": 8074100736,
+        "optionalTotalBytes": 11662589952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 2422230220.799999,
+              "reloadReductionBytes": 12111151104
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 15670313984.0,
+            "peakResidentBytes": 15670313984,
+            "reloadTotalBytes": 11662589952,
+            "retainedIntegralBytes": 58312949760,
+            "retainedLeadingIntegralBytes": 46650359808
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 4007724032.0,
+            "peakResidentBytes": 4007724032,
+            "reloadTotalBytes": 58312949760,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 12081824768.0,
+            "peakResidentBytes": 12081824768,
+            "reloadTotalBytes": 26016546816,
+            "retainedIntegralBytes": 40370503680,
+            "retainedLeadingIntegralBytes": 32296402944
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 9659594547.2,
+            "peakResidentBytes": 12081824768,
+            "reloadTotalBytes": 38127697920,
+            "retainedIntegralBytes": 28259352576,
+            "retainedLeadingIntegralBytes": 20185251840
+          }
+        },
+        "currentPeakOptionalBytes": 8074100736,
+        "optionalTotalBytes": 11662589952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 5432573952.0,
+              "reloadReductionBytes": 48893165568
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 5432573952.0,
+              "reloadReductionBytes": 48893165568
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 15670313984.0,
+            "peakResidentBytes": 15670313984,
+            "reloadTotalBytes": 11662589952,
+            "retainedIntegralBytes": 104963309568,
+            "retainedLeadingIntegralBytes": 93300719616
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 4007724032.0,
+            "peakResidentBytes": 4007724032,
+            "reloadTotalBytes": 104963309568,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 15670313984.0,
+            "peakResidentBytes": 15670313984,
+            "reloadTotalBytes": 11662589952,
+            "retainedIntegralBytes": 104963309568,
+            "retainedLeadingIntegralBytes": 93300719616
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 8,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 10237740032.0,
+            "peakResidentBytes": 15670313984,
+            "reloadTotalBytes": 60555755520,
+            "retainedIntegralBytes": 56070144000,
+            "retainedLeadingIntegralBytes": 44407554048
+          }
+        },
+        "currentPeakOptionalBytes": 11662589952,
+        "optionalTotalBytes": 11662589952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 2242805760.0,
+              "reloadReductionBytes": 11214028800
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 2242805760.0,
+              "reloadReductionBytes": 11214028800
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 15670313984.0,
+            "peakResidentBytes": 15670313984,
+            "reloadTotalBytes": 11662589952,
+            "retainedIntegralBytes": 58312949760,
+            "retainedLeadingIntegralBytes": 46650359808
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 4007724032.0,
+            "peakResidentBytes": 4007724032,
+            "reloadTotalBytes": 58312949760,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 15670313984.0,
+            "peakResidentBytes": 15670313984,
+            "reloadTotalBytes": 11662589952,
+            "retainedIntegralBytes": 58312949760,
+            "retainedLeadingIntegralBytes": 46650359808
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 4,
+            "meanResidentBytes": 13427508224.0,
+            "peakResidentBytes": 15670313984,
+            "reloadTotalBytes": 22876618752,
+            "retainedIntegralBytes": 47098920960,
+            "retainedLeadingIntegralBytes": 35436331008
+          }
+        },
+        "currentPeakOptionalBytes": 11662589952,
+        "optionalTotalBytes": 11662589952,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    },
+    "nail-qwen36-35b": {
+      "T1_DOCUMENT_SESSION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 4831838208.0,
+              "reloadReductionBytes": 21743271936
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21634738912.0,
+            "peakResidentBytes": 21634738912,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 108716359680,
+            "retainedLeadingIntegralBytes": 90596966400
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 3515345632.0,
+            "peakResidentBytes": 3515345632,
+            "reloadTotalBytes": 108716359680,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 18010860256.0,
+            "peakResidentBytes": 18010860256,
+            "reloadTotalBytes": 36238786560,
+            "retainedIntegralBytes": 86973087744,
+            "retainedLeadingIntegralBytes": 72477573120
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 5,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 13179022048.0,
+            "peakResidentBytes": 18010860256,
+            "reloadTotalBytes": 57982058496,
+            "retainedIntegralBytes": 57982058496,
+            "retainedLeadingIntegralBytes": 50734301184
+          }
+        },
+        "currentPeakOptionalBytes": 14495514624,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 4348654387.200001,
+              "reloadReductionBytes": 21743271936
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21634738912.0,
+            "peakResidentBytes": 21634738912,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 90596966400,
+            "retainedLeadingIntegralBytes": 72477573120
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 3515345632.0,
+            "peakResidentBytes": 3515345632,
+            "reloadTotalBytes": 90596966400,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 18010860256.0,
+            "peakResidentBytes": 18010860256,
+            "reloadTotalBytes": 32614907904,
+            "retainedIntegralBytes": 72477573120,
+            "retainedLeadingIntegralBytes": 57982058496
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 13662205868.8,
+            "peakResidentBytes": 18010860256,
+            "reloadTotalBytes": 54358179840,
+            "retainedIntegralBytes": 50734301184,
+            "retainedLeadingIntegralBytes": 36238786560
+          }
+        },
+        "currentPeakOptionalBytes": 14495514624,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 7247757312.0,
+              "reloadReductionBytes": 65229815808
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 7247757312.0,
+              "reloadReductionBytes": 65229815808
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21634738912.0,
+            "peakResidentBytes": 21634738912,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 163074539520,
+            "retainedLeadingIntegralBytes": 144955146240
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 3515345632.0,
+            "peakResidentBytes": 3515345632,
+            "reloadTotalBytes": 163074539520,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21634738912.0,
+            "peakResidentBytes": 21634738912,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 163074539520,
+            "retainedLeadingIntegralBytes": 144955146240
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 8,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 14386981600.0,
+            "peakResidentBytes": 21634738912,
+            "reloadTotalBytes": 83349209088,
+            "retainedIntegralBytes": 97844723712,
+            "retainedLeadingIntegralBytes": 79725330432
+          }
+        },
+        "currentPeakOptionalBytes": 18119393280,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 2899102924.799999,
+              "reloadReductionBytes": 14495514624
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 2899102924.799999,
+              "reloadReductionBytes": 14495514624
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21634738912.0,
+            "peakResidentBytes": 21634738912,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 90596966400,
+            "retainedLeadingIntegralBytes": 72477573120
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 3515345632.0,
+            "peakResidentBytes": 3515345632,
+            "reloadTotalBytes": 90596966400,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 21634738912.0,
+            "peakResidentBytes": 21634738912,
+            "reloadTotalBytes": 18119393280,
+            "retainedIntegralBytes": 90596966400,
+            "retainedLeadingIntegralBytes": 72477573120
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 4,
+            "meanResidentBytes": 18735635987.2,
+            "peakResidentBytes": 21634738912,
+            "reloadTotalBytes": 32614907904,
+            "retainedIntegralBytes": 76101451776,
+            "retainedLeadingIntegralBytes": 57982058496
+          }
+        },
+        "currentPeakOptionalBytes": 18119393280,
+        "optionalTotalBytes": 18119393280,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    },
+    "qwen3-coder-30b": {
+      "T1_DOCUMENT_SESSION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 3623878656.0,
+              "reloadReductionBytes": 16307453952
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 17180913664.0,
+            "peakResidentBytes": 17180913664,
+            "reloadTotalBytes": 16307453952,
+            "retainedIntegralBytes": 97844723712,
+            "retainedLeadingIntegralBytes": 81537269760
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 873459712.0,
+            "peakResidentBytes": 873459712,
+            "reloadTotalBytes": 97844723712,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 11745095680.0,
+            "peakResidentBytes": 11745095680,
+            "reloadTotalBytes": 43486543872,
+            "retainedIntegralBytes": 65229815808,
+            "retainedLeadingIntegralBytes": 54358179840
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 5,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 6,
+            "meanResidentBytes": 8121217024.0,
+            "peakResidentBytes": 11745095680,
+            "reloadTotalBytes": 59793997824,
+            "retainedIntegralBytes": 43486543872,
+            "retainedLeadingIntegralBytes": 38050725888
+          }
+        },
+        "currentPeakOptionalBytes": 10871635968,
+        "optionalTotalBytes": 16307453952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_A",
+          "STATE_B",
+          "STATE_AB",
+          "STATE_A"
+        ]
+      },
+      "T2_COMPUTER_OPERATION": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 3261490790.3999996,
+              "reloadReductionBytes": 16307453952
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 17180913664.0,
+            "peakResidentBytes": 17180913664,
+            "reloadTotalBytes": 16307453952,
+            "retainedIntegralBytes": 81537269760,
+            "retainedLeadingIntegralBytes": 65229815808
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 873459712.0,
+            "peakResidentBytes": 873459712,
+            "reloadTotalBytes": 81537269760,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 11745095680.0,
+            "peakResidentBytes": 11745095680,
+            "reloadTotalBytes": 38050725888,
+            "retainedIntegralBytes": 54358179840,
+            "retainedLeadingIntegralBytes": 43486543872
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 8483604889.6,
+            "peakResidentBytes": 11745095680,
+            "reloadTotalBytes": 54358179840,
+            "retainedIntegralBytes": 38050725888,
+            "retainedLeadingIntegralBytes": 27179089920
+          }
+        },
+        "currentPeakOptionalBytes": 10871635968,
+        "optionalTotalBytes": 16307453952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB"
+        ]
+      },
+      "T3_AGENTIC_MULTI_TURN": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 7851737088.0,
+              "reloadReductionBytes": 70665633792
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 7851737088.0,
+              "reloadReductionBytes": 70665633792
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 17180913664.0,
+            "peakResidentBytes": 17180913664,
+            "reloadTotalBytes": 16307453952,
+            "retainedIntegralBytes": 146767085568,
+            "retainedLeadingIntegralBytes": 130459631616
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 873459712.0,
+            "peakResidentBytes": 873459712,
+            "reloadTotalBytes": 146767085568,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 17180913664.0,
+            "peakResidentBytes": 17180913664,
+            "reloadTotalBytes": 16307453952,
+            "retainedIntegralBytes": 146767085568,
+            "retainedLeadingIntegralBytes": 130459631616
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 8,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 9,
+            "meanResidentBytes": 9329176576.0,
+            "peakResidentBytes": 17180913664,
+            "reloadTotalBytes": 86973087744,
+            "retainedIntegralBytes": 76101451776,
+            "retainedLeadingIntegralBytes": 59793997824
+          }
+        },
+        "currentPeakOptionalBytes": 16307453952,
+        "optionalTotalBytes": 16307453952,
+        "states": [
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_B",
+          "STATE_A",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      },
+      "T4_LONG_CONTEXT": {
+        "V1_equalPeakBudget": {
+          "improvers": {
+            "CANDIDATE_ALL_RESIDENT": {
+              "meanResidencyIncreaseBytes": 3261490790.3999996,
+              "reloadReductionBytes": 16307453952
+            },
+            "CANDIDATE_FILL_PEAK": {
+              "meanResidencyIncreaseBytes": 3261490790.3999996,
+              "reloadReductionBytes": 16307453952
+            }
+          },
+          "improversExist": true
+        },
+        "V2_equalIntegralBudget": {
+          "consequence": "at equal retention time-integral (first n-1 steps) no policy can have lower total reload; improvement requires a higher resident-byte integral",
+          "frontierRelation": "reloadTotal = n*optionalTotal - retainedLeadingIntegral",
+          "identityHoldsAllCandidates": true
+        },
+        "V3_dominance": {
+          "consequence": "the current policy is not dominated on (reload, mean residency, peak); any reload gain pays with higher mean residency",
+          "dominatingCandidatesExist": false
+        },
+        "candidates": {
+          "CANDIDATE_ALL_RESIDENT": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 17180913664.0,
+            "peakResidentBytes": 17180913664,
+            "reloadTotalBytes": 16307453952,
+            "retainedIntegralBytes": 81537269760,
+            "retainedLeadingIntegralBytes": 65229815808
+          },
+          "CANDIDATE_CORE_ONLY": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 5,
+            "meanResidentBytes": 873459712.0,
+            "peakResidentBytes": 873459712,
+            "reloadTotalBytes": 81537269760,
+            "retainedIntegralBytes": 0,
+            "retainedLeadingIntegralBytes": 0
+          },
+          "CANDIDATE_FILL_PEAK": {
+            "evictTransitions": 0,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 1,
+            "meanResidentBytes": 17180913664.0,
+            "peakResidentBytes": 17180913664,
+            "reloadTotalBytes": 16307453952,
+            "retainedIntegralBytes": 81537269760,
+            "retainedLeadingIntegralBytes": 65229815808
+          },
+          "POLICY_STATE_RETENTION": {
+            "evictTransitions": 4,
+            "frontierIdentityHolds": true,
+            "loadTransitions": 4,
+            "meanResidentBytes": 13919422873.6,
+            "peakResidentBytes": 17180913664,
+            "reloadTotalBytes": 32614907904,
+            "retainedIntegralBytes": 65229815808,
+            "retainedLeadingIntegralBytes": 48922361856
+          }
+        },
+        "currentPeakOptionalBytes": 16307453952,
+        "optionalTotalBytes": 16307453952,
+        "states": [
+          "STATE_ALL",
+          "STATE_AB",
+          "STATE_BC",
+          "STATE_AB",
+          "STATE_ALL"
+        ]
+      }
+    }
+  },
+  "protocol": "G1.9-E0.FEASIBILITY.V1",
+  "verdict": {
+    "V1_equalPeak_improversExist": true,
+    "V2_equalIntegral_frontierExact": true,
+    "V3_noDominationOfCurrentPolicy": true,
+    "pairsChecked": 20,
+    "result": "FEASIBLE_TRADEOFF_SPACE_ONLY_NO_FREE_IMPROVEMENT"
+  }
+}

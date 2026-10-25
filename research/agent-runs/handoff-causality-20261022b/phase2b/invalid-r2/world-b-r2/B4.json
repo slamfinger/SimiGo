@@ -1,0 +1,37 @@
+{
+ "allowlisted_occurrences": {
+  "primary_database": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r2/pristine.sqlite",
+  "u1_item_prompt_seed": true,
+  "u1_settlement_result": true,
+  "u1_source_payload": true
+ },
+ "audited_at_utc": "2026-10-21T17:53:17Z",
+ "cross_contaminated": false,
+ "nonce_length": 32,
+ "nonce_sha256": "70d5a7ccb2cff7f6f654c4ffdb8811b9cb2392a0fcd4727891ca4129b61cc962",
+ "schema_id": "SIMIGO-CAUSALITY-PHASE2-B4-V1",
+ "surface_contains_nonce": {
+  "argv": false,
+  "cold_seed": false,
+  "environment": false,
+  "other_world_database": false,
+  "other_world_logs": false,
+  "other_world_state": false,
+  "pre_u2_evidence": false,
+  "pre_u2_logs": false,
+  "temporary_files": false,
+  "u2_base_template": false,
+  "u2_state_directory": false
+ },
+ "unexpected_hit_paths": {
+  "other_world_database": [],
+  "other_world_logs": [],
+  "other_world_state": [],
+  "pre_u2_evidence": [],
+  "pre_u2_logs": [],
+  "temporary_files": [],
+  "u2_state_directory": []
+ },
+ "verdict": "CLEAN",
+ "world": "world-b-r2"
+}

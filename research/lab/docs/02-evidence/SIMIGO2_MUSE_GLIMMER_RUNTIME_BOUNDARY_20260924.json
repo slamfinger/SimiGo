@@ -1,0 +1,48 @@
+{
+  "model": "OpensourceWTF/Muse-Glimmer-30B-MLX-q4",
+  "snapshot": "e1c987b60874388e68621c71b680643b1cb0ce03",
+  "config": {
+    "modelType": "muse_glimmer_text",
+    "architectures": null,
+    "numHiddenLayers": 52,
+    "hiddenSize": 6656,
+    "quantizationBits": 4
+  },
+  "checkpoint": {
+    "bytes": 17603109888,
+    "parameters": 27854780928,
+    "tensors": 1463,
+    "switchMLPTensors": 0,
+    "visionTensors": 0
+  },
+  "simigoInventory": {
+    "coreNonSwitch": {"tensors": 1463, "bytes": 17603109888},
+    "switchMLP_L00_15": {"tensors": 0, "bytes": 0},
+    "switchMLP_L16_31": {"tensors": 0, "bytes": 0},
+    "switchMLP_L32_47": {"tensors": 0, "bytes": 0}
+  },
+  "supportChange": {
+    "repository": "<LOCAL_HOME>/Documents/mlx-swift-lm",
+    "branch": "exp/execution-state-fork",
+    "commit": "4ff8c19",
+    "registeredModelType": "muse_glimmer_text",
+    "sourceReference": "mlx-lm upstream muse_glimmer.py language tower"
+  },
+  "runtime": {
+    "factory": "MLXLLM.LLMModelFactory.shared",
+    "loadResult": "PASS",
+    "forwardResult": "PASS",
+    "baselineOutput": "uk repeated for 24 tokens",
+    "restoredOutput": "same as baseline",
+    "outputEquals": true,
+    "activeMemoryBytes": 17604890160,
+    "peakMemoryBytes": 17634220738,
+    "chatTemplate": null
+  },
+  "conclusion": {
+    "runtimeLoadAndForward": "PASS",
+    "semanticQuality": "UNRESOLVED",
+    "simigoWholeGroupResidency": "NOT_APPLICABLE",
+    "reason": "no switch_mlp groups"
+  }
+}

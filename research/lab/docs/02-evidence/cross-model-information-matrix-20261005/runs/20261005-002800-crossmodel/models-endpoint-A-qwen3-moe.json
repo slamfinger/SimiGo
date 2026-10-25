@@ -1,0 +1,34 @@
+{
+  "data": [
+    {
+      "backend": "NativeMLX",
+      "id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+      "runtime": {
+        "constraints": [
+          "serializeGeneration=true：并发生成跨 session 单飞（qwen3_5_moe 编译锁互堵缓解，2026-09-11 实测）"
+        ],
+        "cacheInvalidation": "kvFingerprint mismatch → 旧缓存失效，全量 prefill",
+        "concurrency": "global single-flight (serializeGeneration=true)"
+      },
+      "contextLength": 262144,
+      "object": "model",
+      "architecture": "qwen3_moe",
+      "created": 1791131337,
+      "capabilities": {
+        "chat": "supported",
+        "reasoning": "unverified",
+        "streaming": "supported",
+        "vision": "unsupported",
+        "toolCalling": "supported",
+        "structuredOutput": "unverified"
+      },
+      "owned_by": "simigo",
+      "protocolEndpoints": {
+        "textCompletions": "supported",
+        "responses": "supported",
+        "chatCompletions": "supported"
+      }
+    }
+  ],
+  "object": "list"
+}

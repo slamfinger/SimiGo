@@ -1,0 +1,9 @@
+# M3 stage C probe round3 2026-10-23T19:02:57Z
+# target: installed RC binary /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+# method: poll this pid's listening socket, then probe the product HTTPServer
+# auth policy: NO relaxation. No valid LOCALB proof is fabricated.
+listening_socket_found=0
+authorized_request_completed=0
+probe_result=NO_SOCKET_WINDOW OBSERVED
+# launch attempt: pid=44399 (quit after probe)
+# isolated roots: /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3c

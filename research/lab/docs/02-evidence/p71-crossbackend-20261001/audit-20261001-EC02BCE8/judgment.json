@@ -1,0 +1,17 @@
+{
+  "cells" : {
+    "C1_identity" : "PASS",
+    "C2_position" : "PASS",
+    "C3_anchor" : "PASS",
+    "C4_continuation" : "PASS",
+    "C5_parent_non_pollution" : "PASS",
+    "verdict" : "CONTINUATION_VALIDATED_CROSSBACKEND"
+  },
+  "inputs" : {
+    "fork" : "audit-20261001-67D87B20",
+    "form" : "audit-20261001-5340FE99",
+    "pollution" : "audit-20261001-6BEE5FAE",
+    "restore" : "audit-20261001-95E010A2"
+  },
+  "overall" : "CONTINUATION_VALIDATED_CROSSBACKEND"
+}

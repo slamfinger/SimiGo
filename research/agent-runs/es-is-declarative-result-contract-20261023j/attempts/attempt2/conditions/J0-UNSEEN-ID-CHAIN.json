@@ -1,0 +1,904 @@
+{
+  "child_stdout": {
+    "bytes": 0,
+    "exists": true,
+    "path": "runs/J0/stdout/j0-p1.stdout.bin",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "contract_dispatch_basis": "declared_contract",
+  "evidence_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J0/evidence/j0-p1.json",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J0/evidence/j0-p2.json",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J0/evidence/j0-p3.json"
+  ],
+  "harness_direct_result_reads": 0,
+  "id": "J0-UNSEEN-ID-CHAIN",
+  "kind": "real_model",
+  "observations": {
+    "closure_signature_verified": true,
+    "contract_dispatch_basis": "declared_contract",
+    "expected_route_key": "NORTH>EAST",
+    "harness_direct_result_reads": 0,
+    "ids_unseen": true,
+    "item_ids": [
+      "J-28fb8aa8-U1",
+      "J-28fb8aa8-U2",
+      "J-28fb8aa8-U3"
+    ],
+    "observed_route_keys": {
+      "u1": "NORTH>EAST",
+      "u2": "NORTH>EAST",
+      "u3": "NORTH>EAST"
+    },
+    "old_state_or_prefix_copied": false,
+    "p2_u1_regeneration_count": 0,
+    "p3_u1_regeneration_count": 0,
+    "p3_u2_regeneration_count": 0,
+    "process_count": 3,
+    "run_token": "28fb8aa8",
+    "semantic_trace": {
+      "contract_validation_reports": [
+        {},
+        {},
+        {}
+      ],
+      "source_a": {
+        "object_id": "d61172a177df219d54006731f165726f521bf96c1286071b498ac79b65689059",
+        "payload": {
+          "origin_code": "NORTH"
+        }
+      },
+      "source_b": {
+        "object_id": "0100979192bca24d5fc4c10addcc4c6b2352189962f138cef0a02ae9df51ef35",
+        "payload": {
+          "destination_code": "EAST",
+          "priority": "5"
+        }
+      },
+      "u1_settlement": {
+        "object_id": "4dcea7f3bb17933afb228c6ac72bd038483fd6fff433a75bd16f976f9a8962f4",
+        "result": {
+          "destination_code": "EAST",
+          "origin_code": "NORTH",
+          "priority": "5",
+          "route_key": "NORTH>EAST"
+        },
+        "signature_envelope_id": "23d0c9f484728685799c069b86859eacb3e02abeec4016e023c9b72c16d0756d",
+        "signature_verified": true
+      },
+      "u2_input": {
+        "constructed_by_harness": false,
+        "fields_used": [
+          "priority",
+          "route_key"
+        ],
+        "source_settlement_object_id": "4dcea7f3bb17933afb228c6ac72bd038483fd6fff433a75bd16f976f9a8962f4",
+        "values": {
+          "priority": "5",
+          "route_key": "NORTH>EAST"
+        }
+      },
+      "u2_settlement": {
+        "object_id": "d5a14498f25822e6472687755f0e498d37ce0c7ab18465f0b066ea6930e0423d",
+        "result": {
+          "route_key": "NORTH>EAST"
+        },
+        "signature_envelope_id": "793dd92c83a56b0db17db66d0bd3f9471258cc920a8456ec716ab5a02d3600d8",
+        "signature_verified": true
+      },
+      "u3_input": {
+        "constructed_by_harness": false,
+        "fields_used": [
+          "route_key"
+        ],
+        "source_settlement_object_id": "d5a14498f25822e6472687755f0e498d37ce0c7ab18465f0b066ea6930e0423d",
+        "values": {
+          "route_key": "NORTH>EAST"
+        }
+      },
+      "u3_settlement": {
+        "object_id": "b285db1506bc8f63875adb63a78ffe18667da371e2a76b2ccc0210cfd70aff44",
+        "result": {
+          "route_key": "NORTH>EAST"
+        },
+        "signature_envelope_id": "7223c182d310a66eeadc74467a1e3a1f8c75973ccc14ee437555e0703b72d625",
+        "signature_verified": true
+      }
+    },
+    "stage_records": [
+      {
+        "child_stderr": {
+          "bytes": 0,
+          "exists": true,
+          "path": "runs/J0/stderr/j0-p1.stderr.bin",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "child_stdout": {
+          "bytes": 0,
+          "exists": true,
+          "path": "runs/J0/stdout/j0-p1.stdout.bin",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "computed_item_ids": [
+          "J-28fb8aa8-U1"
+        ],
+        "contract_dispatch_basis": "declared_contract",
+        "counters": {
+          "generation_calls": 1,
+          "model_loads": 1,
+          "seed_tokenize_calls": 1,
+          "text_tokenize_calls": 1
+        },
+        "declared_contract_audit": {
+          "contract_dispatch_basis": "declared_contract",
+          "contract_read": true,
+          "declared_contract_fields": [
+            "destination_code",
+            "origin_code",
+            "priority",
+            "route_key"
+          ],
+          "declared_contract_schema_version": "simigo.result-contract/v1",
+          "redeclared_extraction_matches_settled_value": true,
+          "reextracted_fields": {
+            "destination_code": "EAST",
+            "origin_code": "NORTH",
+            "priority": "5",
+            "route_key": "NORTH>EAST"
+          }
+        },
+        "declared_dependencies": [
+          "J-28fb8aa8-ORIGIN",
+          "J-28fb8aa8-DEST"
+        ],
+        "demand_id": "J-28fb8aa8-u1",
+        "generated_text": " ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5\nYou are executing one task step in a new execution instance.\nThe origin sector is SOUTH (route priority 2).\nThe destination sector is WEST",
+        "generation_calls": 1,
+        "initial_position": 0,
+        "input_text_sha256": "ddae3ba92aedfd78cc5e0a312358cfe15e760c2f446f2671412f1a49b699ad0a",
+        "logical_es_id": "j0-p1",
+        "model_load_count": 1,
+        "old_state_or_prefix_copied": false,
+        "output_text_sha256": "b42f33cab704b20254d9c43a091d461ac24ddb4e674a3be078926f13c5acf260",
+        "output_token_ids": [
+          2726,
+          55529,
+          51995,
+          35941,
+          198,
+          62571,
+          85234,
+          6349,
+          198,
+          99111,
+          51995,
+          35941,
+          59384,
+          6349,
+          198,
+          47,
+          34886,
+          28,
+          20,
+          198,
+          2610,
+          525,
+          30220,
+          825,
+          3383,
+          3019,
+          304,
+          264,
+          501,
+          11320,
+          2867,
+          624,
+          785,
+          6238,
+          10486,
+          374,
+          79615,
+          320,
+          8966,
+          10619,
+          220,
+          17,
+          4292,
+          785,
+          9106,
+          10486,
+          374,
+          65090
+        ],
+        "pid": 98026,
+        "recomputed_upstream_item_ids": [],
+        "result_digest": "77ae30cebd1f49202ea9d8afc158dba593e483dbc4f81b45cbaad84c55c8f04c",
+        "reused_item_ids": [
+          "J-28fb8aa8-ORIGIN",
+          "J-28fb8aa8-DEST"
+        ],
+        "runtime_execution_instance_id": "79b7ba35-bc2b-493b-882f-2805ce319d3a",
+        "seed_tokenize_calls": 1,
+        "settlement_object_id": "4dcea7f3bb17933afb228c6ac72bd038483fd6fff433a75bd16f976f9a8962f4",
+        "signature_envelope_id": "23d0c9f484728685799c069b86859eacb3e02abeec4016e023c9b72c16d0756d",
+        "stage": "P1",
+        "state_empty_at_start": true,
+        "task_item_id": "J-28fb8aa8-U1",
+        "terminal_state": "TASK_SETTLED",
+        "text_tokenize_calls": 1,
+        "wall_seconds": 18.357
+      },
+      {
+        "child_stderr": {
+          "bytes": 0,
+          "exists": true,
+          "path": "runs/J0/stderr/j0-p2.stderr.bin",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "child_stdout": {
+          "bytes": 0,
+          "exists": true,
+          "path": "runs/J0/stdout/j0-p2.stdout.bin",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "computed_item_ids": [
+          "J-28fb8aa8-U2"
+        ],
+        "contract_dispatch_basis": "declared_contract",
+        "counters": {
+          "generation_calls": 1,
+          "model_loads": 1,
+          "seed_tokenize_calls": 1,
+          "text_tokenize_calls": 1
+        },
+        "declared_contract_audit": {
+          "contract_dispatch_basis": "declared_contract",
+          "contract_read": true,
+          "declared_contract_fields": [
+            "route_key"
+          ],
+          "declared_contract_schema_version": "simigo.result-contract/v1",
+          "redeclared_extraction_matches_settled_value": true,
+          "reextracted_fields": {
+            "route_key": "NORTH>EAST"
+          }
+        },
+        "declared_dependencies": [
+          "J-28fb8aa8-U1"
+        ],
+        "demand_id": "J-28fb8aa8-u2",
+        "generated_text": " FLOW=NORTH>EAST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST",
+        "generation_calls": 1,
+        "initial_position": 0,
+        "input_text_sha256": "a6bdef8c257fe20050cb1906fdb64b1c9f4e85b1559e286591a85bc3855d964b",
+        "logical_es_id": "j0-p2",
+        "model_load_count": 1,
+        "old_state_or_prefix_copied": false,
+        "output_text_sha256": "5bf91453cdc87e97ab591395dd5fe3268f8521660073b415d04d5138d84763d6",
+        "output_token_ids": [
+          434,
+          9441,
+          51995,
+          35941,
+          59384,
+          6349,
+          198,
+          46060,
+          51995,
+          35941,
+          29,
+          94225,
+          198,
+          46060,
+          51995,
+          35941,
+          29,
+          94225,
+          198,
+          46060,
+          51995,
+          35941,
+          29,
+          94225,
+          198,
+          46060,
+          51995,
+          35941,
+          29,
+          94225,
+          198,
+          46060,
+          51995,
+          35941,
+          29,
+          94225,
+          198,
+          46060,
+          51995,
+          35941,
+          29,
+          94225,
+          198,
+          46060,
+          51995,
+          35941,
+          29,
+          94225
+        ],
+        "pid": 98035,
+        "recomputed_upstream_item_ids": [],
+        "result_digest": "54d61104e2676f9924222b1c7afb79e35fe91e906bf4c7c5fe859d1a2db40b03",
+        "reused_item_ids": [
+          "J-28fb8aa8-ORIGIN",
+          "J-28fb8aa8-DEST",
+          "J-28fb8aa8-U1"
+        ],
+        "runtime_execution_instance_id": "add2af1d-42af-48b8-9adf-12d7022b64ca",
+        "seed_tokenize_calls": 1,
+        "settlement_object_id": "d5a14498f25822e6472687755f0e498d37ce0c7ab18465f0b066ea6930e0423d",
+        "signature_envelope_id": "793dd92c83a56b0db17db66d0bd3f9471258cc920a8456ec716ab5a02d3600d8",
+        "stage": "P2",
+        "state_empty_at_start": true,
+        "task_item_id": "J-28fb8aa8-U2",
+        "terminal_state": "TASK_SETTLED",
+        "text_tokenize_calls": 1,
+        "wall_seconds": 15.022
+      },
+      {
+        "child_stderr": {
+          "bytes": 0,
+          "exists": true,
+          "path": "runs/J0/stderr/j0-p3.stderr.bin",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "child_stdout": {
+          "bytes": 0,
+          "exists": true,
+          "path": "runs/J0/stdout/j0-p3.stdout.bin",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "computed_item_ids": [
+          "J-28fb8aa8-U3"
+        ],
+        "contract_dispatch_basis": "declared_contract",
+        "counters": {
+          "generation_calls": 1,
+          "model_loads": 1,
+          "seed_tokenize_calls": 1,
+          "text_tokenize_calls": 1
+        },
+        "declared_contract_audit": {
+          "contract_dispatch_basis": "declared_contract",
+          "contract_read": true,
+          "declared_contract_fields": [
+            "route_key"
+          ],
+          "declared_contract_schema_version": "simigo.result-contract/v1",
+          "redeclared_extraction_matches_settled_value": true,
+          "reextracted_fields": {
+            "route_key": "NORTH>EAST"
+          }
+        },
+        "declared_dependencies": [
+          "J-28fb8aa8-U2"
+        ],
+        "demand_id": "J-28fb8aa8-u3",
+        "generated_text": " CONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\n",
+        "generation_calls": 1,
+        "initial_position": 0,
+        "input_text_sha256": "14b5a02b6bf440e8acdf1371fbc43bd3a2ddf12346a36fe2c9706dd464c358d5",
+        "logical_es_id": "j0-p3",
+        "model_load_count": 1,
+        "old_state_or_prefix_copied": false,
+        "output_text_sha256": "35a77041ce4f0539c54bd7fa2c6b4e89b32e31c1e5252d65aa4d3af9682bcc19",
+        "output_token_ids": [
+          45189,
+          32432,
+          1479,
+          51995,
+          35941,
+          59384,
+          6349,
+          198,
+          38634,
+          32432,
+          1479,
+          51995,
+          35941,
+          59384,
+          6349,
+          198,
+          38634,
+          32432,
+          1479,
+          51995,
+          35941,
+          59384,
+          6349,
+          198,
+          38634,
+          32432,
+          1479,
+          51995,
+          35941,
+          59384,
+          6349,
+          198,
+          38634,
+          32432,
+          1479,
+          51995,
+          35941,
+          59384,
+          6349,
+          198,
+          38634,
+          32432,
+          1479,
+          51995,
+          35941,
+          59384,
+          6349,
+          198
+        ],
+        "pid": 98046,
+        "recomputed_upstream_item_ids": [],
+        "result_digest": "d9d0a3a27be8adc4606ac4176d7fefd4cefd82a588f365ddb1f2a3d676e3d00a",
+        "reused_item_ids": [
+          "J-28fb8aa8-ORIGIN",
+          "J-28fb8aa8-DEST",
+          "J-28fb8aa8-U1",
+          "J-28fb8aa8-U2"
+        ],
+        "runtime_execution_instance_id": "bf329a9b-f721-456a-989e-3d3cc04097be",
+        "seed_tokenize_calls": 1,
+        "settlement_object_id": "b285db1506bc8f63875adb63a78ffe18667da371e2a76b2ccc0210cfd70aff44",
+        "signature_envelope_id": "7223c182d310a66eeadc74467a1e3a1f8c75973ccc14ee437555e0703b72d625",
+        "stage": "P3",
+        "state_empty_at_start": true,
+        "task_item_id": "J-28fb8aa8-U3",
+        "terminal_state": "TASK_SETTLED",
+        "text_tokenize_calls": 1,
+        "wall_seconds": 14.564
+      }
+    ],
+    "u1_generation_count": 1,
+    "u2_generation_count": 1,
+    "u3_generation_count": 1
+  },
+  "old_state_or_prefix_copied": false,
+  "raw_log_paths": [
+    "runs/J0/stdout/j0-p1.stdout.bin",
+    "runs/J0/stdout/j0-p2.stdout.bin",
+    "runs/J0/stdout/j0-p3.stdout.bin"
+  ],
+  "semantic_trace": {
+    "contract_validation_reports": [
+      {},
+      {},
+      {}
+    ],
+    "source_a": {
+      "object_id": "d61172a177df219d54006731f165726f521bf96c1286071b498ac79b65689059",
+      "payload": {
+        "origin_code": "NORTH"
+      }
+    },
+    "source_b": {
+      "object_id": "0100979192bca24d5fc4c10addcc4c6b2352189962f138cef0a02ae9df51ef35",
+      "payload": {
+        "destination_code": "EAST",
+        "priority": "5"
+      }
+    },
+    "u1_settlement": {
+      "object_id": "4dcea7f3bb17933afb228c6ac72bd038483fd6fff433a75bd16f976f9a8962f4",
+      "result": {
+        "destination_code": "EAST",
+        "origin_code": "NORTH",
+        "priority": "5",
+        "route_key": "NORTH>EAST"
+      },
+      "signature_envelope_id": "23d0c9f484728685799c069b86859eacb3e02abeec4016e023c9b72c16d0756d",
+      "signature_verified": true
+    },
+    "u2_input": {
+      "constructed_by_harness": false,
+      "fields_used": [
+        "priority",
+        "route_key"
+      ],
+      "source_settlement_object_id": "4dcea7f3bb17933afb228c6ac72bd038483fd6fff433a75bd16f976f9a8962f4",
+      "values": {
+        "priority": "5",
+        "route_key": "NORTH>EAST"
+      }
+    },
+    "u2_settlement": {
+      "object_id": "d5a14498f25822e6472687755f0e498d37ce0c7ab18465f0b066ea6930e0423d",
+      "result": {
+        "route_key": "NORTH>EAST"
+      },
+      "signature_envelope_id": "793dd92c83a56b0db17db66d0bd3f9471258cc920a8456ec716ab5a02d3600d8",
+      "signature_verified": true
+    },
+    "u3_input": {
+      "constructed_by_harness": false,
+      "fields_used": [
+        "route_key"
+      ],
+      "source_settlement_object_id": "d5a14498f25822e6472687755f0e498d37ce0c7ab18465f0b066ea6930e0423d",
+      "values": {
+        "route_key": "NORTH>EAST"
+      }
+    },
+    "u3_settlement": {
+      "object_id": "b285db1506bc8f63875adb63a78ffe18667da371e2a76b2ccc0210cfd70aff44",
+      "result": {
+        "route_key": "NORTH>EAST"
+      },
+      "signature_envelope_id": "7223c182d310a66eeadc74467a1e3a1f8c75973ccc14ee437555e0703b72d625",
+      "signature_verified": true
+    }
+  },
+  "stage_records": [
+    {
+      "child_stderr": {
+        "bytes": 0,
+        "exists": true,
+        "path": "runs/J0/stderr/j0-p1.stderr.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "child_stdout": {
+        "bytes": 0,
+        "exists": true,
+        "path": "runs/J0/stdout/j0-p1.stdout.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "computed_item_ids": [
+        "J-28fb8aa8-U1"
+      ],
+      "contract_dispatch_basis": "declared_contract",
+      "counters": {
+        "generation_calls": 1,
+        "model_loads": 1,
+        "seed_tokenize_calls": 1,
+        "text_tokenize_calls": 1
+      },
+      "declared_contract_audit": {
+        "contract_dispatch_basis": "declared_contract",
+        "contract_read": true,
+        "declared_contract_fields": [
+          "destination_code",
+          "origin_code",
+          "priority",
+          "route_key"
+        ],
+        "declared_contract_schema_version": "simigo.result-contract/v1",
+        "redeclared_extraction_matches_settled_value": true,
+        "reextracted_fields": {
+          "destination_code": "EAST",
+          "origin_code": "NORTH",
+          "priority": "5",
+          "route_key": "NORTH>EAST"
+        }
+      },
+      "declared_dependencies": [
+        "J-28fb8aa8-ORIGIN",
+        "J-28fb8aa8-DEST"
+      ],
+      "demand_id": "J-28fb8aa8-u1",
+      "generated_text": " ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5\nYou are executing one task step in a new execution instance.\nThe origin sector is SOUTH (route priority 2).\nThe destination sector is WEST",
+      "generation_calls": 1,
+      "initial_position": 0,
+      "input_text_sha256": "ddae3ba92aedfd78cc5e0a312358cfe15e760c2f446f2671412f1a49b699ad0a",
+      "logical_es_id": "j0-p1",
+      "model_load_count": 1,
+      "old_state_or_prefix_copied": false,
+      "output_text_sha256": "b42f33cab704b20254d9c43a091d461ac24ddb4e674a3be078926f13c5acf260",
+      "output_token_ids": [
+        2726,
+        55529,
+        51995,
+        35941,
+        198,
+        62571,
+        85234,
+        6349,
+        198,
+        99111,
+        51995,
+        35941,
+        59384,
+        6349,
+        198,
+        47,
+        34886,
+        28,
+        20,
+        198,
+        2610,
+        525,
+        30220,
+        825,
+        3383,
+        3019,
+        304,
+        264,
+        501,
+        11320,
+        2867,
+        624,
+        785,
+        6238,
+        10486,
+        374,
+        79615,
+        320,
+        8966,
+        10619,
+        220,
+        17,
+        4292,
+        785,
+        9106,
+        10486,
+        374,
+        65090
+      ],
+      "pid": 98026,
+      "recomputed_upstream_item_ids": [],
+      "result_digest": "77ae30cebd1f49202ea9d8afc158dba593e483dbc4f81b45cbaad84c55c8f04c",
+      "reused_item_ids": [
+        "J-28fb8aa8-ORIGIN",
+        "J-28fb8aa8-DEST"
+      ],
+      "runtime_execution_instance_id": "79b7ba35-bc2b-493b-882f-2805ce319d3a",
+      "seed_tokenize_calls": 1,
+      "settlement_object_id": "4dcea7f3bb17933afb228c6ac72bd038483fd6fff433a75bd16f976f9a8962f4",
+      "signature_envelope_id": "23d0c9f484728685799c069b86859eacb3e02abeec4016e023c9b72c16d0756d",
+      "stage": "P1",
+      "state_empty_at_start": true,
+      "task_item_id": "J-28fb8aa8-U1",
+      "terminal_state": "TASK_SETTLED",
+      "text_tokenize_calls": 1,
+      "wall_seconds": 18.357
+    },
+    {
+      "child_stderr": {
+        "bytes": 0,
+        "exists": true,
+        "path": "runs/J0/stderr/j0-p2.stderr.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "child_stdout": {
+        "bytes": 0,
+        "exists": true,
+        "path": "runs/J0/stdout/j0-p2.stdout.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "computed_item_ids": [
+        "J-28fb8aa8-U2"
+      ],
+      "contract_dispatch_basis": "declared_contract",
+      "counters": {
+        "generation_calls": 1,
+        "model_loads": 1,
+        "seed_tokenize_calls": 1,
+        "text_tokenize_calls": 1
+      },
+      "declared_contract_audit": {
+        "contract_dispatch_basis": "declared_contract",
+        "contract_read": true,
+        "declared_contract_fields": [
+          "route_key"
+        ],
+        "declared_contract_schema_version": "simigo.result-contract/v1",
+        "redeclared_extraction_matches_settled_value": true,
+        "reextracted_fields": {
+          "route_key": "NORTH>EAST"
+        }
+      },
+      "declared_dependencies": [
+        "J-28fb8aa8-U1"
+      ],
+      "demand_id": "J-28fb8aa8-u2",
+      "generated_text": " FLOW=NORTH>EAST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST\nFLOW=NORTH>WEST",
+      "generation_calls": 1,
+      "initial_position": 0,
+      "input_text_sha256": "a6bdef8c257fe20050cb1906fdb64b1c9f4e85b1559e286591a85bc3855d964b",
+      "logical_es_id": "j0-p2",
+      "model_load_count": 1,
+      "old_state_or_prefix_copied": false,
+      "output_text_sha256": "5bf91453cdc87e97ab591395dd5fe3268f8521660073b415d04d5138d84763d6",
+      "output_token_ids": [
+        434,
+        9441,
+        51995,
+        35941,
+        59384,
+        6349,
+        198,
+        46060,
+        51995,
+        35941,
+        29,
+        94225,
+        198,
+        46060,
+        51995,
+        35941,
+        29,
+        94225,
+        198,
+        46060,
+        51995,
+        35941,
+        29,
+        94225,
+        198,
+        46060,
+        51995,
+        35941,
+        29,
+        94225,
+        198,
+        46060,
+        51995,
+        35941,
+        29,
+        94225,
+        198,
+        46060,
+        51995,
+        35941,
+        29,
+        94225,
+        198,
+        46060,
+        51995,
+        35941,
+        29,
+        94225
+      ],
+      "pid": 98035,
+      "recomputed_upstream_item_ids": [],
+      "result_digest": "54d61104e2676f9924222b1c7afb79e35fe91e906bf4c7c5fe859d1a2db40b03",
+      "reused_item_ids": [
+        "J-28fb8aa8-ORIGIN",
+        "J-28fb8aa8-DEST",
+        "J-28fb8aa8-U1"
+      ],
+      "runtime_execution_instance_id": "add2af1d-42af-48b8-9adf-12d7022b64ca",
+      "seed_tokenize_calls": 1,
+      "settlement_object_id": "d5a14498f25822e6472687755f0e498d37ce0c7ab18465f0b066ea6930e0423d",
+      "signature_envelope_id": "793dd92c83a56b0db17db66d0bd3f9471258cc920a8456ec716ab5a02d3600d8",
+      "stage": "P2",
+      "state_empty_at_start": true,
+      "task_item_id": "J-28fb8aa8-U2",
+      "terminal_state": "TASK_SETTLED",
+      "text_tokenize_calls": 1,
+      "wall_seconds": 15.022
+    },
+    {
+      "child_stderr": {
+        "bytes": 0,
+        "exists": true,
+        "path": "runs/J0/stderr/j0-p3.stderr.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "child_stdout": {
+        "bytes": 0,
+        "exists": true,
+        "path": "runs/J0/stdout/j0-p3.stdout.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "computed_item_ids": [
+        "J-28fb8aa8-U3"
+      ],
+      "contract_dispatch_basis": "declared_contract",
+      "counters": {
+        "generation_calls": 1,
+        "model_loads": 1,
+        "seed_tokenize_calls": 1,
+        "text_tokenize_calls": 1
+      },
+      "declared_contract_audit": {
+        "contract_dispatch_basis": "declared_contract",
+        "contract_read": true,
+        "declared_contract_fields": [
+          "route_key"
+        ],
+        "declared_contract_schema_version": "simigo.result-contract/v1",
+        "redeclared_extraction_matches_settled_value": true,
+        "reextracted_fields": {
+          "route_key": "NORTH>EAST"
+        }
+      },
+      "declared_dependencies": [
+        "J-28fb8aa8-U2"
+      ],
+      "demand_id": "J-28fb8aa8-u3",
+      "generated_text": " CONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\n",
+      "generation_calls": 1,
+      "initial_position": 0,
+      "input_text_sha256": "14b5a02b6bf440e8acdf1371fbc43bd3a2ddf12346a36fe2c9706dd464c358d5",
+      "logical_es_id": "j0-p3",
+      "model_load_count": 1,
+      "old_state_or_prefix_copied": false,
+      "output_text_sha256": "35a77041ce4f0539c54bd7fa2c6b4e89b32e31c1e5252d65aa4d3af9682bcc19",
+      "output_token_ids": [
+        45189,
+        32432,
+        1479,
+        51995,
+        35941,
+        59384,
+        6349,
+        198,
+        38634,
+        32432,
+        1479,
+        51995,
+        35941,
+        59384,
+        6349,
+        198,
+        38634,
+        32432,
+        1479,
+        51995,
+        35941,
+        59384,
+        6349,
+        198,
+        38634,
+        32432,
+        1479,
+        51995,
+        35941,
+        59384,
+        6349,
+        198,
+        38634,
+        32432,
+        1479,
+        51995,
+        35941,
+        59384,
+        6349,
+        198,
+        38634,
+        32432,
+        1479,
+        51995,
+        35941,
+        59384,
+        6349,
+        198
+      ],
+      "pid": 98046,
+      "recomputed_upstream_item_ids": [],
+      "result_digest": "d9d0a3a27be8adc4606ac4176d7fefd4cefd82a588f365ddb1f2a3d676e3d00a",
+      "reused_item_ids": [
+        "J-28fb8aa8-ORIGIN",
+        "J-28fb8aa8-DEST",
+        "J-28fb8aa8-U1",
+        "J-28fb8aa8-U2"
+      ],
+      "runtime_execution_instance_id": "bf329a9b-f721-456a-989e-3d3cc04097be",
+      "seed_tokenize_calls": 1,
+      "settlement_object_id": "b285db1506bc8f63875adb63a78ffe18667da371e2a76b2ccc0210cfd70aff44",
+      "signature_envelope_id": "7223c182d310a66eeadc74467a1e3a1f8c75973ccc14ee437555e0703b72d625",
+      "stage": "P3",
+      "state_empty_at_start": true,
+      "task_item_id": "J-28fb8aa8-U3",
+      "terminal_state": "TASK_SETTLED",
+      "text_tokenize_calls": 1,
+      "wall_seconds": 14.564
+    }
+  ],
+  "stages": 3,
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J0"
+}

@@ -1,0 +1,7 @@
+S1_authorized_valid_proof_200                      PASS
+S2_invalid_proof_refused                           PASS
+S3_authorized_request_generated                    PASS
+S4_invalid_proof_no_generation                     PASS
+S5_missing_activation_refused_before_generation    PASS
+overall: PASS
+wrote /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/evidence/service_http_gate_verdict.json

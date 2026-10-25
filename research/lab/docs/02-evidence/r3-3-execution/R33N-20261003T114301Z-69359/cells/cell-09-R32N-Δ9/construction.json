@@ -1,0 +1,24 @@
+{
+  "cell_id": "cell-09-R32N-Δ9",
+  "es_artifact_sha256": "1bad67961db129f8068dc7e6162a70ef3ce8e221a63dda6fc3dceb9e83fef994",
+  "is0_canonical_sha256": "d599145cc55460274bbce09ab32b95fbdca4e5bf6a6e8cdcfff4249d2e8e2397",
+  "locked_at_utc": "2026-10-03T11:43:11Z",
+  "locked_before_evaluation": true,
+  "op_class": "R3-N",
+  "op_id": "R32N-Δ9",
+  "predicted": {
+    "A": [
+      "SATISFIED",
+      null
+    ],
+    "C": [
+      "SATISFIED",
+      null
+    ],
+    "I": [
+      "SATISFIED",
+      null
+    ]
+  },
+  "run_uuid": "R33N-20261003T114301Z-69359"
+}

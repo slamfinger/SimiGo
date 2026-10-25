@@ -1,0 +1,1096 @@
+{
+  "checks": [
+    {
+      "criterion": "model_identity",
+      "detail": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+      "name": "stage_a_snapshot_revision_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": 4,
+      "name": "stage_a_weights_listed",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": [
+        "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4"
+      ],
+      "name": "stage_a_weight_digests_are_sha256",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5",
+      "name": "stage_a_weights_manifest_sha256_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+      "name": "stage_a_tokenizer_json_sha256_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+      "name": "stage_a_config_json_sha256_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "c100efb419233c6be585014ebd9f5a8c2a4fe9de63be6271172f0f70f1c315ea",
+      "name": "stage_a_model_index_json_sha256_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+      "name": "stage_c_snapshot_revision_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": 4,
+      "name": "stage_c_weights_listed",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": [
+        "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4"
+      ],
+      "name": "stage_c_weight_digests_are_sha256",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5",
+      "name": "stage_c_weights_manifest_sha256_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+      "name": "stage_c_tokenizer_json_sha256_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+      "name": "stage_c_config_json_sha256_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": "c100efb419233c6be585014ebd9f5a8c2a4fe9de63be6271172f0f70f1c315ea",
+      "name": "stage_c_model_index_json_sha256_present",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+        "expected": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d"
+      },
+      "name": "same_model_snapshot_both_stages",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5",
+        "expected": "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5"
+      },
+      "name": "same_weights_manifest_both_stages",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+        "expected": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+      },
+      "name": "same_tokenizer_both_stages",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+        "expected": "6e302ea604ad9ab206367e2c501d1571023e7b6d"
+      },
+      "name": "independent_snapshot_revision",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": {
+          "model-00001-of-00004.safetensors": "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+          "model-00002-of-00004.safetensors": "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+          "model-00003-of-00004.safetensors": "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+          "model-00004-of-00004.safetensors": "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4"
+        },
+        "expected": {
+          "model-00001-of-00004.safetensors": "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+          "model-00002-of-00004.safetensors": "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+          "model-00003-of-00004.safetensors": "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+          "model-00004-of-00004.safetensors": "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4"
+        }
+      },
+      "name": "independent_weight_blob_set",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "per_file": {
+          "model-00001-of-00004.safetensors": 5321473414,
+          "model-00002-of-00004.safetensors": 5366644780,
+          "model-00003-of-00004.safetensors": 5276887419,
+          "model-00004-of-00004.safetensors": 1216066381
+        },
+        "total_weight_bytes": 17181071994
+      },
+      "name": "independent_weight_bytes_are_real_blobs",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+        "expected": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13"
+      },
+      "name": "independent_config_json_sha256",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+        "expected": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+      },
+      "name": "independent_tokenizer_json_sha256",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd",
+        "expected": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+      },
+      "name": "independent_tokenizer_config_json_sha256",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": "c100efb419233c6be585014ebd9f5a8c2a4fe9de63be6271172f0f70f1c315ea",
+        "expected": "c100efb419233c6be585014ebd9f5a8c2a4fe9de63be6271172f0f70f1c315ea"
+      },
+      "name": "independent_model_index_json_sha256",
+      "passed": true
+    },
+    {
+      "criterion": "model_identity",
+      "detail": {
+        "actual": [
+          {
+            "content_sha256": "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+            "name": "model-00001-of-00004.safetensors",
+            "size_bytes": 76
+          },
+          {
+            "content_sha256": "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+            "name": "model-00002-of-00004.safetensors",
+            "size_bytes": 76
+          },
+          {
+            "content_sha256": "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+            "name": "model-00003-of-00004.safetensors",
+            "size_bytes": 76
+          },
+          {
+            "content_sha256": "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+            "name": "model-00004-of-00004.safetensors",
+            "size_bytes": 76
+          }
+        ],
+        "expected": [
+          {
+            "content_sha256": "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+            "name": "model-00001-of-00004.safetensors",
+            "size_bytes": 76
+          },
+          {
+            "content_sha256": "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+            "name": "model-00002-of-00004.safetensors",
+            "size_bytes": 76
+          },
+          {
+            "content_sha256": "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+            "name": "model-00003-of-00004.safetensors",
+            "size_bytes": 76
+          },
+          {
+            "content_sha256": "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+            "name": "model-00004-of-00004.safetensors",
+            "size_bytes": 76
+          }
+        ]
+      },
+      "name": "both_stages_list_identical_weights",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": {
+        "actual": "eee54f874e9809ddfbb8951867274682a1001e577b230cb9c9fd6b084b896286",
+        "expected": "eee54f874e9809ddfbb8951867274682a1001e577b230cb9c9fd6b084b896286"
+      },
+      "name": "stage_c_opened_stage_a_database_bytes",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": {
+        "actual": "110192522",
+        "expected": "110192522"
+      },
+      "name": "same_physical_file",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": {
+        "actual": "ok",
+        "expected": "ok"
+      },
+      "name": "database_integrity_check",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": 12,
+      "name": "all_carrier_objects_verify",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": "SETTLED",
+      "name": "u1_settled_after_stage_c",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": "SETTLED",
+      "name": "u2_settled_after_stage_c",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": {
+        "actual": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2",
+        "expected": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2"
+      },
+      "name": "u1_settlement_object_matches_stage_a",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": {
+        "actual": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2",
+        "expected": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2"
+      },
+      "name": "u1_physical_object_is_the_settled_one",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": {
+        "actual": "handoff-a-u1-handoff-20261022a",
+        "expected": "handoff-a-u1-handoff-20261022a"
+      },
+      "name": "u1_settlement_advancement_is_stage_a",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": "813d5e461ea2d03247c31baf9b0b462fde122af1bd6c059202885dd852c2a77a",
+      "name": "u1_result_digest_stable",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": {
+        "actual": "469c36fd055c1e827ba8017f73b5fc33e19b2dd0fb1501fb0d2c64a4e4ac2ce7",
+        "expected": "469c36fd055c1e827ba8017f73b5fc33e19b2dd0fb1501fb0d2c64a4e4ac2ce7"
+      },
+      "name": "database_bytes_unchanged_since_stage_c",
+      "passed": true
+    },
+    {
+      "criterion": "is_persistence",
+      "detail": {
+        "actual": "110192522",
+        "expected": "110192522"
+      },
+      "name": "database_inode_unchanged_since_stage_c",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "stage_a_pid": 65085,
+        "stage_c_pid": 66383
+      },
+      "name": "stage_c_is_a_new_process",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "actual": false,
+        "expected": false
+      },
+      "name": "stage_c_did_not_create_a_fresh_execution",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "actual": 1,
+        "expected": 1
+      },
+      "name": "stage_c_recovered_position",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": "active",
+      "name": "stage_c_recovered_lifecycle_is_live",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022a/state",
+      "name": "same_durable_state_directory",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "actual": "APPLIED_SWIFT",
+        "expected": "APPLIED_SWIFT"
+      },
+      "name": "is_authorized_recovery_with_applied_state",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": "handoff-a-u1-handoff-20261022a:runtime-applied",
+      "name": "stage_a_confirmation_present_in_is",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": "handoff-c-u2-handoff-20261022a:runtime-applied",
+      "name": "stage_c_confirmation_present_in_is",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "actual": "handoff-a-u1-handoff-20261022a:runtime-applied",
+        "expected": "handoff-a-u1-handoff-20261022a:runtime-applied"
+      },
+      "name": "stage_c_advancement_prior_is_stage_a_confirmation",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "alive": false,
+        "stage_a_pid": 65085
+      },
+      "name": "stage_a_process_terminated",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "g3_cache_session_installed": false,
+        "kv_carrier_present": false,
+        "old_binding_unusable": true,
+        "released": true,
+        "retired_storage_ids": []
+      },
+      "name": "stage_a_released_carrier_before_exit",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": 3.186692953109741,
+      "name": "stage_c_reloaded_the_weights",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "actual": 1,
+        "expected": 1
+      },
+      "name": "durable_state_created_exactly_once",
+      "passed": true
+    },
+    {
+      "criterion": "es_independence",
+      "detail": {
+        "actual": [
+          [
+            "created",
+            0
+          ],
+          [
+            "continued",
+            1
+          ],
+          [
+            "reattached",
+            1
+          ],
+          [
+            "continued",
+            2
+          ]
+        ],
+        "expected": [
+          [
+            "created",
+            0
+          ],
+          [
+            "continued",
+            1
+          ],
+          [
+            "reattached",
+            1
+          ],
+          [
+            "continued",
+            2
+          ]
+        ]
+      },
+      "name": "durable_state_lineage",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": 129,
+        "expected": 129
+      },
+      "name": "durable_representation_step_1_length",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": [
+          69956,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626
+        ],
+        "expected": [
+          69956,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626
+        ]
+      },
+      "name": "durable_representation_step_1_tail_is_stage_a",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "actual": 209,
+        "expected": 209
+      },
+      "name": "durable_representation_step_2_length",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": [
+        {
+          "executionID": "PRODUCTION-REAL-PALACE",
+          "isConfirmationStateID": "handoff-c-u2-handoff-20261022a:runtime-applied",
+          "isOriginalStateID": "handoff-c-u2-handoff-20261022a",
+          "lastSettledAdvancementID": "handoff-c-u2-handoff-20261022a",
+          "position": 2,
+          "resultDigest": "4705aadad7cdd147411938aeb084d871673ef7c6991c4a04bd564bb4d8579b71",
+          "validityBasis": "124989279277096d8e338a98521b2603e1a7274610f89ae4e28a71d68dff5b79"
+        }
+      ],
+      "name": "durable_checkpoint_is_stage_c_advancement",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": [
+          "TASK-U1"
+        ],
+        "expected": [
+          "TASK-U1"
+        ]
+      },
+      "name": "stage_a_computed_step_1_only",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": [
+          "TASK-SOURCE"
+        ],
+        "expected": [
+          "TASK-SOURCE"
+        ]
+      },
+      "name": "stage_a_reused_registered_source",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": [
+          "TASK-U2"
+        ],
+        "expected": [
+          "TASK-U2"
+        ]
+      },
+      "name": "stage_c_computed_step_2_only",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": [
+          "TASK-SOURCE",
+          "TASK-U1"
+        ],
+        "expected": [
+          "TASK-SOURCE",
+          "TASK-U1"
+        ]
+      },
+      "name": "stage_c_reused_source_and_step_1",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2",
+        "expected": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2"
+      },
+      "name": "stage_c_u1_settlement_object_identity",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": "3cc3f08ee5cc8814f51aa8b1567fb3127c87080ecbb7b115eed5e3c443c7e9e0",
+        "expected": "3cc3f08ee5cc8814f51aa8b1567fb3127c87080ecbb7b115eed5e3c443c7e9e0"
+      },
+      "name": "stage_c_source_settlement_object_identity",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": 1,
+        "expected": 1
+      },
+      "name": "stage_c_model_continuation_calls",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": 0,
+        "expected": 0
+      },
+      "name": "stage_c_seed_retokenizations",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "actual": 129,
+        "expected": 129
+      },
+      "name": "stage_c_recovered_prefix_is_stage_a_prefix",
+      "passed": true
+    },
+    {
+      "criterion": "settled_work_reuse",
+      "detail": {
+        "authorized_by_is_runtime_application_status": "APPLIED_SWIFT",
+        "authorized_by_is_state_id": "handoff-a-u1-handoff-20261022a:runtime-applied",
+        "bound_prefix_token_count": 129,
+        "persisted_representation_rebound": true,
+        "prefix_tail_matches_stage_a_generated_tokens": true,
+        "recovered_lifecycle": "active",
+        "recovered_position": 1,
+        "stage_a_prefix_token_count": 129,
+        "tokenize_seed_calls_this_call": 0
+      },
+      "name": "recovered_prefix_tail_is_stage_a_generation",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": [
+        69956,
+        28,
+        42,
+        5626,
+        19,
+        1867,
+        198,
+        65310,
+        28,
+        42,
+        5626,
+        19,
+        1867,
+        198,
+        65310,
+        28,
+        42,
+        5626,
+        19,
+        1867,
+        198,
+        65310,
+        28,
+        42,
+        5626,
+        19,
+        1867,
+        198,
+        65310,
+        28,
+        42,
+        5626
+      ],
+      "name": "stage_a_real_model_generated",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "stage_a_tokens": [
+          69956,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          65310,
+          28,
+          42,
+          5626
+        ],
+        "stage_c_tokens": [
+          220,
+          96704,
+          640,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          12,
+          22,
+          638,
+          15,
+          198,
+          65310,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          198,
+          11692,
+          39351,
+          28,
+          42,
+          5626,
+          19,
+          1867,
+          12,
+          22,
+          638,
+          15,
+          198
+        ]
+      },
+      "name": "stage_c_real_model_generated_new_work",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "actual": 1,
+        "expected": 1
+      },
+      "name": "stage_c_model_call_count",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "actual": 2,
+        "expected": 2
+      },
+      "name": "stage_c_advanced_to_position_2",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "actual": 129,
+        "expected": 129
+      },
+      "name": "stage_c_consumed_the_settled_prefix",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "next_input_sha256": "32bd7bd5a7afb4230e569430d9dce3a52870de6638ff00f58ff0435fe66ff2f0",
+        "next_input_uses_settled_checksum": true,
+        "next_input_uses_settled_u1_secret": true
+      },
+      "name": "stage_c_input_used_settled_u1_secret",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "expected_from_settled_dependencies": "KDC4AB-7cc0",
+        "settled_answer": "KDC4AB-7cc0"
+      },
+      "name": "stage_c_answer_matches_dependency_values",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "actual": "handoff-c-u2-handoff-20261022a",
+        "expected": "handoff-c-u2-handoff-20261022a"
+      },
+      "name": "u2_settlement_advancement_is_stage_c",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": "8b6a3d9d6c85ede6c3b1d9bc1f60e2dcab48779364b804bf9e534a6214b23b57",
+      "name": "u2_result_digest_matches_contract",
+      "passed": true
+    },
+    {
+      "criterion": "incremental_continuation",
+      "detail": {
+        "actual": {
+          "TASK-SOURCE": "3cc3f08ee5cc8814f51aa8b1567fb3127c87080ecbb7b115eed5e3c443c7e9e0",
+          "TASK-U1": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2"
+        },
+        "expected": {
+          "TASK-SOURCE": "3cc3f08ee5cc8814f51aa8b1567fb3127c87080ecbb7b115eed5e3c443c7e9e0",
+          "TASK-U1": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2"
+        }
+      },
+      "name": "u2_dependency_declares_step_1_and_source",
+      "passed": true
+    },
+    {
+      "criterion": "dependency_correctness",
+      "detail": {
+        "actual": [
+          "TASK-U1",
+          "TASK-U2"
+        ],
+        "expected": [
+          "TASK-U1",
+          "TASK-U2"
+        ]
+      },
+      "name": "invalidation_propagated_to_step_2",
+      "passed": true
+    },
+    {
+      "criterion": "dependency_correctness",
+      "detail": {
+        "actual": [
+          "TASK-U1",
+          "TASK-U2"
+        ],
+        "expected": [
+          "TASK-U1",
+          "TASK-U2"
+        ]
+      },
+      "name": "probe_recomputed_invalidated_closure",
+      "passed": true
+    },
+    {
+      "criterion": "dependency_correctness",
+      "detail": {
+        "actual": [
+          "TASK-SOURCE"
+        ],
+        "expected": [
+          "TASK-SOURCE"
+        ]
+      },
+      "name": "probe_reused_valid_source",
+      "passed": true
+    },
+    {
+      "criterion": "dependency_correctness",
+      "detail": {
+        "actual": "ADVANCED",
+        "expected": "ADVANCED"
+      },
+      "name": "probe_advanced",
+      "passed": true
+    },
+    {
+      "criterion": "dependency_correctness",
+      "detail": {
+        "actual": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2",
+        "expected": "e1b399b2a710cb0161c140e8796354ea807c208d9c00ab7d130bc3b9ca6b42e2"
+      },
+      "name": "authoritative_u1_untouched",
+      "passed": true
+    },
+    {
+      "criterion": "dependency_correctness",
+      "detail": {
+        "actual": "f2f0a9152fb60b3923e6b2d625bd4fbd99e6933dcc3cbc8f31bd7aa844531a9e",
+        "expected": "f2f0a9152fb60b3923e6b2d625bd4fbd99e6933dcc3cbc8f31bd7aa844531a9e"
+      },
+      "name": "authoritative_u2_untouched",
+      "passed": true
+    }
+  ],
+  "criteria": {
+    "dependency_correctness": "PASS",
+    "es_independence": "PASS",
+    "incremental_continuation": "PASS",
+    "is_persistence": "PASS",
+    "model_identity": "PASS",
+    "settled_work_reuse": "PASS"
+  },
+  "database": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022a/carrier.sqlite",
+  "es_state_file": {
+    "lineage": [
+      [
+        "created",
+        0
+      ],
+      [
+        "continued",
+        1
+      ],
+      [
+        "reattached",
+        1
+      ],
+      [
+        "continued",
+        2
+      ]
+    ],
+    "path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022a/state/execution-state.json",
+    "representation_token_counts": {
+      "0": 96,
+      "1": 129,
+      "2": 209
+    },
+    "settlement_checkpoints": [
+      {
+        "executionID": "PRODUCTION-REAL-PALACE",
+        "isConfirmationStateID": "handoff-c-u2-handoff-20261022a:runtime-applied",
+        "isOriginalStateID": "handoff-c-u2-handoff-20261022a",
+        "lastSettledAdvancementID": "handoff-c-u2-handoff-20261022a",
+        "position": 2,
+        "resultDigest": "4705aadad7cdd147411938aeb084d871673ef7c6991c4a04bd564bb4d8579b71",
+        "validityBasis": "124989279277096d8e338a98521b2603e1a7274610f89ae4e28a71d68dff5b79"
+      }
+    ],
+    "sha256": "64630ea3934a7776ddc1fbe3b049c43b8fd965bece7324d4ab0969108102ef08"
+  },
+  "metadata_notes": [
+    "The stage evidence was written before the modelIdentity fix: weight_files[].size_bytes recorded the SYMLINK length (76) instead of the blob size. Weight identity is unaffected because it is the blob file name (a git-lfs content sha256); the verifier re-resolved the snapshot and recorded real blob sizes under resolved_snapshot.",
+    "The experiment was NOT re-executed to correct evidence metadata; the fix applies to future runs only."
+  ],
+  "overall": "PASS",
+  "prefix_replay_tokens": 129,
+  "probe": {
+    "computed_item_ids": [
+      "TASK-U1",
+      "TASK-U2"
+    ],
+    "invalidated_item_ids": [
+      "TASK-U1",
+      "TASK-U2"
+    ],
+    "reused_item_ids": [
+      "TASK-SOURCE"
+    ],
+    "state": "ADVANCED"
+  },
+  "propositions": {
+    "arc_reference_release": "UNPROVEN_NOT_INSTRUMENTED",
+    "gpu_memory_returned_to_os": "UNPROVEN_NOT_A_SUCCESS_CONDITION",
+    "old_carrier_not_reusable": "PASS_BINDING_LEVEL_TOMBSTONE_VERIFIED",
+    "physical_kv_reuse": "UNPROVEN_PREFIX_REPLAY"
+  },
+  "resolved_snapshot": {
+    "content_manifest_sha256": "f3585350778f2b9389bb431501c2edf736ccabb165e028ed30c51f136314270b",
+    "identity_file_sha256": {
+      "config.json": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+      "model.safetensors.index.json": "c100efb419233c6be585014ebd9f5a8c2a4fe9de63be6271172f0f70f1c315ea",
+      "tokenizer.json": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+      "tokenizer_config.json": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+    },
+    "snapshot_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "snapshot_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "total_weight_bytes": 17181071994,
+    "weight_files": [
+      {
+        "blob_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "blob_size_bytes": 5321473414,
+        "content_sha256": "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "name": "model-00001-of-00004.safetensors"
+      },
+      {
+        "blob_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "blob_size_bytes": 5366644780,
+        "content_sha256": "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "name": "model-00002-of-00004.safetensors"
+      },
+      {
+        "blob_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "blob_size_bytes": 5276887419,
+        "content_sha256": "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "name": "model-00003-of-00004.safetensors"
+      },
+      {
+        "blob_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "blob_size_bytes": 1216066381,
+        "content_sha256": "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "name": "model-00004-of-00004.safetensors"
+      }
+    ]
+  },
+  "run_dir": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022a",
+  "schema_id": "SIMIGO-REAL-MODEL-HANDOFF-VERIFICATION-V1",
+  "verified_at_utc": "2026-10-21T16:36:10Z"
+}

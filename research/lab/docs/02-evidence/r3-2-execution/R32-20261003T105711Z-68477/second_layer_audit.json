@@ -1,0 +1,173 @@
+{
+  "checks": [
+    {
+      "detail": "{'R32-20261003T105711Z-68477'}",
+      "name": "A7 run_uuid uniform",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A7 monotonic non-decreasing",
+      "pass": true
+    },
+    {
+      "detail": "cells=14",
+      "name": "A7 per-cell event sequence complete & ordered (14 cells)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A7 construction/outcome physically separate files",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A1 evidence chain closure (all 14 cells)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A2 signatures one-to-one vs construction-time predictions",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A3 targeted cells: only targeted condition broke (raw t1)",
+      "pass": true
+    },
+    {
+      "detail": "region_keys=['archived-note'] referenced=['I-S0', 'I-S1', 'anchor:state-diff', 'lineage-root', 'runtime-declaration']",
+      "name": "A4 IS-B region∩referenced empty at CONSTRUCTION TIME (independent of outcomes)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A4 IS-B outcomes consistent with construction-time derivation",
+      "pass": true
+    },
+    {
+      "detail": "rel=objects/store-v2/R-1.json in_boundary=True digest_match=True",
+      "name": "A5 K-1b binding invariant preserved (resolution+digest+boundary)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A5 K-1b original storage path vacated (migration really happened)",
+      "pass": true
+    },
+    {
+      "detail": "mismatch=[]",
+      "name": "A6 replay purity: frozen op on fresh IS₀ copy reproduces every cell IS tree byte-identically (no hidden cumulative state)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A6 K-0 cell IS tree identical to canonical IS₀",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A8 SUPPORTED strictly per Spec §6.2 pre-registered rule (9/9 targeted PREDICTION-MATCH + controls HOLD + no inconclusive)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A8 audit recomputation agrees with independent adjudicator (14/14 verdicts)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A8 campaign verdict recorded as SUPPORTED (no broadening)",
+      "pass": true
+    }
+  ],
+  "failed": [],
+  "per_cell_rows": [
+    [
+      "cell-01-R32-I-Δ1",
+      "IS-I",
+      "I-MISMATCH",
+      "only-target"
+    ],
+    [
+      "cell-02-R32-I-Δ2",
+      "IS-I",
+      "I-NF",
+      "only-target"
+    ],
+    [
+      "cell-03-R32-I-Δ3",
+      "IS-I",
+      "I-AMBIG",
+      "only-target"
+    ],
+    [
+      "cell-04-R32-A-Δ1",
+      "IS-A",
+      "A-NF",
+      "only-target"
+    ],
+    [
+      "cell-05-R32-A-Δ2",
+      "IS-A",
+      "A-NF",
+      "only-target"
+    ],
+    [
+      "cell-06-R32-A-Δ3",
+      "IS-A",
+      "A-SUB",
+      "only-target"
+    ],
+    [
+      "cell-07-R32-C-Δ1",
+      "IS-C",
+      "C-REF-NOT-FOUND",
+      "only-target"
+    ],
+    [
+      "cell-08-R32-C-Δ2",
+      "IS-C",
+      "C-INV",
+      "only-target"
+    ],
+    [
+      "cell-09-R32-C-Δ3",
+      "IS-C",
+      "C-INV",
+      "only-target"
+    ],
+    [
+      "cell-10-R32-B-Δ1",
+      "IS-B",
+      "-",
+      "all-SATISFIED"
+    ],
+    [
+      "cell-11-R32-B-Δ2",
+      "IS-B",
+      "-",
+      "all-SATISFIED"
+    ],
+    [
+      "cell-12-R32-K-1a",
+      "K-1",
+      "-",
+      "all-SATISFIED"
+    ],
+    [
+      "cell-13-R32-K-1b",
+      "K-1",
+      "-",
+      "all-SATISFIED"
+    ],
+    [
+      "cell-14-R32-K-0",
+      "K-0",
+      "-",
+      "all-SATISFIED"
+    ]
+  ],
+  "run_uuid": "R32-20261003T105711Z-68477",
+  "verdict": "AUDIT PASS"
+}

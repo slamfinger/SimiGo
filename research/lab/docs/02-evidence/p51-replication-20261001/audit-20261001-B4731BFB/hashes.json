@@ -1,0 +1,5 @@
+{
+  "checkpoint_meta_sha256" : "5144fb557a8a2f4c430d6d7c10fa4e751a4a916add1bbb40546cd82031ef02a3",
+  "checkpoint_tensor_sha256" : "5226874ea9db75c859f013b16feecf2092da2edd46a198324b1fd07fb78e2c4d",
+  "model" : "Nail-Qwen3.6-35B-A3B-MLX@31a0106483c94e9fbb0a6d3360ff122d47377058;config=sha256:46f215270b159f88fdf2eda2151894e2803e5def43062c34e376499ded6f277a"
+}

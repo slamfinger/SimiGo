@@ -1,0 +1,110 @@
+{
+  "allPairsSavePromptTime" : true,
+  "boundary" : 512,
+  "coldPromptTime" : {
+    "maximum" : 0.8838889598846436,
+    "mean" : 0.8802443345387777,
+    "median" : 0.8799870014190674,
+    "minimum" : 0.8768570423126221,
+    "values" : [
+      0.8768570423126221,
+      0.8799870014190674,
+      0.8838889598846436
+    ]
+  },
+  "coldWall" : {
+    "maximum" : 289.947291,
+    "mean" : 286.3352776666666,
+    "median" : 288.343292,
+    "minimum" : 280.71525,
+    "values" : [
+      280.71525,
+      288.343292,
+      289.947291
+    ]
+  },
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "note" : "Paired canonical cold vs adopted-warm legs under one model load; promptTime is the prefill metric; swap must stay stable for the pass verdict. No inference-behavior changes.",
+  "pairs" : [
+    {
+      "cold" : {
+        "generationTokenCount" : 16,
+        "kind" : "cold",
+        "promptTimeSeconds" : 0.8768570423126221,
+        "wallSeconds" : 280.71525
+      },
+      "index" : 0,
+      "promptTimeSavings" : 0.6209800243377686,
+      "wallSavings" : -388.07533299999994,
+      "warm" : {
+        "generationTokenCount" : 16,
+        "kind" : "warm",
+        "promptTimeSeconds" : 0.2558770179748535,
+        "wallSeconds" : 668.790583
+      }
+    },
+    {
+      "cold" : {
+        "generationTokenCount" : 16,
+        "kind" : "cold",
+        "promptTimeSeconds" : 0.8799870014190674,
+        "wallSeconds" : 288.343292
+      },
+      "index" : 1,
+      "promptTimeSavings" : 0.6236679553985596,
+      "wallSavings" : -392.169749,
+      "warm" : {
+        "generationTokenCount" : 16,
+        "kind" : "warm",
+        "promptTimeSeconds" : 0.2563190460205078,
+        "wallSeconds" : 680.513041
+      }
+    },
+    {
+      "cold" : {
+        "generationTokenCount" : 16,
+        "kind" : "cold",
+        "promptTimeSeconds" : 0.8838889598846436,
+        "wallSeconds" : 289.947291
+      },
+      "index" : 2,
+      "promptTimeSavings" : 0.6271579265594482,
+      "wallSavings" : -380.677084,
+      "warm" : {
+        "generationTokenCount" : 16,
+        "kind" : "warm",
+        "promptTimeSeconds" : 0.2567310333251953,
+        "wallSeconds" : 670.624375
+      }
+    }
+  ],
+  "pass" : true,
+  "profileVersion" : "canonical-remainder-v1",
+  "promptTokenCount" : 648,
+  "stride" : 256,
+  "swapAtEnd" : 1825633731,
+  "swapAtStart" : 1825633731,
+  "swapStable" : true,
+  "warmPromptTime" : {
+    "maximum" : 0.2567310333251953,
+    "mean" : 0.25630903244018555,
+    "median" : 0.2563190460205078,
+    "minimum" : 0.2558770179748535,
+    "values" : [
+      0.2558770179748535,
+      0.2563190460205078,
+      0.2567310333251953
+    ]
+  },
+  "warmWall" : {
+    "maximum" : 680.513041,
+    "mean" : 673.309333,
+    "median" : 670.624375,
+    "minimum" : 668.790583,
+    "values" : [
+      668.790583,
+      680.513041,
+      670.624375
+    ]
+  }
+}

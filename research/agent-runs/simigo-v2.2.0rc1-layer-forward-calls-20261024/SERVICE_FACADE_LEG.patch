@@ -1,0 +1,121 @@
+--- a/SimiGo/Headless/SimiGoLocalBManagementEntry.swift
++++ b/SimiGo/Headless/SimiGoLocalBManagementEntry.swift
+@@ -21,6 +21,9 @@
+ //   pair-approve -> LOCALBPairingCoordinator.preparePairing
+ //                -> LOCALBPairingCoordinator.approveAndRegister
+ //   serve        -> NativeMLX.startWithLOCALB(nil, nil)        (the SAME call `Service` makes)
++//   serve-service-> Service.shared.start(path:)                (the product's own Start facade,
++//                   which forwards to that same call; used to judge the gate on the orchestration
++//                   path itself rather than only on the runtime call it delegates to)
+ //
+ // It does NOT add a route, relax TLS, accept a caller-declared SPKI, skip the
+ // proof gate, or auto-activate on a normal launch: `evaluate` is gated on
+@@ -36,6 +39,7 @@
+     case pairIssue = "pair-issue"
+     case pairApprove = "pair-approve"
+     case serve
++    case serveService = "serve-service"
+ }
+ 
+ enum SimiGoLocalBManagementEntry {
+@@ -60,7 +64,7 @@
+             return Decision(
+                 requested: true, role: nil,
+                 error: "unsupported \(environmentKey) '\(raw)' "
+-                    + "(allowed: prepare|activate|pair-issue|pair-approve|serve)"
++                    + "(allowed: prepare|activate|pair-issue|pair-approve|serve|serve-service)"
+             )
+         }
+         // These roles create keys and registry state. They are only allowed
+@@ -99,7 +103,7 @@
+             ] where env[key]?.isEmpty != false {
+                 return missing(key)
+             }
+-        case .serve:
++        case .serve, .serveService:
+             guard env["SIMIGO_LOCALB_SERVE_MODEL"]?.isEmpty == false else {
+                 return missing("SIMIGO_LOCALB_SERVE_MODEL")
+             }
+@@ -118,12 +122,23 @@
+             case .pairIssue: try runPairIssue()
+             case .pairApprove: try runPairApprove()
+             case .serve: try await runServe()
++            case .serveService: try await runServeService()
+             }
+             return 0
+         } catch let status as LOCALBStatus {
+             emit(["role": role.rawValue, "result": "fail-closed",
+                   "localb_status": status.rawValue])
+             return 3
++        } catch let refused as FacadeStartRefused {
++            // The facade swallows the runtime's typed throw into `status`; the
++            // token is extracted, never invented: when the text carries no
++            // LOCALB_ code the raw status string is what gets recorded.
++            emit(["role": role.rawValue, "result": "fail-closed",
++                  "binding": "Service.start(path:)",
++                  "localb_status": typedStatus(in: refused.status),
++                  "service_status": refused.status,
++                  "listening": false])
++            return 3
+         } catch {
+             emit(["role": role.rawValue, "result": "error",
+                   "message": "\(error)"])
+@@ -301,7 +316,58 @@
+ 
+     /// Retained for the process lifetime: releasing it would stop the server.
+     private static var servingRuntime: NativeMLX?
++
++    /// Same listener, but reached through the product's own orchestration
++    /// surface: `Service.shared.start(path:)` -> `internalStart` ->
++    /// `NativeMLX.start(path:port:)` -> `startWithLOCALB(nil, nil)`. Nothing is
++    /// injected into either layer: the node address comes from the product's
++    /// own resolution (`SIMIGO_PORT`, else the persisted port) and the LOCALB
++    /// host from the isolated managed root, so a never-activated host still
++    /// refuses before a listener exists.
++    private static func runServeService() async throws {
++        let env = ProcessInfo.processInfo.environment
++        let modelPath = env["SIMIGO_LOCALB_SERVE_MODEL"] ?? ""
++        let service = Service.shared
++
++        // The facade catches the runtime's typed throw; a not-running service
++        // after `start` therefore IS the fail-closed outcome, and its own status
++        // text is the only truthful record of which gate refused.
++        await service.start(path: modelPath)
+ 
++        guard service.isRunning else {
++            throw FacadeStartRefused(status: service.status)
++        }
++        emit([
++            "role": "serve-service",
++            "binding": "Service.start(path:)",
++            "model_path": modelPath,
++            "base_url": service.inferenceBaseURL,
++            "api_base_url": service.inferenceAPIBaseURL,
++            "listening": true,
++            "service_is_running": service.isRunning,
++            "service_status": service.status
++        ])
++        while true {
++            try await Task.sleep(nanoseconds: 5_000_000_000)
++        }
++    }
++
++    /// The facade reports failures as status text; this only lifts an existing
++    /// `LOCALB_*` token out of it, so a refusal keeps the same typed identity it
++    /// would have had on the direct path.
++    struct FacadeStartRefused: Error {
++        let status: String
++    }
++
++    private static func typedStatus(in text: String) -> String {
++        for token in text.split(whereSeparator: {
++            !($0.isLetter || $0.isNumber || $0 == "_")
++        }) where token.hasPrefix("LOCALB_") {
++            return String(token)
++        }
++        return text
++    }
++
+     // MARK: - Helpers
+ 
+     private static func requireOperationalContext() throws -> LOCALBHostRuntimeContext {

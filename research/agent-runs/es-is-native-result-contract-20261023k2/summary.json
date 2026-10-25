@@ -1,0 +1,171 @@
+{
+  "carrier_loop_semantics_changed": false,
+  "conditions": {
+    "K0-NATIVE-AUTHORITY-3-PROCESS": {
+      "evidence_path": "conditions/K0-NATIVE-AUTHORITY-3-PROCESS.json",
+      "kind": "real_model",
+      "observations": {
+        "contract_dispatch_basis": "native_pre_settlement_declared_contract",
+        "item_ids": [
+          "J-86281eba-U1",
+          "J-86281eba-U2",
+          "J-86281eba-U3"
+        ],
+        "j0_terminal_state": "OBSERVED",
+        "native_authority_stages": [
+          {
+            "item": "J-86281eba-U1",
+            "native_authority": "native_pre_settlement",
+            "native_bindings_from_is": true,
+            "native_constraint_checks_passed": true,
+            "native_gate": "native.SimiGoResultContracts",
+            "native_status": "VALID",
+            "native_verified_binding_count": 3,
+            "native_vs_python_values_agree": true,
+            "native_vs_settled_values_agree": true,
+            "ok": true,
+            "settlement_created": true,
+            "signature_created": true,
+            "stage": "P1",
+            "terminal_state": "TASK_SETTLED"
+          },
+          {
+            "item": "J-86281eba-U2",
+            "native_authority": "native_pre_settlement",
+            "native_bindings_from_is": true,
+            "native_constraint_checks_passed": true,
+            "native_gate": "native.SimiGoResultContracts",
+            "native_status": "VALID",
+            "native_verified_binding_count": 1,
+            "native_vs_python_values_agree": true,
+            "native_vs_settled_values_agree": true,
+            "ok": true,
+            "settlement_created": true,
+            "signature_created": true,
+            "stage": "P2",
+            "terminal_state": "TASK_SETTLED"
+          },
+          {
+            "item": "J-86281eba-U3",
+            "native_authority": "native_pre_settlement",
+            "native_bindings_from_is": true,
+            "native_constraint_checks_passed": true,
+            "native_gate": "native.SimiGoResultContracts",
+            "native_status": "VALID",
+            "native_verified_binding_count": 1,
+            "native_vs_python_values_agree": true,
+            "native_vs_settled_values_agree": true,
+            "ok": true,
+            "settlement_created": true,
+            "signature_created": true,
+            "stage": "P3",
+            "terminal_state": "TASK_SETTLED"
+          }
+        ],
+        "run_token": "86281eba"
+      },
+      "terminal_state": "OBSERVED"
+    },
+    "N2-NATIVE-REFUSES-WHERE-PYTHON-ACCEPTS": {
+      "evidence_path": "conditions/N2-NATIVE-REFUSES-WHERE-PYTHON-ACCEPTS.json",
+      "kind": "native_authority_counterfactual",
+      "observations": {
+        "declared_constraint_kind": "equals_binding_segment",
+        "generation_before_refusal": true,
+        "generation_calls": 1,
+        "item_id_under_test": "J-a8d9d2d8-U1",
+        "model_continuation_calls": 1,
+        "model_loads": 1,
+        "native_refused": true,
+        "native_rejection": {
+          "code": "CONTRACT_UNKNOWN_CONSTRAINT",
+          "detail": "[model_result_preparation] PRODUCER_RESULT_CONTRACT.CONTRACT_UNKNOWN_CONSTRAINT: field=route_key unsupported constraint kind equals_binding_segment",
+          "field": "route_key",
+          "kind": "PRODUCER_RESULT_CONTRACT_REFUSAL",
+          "stage": "PRODUCER_RESULT_CONTRACT"
+        },
+        "python_gate_outcome_for_same_kind": "VALID",
+        "python_implements_kind": true,
+        "run_token": "a8d9d2d8",
+        "signature_created": false,
+        "valid_settlement_created": false
+      },
+      "terminal_state": "OBSERVED"
+    }
+  },
+  "created_at_utc": "2026-10-22T18:46:31Z",
+  "guards": {
+    "parity": "PASS",
+    "regression": "PASS"
+  },
+  "historical_artifacts_modified": false,
+  "implementation": {
+    "attempt": 1,
+    "binary_sha256": "f88e866e9da8674826a3ce099a01b3335349c7cd95fbe64f3ea461fb4b0556d7",
+    "contract_dispatch_basis": "native_pre_settlement_declared_contract",
+    "gate_authority": "SimiGoTaskRun.continueTask modelValue closure (before value file + execute-with-model-result)",
+    "native_gate": "native.SimiGoResultContracts",
+    "parity_gate": {
+      "case_count": 36,
+      "cases_sha256": "68dab430e194a808377763ea81641c95b8c5299fc12fb8a1e46d44be4c560bb9",
+      "harness_exit": 0,
+      "issue_count": 0,
+      "issues": [],
+      "verdict": "PASS"
+    },
+    "regression": {
+      "python_suite": {
+        "<unit>": {
+          "check_count": 0,
+          "condition_count": 0,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        },
+        "admission_selftest": {
+          "check_count": 0,
+          "condition_count": 7,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        },
+        "h_selective_invalidation_selftest": {
+          "check_count": 5,
+          "condition_count": 0,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        },
+        "i_semantic_sufficiency_selftest": {
+          "check_count": 7,
+          "condition_count": 0,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        },
+        "j_contract_selftest": {
+          "check_count": 16,
+          "condition_count": 0,
+          "exit_code": 0,
+          "failed_checks": [],
+          "verdict": "PASS"
+        }
+      },
+      "swift_native_tests": {
+        "all_passed": true,
+        "executed": 21,
+        "exit": 0,
+        "expected_tests": 21,
+        "failures": 0,
+        "tail": "e 'Selected tests' passed at 2026-10-23 02:45:24.417.\n\t Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds\nBuilding for debugging...\n[Computing dependencies]\n[Using on-disk description]\nwarning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')\nBuild complete! (0.68\u79d2)\n"
+      },
+      "verdict": "PASS"
+    }
+  },
+  "label": "es-is-native-result-contract-20261023k",
+  "primary_entry": "native SimiGoTaskRun continueTask / native gate",
+  "research_question": "Can the native result-contract engine, fed only with Information Space-verified bindings, act as the pre-settlement authority for a real model on run-time ids, agreeing with the Python gate where both implement a construct and refusing fail-closed (settling nothing) where only Python does?",
+  "round": "K",
+  "schema_version": "simigo-k-evidence-v1",
+  "terminal_state": "OBSERVED"
+}

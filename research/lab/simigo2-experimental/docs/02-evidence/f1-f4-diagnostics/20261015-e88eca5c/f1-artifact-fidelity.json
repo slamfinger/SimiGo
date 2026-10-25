@@ -1,0 +1,11 @@
+{
+  "boundary" : 900,
+  "keysMaxAbsDiff" : 0,
+  "keysNonZeroRows" : 40455,
+  "layersCompared" : 48,
+  "loadedPrefixRows" : 900,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "note" : "Artifact sourced from an UNCHUNKED session and compared against a direct single-forward KV over the same prefix. ~0 diff acquits save\/load; large diff isolates it.",
+  "promptTokenCount" : 968,
+  "valuesMaxAbsDiff" : 0
+}

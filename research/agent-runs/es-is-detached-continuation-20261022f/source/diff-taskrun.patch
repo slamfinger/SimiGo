@@ -1,0 +1,76 @@
+--- a/simigo2-experimental/Sources/SimiGoTaskRun/main.swift
++++ b/simigo2-experimental/Sources/SimiGoTaskRun/main.swift
+@@ -43,6 +43,10 @@
+   let evaluatedAtUTC: String
+   let runID: String
+   let maxTokens: Int
++  /// Logical execution identity owned by THIS process. A detached consumer is
++  /// started with a different id so it creates a genuinely new execution state
++  /// instead of reattaching the producer's identity.
++  let executionID: ExecutionID
+   /// Admit the item's input and STOP before loading or calling the model. Used
+   /// as the model-free probe of the same admission path a real run uses.
+   let admissionProbe: Bool
+@@ -80,6 +84,9 @@
+     evaluatedAtUTC = try required("evaluated-at")
+     runID = values["run-id"] ?? "ordinary-task-\(ProcessInfo.processInfo.processIdentifier)"
+     maxTokens = Int(values["max-tokens"] ?? "24") ?? 24
++    executionID = ExecutionID(
++      values["execution-id"]
++        ?? ProductionRuntimeInformationIntegration.executionID.rawValue)
+     admissionProbe = values["admission-probe"] == "1"
+   }
+ }
+@@ -248,7 +255,8 @@
+       modelExecutor: nil,
+       backend: MLXExecutionStateBackend(),
+       semanticStateDirectory: options.stateDir,
+-      resetToFreshBaseline: false)
++      resetToFreshBaseline: false,
++      executionID: options.executionID)
+     var probeAdmission: ProductionTaskInputAdmission?
+     var probeRefusal: [String: Any] = [:]
+     var probeFailure = ""
+@@ -311,6 +319,7 @@
+       "model_loaded": false,
+       "input_admission_status": probeStatus,
+       "input_admission": probeAdmission?.evidenceDictionary() ?? [:],
++      "execution_id": options.executionID.rawValue,
+       "input_admission_refusal": probeRefusal,
+       "failure": probeFailure,
+       "trust_anchor_path": trustAnchorPath ?? "",
+@@ -348,7 +357,8 @@
+     modelExecutor: executor,
+     backend: backend,
+     semanticStateDirectory: options.stateDir,
+-    resetToFreshBaseline: true)
++    resetToFreshBaseline: true,
++    executionID: options.executionID)
+   let provenance = ProductionTaskProvenance(
+     runID: options.runID,
+     buildSHA256: ProductionTaskProvenance.buildIdentity(runtimeRoot: runtimeRoot),
+@@ -469,6 +479,14 @@
+     }
+   }
+   if let report {
++    record["execution_state"] = [
++      "execution_id": outcome?.handle.id.rawValue ?? options.executionID.rawValue,
++      "created": report.created,
++      "advanced_position": report.advancedPosition,
++      "advanced_lifecycle": report.advancedLifecycle,
++      "advanced_state_id": report.isPendingStateID,
++      "lifecycle_records": integration.lifecycleRecordSummary(),
++    ]
+     record["settlement"] = [
+       "computed_item_ids": report.computedItemIDs,
+       "reused_item_ids": report.reusedItemIDs,
+@@ -497,6 +515,9 @@
+     record["generated_text"] = report.generatedText
+     record["generated_text_sha256"] = sha256Hex(Data(report.generatedText.utf8))
+     record["generated_token_ids"] = report.generatedTokenIDs
++    record["consumed_prefix_length"] = report.consumedPrefixLength
++    record["next_input_token_ids"] = report.nextInputTokenIDs
++    record["updated_prefix_token_count"] = report.updatedPrefixTokenCount
+   }
+   record["terminal_state"] = report != nil ? "TASK_SETTLED"
+     : (refusal.isEmpty ? "TASK_FAILED" : "INPUT_ADMISSION_REFUSED")

@@ -1,0 +1,16 @@
+ M Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift
+ M Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift
+ M Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift
+ M Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBProductionSignerTests.swift
+ M Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
+ M Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift
+ M SimiGo.xcodeproj/project.pbxproj
+ M SimiGo/App/CloudBackend.swift
+ M SimiGo/App/StatusBarCoordinator.swift
+ M SimiGo/Headless/SimiGoG1G3Entry.swift
+ M SimiGoTests/CloudBackendTests.swift
+ M SimiGoTests/LOCALBTransportWiringTests.swift
+ M SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift
+?? Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift
+?? Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift
+?? SimiGo/Headless/SimiGoLocalBManagementEntry.swift

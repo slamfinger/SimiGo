@@ -1,0 +1,189 @@
+{
+ "file_count": 46,
+ "files": [
+  {
+   "path": "controls/g1-missing-transitive-dependency/carrier.sqlite",
+   "sha256": "ff1e1ec77f83a5420f671646a199db28727771df6ac75023020be3446dc8d364"
+  },
+  {
+   "path": "controls/g1-missing-transitive-dependency/evidence/u3.json",
+   "sha256": "bbe7f48275196703f5e5dbc196d50d9e39afb7a06b3c351d2164df1d3ecc2e5d"
+  },
+  {
+   "path": "controls/g1-missing-transitive-dependency/logs/u3.log",
+   "sha256": "2fa09ca6a7217915c4acb71b7e4738a23f77b3fe87f1deb35d60931214f60102"
+  },
+  {
+   "path": "controls/g1-missing-transitive-dependency/mutation.json",
+   "sha256": "4e6961adaecaa4aa1f5e08d4fcd269396b899bca3e24d87e08c7d56528d428d1"
+  },
+  {
+   "path": "controls/n4-scan-scope.json",
+   "sha256": "850c644bf3c5609d267a01f262eb008a84da57dc86c518e1e5960b4f6eafcc1d"
+  },
+  {
+   "path": "diffs/admission_selftest.diff",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "diffs/bridge.diff",
+   "sha256": "90f9db75fce3135c965ddffe128e3bca5c5bf7760a12488c2f693f7a62610fb0"
+  },
+  {
+   "path": "diffs/driver.diff",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "diffs/swift_production.diff",
+   "sha256": "c400dde320061982356d6077214df5a35fb1a9c05ae801f21a24c58f5873546e"
+  },
+  {
+   "path": "logs/run_phase_g.attempt1.log",
+   "sha256": "30610b6e29f82f7977e07ebb58ba1759dd39d123c926f9870aef18804ba8e1fe"
+  },
+  {
+   "path": "logs/run_phase_g.summarize.log",
+   "sha256": "1345859ad81c66c7cc26484ecf61dfc0fb72e76e313d4af70a71bdacbe56d8fd"
+  },
+  {
+   "path": "manifests/artifact-manifest.json",
+   "sha256": "a76eb0269300491bfcee9d57f969c831d2ac404aac5b96563dbdf6d100edd713"
+  },
+  {
+   "path": "manifests/workspace-before.json",
+   "sha256": "75ad9f52d3d31f720f7e1fb717a99afe0fc3a1a2cbf871d08a5c1b8422d96704"
+  },
+  {
+   "path": "manifests/workspace-verify.json",
+   "sha256": "f9cc8ef00cb42958ea8fc63e3c71492ef1daf1b86f00fb23f7d66e71eb27b21d"
+  },
+  {
+   "path": "report/EVIDENCE_REPORT.md",
+   "sha256": "0847093ac19b886882068531a8301e37e19e317f3a030fdaccd23d8004898d8c"
+  },
+  {
+   "path": "report/SOURCE_DIFF_SUMMARY.md",
+   "sha256": "605dde24a1fa0546be4302843d8bcaa8a10bbc58ad6e0d87ecfd90a3036dfed1"
+  },
+  {
+   "path": "source/CALL_GRAPH_REVIEW.md",
+   "sha256": "c261caca7ec568b867bca401199a633968b9e3a3783f349dd19906f1833a2007"
+  },
+  {
+   "path": "source/U3_DESIGN.md",
+   "sha256": "7074ebbebe116caa3f887a49ca4cff912fc11c519ac40afabd19129c61868ac8"
+  },
+  {
+   "path": "stages/chain/carrier.sqlite",
+   "sha256": "d54a2e1ab232d3fbba9a4fbf3dffb7931503c7fd192a4afd519ffcff930f7161"
+  },
+  {
+   "path": "stages/chain/lifecycle.json",
+   "sha256": "6783e8d8dfeeaed5aafe12a7d00b8d5a588a7c8934ffae6c8ecc7155e61ad37b"
+  },
+  {
+   "path": "stages/chain/logs/driver.log",
+   "sha256": "5b70cbcdda2726a0e8a4d222649d3adce312551e96c9f9b9ba532556bbf62708"
+  },
+  {
+   "path": "stages/chain/process-logs/u1.stderr.log",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "stages/chain/process-logs/u1.stdout.log",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "stages/chain/process-logs/u2.stderr.log",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "stages/chain/process-logs/u2.stdout.log",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "stages/chain/process-logs/u3.stderr.log",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "stages/chain/process-logs/u3.stdout.log",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "path": "stages/chain/u1-evidence.json",
+   "sha256": "502916f7baddce9ebd4b9ddbb1297fe0d4672cf62fdd3fa574c8d330ab9c4943"
+  },
+  {
+   "path": "stages/chain/u1-state/execution-state.json",
+   "sha256": "bb0674da69e5398a3e1961f804225495f973a9d71c09ba9563f27863b5cb579e"
+  },
+  {
+   "path": "stages/chain/u2-evidence.json",
+   "sha256": "1168cbeab4c0bfded42b2357531e16d0034a129a5ac871b95c6ff8f6297d50af"
+  },
+  {
+   "path": "stages/chain/u2-state/execution-state.json",
+   "sha256": "4ebfe74e65726fcf4ab4cda2be7675835c974515f2b54d9467e6007aaa3a922b"
+  },
+  {
+   "path": "stages/chain/u3-evidence.json",
+   "sha256": "90c89c017e5016c778133087c04bc8bbc85099b09632a3e3d88e1bb492cf338e"
+  },
+  {
+   "path": "stages/chain/u3-state/execution-state.json",
+   "sha256": "678ee83bd8de69be6810181be2d595ee85449c5c261b2a0414500d7f750c7257"
+  },
+  {
+   "path": "tests/admission-selftest.json",
+   "sha256": "f0b68257f6b381a540157ca5f84fdb0e4794b22b10fd46eaef4671ee1e6e45db"
+  },
+  {
+   "path": "tests/multihop-swift-test.log",
+   "sha256": "d9c79001c75bb097d6e7577d467e4fb2020d6a63017485f71b437aa3aac40a38"
+  },
+  {
+   "path": "tools/AGENT_TASK.md",
+   "sha256": "4ee06b176be02106a38999cd7a1e55bafceda064ec0a6fd4ada52062547944ba"
+  },
+  {
+   "path": "tools/LOCAL_AGENT_HANDOFF.md",
+   "sha256": "df19389917d81aab9f5dd1b4b65ccd7dc6905a534cf6b8d95bdc26b961913604"
+  },
+  {
+   "path": "tools/artifact_guard.py",
+   "sha256": "76c0faac5e18897854e178d4b1ae740d8c92b23010cd8bde0d7ee1760b957b03"
+  },
+  {
+   "path": "tools/evidence_schema.json",
+   "sha256": "42faf5a909b9197c544a9a68914f30ef75f0c7babfe2409b0c07d3c039a6f11d"
+  },
+  {
+   "path": "tools/experiment_plan.json",
+   "sha256": "20edfe2e69274566edf8763699fd7ec643cc6b0f895d11c9ab0245eaa4a574c8"
+  },
+  {
+   "path": "tools/validate_g_evidence.py",
+   "sha256": "04f530540646e5703a62d071cedda53281fffa2cf687b10e1cc8dbff6d82c01d"
+  },
+  {
+   "path": "tools/workspace_guard.py",
+   "sha256": "eba2654f5cf6a4978ddd99d22267e8ff52710eff284d711b021078a9d0095687"
+  },
+  {
+   "path": "trust/attacker-anchor.json",
+   "sha256": "d5737e2197bbbe5defaecac97cb8d9222e5aff76a1f20f7f803142bd1a0236ff"
+  },
+  {
+   "path": "trust/settlement-signing-key.json",
+   "sha256": "ad8727969092ec828d583f9d9f1e4c46ef153702185ed38ea71fe1ec25bbf90c"
+  },
+  {
+   "path": "trust/settlement-trust-anchor.json",
+   "sha256": "a3a9e62299bc60e2ed5c97011d33a7de53182bee4a2baba35e1791475c7ca1e8"
+  },
+  {
+   "path": "trust/trust-root.json",
+   "sha256": "cdbd86f7c3ea5e291c3c1845ff8aee037e30bb5e293a7285b9de60fe903b0ef4"
+  }
+ ]
+}

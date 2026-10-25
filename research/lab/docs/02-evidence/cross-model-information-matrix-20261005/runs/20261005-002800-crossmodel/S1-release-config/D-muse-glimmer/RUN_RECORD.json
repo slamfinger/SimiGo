@@ -1,0 +1,18 @@
+{
+  "sample_id": "S1-release-config",
+  "model_id": "D-muse-glimmer",
+  "repo_id": "RadixArk/Muse-Glimmer-q4-MLX",
+  "endpoint_identity_match": "RadixArk/Muse-Glimmer-q4-MLX",
+  "architecture": "muse_glimmer",
+  "http_status": 200,
+  "elapsed_seconds": 311.875883,
+  "prompt_sha256": "a63d561ece54b76b734cb755334513916ea8e6f98da7c2d9004973a78f24c3e2",
+  "request_sha256": "497d6c6009e2c0f783c0083a7726c5b4c8025e76a8216ce1ca5c6a22f9100cde",
+  "response_sha256": "30d7bb51505d5f26e5bee6849b128c5e47536038c1299f70e93dc79f6ebce765",
+  "runtime_backend": "NativeMLX/MLX Swift LM text route",
+  "active_endpoint_models": [
+    "RadixArk/Muse-Glimmer-q4-MLX"
+  ],
+  "runtime_isolation": "NOT ENFORCED BY THIS RUNNER",
+  "created_at": "2026-10-05T01:00:21.498800+08:00"
+}

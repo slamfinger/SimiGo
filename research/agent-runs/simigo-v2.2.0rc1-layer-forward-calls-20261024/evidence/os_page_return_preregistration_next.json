@@ -1,0 +1,46 @@
+{
+  "artifact": "physical_page_return - rule registration for FUTURE trials",
+  "registered_at": "2026-10-24T18:40+08:00",
+  "amended_at": "2026-10-24T18:55+08:00 (exact per-trial ratios recomputed from bytes; host-pool-state clauses added after the free-only decomposition was measured)",
+  "registered_by": "the batch driver, on the operator's standing instruction that a metric change must be registered before the runs it scores",
+  "applies_to": "page-return trials whose run is STARTED AFTER this timestamp, on any candidate",
+  "does_not_apply_to": [
+    "os3 (60973e08..., previous batch)",
+    "os4 (95224f06..., this batch, BLOCKED)",
+    "os5 / os5b / os5c (83a880..., this batch) - these were scored one-trial-at-a-time under the pre-existing rule and keep exactly those verdicts"
+  ],
+  "reason_for_registering": [
+    "Three trials of the SAME executable (83a88048569f...) landed on both sides of A5: os5 0.517308 PASS (+299,436,164 B), os5b 0.499115 BLOCKED (-15,300,440 B), os5c 0.496538 BLOCKED (-59,897,700 B). Ratio spread 0.020771, margin spread 359,333,864 B. A single trial at the 0.50 line is therefore not decisive evidence about a binary.",
+    "For scale: os4's failure margin on the previous candidate was -6,920,060 B, i.e. 4.9x smaller than the spread produced by repeating the SAME binary. Candidate-level differences are currently inside trial noise for this metric.",
+    "The methodological concern that free+inactive over-credits the kernel was TESTED against the stored bytes (evidence/os_page_return_free_only_exploratory.json) and is NOT supported: the inactive component contributes at most 0.0033 of the scored gain, because inactive DRAINS (~13 GiB -> ~5 GiB) while free fills (~0.15 GiB -> ~16.2 GiB). free-only would score 0.997-0.998 on the same records, i.e. it is the LOOSER reading, not the stricter one."
+  ],
+  "binding_rule_unchanged": {
+    "A5": "host gain of (free+inactive) across the pre-registered settle window >= 0.5 * kernel resident drop, compared in integer bytes",
+    "threshold_changed": false,
+    "metric_redefined": false,
+    "settle_window_ms": 1500,
+    "sample_interval_ms": 10,
+    "min_low_samples": 20,
+    "note": "nothing in A1-A9 is relaxed; the exit teardown remains measured and excluded (exit_teardown_used_for_verdict=false)"
+  },
+  "new_binding_requirements_for_future_claims": [
+    "three independent trials on that exact executable sha256, each judged by the unchanged A1-A9 set; the gate may only be reported as supported when ALL THREE pass A5",
+    "report per-trial ratio recomputed from bytes, the minimum ratio, and the margin in bytes to 0.5*drop - never the 3-decimal verdict field alone",
+    "record the free-only ratio and the inactive share of the gain beside every trial, explicitly as non-binding observations",
+    "record the host pool state at the anchor (free, inactive, free+inactive bytes) for every trial and report it beside the verdict, because the measured gain is peak minus that anchor",
+    "the host starting state may not be selected for: no re-run until a favourable anchor is found, no waiting for a 'quiet' machine, no discarding a trial because its anchor looked unusual - every started trial is kept and counted",
+    "no other memory-heavy process may run inside a trial window; if one did, the trial is recorded as contaminated and does not count toward the set of three",
+    "any trial whose candidate sha256 differs from the claimed identity invalidates the whole set"
+  ],
+  "explicitly_not_adopted_here": {
+    "free_only_criterion": "measured as LOOSER (0.997-0.998 vs 0.4965-0.5173 on the same records), so adopting it after BLOCKED trials would move the goalpost in the passing direction. It stays a non-binding observation. If the operator wants a criterion that separates 'the target's pages' from 'the pre-existing inactive backlog', that is a new rule and must be registered, with its own threshold and repeat policy, before the runs it scores.",
+    "lowering_the_0.50_threshold": "not proposed and not done; the observed 0.5 split argues for more trials, not for a softer line",
+    "host_state_normalisation": "not attempted as a correction factor; it is recorded and reported instead, because inventing a normalisation after seeing five trials would be fitting the data"
+  },
+  "consequence_for_this_batch": "physical_page_return stays BLOCKED. os5's PASS is not promoted to a candidate-level claim, because the same binary produced two BLOCKED trials and the 3-trial policy above was not in force for them.",
+  "governance": [
+    "no sealed evidence from RC1 / G2 / round-2 / round-3 was modified",
+    "no push, merge, tag, or ledger write",
+    "acceptance_report.json sha256 remains 57de11e7f0a27e840829b5168dc189b79efcea0e2f81771ca8bbbcfe996cb07c"
+  ]
+}

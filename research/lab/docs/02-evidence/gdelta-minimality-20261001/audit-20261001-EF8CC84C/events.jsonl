@@ -1,0 +1,6 @@
+{"wallTime":"2026-10-01T12:00:10Z","event":"run_start","runUUID":"audit-20261001-EF8CC84C","monotonicNs":266666078201000,"payload":{"experiment":"G-delta","cell":"P"}}
+{"wallTime":"2026-10-01T12:00:10Z","event":"derivability","runUUID":"audit-20261001-EF8CC84C","monotonicNs":266666080128666,"payload":{"position_from_remaining_fields":"NOT_DERIVABLE (hash has no preimage; carrier counting excluded)"}}
+{"wallTime":"2026-10-01T12:00:10Z","event":"truncation_probe","runUUID":"audit-20261001-EF8CC84C","monotonicNs":266666080918833,"payload":{"original_count":"54","anchor_detects_mismatch":"YES","carrier_count":"46"}}
+{"wallTime":"2026-10-01T12:00:10Z","event":"truncated_continuation","runUUID":"audit-20261001-EF8CC84C","monotonicNs":266666095545083,"payload":{"proceeded":"YES"}}
+{"wallTime":"2026-10-01T12:00:10Z","event":"r0_verify","runUUID":"audit-20261001-EF8CC84C","monotonicNs":266666096304833,"payload":{"result":"ALL_PASS"}}
+{"wallTime":"2026-10-01T12:00:10Z","event":"run_complete","runUUID":"audit-20261001-EF8CC84C","monotonicNs":266666096380958,"payload":{"outcome":"COMPENSATED(A ⊇ P for boundary integrity on full-prefix-anchor representation) — closure revision gate","cell":"P"}}

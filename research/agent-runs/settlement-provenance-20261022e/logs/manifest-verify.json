@@ -1,0 +1,13 @@
+{
+ "artifact_count": 96,
+ "entry_count": 108,
+ "failures": [],
+ "guarded_path_count": 12,
+ "listed_but_absent": [],
+ "manifest": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/manifests/MANIFEST_SHA256.txt",
+ "manifest_sha256": "0165d2b5b71e6cbf3811ded8e7c3df74f33913294295dc578a1d07b78c2333f0",
+ "result": "PASS",
+ "schema_id": "SIMIGO-E-ROUND-MANIFEST-VERIFY-V1",
+ "unlisted_run_root_files": [],
+ "verified_utc": "2026-10-22T06:10:53.957230+00:00"
+}

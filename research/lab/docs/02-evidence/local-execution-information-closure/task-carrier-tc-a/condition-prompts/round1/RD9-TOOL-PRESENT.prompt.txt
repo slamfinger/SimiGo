@@ -1,0 +1,63 @@
+# Execution B Instruction
+
+You are Execution B, a fresh Local MLX agent reached through SimiGo HTTPServer.
+You have no prior conversation.
+
+## Tool rule
+
+Use no tools.
+
+Do not use `fetch_stored_information`. Do not use `read_file`. Do not request
+source files. Do not use shell, network, search, memory, or storage tools. Do
+not infer unavailable compatibility content.
+
+## Supplied compatibility residue
+
+Core compatibility decisions:
+
+gamma is not baseline-compatible;
+
+alpha ↔ beta  = allow;
+alpha ↔ gamma = block;
+beta ↔ gamma  = block.
+
+Tool evidence:
+
+read_file platform-baseline.json -> {"ok":true,"path":"platform-baseline.json","content":"{\n  \"platform_id\": \"edge-release-testbed\",\n  \"max_schema_version\": 3,\n  \"required_flags\": {\n    \"metrics_v2\": true\n  },\n  \"deployment_rules\": {\n    \"mode\": \"sequential\",\n    \"allow_incompatible_pair\": false\n  }\n}\n"}
+read_file service-alpha.json -> {"ok":true,"path":"service-alpha.json","content":"{\n  \"service_id\": \"alpha\",\n  \"api_version\": 2,\n  \"schema_version\": 3,\n  \"port\": 8081,\n  \"flags\": {\n    \"metrics_v2\": true\n  },\n  \"queue_protocol\": \"mqtt\"\n}\n"}
+read_file service-beta.json -> {"ok":true,"path":"service-beta.json","content":"{\n  \"service_id\": \"beta\",\n  \"api_version\": 2,\n  \"schema_version\": 3,\n  \"port\": 8082,\n  \"flags\": {\n    \"metrics_v2\": true\n  },\n  \"queue_protocol\": \"mqtt\"\n}\n"}
+read_file service-gamma.json -> {"ok":true,"path":"service-gamma.json","content":"{\n  \"service_id\": \"gamma\",\n  \"api_version\": 3,\n  \"schema_version\": 2,\n  \"port\": 8081,\n  \"flags\": {\n    \"metrics_v2\": false\n  },\n  \"queue_protocol\": \"mqtt\"\n}\n"}
+
+## Release request
+
+The release candidate set is:
+
+```text
+["alpha", "beta", "gamma"]
+```
+
+Deployment mode is sequential. Apply only these rules:
+
+1. A service is blocked if the supplied compatibility residue marks it as not
+   individually baseline-compatible.
+2. Two services may both appear in the deployment order only when the supplied
+   compatibility residue marks their pair as mutually compatible.
+3. Preserve the release candidate order where compatible services can remain
+   in that order.
+4. Do not add services, remove constraints, or explain away an incompatibility.
+
+## Final output
+
+Return only one minified JSON object and no Markdown, explanation, or code
+fence. Use this exact shape, replacing each `...` with a value:
+
+```json
+{"release_decision":"...","deployment_order":["..."],"blocked_services":[{"service_id":"...","reason":"..."}]}
+```
+
+Use exactly the key order shown. If no supplied compatibility residue is
+present, return only:
+
+```json
+{"release_decision":"blocked","deployment_order":[],"blocked_services":[],"error":"compatibility residue unavailable"}
+```

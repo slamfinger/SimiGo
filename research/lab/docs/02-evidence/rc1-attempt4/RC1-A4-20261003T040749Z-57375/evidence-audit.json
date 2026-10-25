@@ -1,0 +1,12 @@
+{
+  "layer1_evidence_integrity": "PRESERVED",
+  "lifecycle_reconstructable": true,
+  "old_fresh_evidence_separate": true,
+  "old_fresh_pids_distinct": true,
+  "physical_change_preserved": true,
+  "carrier_separation_preserved": true,
+  "forbidden_channel_runtime_checks_failed": [],
+  "checkpoint_stage_capture": "PARTIAL_RAPID_UNIQUE_STATES",
+  "implementation_changed_during_run": false,
+  "protocol_changed_during_run": false
+}

@@ -1,0 +1,27 @@
+{
+  "all_checks_pass": false,
+  "checks": [
+    {
+      "check": "schema",
+      "ok": true
+    },
+    {
+      "check": "settlement_index_present",
+      "code": "SETTLEMENT_MISSING",
+      "detail": "index entry settlement:u1-result",
+      "ok": false
+    }
+  ],
+  "code": "SETTLEMENT_MISSING",
+  "database": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/C_missing/g2.sqlite",
+  "database_tree_digest_after": "7ce20f80193e092e227844e61e6c67ff4ac482d64f5a96c118a08a72a3a2c932",
+  "database_tree_digest_before": "7ce20f80193e092e227844e61e6c67ff4ac482d64f5a96c118a08a72a3a2c932",
+  "database_unchanged": true,
+  "decision": "REFUSED",
+  "detail": "index entry settlement:u1-result",
+  "expectation": "refused",
+  "expectation_met": true,
+  "model_loaded": false,
+  "pid": 52102,
+  "schema_id": "SIMIGO-G2-RESTORE-GATE-V1"
+}

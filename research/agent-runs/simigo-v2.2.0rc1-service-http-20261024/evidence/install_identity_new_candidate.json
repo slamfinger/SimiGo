@@ -1,0 +1,338 @@
+{
+ "app": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app",
+ "build_version": "26",
+ "bundle_file_count": 19,
+ "bundle_id": "SwiftUI.SimiGo",
+ "bundle_tree_sha256": "243ac13fb77bd53ae5c6f8cd3f7832d1a28abc93850566e0c9878a60c38311ae",
+ "cdhash_sha256": "e11e87be1865957971bb21dd4372b2b2298da9f7",
+ "codesign_dv": {
+  "err": "Executable=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app/Contents/MacOS/SimiGo\nIdentifier=SwiftUI.SimiGo\nFormat=app bundle with Mach-O thin (arm64)\nCodeDirectory v=20500 size=206447 flags=0x10002(adhoc,runtime) hashes=6441+7 location=embedded\nVersionPlatform=1\nVersionMin=1704960\nVersionSDK=1769472\nHash type=sha256 size=32\nCandidateCDHash sha256=e11e87be1865957971bb21dd4372b2b2298da9f7\nCandidateCDHashFull sha256=e11e87be1865957971bb21dd4372b2b2298da9f766ff8c6ffdd570cc6be4e7cf\nHash choices=sha256\nCMSDigest=e11e87be1865957971bb21dd4372b2b2298da9f766ff8c6ffdd570cc6be4e7cf\nCMSDigestType=2\nExecutable Segment base=0\nExecutable Segment limit=33472512\nExecutable Segment flags=0x1\nPage size=16384\nCDHash=e11e87be1865957971bb21dd4372b2b2298da9f7\nSignature=adhoc\nInfo.plist entries=20\nTeamIdentifier=not set\nRuntime Version=27.0.0\nSealed Resources version=2 rules=13 files=15\nInternal requirements count=0 size=12\nTotal signatures=1\nChosen signature=1",
+  "out": "",
+  "rc": 0
+ },
+ "codesign_verify": {
+  "err": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app: valid on disk\n/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app: satisfies its Designated Requirement",
+  "out": "",
+  "rc": 0
+ },
+ "dyld_shared_cache": {
+  "exists": false,
+  "note": "This macOS build supplies the OS libraries from an OS-managed cache; none of the 48 linked paths exists as a file, so they cannot be hashed individually and none of them belongs to the candidate.",
+  "path_checked": "/System/Library/dyld/dyld_shared_cache_arm64e"
+ },
+ "dylib_note": "The candidate ships no embedded frameworks or dylibs: the bundle holds exactly one Mach-O (Contents/MacOS/SimiGo, 105,731,152 bytes, sha256 60973e08...) and links only OS libraries (48, all /System or /usr, none present as a file on this build). The executable digest, the bundle tree digest and the CDHash therefore fully describe the candidate.",
+ "executable": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app/Contents/MacOS/SimiGo",
+ "executable_sha256": "60973e086f12583a20a6b578de33e678bd4a7e1846a7b6cd0084cd845eae90cd",
+ "executable_size": 105731152,
+ "gatekeeper_assess_raw_expected_rejected": true,
+ "installed_equals_built": true,
+ "macho_members": [
+  {
+   "file": "Mach-O 64-bit executable arm64",
+   "install_name": null,
+   "path": "Contents/MacOS/SimiGo",
+   "sha256": "60973e086f12583a20a6b578de33e678bd4a7e1846a7b6cd0084cd845eae90cd"
+  }
+ ],
+ "main_executable_libraries": [
+  "\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.27.0)",
+  "\t/usr/lib/libsqlite3.dylib (compatibility version 9.0.0, current version 406.0.0)",
+  "\t/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation (compatibility version 300.0.0, current version 5027.0.69)",
+  "\t/System/Library/Frameworks/Metal.framework/Versions/A/Metal (compatibility version 1.0.0, current version 382.5.3)",
+  "\t/System/Library/Frameworks/Accelerate.framework/Versions/A/Accelerate (compatibility version 1.0.0, current version 4.0.0)",
+  "\t/usr/lib/libobjc.A.dylib (compatibility version 1.0.0, current version 228.0.0)",
+  "\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)",
+  "\t/System/Library/Frameworks/AVFAudio.framework/Versions/A/AVFAudio (compatibility version 1.0.0, current version 1.0.0)",
+  "\t/System/Library/Frameworks/AVFoundation.framework/Versions/A/AVFoundation (compatibility version 1.0.0, current version 2.0.0)",
+  "\t/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit (compatibility version 45.0.0, current version 2775.10.103)",
+  "\t/System/Library/Frameworks/AuthenticationServices.framework/Versions/A/AuthenticationServices (compatibility version 1.0.0, current version 625.1.29)",
+  "\t/System/Library/Frameworks/Combine.framework/Versions/A/Combine (compatibility version 1.0.0, current version 3023.0.0)",
+  "\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.0.69)",
+  "\t/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics (compatibility version 64.0.0, current version 2050.0.0)",
+  "\t/System/Library/Frameworks/CoreImage.framework/Versions/A/CoreImage (compatibility version 1.0.1, current version 7.0.0)",
+  "\t/System/Library/Frameworks/CoreML.framework/Versions/A/CoreML (compatibility version 1.0.0, current version 1.0.0)",
+  "\t/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia (compatibility version 1.0.0, current version 3350.77.5)",
+  "\t/System/Library/Frameworks/CryptoKit.framework/Versions/A/CryptoKit (compatibility version 1.0.0, current version 1.0.0)",
+  "\t/System/Library/Frameworks/FoundationModels.framework/Versions/A/FoundationModels (compatibility version 1.0.0, current version 2.0.68, weak)",
+  "\t/System/Library/Frameworks/Network.framework/Versions/A/Network (compatibility version 1.0.0, current version 6681.1.1)",
+  "\t/System/Library/Frameworks/Security.framework/Versions/A/Security (compatibility version 1.0.0, current version 62460.1.2)",
+  "\t/System/Library/Frameworks/SwiftUI.framework/Versions/A/SwiftUI (compatibility version 1.0.0, current version 8.0.84)",
+  "\t/usr/lib/swift/libswiftAVFoundation.dylib (compatibility version 1.0.0, current version 2450.77.5)",
+  "\t/usr/lib/swift/libswiftCore.dylib (compatibility version 0.0.0, current version 0.0.0)",
+  "\t/usr/lib/swift/libswiftCoreAudio.dylib (compatibility version 1.0.0, current version 482.102.10, weak)",
+  "\t/usr/lib/swift/libswiftCoreFoundation.dylib (compatibility version 1.0.0, current version 120.100.0)",
+  "\t/usr/lib/swift/libswiftCoreImage.dylib (compatibility version 1.0.0, current version 3.0.0, weak)",
+  "\t/usr/lib/swift/libswiftCoreMIDI.dylib (compatibility version 1.0.0, current version 6.0.0, weak)",
+  "\t/usr/lib/swift/libswiftDarwin.dylib (compatibility version 1.0.0, current version 428.0.10)",
+  "\t/usr/lib/swift/libswiftDispatch.dylib (compatibility version 1.0.0, current version 1605.0.2)",
+  "\t/usr/lib/swift/libswiftIOKit.dylib (compatibility version 1.0.0, current version 1.0.0, weak)",
+  "\t/usr/lib/swift/libswiftMetal.dylib (compatibility version 1.0.0, current version 382.5.3, weak)",
+  "\t/usr/lib/swift/libswiftOSLog.dylib (compatibility version 1.0.0, current version 10.0.0, weak)",
+  "\t/usr/lib/swift/libswiftObjectiveC.dylib (compatibility version 1.0.0, current version 973.1.0)",
+  "\t/usr/lib/swift/libswiftObservation.dylib (compatibility version 0.0.0, current version 0.0.0)",
+  "\t/usr/lib/swift/libswiftQuartzCore.dylib (compatibility version 1.0.0, current version 5.0.0, weak)",
+  "\t/usr/lib/swift/libswiftRegexBuilder.dylib (compatibility version 0.0.0, current version 0.0.0)",
+  "\t/usr/lib/swift/libswiftSpatial.dylib (compatibility version 1.0.0, current version 1.0.0, weak)",
+  "\t/usr/lib/swift/libswiftSynchronization.dylib (compatibility version 0.0.0, current version 0.0.0)",
+  "\t/usr/lib/swift/libswiftUniformTypeIdentifiers.dylib (compatibility version 1.0.0, current version 917.0.1)",
+  "\t/usr/lib/swift/libswiftXPC.dylib (compatibility version 1.0.0, current version 167.0.2, weak)",
+  "\t/usr/lib/swift/libswift_Builtin_float.dylib (compatibility version 0.0.0, current version 0.0.0, weak)",
+  "\t/usr/lib/swift/libswift_Concurrency.dylib (compatibility version 0.0.0, current version 0.0.0)",
+  "\t/usr/lib/swift/libswift_DarwinFoundation1.dylib (compatibility version 1.0.0, current version 428.0.10)",
+  "\t/usr/lib/swift/libswift_StringProcessing.dylib (compatibility version 0.0.0, current version 0.0.0)",
+  "\t/usr/lib/swift/libswiftos.dylib (compatibility version 1.0.0, current version 1090.0.0)",
+  "\t/usr/lib/swift/libswiftsimd.dylib (compatibility version 1.0.0, current version 25.0.0, weak)",
+  "\t/usr/lib/swift/libswiftCoreMedia.dylib (compatibility version 1.0.0, current version 3350.77.5)"
+ ],
+ "marketing_version": "2.2.0",
+ "release_product": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/build/Build/Products/Release/SimiGo.app",
+ "release_product_file_count": 19,
+ "release_product_tree_sha256": "243ac13fb77bd53ae5c6f8cd3f7832d1a28abc93850566e0c9878a60c38311ae",
+ "spctl_assess": {
+  "err": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app: rejected",
+  "out": "",
+  "rc": 3
+ },
+ "system_library_digests": [
+  {
+   "path": "/usr/lib/libc++.1.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/libsqlite3.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/Metal.framework/Versions/A/Metal",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/Accelerate.framework/Versions/A/Accelerate",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/libobjc.A.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/libSystem.B.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/AVFAudio.framework/Versions/A/AVFAudio",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/AVFoundation.framework/Versions/A/AVFoundation",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/AuthenticationServices.framework/Versions/A/AuthenticationServices",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/Combine.framework/Versions/A/Combine",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/CoreImage.framework/Versions/A/CoreImage",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/CoreML.framework/Versions/A/CoreML",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/CryptoKit.framework/Versions/A/CryptoKit",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/FoundationModels.framework/Versions/A/FoundationModels",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/Network.framework/Versions/A/Network",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/System/Library/Frameworks/SwiftUI.framework/Versions/A/SwiftUI",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftAVFoundation.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftCore.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftCoreAudio.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftCoreFoundation.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftCoreImage.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftCoreMIDI.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftDarwin.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftDispatch.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftIOKit.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftMetal.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftOSLog.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftObjectiveC.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftObservation.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftQuartzCore.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftRegexBuilder.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftSpatial.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftSynchronization.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftUniformTypeIdentifiers.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftXPC.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswift_Builtin_float.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswift_Concurrency.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswift_DarwinFoundation1.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswift_StringProcessing.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftos.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftsimd.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  },
+  {
+   "path": "/usr/lib/swift/libswiftCoreMedia.dylib",
+   "resolved_from": "dyld shared cache",
+   "sha256": null
+  }
+ ]
+}

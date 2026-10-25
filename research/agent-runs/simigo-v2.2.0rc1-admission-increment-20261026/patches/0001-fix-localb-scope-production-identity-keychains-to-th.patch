@@ -1,0 +1,179 @@
+From 30beaa5f9e543782fda851acdd3835de9a52dea7 Mon Sep 17 00:00:00 2001
+From: "Mr.Simi" <mr.simi@MrSimideMacBook-Air-5.local>
+Date: Mon, 26 Oct 2026 02:05:28 +0800
+Subject: [PATCH 1/7] fix(localb): scope production identity keychains to the
+ managed file store
+
+The login-Keychain default bound private-key items to the code signature
+of whichever ad-hoc build created them; every re-signed build was then
+refused by CSSMERR_CSP_OPERATION_AUTH_DENIED on SecKeyCopyPublicKey,
+surfacing as transportIdentityMismatch (LOCALBStatus error 59) and
+blocking real-domain startup. Both the transport identity and the
+production signer now default to a 0600 file keychain under the managed
+root (isolated SIMIGO_HOME first, <home>/.simigo/localb second). Root
+cause and probe evidence: ROOT_CAUSE_REALDOMAIN_START_FAILURE.md.
+---
+ .../LOCALBCore/LOCALBProductionSigner.swift   |  2 +-
+ .../LOCALBTransportIdentityStore.swift        | 63 ++++++++++++++++---
+ .../LOCALBTransportIdentityStoreTests.swift   | 26 +++++---
+ 3 files changed, 73 insertions(+), 18 deletions(-)
+
+diff --git a/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift b/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift
+index ca80c79..75dbbed 100644
+--- a/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift
++++ b/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift
+@@ -848,7 +848,7 @@ public struct LOCALBKeychainSignerStore {
+ 
+     public init(service: String = "com.simigo.localb-production-signer",
+                 account: String = "signing-key-v1",
+-                keychainPath: String? = LOCALBKeychainScope.isolatedDefault(
++                keychainPath: String? = LOCALBKeychainScope.scopedDefault(
+                     fileName: "production-signer.keychain-db")) {
+         self.service = service
+         self.account = account
+diff --git a/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift b/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift
+index 63c8841..d7a0bc1 100644
+--- a/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift
++++ b/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift
+@@ -95,25 +95,51 @@ public struct LOCALBTransportIdentityStore {
+ 
+     public init(service: String = "com.simigo.localb-transport-identity",
+                 account: String = "tls-identity-v1",
+-                keychainPath: String? = LOCALBTransportIdentityStore.defaultIsolatedKeychainPath()) {
++                keychainPath: String? = LOCALBTransportIdentityStore.defaultScopedKeychainPath()) {
+         self.service = service
+         self.account = account
+         self.keychainPath = keychainPath
+     }
+ 
+-    /// Default scoping rule: only an explicitly isolated managed root scopes
+-    /// the identity into its own keychain file.
+-    public static func defaultIsolatedKeychainPath(
++    /// Scoped file keychain location for the transport identity.
++    ///
++    /// Priority: an isolated `SIMIGO_HOME` root first (tests/experiments never
++    /// touch the user's real state), then the production managed root
++    /// `<home>/.simigo/localb/…`. The production branch exists because the
++    /// login-Keychain alternative binds private-key items to the code signature
++    /// of whichever ad-hoc build created them: every re-signed build (each RC)
++    /// is then refused with CSSMERR_CSP_OPERATION_AUTH_DENIED on
++    /// `SecKeyCopyPublicKey` — surfaced as `transportIdentityMismatch` and
++    /// blocking real-domain startup entirely (observed 2026-10-26 on the
++    /// admission-increment candidate). A 0600 file inside the user's own home
++    /// carries an equivalent user-domain trust boundary without depending on
++    /// any particular code signature.
++    public static func defaultScopedKeychainPath(
+         env: [String: String] = ProcessInfo.processInfo.environment
+     ) -> String? {
+-        guard let home = env["SIMIGO_HOME"], !home.isEmpty else { return nil }
+-        let root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
++        let root: URL
++        if let home = env["SIMIGO_HOME"], !home.isEmpty {
++            root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
++        } else {
++            root = FileManager.default.homeDirectoryForCurrentUser
++                .appendingPathComponent(".simigo", isDirectory: true)
++        }
+         return root
+             .appendingPathComponent("localb", isDirectory: true)
+             .appendingPathComponent("transport-identity.keychain-db", isDirectory: false)
+             .path
+     }
+ 
++    /// Legacy name kept for source compatibility; the default is now ALWAYS a
++    /// scoped file keychain (isolated root first, production managed root
++    /// second) — see ``defaultScopedKeychainPath(env:)``.
++    @available(*, deprecated, renamed: "defaultScopedKeychainPath")
++    public static func defaultIsolatedKeychainPath(
++        env: [String: String] = ProcessInfo.processInfo.environment
++    ) -> String? {
++        defaultScopedKeychainPath(env: env)
++    }
++
+     /// Physical tags are unique PER ATTEMPT, not per logical generation: a
+     /// failed attempt whose key was permanently written but whose
+     /// certificate/verification/index-commit never completed leaves an
+@@ -664,18 +690,37 @@ public struct LOCALBKeychainScope {
+         self.fileName = fileName
+     }
+ 
+-    public static func isolatedDefault(
++    /// Same scoping rule as the transport identity: isolated `SIMIGO_HOME`
++    /// first, then the production managed root `<home>/.simigo/localb/…`.
++    /// The production branch avoids login-Keychain ACLs that bind items to
++    /// the creating build's code signature (see
++    /// ``LOCALBTransportIdentityStore/defaultScopedKeychainPath(env:)``).
++    public static func scopedDefault(
+         fileName: String,
+         env: [String: String] = ProcessInfo.processInfo.environment
+     ) -> String? {
+-        guard let home = env["SIMIGO_HOME"], !home.isEmpty else { return nil }
+-        let root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
++        let root: URL
++        if let home = env["SIMIGO_HOME"], !home.isEmpty {
++            root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
++        } else {
++            root = FileManager.default.homeDirectoryForCurrentUser
++                .appendingPathComponent(".simigo", isDirectory: true)
++        }
+         return root
+             .appendingPathComponent("localb", isDirectory: true)
+             .appendingPathComponent(fileName, isDirectory: false)
+             .path
+     }
+ 
++    /// Legacy name; defaults are now always a scoped file keychain.
++    @available(*, deprecated, renamed: "scopedDefault(fileName:env:)")
++    public static func isolatedDefault(
++        fileName: String,
++        env: [String: String] = ProcessInfo.processInfo.environment
++    ) -> String? {
++        scopedDefault(fileName: fileName, env: env)
++    }
++
+     func resolve() throws -> SecKeychain? {
+         guard let path else { return nil }
+         let fm = FileManager.default
+diff --git a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
+index ff543f2..c7fd839 100644
+--- a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
++++ b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
+@@ -342,17 +342,27 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+         }
+     }
+ 
+-    /// Scoping is derived from the isolation roots, never from a separate
+-    /// switch: a run that redirects `SIMIGO_HOME` cannot keep writing
+-    /// identities into the real login Keychain.
+-    func testDefaultKeychainPathOnlyFollowsAnIsolatedManagedRoot() {
+-        XCTAssertNil(LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(env: [:]))
+-        XCTAssertNil(LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(
+-            env: ["SIMIGO_HOME": ""]))
++    /// Scoping follows the managed roots: an isolated `SIMIGO_HOME` first, then
++    /// the production managed root. The login Keychain is never the default:
++    /// its per-signature ACLs refused every re-signed build (2026-10-26
++    /// real-domain failure, CSSMERR_CSP_OPERATION_AUTH_DENIED).
++    func testDefaultKeychainPathFollowsManagedRoots() {
++        let home = FileManager.default.homeDirectoryForCurrentUser
++            .appendingPathComponent(".simigo/localb/transport-identity.keychain-db").path
++        XCTAssertEqual(LOCALBTransportIdentityStore.defaultScopedKeychainPath(env: [:]), home)
+         XCTAssertEqual(
+-            LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(
++            LOCALBTransportIdentityStore.defaultScopedKeychainPath(
++                env: ["SIMIGO_HOME": ""]),
++            home)
++        XCTAssertEqual(
++            LOCALBTransportIdentityStore.defaultScopedKeychainPath(
+                 env: ["SIMIGO_HOME": "/Users/example/iso-root"]),
+             "/Users/example/iso-root/localb/transport-identity.keychain-db")
++        XCTAssertEqual(
++            LOCALBKeychainScope.scopedDefault(
++                fileName: "production-signer.keychain-db", env: [:]),
++            FileManager.default.homeDirectoryForCurrentUser
++                .appendingPathComponent(".simigo/localb/production-signer.keychain-db").path)
+     }
+ 
+     private func indexQueryDict(for store: LOCALBTransportIdentityStore) -> [String: Any] {
+-- 
+2.54.0 (Apple Git-157)
+

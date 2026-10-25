@@ -1,0 +1,664 @@
+{
+  "boundary" : "ISOLATED_INSTRUMENTATION \/ LAYER_ENTERED_ONLY \/ OBSERVER_PASSIVE \/ DECLARED_LINE_IS_SCENARIO \/ MEASURED_LINE_IS_OBSERVATION \/ NOT_DEMAND \/ NOT_PREDICTION \/ EXPERT_DEMAND_NOT_INSTRUMENTED",
+  "instrumentedModuleCount" : 40,
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+  "modelType" : "Qwen35MoEModel",
+  "preamble" : {
+    "baselineText" : "ping",
+    "baselineTokenIDs" : [
+      9694,
+      248046
+    ],
+    "controlPrompt" : "Return exactly one word: ping",
+    "identityPass" : true,
+    "instrumentedText" : "ping",
+    "instrumentedTokenIDs" : [
+      9694,
+      248046
+    ]
+  },
+  "protocolVersion" : "G1.9-C.COLLECT.V1",
+  "status" : "COLLECTED",
+  "workloads" : [
+    {
+      "steps" : [
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 966.189042,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "OPEN_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Open the project report and read the first section.",
+          "stepIndex" : 0,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 115.47725,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "SUMMARIZE_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Summarize the report you just opened in two sentences.",
+          "stepIndex" : 1,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 230.789834,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "SEARCH_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Find every mention of the delivery date in the report.",
+          "stepIndex" : 2,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 520,
+          "executionState" : "STATE_B",
+          "generatedTokenCount" : 13,
+          "generationMilliseconds" : 627.6470419999999,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 208,
+            "SWITCH_MLP_L16_31" : 208,
+            "SWITCH_MLP_L32_47" : 104
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "EDIT_DOCUMENT",
+          "passCount" : 13,
+          "prompt" : "Rewrite the second paragraph of the report more concisely.",
+          "stepIndex" : 3,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 227.626083,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "RECHECK_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Check the edited paragraph against the rest of the report.",
+          "stepIndex" : 4,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 348.966292,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "SAVE_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Confirm the changes and save the report.",
+          "stepIndex" : 5,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        }
+      ],
+      "summary" : "open → summarize → search → edit → recheck → save on one document",
+      "traceID" : "T1_DOCUMENT_SESSION"
+    },
+    {
+      "steps" : [
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 289.634958,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "FILE_INSPECT",
+          "passCount" : 16,
+          "prompt" : "List the files in the current project folder.",
+          "stepIndex" : 0,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 296.21195900000004,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "TOOL_CALL_1",
+          "passCount" : 16,
+          "prompt" : "Run the test suite for this project and report failures.",
+          "stepIndex" : 1,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_B",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 479.971958,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "TOOL_RESULT_1",
+          "passCount" : 16,
+          "prompt" : "The test run returned three failures. Which module do they belong to?",
+          "stepIndex" : 2,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 419.03141700000003,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "NEXT_OPERATION",
+          "passCount" : 16,
+          "prompt" : "Inspect the failing module's main file.",
+          "stepIndex" : 3,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 458.460791,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "TOOL_CALL_2",
+          "passCount" : 16,
+          "prompt" : "Run the failing module's tests again with verbose output.",
+          "stepIndex" : 4,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        }
+      ],
+      "summary" : "file inspect → tool call → tool result → next operation → tool call again",
+      "traceID" : "T2_COMPUTER_OPERATION"
+    },
+    {
+      "steps" : [
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 614.073625,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "USER_TURN_1",
+          "passCount" : 16,
+          "prompt" : "Find the largest file in this repository.",
+          "stepIndex" : 0,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 959.462125,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "TOOL_CALL_1",
+          "passCount" : 16,
+          "prompt" : "Search the repository for files larger than ten megabytes.",
+          "stepIndex" : 1,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_B",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 577.6828750000001,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "TOOL_RESULT_1",
+          "passCount" : 16,
+          "prompt" : "The search found one large asset file. Continue.",
+          "stepIndex" : 2,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 753.555,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "USER_TURN_2",
+          "passCount" : 16,
+          "prompt" : "Now check when that file was last modified.",
+          "stepIndex" : 3,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 544.373458,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "TOOL_CALL_2",
+          "passCount" : 16,
+          "prompt" : "Look up the modification history of that asset file.",
+          "stepIndex" : 4,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_B",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 672.469667,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "TOOL_RESULT_2",
+          "passCount" : 16,
+          "prompt" : "The file was modified two weeks ago. Continue.",
+          "stepIndex" : 5,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 565.321917,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "USER_TURN_3",
+          "passCount" : 16,
+          "prompt" : "Summarize what we found about this file.",
+          "stepIndex" : 6,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 756.9305410000001,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "TOOL_CALL_3",
+          "passCount" : 16,
+          "prompt" : "Collect the file size and modification date into one line.",
+          "stepIndex" : 7,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_ALL",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 723.2085000000001,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "FINAL_ANSWER",
+          "passCount" : 16,
+          "prompt" : "Write the final one-paragraph answer about the asset file.",
+          "stepIndex" : 8,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        }
+      ],
+      "summary" : "three user turns interleaved with tool calls and results, then a final answer",
+      "traceID" : "T3_AGENTIC_MULTI_TURN"
+    },
+    {
+      "steps" : [
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "eventCount" : 600,
+          "executionState" : "STATE_ALL",
+          "generatedTokenCount" : 15,
+          "generationMilliseconds" : 967.162416,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 240,
+            "SWITCH_MLP_L16_31" : 240,
+            "SWITCH_MLP_L32_47" : 120
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "CONTEXT_LOAD",
+          "passCount" : 15,
+          "prompt" : "Read the whole conversation above as one context.",
+          "stepIndex" : 0,
+          "traceID" : "T4_LONG_CONTEXT"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 731.822666,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "EXTRACT_1",
+          "passCount" : 16,
+          "prompt" : "Extract the first question asked in this context.",
+          "stepIndex" : 1,
+          "traceID" : "T4_LONG_CONTEXT"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_BC",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 496.819292,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "EXTRACT_2",
+          "passCount" : 16,
+          "prompt" : "Extract the last answer given in this context.",
+          "stepIndex" : 2,
+          "traceID" : "T4_LONG_CONTEXT"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 661.811792,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "EXTRACT_3",
+          "passCount" : 16,
+          "prompt" : "Extract the first question again and compare it with the last answer.",
+          "stepIndex" : 3,
+          "traceID" : "T4_LONG_CONTEXT"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "eventCount" : 640,
+          "executionState" : "STATE_ALL",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 581.130375,
+          "measuredGroupEventCounts" : {
+            "SWITCH_MLP_L00_15" : 256,
+            "SWITCH_MLP_L16_31" : 256,
+            "SWITCH_MLP_L32_47" : 128
+          },
+          "measuredGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "operation" : "CONTEXT_SUMMARY",
+          "passCount" : 16,
+          "prompt" : "Summarize the entire context in three sentences.",
+          "stepIndex" : 4,
+          "traceID" : "T4_LONG_CONTEXT"
+        }
+      ],
+      "summary" : "one loaded context, repeated executions over different regions, then a summary",
+      "traceID" : "T4_LONG_CONTEXT"
+    }
+  ]
+}

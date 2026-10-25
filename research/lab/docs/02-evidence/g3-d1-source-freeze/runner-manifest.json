@@ -1,0 +1,2631 @@
+{
+  "archive_dir": "docs/02-evidence/g3-d1-source-freeze/archives",
+  "archives": [
+    {
+      "content": "full bytes of every in-scope file",
+      "file_count": 204,
+      "format": "posix-tar",
+      "kind": "worktree-archive",
+      "path": "outer_worktree.tar",
+      "preserves": [
+        "type",
+        "mode",
+        "link_target",
+        "bytes"
+      ],
+      "repo": ".",
+      "sha256": "98c3f3c410849388ae6db87c3f329cb0127a66c46409191eb9910172fe4f90b7",
+      "size": 3246080
+    },
+    {
+      "commit_count": 1,
+      "full_history": false,
+      "head": "19d874c5f2c1871b0d032bd546495be7bd830169",
+      "kind": "git-bundle",
+      "path": "vendor_mlx-swift.bundle",
+      "prerequisite": "ef5f1b6bb24e27922189316362f3057c64261704",
+      "repo": "vendor/mlx-swift",
+      "sha256": "24f06b77bca800619101476737f0d5b02f0d82c13e10381c4be70d2d0957c95a",
+      "size": 2922
+    },
+    {
+      "commit_count": 541,
+      "full_history": true,
+      "head": "2040afcd607d57c1add6b99aca3967f3786752bf",
+      "kind": "git-bundle",
+      "path": "vendor_mlx-swift-lm.bundle",
+      "prerequisite": null,
+      "repo": "vendor/mlx-swift-lm",
+      "sha256": "148cf23c3382ef57a249540bde352dc9eee05ee619ed61da39a48c0fb20bed14",
+      "size": 4889191
+    },
+    {
+      "kind": "worktree-diff",
+      "path": "vendor_mlx-swift-lm.worktree.diff",
+      "repo": "vendor/mlx-swift-lm",
+      "sha256": "e40d4b84d6f747e3623f653b1f42608fa6723ddb58430286bb97c2215224d6ae",
+      "size": 6174
+    },
+    {
+      "commit_count": 1,
+      "full_history": false,
+      "head": "3fe6fa896531b2ba2ad83d66d4f919dee6f1dbd4",
+      "kind": "git-bundle",
+      "path": "vendor_mlx-swift_Source_Cmlx_mlx-c.bundle",
+      "prerequisite": "c74db5307cc8ce122f48d97ef951b30578674e7f",
+      "repo": "vendor/mlx-swift/Source/Cmlx/mlx-c",
+      "sha256": "8250ac8b090dcff690c554c679a1c79b171f1e446f82b50a8f32220ee768f394",
+      "size": 2025
+    }
+  ],
+  "artifact_stamp": {
+    "artifacts_sha256": {
+      "simigo2-experimental/.build/out/Products/Debug/G3D1Supervisor": "fff0db5d475e90c17e41b058be4415a87c6af21ace7314b10988538a536432c7",
+      "simigo2-experimental/.build/out/Products/Debug/G3D1SupervisorTests.xctest": "afc929b0a2eafaa326126364f4ecf8b1184897417268f9dc9ac0edec69476264",
+      "simigo2-experimental/.build/out/Products/Debug/G3D1Worker": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a",
+      "simigo2-experimental/.build/out/Products/Debug/SimiGo2ExperimentalTests.xctest": "9c6b02e309202d5a4b9eea89cf3ea5bd46079c83f08048db09e827c67d930ddf",
+      "simigo2-experimental/.build/out/Products/Debug/SimiGoRuntimeContractTests.xctest": "2c05fac9d03f3eec16d680f1106889e5065aa5f831fe351f1de8125bd0c52f35",
+      "simigo2-experimental/.build/out/Products/Debug/g3-swift-isolation-entry": "eee7a2c53c5132878f7a9ab27cce4e8c057a3dfcc3ea3805273ae19a69f41457"
+    },
+    "builder": "tools/g3_build_stamped.py",
+    "built_at_utc": "2026-10-21T12:03:39Z",
+    "commands": [
+      {
+        "command": "swift build --scratch-path .build/out",
+        "exit": 0,
+        "stderr_tail": [
+          "warning: 'mlx-swift-lm': Conflicting identity for mlx-swift: dependency 'github.com/slamfinger/mlx-swift' and dependency '/users/mr.simi/documents/simigo-lab/vendor/mlx-swift' both point to the same package identity 'mlx-swift'. The dependencies are introduced through the following chains: (A) /users/mr.simi/documents/simigo-lab/simigo2-experimental->/users/mr.simi/documents/simigo-lab/vendor/mlx-swift-lm->github.com/slamfinger/mlx-swift (B) /users/mr.simi/documents/simigo-lab/simigo2-experimental->/users/mr.simi/documents/simigo-lab/vendor/mlx-swift. If there are multiple chains that lead to the same dependency, only the first chain is shown here. To see all chains use debug output option. To resolve the conflict, coordinate with the maintainer of the package that introduces the conflicting dependency. This will be escalated to an error in future versions of SwiftPM.",
+          "warning: 'mlx-swift-lm': Conflicting identity for mlx-swift: dependency 'github.com/slamfinger/mlx-swift' and dependency '/users/mr.simi/documents/simigo-lab/vendor/mlx-swift' both point to the same package identity 'mlx-swift'. The dependencies are introduced through the following chains: (A) /users/mr.simi/documents/simigo-lab/simigo2-experimental->/users/mr.simi/documents/simigo-lab/vendor/mlx-swift-lm->github.com/slamfinger/mlx-swift (B) /users/mr.simi/documents/simigo-lab/simigo2-experimental->/users/mr.simi/documents/simigo-lab/vendor/mlx-swift. If there are multiple chains that lead to the same dependency, only the first chain is shown here. To see all chains use debug output option. To resolve the conflict, coordinate with the maintainer of the package that introduces the conflicting dependency. This will be escalated to an error in future versions of SwiftPM.",
+          "warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')"
+        ],
+        "stdout_tail": [
+          "Building for debugging...",
+          "[Computing dependencies]",
+          "[1 / 86] mlx-swift_Cmlx",
+          "Build complete! (0.60秒)"
+        ]
+      },
+      {
+        "command": "swift build --build-tests --scratch-path .build/out",
+        "exit": 0,
+        "stderr_tail": [
+          "warning: 'mlx-swift-lm': Conflicting identity for mlx-swift: dependency 'github.com/slamfinger/mlx-swift' and dependency '/users/mr.simi/documents/simigo-lab/vendor/mlx-swift' both point to the same package identity 'mlx-swift'. The dependencies are introduced through the following chains: (A) /users/mr.simi/documents/simigo-lab/simigo2-experimental->/users/mr.simi/documents/simigo-lab/vendor/mlx-swift-lm->github.com/slamfinger/mlx-swift (B) /users/mr.simi/documents/simigo-lab/simigo2-experimental->/users/mr.simi/documents/simigo-lab/vendor/mlx-swift. If there are multiple chains that lead to the same dependency, only the first chain is shown here. To see all chains use debug output option. To resolve the conflict, coordinate with the maintainer of the package that introduces the conflicting dependency. This will be escalated to an error in future versions of SwiftPM.",
+          "warning: 'mlx-swift-lm': Conflicting identity for mlx-swift: dependency 'github.com/slamfinger/mlx-swift' and dependency '/users/mr.simi/documents/simigo-lab/vendor/mlx-swift' both point to the same package identity 'mlx-swift'. The dependencies are introduced through the following chains: (A) /users/mr.simi/documents/simigo-lab/simigo2-experimental->/users/mr.simi/documents/simigo-lab/vendor/mlx-swift-lm->github.com/slamfinger/mlx-swift (B) /users/mr.simi/documents/simigo-lab/simigo2-experimental->/users/mr.simi/documents/simigo-lab/vendor/mlx-swift. If there are multiple chains that lead to the same dependency, only the first chain is shown here. To see all chains use debug output option. To resolve the conflict, coordinate with the maintainer of the package that introduces the conflicting dependency. This will be escalated to an error in future versions of SwiftPM.",
+          "warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')"
+        ],
+        "stdout_tail": [
+          "Building for debugging...",
+          "[Computing dependencies]",
+          "Build complete! (0.63秒)"
+        ]
+      }
+    ],
+    "schema_id": "G3-D1-BUILD-STAMP-V1",
+    "source_sha256": "2b027bb80a47d266ec8beeec06992b18aa0f94ba994b82449651e5da91467912",
+    "source_sha256_matches": true,
+    "toolchain": {
+      "machine": "arm64",
+      "macos": "27.0.1",
+      "python": "3.9.6",
+      "swift": [
+        "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)",
+        "Target: arm64-apple-macosx27.0.0"
+      ],
+      "swift_exit": 0
+    }
+  },
+  "artifacts": [
+    {
+      "expected": true,
+      "fresh_against_scope": true,
+      "kind": "executable",
+      "mtime_utc": "2026-10-21T11:17:46Z",
+      "path": "simigo2-experimental/.build/out/Products/Debug/g3-swift-isolation-entry",
+      "present": true,
+      "sha256": "eee7a2c53c5132878f7a9ab27cce4e8c057a3dfcc3ea3805273ae19a69f41457",
+      "size": 1204096
+    },
+    {
+      "expected": true,
+      "fresh_against_scope": true,
+      "kind": "bundle",
+      "mtime_utc": "2026-10-21T11:18:01Z",
+      "path": "simigo2-experimental/.build/out/Products/Debug/SimiGo2ExperimentalTests.xctest",
+      "present": true,
+      "sha256": "9c6b02e309202d5a4b9eea89cf3ea5bd46079c83f08048db09e827c67d930ddf",
+      "size": 114512123
+    },
+    {
+      "expected": true,
+      "fresh_against_scope": true,
+      "kind": "bundle",
+      "mtime_utc": "2026-10-21T11:18:00Z",
+      "path": "simigo2-experimental/.build/out/Products/Debug/SimiGoRuntimeContractTests.xctest",
+      "present": true,
+      "sha256": "2c05fac9d03f3eec16d680f1106889e5065aa5f831fe351f1de8125bd0c52f35",
+      "size": 2839691
+    },
+    {
+      "expected": true,
+      "fresh_against_scope": true,
+      "kind": "executable",
+      "mtime_utc": "2026-10-21T11:17:47Z",
+      "path": "simigo2-experimental/.build/out/Products/Debug/G3D1Worker",
+      "present": true,
+      "sha256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a",
+      "size": 1626400
+    },
+    {
+      "expected": true,
+      "fresh_against_scope": true,
+      "kind": "executable",
+      "mtime_utc": "2026-10-21T11:17:47Z",
+      "path": "simigo2-experimental/.build/out/Products/Debug/G3D1Supervisor",
+      "present": true,
+      "sha256": "fff0db5d475e90c17e41b058be4415a87c6af21ace7314b10988538a536432c7",
+      "size": 1632464
+    },
+    {
+      "expected": true,
+      "fresh_against_scope": true,
+      "kind": "bundle",
+      "mtime_utc": "2026-10-21T11:18:00Z",
+      "path": "simigo2-experimental/.build/out/Products/Debug/G3D1SupervisorTests.xctest",
+      "present": true,
+      "sha256": "afc929b0a2eafaa326126364f4ecf8b1184897417268f9dc9ac0edec69476264",
+      "size": 1752502
+    }
+  ],
+  "boundary": {
+    "available": true,
+    "checks": [
+      {
+        "allowed": [
+          "SimiGoRuntimeContract"
+        ],
+        "evidence_class": "module_unreachability",
+        "id": "G8b-A.entry_dependency_set",
+        "observed": [
+          "SimiGoRuntimeContract"
+        ],
+        "passed": true,
+        "subject": "G3SwiftIsolationEntry"
+      },
+      {
+        "evidence_class": "module_unreachability",
+        "forbidden": "SimiGo2Experimental",
+        "id": "G8b-A.entry_excludes.SimiGo2Experimental",
+        "observed": [
+          "SimiGoRuntimeContract"
+        ],
+        "passed": true,
+        "subject": "G3SwiftIsolationEntry"
+      },
+      {
+        "applicable": true,
+        "evidence_class": "module_unreachability",
+        "forbidden": [
+          "SimiGo2Experimental"
+        ],
+        "id": "G8b-A.worker_dependency_set",
+        "note": null,
+        "observed": [
+          "G3D1WorkerCore",
+          "SimiGoRuntimeContract"
+        ],
+        "passed": true,
+        "subject": "G3D1Worker"
+      },
+      {
+        "applicable": true,
+        "evidence_class": "module_unreachability",
+        "forbidden": [
+          "SimiGo2Experimental"
+        ],
+        "id": "G8b-A.worker_transitive_closure_excludes_ungated",
+        "observed": [
+          "G3D1WorkerCore",
+          "SimiGoRuntimeContract"
+        ],
+        "passed": true,
+        "subject": "G3D1Worker"
+      }
+    ],
+    "method": "swift package dump-package",
+    "non_claims": [
+      "G8b-B: no claim that an actively hostile caller is structurally prevented from calling the ungated public API of the linked executor module",
+      "a second PID and a supervisor do not by themselves close G8b-B: the worker still links the executor module unless a separate facade/visibility mechanism is proven",
+      "G8b-A covers the reviewed entry's dependency set, calling convention and artifact identity; it is not a sandbox"
+    ],
+    "targets": {
+      "G3D1Worker": [
+        "G3D1WorkerCore",
+        "SimiGoRuntimeContract"
+      ],
+      "G3D1WorkerCore": [
+        "SimiGoRuntimeContract"
+      ],
+      "G3SwiftIsolationEntry": [
+        "SimiGoRuntimeContract"
+      ],
+      "SimiGo2Experimental": [
+        "MLX",
+        "MLXHuggingFace",
+        "MLXLLM",
+        "MLXLMCommon",
+        "MLXNN",
+        "SimiGoRuntimeContract",
+        "Tokenizers"
+      ]
+    },
+    "threat_model": "case_a_reviewed_cooperating_worker"
+  },
+  "build_inputs": {
+    "package_resolved_sha256": "22d05fec17408e5a497f2df7f7f9c80354c7922bd350aca693256607fd034f61",
+    "package_sha256": "9b38181b1427f00fde32cce8f0ae9fc963c882bd578003652e46941721f98842",
+    "package_swift_sha256": "526cb0813c7c6717eb23aa7b554d63f7b4c73fd54712d449c7dc22a5d4d0b2b2",
+    "path_dependency_roots": [
+      "../vendor/mlx-swift",
+      "../vendor/mlx-swift-lm"
+    ],
+    "resolved_fork_pin_count": 0,
+    "root_package_resolved_sha256": "1c036b74d78bdf2e460efd5a11da24b8ed5588f89905741ff76fee6e4ad5468b",
+    "root_package_swift_sha256": "7425c5c9475ada866c7c1d65f0837d7acc35f892be51db182dae4efa2cb5c5aa"
+  },
+  "d1_execution_binding": {
+    "launch_match": true,
+    "launch_pid": 74127,
+    "launch_running_executable": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/g3-d1-source-freeze/execution/stage/G3D1Worker",
+    "marker": "26b9c7bc081c7f4104e2ad6a2873dd736079ca1c7ba9fc278ffa7af0a4b7c3fb",
+    "marker_consumed": true,
+    "reasons": [],
+    "record": "docs/02-evidence/g3-d1-source-freeze/execution/execution-identity.json",
+    "record_sha256": "ed3d8a12ecfd69501395b9868ed10e3bdf42e55bc04fcf05cef5fc54f1cbcb2c",
+    "runner_sha256_matches": true,
+    "source_sha256_matches": true,
+    "stand_in": false,
+    "status": "bound",
+    "worker": "simigo2-experimental/.build/out/out/Products/Debug/G3D1Worker",
+    "worker_sha256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a"
+  },
+  "digest_rules": {
+    "encoding": "UTF-8 JSON; json.dumps(sort_keys=True, separators=(',', ':'), ensure_ascii=False); SHA-256 over the resulting bytes",
+    "filesystem_semantics": "files[] records type (file|symlink), permission bits, and symlink target; the outer tar preserves the same type, mode and link target",
+    "runner_covers": [
+      "all source_covers fields",
+      "artifacts[]: path, expected, present, kind, sha256, size",
+      "artifact_stamp: source_sha256, artifacts_sha256, commands (command + exit only), toolchain"
+    ],
+    "runner_excludes": [
+      "artifact mtime_utc and fresh_against_scope (ordering, not identity)",
+      "artifact_stamp.built_at_utc (a timestamp, not identity)",
+      "artifact_stamp.source_sha256_matches (a verification flag, already implied)",
+      "artifact_stamp.commands[].stdout_tail/stderr_tail (build log, not identity)",
+      "generated_at_utc, runner_sha256, open_conditions, source_revision",
+      "d1_execution_binding (status, not source)"
+    ],
+    "schema": "G3-D1-SOURCE-DIGEST-V3",
+    "self_reference_exclusions": [
+      "runner-manifest.json and its .sha256 sidecar are not in files[]",
+      "the archive directory is not in files[]",
+      "source_sha256 does not include runner_sha256 or artifact_stamp",
+      "runner_sha256 does not include itself; it includes source_sha256 as a value"
+    ],
+    "sorting": "files[] by path; archives[] by (repo, kind, path); vendor_repos[] in VENDOR_REPOS order; vendor dirty_files[] by path; submodules[] by path",
+    "source_covers": [
+      "schema_id and digest_rules (these rules are themselves frozen)",
+      "scope (dirs, files, governance prefix)",
+      "files[]: path, type, sha256, size, mode, link_target (sorted by path)",
+      "vendor_repos[]: path, head, tree, dirty_files[], tracked_diff_sha256, submodules[]",
+      "build_inputs: package/resolved hashes, root package hashes, path roots, pin count",
+      "archives[]: kind, repo, path, sha256, size, prerequisite, full_history, head, commit_count, file_count"
+    ],
+    "source_excludes": [
+      "generated_at_utc, toolchain (environment, not source)",
+      "boundary and entry_guards (derived checks over covered bytes, recomputed on verify)",
+      "outer_repo branch/remotes/remote_ref_count/local_only_head/head_in_remote_branch",
+      "files[].git_state (tracking state, not content)",
+      "vendor_repos[] branch/remotes/remote_ref_count/head_in_remote_branch/local_only_head",
+      "artifact_stamp, artifacts[], runner_sha256, open_conditions, source_revision",
+      "d1_execution_binding (status, not source)"
+    ],
+    "stability": "source_sha256 depends only on covered content and these rules; runner_sha256 additionally depends on artifact bytes and toolchain, so two builds of identical sources+artifacts yield the same runner_sha256"
+  },
+  "entry_guards": {
+    "checks": [
+      {
+        "evidence_class": "type_enforced",
+        "id": "G8a.runner_factory_required",
+        "observed": {
+          "optional_form": false,
+          "required_parameter": true
+        },
+        "passed": true,
+        "subject": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3DualArmRunner.swift"
+      },
+      {
+        "evidence_class": "source_order",
+        "id": "G8a.public_entry_delegates_inside_gate",
+        "observed": {
+          "delegate_offset": 478,
+          "gate_offset": 333,
+          "side_effect_offsets": {
+            "G3RunSettlement(": -1,
+            "claimContinuation()": -1,
+            "consumeBinding(": -1,
+            "context.model(": -1
+          }
+        },
+        "passed": true,
+        "subject": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift"
+      },
+      {
+        "evidence_class": "source_order",
+        "id": "G8a.executor_guard_precedes_side_effects",
+        "observed": {
+          "guard_offset": 1299,
+          "per_arm_call_offset": 1818,
+          "side_effect_offsets": {
+            "G3RunSettlement(": -1,
+            "claimContinuation()": -1,
+            "consumeBinding(": -1,
+            "context.model(": -1
+          },
+          "throw_offset": 1383
+        },
+        "passed": true,
+        "subject": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift"
+      },
+      {
+        "evidence_class": "source_order",
+        "id": "G8a.executor_no_recompute_fallback",
+        "observed": {
+          "ungated_call_offsets": []
+        },
+        "passed": true,
+        "subject": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift"
+      },
+      {
+        "evidence_class": "source_order",
+        "id": "G8a.gated_body_has_no_conditional_compilation",
+        "observed": {
+          "directives": []
+        },
+        "passed": true,
+        "subject": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift"
+      }
+    ],
+    "method": "source scan of the gated executor entry"
+  },
+  "files": [
+    {
+      "git_state": "modified",
+      "link_target": null,
+      "mode": 420,
+      "path": ".gitignore",
+      "sha256": "e688a642ae4e43e49435209ff38108a35fc615abe9f085e5ca5034828e73815a",
+      "size": 968,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "Package.resolved",
+      "sha256": "1c036b74d78bdf2e460efd5a11da24b8ed5588f89905741ff76fee6e4ad5468b",
+      "size": 3290,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "Package.swift",
+      "sha256": "7425c5c9475ada866c7c1d65f0837d7acc35f892be51db182dae4efa2cb5c5aa",
+      "size": 2938,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "docs/00-governance/SIMIGO2_G3_D1_ENTRY_BOUNDARY_DECISION_V0.1_20261021.md",
+      "sha256": "0cfd5715437294af62195800ee4a1d4bdd463003d94c68793f4fafa90dc4a28b",
+      "size": 65553,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "docs/00-governance/SIMIGO2_G3_D1_EXPERIMENT_PROTOCOL_V0.1_20261021.md",
+      "sha256": "4cbef4d6a8f6d5e72b12fca6c90d92ca55fd0e501bc3e0ec1d5012e4cfadaa23",
+      "size": 45679,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "docs/00-governance/SIMIGO2_G3_D1_EXPERIMENT_PROTOCOL_V0.1_20261021.sha256",
+      "sha256": "43fcdeb11a79fcc65f3a2cb561aa8aa27d60c81f99185e7f9a56ac61c66e3f4d",
+      "size": 117,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "docs/00-governance/SIMIGO2_G3_RUNTIME_ISOLATION_D_AUTHORIZATION_BOUNDARY_V0.1_20261021.md",
+      "sha256": "6f898ce3561a3b7e8312a55a02763cbed5d7813f0adf8fc505591a5f0d9152a1",
+      "size": 25953,
+      "type": "file"
+    },
+    {
+      "git_state": "modified",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Package.resolved",
+      "sha256": "22d05fec17408e5a497f2df7f7f9c80354c7922bd350aca693256607fd034f61",
+      "size": 2767,
+      "type": "file"
+    },
+    {
+      "git_state": "modified",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Package.swift",
+      "sha256": "526cb0813c7c6717eb23aa7b554d63f7b4c73fd54712d449c7dc22a5d4d0b2b2",
+      "size": 7445,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/.DS_Store",
+      "sha256": "b48b2b7eb4497702445be0016c1bd68ae62ee72e9a293acb86d15cafb5d126bb",
+      "size": 14340,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/ActualMLXSmokeChild/main.swift",
+      "sha256": "87e58b221a911bd126d41f730016a878a7d20a5d6a19f4e313f134b8e6a4d32f",
+      "size": 8529,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/EngineBaselineCrashChild/main.swift",
+      "sha256": "f004baf2ea0cb175889b9b8fa8b81e1078f5f696fe077e276f79bf7efbfe6ce2",
+      "size": 3251,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/ExecutionStateChaosChild/main.swift",
+      "sha256": "1a67ac75dcc479f6e423986435cea66befdf496b56de83678282737fe98f5935",
+      "size": 3915,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3D1Supervisor/main.swift",
+      "sha256": "c02800dd297af7057a4e16eade6e9f1b48704a9f4eb7957ec2a6ef16fabe3a2d",
+      "size": 2419,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3D1Worker/main.swift",
+      "sha256": "2e18a2c2bfb20a10004f3b53bec8a3a702ede5089b684f55eb2ced95db32d7d9",
+      "size": 966,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1Audit.swift",
+      "sha256": "8b7153f37398a42fd7a0d5c6d8b3b4f33282a4943a7c913c33664d1c0262b52e",
+      "size": 3700,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1Authorization.swift",
+      "sha256": "cc29c564e28602a13f39f5ad5d7138b2c9ac55a551c3ae777848f0ace626782f",
+      "size": 6988,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1GatedRun.swift",
+      "sha256": "ba05a5f92d30c39f6dc1398760d9e9d5847bff2b60bbfdfb5c1d0026a03617e8",
+      "size": 8681,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1Identity.swift",
+      "sha256": "23edb9ae0a926d00db18383fa18e562073d3031b811c1bb2ba8c601fa3718fdb",
+      "size": 4183,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1SupervisorCore.swift",
+      "sha256": "fd780962b162601fc420923270224520e3e8380894f8198c8070ed894d642ad6",
+      "size": 7171,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1WorkerCore.swift",
+      "sha256": "a20cf4c9dfea8cf805b26cbc48fd36050e0fbeee398efe9babe2c8e788757413",
+      "size": 12031,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/G3SwiftIsolationEntry/main.swift",
+      "sha256": "ae9afe9e23096e69eeab5440108e339edf2a30260114d9939ebb0c79717a4b4a",
+      "size": 5026,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/MaterializationQuarantineCrashChild/main.swift",
+      "sha256": "61140c5bfa62978243bd2c9cb87f7a32573fd8af07c9041958991cee0a909d4f",
+      "size": 4801,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2App/SimiGo2App.swift",
+      "sha256": "94267ddf51999a9af8c966a1ebb010e142a8bd72de13e6d0acbb7974cac0a50e",
+      "size": 34354,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ActualMLXSmokeSuccessGate.swift",
+      "sha256": "b32a1038ce14ff0c14af502847acd98511e5d6c0d1d12ee36b6065098bc87711",
+      "size": 3659,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/AsyncLock.swift",
+      "sha256": "f2da1cb65f8e3d5478642a527e305d8ecbf9b7a238278222ebab16e6eafa1926",
+      "size": 1754,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/CanonicalPrefillAcceptance.swift",
+      "sha256": "23604d4a7686f26a7b16c0865a1772ebaee736c78d63d195b6a8d3c4095df96c",
+      "size": 7646,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/CanonicalPrefillProfile.swift",
+      "sha256": "492fcc28b300a869294a32c2d2aff0985a690e0d3738e87152a8b8fbe3fe402e",
+      "size": 1926,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ChatTemplateGeneration.swift",
+      "sha256": "61299813f1037cc7a32bc3482c64ea2f771d01cdc37ec67ded7e4df3b1596aa4",
+      "size": 3583,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/CrossBackendLogitProbe.swift",
+      "sha256": "476794df5080bd2856a776c776b9d064638441ff1fd2a328f63dfb4fd85c4ece",
+      "size": 17193,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/CrossBackendMarginProbe.swift",
+      "sha256": "c5d577e0c26749c221e6ad877a85fa95a1500e7a691e1d1178ec7c729938dec8",
+      "size": 24359,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/CrossBackendTokenProbe.swift",
+      "sha256": "bb1fd3f75b029af59fda82505e9f1ed95b2220ee0efa6decda62961164725e91",
+      "size": 15206,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/DurableExecutionStateStore.swift",
+      "sha256": "b92dd14a7b91422170d6339f853d4124bd3c0ba79871bbd07b14f08ee2b890c8",
+      "size": 10924,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/E5ExecutionStateScenario.swift",
+      "sha256": "8db2971cff5a04d03755d695aa9a23e54f2c3b65c800e84c4dc9b895d8761402",
+      "size": 21561,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/EngineSessionBaseline.swift",
+      "sha256": "53b640ee5016f6e2af2ddb27c65037e312a7e4c1319419bd022d2c47ca4a7d73",
+      "size": 31853,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionBindingRegistry.swift",
+      "sha256": "1f5e245e8bb81e83bca6e836ac6174b8364d7fdda8a6073187c804b90bdc3394",
+      "size": 9741,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift",
+      "sha256": "5ac835a0fabe69424bc85f1d09317265903eb172a917fa6624ff5f299dfa2060",
+      "size": 29592,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionResidencyPlanner.swift",
+      "sha256": "a387fa0e60211c8b36e2c6ebfca09a830c764444defea32641455b24f22a08bd",
+      "size": 5369,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionState.swift",
+      "sha256": "7894c4c202a9599cee0f58154348afbf8d306a548e48e0a44b567aebc90463ca",
+      "size": 2046,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionStateChaosHarness.swift",
+      "sha256": "28d148fa533ce65b7a80f7409563bb95d698804a06dcd16372c6d2f1c23b2e19",
+      "size": 18681,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionStateMaterializationExperiment.swift",
+      "sha256": "22d22bb8c1b9168a10965081c40b06625ea465fbd8d4ec77daa897fc8817fcb5",
+      "size": 2610,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionStatePrefixPool.swift",
+      "sha256": "fe45f7e154efd93820b3e52585d7433efd862c3a7ba50504f53d91311e297f95",
+      "size": 14065,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ExperimentSchema.swift",
+      "sha256": "6da19b578eb57ab96cd74e8ab13addb387c212bda630a825ea5e9e4cad9a1fdf",
+      "size": 4980,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/F1ArtifactFidelity.swift",
+      "sha256": "7a40673099e4d9085c0f3f3f2cefb256d130078b9ef87ee2a0f4f4388d935735",
+      "size": 6272,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/F1PrefillDiagnostics.swift",
+      "sha256": "d7a7088bf3a0f61d565003df89b94fcd1de6c94426787389ca0d59064ccc5aec",
+      "size": 14996,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/F3BenefitProtocol.swift",
+      "sha256": "b712476721b25b2d81d3ef4b500b2fa5edd0d3bf978e8c15cc6caf0c8aa1fae8",
+      "size": 10903,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/G3KVAllocationGateway.swift",
+      "sha256": "a220f56273a070f8fad7317f6c28d3810e0c8fbdaeb510aa4da5cb562979acb6",
+      "size": 28301,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/G3MLXRuntimeResourceProbe.swift",
+      "sha256": "73b461bcfb8a859911871d795be48ab391fd86358336dca73a83c6887da40257",
+      "size": 23306,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/G3PerArmKVCache.swift",
+      "sha256": "9d8e728d323136a72733840faa96593bd9845542b309b9292e01617853268c05",
+      "size": 24492,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/GroupExecutionTraceProbe.swift",
+      "sha256": "d8e57129d52c27746a76f6ca4231271875542992051fbe89895809c24a1883b5",
+      "size": 22320,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/InstrumentationIdentityProbe.swift",
+      "sha256": "9964f589794616d96e050a8a7d62cc471984407049f5c4e6171a045f4f1b5c50",
+      "size": 19537,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/MeasuredExecutionTracePilot.swift",
+      "sha256": "a1dcb410c6733f3a3ee294edaaa5939a8c0df33e1d8b6e4a1995f8f4c71141db",
+      "size": 18637,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/MeasuredTraceCollection.swift",
+      "sha256": "3193eb26dbd8031bc3ccc433aea277f60c16c15d0456a1749af11b40ff3c6d63",
+      "size": 11794,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/IntegratedESPalaceRuntimeAdapter.swift",
+      "sha256": "87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec",
+      "size": 18699,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/L4Identity.swift",
+      "sha256": "1ffd3b6aebe49c5e7a4f755b13f67a55b35df7159d646cb21141527182e17a52",
+      "size": 13038,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/L4Reconciliation.swift",
+      "sha256": "7f92cbac9ca659525a189b5b4fda0435dd3cb5f325ad0926390bb4f07b385dd3",
+      "size": 11429,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LLAMARepresentationConsistencyExperiment.swift",
+      "sha256": "328f2cff870a5dfe541fcc0a19cf63aaa8cd4b707c899ae9ae0116720726d856",
+      "size": 6344,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateAB.swift",
+      "sha256": "b8c8b328879004886c21e002eac396458040853bcd8e26a7399e1272394ef651",
+      "size": 7836,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateAdapter.swift",
+      "sha256": "e17ccea7f91cdd0166b462ac645f1ef7d2dcfcce890cfc77fde263514c9d34b6",
+      "size": 11556,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateBackend.swift",
+      "sha256": "d8cbe38aea0d6c4c340f953f88af61dd9bbf958f4804764b812e583691a59ee8",
+      "size": 3781,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateCancellation.swift",
+      "sha256": "378227ef154a2b40532e8f8856a8b441e465750246afdda32462fc228a3d05c3",
+      "size": 15915,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateExecutor.swift",
+      "sha256": "64bdb329590292e02f87f67315a447e22b2d863febbbe18c7f628a90ef81ccab",
+      "size": 3966,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LLAMAServerExecutionStateForkRestore.swift",
+      "sha256": "9a44bc356ec85e42043e3402739fef436558a6f786b0f3f5dac65d99a63095b3",
+      "size": 10855,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LayerDemandCSV.swift",
+      "sha256": "6582e64471dbb15b9dfd75d075871ca9274aca98559b6367e891dd4e6d9699db",
+      "size": 2816,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LayerDemandExperimentRunner.swift",
+      "sha256": "e0f1ca36321dfc6f6ef1a6707e6364055222bd3abab3ee50db4075ee10113116",
+      "size": 3863,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LayerGroup.swift",
+      "sha256": "fe2ddd6fbc36b7762dff3082025c34cd33b37131b54cdf2b3e411b5c391444e9",
+      "size": 2451,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LayerPolicy.swift",
+      "sha256": "163128b9aa4cf51e84334a3a69624507fa83fc3d96b25712839f33e508124a42",
+      "size": 2638,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/LayerResidencyEngine.swift",
+      "sha256": "402b46a2695e6b2e16d833e30b1285ac5cbbdb2e22b567650d4cb3d463910096",
+      "size": 4607,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXExecutionStateBackend.swift",
+      "sha256": "77f5626b67ace93120ac8adbc9b5d4ba2a1a1e3e3a7568929f54d0e2bac38df9",
+      "size": 5366,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXExecutionStateCostProfile.swift",
+      "sha256": "f517698a9716e9b1c9f0318f1c82ca1014215bfbdd84fbc7e8741a0efbd771ca",
+      "size": 45408,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupGate.swift",
+      "sha256": "5e533e9bcf56989740b58828b178340f6fda0fe563997c797be8ae5270e80360",
+      "size": 3272,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupInferenceGate.swift",
+      "sha256": "e05b0f56a69ed233822295dbfe9d94d1a5754bf59a6465d029ca2b0742534f81",
+      "size": 7497,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupLifecycleExperiment.swift",
+      "sha256": "5adff031ee68220d1dc1cbdd787768b403f9e33af69d59b6e77d23f9db418ca7",
+      "size": 6045,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupResidencyBenchmark.swift",
+      "sha256": "e328a383f85a143c7fe40df4e049d1c26bf9e774f2ce8be7125e925ea9e8d12b",
+      "size": 15487,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXParameterSwapGate.swift",
+      "sha256": "7d2d42c32881e7a2e892694bf8ff6fd40136e175a9723f72aa8c2b477b1ef056",
+      "size": 4180,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixCrossSessionCache.swift",
+      "sha256": "196318bbea08b0317e33ab1f7699535cf32f0ac1c80db586a5d95a520d1eb50c",
+      "size": 26451,
+      "type": "file"
+    },
+    {
+      "git_state": "modified",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift",
+      "sha256": "91f351c0b82707bb0fa58bc5e6ee4fab196b10b77bbffb5fbb66470eed3cdc56",
+      "size": 29685,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixSnapshotLoader.swift",
+      "sha256": "7af263de0c50262e1b27fdd6cf3f4d385ea1f5de4c8fd93258e3dbc3599062e0",
+      "size": 815,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXResidencyBackend.swift",
+      "sha256": "80d0940c79454cea14eff98a8dbac4c1fcacd47919707a68c3791dea0349854d",
+      "size": 1838,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXSmallScaleChatHost.swift",
+      "sha256": "e66cce8a1f349fc38a07a6a8dc0f86ef4aca949b83fbeb9504ea8ecdf8f4d700",
+      "size": 32300,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/MaterializationCoordinator.swift",
+      "sha256": "b9f79b33e4fad42eb0bcb573dfb0d6ddf203b0faf43eac8549828918f77c0f15",
+      "size": 23828,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ModelInventoryReference.swift",
+      "sha256": "1291cbf24fc33243298cae2e371f0d1da3df75a0853407a61d9b0fe312a04b9f",
+      "size": 1891,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/NamedSourceConformanceProfile.swift",
+      "sha256": "31c48af352ebe85ff92c580dd1c3754e538249cf0f31248b882b87e53e63a6f7",
+      "size": 10500,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O2BaselineProbe.swift",
+      "sha256": "111febfb576f8eef7460e6eceaa1125f754aef725d06b070235b4d8bdd1e273b",
+      "size": 13591,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O3CSegmentWiseProbe.swift",
+      "sha256": "207665fbae1b8790bfd4f36230aec091c5ff46373d9ec805ac2cf02c6e192a23",
+      "size": 15336,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O3CStreamingForward.swift",
+      "sha256": "68a5f4dc5a63fa9b64aae7f28ec89c8b0bb146b959d8061b0118ebca9aade987",
+      "size": 15950,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O3SkeletonProbe.swift",
+      "sha256": "209c8f53bffaacee26b13aab7a433fcd6e368aaf1f58a2955bc02d4640a46985",
+      "size": 12055,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O4GenerationProbe.swift",
+      "sha256": "954ff15a828f7050e3a9039b52754e2b783bb8b02a0cecbfe5fa42b79c7ccc38",
+      "size": 19742,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O4OversizedGenerationProbe.swift",
+      "sha256": "7ad08232b2960d13ed7460359015a92d19a10aa4bb768f10f5864d2bc52f58a8",
+      "size": 16241,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O6CancellationAB.swift",
+      "sha256": "5c81ff135c7d795c4d8021d51f308568588ffc4f53cdc178d0882cf2a258f119",
+      "size": 15755,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O6ExecutionStateOversized.swift",
+      "sha256": "3815a01ab25e4a8f7f2cb4813ad20483e72f9d22af6c24960940e01642249ca1",
+      "size": 37280,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O6FixedPrefixPhaseStudy.swift",
+      "sha256": "9b309493f0ab9a5d0f4996780bf4340559e8182851a36c6c01491adb49eedfc3",
+      "size": 2969,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/O6SegmentPhaseProfiler.swift",
+      "sha256": "75ae5b7768dc7e5234fa0f215268b924e109f7ea977114d630b18c55908a33f9",
+      "size": 6727,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/OversizedSegmentMaterializer.swift",
+      "sha256": "df6e189aa3e055ae0218eae7023eb936019f460d589646dda659b4ff7d95d1c7",
+      "size": 1466,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/OversizedSegmentedEngine.swift",
+      "sha256": "6184e4fea8bd3a885951cee9e666d1dfb11c97e0f68c7ac8bc5ba0335b46f5ae",
+      "size": 56707,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/OversizedTokenLedger.swift",
+      "sha256": "c2999c5f53de5c1d7ca24fa0639981219d1481344350ed0fb1a44c981f9f1f57",
+      "size": 7654,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/PerTensorSafetensorsReader.swift",
+      "sha256": "5df739791a2c12b6ec01f9dc52163f210b1bf9c1daee4578d07925416d5143dd",
+      "size": 5693,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/PersistentSRSRepresentation.swift",
+      "sha256": "1e6cf0d301b264b9df9d67a082710b3b9061f82d908f9fc80085e36628e4cc45",
+      "size": 108085,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/PlannerBudgetSweep.swift",
+      "sha256": "6a3e8547c53b57aafa555778b920a45ac92cf7eeedc58ae60260ae727630e241",
+      "size": 6019,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/PrefixSnapshotStore.swift",
+      "sha256": "151c9f217ee96d8b31be2b55823b5f15a328338b24c62aacf2f10b3dfdfeeef6",
+      "size": 35398,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+      "sha256": "d9d33c812f8bf5bfaeac67590a7fc2e9907fc120217ae5e5ae097bfecbd08b32",
+      "size": 18283,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/RepresentationCaptureAudit.swift",
+      "sha256": "b8db3846673e0d5df1ed46c2008f198c79170b0761b91308dbcca5090352df03",
+      "size": 3708,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/RepresentationConsistencyBoundaryExperiment.swift",
+      "sha256": "621fcb4a8d1a99860839b3f1f327659a9f7c221fbc49110e6fc75ee1f259e548",
+      "size": 11234,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ResidencyBenchmark.swift",
+      "sha256": "73f6256229a3ecfdefc07f967fd34a2e0ba88cc18299a834d8f6be230352a66e",
+      "size": 1488,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ResidencyContractStateMachine.swift",
+      "sha256": "2c087a860067c6ef3bc609ed1297eb8491518fb0db6545b2c4eaf447200aedf1",
+      "size": 6649,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ResidencyController.swift",
+      "sha256": "116ace13f65545fca6f41d58ce66d48a8130a65d7cb562c8dc982e9fcd0d8d0c",
+      "size": 13530,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ResidencyPolicyKind.swift",
+      "sha256": "84593e3762bbe3d1afb119f08e905c32c528d54d429463fcabdda3a24f84ee42",
+      "size": 5130,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/SRSVALDecisionCore.swift",
+      "sha256": "7fec2ed4d6e6f82fe677a7f098ec98d3e99bf4138420f1dd051570c75cf1c72e",
+      "size": 60381,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/SafetensorsGroupMaterializer.swift",
+      "sha256": "fc55685af01fb8a0522f543748d42f2ef60c234e277a7eb06af793ec3ea32957",
+      "size": 6271,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/SafetensorsInventory.swift",
+      "sha256": "c7cc2fb894d59cd1e257e66acdbe98903a67264712bc2a20294fd1e9dbf193be",
+      "size": 8209,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/StateSequenceSweep.swift",
+      "sha256": "97e45aa47eb6abcfde0d0ee69d468dfb611d8bb68bd12981807c113bad34d44c",
+      "size": 2368,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/TypedRepresentationPayloadPersistence.swift",
+      "sha256": "90dc8dd67f9f619310874b1438181d4ced1ed389788e8af9083209e75a862a51",
+      "size": 1405,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/UIBranchSessions.swift",
+      "sha256": "f318f197d25f5803de678f265bbc7304368bbbd44bb76195d984e19aa01b1280",
+      "size": 121194,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/UnsafeSendableBox.swift",
+      "sha256": "0e9ce7b58db83ff2e241de38f3b4dd0e798749beacaaf8e03d840767cf423a72",
+      "size": 278,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/WorkloadTrace.swift",
+      "sha256": "2b9deebf699951ed32e7856dc5a3dc8ee1e6f1a2c9cc2a4ebf7ba0adaf73066c",
+      "size": 17974,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionContinuityContract.swift",
+      "sha256": "ea173a63ad975592fc815d5739de233b70e9056fe2ecad38969eca280275e051",
+      "size": 5256,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionIdentityAllocator.swift",
+      "sha256": "0f6897cf043f744f4295ab6806aa81e7f0cf97798501271f48a5b1c05070d124",
+      "size": 10579,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionStateBackendContract.swift",
+      "sha256": "c19b91e475b217568a3f2d1f54a0ad3161d1b93d2330eed76892575fff10c4b5",
+      "size": 3376,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3ArmResourceOwnership.swift",
+      "sha256": "8450a8c24d6852eaefa1634a406122c8795599af3343a183415e97dcdda91358",
+      "size": 22297,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3DualArmRunner.swift",
+      "sha256": "0eb643cb80074da450bcfb0561f9749f9cc4483859133445230e672b1e76077b",
+      "size": 21479,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3ExecutionDispatch.swift",
+      "sha256": "f8785b94679054fbb55be1021840a5ecb381b6900ad8e9a9ff40eb6ea24fc3a3",
+      "size": 11655,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3IsolatedExecutionEntry.swift",
+      "sha256": "9aa282d170d2dd2950a74e33d8f9d87f00beb5245b063418130fe1595d6a95b4",
+      "size": 16295,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3PerArmKVCache.swift",
+      "sha256": "8f1b3eb6cbe0b43e973c6f87b449d8860445d97d2d28336b09eece879fdc0f88",
+      "size": 50224,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/RuntimeBackendContract.swift",
+      "sha256": "00156bc5d2afa2548c0b6f7cd7dccea40342e82efd91ec473fe4b1ce06b0038f",
+      "size": 3253,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/RuntimeIsolationGate.swift",
+      "sha256": "9c933fddb188c19a9ff49ac3297d9192097431089749762067b440d78daa9298",
+      "size": 27535,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Sources/simigo2ctl/Simigo2CTL.swift",
+      "sha256": "ba562159f2f97484ec8eca12005556220ec74d54624ad705094d04964b39eb91",
+      "size": 44856,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/G3D1SupervisorTests/G3D1SupervisorTests.swift",
+      "sha256": "268c493a793eef6f57b3e7928c04ff5fc646b6c4ddea87ecc3bcad956303b464",
+      "size": 14472,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ActualMLXSmokeValidation.swift",
+      "sha256": "1c3fcdf06022126d2bea12ec743568ab52a9b90982bc3bfae490b0153c11cc85",
+      "size": 39579,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/BackendConformanceMatrixTests.swift",
+      "sha256": "86a97ff04e5c5080a7d5a16194111a913c6dd5af87c1e59ec5d404fa32c3c96b",
+      "size": 8566,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift",
+      "sha256": "b2227457961fcf65931cf0f0487b43d7aeba24b0fb7b2ee75b300435c9aa8ff1",
+      "size": 14037,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/DriftFenceDiagnostics.swift",
+      "sha256": "3420f524c442a421137102530cd0ea99f89fb483140d8c0a917185a452a6834c",
+      "size": 1969,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/DurableExecutionStateStoreTests.swift",
+      "sha256": "407518252a47b252fb775d7bc369690e4a531eef302c5ae45693b125f2754509",
+      "size": 12123,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/DurableIdentityRuntimeWiringTests.swift",
+      "sha256": "267712acab23b64276ea0f90eaeaca67b703f53bdea838b9b24dd0c2d1b936ad",
+      "size": 6301,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/EnginePersistenceLayoutTests.swift",
+      "sha256": "6aefa48c46d3a99e9506605e6a669b629171deab31b1d4ee15630359bc72e576",
+      "size": 1700,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/EngineSessionBaselineTests.swift",
+      "sha256": "0553709ffabae44db4c00776597f4bbee7c6abffa20902ed612ea3394f5a2982",
+      "size": 31443,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ExecutionContinuityCoordinatorTests.swift",
+      "sha256": "500418d12a815cd06e6b0c425d2c44945e0b6302489ff477e72dca3b8456430b",
+      "size": 47218,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ExecutionResidencyIntegrationTests.swift",
+      "sha256": "74e64feea03af15cd63c0f19b6059b861ffbd598b02d1cd19f04bae1d1380d62",
+      "size": 12909,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ExecutionResidencyPlannerTests.swift",
+      "sha256": "6a26a2e647a05481f8b1894ef203a7b99d32c18f5bf716159125ae4f361639a5",
+      "size": 5092,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ExecutionStateChaosAcceptanceTests.swift",
+      "sha256": "65f759d8e83b440f164af8ed1752fa4682ee7d873fe1a1faf84e2d82ade75266",
+      "size": 15152,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ExecutionStatePrefixPoolTests.swift",
+      "sha256": "c3888b7b2e86780c48af18dcf80fbf6b51be88d380cbc033bfb876ad8c21c3ca",
+      "size": 10157,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ExperimentSchemaTests.swift",
+      "sha256": "4eda9d51c1aafbef60545a959e71b89619c8ed775b5f504604d005f18f2c8fbc",
+      "size": 2754,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/Fork3StructuralBattery.swift",
+      "sha256": "f10c7da08689ea448cac1152a0b8c510e63c04bd7c29d18a2ad3cf509915c564",
+      "size": 11103,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3CancellationPointTests.swift",
+      "sha256": "44b549fd92aa03550f2832adeba7b5e9d0498e7a42081c8df75d3366b46fbee4",
+      "size": 19651,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3GatedEntryAdmissionTests.swift",
+      "sha256": "3158de39092fb6b2609488805442fee67eadf62a66147bf09b120214151a87ff",
+      "size": 7644,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3GatewayTerminationTests.swift",
+      "sha256": "80d8848f697853f94b638b0268cdb46cfce273480fb16be21f7fdc8c8766c5de",
+      "size": 14453,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3KVAllocationGatewayTests.swift",
+      "sha256": "411c0be1fd0d996c079647a8de94752033dedc7a7caa70eb29da1fd7792ee913",
+      "size": 50156,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3MLXArrayStorageIdentityTests.swift",
+      "sha256": "29ac327e29e1eb5185745d09addebd3c9a52cb7fc56fc3a6096e4d909bce0149",
+      "size": 8984,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3MLXDuringGenerationRegistrationTests.swift",
+      "sha256": "35b1f1ea6d5ecc012f5b27fab6595e37a1c78a9ac7af2634d6d833fbe58118a9",
+      "size": 13636,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3NativeCacheDispatchTests.swift",
+      "sha256": "b073110a38dfac86ec6676608c52b3cfd8d5b57fc33da12f413ae061d2a64903",
+      "size": 23570,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3ObserverBindingTests.swift",
+      "sha256": "3acb8a06406a07d58c9cb1f968fe7806c27103baf2e5f381c92901506ea62ca3",
+      "size": 9463,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3RefusalContainmentTests.swift",
+      "sha256": "4edb0740c45d44639b2ac39882028674eb17967575956cfba573abd181c80fc7",
+      "size": 26212,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3RunSettlementTests.swift",
+      "sha256": "080d03f21c126c77f847fbfa46c40429ee78f1baad415a53108e4cf36cc304ed",
+      "size": 6152,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/GroupExecutionTraceProbeTests.swift",
+      "sha256": "b798b9f7388bdabbe63298413ff3ab2b927329e1af4578d96e762bfe5781720a",
+      "size": 3396,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/InstrumentationIdentityProbeTests.swift",
+      "sha256": "d3c9f56771eadd2c7f92a6372aeedbdc32dd45b0c12dff8b0e08e21c4e447933",
+      "size": 1147,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceAuthorizedRuntimeValidation.swift",
+      "sha256": "c43267cfdad7a96ab79789bcba49eb96a866e53dd7b744945307a68435d854ed",
+      "size": 16410,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeAdapterBranchTests.swift",
+      "sha256": "437e7b4bda837967f9b18e40af8ae0dca1e0c3079b9ac6e27acc8913bebd922a",
+      "size": 10662,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeValidationV2.swift",
+      "sha256": "7dd1bd493000f03fe9622b7da7f1e846c8815502a7c4afbd0dcd76adfd4d0be3",
+      "size": 20308,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift",
+      "sha256": "5bac6d5fdfd0ae7386e046d38d64953a62694f7466154b0167ed0008e2d004c4",
+      "size": 9796,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/LLAMAServerExecutionStateAdapterTests.swift",
+      "sha256": "9133a026f6271dcb9e255bd5684d5f0a9f94fef6be9748255c33e77990ea686a",
+      "size": 22896,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/LayerDemandExperimentRunnerTests.swift",
+      "sha256": "f6deb421cff003922f7981e67e9235627e6a5b0a94899789970cbdf40df78a07",
+      "size": 2230,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/LayerResidencyTests.swift",
+      "sha256": "fbfec333de4b26e96719a534336766519c1c798d6af31c7ef0511fd2a4bc41a3",
+      "size": 8119,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MLXParameterSwapGateTests.swift",
+      "sha256": "2b5160e5ecaa67ffa2d280aa531efdcaf5effb9c4e6ecad84ebeb820ed5b6d88",
+      "size": 685,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MLXPrefixCrossSessionCacheTests.swift",
+      "sha256": "a1ecabe9a42dcbf7467182b93054ee7bb141bb63c006e1c96c58b1c08c264678",
+      "size": 47006,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MLXSmallScaleChatHostTests.swift",
+      "sha256": "b1995ecad79ff80d48a52ab366cd6ac0c7f75d2f93b04f610f04566cf4176cba",
+      "size": 7802,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MaterializationCoordinatorTests.swift",
+      "sha256": "25a22e6c444eb4c8ed41c3dd20f898f4e6035f1d4a64ec2153a898da15eefe4e",
+      "size": 101479,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MeasuredExecutionTracePilotTests.swift",
+      "sha256": "3995926001b67138188af9c0d65de88a58ec206b83ec68f10a57e3c52b22680c",
+      "size": 5407,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MeasuredTraceCollectionTests.swift",
+      "sha256": "4ac809590a56d1d090b340eeaf013e35099097a37ecdc35dee31b39b707da66d",
+      "size": 2462,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MockResidencyMaterializer.swift",
+      "sha256": "e057aae0fd8da1338bfd853dd2a61815d60f09f7ee3e5a6b5a28977567b4ecb6",
+      "size": 1163,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/NamedSourceConformanceProfileTests.swift",
+      "sha256": "dd955e1aaee93cff40c27afe263ff52249a60306faf209da9d4b4fde5c8327b3",
+      "size": 3188,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/OversizedBackendAtomicityTests.swift",
+      "sha256": "42e55d8b88f243536a952c54612b9e0756bee3d1d6cb3540da35273372d22eb8",
+      "size": 4975,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/OversizedSegmentedEngineRestoreAtomicityTests.swift",
+      "sha256": "b3c616176c864d51f403cc6fcd720f4439426b9877b4ee0b337501302e2678ff",
+      "size": 26052,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/OversizedTokenLedgerTests.swift",
+      "sha256": "a604104a03d6b9a731949670d83e6865728fac1f65195b7a71c7a3244350b04b",
+      "size": 11356,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/PersistentSRSRepresentationTests.swift",
+      "sha256": "d50b0e46ea7d7429879a1ba22fdc8ad54b38806d3ce40f582ed7bf6543a345b3",
+      "size": 33194,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/PrefixPoolSessionLifecycleTests.swift",
+      "sha256": "8dbbcd48d45e3446aefabcc04959a01fbd815766e413ec292de4da060f6396da",
+      "size": 7014,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/PrefixSnapshotStoreTests.swift",
+      "sha256": "2133fc5f4e9742d8f6945e57105406fe66cb6e23c571df7b55abe2ffb39f9633",
+      "size": 11705,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift",
+      "sha256": "875faf929aa6470be86ee9e9a2aa9b17b90aa07d16297678b6a30a6e70bfafc8",
+      "size": 10184,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift",
+      "sha256": "b4963fb08df7af483166244e6a063f5b9f4f6b19e4de023de8b3a088f5e2d395",
+      "size": 15339,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift",
+      "sha256": "dd1316e4403986f3287c81a2db403d7e312a595de62092f8964e33a907da5e38",
+      "size": 11659,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeModelExecutorStub.swift",
+      "sha256": "0e9e6e86c307b35b704b71bdfbcde26fd3ebaa351a185658ecf4a3af8862e189",
+      "size": 1776,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/RepresentationCaptureAuditTests.swift",
+      "sha256": "02fd1ceabc491254c609e1118e016052ee642365e9c4327660c9e91017a92a6e",
+      "size": 1035,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ResidencyControllerFaultInjectionTests.swift",
+      "sha256": "a0386725059a75980a166f438d58efb88ebd40b186bdfe247219a47684c9a742",
+      "size": 13853,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ResidencyControllerTests.swift",
+      "sha256": "b63fe19e88f89812189229467c24f949f0f4f1b37d14193073f628bd2335a61c",
+      "size": 8455,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/RuntimeResidencyContractL1Tests.swift",
+      "sha256": "bcb2a3efd486171c50ea75566b0d41a2c922c99018c358147b955f9570b02949",
+      "size": 4205,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/RuntimeResidencyStateMachineTests.swift",
+      "sha256": "d65257f31d2b3eb203bad6206e755e34022622a75e383bdf114fafb7ed45edea",
+      "size": 3699,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/SRSVALDecisionCoreTests.swift",
+      "sha256": "166b97f53e1b5afb9a010d8a99a5b72e8220b27761980ee176ecd23e96076d3c",
+      "size": 58314,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/StateSequenceTests.swift",
+      "sha256": "bbeeebb3b84a6d60daa58d2c3e134a5daec14e364d9df0418989e75e89b82a8c",
+      "size": 922,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/TokenizerIdentityAuditDiagnostics.swift",
+      "sha256": "16610f37402f680ac94a1948a02d26c1efea82ec6100888c0719dd4d8d61049c",
+      "size": 4146,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/WorkloadTraceTests.swift",
+      "sha256": "4dbb12595ea5b4bab0428bfd9ec517cd52304fbf822c3fc5aec306e7c2284b09",
+      "size": 8517,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/ExecutionContinuityContractTests.swift",
+      "sha256": "b64be2541ac62fd7f692666ab947adb9c9449ed25159f82c3668961625e8f5e4",
+      "size": 3879,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/ExecutionContinuityLifecycleTreeTests.swift",
+      "sha256": "87c385bb06bc8dc5dd380cbbdeb9b5f45ce204b4f7ba98bbd52ac6ead22c8bc3",
+      "size": 18104,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/ExecutionIdentityAllocatorTests.swift",
+      "sha256": "bad354dfd2d502d7f9ffb5ed8b3ec8b767cc7759954fa1857a500d4c33e48383",
+      "size": 5042,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/FakeExecutionContinuityRuntime.swift",
+      "sha256": "9fd500d97f88c8aa098fd85d99eada7bf14c78a339f688d7a3a6c6c025c189fb",
+      "size": 8540,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3CommitLinearizationTests.swift",
+      "sha256": "9c85944ef043ce919c5c34417b45438f1888bdf86bd4c2e0662adc88c21f50de",
+      "size": 19106,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3DualArmRunnerTests.swift",
+      "sha256": "6f3d1686718de830777f03f0d5bbfeaf4645f152febb0bad4d064cfd721c790a",
+      "size": 32798,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3ExecutionDispatchTests.swift",
+      "sha256": "950a113ffefa6c8144b04b87b1425b8235d8dcc3afb2e6fa4116d021b5726791",
+      "size": 9507,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3IsolatedExecutionEntryTests.swift",
+      "sha256": "df74aba221ed1c11c2641fd93b5fcc02f462c0dd4a4076ca8666eea082287326",
+      "size": 14445,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3PerArmCacheWiringTests.swift",
+      "sha256": "cc891f0d7edb53f43ca7c5c6526e647aca62a1b37dab8fdb81e97372a6d8e834",
+      "size": 23301,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3SettlementAxesReportTests.swift",
+      "sha256": "792ec98abb70218ed409a6ac603eb38967dcbc013196133d9f6d91260a7c2ecd",
+      "size": 12161,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3SettlementAxesTests.swift",
+      "sha256": "f637216a26880d76055837b186901405b3ea3d4524d64e4ffa4a9bf22ad9de7d",
+      "size": 10611,
+      "type": "file"
+    },
+    {
+      "git_state": "clean",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/RuntimeBackendContractTests.swift",
+      "sha256": "c47aecda603000eca0416c08eae6ea8b5958d17277b14440f4f24905b6e19752",
+      "size": 4010,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/RuntimeIsolationGateTests.swift",
+      "sha256": "64562b2b36c236e8f60c8a4ba6504833848a63a919f439d112ff5eb6f948db5e",
+      "size": 19266,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "tools/g3_build_stamped.py",
+      "sha256": "e955ec1d9b37922fa20480f87844e25fbe97a2f5f479cfa8a47635e5481abce7",
+      "size": 5515,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "tools/g3_execution_identity.py",
+      "sha256": "e1f216c53c29e048af52102da4edc8c8cc328bd2549d706fab9192f7e49728d1",
+      "size": 21302,
+      "type": "file"
+    },
+    {
+      "git_state": "untracked",
+      "link_target": null,
+      "mode": 420,
+      "path": "tools/g3_runner_manifest.py",
+      "sha256": "877d0f57ad3f03b7e567cbe263d1a92a873680e8f37dc50a3fb705d17de40296",
+      "size": 69629,
+      "type": "file"
+    }
+  ],
+  "generated_at_utc": "2026-10-21T12:03:39Z",
+  "open_conditions": [
+    "Package.resolved records no pin for either vendored fork (path dependencies)",
+    "outer worktree has 44 in-scope files that differ from HEAD",
+    "40 in-scope source files are untracked (not in any commit)",
+    "vendor/mlx-swift HEAD 19d874c5f is not contained in any remote branch",
+    "vendor/mlx-swift/Source/Cmlx/mlx-c submodule HEAD 3fe6fa896 is not contained in any remote branch",
+    "vendor/mlx-swift-lm HEAD 2040afcd6 is not contained in any remote branch",
+    "vendor/mlx-swift-lm has no remote-tracking refs; published state is unknowable",
+    "vendor/mlx-swift-lm has 1 uncommitted file(s)"
+  ],
+  "outer_repo": {
+    "branch": "main",
+    "dirty_files": [
+      {
+        "path": ".gitignore",
+        "sha256": "e688a642ae4e43e49435209ff38108a35fc615abe9f085e5ca5034828e73815a",
+        "status": "modified"
+      },
+      {
+        "path": "simigo2-experimental/Package.resolved",
+        "sha256": "22d05fec17408e5a497f2df7f7f9c80354c7922bd350aca693256607fd034f61",
+        "status": "modified"
+      },
+      {
+        "path": "simigo2-experimental/Package.swift",
+        "sha256": "526cb0813c7c6717eb23aa7b554d63f7b4c73fd54712d449c7dc22a5d4d0b2b2",
+        "status": "modified"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3D1Supervisor/main.swift",
+        "sha256": "c02800dd297af7057a4e16eade6e9f1b48704a9f4eb7957ec2a6ef16fabe3a2d",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3D1Worker/main.swift",
+        "sha256": "2e18a2c2bfb20a10004f3b53bec8a3a702ede5089b684f55eb2ced95db32d7d9",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1Audit.swift",
+        "sha256": "8b7153f37398a42fd7a0d5c6d8b3b4f33282a4943a7c913c33664d1c0262b52e",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1Authorization.swift",
+        "sha256": "cc29c564e28602a13f39f5ad5d7138b2c9ac55a551c3ae777848f0ace626782f",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1GatedRun.swift",
+        "sha256": "ba05a5f92d30c39f6dc1398760d9e9d5847bff2b60bbfdfb5c1d0026a03617e8",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1Identity.swift",
+        "sha256": "23edb9ae0a926d00db18383fa18e562073d3031b811c1bb2ba8c601fa3718fdb",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1SupervisorCore.swift",
+        "sha256": "fd780962b162601fc420923270224520e3e8380894f8198c8070ed894d642ad6",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3D1WorkerCore/G3D1WorkerCore.swift",
+        "sha256": "a20cf4c9dfea8cf805b26cbc48fd36050e0fbeee398efe9babe2c8e788757413",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/G3SwiftIsolationEntry/main.swift",
+        "sha256": "ae9afe9e23096e69eeab5440108e339edf2a30260114d9939ebb0c79717a4b4a",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/G3KVAllocationGateway.swift",
+        "sha256": "a220f56273a070f8fad7317f6c28d3810e0c8fbdaeb510aa4da5cb562979acb6",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/G3MLXRuntimeResourceProbe.swift",
+        "sha256": "73b461bcfb8a859911871d795be48ab391fd86358336dca73a83c6887da40257",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/G3PerArmKVCache.swift",
+        "sha256": "9d8e728d323136a72733840faa96593bd9845542b309b9292e01617853268c05",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift",
+        "sha256": "91f351c0b82707bb0fa58bc5e6ee4fab196b10b77bbffb5fbb66470eed3cdc56",
+        "status": "modified"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3ArmResourceOwnership.swift",
+        "sha256": "8450a8c24d6852eaefa1634a406122c8795599af3343a183415e97dcdda91358",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3DualArmRunner.swift",
+        "sha256": "0eb643cb80074da450bcfb0561f9749f9cc4483859133445230e672b1e76077b",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3ExecutionDispatch.swift",
+        "sha256": "f8785b94679054fbb55be1021840a5ecb381b6900ad8e9a9ff40eb6ea24fc3a3",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3IsolatedExecutionEntry.swift",
+        "sha256": "9aa282d170d2dd2950a74e33d8f9d87f00beb5245b063418130fe1595d6a95b4",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/G3PerArmKVCache.swift",
+        "sha256": "8f1b3eb6cbe0b43e973c6f87b449d8860445d97d2d28336b09eece879fdc0f88",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Sources/SimiGoRuntimeContract/RuntimeIsolationGate.swift",
+        "sha256": "9c933fddb188c19a9ff49ac3297d9192097431089749762067b440d78daa9298",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/G3D1SupervisorTests/G3D1SupervisorTests.swift",
+        "sha256": "268c493a793eef6f57b3e7928c04ff5fc646b6c4ddea87ecc3bcad956303b464",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3CancellationPointTests.swift",
+        "sha256": "44b549fd92aa03550f2832adeba7b5e9d0498e7a42081c8df75d3366b46fbee4",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3GatedEntryAdmissionTests.swift",
+        "sha256": "3158de39092fb6b2609488805442fee67eadf62a66147bf09b120214151a87ff",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3GatewayTerminationTests.swift",
+        "sha256": "80d8848f697853f94b638b0268cdb46cfce273480fb16be21f7fdc8c8766c5de",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3KVAllocationGatewayTests.swift",
+        "sha256": "411c0be1fd0d996c079647a8de94752033dedc7a7caa70eb29da1fd7792ee913",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3MLXArrayStorageIdentityTests.swift",
+        "sha256": "29ac327e29e1eb5185745d09addebd3c9a52cb7fc56fc3a6096e4d909bce0149",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3MLXDuringGenerationRegistrationTests.swift",
+        "sha256": "35b1f1ea6d5ecc012f5b27fab6595e37a1c78a9ac7af2634d6d833fbe58118a9",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3NativeCacheDispatchTests.swift",
+        "sha256": "b073110a38dfac86ec6676608c52b3cfd8d5b57fc33da12f413ae061d2a64903",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3ObserverBindingTests.swift",
+        "sha256": "3acb8a06406a07d58c9cb1f968fe7806c27103baf2e5f381c92901506ea62ca3",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3RefusalContainmentTests.swift",
+        "sha256": "4edb0740c45d44639b2ac39882028674eb17967575956cfba573abd181c80fc7",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3RunSettlementTests.swift",
+        "sha256": "080d03f21c126c77f847fbfa46c40429ee78f1baad415a53108e4cf36cc304ed",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3CommitLinearizationTests.swift",
+        "sha256": "9c85944ef043ce919c5c34417b45438f1888bdf86bd4c2e0662adc88c21f50de",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3DualArmRunnerTests.swift",
+        "sha256": "6f3d1686718de830777f03f0d5bbfeaf4645f152febb0bad4d064cfd721c790a",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3ExecutionDispatchTests.swift",
+        "sha256": "950a113ffefa6c8144b04b87b1425b8235d8dcc3afb2e6fa4116d021b5726791",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3IsolatedExecutionEntryTests.swift",
+        "sha256": "df74aba221ed1c11c2641fd93b5fcc02f462c0dd4a4076ca8666eea082287326",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3PerArmCacheWiringTests.swift",
+        "sha256": "cc891f0d7edb53f43ca7c5c6526e647aca62a1b37dab8fdb81e97372a6d8e834",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3SettlementAxesReportTests.swift",
+        "sha256": "792ec98abb70218ed409a6ac603eb38967dcbc013196133d9f6d91260a7c2ecd",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3SettlementAxesTests.swift",
+        "sha256": "f637216a26880d76055837b186901405b3ea3d4524d64e4ffa4a9bf22ad9de7d",
+        "status": "untracked"
+      },
+      {
+        "path": "simigo2-experimental/Tests/SimiGoRuntimeContractTests/RuntimeIsolationGateTests.swift",
+        "sha256": "64562b2b36c236e8f60c8a4ba6504833848a63a919f439d112ff5eb6f948db5e",
+        "status": "untracked"
+      },
+      {
+        "path": "tools/g3_build_stamped.py",
+        "sha256": "e955ec1d9b37922fa20480f87844e25fbe97a2f5f479cfa8a47635e5481abce7",
+        "status": "untracked"
+      },
+      {
+        "path": "tools/g3_execution_identity.py",
+        "sha256": "e1f216c53c29e048af52102da4edc8c8cc328bd2549d706fab9192f7e49728d1",
+        "status": "untracked"
+      },
+      {
+        "path": "tools/g3_runner_manifest.py",
+        "sha256": "877d0f57ad3f03b7e567cbe263d1a92a873680e8f37dc50a3fb705d17de40296",
+        "status": "untracked"
+      }
+    ],
+    "dirty_files_scope": "declared scope only",
+    "head": "c0ac969427facecd35aae476a08ab3b54855671f",
+    "head_in_remote_branch": [],
+    "local_only_head": true,
+    "path": ".",
+    "remote_ref_count": 27,
+    "remotes": [
+      {
+        "name": "origin",
+        "url": "https://slamfinger@github.com/slamfinger/SimiGo-Lab.git"
+      }
+    ],
+    "submodules": [],
+    "tracked_diff_sha256": "7392af5a521fe400486e2e065a15f89ce5491b611a3523301b1eded258d4dd0f",
+    "tree": "38c3a13226a219b8d9d384fd9f2ce42cf646b524",
+    "upstream": "origin/main"
+  },
+  "repo_context": {
+    "note": "counts only; unrelated work is never hashed or digested",
+    "outer_status_counts": {
+      "modified": 14,
+      "staged": 0,
+      "untracked": 100
+    },
+    "vendor_status_counts": {
+      "vendor/mlx-swift": {
+        "modified": 0,
+        "staged": 0,
+        "untracked": 0
+      },
+      "vendor/mlx-swift-lm": {
+        "modified": 1,
+        "staged": 0,
+        "untracked": 0
+      }
+    }
+  },
+  "runner_sha256": "2c7af27b04936889c39d921751679552d9f700983c4f1deb96ba4a33554291f9",
+  "schema_id": "G3-D1-RUNNER-MANIFEST-V3",
+  "scope": {
+    "dirs": [
+      "simigo2-experimental/Sources",
+      "simigo2-experimental/Tests"
+    ],
+    "excluded": [
+      "simigo2-experimental/.build",
+      "**/__pycache__",
+      ".git"
+    ],
+    "files": [
+      ".gitignore",
+      "Package.swift",
+      "Package.resolved",
+      "simigo2-experimental/Package.swift",
+      "simigo2-experimental/Package.resolved",
+      "tools/g3_runner_manifest.py",
+      "tools/g3_build_stamped.py",
+      "tools/g3_execution_identity.py"
+    ],
+    "governance_prefix": "docs/00-governance/SIMIGO2_G3_"
+  },
+  "scope_newest_mtime_utc": "2026-10-21T11:17:00Z",
+  "source_revision": "c0ac9694+g3.2b027bb80a47",
+  "source_sha256": "2b027bb80a47d266ec8beeec06992b18aa0f94ba994b82449651e5da91467912",
+  "toolchain": {
+    "machine": "arm64",
+    "macos": "27.0.1",
+    "python": "3.9.6",
+    "swift": [
+      "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)",
+      "Target: arm64-apple-macosx27.0.0"
+    ],
+    "swift_exit": 0
+  },
+  "vendor_repos": [
+    {
+      "branch": "feature/g3-storage-identity",
+      "dirty_files": [],
+      "dirty_files_scope": "whole repository",
+      "head": "19d874c5f2c1871b0d032bd546495be7bd830169",
+      "head_in_remote_branch": [],
+      "local_only_head": true,
+      "path": "vendor/mlx-swift",
+      "remote_ref_count": 11,
+      "remotes": [
+        {
+          "name": "origin",
+          "url": "https://github.com/slamfinger/mlx-swift.git"
+        }
+      ],
+      "submodules": [
+        {
+          "branch": "HEAD",
+          "dirty": false,
+          "head": "f8e74e3f12f31365464a6867c6579f0e9b29d85",
+          "initialized": true,
+          "path": "Source/Cmlx/mlx",
+          "pointer_matches": true,
+          "remote_containment": [
+            "origin/HEAD -> origin/main",
+            "origin/all-to-sharded-gather",
+            "origin/digani/exp",
+            "origin/digani/sliding",
+            "origin/fence-deadlock",
+            "origin/fp16-sdpa-tk1",
+            "origin/gated-delta-vjp",
+            "origin/gather-mm",
+            "origin/gdn-sdpa-vjp",
+            "origin/global-scale-nvfp4",
+            "origin/grouped-mm-metal",
+            "origin/main"
+          ]
+        },
+        {
+          "branch": "feature/g3-storage-identity",
+          "dirty": false,
+          "head": "3fe6fa896531b2ba2ad83d66d4f919dee6f1dbd4",
+          "initialized": true,
+          "path": "Source/Cmlx/mlx-c",
+          "pointer_matches": true,
+          "remote_containment": []
+        }
+      ],
+      "tracked_diff_sha256": null,
+      "tree": "26918be59a0e51f4411b164b9767adf45d9d22c3",
+      "upstream": null
+    },
+    {
+      "branch": "feature/g3-kv-write-observer",
+      "dirty_files": [
+        {
+          "path": "Libraries/MLXLMCommon/KVCache.swift",
+          "sha256": "93b70dd309ba03e556eec1a4ce3f4f8de67e0095a9f3e22a391fbb957e02d23f",
+          "status": "modified"
+        }
+      ],
+      "dirty_files_scope": "whole repository",
+      "head": "2040afcd607d57c1add6b99aca3967f3786752bf",
+      "head_in_remote_branch": [],
+      "local_only_head": true,
+      "path": "vendor/mlx-swift-lm",
+      "remote_ref_count": 0,
+      "remotes": [
+        {
+          "name": "fork",
+          "url": "https://github.com/slamfinger/mlx-swift-lm.git"
+        },
+        {
+          "name": "upstream",
+          "url": "https://github.com/ml-explore/mlx-swift-lm"
+        }
+      ],
+      "submodules": [],
+      "tracked_diff_sha256": "f787acbb1c0f8732a6761e8cdacd6e57f23a52504c6fb5a7c7d04b9a228b93f1",
+      "tree": "a2c0e114ed0b80dd6cbf35877555852d8d865271",
+      "upstream": null
+    }
+  ]
+}

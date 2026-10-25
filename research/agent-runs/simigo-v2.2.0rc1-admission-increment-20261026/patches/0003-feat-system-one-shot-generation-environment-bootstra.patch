@@ -1,0 +1,423 @@
+From 5e9b002006e50766fa9298c49d2fe5752fb0ea3a Mon Sep 17 00:00:00 2001
+From: "Mr.Simi" <mr.simi@MrSimideMacBook-Air-5.local>
+Date: Mon, 26 Oct 2026 02:05:34 +0800
+Subject: [PATCH 3/7] feat(system): one-shot generation-environment bootstrap
+
+SIMIGO_ENV_BOOTSTRAP=1 provisions a bare install to the state where
+Execution State and Information Space can run: managed directory tree,
+version-locked llama.cpp build into bin (default lock pins the commit
+validated in the real environment when no operator manifest exists;
+operator manifests are never overwritten), the hf CLI via Homebrew when
+absent (adopt-first; manual_required without brew), a blank authoritative
+database (existing databases are never reset), and optional
+SIMIGO_WORKROOT registration into the roots table. JSON report to
+stdout and SIMIGO_ENV_BOOTSTRAP_REPORT. Unit tests cover entry gating,
+database round-trip, and stable root ids.
+---
+ SimiGo/App/StatusBarCoordinator.swift         |  21 ++
+ SimiGo/Headless/SimiGoEnvBootstrapEntry.swift |  83 ++++++++
+ SimiGo/System/EnvManager.swift                | 182 ++++++++++++++++++
+ SimiGoTests/EnvBootstrapEntryTests.swift      |  76 ++++++++
+ 4 files changed, 362 insertions(+)
+ create mode 100644 SimiGo/Headless/SimiGoEnvBootstrapEntry.swift
+ create mode 100644 SimiGoTests/EnvBootstrapEntryTests.swift
+
+diff --git a/SimiGo/App/StatusBarCoordinator.swift b/SimiGo/App/StatusBarCoordinator.swift
+index 34c1ac0..746989b 100644
+--- a/SimiGo/App/StatusBarCoordinator.swift
++++ b/SimiGo/App/StatusBarCoordinator.swift
+@@ -30,6 +30,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
+             }
+             return
+         }
++        // Generation-environment bootstrap gate (SIMIGO_ENV_BOOTSTRAP=1):
++        // provisions the managed tree, llama.cpp, hf, and the blank ES/IS
++        // database (+ optional SIMIGO_WORKROOT registration), then exits. It
++        // is the one-command path from a bare install to a root where
++        // Execution State / Information Space can run; it never starts a model
++        // or a listener.
++        let envBootstrap = SimiGoEnvBootstrapEntry.evaluate()
++        if envBootstrap.requested {
++            guard envBootstrap.valid else {
++                FileHandle.standardError.write(
++                    ("env-bootstrap fail-closed: " + (envBootstrap.error ?? "unknown") + "\n")
++                        .data(using: .utf8)!)
++                exit(2)
++            }
++            FileHandle.standardError.write("env-bootstrap-entered\n".data(using: .utf8)!)
++            Task { @MainActor in
++                let code = await SimiGoEnvBootstrapEntry.run()
++                exit(code)
++            }
++            return
++        }
+         // LOCALB local-management gate (env-gated, isolated roots only). The
+         // product ships the first-run ceremony / pairing primitives but no
+         // surface called them, so a never-activated host could not bind its
+diff --git a/SimiGo/Headless/SimiGoEnvBootstrapEntry.swift b/SimiGo/Headless/SimiGoEnvBootstrapEntry.swift
+new file mode 100644
+index 0000000..81217ec
+--- /dev/null
++++ b/SimiGo/Headless/SimiGoEnvBootstrapEntry.swift
+@@ -0,0 +1,83 @@
++import Foundation
++import SimiGoRuntimeContract
++
++// SIMIGO_ENV_BOOTSTRAP=1 — one-shot provisioning of the full generation
++// environment, so a fresh install (or a clean root) reaches the state where
++// Execution State and Information Space can actually run:
++//
++//   1. managed directory tree        (`<root>/{bin,sources,build,manifests,logs,staging,locks}`)
++//   2. llama.cpp toolchain           (version-locked source build -> `bin/llama-server`,
++//                                     build caches pruned to binaries only)
++//   3. hf CLI                        (adopt if present; else Homebrew install -> `bin/hf`)
++//   4. authoritative ES/IS database  (blank on first run, never reset after)
++//   5. work-root registration        (`SIMIGO_WORKROOT=<abs path>` -> `roots` table,
++//                                     category `work`, locator `path`)
++//
++// `SIMIGO_HOME` selects the managed root exactly like the rest of the product,
++// so the entry is testable against an isolated root and, unset, provisions the
++// real `<home>/.simigo`. The JSON report goes to stdout and, when
++// `SIMIGO_ENV_BOOTSTRAP_REPORT` is set, to that path as well.
++//
++// It never starts a model, opens a listener, or touches pairing state: it only
++// provisions. Exit 0 when every step reports a non-failed status, else 1.
++
++enum SimiGoEnvBootstrapEntry {
++
++    static let environmentKey = "SIMIGO_ENV_BOOTSTRAP"
++
++    struct Decision {
++        let requested: Bool
++        let valid: Bool
++        let error: String?
++    }
++
++    static func evaluate(env: [String: String] = ProcessInfo.processInfo.environment) -> Decision {
++        guard let raw = env[environmentKey], raw == "1" else {
++            return Decision(requested: false, valid: false, error: nil)
++        }
++        if let workRoot = env["SIMIGO_WORKROOT"], !workRoot.isEmpty,
++            !workRoot.hasPrefix("/")
++        {
++            return Decision(requested: true, valid: false,
++                error: "SIMIGO_WORKROOT must be an absolute path")
++        }
++        return Decision(requested: true, valid: true, error: nil)
++    }
++
++    @MainActor
++    static func run() async -> Int32 {
++        let env = ProcessInfo.processInfo.environment
++        let workRoot = env["SIMIGO_WORKROOT"].flatMap { $0.isEmpty ? nil : $0 }
++        let report = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: workRoot)
++
++        let encoder = JSONSerialization.jsonSerializerCompatibleDictionary(report)
++        let data = (try? JSONSerialization.data(
++            withJSONObject: encoder, options: [.prettyPrinted, .sortedKeys])) ?? Data()
++        let text = String(data: data, encoding: .utf8) ?? "{}"
++        FileHandle.standardError.write(Data((text + "\n").utf8))
++        if let outPath = env["SIMIGO_ENV_BOOTSTRAP_REPORT"], !outPath.isEmpty {
++            try? text.write(toFile: outPath, atomically: true, encoding: .utf8)
++        }
++        // Every provisioning step reports its own status; the entry fails only
++        // when a step outright failed (a `manual_required` hf without Homebrew
++        // is guidance, not a failure).
++        func stepFailed(_ step: [String: Any]) -> Bool {
++            (step["status"] as? String).map { ["failed", "install_failed", "install_bin_missing", "构建失败", "构建中断"].contains($0) } ?? false
++        }
++        var failed = false
++        if let llama = report["llama_cpp"] as? [String: Any] { failed = failed || stepFailed(llama) }
++        if let hf = report["hf"] as? [String: Any] { failed = failed || (hf["status"] as? String) == "install_failed" }
++        if let db = report["database"] as? [String: Any] { failed = failed || stepFailed(db) }
++        return failed ? 1 : 0
++    }
++}
++
++private extension JSONSerialization {
++    /// Force-cast the report tree into JSON-serializable containers, dropping
++    /// nothing: the bootstrap report is built exclusively from dictionaries,
++    /// arrays and strings/numbers, so a non-conforming value is a programming
++    /// error best surfaced by the serialization try? above.
++    static func jsonSerializerCompatibleDictionary(_ value: Any) -> [String: Any] {
++        value as? [String: Any] ?? ["unserializable": String(describing: type(of: value))]
++    }
++}
+diff --git a/SimiGo/System/EnvManager.swift b/SimiGo/System/EnvManager.swift
+index 28e2679..cc2bff5 100644
+--- a/SimiGo/System/EnvManager.swift
++++ b/SimiGo/System/EnvManager.swift
+@@ -417,6 +417,188 @@ public final class EnvManager: ObservableObject {
+     }
+ 
+ 
++    // MARK: - Generation environment bootstrap (env-bootstrap entry)
++
++    /// Provision the `hf` CLI into the managed bin.
++    ///
++    /// Discovery order: an already usable `hf` (PATH or managed bin) is adopted
++    /// as-is; otherwise Homebrew (a package manager, never `curl | bash`) is
++    /// used to install the official `huggingface-cli`, and the binary is
++    /// linked into `~/.simigo/bin`. Without Homebrew the step reports
++    /// `manual_required` with instructions instead of failing the bootstrap.
++    public func bootstrapHFTool() async -> [String: Any] {
++        let fm = FileManager.default
++        let binTarget = Self.binDir + "/hf"
++        if let existing = Self.findTool("hf") {
++            return ["status": "already_present", "path": existing]
++        }
++        if fm.fileExists(atPath: binTarget) && fm.isExecutableFile(atPath: binTarget) {
++            return ["status": "already_present", "path": binTarget]
++        }
++        guard let brew = Self.findTool("brew") else {
++            return [
++                "status": "manual_required",
++                "detail": "未找到 hf 且未安装 Homebrew：请安装官方 huggingface-cli 后重跑（禁止 curl | bash）",
++            ]
++        }
++        do {
++            appendCommandLog("📦 通过 Homebrew 安装官方 huggingface-cli …")
++            try await runCommand(brew, args: ["install", "huggingface-cli"])
++            // Locate the installed binary via brew's own prefix resolution.
++            let prefix = try await Self.captureCommand(brew, args: ["--prefix", "huggingface-cli"])
++            let candidate = (prefix as NSString).appendingPathComponent("/bin/hf")
++            guard fm.fileExists(atPath: candidate) else {
++                return ["status": "install_bin_missing", "detail": "brew 安装完成但未找到 \(candidate)"]
++            }
++            try? fm.removeItem(atPath: binTarget)
++            try fm.createSymbolicLink(atPath: binTarget, withDestinationPath: candidate)
++            try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: binTarget)
++            return ["status": "installed", "path": binTarget, "target": candidate]
++        } catch {
++            return ["status": "install_failed", "detail": error.localizedDescription]
++        }
++    }
++
++    /// Ensure a fresh authoritative ES/IS database exists and optionally
++    /// register the operator's work root.
++    ///
++    /// An EXISTING database is never reset — the blank-database semantics apply
++    /// to a new environment only. `workRoot`, when given, is registered in the
++    /// `roots` table (category `work`, locator `path`) so Execution State and
++    /// Information Space can index files under it without ever copying them in.
++    public func bootstrapFreshDatabase(workRoot: String?) -> [String: Any] {
++        let url = SimiGoPaths.databaseURL
++        let existedBefore = FileManager.default.fileExists(atPath: url.path)
++        do {
++            let db = try SimiGoESISDatabase(url: url, createIfNeeded: true)
++            try db.runMigrations()
++            var report: [String: Any] = [
++                "status": existedBefore ? "existing" : "created",
++                "path": url.path,
++                "schema_version": (try? db.schemaVersion()) ?? -1,
++            ]
++            if let workRoot, !workRoot.isEmpty {
++                let standardized = (workRoot as NSString).standardizingPath
++                let rootID = "work-" + Self.stableRootID(forPath: standardized)
++                try db.upsertRoot(
++                    rootID: rootID, category: "work",
++                    displayName: standardized, locatorType: "path", status: "registered")
++                report["work_root"] = [
++                    "root_id": rootID,
++                    "path": standardized,
++                    "registered": true,
++                ]
++            }
++            return report
++        } catch {
++            return ["status": "failed", "path": url.path, "detail": error.localizedDescription]
++        }
++    }
++
++    /// Ensure a version-locked engine manifest exists before building.
++    ///
++    /// The build path is fail-closed without a pinned `llama.cpp` ref; an
++    /// operator-supplied manifest is never overwritten. When none exists, this
++    /// writes the default lock file pinning llama.cpp to the commit already
++    /// validated in the user's real environment (2026-10-18, build 11720,
++    /// `0878f7c3…`) — self-bootstrap without upstream drift.
++    public func ensureDefaultEngineManifest() -> [String: Any] {
++        let url = SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName)
++        if FileManager.default.fileExists(atPath: url.path) {
++            return ["status": "present", "path": url.path]
++        }
++        let pinned = "0878f7c304cc13915c831ae17694534c94940176"
++        var recipes = SimiGoEngineRegistry.bundledDefaults
++        if let idx = recipes.firstIndex(where: { $0.id == "llama.cpp" }) {
++            recipes[idx] = EngineRecipe(
++                id: "llama.cpp", displayName: "llama.cpp", kind: .sourceBuild,
++                upstreamURL: "https://github.com/ggml-org/llama.cpp.git",
++                pinnedRef: pinned,
++                producedBinaryRelPath: "build/bin/llama-server")
++        }
++        do {
++            let encoder = JSONEncoder()
++            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
++            try FileManager.default.createDirectory(
++                at: SimiGoPaths.manifests, withIntermediateDirectories: true)
++            try encoder.encode(recipes).write(to: url)
++            return ["status": "created", "pinned_ref": pinned, "path": url.path]
++        } catch {
++            return ["status": "failed", "detail": error.localizedDescription]
++        }
++    }
++
++    /// One-shot provisioning of the full generation environment: managed
++    /// directory tree, llama.cpp toolchain (version-locked build, caches
++    /// pruned to binaries), the `hf` CLI, and the authoritative ES/IS
++    /// database with an optional work-root registration. Returns a JSON-ready
++    /// report; a step that cannot run reports its own status instead of
++    /// aborting the rest.
++    public func bootstrapGenerationEnvironment(workRoot: String?) async -> [String: Any] {
++        var report: [String: Any] = [
++            "managed_root": SimiGoPaths.managedRoot().path,
++            "started_at": ISO8601DateFormatter().string(from: Date()),
++        ]
++        // 0) Version-locked engine manifest (operator manifest wins; the
++        //    default pins llama.cpp to the validated commit).
++        report["engine_manifest"] = ensureDefaultEngineManifest()
++        // 1) Directory tree + llama.cpp (reuses the shipped, version-locked
++        //    recipe path incl. cache pruning).
++        let previousEngine = selectedEngineID
++        selectedEngineID = "llama.cpp"
++        await setupEnvironment()
++        selectedEngineID = previousEngine
++        report["llama_cpp"] = [
++            "status": commandStatus,
++            "llama_server": Self.llamaServerExecutable,
++        ]
++        // 2) hf CLI.
++        report["hf"] = await bootstrapHFTool()
++        // 3) Fresh ES/IS database + work root.
++        report["database"] = bootstrapFreshDatabase(workRoot: workRoot)
++        report["finished_at"] = ISO8601DateFormatter().string(from: Date())
++        return report
++    }
++
++    /// Stable root id for a registered work root: FNV-1a over the
++    /// standardized path — reproducible across runs, no crypto requirement.
++    nonisolated static func stableRootID(forPath path: String) -> String {
++        var hash: UInt64 = 0xcbf29ce484222325
++        for byte in path.utf8 {
++            hash ^= UInt64(byte)
++            hash = hash &* 0x100000001b3
++        }
++        return String(format: "%016x", hash)
++    }
++
++    /// Run a command and return its trimmed stdout (used by hf provisioning).
++    static func captureCommand(_ cmd: String, args: [String]) async throws -> String {
++        try await withCheckedThrowingContinuation { continuation in
++            let process = Process()
++            process.executableURL = URL(fileURLWithPath: cmd)
++            process.arguments = args
++            let pipe = Pipe()
++            process.standardOutput = pipe
++            process.standardError = Pipe()
++            process.terminationHandler = { process in
++                if process.terminationStatus == 0 {
++                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
++                    continuation.resume(returning: String(data: data, encoding: .utf8)?
++                        .trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
++                } else {
++                    continuation.resume(throwing: NSError(
++                        domain: "EnvManager", code: Int(process.terminationStatus),
++                        userInfo: [NSLocalizedDescriptionKey: "\(cmd) exited \(process.terminationStatus)"]))
++                }
++            }
++            do {
++                try process.run()
++            } catch {
++                continuation.resume(throwing: error)
++            }
++        }
++    }
++
+     // MARK: - Process Runner
+     private func runCommand(_ cmd: String, args: [String]) async throws {
+         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+diff --git a/SimiGoTests/EnvBootstrapEntryTests.swift b/SimiGoTests/EnvBootstrapEntryTests.swift
+new file mode 100644
+index 0000000..423a448
+--- /dev/null
++++ b/SimiGoTests/EnvBootstrapEntryTests.swift
+@@ -0,0 +1,76 @@
++import XCTest
++import SimiGoRuntimeContract
++@testable import SimiGo
++
++/// env-bootstrap 入口与数据库接口的单测：
++/// - evaluate 的 fail-closed 语义（env 门控、workroot 绝对路径要求）；
++/// - 空白数据库创建 + 工作目录注册的 round-trip（新库 → upsertRoot → 重开读回）；
++/// - stableRootID 跨运行稳定。
++final class EnvBootstrapEntryTests: XCTestCase {
++
++    // MARK: - evaluate
++
++    func testEvaluateGating() {
++        XCTAssertFalse(SimiGoEnvBootstrapEntry.evaluate(env: [:]).requested)
++        XCTAssertFalse(
++            SimiGoEnvBootstrapEntry
++                .evaluate(env: ["SIMIGO_ENV_BOOTSTRAP": ""]).requested)
++        let ok = SimiGoEnvBootstrapEntry.evaluate(env: ["SIMIGO_ENV_BOOTSTRAP": "1"])
++        XCTAssertTrue(ok.requested)
++        XCTAssertTrue(ok.valid)
++        XCTAssertNil(ok.error)
++
++        let relative = SimiGoEnvBootstrapEntry.evaluate(
++            env: ["SIMIGO_ENV_BOOTSTRAP": "1", "SIMIGO_WORKROOT": "relative/path"])
++        XCTAssertTrue(relative.requested)
++        XCTAssertFalse(relative.valid)
++        XCTAssertNotNil(relative.error)
++
++        let absolute = SimiGoEnvBootstrapEntry.evaluate(
++            env: ["SIMIGO_ENV_BOOTSTRAP": "1", "SIMIGO_WORKROOT": "/tmp/somewhere"])
++        XCTAssertTrue(absolute.valid)
++    }
++
++    // MARK: - Database interface round-trip
++
++    func testFreshDatabaseCreationAndWorkRootRoundTrip() throws {
++        let dir = FileManager.default.temporaryDirectory
++            .appendingPathComponent("envboot-\(UUID().uuidString)", isDirectory: true)
++        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let dbURL = dir.appendingPathComponent("simigo.sqlite3")
++
++        // Blank creation.
++        XCTAssertFalse(FileManager.default.fileExists(atPath: dbURL.path))
++        let db = try SimiGoESISDatabase(url: dbURL, createIfNeeded: true)
++        try db.runMigrations()
++        XCTAssertTrue(FileManager.default.fileExists(atPath: dbURL.path))
++        let schema = try db.schemaVersion()
++        XCTAssertGreaterThanOrEqual(schema, 3)
++
++        // Work-root registration, then read back from a fresh handle.
++        let workPath = "/tmp/simigo-work-\(UUID().uuidString)"
++        let rootID = "work-" + EnvManager.stableRootID(forPath: workPath)
++        try db.upsertRoot(
++            rootID: rootID, category: "work",
++            displayName: workPath, locatorType: "path", status: "registered")
++        let reopened = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
++        let roots = try reopened.listRoots()
++        XCTAssertTrue(roots.contains { $0.rootID == rootID && $0.category == "work" },
++                      "registered work root must survive a reopen: \(roots)")
++
++        // Existing databases are never blanked by createIfNeeded.
++        _ = try SimiGoESISDatabase(url: dbURL, createIfNeeded: true)
++        let after = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
++        XCTAssertTrue(try after.listRoots().contains { $0.rootID == rootID })
++    }
++
++    func testStableRootIDIsDeterministic() {
++        XCTAssertEqual(
++            EnvManager.stableRootID(forPath: "/a/b/c"),
++            EnvManager.stableRootID(forPath: "/a/b/c"))
++        XCTAssertNotEqual(
++            EnvManager.stableRootID(forPath: "/a/b/c"),
++            EnvManager.stableRootID(forPath: "/a/b/d"))
++    }
++}
+-- 
+2.54.0 (Apple Git-157)
+

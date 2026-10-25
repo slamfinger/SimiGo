@@ -1,0 +1,12 @@
+{"ts":"2026-09-30T13:41:20Z","case":"sideA","model":"loaded"}
+{"ts":"2026-09-30T13:41:20Z","case":"sideA","restore_position":"17"}
+{"ts":"2026-09-30T13:42:02Z","case":"sideA","position_before":"17"}
+{"ts":"2026-09-30T13:42:02Z","case":"sideA","position_after_runtime":"18"}
+{"ts":"2026-09-30T13:42:02Z","case":"sideA","response_O_A":"你是想继续查看其他目录吗？比如：\n\n- **三公司管理制度及规定**（另一个4号文件夹）\n- **国家及地方法"}
+{"ts":"2026-09-30T13:42:02Z","case":"sideA","note":"process A exits NOW; position 18 was in-memory only (tunables off -> no checkpoint); position 18 is EXPECTED to die here"}
+{"ts":"2026-09-30T13:43:37Z","case":"sideB","durable_position":"17"}
+{"ts":"2026-09-30T13:43:42Z","case":"sideB","model":"loaded (fresh process — sessions dict empty by construction)"}
+{"ts":"2026-09-30T13:43:43Z","case":"sideB","restore_position":"17"}
+{"ts":"2026-09-30T13:44:13Z","case":"sideB","response_O_B":"你是想继续查看其他目录吗？比如：\n\n- **三公司管理制度及规定**（另一个4号文件夹）\n- **国家及地方法"}
+{"ts":"2026-09-30T13:44:13Z","case":"sideB","O_B_equals_O_A":"YES (re-derived position/continuation semantically valid across process boundary)"}
+{"ts":"2026-09-30T13:44:13Z","case":"sideB","reading":"position 17 (checkpointed) SURVIVED as authoritative; position 18 (runtime-only) did NOT; continuation re-derived from surviving history reproduced the boundary-crossing behavior"}

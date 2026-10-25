@@ -1,0 +1,17 @@
+status=STOPPED_IMPLEMENTATION_DEFECT
+authorized=true
+implementation_baseline=bae68a852cfc
+arms_attempted=C-A,C-B
+arms_completed_with_evaluator=C-A
+arms_not_run=C-C
+C-A_old=COMPLETED
+C-A_fresh_first=ERROR_INVOCATION_PARSER
+C-A_fresh_retry=COMPLETED_WITH_RECORDED_DUPLICATE_CONTINUE_TOKEN_DEVIATION
+C-A_evaluator=PARTIAL_SUCCESS_X1_ONLY
+C-B_old=FATAL_INVALID_INCREMENTAL_CHECKPOINT_STATE
+C-B_fresh=NOT_RUN
+C-C=NOT_RUN
+protocol_change=false
+implementation_change_during_execution=false
+classification=INVALID_INCONCLUSIVE_IMPLEMENTATION_DEFECT
+next=C-IMPL_REOPEN_AND_FIX_INCREMENTAL_VALIDATION

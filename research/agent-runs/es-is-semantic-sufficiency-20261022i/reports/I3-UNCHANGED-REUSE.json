@@ -1,0 +1,28 @@
+{
+  "db_post_sha256": "6541cb41c08214e3c4d9a362866601778eaae2821857b8ba47584dfd02d2461e",
+  "db_pre_sha256": "6361a98a23c36a71faf579f91decebad659fd8fc59610937b4346633b4fc1419",
+  "id": "I3-UNCHANGED-REUSE",
+  "kind": "model_free_control",
+  "notes": [
+    "model-free demand probe exercises the exact production reuse/settlement decision (execute_demand -> _settlement_reuse_decision); it reuses every valid settlement and recomputes nothing. No model load or generation occurs in this probe by construction."
+  ],
+  "observations": {
+    "all_eligible_items_reused": true,
+    "computed_item_ids": [],
+    "generation_calls": 0,
+    "model_loads": 0,
+    "probe_uses_production_reuse_decision": true,
+    "reused_item_ids": [
+      "SOURCE-B",
+      "TASK-U1",
+      "TASK-U2",
+      "TASK-U3",
+      "SOURCE-A"
+    ]
+  },
+  "raw_log_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I3/logs/i3-unchanged-reuse-probe.log"
+  ],
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I3"
+}

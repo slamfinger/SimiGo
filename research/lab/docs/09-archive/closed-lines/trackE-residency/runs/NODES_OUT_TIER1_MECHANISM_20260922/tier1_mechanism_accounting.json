@@ -1,0 +1,687 @@
+{
+  "FINAL": {
+    "effect_verdict": "LOCKED",
+    "mechanism_extraction_complete": true,
+    "tier1_data_collection": "COMPLETE_FOR_THIS_FROZEN_FACE"
+  },
+  "binding": {
+    "all_source_and_artifact_checks_pass": true,
+    "baseline_blob": "ff6d4e21df40db800e64bd5c949c39b3d77d22aa",
+    "baseline_blob_matches_official": true,
+    "contract_commit": "0918260c722a98a2c9b6ccaa94efb0ca9668d9ec",
+    "hot_baseline_matches_official": true,
+    "hot_candidate_counts_match_official": true,
+    "official_artifact_sha256": "556ab61f2fe39fdf0db0a392d2bc99496d6ba83b09fc9e427f481aac68216521",
+    "runner_commit": "f4d880efd4cac21e60a55688dd686b801f3b7044",
+    "runner_sha256": "ace241fc6ca22bd1dd40d2e6036662ae0b1e2e1564f49fe3a140900e26495f17",
+    "runner_sha_matches_official": true,
+    "tree_baseline_matches_official": true,
+    "tree_candidate_counts_match_official": true
+  },
+  "date": "2026-09-22",
+  "provenance": {
+    "baseline_blob": "ff6d4e21df40db800e64bd5c949c39b3d77d22aa",
+    "baseline_commit": "17bde28",
+    "boundary": "read-only extraction; Runner/baseline/Candidate A unchanged",
+    "contract_commit": "0918260c722a98a2c9b6ccaa94efb0ca9668d9ec",
+    "extractor_path": "trackE-residency/nodes_out_tier1_mechanism_extractor.py",
+    "extractor_sha256": "b9f151d34a6b1fb0b1df83102743863e8563e984ac8a1c2779f955262c6928a8",
+    "official_artifact_sha256": "556ab61f2fe39fdf0db0a392d2bc99496d6ba83b09fc9e427f481aac68216521",
+    "runner_commit": "f4d880efd4cac21e60a55688dd686b801f3b7044",
+    "runner_sha256": "ace241fc6ca22bd1dd40d2e6036662ae0b1e2e1564f49fe3a140900e26495f17"
+  },
+  "schema": "nodes-out-tier1-mechanism-accounting-v0.1",
+  "status": "MECHANISM_ACCOUNTING_COMPLETE_EFFECT_VERDICT_LOCKED",
+  "workloads": {
+    "hot": {
+      "baseline": {
+        "M02_decode_ready_or_baseline_current_resident": {
+          "baseline_current_resident": {
+            "false_steps": 0,
+            "true_steps": 2000
+          }
+        },
+        "M04_current_node_coverage": {
+          "baseline": {
+            "covered_steps": 2000,
+            "uncovered_steps": 0
+          }
+        },
+        "M05_residency_state_shape_mapped": {
+          "empty_node_node_steps": {
+            "max": 31,
+            "mean": 20.0425,
+            "min": 20,
+            "sum": 40085,
+            "terminal": 20
+          },
+          "externalized_node_node_steps": {
+            "max": 20,
+            "mean": 18.66,
+            "min": 0,
+            "sum": 37320,
+            "terminal": 20
+          },
+          "full_node_node_steps": {
+            "max": 12,
+            "mean": 11.9575,
+            "min": 1,
+            "sum": 23915,
+            "terminal": 12
+          },
+          "note": "baseline node state is mapped as full; partial is not representable at node granularity",
+          "partial_node_node_steps": {
+            "max": 0,
+            "mean": 0.0,
+            "min": 0,
+            "sum": 0,
+            "terminal": 0
+          },
+          "terminal": {
+            "externalized": 20,
+            "resident": 12
+          }
+        },
+        "M06_slot_occupancy_ratio": {
+          "capacity_exceed_steps": 0,
+          "step_summary": {
+            "max": 1.0,
+            "mean": 0.996458,
+            "min": 0.08333333333333333,
+            "sum": 1992.9166666666665,
+            "terminal": 1.0
+          }
+        },
+        "M07_resident_byte_exposure_KiB": {
+          "step_summary": {
+            "max": 938952,
+            "mean": 935626.545,
+            "min": 78246,
+            "sum": 1871253090,
+            "terminal": 938952
+          },
+          "unit": "KiB; disclosure only, capacity remains node-slot based"
+        },
+        "M08_raw_rehydrate_count": 696,
+        "M09_rehydrate_byte_mass_KiB": 54459216,
+        "M10_node_touch_acquisition_incidence_mapped": {
+          "acquisition_touches": 696,
+          "no_acquisition_touches": 1304,
+          "note": "step 0 uses an empty pre-state; later steps use the prior post-capacity baseline resident set"
+        },
+        "M11_raw_externalize_count": 684,
+        "M12_externalize_byte_mass_KiB": 53520264,
+        "M13_compatible_J_disclosure": 973.08
+      },
+      "baseline_regression_ok": true,
+      "candidate": {
+        "M02_decode_ready_or_baseline_current_resident": {
+          "candidate_decode_ready": {
+            "false_steps": 0,
+            "true_steps": 2000
+          }
+        },
+        "M04_current_node_coverage": {
+          "candidate_gdn_and_att": {
+            "covered_steps": 2000,
+            "uncovered_steps": 0
+          }
+        },
+        "M05_residency_state_shape_mapped": {
+          "empty_node_node_steps": {
+            "max": 31,
+            "mean": 20.0425,
+            "min": 20,
+            "sum": 40085,
+            "terminal": 20
+          },
+          "full_node_node_steps": {
+            "max": 12,
+            "mean": 11.9575,
+            "min": 1,
+            "sum": 23915,
+            "terminal": 12
+          },
+          "partial_node_node_steps": {
+            "max": 0,
+            "mean": 0.0,
+            "min": 0,
+            "sum": 0,
+            "terminal": 0
+          },
+          "resident_units_by_kind_node_steps": {
+            "ATT": {
+              "max": 12,
+              "mean": 11.9575,
+              "min": 1,
+              "sum": 23915,
+              "terminal": 12
+            },
+            "GDN": {
+              "max": 12,
+              "mean": 11.9575,
+              "min": 1,
+              "sum": 23915,
+              "terminal": 12
+            }
+          },
+          "terminal": {
+            "empty_node": 20,
+            "full_node": 12,
+            "partial_node": 0,
+            "resident_units": 24,
+            "resident_units_by_kind": {
+              "ATT": 12,
+              "GDN": 12
+            }
+          }
+        },
+        "M06_slot_occupancy_ratio": {
+          "capacity_exceed_steps": 0,
+          "step_summary": {
+            "max": 1.0,
+            "mean": 0.996458,
+            "min": 0.08333333333333333,
+            "sum": 1992.9166666666665,
+            "terminal": 1.0
+          }
+        },
+        "M07_resident_byte_exposure_KiB": {
+          "step_summary": {
+            "max": 938952,
+            "mean": 935626.545,
+            "min": 78246,
+            "sum": 1871253090,
+            "terminal": 938952
+          },
+          "unit": "KiB; disclosure only, capacity remains unit-slot based"
+        },
+        "M08_raw_rehydrate_count": {
+          "ATT": 696,
+          "GDN": 696,
+          "total": 1392
+        },
+        "M09_rehydrate_byte_mass_KiB": {
+          "ATT": 11696976,
+          "GDN": 42762240,
+          "total": 54459216
+        },
+        "M10_node_touch_acquisition_incidence_mapped": {
+          "any_unit_acquisition_touches": 696,
+          "full_pair_acquisition_touches": 696,
+          "no_acquisition_touches": 1304,
+          "note": "any/full-pair are Candidate-only mapped descriptors; they are not equivalent to baseline node acquisition"
+        },
+        "M11_raw_externalize_count": {
+          "ATT": 684,
+          "GDN": 684,
+          "total": 1368
+        },
+        "M12_externalize_byte_mass_KiB": {
+          "ATT": 11495304,
+          "GDN": 42024960,
+          "total": 53520264
+        },
+        "compatible_J_M13": 1946.16,
+        "state_replay_source": "post-step replay of unchanged Runner events",
+        "terminal": {
+          "ext_count": 1368,
+          "five_tuple": {
+            "continuation": [
+              "advance",
+              7,
+              null,
+              [
+                146,
+                18,
+                21,
+                154,
+                170,
+                29,
+                17,
+                124,
+                136,
+                18,
+                18,
+                14,
+                18,
+                18,
+                25,
+                25,
+                8,
+                162,
+                12,
+                27,
+                20,
+                151,
+                11,
+                148,
+                16,
+                21,
+                19,
+                141,
+                15,
+                150,
+                20,
+                128
+              ],
+              [
+                1992,
+                1938,
+                1964,
+                1985,
+                1978,
+                1934,
+                1997,
+                1999,
+                1989,
+                1704,
+                1928,
+                1990,
+                1874,
+                1986,
+                1946,
+                1980,
+                1855,
+                1994,
+                1995,
+                1942,
+                1833,
+                1987,
+                1988,
+                1998,
+                1854,
+                1961,
+                1742,
+                1996,
+                1982,
+                1950,
+                1993,
+                1957
+              ]
+            ],
+            "identity": "simigo-nodes-out-v1",
+            "kv_versions": [
+              146,
+              18,
+              21,
+              154,
+              170,
+              29,
+              17,
+              124,
+              136,
+              18,
+              18,
+              14,
+              18,
+              18,
+              25,
+              25,
+              8,
+              162,
+              12,
+              27,
+              20,
+              151,
+              11,
+              148,
+              16,
+              21,
+              19,
+              141,
+              15,
+              150,
+              20,
+              128
+            ],
+            "next_input": null,
+            "position": 1999
+          },
+          "rehy_count": 1392,
+          "resident_units": 24
+        },
+        "terminal_state_replay_matches_runner": true
+      },
+      "candidate_violation_count": 0,
+      "deterministic_diff": 0,
+      "steps": 2000,
+      "stop_conditions": {
+        "artifact_or_source_binding_fail": false,
+        "baseline_capacity_exceed": false,
+        "baseline_current_node_uncovered": false,
+        "baseline_regression_fail": false,
+        "candidate_capacity_exceed": false,
+        "candidate_current_node_uncovered": false,
+        "candidate_terminal_replay_mismatch": false,
+        "candidate_violation": false,
+        "deterministic_diff": false
+      }
+    },
+    "tree": {
+      "baseline": {
+        "M02_decode_ready_or_baseline_current_resident": {
+          "baseline_current_resident": {
+            "false_steps": 0,
+            "true_steps": 2000
+          }
+        },
+        "M04_current_node_coverage": {
+          "baseline": {
+            "covered_steps": 2000,
+            "uncovered_steps": 0
+          }
+        },
+        "M05_residency_state_shape_mapped": {
+          "empty_node_node_steps": {
+            "max": 31,
+            "mean": 20.033,
+            "min": 20,
+            "sum": 40066,
+            "terminal": 20
+          },
+          "externalized_node_node_steps": {
+            "max": 20,
+            "mean": 19.321,
+            "min": 0,
+            "sum": 38642,
+            "terminal": 20
+          },
+          "full_node_node_steps": {
+            "max": 12,
+            "mean": 11.967,
+            "min": 1,
+            "sum": 23934,
+            "terminal": 12
+          },
+          "note": "baseline node state is mapped as full; partial is not representable at node granularity",
+          "partial_node_node_steps": {
+            "max": 0,
+            "mean": 0.0,
+            "min": 0,
+            "sum": 0,
+            "terminal": 0
+          },
+          "terminal": {
+            "externalized": 20,
+            "resident": 12
+          }
+        },
+        "M06_slot_occupancy_ratio": {
+          "capacity_exceed_steps": 0,
+          "step_summary": {
+            "max": 1.0,
+            "mean": 0.99725,
+            "min": 0.08333333333333333,
+            "sum": 1994.5,
+            "terminal": 1.0
+          }
+        },
+        "M07_resident_byte_exposure_KiB": {
+          "step_summary": {
+            "max": 938952,
+            "mean": 936369.882,
+            "min": 78246,
+            "sum": 1872739764,
+            "terminal": 938952
+          },
+          "unit": "KiB; disclosure only, capacity remains node-slot based"
+        },
+        "M08_raw_rehydrate_count": 1015,
+        "M09_rehydrate_byte_mass_KiB": 79419690,
+        "M10_node_touch_acquisition_incidence_mapped": {
+          "acquisition_touches": 1015,
+          "no_acquisition_touches": 985,
+          "note": "step 0 uses an empty pre-state; later steps use the prior post-capacity baseline resident set"
+        },
+        "M11_raw_externalize_count": 1003,
+        "M12_externalize_byte_mass_KiB": 78480738,
+        "M13_compatible_J_disclosure": 1422.87
+      },
+      "baseline_regression_ok": true,
+      "candidate": {
+        "M02_decode_ready_or_baseline_current_resident": {
+          "candidate_decode_ready": {
+            "false_steps": 0,
+            "true_steps": 2000
+          }
+        },
+        "M04_current_node_coverage": {
+          "candidate_gdn_and_att": {
+            "covered_steps": 2000,
+            "uncovered_steps": 0
+          }
+        },
+        "M05_residency_state_shape_mapped": {
+          "empty_node_node_steps": {
+            "max": 31,
+            "mean": 20.033,
+            "min": 20,
+            "sum": 40066,
+            "terminal": 20
+          },
+          "full_node_node_steps": {
+            "max": 12,
+            "mean": 11.967,
+            "min": 1,
+            "sum": 23934,
+            "terminal": 12
+          },
+          "partial_node_node_steps": {
+            "max": 0,
+            "mean": 0.0,
+            "min": 0,
+            "sum": 0,
+            "terminal": 0
+          },
+          "resident_units_by_kind_node_steps": {
+            "ATT": {
+              "max": 12,
+              "mean": 11.967,
+              "min": 1,
+              "sum": 23934,
+              "terminal": 12
+            },
+            "GDN": {
+              "max": 12,
+              "mean": 11.967,
+              "min": 1,
+              "sum": 23934,
+              "terminal": 12
+            }
+          },
+          "terminal": {
+            "empty_node": 20,
+            "full_node": 12,
+            "partial_node": 0,
+            "resident_units": 24,
+            "resident_units_by_kind": {
+              "ATT": 12,
+              "GDN": 12
+            }
+          }
+        },
+        "M06_slot_occupancy_ratio": {
+          "capacity_exceed_steps": 0,
+          "step_summary": {
+            "max": 1.0,
+            "mean": 0.99725,
+            "min": 0.08333333333333333,
+            "sum": 1994.5,
+            "terminal": 1.0
+          }
+        },
+        "M07_resident_byte_exposure_KiB": {
+          "step_summary": {
+            "max": 938952,
+            "mean": 936369.882,
+            "min": 78246,
+            "sum": 1872739764,
+            "terminal": 938952
+          },
+          "unit": "KiB; disclosure only, capacity remains unit-slot based"
+        },
+        "M08_raw_rehydrate_count": {
+          "ATT": 1015,
+          "GDN": 1015,
+          "total": 2030
+        },
+        "M09_rehydrate_byte_mass_KiB": {
+          "ATT": 17058090,
+          "GDN": 62361600,
+          "total": 79419690
+        },
+        "M10_node_touch_acquisition_incidence_mapped": {
+          "any_unit_acquisition_touches": 1015,
+          "full_pair_acquisition_touches": 1015,
+          "no_acquisition_touches": 985,
+          "note": "any/full-pair are Candidate-only mapped descriptors; they are not equivalent to baseline node acquisition"
+        },
+        "M11_raw_externalize_count": {
+          "ATT": 1003,
+          "GDN": 1003,
+          "total": 2006
+        },
+        "M12_externalize_byte_mass_KiB": {
+          "ATT": 16856418,
+          "GDN": 61624320,
+          "total": 78480738
+        },
+        "compatible_J_M13": 2845.74,
+        "state_replay_source": "post-step replay of unchanged Runner events",
+        "terminal": {
+          "ext_count": 2006,
+          "five_tuple": {
+            "continuation": [
+              "advance",
+              0,
+              null,
+              [
+                124,
+                62,
+                55,
+                31,
+                124,
+                43,
+                36,
+                22,
+                126,
+                65,
+                47,
+                19,
+                112,
+                37,
+                32,
+                17,
+                127,
+                53,
+                47,
+                31,
+                130,
+                43,
+                31,
+                19,
+                139,
+                71,
+                45,
+                35,
+                149,
+                55,
+                42,
+                31
+              ],
+              [
+                1999,
+                1983,
+                1949,
+                1992,
+                1986,
+                1970,
+                1982,
+                1872,
+                1988,
+                1887,
+                1886,
+                1849,
+                1991,
+                1940,
+                1939,
+                1874,
+                1989,
+                1977,
+                1976,
+                1927,
+                1998,
+                1997,
+                1827,
+                1819,
+                1996,
+                1995,
+                1994,
+                1993,
+                1990,
+                1943,
+                1930,
+                1929
+              ]
+            ],
+            "identity": "simigo-nodes-out-v1",
+            "kv_versions": [
+              124,
+              62,
+              55,
+              31,
+              124,
+              43,
+              36,
+              22,
+              126,
+              65,
+              47,
+              19,
+              112,
+              37,
+              32,
+              17,
+              127,
+              53,
+              47,
+              31,
+              130,
+              43,
+              31,
+              19,
+              139,
+              71,
+              45,
+              35,
+              149,
+              55,
+              42,
+              31
+            ],
+            "next_input": null,
+            "position": 1999
+          },
+          "rehy_count": 2030,
+          "resident_units": 24
+        },
+        "terminal_state_replay_matches_runner": true
+      },
+      "candidate_violation_count": 0,
+      "deterministic_diff": 0,
+      "steps": 2000,
+      "stop_conditions": {
+        "artifact_or_source_binding_fail": false,
+        "baseline_capacity_exceed": false,
+        "baseline_current_node_uncovered": false,
+        "baseline_regression_fail": false,
+        "candidate_capacity_exceed": false,
+        "candidate_current_node_uncovered": false,
+        "candidate_terminal_replay_mismatch": false,
+        "candidate_violation": false,
+        "deterministic_diff": false
+      }
+    }
+  }
+}

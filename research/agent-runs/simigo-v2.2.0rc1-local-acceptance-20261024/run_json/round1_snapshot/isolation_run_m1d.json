@@ -1,0 +1,42 @@
+{
+ "tag": "m1d",
+ "evidence_dir": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/run_isolated_m1d",
+ "exit_code": 0,
+ "duration_s": 136,
+ "executed_skipped_failures": [
+  207,
+  14,
+  0
+ ],
+ "xctestrun_isolated_sha256": "c6a1da7cc704c431fee437f3d8ac1f53ab3ccee68d49cedc375c66314136667d",
+ "fresh_isolation_root": true,
+ "isolation_content_bytes": {
+  "home": 500633,
+  "cache": 20343821264,
+  "state-graph": 0
+ },
+ "noninterference": {
+  "real_user_state_write_count": 0,
+  "real_user_state_write_paths": [],
+  "violation_events": 0,
+  "distinct_violation_count": 0,
+  "expected_self_writes": 0,
+  "reference_changes": 0,
+  "swept_real_roots": [
+   "/Users/mr.simi/.simigo",
+   "/Users/mr.simi/Library/Application Support/SimiGo"
+  ]
+ },
+ "checks": {
+  "test_execute_succeeded": true,
+  "exit_code_zero": true,
+  "counts_parsed": true,
+  "no_failures": true,
+  "xctestrun_only_three_roots": true,
+  "isolation_home_used_by_app": true,
+  "isolation_cache_used_by_app": true,
+  "no_real_user_state_write": true,
+  "no_unexpected_write": true
+ },
+ "passed": true
+}

@@ -1,0 +1,15 @@
+{
+  "attempt": 2,
+  "authorization": "AUTHORIZED",
+  "authorization_text": "执行 Attempt #2",
+  "authorization_time_local": "2026-10-03T04:44:08+0800",
+  "authorization_type": "NEW_EXPLICIT",
+  "authorized_by": "human repository owner via chat instruction",
+  "branch": "codex/execution-state-research-20260929",
+  "experiment": "R-C1",
+  "implementation_baseline": "df7a6246c7a8",
+  "implementation_changes_since_audit": false,
+  "previous_attempt": "RC1-20261002T202144Z-42754",
+  "previous_attempt_state": "STOPPED_INVALID_INCONCLUSIVE",
+  "run_id": "RC1-A2-20261002T204817Z-45666"
+}

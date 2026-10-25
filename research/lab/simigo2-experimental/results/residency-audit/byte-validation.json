@@ -1,0 +1,185 @@
+{
+  "boundary": "OBSERVABILITY_AUDIT / BYTE_LEVEL_VALIDATION / GROUP_RESIDENT_SET_IS_POLICY_BOOKKEEPING / NOT_DEMAND",
+  "models": {
+    "cyber-tiel-35b": {
+      "maxAbsDeviationBytes": 892815436,
+      "maxAbsRelativeDeviation": 0.29925383686805196,
+      "meanAbsRelativeDeviation": 0.13643496586471193,
+      "perPolicy": {
+        "allResident": {
+          "maxAbsDeviationBytes": 892815436,
+          "maxAbsRelativeDeviation": 0.042307789055779546,
+          "meanAbsRelativeDeviation": 0.042121393917951645,
+          "rows": 25
+        },
+        "naiveOnDemand": {
+          "maxAbsDeviationBytes": 892814476,
+          "maxAbsRelativeDeviation": 0.29925383686805196,
+          "meanAbsRelativeDeviation": 0.29925383686805196,
+          "rows": 25
+        },
+        "stateDriven": {
+          "maxAbsDeviationBytes": 892815436,
+          "maxAbsRelativeDeviation": 0.0872637211824763,
+          "meanAbsRelativeDeviation": 0.06792966680813224,
+          "rows": 25
+        }
+      },
+      "transitionCount": 75,
+      "worstRow": {
+        "deviationBytes": -892815436,
+        "measuredBytes": 20210046612,
+        "policy": "allResident",
+        "predictedBytes": 21102862048,
+        "relativeDeviation": -0.042307789055779546,
+        "state": null,
+        "trace": "T1",
+        "transitionIndex": 0
+      }
+    },
+    "gemma4-12b-coder": {
+      "maxAbsDeviationBytes": 2432170,
+      "maxAbsRelativeDeviation": 0.0003630651134457379,
+      "meanAbsRelativeDeviation": 0.0002305296161962651,
+      "perPolicy": {
+        "allResident": {
+          "maxAbsDeviationBytes": 2432170,
+          "maxAbsRelativeDeviation": 0.0003630651134457379,
+          "meanAbsRelativeDeviation": 0.0003630651134457379,
+          "rows": 25
+        },
+        "naiveOnDemand": {
+          "maxAbsDeviationBytes": 74026,
+          "maxAbsRelativeDeviation": 3.8526778781157736e-05,
+          "meanAbsRelativeDeviation": 3.8526778781157736e-05,
+          "rows": 25
+        },
+        "stateDriven": {
+          "maxAbsDeviationBytes": 2432170,
+          "maxAbsRelativeDeviation": 0.0003630651134457379,
+          "meanAbsRelativeDeviation": 0.00028999695636189955,
+          "rows": 25
+        }
+      },
+      "transitionCount": 75,
+      "worstRow": {
+        "deviationBytes": 2432170,
+        "measuredBytes": 6701423370,
+        "policy": "allResident",
+        "predictedBytes": 6698991200,
+        "relativeDeviation": 0.0003630651134457379,
+        "state": null,
+        "trace": "T1",
+        "transitionIndex": 0
+      }
+    },
+    "muse-glimmer-30b": {
+      "maxAbsDeviationBytes": 5179120,
+      "maxAbsRelativeDeviation": 0.0006548514765599509,
+      "meanAbsRelativeDeviation": 0.0004600128675809935,
+      "perPolicy": {
+        "allResident": {
+          "maxAbsDeviationBytes": 5179120,
+          "maxAbsRelativeDeviation": 0.00033050518357756475,
+          "meanAbsRelativeDeviation": 0.0003305051835775648,
+          "rows": 25
+        },
+        "naiveOnDemand": {
+          "maxAbsDeviationBytes": 2624464,
+          "maxAbsRelativeDeviation": 0.0006548514765599509,
+          "meanAbsRelativeDeviation": 0.0006548514765599508,
+          "rows": 25
+        },
+        "stateDriven": {
+          "maxAbsDeviationBytes": 5179120,
+          "maxAbsRelativeDeviation": 0.00043615492809841877,
+          "meanAbsRelativeDeviation": 0.00039468194260546506,
+          "rows": 25
+        }
+      },
+      "transitionCount": 75,
+      "worstRow": {
+        "deviationBytes": 5179120,
+        "measuredBytes": 15675493104,
+        "policy": "allResident",
+        "predictedBytes": 15670313984,
+        "relativeDeviation": 0.00033050518357756475,
+        "state": null,
+        "trace": "T1",
+        "transitionIndex": 0
+      }
+    },
+    "nail-qwen36-35b": {
+      "maxAbsDeviationBytes": 892398284,
+      "maxAbsRelativeDeviation": 0.2538576337633932,
+      "meanAbsRelativeDeviation": 0.12005741661211332,
+      "perPolicy": {
+        "allResident": {
+          "maxAbsDeviationBytes": 892398284,
+          "maxAbsRelativeDeviation": 0.041248396277387904,
+          "meanAbsRelativeDeviation": 0.041248396277387904,
+          "rows": 25
+        },
+        "naiveOnDemand": {
+          "maxAbsDeviationBytes": 892397324,
+          "maxAbsRelativeDeviation": 0.2538576337633932,
+          "meanAbsRelativeDeviation": 0.2538576337633932,
+          "rows": 25
+        },
+        "stateDriven": {
+          "maxAbsDeviationBytes": 892398284,
+          "maxAbsRelativeDeviation": 0.08291267979532575,
+          "meanAbsRelativeDeviation": 0.06506621979555884,
+          "rows": 25
+        }
+      },
+      "transitionCount": 75,
+      "worstRow": {
+        "deviationBytes": -892398284,
+        "measuredBytes": 20742340628,
+        "policy": "allResident",
+        "predictedBytes": 21634738912,
+        "relativeDeviation": -0.041248396277387904,
+        "state": null,
+        "trace": "T1",
+        "transitionIndex": 0
+      }
+    },
+    "qwen3-coder-30b": {
+      "maxAbsDeviationBytes": 40112,
+      "maxAbsRelativeDeviation": 4.592312553048812e-05,
+      "meanAbsRelativeDeviation": 1.760841592239193e-05,
+      "perPolicy": {
+        "allResident": {
+          "maxAbsDeviationBytes": 38960,
+          "maxAbsRelativeDeviation": 2.267632604524099e-06,
+          "meanAbsRelativeDeviation": 2.267632604524099e-06,
+          "rows": 25
+        },
+        "naiveOnDemand": {
+          "maxAbsDeviationBytes": 40112,
+          "maxAbsRelativeDeviation": 4.592312553048812e-05,
+          "meanAbsRelativeDeviation": 4.592312553048812e-05,
+          "rows": 25
+        },
+        "stateDriven": {
+          "maxAbsDeviationBytes": 39728,
+          "maxAbsRelativeDeviation": 6.296758823151347e-06,
+          "meanAbsRelativeDeviation": 4.634489632163578e-06,
+          "rows": 25
+        }
+      },
+      "transitionCount": 75,
+      "worstRow": {
+        "deviationBytes": 40112,
+        "measuredBytes": 873499824,
+        "policy": "naiveOnDemand",
+        "predictedBytes": 873459712,
+        "relativeDeviation": 4.592312553048812e-05,
+        "state": null,
+        "trace": "T1",
+        "transitionIndex": 0
+      }
+    }
+  }
+}

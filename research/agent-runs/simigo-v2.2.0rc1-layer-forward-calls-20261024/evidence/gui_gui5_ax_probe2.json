@@ -1,0 +1,174 @@
+{
+ "tag": "gui5",
+ "captured_at": "2026-10-24T15:30:33+0800",
+ "candidate": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app",
+ "candidate_exe_sha256": "95224f06cf9c1387cd77c2582cec7d009584a28ce66ff4de76b405a764737fe6",
+ "launch": {
+  "argv": [
+   "open",
+   "-n",
+   "-F",
+   "--env",
+   "SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/home",
+   "--env",
+   "SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/cache",
+   "--env",
+   "SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/state-graph/reference-graph-v1.json",
+   "--stdout",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/logs/gui_stdout.log",
+   "--stderr",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/logs/gui_stderr.log",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app"
+  ],
+  "result": {
+   "argv": [
+    "open",
+    "-n",
+    "-F",
+    "--env",
+    "SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/home",
+    "--env",
+    "SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/cache",
+    "--env",
+    "SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/state-graph/reference-graph-v1.json",
+    "--stdout",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/logs/gui_stdout.log",
+    "--stderr",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/logs/gui_stderr.log",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app"
+   ],
+   "exit_code": 0,
+   "stdout": "",
+   "stderr": "",
+   "wall_seconds": 0.06
+  },
+  "isolated_roots": {
+   "SIMIGO_HOME": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/home",
+   "SIMIGO_CACHE_ROOT": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/cache",
+   "SIMIGO_STATE_GRAPH_STORE": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/gui5/state-graph/reference-graph-v1.json"
+  },
+  "pids": [
+   88224
+  ],
+  "pid": 88224,
+  "ps": {
+   "argv": [
+    "ps",
+    "-o",
+    "pid,etime,stat,command",
+    "-p",
+    "88224"
+   ],
+   "exit_code": 0,
+   "stdout": "  PID ELAPSED STAT COMMAND\n88224   00:00 R    /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app/Contents/MacOS/SimiGo\n",
+   "stderr": "",
+   "wall_seconds": 0.0
+  }
+ },
+ "attempts": [
+  {
+   "attempt": "P1 enumerate every menu bar item of the candidate, with frame and children",
+   "result": {
+    "argv": [
+     "osascript",
+     "-l",
+     "JavaScript",
+     "-e",
+     "const se = Application(\"System Events\"); const p = se.processes.byName(\"SimiGo\");const out = {bars: 0, items: [], error: null};try { out.bars = p.menuBars.length; for (let b = 0; b < out.bars; b++) { const bar = p.menuBars[b];  const n = bar.menuBarItems.length;  for (let i = 0; i < n; i++) { const it = bar.menuBarItems[i];   const rec = {bar: b, index: i, title: null, description: null, position: null,                size: null, actions: [], children: [], childErrors: []};   try { rec.title = String(it.title()); } catch (e) {}   try { rec.description = String(it.description()); } catch (e) {}   try { rec.position = it.position(); } catch (e) { rec.position = String(e); }   try { rec.size = it.size(); } catch (e) { rec.size = String(e); }   try { const a = it.actions(); for (let k = 0; k < a.length; k++) rec.actions.push(String(a[k].name())); } catch (e) {}   try { const items = it.menus[0].menuItems();    for (let j = 0; j < items.length; j++) { try { rec.children.push(String(items[j].title())); }     catch (e) { rec.childErrors.push(String(e)); } } } catch (e) {}   out.items.push(rec); } } } catch (e) { out.error = String(e); }JSON.stringify(out)"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"bars\":2,\"items\":[{\"bar\":0,\"index\":0,\"title\":\"Apple\",\"description\":\"null\",\"position\":[0,30],\"size\":[0,0],\"actions\":[\"AXCancel\",\"AXPress\",\"AXPick\"],\"children\":[\"\u5173\u4e8e\u672c\u673a\",\"\u7cfb\u7edf\u4fe1\u606f\",\"\",\"\u7cfb\u7edf\u8bbe\u7f6e\u2026\",\"App Store\",\"\",\"\u6700\u8fd1\u4f7f\u7528\u7684\u9879\u76ee\",\"\",\"\u5f3a\u5236\u9000\u51fa\u2026\",\"\u5f3a\u5236\u9000\u51fa\u201cSimiGo\u201d\",\"\",\"\u7761\u7720\",\"\u91cd\u542f\u2026\",\"\u91cd\u542f\",\"\u5173\u673a\u2026\",\"\u5173\u673a\",\"\",\"\u9501\u5c4f\",\"\u9000\u51fa\u767b\u5f55\u201cMr.Simi\u201d\u2026\",\"\u9000\u51fa\u767b\u5f55\u201cMr.Simi\u201d\",\"\"],\"childErrors\":[]},{\"bar\":0,\"index\":1,\"title\":\"SimiGo\",\"description\":\"null\",\"position\":[0,30],\"size\":[0,0],\"actions\":[\"AXCancel\",\"AXPress\",\"AXPick\"],\"children\":[\"About SimiGo\",\"\",\"Settings\u2026\",\"\",\"Services\",\"\",\"Hide SimiGo\",\"Hide Others\",\"Show All\",\"\",\"Quit SimiGo\"],\"childErrors\":[]},{\"bar\":0,\"index\":2,\"title\":\"Edit\",\"description\":\"null\",\"position\":[0,30],\"size\":[0,0],\"actions\":[\"AXCancel\",\"AXPress\",\"AXPick\"],\"children\":[\"Undo\",\"Redo\",\"\",\"Cut\",\"Copy\",\"Paste\",\"Delete\",\"Select All\",\"\",\"AutoFill\",\"Start Dictation\u2026\",\"Emoji & Symbols\"],\"childErrors\":[]},{\"bar\":0,\"index\":3,\"title\":\"View\",\"description\":\"null\",\"position\":[0,30],\"size\":[0,0],\"actions\":[\"AXCancel\",\"AXPress\",\"AXPick\"],\"children\":[\"Enter Full Screen\"],\"childErrors\":[]},{\"bar\":0,\"index\":4,\"title\":\"Window\",\"description\":\"null\",\"position\":[0,30],\"size\":[0,0],\"actions\":[\"AXCancel\",\"AXPress\",\"AXPick\"],\"children\":[\"Close\",\"Close All\",\"Minimize\",\"Minimize All\",\"Zoom\",\"Zoom All\",\"Fill\",\"Center\",\"\",\"Move & Resize\",\"Full Screen Tile\",\"\",\"Bring All to Front\",\"Arrange in Front\",\"Remove Window from Set\"],\"childErrors\":[]},{\"bar\":0,\"index\":5,\"title\":\"Help\",\"description\":\"null\",\"position\":[0,30],\"size\":[0,0],\"actions\":[\"AXCancel\",\"AXPress\",\"AXPick\"],\"children\":[\"SimiGo Help\"],\"childErrors\":[]},{\"bar\":1,\"index\":0,\"title\":\"\",\"description\":\"SimiGo\",\"position\":[-1,1068],\"size\":[20,24],\"actions\":[\"AXPress\"],\"children\":[],\"childErrors\":[]}],\"error\":null}\n",
+    "stderr": "",
+    "wall_seconds": 2.36
+   }
+  },
+  {
+   "attempt": "P2 calibration: NSScreen frames + frames of the OTHER menu bar extras",
+   "result": {
+    "argv": [
+     "osascript",
+     "-l",
+     "JavaScript",
+     "-e",
+     "ObjC.import(\"AppKit\"); ObjC.import(\"Foundation\");const screens = []; const ss = $.NSScreen.screens;for (let i = 0; i < ss.count; i++) { const f = ss.objectAtIndex(i).frame; screens.push({x: f.origin.x, y: f.origin.y, w: f.size.width, h: f.size.height}); }const se = Application(\"System Events\"); const names = [\"SimiGo\", \"Control Center\", \"SystemUIServer\"];const procs = [];for (let n = 0; n < names.length; n++) { const nm = names[n]; try { const p = se.processes.byName(nm);  if (!p.exists()) { procs.push({name: nm, exists: false}); continue; }  const rec = {name: nm, exists: true, bars: p.menuBars.length, extras: []};  for (let b = 0; b < rec.bars; b++) { const bar = p.menuBars[b]; const cnt = bar.menuBarItems.length;   for (let i = 0; i < cnt; i++) { const it = bar.menuBarItems[i];    const e = {bar: b, i: i, pos: null, size: null, desc: null};    try { e.pos = it.position(); } catch (err) {}    try { e.size = it.size(); } catch (err) {}    try { e.desc = String(it.description()); } catch (err) {}    rec.extras.push(e); } }  procs.push(rec); } catch (e) { procs.push({name: nm, error: String(e)}); } }JSON.stringify({screens: screens, processes: procs})"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"screens\":[{\"x\":0,\"y\":0,\"w\":1920,\"h\":1080}],\"processes\":[{\"name\":\"SimiGo\",\"exists\":true,\"bars\":2,\"extras\":[{\"bar\":0,\"i\":0,\"pos\":[0,30],\"size\":[0,0],\"desc\":\"null\"},{\"bar\":0,\"i\":1,\"pos\":[0,30],\"size\":[0,0],\"desc\":\"null\"},{\"bar\":0,\"i\":2,\"pos\":[0,30],\"size\":[0,0],\"desc\":\"null\"},{\"bar\":0,\"i\":3,\"pos\":[0,30],\"size\":[0,0],\"desc\":\"null\"},{\"bar\":0,\"i\":4,\"pos\":[0,30],\"size\":[0,0],\"desc\":\"null\"},{\"bar\":0,\"i\":5,\"pos\":[0,30],\"size\":[0,0],\"desc\":\"null\"},{\"bar\":1,\"i\":0,\"pos\":[-1,1068],\"size\":[20,24],\"desc\":\"SimiGo\"}]},{\"name\":\"Control Center\",\"exists\":false},{\"name\":\"SystemUIServer\",\"exists\":true,\"bars\":0,\"extras\":[]}]}\n",
+    "stderr": "",
+    "wall_seconds": 3.97
+   }
+  },
+  {
+   "attempt": "P3 proper dispatch test: AXShowMenu on the app menu, then press Settings...",
+   "result": {
+    "argv": [
+     "osascript",
+     "-l",
+     "JavaScript",
+     "-e",
+     "const se = Application(\"System Events\"); const p = se.processes.byName(\"SimiGo\");const out = {windowsBefore: p.windows.length, showError: null, pressError: null,             pressed: null, windowsAfter: null, windowTitles: [], menusOpenAfterShow: null};try { p.menuBars[0].menuBarItems[1].actions.byName(\"AXShowMenu\").perform(); }catch (e) { out.showError = String(e); }delay(1.2);try { out.menusOpenAfterShow = p.menuBars[0].menuBarItems[1].menus.length; } catch (e) {}try { const items = p.menuBars[0].menuBarItems[1].menus[0].menuItems(); for (let i = 0; i < items.length; i++) { const t = String(items[i].title());  if (t.indexOf(\"Settings\") >= 0) { items[i].actions[0].perform(); out.pressed = t; } } }catch (e) { out.pressError = String(e); }delay(2.5);out.windowsAfter = p.windows.length;for (let i = 0; i < out.windowsAfter; i++) { try { out.windowTitles.push(String(p.windows[i].name())); } catch (e) { out.windowTitles.push(\"ERR\"); } }JSON.stringify(out)"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"windowsBefore\":0,\"showError\":null,\"pressError\":null,\"pressed\":\"Settings\u2026\",\"windowsAfter\":0,\"windowTitles\":[],\"menusOpenAfterShow\":1}\n",
+    "stderr": "",
+    "wall_seconds": 4.11
+   }
+  },
+  {
+   "attempt": "P4 AXShowMenu on the status item itself, then look for a window or a popover",
+   "result": {
+    "argv": [
+     "osascript",
+     "-l",
+     "JavaScript",
+     "-e",
+     "const se = Application(\"System Events\"); const p = se.processes.byName(\"SimiGo\");const out = {windowsBefore: p.windows.length, error: null, windowsAfter: null,             stillRunning: null, menuActionTried: \"AXShowMenu\"};try { p.menuBars[1].menuBarItems[0].actions.byName(\"AXShowMenu\").perform(); }catch (e) { out.error = String(e); }delay(2.5); out.windowsAfter = p.windows.length; out.stillRunning = p.exists();JSON.stringify(out)"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"windowsBefore\":0,\"error\":null,\"windowsAfter\":0,\"stillRunning\":true,\"menuActionTried\":\"AXShowMenu\"}\n",
+    "stderr": "",
+    "wall_seconds": 2.66
+   }
+  }
+ ],
+ "screen_recording": {
+  "exit_code": 1,
+  "stderr": "could not create image from display\n",
+  "bytes": 0
+ },
+ "quit": {
+  "result": {
+   "argv": [
+    "osascript",
+    "-e",
+    "tell application \"SimiGo\" to quit"
+   ],
+   "exit_code": 0,
+   "stdout": "",
+   "stderr": "",
+   "wall_seconds": 0.08
+  },
+  "still_running_after_quit": false
+ },
+ "noninterference": {
+  "pre": "gui_gui5_snapshot_pre.json",
+  "post": "gui_gui5_snapshot_post.json",
+  "diff": "gui_gui5_snapshot_diff.json",
+  "diff_result": {
+   "argv": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/mr.simi/Documents/SimiGo/tools/rc_noninterference_diff.py",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_gui5_snapshot_pre.json",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_gui5_snapshot_post.json",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_gui5_snapshot_diff.json",
+    "--allow-prefix",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence"
+   ],
+   "exit_code": 0,
+   "stdout": "{\n \"a\": \"gui_gui5_pre\",\n \"b\": \"gui_gui5_post\",\n \"violation_events\": 0,\n \"distinct_violation_count\": 0,\n \"real_user_state_write_count\": 0,\n \"real_user_state_write_paths\": [],\n \"expected_self_writes\": 0,\n \"reference_changes\": 0\n}\n",
+   "stderr": "",
+   "wall_seconds": 0.06
+  }
+ },
+ "finding": "P3 still produced no window after AXShowMenu + press (showError=None, pressError=None, pressed='Settings\u2026'), so the app's menu path does not respond to AX actions on this host even when done correctly. P4 AXShowMenu on the status item: windows 0 -> 0, error=None."
+}

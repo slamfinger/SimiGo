@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "experiment_id": "ES_IS_DETACHED_CONTINUATION_20261022F",
+  "research_question": "Can a real model result settled in PALACE Information Space outlive its producer Execution State and OS process, then be restored as a verified input in a genuinely new Execution State/process for incremental continuation without re-generating the completed task?",
+  "primary_claim": "A semantically sufficient, dependency-complete, valid settled U1 result can be detached from the old execution context and reused through IS by a new native production task execution for U2.",
+  "not_in_scope": [
+    "database-wide anti-rollback or remote/hardware trust root work",
+    "global no-recompute policy",
+    "changes to carrier_loop / execute_demand recompute semantics",
+    "KV optimization or performance benchmarking as the primary goal",
+    "generic chat/engine paths not executing task items",
+    "changing old experiment evidence or model-weight copying"
+  ],
+  "run_root": "$HOME/SimiGo-Agent-Runs/es-is-detached-continuation-20261022f",
+  "phases": [
+    {
+      "id": "P0_PREFLIGHT",
+      "goal": "Create before-change workspace and historical-artifact snapshots; map actual native call graph and KV/context ownership.",
+      "conditions": ["snapshot_git_worktree", "snapshot_existing_runs_A_to_E", "map_continueTask_and_IS_paths", "map_actual_MLX_context_and_cache_owners"],
+      "must_precede_source_changes": true
+    },
+    {
+      "id": "P1_NATIVE_IMPLEMENTATION",
+      "goal": "Make a native Swift driver own U1 and U2 process/ExecutionState lifecycle; ordinary continueTask performs the IS admission itself.",
+      "requirements": ["U1 actual model generation and signed settlement", "wait for U1 exit", "U2 new OS process", "new execution_state_id and empty state", "no old prefix/checkpoint/KV serialization", "production admission before tokenization", "per-call counters at real call sites"],
+      "native_authority": true
+    },
+    {
+      "id": "P2_POSITIVE_WORLDS",
+      "conditions": [
+        {"id": "W-A", "expected": "U1 settles runtime nonce A; U1 process exits; fresh U2 restores A from IS through ordinary continueTask and generates exactly once."},
+        {"id": "W-B", "expected": "Independent nonce B and complete settlement lineage; same byte-identical nonce-free U2 base template; fresh U2 output follows B, not A."}
+      ]
+    },
+    {
+      "id": "P3_NEGATIVE_CONTROLS",
+      "conditions": [
+        {"id": "N1-MISSING-SETTLEMENT", "expected": "ordinary continueTask refuses before text/seed tokenization and generation; no item/source fallback."},
+        {"id": "N2-INVALID-SIGNATURE-OR-BYTE-TAMPER", "expected": "consumer refuses before tokenization/generation."},
+        {"id": "N3-DEPENDENCY-MISMATCH", "expected": "consumer refuses before tokenization/generation."},
+        {"id": "N4-PREFIX-AND-CROSS-WORLD-AUDIT", "expected": "no nonce/prefix leakage into base template, cold seed, U2 state, argv, env, disallowed files/logs or the other world."}
+      ]
+    },
+    {
+      "id": "P4_VALIDATION",
+      "requirements": ["native build", "focused and relevant Swift tests", "one attempt per scientific condition", "summary/evidence-schema validation", "workspace guard", "historical-run artifact guard", "C1-C4 reported separately"]
+    }
+  ],
+  "identity_requirements": {
+    "record_separately": ["logical_lineage_id", "source_execution_state_id", "new_execution_state_id", "producer_pid", "consumer_pid", "settlement_object_id", "settlement_signature_object_id"],
+    "consumer_execution_state_must_differ_from_source_state": true,
+    "consumer_state_starts_at_position": 0,
+    "consumer_prefix_replay_tokens": 0,
+    "source_process_must_exit_before_consumer_starts": true
+  },
+  "count_expectations": {
+    "each_world_u1_generation_calls": 1,
+    "each_world_u2_generation_calls": 1,
+    "u1_generation_calls_during_u2_phase": 0,
+    "failed_controls_text_tokenize_calls": 0,
+    "failed_controls_seed_tokenize_calls": 0,
+    "failed_controls_generate_calls": 0,
+    "harness_direct_settlement_reads": 0,
+    "harness_direct_item_reads": 0
+  },
+  "run_policy": {
+    "no_silent_retry": true,
+    "no_commit": true,
+    "no_push": true,
+    "no_staging": true,
+    "preserve_all_existing_dirty_untracked_changes": true,
+    "preserve_all_preexisting_A_to_E_run_artifacts": true,
+    "do_not_modify_run_20261022a": true,
+    "do_not_modify_G2_frozen_batch_or_existing_evidence": true,
+    "do_not_copy_model_weights": true,
+    "do_not_change_carrier_loop_recompute_semantics": true,
+    "do_not_implement_global_no_recompute": true,
+    "evidence_root_outside_repository": true,
+    "allowed_terminal_states": ["OBSERVED", "INVALID_CONDITION", "BLOCKED_NOT_RUN", "OBSERVED_FORMAT_FAILURE"]
+  },
+  "conclusion_objects": {
+    "C1": "Recovery/admission authority, specifically before tokenization/generation.",
+    "C2": "The exact value consumed by U2 comes from the verified U1 IS settlement, with no old prompt/prefix/side-channel copy.",
+    "C3": "Observe existing path behavior only; do not change recompute policy.",
+    "C4": "Use existing E-round signature/provenance validation as prerequisite; do not expand into store-wide anti-rollback. Signature does not prove semantic correctness."
+  }
+}

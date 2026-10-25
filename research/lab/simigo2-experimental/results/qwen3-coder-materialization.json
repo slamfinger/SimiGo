@@ -1,0 +1,139 @@
+{
+  "averageThroughputMiBsPerSecond": 3874.2830133948637,
+  "elapsedMilliseconds": 6905.276667,
+  "loadedBytes": 28052549632,
+  "modelDirectory": "<LOCAL_HF_CACHE>/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/<revision>",
+  "reports": [
+    {
+      "elapsedMilliseconds": 1019.225792,
+      "evictedGroupIDs": [],
+      "executionState": "STATE_A",
+      "loadedBytes": 6309277696,
+      "loadedGroupIDs": [
+        "CORE_NON_SWITCH",
+        "SWITCH_MLP_L00_15"
+      ],
+      "reports": [
+        {
+          "byteCount": 873459712,
+          "elapsedMilliseconds": 204.393625,
+          "groupID": "CORE_NON_SWITCH",
+          "tensorCount": 919,
+          "throughputMiBsPerSecond": 4075.450463535739
+        },
+        {
+          "byteCount": 5435817984,
+          "elapsedMilliseconds": 814.832167,
+          "groupID": "SWITCH_MLP_L00_15",
+          "tensorCount": 144,
+          "throughputMiBsPerSecond": 6362.046332910664
+        }
+      ],
+      "residentGroupIDs": [
+        "SWITCH_MLP_L00_15",
+        "CORE_NON_SWITCH"
+      ],
+      "throughputMiBsPerSecond": 5903.496694233971
+    },
+    {
+      "elapsedMilliseconds": 1043.33575,
+      "evictedGroupIDs": [],
+      "executionState": "STATE_B",
+      "loadedBytes": 5435817984,
+      "loadedGroupIDs": [
+        "SWITCH_MLP_L16_31"
+      ],
+      "reports": [
+        {
+          "byteCount": 5435817984,
+          "elapsedMilliseconds": 1043.33575,
+          "groupID": "SWITCH_MLP_L16_31",
+          "tensorCount": 144,
+          "throughputMiBsPerSecond": 4968.678586926596
+        }
+      ],
+      "residentGroupIDs": [
+        "CORE_NON_SWITCH",
+        "SWITCH_MLP_L16_31"
+      ],
+      "throughputMiBsPerSecond": 4968.678586926596
+    },
+    {
+      "elapsedMilliseconds": 1308.649,
+      "evictedGroupIDs": [],
+      "executionState": "STATE_AB",
+      "loadedBytes": 5435817984,
+      "loadedGroupIDs": [
+        "SWITCH_MLP_L00_15"
+      ],
+      "reports": [
+        {
+          "byteCount": 5435817984,
+          "elapsedMilliseconds": 1308.649,
+          "groupID": "SWITCH_MLP_L00_15",
+          "tensorCount": 144,
+          "throughputMiBsPerSecond": 3961.3372264067752
+        }
+      ],
+      "residentGroupIDs": [
+        "SWITCH_MLP_L16_31",
+        "CORE_NON_SWITCH",
+        "SWITCH_MLP_L00_15"
+      ],
+      "throughputMiBsPerSecond": 3961.3372264067752
+    },
+    {
+      "elapsedMilliseconds": 0,
+      "evictedGroupIDs": [],
+      "executionState": "STATE_A",
+      "loadedBytes": 0,
+      "loadedGroupIDs": [],
+      "reports": [],
+      "residentGroupIDs": [
+        "CORE_NON_SWITCH",
+        "SWITCH_MLP_L00_15"
+      ],
+      "throughputMiBsPerSecond": 0
+    },
+    {
+      "elapsedMilliseconds": 3534.0661250000003,
+      "evictedGroupIDs": [],
+      "executionState": "STATE_ALL",
+      "loadedBytes": 10871635968,
+      "loadedGroupIDs": [
+        "SWITCH_MLP_L16_31",
+        "SWITCH_MLP_L32_47"
+      ],
+      "reports": [
+        {
+          "byteCount": 5435817984,
+          "elapsedMilliseconds": 1749.262917,
+          "groupID": "SWITCH_MLP_L16_31",
+          "tensorCount": 144,
+          "throughputMiBsPerSecond": 2963.5339259867246
+        },
+        {
+          "byteCount": 5435817984,
+          "elapsedMilliseconds": 1784.803208,
+          "groupID": "SWITCH_MLP_L32_47",
+          "tensorCount": 144,
+          "throughputMiBsPerSecond": 2904.5218972959174
+        }
+      ],
+      "residentGroupIDs": [
+        "SWITCH_MLP_L16_31",
+        "SWITCH_MLP_L32_47",
+        "CORE_NON_SWITCH",
+        "SWITCH_MLP_L00_15"
+      ],
+      "throughputMiBsPerSecond": 2933.7311847836463
+    }
+  ],
+  "states": [
+    "STATE_A",
+    "STATE_B",
+    "STATE_AB",
+    "STATE_A",
+    "STATE_ALL"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "eq": {
+    "EQ-1": true,
+    "EQ-2": true,
+    "EQ-3": true,
+    "EQ-4": true,
+    "EQ-5": true,
+    "EQ-6": true,
+    "EQ-7": true,
+    "EQ-8": true
+  },
+  "overall_pass": true,
+  "rej": {
+    "REJ-1": false,
+    "REJ-10": false,
+    "REJ-11": false,
+    "REJ-12": false,
+    "REJ-13": false,
+    "REJ-14": false,
+    "REJ-2": false,
+    "REJ-3": false,
+    "REJ-4": false,
+    "REJ-5": false,
+    "REJ-6": false,
+    "REJ-7": false,
+    "REJ-8": false,
+    "REJ-9": false
+  }
+}

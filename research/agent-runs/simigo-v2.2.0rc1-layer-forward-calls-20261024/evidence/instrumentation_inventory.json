@@ -1,0 +1,49 @@
+{
+ "gate_wording_under_review": "No per-layer forward-count instrumentation exists in the product.",
+ "where_it_actually_lives": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation",
+ "files": [
+  {
+   "name": "GroupExecutionTraceProbe.swift",
+   "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/GroupExecutionTraceProbe.swift",
+   "lines": 594,
+   "sha256": "d8e57129d52c27746a76f6ca4231271875542992051fbe89895809c24a1883b5"
+  },
+  {
+   "name": "InstrumentationIdentityProbe.swift",
+   "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/InstrumentationIdentityProbe.swift",
+   "lines": 532,
+   "sha256": "9964f589794616d96e050a8a7d62cc471984407049f5c4e6171a045f4f1b5c50"
+  },
+  {
+   "name": "MeasuredExecutionTracePilot.swift",
+   "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/MeasuredExecutionTracePilot.swift",
+   "lines": 442,
+   "sha256": "a1dcb410c6733f3a3ee294edaaa5939a8c0df33e1d8b6e4a1995f8f4c71141db"
+  },
+  {
+   "name": "MeasuredTraceCollection.swift",
+   "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/MeasuredTraceCollection.swift",
+   "lines": 270,
+   "sha256": "3193eb26dbd8031bc3ccc433aea277f60c16c15d0456a1749af11b40ff3c6d63"
+  }
+ ],
+ "total_lines": 1838,
+ "observation_points": [
+  "layers.*.mlp.down_proj",
+  "layers.*.mlp.switch_mlp.down_proj"
+ ],
+ "event_semantics": "one `layerEntered` event per (forward pass, decoder layer); `passCount` counts layer-0 appearances",
+ "references_outside_instrumentation_dir": [
+  {
+   "symbol": "ExecutionTracePilot",
+   "path": "SimiGo/Headless/SimiGoG1G3Entry.swift"
+  },
+  {
+   "symbol": "ExecutionTracePilot",
+   "path": "SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift"
+  }
+ ],
+ "references_outside_instrumentation_dir_at_head": [],
+ "head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+ "reading": "At HEAD the only references to these symbols live inside the Instrumentation directory itself: the instrumentation is compiled into the runtime package but nothing drives it, so no per-layer numbers had ever been produced. The gate text conflated 'nothing drives it' with 'it does not exist'. This batch adds the driver (SimiGo/Headless/SimiGoG1G3Entry.swift, role `tracepilot`) and a test for its role resolution; the observer itself is unchanged."
+}

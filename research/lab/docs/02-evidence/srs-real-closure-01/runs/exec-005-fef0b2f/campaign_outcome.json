@@ -1,0 +1,96 @@
+{
+  "artifact_sha256": {
+    "driver-events.jsonl": "27d8717ad6fbb3e8ad347229922885129cf5207442f673fe4346defc05678fc0",
+    "environment_measurement.json": "a10eafdef13d6f9f25e84a8d11d2038f6242aa24490dd1c1bbe48e6a0a0d7812",
+    "es1-events.jsonl": "e584528a2f4d526329f3e61c9d3b25225656616454ae334ae3bd97b5bb972bc5",
+    "es2-events.jsonl": "311dfc7e3b40354831a22088d18d7176cde0e9e24e32f190d89f68ba5e8faf70",
+    "esn-events.jsonl": "1e2b3596ed2bd38ace2d738f1308a279154e5c2742e0bc431a19a5408c183aae",
+    "execution_provenance.json": "1c7b2f211fb06e4f4039ccac4b07ac1ebec07a3b353bf5ff61d4a3133bfb1273",
+    "invocation_graph-es2.json": "0c3c547af76ef386dfce65bc2d31cf2348eea2873b300cd23041eeae1c4df5e1",
+    "invocation_graph-esn.json": "f964bc35124a87946acb1c2799e8bb24eb48e66ab965ea4e9258e88fc72ad22b",
+    "materialize-events.jsonl": "e209b9009da2b7af0fd86da7f36e5812f9222c84f1ff5cc9eb9e78850e1e5a03",
+    "mutate-n1-events.jsonl": "d625011140b1001dae50f401c7256fb1497f7c10eaeac46d997214245d2b4ef2",
+    "observer_verdict.json": "de21064e41bd1f6fdde074517c8933aee08b77373407d9ebcc8aec196ac53459",
+    "provenance_plan.json": "232631b6f7ba81ecb2a3403bc4087b62a96fae473f26a5f8da80fddc1a79b1b4",
+    "runtime_binding.json": "2a99c90daa5d3102ae858a343195418e09143201f97d8fc4d771587161f28c02",
+    "step0_verification.json": "140269230e7049037f4a210d9f5cdf96ae24797c6f95512893bf2b37ccf8e0bb",
+    "tau2-runtime.json": "260fd15c41c07b712b6ed11ae55be84a68fdcc56327a5c5560050dbaec3e2570",
+    "tauN1-runtime.json": "cbeb87ef4c6bee7665d3a7c6330074d4a4e49816e2298ffb663e14cd1716f2a3"
+  },
+  "authorization": {
+    "execution_sar": "SRS_REAL_CLOSURE_01_SAR_EXECUTION_005",
+    "is_mutation_sar": "SRS_REAL_CLOSURE_01_SAR_IS_MUTATION_005",
+    "observer_authorization_record": "SRS_REAL_CLOSURE_01_OBSERVER_AUTHORIZATION_RECORD_005",
+    "provenance_binding_closure_record": "SRS_REAL_CLOSURE_01_EXECUTION_PROVENANCE_AND_BINDING_CLOSURE_RECORD_005",
+    "records_commit": "afca0d0519d40643fbfa279ec8fe3bc40f264d01",
+    "request_commit": "e721f7a7460d3fbe0fe42c388bd4d07ce44709c2",
+    "request_sha256": "fa393cabb5af5f881c912d5b8b12c6791c25c33240bc166ec3b8e0c52998b577",
+    "tau_interface_completion_record": "SRS_REAL_CLOSURE_01_TAU_N1_INTERFACE_COMPLETION_RECORD_005",
+    "tau_interface_completion_sar": "SRS_REAL_CLOSURE_01_TAU_N1_INTERFACE_COMPLETION_SAR_005"
+  },
+  "boundary": {
+    "E1_E6_complete": false,
+    "N1_BLOCK_absent": true,
+    "core_claim": "NOT_ESTABLISHED",
+    "positive_REUSE_observed_but_not_campaign_evidence": true,
+    "repair_requires_new_human_authorization": true,
+    "results_interpretable_for_core_claim": false,
+    "semantic_hypothesis_refuted": false,
+    "semantic_hypothesis_supported": false
+  },
+  "budget_effect": {
+    "automatic_renewal": "forbidden",
+    "execution_campaign_budget_consumed": true,
+    "is_mutation_budget_consumed_by_partial_campaign": true,
+    "is_mutation_write_not_performed": [
+      "mutate-n1 D' object + revision-2 mapping"
+    ],
+    "is_mutation_writes_performed": [
+      "materialize D object + revision-1 mapping",
+      "es1 SRS object + index entry",
+      "es2 continuation object + index entry"
+    ],
+    "observer_use_budget_consumed": true
+  },
+  "exact_execution_repository_commit": "fef0b2fa5b3ac817a099bac885522fd17f4d3362",
+  "outcome": "INVALID",
+  "provenance": {
+    "driver_command_ok": false,
+    "driver_returncode": 1,
+    "exact_cwd_enforced": true,
+    "exact_repository_commit_enforced": true,
+    "input_bindings_verified": true,
+    "manifest": "execution_provenance.json",
+    "observer_command_ok": true,
+    "observer_returncode": 0,
+    "overall_ok": false,
+    "recorder_identity": "SRS-REAL-CLOSURE-01-EXECUTION_PROVENANCE_RECORDER_004",
+    "recorder_sha256": "c0aff998aabada80c87d6eec1cebdf35292e16f455e72389ec36e71ea99ee262",
+    "required_artifacts_verified": true
+  },
+  "root_cause": {
+    "class": "TAU_N1_D_PRIME_FIELD_PLACEMENT_MISMATCH",
+    "completed_schema_field_location": "dependencies[0].d_prime_seed_path",
+    "exact_runner_expected_location": "top-level d_prime_seed_path",
+    "interpretation": "Residual bilateral interface mismatch after Part T; not runtime drift, EPR004 failure, or semantic refutation."
+  },
+  "run_id": "exec-005-fef0b2f",
+  "semantic_sequence": {
+    "N1_dependency_mutation": "NOT PERFORMED",
+    "es1": "PASS",
+    "es2": "PASS",
+    "es2_expected_decision": "REUSE",
+    "es2_expected_vs_actual_match": true,
+    "es2_primary_decision": "REUSE",
+    "esn": "RAN INVALID",
+    "esn_expected_decision": "BLOCK",
+    "esn_expected_vs_actual_match": false,
+    "esn_primary_decision": "REUSE",
+    "materialize": "PASS",
+    "mutate_n1": "FAIL",
+    "mutate_n1_error": "KeyError: d_prime_seed_path"
+  },
+  "step0": "PASS",
+  "stop_code": "TAU_N1_D_PRIME_FIELD_PLACEMENT_MISMATCH",
+  "stop_point": "POST_FROZEN_SEQUENCE_EVIDENCE_AUDIT"
+}

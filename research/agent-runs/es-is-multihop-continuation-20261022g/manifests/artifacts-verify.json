@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "verified_utc": "2026-10-22T11:10:09.379324+00:00",
+  "snapshot": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g/manifests/artifacts-before.json",
+  "result": "PASS",
+  "roots": [
+    {
+      "root": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-detached-continuation-20261022f",
+      "changed": false,
+      "changed_count": 0,
+      "changed_paths": []
+    },
+    {
+      "root": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b",
+      "changed": false,
+      "changed_count": 0,
+      "changed_paths": []
+    },
+    {
+      "root": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c",
+      "changed": false,
+      "changed_count": 0,
+      "changed_paths": []
+    },
+    {
+      "root": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022d",
+      "changed": false,
+      "changed_count": 0,
+      "changed_paths": []
+    },
+    {
+      "root": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e",
+      "changed": false,
+      "changed_count": 0,
+      "changed_paths": []
+    },
+    {
+      "root": "/Users/mr.simi/SimiGo-Agent-Runs/run-20261022a",
+      "changed": false,
+      "changed_count": 0
+    }
+  ],
+  "issues": []
+}

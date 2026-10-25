@@ -1,0 +1,9 @@
+{
+ "not_retried_silently": true,
+ "preserved": true,
+ "reason": "A0 entered continueTask but the bridge rejected demand 'phase1-u2' (unknown demand), and the r1 verification did not assert failure absence, so r1 could not distinguish a failed continuation from success. The driver was fixed to register demand 'handoff-u2' and to require failure_absent/answer_nonempty; r2 is the valid run.",
+ "replacement": "phase1/prepack/run-20261022b-phase1-r2",
+ "run": "phase1/prepack/run-20261022b-phase1",
+ "schema_id": "SIMIGO-CAUSALITY-INVALID-RUN-NOTE-V1",
+ "status": "INVALID_CONDITION"
+}

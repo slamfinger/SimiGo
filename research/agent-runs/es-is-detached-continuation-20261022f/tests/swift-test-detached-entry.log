@@ -1,0 +1,34 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+Build complete! (0.66秒)
+Test Suite 'Selected tests' started at 2026-10-22 17:00:15.410.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-22 17:00:15.411.
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-22 17:00:15.411.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 17:00:15.411.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-22 17:00:15.532.
+Test Suite 'SimiGo2ExperimentalTests.xctest' started at 2026-10-22 17:00:15.532.
+Test Suite 'DetachedContinuationEntryTests' started at 2026-10-22 17:00:15.532.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testDetachedDriverRefusesNonEmptyConsumerStateDirectory]' started.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testDetachedDriverRefusesNonEmptyConsumerStateDirectory]' passed (0.074 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testOrdinaryExecutableEntryAdmitsAndRefusesWithoutAnyModelWork]' started.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testOrdinaryExecutableEntryAdmitsAndRefusesWithoutAnyModelWork]' passed (0.900 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testPerInstanceIdentityCreatesItsOwnColdStateFromInformationSpaceInput]' started.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testPerInstanceIdentityCreatesItsOwnColdStateFromInformationSpaceInput]' passed (0.454 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testPerInstanceIdentityStillRefusesBeforeTheModelWhenSettlementIsMissing]' started.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testPerInstanceIdentityStillRefusesBeforeTheModelWhenSettlementIsMissing]' passed (0.196 seconds).
+Test Suite 'DetachedContinuationEntryTests' passed at 2026-10-22 17:00:17.155.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 1.623 (1.623) seconds
+Test Suite 'SimiGo2ExperimentalTests.xctest' passed at 2026-10-22 17:00:17.155.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 1.623 (1.623) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 17:00:17.155.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 1.623 (1.624) seconds
+Test Suite 'Selected tests' started at 2026-10-22 17:00:17.213.
+Test Suite 'G3D1SupervisorTests.xctest' started at 2026-10-22 17:00:17.213.
+Test Suite 'G3D1SupervisorTests.xctest' passed at 2026-10-22 17:00:17.213.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 17:00:17.213.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds

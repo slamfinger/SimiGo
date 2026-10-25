@@ -1,0 +1,16 @@
+{
+  "id": "chatcmpl-f344e64a-c9a0-4286-9089-db44f52d0997",
+  "created": 1791136483,
+  "object": "chat.completion",
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"release_decision\":\"blocked\",\"deployment_order\":[],\"blocked_services\":[{\"service_id\":\"gamma\",\"reason\":\"not individually baseline-compatible\"}]}"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ]
+}

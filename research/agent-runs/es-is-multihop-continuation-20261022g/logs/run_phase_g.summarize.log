@@ -1,0 +1,8 @@
+{
+ "terminal_state": "OBSERVED",
+ "conditions": {
+  "G0_CHAIN_3_HOPS": "OBSERVED",
+  "G1_MISSING_TRANSITIVE_DEPENDENCY": "OBSERVED",
+  "N4_NONCE_AND_PREFIX_ISOLATION_AUDIT": "OBSERVED"
+ }
+}

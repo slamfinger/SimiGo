@@ -1,0 +1,44 @@
+{
+  "cell_id": "cell-02-X-09",
+  "cell_op": "X-09",
+  "es_artifact_sha256": "3f9d921d72f91865788f258fadc2ec8fa63db2abe5228fef3d6e3ec28722a537",
+  "is0_canonical_sha256": "d599145cc55460274bbce09ab32b95fbdca4e5bf6a6e8cdcfff4249d2e8e2397",
+  "locked_at_utc": "2026-10-03T13:07:44Z",
+  "locked_before_evaluation": true,
+  "op_a": "R32-I-Δ3",
+  "op_b": "R32-I-Δ2",
+  "op_class": "IS-X",
+  "p_comp": {
+    "A": {
+      "sig_set": [],
+      "state": "SATISFIED"
+    },
+    "C": {
+      "sig_set": [],
+      "state": "SATISFIED"
+    },
+    "I": {
+      "sig_set": [
+        "I-AMBIG",
+        "I-NF"
+      ],
+      "state": "BROKEN"
+    }
+  },
+  "resolution_expectation": {
+    "construction_trace": {
+      "index_entries_preregistered": [
+        "lineage/lineage-root.json"
+      ]
+    },
+    "key": "lineage-root",
+    "preregistered": {
+      "derivation": "Δ3 sets index [orig,conflict]; Δ2 deletes orig+pops key → key absent",
+      "expected_candidate_count": 0,
+      "expected_resolved_target": null,
+      "expected_surviving_anchor": null,
+      "index_key": "lineage-root"
+    }
+  },
+  "run_uuid": "R33X-A2-20261003T130744Z-70945"
+}

@@ -1,0 +1,6 @@
+2026-10-24 19:48:23.571 SimiGo[49524:5320814] SimiGo bootstrap: issueCount=0 models=20 work=0 legacyMigrated=false
+2026-10-24 19:49:01.194 SimiGo[49524:5320814] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+LLVM Profile Error: Failed to write file "default.profraw": Read-only file system
+2026-10-24 19:50:32.982 SimiGo[49657:5324863] SimiGo bootstrap: issueCount=0 models=20 work=0 legacyMigrated=false
+2026-10-24 19:50:42.648 SimiGo[49657:5324863] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+LLVM Profile Error: Failed to write file "default.profraw": Read-only file system

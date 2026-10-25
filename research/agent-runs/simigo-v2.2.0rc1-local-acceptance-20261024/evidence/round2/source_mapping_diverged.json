@@ -1,0 +1,90 @@
+[
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionBindingRegistry.swift",
+  "product_lines": 221,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionBindingRegistry.swift",
+  "added": 25,
+  "removed": 42,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift",
+  "product_lines": 280,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift",
+  "added": 134,
+  "removed": 627,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExecutionStatePrefixPool.swift",
+  "product_lines": 324,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionStatePrefixPool.swift",
+  "added": 7,
+  "removed": 43,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXExecutionStateBackend.swift",
+  "product_lines": 130,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXExecutionStateBackend.swift",
+  "added": 1,
+  "removed": 46,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift",
+  "product_lines": 116,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift",
+  "added": 0,
+  "removed": 527,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MaterializationCoordinator.swift",
+  "product_lines": 119,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/MaterializationCoordinator.swift",
+  "added": 38,
+  "removed": 544,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O6ExecutionStateOversized.swift",
+  "product_lines": 942,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/O6ExecutionStateOversized.swift",
+  "added": 1,
+  "removed": 10,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentedEngine.swift",
+  "product_lines": 906,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/OversizedSegmentedEngine.swift",
+  "added": 40,
+  "removed": 382,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedTokenLedger.swift",
+  "product_lines": 159,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/OversizedTokenLedger.swift",
+  "added": 0,
+  "removed": 24,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/PrefixSnapshotStore.swift",
+  "product_lines": 289,
+  "lab_path": "simigo2-experimental/Sources/SimiGo2Experimental/PrefixSnapshotStore.swift",
+  "added": 69,
+  "removed": 557,
+  "shape": "product_trimmed"
+ },
+ {
+  "product_path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ExecutionStateBackendContract.swift",
+  "product_lines": 72,
+  "lab_path": "simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionStateBackendContract.swift",
+  "added": 0,
+  "removed": 8,
+  "shape": "product_trimmed"
+ }
+]

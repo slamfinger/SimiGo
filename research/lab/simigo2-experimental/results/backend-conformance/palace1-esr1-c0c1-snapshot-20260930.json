@@ -1,0 +1,43 @@
+{
+  "fixture": "/tmp/simigo-palace1-e1/esr1/c1",
+  "c0_freeze": {
+    "execution_identity": "default/5401315f-faa7-4984-9639-fccef06ae188/main",
+    "lineage": {
+      "forkPoint": "ABSENT",
+      "root": "default/5401315f-faa7-4984-9639-fccef06ae188",
+      "note": "product lineage records are process-scoped O-layer; durable lineage = storageKey addressing"
+    },
+    "logical_position_proxy": 17,
+    "history_sha256": "fb6a5a0784b676bc2ecaab6c71ac7092d8c40c8c2e5d77dd19c1aff4692734c9",
+    "representation_identity": {
+      "cacheSHA256": "5ce9dcbda52286ef2717e6212feabbc2d99eabf1415ee32510e35fd3ac7238ae",
+      "checkpointGeneration": "c1185f0a-2cf9-4b02-85c6-c386f9177ea9"
+    },
+    "artifact_hash_before": "c9246ab1d77afe16fe272caa271a20dbc4fdcb478232ed7384500d6fd5e0cfb4",
+    "environment": {
+      "product_commit": "dc12a0c",
+      "lab_commit": "6211764",
+      "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"
+    },
+    "checkpoint_prefix_state": {
+      "branch_checkpoints_on_real_store": 204,
+      "prefix_pool_pairs": 24,
+      "pool_snapshot_for_this_session": "17/17 HIT under namespace think:1 (E2)"
+    }
+  },
+  "c1_boundary": {
+    "removed": [
+      "default_5401315f-faa7-4984-9639-fccef06ae188_main.safetensors"
+    ],
+    "kept": [
+      "default_5401315f-faa7-4984-9639-fccef06ae188_main.meta.json"
+    ],
+    "meta_intact_after_removal": true,
+    "hidden_representation_register": [
+      "REAL ~/.simigo/branch-checkpoints/{base}.safetensors (original, outside fixture, READ-ONLY)",
+      "REAL ~/.simigo/prefix-pool namespace think:1 17/17 snapshot (E2-discovered, outside fixture)",
+      "E1 mutation copy (esr1 sibling) - also sans safetensors"
+    ],
+    "hidden_rep_exclusion_for_runtime": "SIMIGO_PREFIX_POOL=0 excludes pool; loader pointed at fixture dir excludes real checkpoints; live session absent (fresh instance)"
+  }
+}

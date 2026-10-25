@@ -1,0 +1,1183 @@
+{
+  "protocolVersion": "RQ3.LLAMA.CONTEXT.CONTROLS.V1",
+  "boundary": "BACKEND_CONTEXT_SEQUENCE_CONTROL / NO_EXECUTION_STATE_OBJECT / NOT_A_UNIVERSAL_PERFORMANCE_CLAIM",
+  "health": {
+    "status": "ok"
+  },
+  "request": {
+    "n_predict": 1,
+    "temperature": 0.0,
+    "seed": 42,
+    "cache_prompt": false,
+    "return_tokens": true
+  },
+  "transport": "http-keep-alive",
+  "serverCacheDisabled": true,
+  "slotSimilarityDisabled": true,
+  "prompts": {
+    "parent": "Return exactly one word: ping",
+    "divergent": "alpha beta gamma delta epsilon zeta eta theta alpha beta gamma delta epsilon zeta eta theta alpha beta gamma delta epsilon zeta eta theta alpha beta gamma delta epsilon zeta eta theta",
+    "parentTokens": [
+      5423,
+      6681,
+      799,
+      3299,
+      25,
+      29018
+    ],
+    "divergentTokens": [
+      6918,
+      13053,
+      20956,
+      9197,
+      30183,
+      1110,
+      1850,
+      37705,
+      17972,
+      8029,
+      13053,
+      20956,
+      9197,
+      30183,
+      1110,
+      1850,
+      37705,
+      17972,
+      8029,
+      13053,
+      20956,
+      9197,
+      30183,
+      1110,
+      1850,
+      37705,
+      17972,
+      8029,
+      13053,
+      20956,
+      9197,
+      30183,
+      1110,
+      1850,
+      37705,
+      17972
+    ]
+  },
+  "cyclesRequested": 12,
+  "sequenceDefinitions": {
+    "same": "C,C,C",
+    "diverge": "C,D,C"
+  },
+  "summary": {
+    "sameClientThirdMinusFirst": {
+      "n": 12.0,
+      "meanMs": 0.05071158333333159,
+      "medianMs": -0.5097505000000027,
+      "p95Ms": 4.325220899999996,
+      "minMs": -3.8800000000000097,
+      "maxMs": 7.500416000000001
+    },
+    "divergeClientThirdMinusFirst": {
+      "n": 12.0,
+      "meanMs": -0.9355488333333307,
+      "medianMs": -0.22006299999999612,
+      "p95Ms": 1.759276749999998,
+      "minMs": -4.741582999999991,
+      "maxMs": 2.404083
+    },
+    "samePredictedThirdMinusFirst": {
+      "n": 12.0,
+      "meanMs": 0.0,
+      "medianMs": 0.0,
+      "p95Ms": 0.0,
+      "minMs": 0.0,
+      "maxMs": 0.0
+    },
+    "divergePredictedThirdMinusFirst": {
+      "n": 12.0,
+      "meanMs": 0.0,
+      "medianMs": 0.0,
+      "p95Ms": 0.0,
+      "minMs": 0.0,
+      "maxMs": 0.0
+    },
+    "samePromptThirdMinusFirst": {
+      "n": 12.0,
+      "meanMs": 0.016833333333333183,
+      "medianMs": -0.49099999999999966,
+      "p95Ms": 4.03619999999999,
+      "minMs": -3.8930000000000007,
+      "maxMs": 6.849999999999994
+    },
+    "divergePromptThirdMinusFirst": {
+      "n": 12.0,
+      "meanMs": -0.9219166666666693,
+      "medianMs": -0.16600000000000392,
+      "p95Ms": 1.4641999999999993,
+      "minMs": -4.7690000000000055,
+      "maxMs": 1.6599999999999966
+    },
+    "divergeMinusSameClientDeltaMeanMs": -0.9862604166666623,
+    "sameThirdTokensIdenticalFirst": 12,
+    "divergeThirdTokensIdenticalFirst": 12
+  },
+  "cycles": [
+    {
+      "cycle": 0,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 101.778458,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.161,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 100.663875,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.958,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 101.56375,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.899,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -0.21470800000000168,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -0.26200000000000045,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 100.727042,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.096,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 192.141042,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 191.622,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 98.473291,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.991,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -2.253750999999994,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -2.105000000000004,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 1,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.706709,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.284,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 184.357375,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 183.862,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 94.087125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 93.627,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -2.6195840000000032,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -2.6570000000000107,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.672625,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.224,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.441542,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.004,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.913208,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.504,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -0.7594169999999991,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -0.7199999999999989,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 2,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 95.784917,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.295,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.292209,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.913,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.443541,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.029,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": 1.6586240000000032,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 1.7339999999999947,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.103541,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.646,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 186.126209,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 185.705,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 94.493333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 94.074,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -2.610208,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -2.5720000000000027,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 3,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.322125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.872,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 188.596459,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 188.164,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.553833,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.176,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": 1.2317079999999976,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 1.304000000000002,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 95.948125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.57,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.539125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.094,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.675459,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.245,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": 1.727333999999999,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 1.6750000000000114,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 4,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.3105,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.899,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 94.887208,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 94.434,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 92.4305,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 92.006,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -3.8800000000000097,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -3.8930000000000007,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 95.872166,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.421,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 188.311667,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 187.892,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 95.846416,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.432,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -0.02575000000000216,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 0.01099999999999568,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 5,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.909292,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.504,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 188.8805,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 188.403,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.680125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.268,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -0.22916699999998968,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -0.2360000000000042,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.075667,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.666,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 94.016041,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 93.606,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 95.02875,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 94.6,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -2.0469169999999934,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -2.0660000000000025,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 6,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.090708,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.673,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.270417,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 96.851,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 96.214708,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.806,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -0.8760000000000048,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -0.8670000000000044,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 95.633542,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.232,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 189.541834,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 189.093,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 95.701959,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 95.25,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.06841699999999662,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 0.018000000000000682,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 7,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.558292,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.101,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 185.764792,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 185.363,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 97.580791,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.005,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.022499000000010483,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -0.09600000000000364,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 105.154042,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 103.997,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 108.343459,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 106.886,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 112.654458,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 110.847,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": 7.500416000000001,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 6.849999999999994,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 8,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 109.551292,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 108.261,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 108.22075,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 106.951,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 109.291208,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 108.007,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -0.2600840000000062,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -0.2539999999999907,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 109.226875,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.69,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 198.276541,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 196.576,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 109.015916,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.765,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -0.21095900000000256,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 0.07500000000000284,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 9,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 108.770333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.084,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 200.710667,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 199.476,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 106.508042,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.388,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -2.2622909999999905,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -1.695999999999998,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 110.03325,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 108.58,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 113.96275,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 112.805,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 108.444791,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 106.97,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -1.5884590000000003,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -1.6099999999999994,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 10,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 107.551125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 106.126,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 107.74525,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 106.815,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 108.012958,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.035,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.4618329999999986,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 0.9089999999999918,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 108.481917,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.525,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 200.794375,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 199.554,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 110.886,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 109.185,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": 2.404083,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": 1.6599999999999966,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 11,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 113.015333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 111.726,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " alpha",
+              "tokens": [
+                8029
+              ],
+              "clientWallMs": 200.937083,
+              "promptN": 36,
+              "cachedN": 0,
+              "promptMs": 199.754,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 108.27375,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 106.957,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -4.741582999999991,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -4.7690000000000055,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 110.183,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 108.887,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 107.805791,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 106.586,
+              "predictedMs": 0.001
+            },
+            {
+              "content": " or",
+              "tokens": [
+                466
+              ],
+              "clientWallMs": 109.068917,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.593,
+              "predictedMs": 0.001
+            }
+          ],
+          "thirdMinusFirstClientMs": -1.114083000000008,
+          "thirdMinusFirstPredictedMs": 0.0,
+          "thirdMinusFirstPromptMs": -1.293999999999997,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+error: task did not settle: ["stage": "SETTLEMENT_NOT_ADMITTED", "item_id": "TASK-U1", "kind": "ADMISSION_REFUSED", "reason": "SETTLEMENT_BASIS_MISMATCH"]

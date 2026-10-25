@@ -1,0 +1,9 @@
+{
+  "canonical_information_space_mutation" : false,
+  "canonical_palace_mutation" : false,
+  "d002_rerun_or_repair" : false,
+  "model_authority" : false,
+  "network_access" : false,
+  "result" : "PASS",
+  "schema_id" : "INTEGRATED-ES-PALACE-RUNTIME-FORBIDDEN-CHANNEL-DENIAL-V1"
+}

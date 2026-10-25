@@ -1,0 +1,10 @@
+{
+ "rid": "os4",
+ "child": {
+  "pid": 38411,
+  "exit_code": 0,
+  "wall_seconds": 256.7
+ },
+ "samples": 22514,
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/os_page_return_raw.json"
+}

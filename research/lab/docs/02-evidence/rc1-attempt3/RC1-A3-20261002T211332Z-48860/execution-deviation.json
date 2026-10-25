@@ -1,0 +1,14 @@
+[
+  {
+    "id": "E-1",
+    "phase": "C-C old process construction",
+    "classification": "IMPLEMENTATION_DEFECT",
+    "severity": "EXECUTION_STOPPING",
+    "observed": "C-C old process raised invalid state: C-C construction pointer set is invalid before awaiting-external-overwrite marker. No Information or Relation persistence rows were present in the preserved workspace.",
+    "evidence": "CContinuationStudy-crash.ips; absent awaiting marker; empty/absent persisted carrier state; stderr record.",
+    "resolution": "Stop Attempt #3 without implementation modification; reopen C-Impl for construction-state defect diagnosis.",
+    "semantic_substitution": false,
+    "protocol_change": false,
+    "implementation_change": false
+  }
+]

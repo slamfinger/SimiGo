@@ -1,0 +1,24 @@
+{
+  "result": "PASS",
+  "output": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-selective-invalidation-20261022h/manifests/postchange-snapshot.json",
+  "head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "branch": "main",
+  "worktree_file_count": 5195,
+  "history_roots": 3,
+  "preexisting_status_entries": 141
+}
+{
+ "terminal_state": "FAILED",
+ "guards": {
+  "workspace": "PASS",
+  "historical_artifacts": "PASS"
+ },
+ "conditions": {
+  "H0": "OBSERVED",
+  "H5": "OBSERVED",
+  "H1": "FAILED",
+  "H2": "BLOCKED_NOT_RUN",
+  "H3": "FAILED",
+  "H4": "OBSERVED"
+ }
+}

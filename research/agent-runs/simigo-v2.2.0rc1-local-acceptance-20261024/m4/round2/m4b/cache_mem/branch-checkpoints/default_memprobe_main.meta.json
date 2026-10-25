@@ -1,0 +1,17 @@
+{
+  "cacheSHA256" : "f39e90650461ff55104e53086dc046b390075ad88b4cba179f9fe5be6faab25a",
+  "checkpointGeneration" : "66ec92ab-fe5f-411a-8688-f9310871f682",
+  "history" : [
+    {
+      "content" : "Output exactly one line and nothing else: RESULT=delta9",
+      "role" : "user"
+    },
+    {
+      "content" : "RESULT=delta9",
+      "role" : "assistant"
+    }
+  ],
+  "modelId" : "mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "savedAt" : "2026-10-23T17:40:40Z",
+  "storageKey" : "default\/memprobe\/main"
+}

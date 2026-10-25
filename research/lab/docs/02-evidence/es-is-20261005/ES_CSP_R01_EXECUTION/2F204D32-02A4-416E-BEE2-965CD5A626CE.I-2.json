@@ -1,0 +1,209 @@
+{
+  "c1" : {
+    "boundary_cardinality" : 2,
+    "defects" : [
+
+    ],
+    "observed_slots" : [
+      "O1",
+      "D1",
+      "A1",
+      "B1",
+      "B2",
+      "I1",
+      "P1a",
+      "P1b"
+    ],
+    "pointer_cardinality" : 2,
+    "required_base_slots" : [
+      "O1",
+      "I1",
+      "D1",
+      "A1"
+    ],
+    "status" : "PASS"
+  },
+  "c2" : {
+    "authority" : "NEXT_ACTION records only",
+    "boundary" : "",
+    "decision" : "BLOCK_INSUFFICIENT",
+    "invalid_pointer_targets" : [
+
+    ],
+    "pointer_target_cardinality" : 2,
+    "pointer_targets" : [
+      "B1",
+      "B2"
+    ],
+    "reason" : "AMBIGUOUS_POINTER_SET"
+  },
+  "c3" : {
+    "contributes_to_pass" : false,
+    "role" : "OBSERVATION_ONLY",
+    "status" : "NOT_PERFORMED"
+  },
+  "entry_point" : {
+    "input" : "uasession:3CEB2438-ACA1-4B77-86D8-338F16F12730",
+    "resolution" : "EXACT_NON_SEMANTIC",
+    "resolved_carrier_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730"
+  },
+  "events" : [
+    {
+      "event_id" : "E6DBC3FA-AF91-4B99-A6B5-9A80A1830273",
+      "information_id" : "E0F2CCFC-E393-4BE0-A511-C2EE7C070668",
+      "mapping_from_version" : "1",
+      "mapping_id" : "89F43626-6AD2-4717-A6BD-158643695EB8",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 116,
+      "payload_sha256" : "8a775a684dc98bc9d4eaaec977f02812df3cf3f1a9741b813b245fe52fb0dffe",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"O1\",\"content\":\"Continue the bounded research note without adding new claims.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RAW",
+      "sequence" : 0,
+      "session_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730",
+      "slot" : "O1"
+    },
+    {
+      "event_id" : "4CE18A45-A919-4644-8BCD-A2AECA113F05",
+      "information_id" : "978C2253-5BE7-4E5E-BAFA-D13D9D494A97",
+      "mapping_from_version" : "3",
+      "mapping_id" : "EC84E733-5B31-4395-AFCE-57F6D470E19C",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 118,
+      "payload_sha256" : "bb056822624587171d62a840b32e3efae818837eb4119146aed157542f8c62d7",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"D1\",\"content\":\"The bounded note is ready for boundary-registered continuation.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "JUDGMENT",
+      "sequence" : 1,
+      "session_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730",
+      "slot" : "D1"
+    },
+    {
+      "event_id" : "7E1D6630-DEE0-4560-B714-40824052F0D3",
+      "information_id" : "68586DD1-4C9A-4DF7-8E63-7BE5CB5CC5AE",
+      "mapping_from_version" : "5",
+      "mapping_id" : "218DEBE3-84D3-4BDA-9283-A4A9E04D1AD4",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 91,
+      "payload_sha256" : "ab6c28da3b98f642a60bd476f8e2480da0d16da02d7e4401feeed46340482c8b",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"A1\",\"content\":\"Artifact reference: bounded-note-v1.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RESULT",
+      "sequence" : 2,
+      "session_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730",
+      "slot" : "A1"
+    },
+    {
+      "event_id" : "1E5B7670-9DE4-4E7E-801B-CA920124FA54",
+      "information_id" : "917A567D-2AA8-4639-A056-AA12616FD875",
+      "mapping_from_version" : "7",
+      "mapping_id" : "9F6A4E6E-6BA4-4F36-9508-5F7087E6B4B4",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 84,
+      "payload_sha256" : "d5cb2bda4fbb040b84b9f20af039807cf92b8090d10ed6f5684e10bcb20cfe4c",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"B1\",\"content\":\"Boundary state candidate one.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RESULT",
+      "sequence" : 3,
+      "session_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730",
+      "slot" : "B1"
+    },
+    {
+      "event_id" : "031C9E06-1BE1-4523-9B55-7561929C6788",
+      "information_id" : "DFEA8D97-5195-4B47-984A-FBF660F3FC8E",
+      "mapping_from_version" : "9",
+      "mapping_id" : "5B1581E5-3F1A-4892-953E-9F18685EA595",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 84,
+      "payload_sha256" : "a4ee9fab0d7108af535dedee8bdb1aa58eb52603cbb23d51d48ad636c6e115a4",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"B2\",\"content\":\"Boundary state candidate two.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RESULT",
+      "sequence" : 4,
+      "session_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730",
+      "slot" : "B2"
+    },
+    {
+      "event_id" : "F7233643-1C9F-471F-86FB-261077218800",
+      "information_id" : "CD106D8C-3D24-4AD6-A635-C9C2035E9475",
+      "mapping_from_version" : "11",
+      "mapping_id" : "A32193F8-D8CC-45D4-BA51-344AD1056D26",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 57,
+      "payload_sha256" : "72b8a86174566f406c4f722dea34a2f2ee5a8461379e9b45a566a297d7fe6f89",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"I1\",\"content\":\"A1\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "EVIDENCE_LINK",
+      "sequence" : 5,
+      "session_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730",
+      "slot" : "I1"
+    },
+    {
+      "event_id" : "431C0B9F-3A4D-4863-B5F3-8045A2EBF0E3",
+      "information_id" : "B3DE4A4C-227E-4F99-9E4B-68AB4AEDD16E",
+      "mapping_from_version" : "13",
+      "mapping_id" : "DDCDF346-2464-48AE-ABCE-874467BF5F98",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 111,
+      "payload_sha256" : "414d57ca35e8a4e9ebdf4ad4764440f0c95b1bb0e71a0eadad35aef58837e54e",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"P1a\",\"content\":\"Continue at the registered boundary.\",\"target_slot\":\"B1\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "NEXT_ACTION",
+      "sequence" : 6,
+      "session_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730",
+      "slot" : "P1a",
+      "target_slot" : "B1"
+    },
+    {
+      "event_id" : "0E293B78-6188-4EC8-8FAF-96F7A5878D00",
+      "information_id" : "C1F15407-CD90-4EE2-B3E2-745AF7BFC5A2",
+      "mapping_from_version" : "15",
+      "mapping_id" : "709666B2-20A3-48BF-8D2F-264E057550FE",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 111,
+      "payload_sha256" : "0f0bcfa824e9464229c19987f470d241808ec8f798c04dfeccedd03576664e31",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"P1b\",\"content\":\"Continue at the registered boundary.\",\"target_slot\":\"B2\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "NEXT_ACTION",
+      "sequence" : 7,
+      "session_id" : "3CEB2438-ACA1-4B77-86D8-338F16F12730",
+      "slot" : "P1b",
+      "target_slot" : "B2"
+    }
+  ],
+  "evidence" : {
+    "EV-6_reconstruction_manifest" : true,
+    "EV-7_c1_status" : true,
+    "EV-8_c2_status" : true,
+    "EV-9_carrier_precondition" : true,
+    "EV-R3_pointer_path" : "NEXT_ACTION only",
+    "stable_addressing_only" : true
+  },
+  "interruption_kind" : "I-2",
+  "opaque_fixture_instance_id" : "2F204D32-02A4-416E-BEE2-965CD5A626CE",
+  "payload_errors" : [
+
+  ],
+  "run_label" : "ES-CSP-RUN-01",
+  "schema_version" : "es-csp/reconstruction-manifest-v1",
+  "side_channel_exclusions" : {
+    "agent_notes" : true,
+    "conversation_history" : true,
+    "deficiency_description" : true,
+    "embedding" : true,
+    "expected_c1" : true,
+    "expected_c2" : true,
+    "fixture_role" : true,
+    "mcp" : true,
+    "prior_process_memory" : true,
+    "ranking" : true,
+    "remote_api" : true,
+    "semantic_search" : true
+  },
+  "snapshot" : {
+    "event_count" : 8,
+    "mapping_count" : 8,
+    "read_version" : 16
+  },
+  "source_baseline_identifier" : "39c1031"
+}

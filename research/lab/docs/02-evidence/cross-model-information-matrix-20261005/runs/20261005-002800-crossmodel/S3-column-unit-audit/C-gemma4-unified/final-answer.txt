@@ -1,0 +1,58 @@
+```json
+{
+  "task_id": "boundary-study/y-exp",
+  "decision": "rejected",
+  "findings": [
+    {
+      "id": 1,
+      "statement": "The hypothesis that E column stores amounts in units of 万元 is contradicted by the data.",
+      "evidence": "The E column header is explicitly labeled '工程数量' (Work Quantity), not a monetary amount.",
+      "function": "decision"
+    },
+    {
+      <audio|>": 2,
+      "statement": "The units listed for E are physical quantities, not currency.",
+      "evidence": "Unit counts include m3 (310), kg (135), m (65), m³ (207), and m² (9).",
+      "function": "evidence"
+    },
+    {
+      "id": 3,
+      "statement": "The values in E are used as quantities in cost formulas.",
+      "evidence": "J = G * E (e.g. J47 = G47 * E47) and J = SUMPRODUCT(E..., G...)",
+      "function": "relation"
+    },
+    {
+      "id": 4,
+      "statement": "The E column values are raw quantities, not scaled by a factor of 10,000.",
+      "evidence": "Row 47 shows E = 51034.69641, which is a precise physical quantity for excavation.",
+      "function": "evidence"
+    },
+    {
+      "id": 5,
+      "statement": "The E column contains both hardcoded and formula-derived quantities.",
+      "evidence": "815 cached numeric rows, 793 hardcoded, 22 formula rows.",
+      "function": "evidence"
+    },
+    {
+      "id": 6,
+      "statement": "The E column values are used as the base for calculating J (Contract/Project costs).",
+      "evidence": "J = G * E and J = SUMPRODUCT(E..., G...)",
+      "function": "relation"
+    },
+    {
+      "id": 7,
+      "statement": "The E column values are not stated to be in 万元.",
+      "evidence": "Header is '工程数量' and unit counts list physical units.",
+      "function": "uncertainty"
+    },
+    {
+      "id": 8,
+      "statement": "The hypothesis is rejected because E represents physical quantities.",
+      "evidence": "Header and unit counts confirm E is '工程数量' (Work Quantity).",
+      "function": "decision"
+    }
+  ],
+  "missing_or_uncertain": "None",
+  "confidence": 1.0
+}
+```

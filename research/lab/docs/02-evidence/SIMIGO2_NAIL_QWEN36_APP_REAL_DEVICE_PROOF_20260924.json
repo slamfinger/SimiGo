@@ -1,0 +1,379 @@
+{
+  "device" : {
+    "brand" : "Apple M5",
+    "machine" : "arm64",
+    "operatingSystem" : "Version 26.6.2 (Build 25G83)",
+    "physicalMemoryBytes" : 34359738368
+  },
+  "gate" : "GATE5_MULTI_STATE_REAL_DEVICE",
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+  "report" : {
+    "allResident" : {
+      "cumulativeReleasedBytes" : 0,
+      "cumulativeReloadedBytes" : 0,
+      "outputs" : [
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return"
+      ],
+      "policy" : "ALL_RESIDENT",
+      "totalGenerationMilliseconds" : 11111.071999999998,
+      "totalReleaseMilliseconds" : 0,
+      "totalReloadMilliseconds" : 0,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 6721.45775,
+          "idleActiveBytes" : 20742340808,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340624,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 1101.439375,
+          "idleActiveBytes" : 20742340808,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 1097.70975,
+          "idleActiveBytes" : 20742340808,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 1095.5685,
+          "idleActiveBytes" : 20742340808,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 1094.896625,
+          "idleActiveBytes" : 20742340808,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        }
+      ]
+    },
+    "benchmarkPass" : true,
+    "idleReductionBytes" : 10871635392,
+    "idleReductionObserved" : true,
+    "naiveOnDemand" : {
+      "cumulativeReleasedBytes" : 90596966400,
+      "cumulativeReloadedBytes" : 72477573120,
+      "outputs" : [
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return"
+      ],
+      "policy" : "NAIVE_ON_DEMAND",
+      "totalGenerationMilliseconds" : 10849.246042,
+      "totalReleaseMilliseconds" : 223.757085,
+      "totalReloadMilliseconds" : 11675.803333999998,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 1100.499209,
+          "idleActiveBytes" : 2622948488,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 45.097709,
+          "releasedBytes" : 18119393280,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 2546.61975,
+          "idleActiveBytes" : 2622948488,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 43.229834,
+          "releasedBytes" : 18119393280,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2712.606833,
+          "reloadedBytes" : 18119393280,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 2314.933875,
+          "idleActiveBytes" : 2622948488,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 46.055375,
+          "releasedBytes" : 18119393280,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2978.304417,
+          "reloadedBytes" : 18119393280,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 2419.524583,
+          "idleActiveBytes" : 2622948488,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 45.797542,
+          "releasedBytes" : 18119393280,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2976.874875,
+          "reloadedBytes" : 18119393280,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 2467.6686250000002,
+          "idleActiveBytes" : 2622948488,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 43.576625,
+          "releasedBytes" : 18119393280,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 3008.017209,
+          "reloadedBytes" : 18119393280,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        }
+      ]
+    },
+    "outputIdentityPass" : true,
+    "reloadReductionVsNaiveBytes" : 18119393280,
+    "reloadReductionVsNaiveObserved" : true,
+    "stateDriven" : {
+      "cumulativeReleasedBytes" : 36238786560,
+      "cumulativeReloadedBytes" : 54358179840,
+      "outputs" : [
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+        "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return"
+      ],
+      "policy" : "EXECUTION_STATE",
+      "totalGenerationMilliseconds" : 12193.263334,
+      "totalReleaseMilliseconds" : 101.096583,
+      "totalReloadMilliseconds" : 10394.219915999998,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 2638.508958,
+          "idleActiveBytes" : 9870705416,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 24.568166,
+          "releasedBytes" : 10871635968,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2993.51125,
+          "reloadedBytes" : 18119393280,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 2646.046792,
+          "idleActiveBytes" : 9870705416,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 31.548042,
+          "releasedBytes" : 10871635968,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2116.03925,
+          "reloadedBytes" : 10871635968,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 3122.714042,
+          "idleActiveBytes" : 17118462344,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 13.075125,
+          "releasedBytes" : 3623878656,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2496.561875,
+          "reloadedBytes" : 10871635968,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 1151.550125,
+          "idleActiveBytes" : 9870705416,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 31.90525,
+          "releasedBytes" : 10871635968,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 326.790833,
+          "reloadedBytes" : 3623878656,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 20742340808,
+          "generationMilliseconds" : 2634.443417,
+          "idleActiveBytes" : 20742340808,
+          "output" : "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Return",
+          "readyActiveBytes" : 20742340808,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 2461.316708,
+          "reloadedBytes" : 10871635968,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        }
+      ]
+    },
+    "states" : [
+      "STATE_A",
+      "STATE_B",
+      "STATE_AB",
+      "STATE_A",
+      "STATE_ALL"
+    ]
+  },
+  "states" : [
+    "STATE_A",
+    "STATE_B",
+    "STATE_AB",
+    "STATE_A",
+    "STATE_ALL"
+  ]
+}

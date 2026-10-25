@@ -1,0 +1,19 @@
+{"elt": "p3-arm-start", "arm": 4, "db": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-p3-arm3.sqlite", "_t": 0.0}
+{"elt": "settle-start", "cp": "arm3-cp", "units": ["A", "B", "C", "D", "E"], "_t": 0.0}
+{"elt": "swift-forward", "unit": "A", "text": "A->shA本报告汇总 Q", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "B", "text": "B->shB本报告汇总 Q", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "C", "text": "C->shC本报告汇总 Q", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "D", "text": "D->shD本报告汇总 Q", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "E", "text": "E->shE无关分支：财务", "real": true, "_t": 0.0}
+{"elt": "p3-settle-execute", "cp": "arm3-cp", "attempt": 0, "state": "ADVANCED", "applied": false, "computed": [], "reused": [], "_t": 0.0}
+{"elt": "execute-demand-note", "cp": "arm3-cp", "err": "ValueError: unknown demand: arm3-cp-apply", "_t": 0.0}
+{"elt": "settle-done", "cp": "arm3-cp", "runtime_status": "APPLIED_SWIFT", "_t": 0.0}
+{"elt": "p3-invalidate-arm4", "arm": 4, "invalidated_item_ids": ["A", "B", "C", "D"], "reason": "source-a-changed", "include_dependents": true, "note": "invalidate_settlement closure observed; separate from the recompute-set proof", "_t": 0.0}
+{"elt": "p3-update-source-arm4", "arm": 4, "unit": "A", "source_version": "v2", "_t": 0.0}
+{"elt": "p3-rerequest-arm4", "arm": 4, "notes": "re-run after A change", "_t": 0.0}
+{"elt": "swift-forward", "unit": "A", "text": "A->shA本报告汇总 Q", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "B", "text": "B->shB本报告汇总 Q", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "C", "text": "C->shC本报告汇总 Q", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "D", "text": "D->shD本报告汇总 Q", "real": true, "_t": 0.0}
+{"elt": "p3-rerequest-result-arm4", "arm": 4, "full_res_keys": ["demand_id", "state", "actions", "computed_item_ids", "reused_item_ids", "result", "advanced", "execution_state"], "recomputed_item_ids": [], "reused_item_ids": ["E"], "state": "ADVANCED", "note": "carriers recomputed=[]/reused=['E']: empty computed on pure recompute; E reuse is proven from E's DB settle record (op10 rev1, never invalidated), not from reused_item_ids", "_t": 0.0}
+{"elt": "p3-arm-done", "arm": 4, "expected_invalidation_set": ["A", "B", "C", "D"], "observed_invalidation_set": ["A", "B", "C", "D"], "observed_call_set": ["A", "B", "C", "D"], "carrier_match": true, "calc_match": true, "all_affected": true, "e_not_computed": true, "recompute_proven": true, "overall": true, "boundary": "real_Swift_Calculator integration here proves executor_integration + settlement_reuse + selective_recompute, NOT model-level continuous computation; carrier reuse != LLM_inference / KV_cache hit", "_t": 0.0}

@@ -1,0 +1,33 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "architecture": "gemma4_unified",
+      "protocolEndpoints": {
+        "textCompletions": "supported",
+        "responses": "unverified",
+        "chatCompletions": "supported"
+      },
+      "capabilities": {
+        "chat": "supported",
+        "reasoning": "unverified",
+        "streaming": "supported",
+        "vision": "unsupported",
+        "toolCalling": "unverified",
+        "structuredOutput": "unverified"
+      },
+      "owned_by": "simigo",
+      "runtime": {
+        "constraints": [
+          "serializeGeneration=true：并发生成跨 session 单飞（qwen3_5_moe 编译锁互堵缓解，2026-09-11 实测）"
+        ],
+        "cacheInvalidation": "kvFingerprint mismatch → 旧缓存失效，全量 prefill",
+        "concurrency": "global single-flight (serializeGeneration=true)"
+      },
+      "id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+      "object": "model",
+      "created": 1791132782,
+      "backend": "NativeMLX"
+    }
+  ]
+}

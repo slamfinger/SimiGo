@@ -1,0 +1,54 @@
+{
+  "boundary": "reaudit PASS certifies instrumentation fix + containment only; Attempt #1 campaign verdict (INCONCLUSIVE) permanently retained; attempt #2 requires new explicit human authorization",
+  "checks": [
+    {
+      "detail": "detail=[]",
+      "name": "RC-1 revised object-identity probes: 12/12 pairs PASS on preserved evidence",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "RC-1 cell-06 A-Δ3 key-substituted PASS (legal migration ≠ effect disappearance)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "RC-2 cell-06 contained (excluded from classification; reason+chain verified)",
+      "pass": true
+    },
+    {
+      "detail": "detail=[]",
+      "name": "RC-2 containment rule: zero classification leakage from INCONCLUSIVE cells",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "RC-2 revised classification recomputation agrees with adjudicator on valid cells",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "RC-3 cell-06 verdict determinism: INCONCLUSIVE maintained",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "RC-3 campaign verdict determinism: INCONCLUSIVE maintained",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "RC-4 IS-X Design rev.2 zero diff (research rules untouched)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "RC-5 reaudit does not revise Attempt #1 verdict (INCONCLUSIVE permanently retained; attempt #2 still requires new explicit human authorization)",
+      "pass": true
+    }
+  ],
+  "failed": [],
+  "revision_source": "SIMIGO_LAB_ISX_IMPL_REVISION_20261003.md",
+  "run_uuid": "R33X-20261003T122818Z-70152",
+  "verdict": "IMPLEMENTATION REAUDIT PASS"
+}

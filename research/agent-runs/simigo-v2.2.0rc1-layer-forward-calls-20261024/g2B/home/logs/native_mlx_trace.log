@@ -1,0 +1,4 @@
+[2026-10-24 14:48:55.854] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=16MB swapUsed=4292MB
+[2026-10-24 14:48:58.325] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 14:48:58.341] NativeMLX ready: model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit port=8201
+[2026-10-24 14:48:58.341] [MEM] afterLoad active=16385MB cache=0MB peak=16385MB footprint=16493MB swapUsed=4292MB

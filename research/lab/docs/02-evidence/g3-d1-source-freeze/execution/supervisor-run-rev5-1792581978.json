@@ -1,0 +1,128 @@
+{
+  "allCompletedCleanly" : true,
+  "claimsSettledDelivery" : false,
+  "distinctPIDs" : true,
+  "runID" : "rev5-1792581978",
+  "schema" : "simigo.g3.d1.supervisor-result\/v1",
+  "slots" : [
+    {
+      "auditPath" : "\/tmp\/d1-rev5-1792581978\/audits\/audit-slot-A.json",
+      "auditRecord" : {
+        "authorization" : {
+          "consumedPathExists" : true,
+          "markerPath" : "\/tmp\/d1-rev5-1792581978\/markers\/marker-slot-A.auth",
+          "status" : "accepted"
+        },
+        "claimsSettledDelivery" : false,
+        "execution" : {
+          "arms" : [
+            {
+              "armID" : "ES+IS",
+              "bindingConsumed" : false,
+              "gatePassed" : false,
+              "gateStage" : "provider_trust",
+              "generationCallCount" : 0,
+              "reason" : "no reviewed live provider is registered for simigo.g3.d1.worker; refusing to treat a fixture as live",
+              "routedVia" : "G3ExecutionDispatch.g3",
+              "settleEntered" : false,
+              "settled" : false
+            },
+            {
+              "armID" : "IS-only",
+              "bindingConsumed" : false,
+              "gatePassed" : false,
+              "gateStage" : "provider_trust",
+              "generationCallCount" : 0,
+              "reason" : "no reviewed live provider is registered for simigo.g3.d1.worker; refusing to treat a fixture as live",
+              "routedVia" : "G3ExecutionDispatch.g3",
+              "settleEntered" : false,
+              "settled" : false
+            }
+          ],
+          "eachArmSettled" : false,
+          "esGenerateBodyRuns" : 0,
+          "isGenerateBodyRuns" : 0,
+          "reached" : true,
+          "totalGenerationCallCount" : 0
+        },
+        "exitCode" : 0,
+        "identity" : {
+          "execPath" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/simigo2-experimental\/.build\/out\/out\/Products\/Debug\/G3D1Worker",
+          "expectedEnvPresent" : true,
+          "status" : "verified",
+          "verifiedExecSHA256" : "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a"
+        },
+        "pid" : 39129,
+        "runID" : "rev5-1792581978",
+        "schema" : "simigo.g3.d1.worker-audit\/v1",
+        "slotID" : "slot-A"
+      },
+      "exitCode" : 0,
+      "markerPath" : "\/tmp\/d1-rev5-1792581978\/markers\/marker-slot-A.auth",
+      "pid" : 39129,
+      "reclaimed" : false,
+      "replayRefused" : true,
+      "slotID" : "slot-A"
+    },
+    {
+      "auditPath" : "\/tmp\/d1-rev5-1792581978\/audits\/audit-slot-B.json",
+      "auditRecord" : {
+        "authorization" : {
+          "consumedPathExists" : true,
+          "markerPath" : "\/tmp\/d1-rev5-1792581978\/markers\/marker-slot-B.auth",
+          "status" : "accepted"
+        },
+        "claimsSettledDelivery" : false,
+        "execution" : {
+          "arms" : [
+            {
+              "armID" : "ES+IS",
+              "bindingConsumed" : false,
+              "gatePassed" : false,
+              "gateStage" : "provider_trust",
+              "generationCallCount" : 0,
+              "reason" : "no reviewed live provider is registered for simigo.g3.d1.worker; refusing to treat a fixture as live",
+              "routedVia" : "G3ExecutionDispatch.g3",
+              "settleEntered" : false,
+              "settled" : false
+            },
+            {
+              "armID" : "IS-only",
+              "bindingConsumed" : false,
+              "gatePassed" : false,
+              "gateStage" : "provider_trust",
+              "generationCallCount" : 0,
+              "reason" : "no reviewed live provider is registered for simigo.g3.d1.worker; refusing to treat a fixture as live",
+              "routedVia" : "G3ExecutionDispatch.g3",
+              "settleEntered" : false,
+              "settled" : false
+            }
+          ],
+          "eachArmSettled" : false,
+          "esGenerateBodyRuns" : 0,
+          "isGenerateBodyRuns" : 0,
+          "reached" : true,
+          "totalGenerationCallCount" : 0
+        },
+        "exitCode" : 0,
+        "identity" : {
+          "execPath" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/simigo2-experimental\/.build\/out\/out\/Products\/Debug\/G3D1Worker",
+          "expectedEnvPresent" : true,
+          "status" : "verified",
+          "verifiedExecSHA256" : "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a"
+        },
+        "pid" : 39130,
+        "runID" : "rev5-1792581978",
+        "schema" : "simigo.g3.d1.worker-audit\/v1",
+        "slotID" : "slot-B"
+      },
+      "exitCode" : 0,
+      "markerPath" : "\/tmp\/d1-rev5-1792581978\/markers\/marker-slot-B.auth",
+      "pid" : 39130,
+      "reclaimed" : false,
+      "replayRefused" : true,
+      "slotID" : "slot-B"
+    }
+  ],
+  "workerBinarySHA256" : "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a"
+}

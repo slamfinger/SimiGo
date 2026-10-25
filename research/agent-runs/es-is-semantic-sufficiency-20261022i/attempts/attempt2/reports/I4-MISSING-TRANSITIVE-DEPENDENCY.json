@@ -1,0 +1,15 @@
+{
+  "id": "I4-MISSING-TRANSITIVE-DEPENDENCY",
+  "kind": "negative_control",
+  "notes": [
+    "--skip-real"
+  ],
+  "observations": {
+    "database_unchanged": false,
+    "generation_calls": 0,
+    "refusal_before_tokenize": false,
+    "state_unchanged": false
+  },
+  "raw_log_paths": [],
+  "terminal_state": "BLOCKED_NOT_RUN"
+}

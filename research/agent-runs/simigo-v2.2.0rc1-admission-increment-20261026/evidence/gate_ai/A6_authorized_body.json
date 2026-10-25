@@ -1,0 +1,1 @@
+{"model":"mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit","id":"chatcmpl-73542fb4-2835-4376-90a4-2dcdae339646","object":"chat.completion","created":1792949464,"choices":[{"message":{"role":"assistant","content":"SERVICE-HTTP-OK"},"index":0,"finish_reason":"stop"}]}

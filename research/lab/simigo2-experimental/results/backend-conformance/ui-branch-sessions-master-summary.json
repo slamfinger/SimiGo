@@ -1,0 +1,231 @@
+{
+  "status": "CONSOLIDATED_PASS_WITH_BOUNDARY",
+  "protocolVersion": "SIMIGO.UI.BRANCH.SESSIONS.MASTER.INDEX.V1",
+  "boundary": "EVIDENCE_INDEX_ONLY / HARNESS_LEVEL / DIFFERENT_MODEL_ARTIFACTS_AND_TOKENIZERS / NO_PRODUCT_UI / NO_PERSISTENT_SESSION_CLAIM / NOT_A_PERFORMANCE_BENCHMARK",
+  "entryCount": 15,
+  "entries": [
+    {
+      "id": "UI1",
+      "title": "LLAMA depth-1 pilot",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-llama-pilot.json",
+      "scope": "LLAMA prefix session; root + branches A/B; 8-token workload"
+    },
+    {
+      "id": "UI2",
+      "title": "MLX oversized pilot",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-mlx-oversized-pilot.json",
+      "scope": "oversized MLX prefix session; root + branches A/B; 2-token workload"
+    },
+    {
+      "id": "UI3",
+      "title": "depth-1 cross-backend matrix",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "expectedStatus": "PASS_WITH_BOUNDARY",
+      "artifact": "ui-branch-session-crossbackend-matrix.json",
+      "scope": "same-shape semantic matrix; different model artifacts/tokenizers"
+    },
+    {
+      "id": "UI4",
+      "title": "LLAMA nested/repeat pilot",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-llama-nested-repeat.json",
+      "scope": "root -> A -> A1 plus root -> B; two release/restore cycles"
+    },
+    {
+      "id": "UI5",
+      "title": "MLX nested/repeat pilot",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-mlx-nested-repeat.json",
+      "scope": "oversized MLX nested graph and repeated release/restore/switch"
+    },
+    {
+      "id": "UI6",
+      "title": "nested cross-backend matrix",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "expectedStatus": "PASS_WITH_BOUNDARY",
+      "artifact": "ui-branch-session-nested-crossbackend-matrix.json",
+      "scope": "same-shape nested semantic matrix; different model artifacts/tokenizers"
+    },
+    {
+      "id": "UI7",
+      "title": "LLAMA cancellation",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-llama-cancellation.json",
+      "scope": "explicit stream DELETE; root/control/recovery semantics"
+    },
+    {
+      "id": "UI8",
+      "title": "MLX cancellation",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-mlx-cancellation.json",
+      "scope": "cooperative token-boundary cancel; root/control/recovery semantics"
+    },
+    {
+      "id": "UI9",
+      "title": "cancellation cross-backend matrix",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "expectedStatus": "PASS_WITH_BOUNDARY",
+      "artifact": "ui-branch-session-cancellation-crossbackend-matrix.json",
+      "scope": "same outcome-shape matrix; explicit DELETE vs cooperative cancel"
+    },
+    {
+      "id": "UI10",
+      "title": "LLAMA long-running branch",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-llama-long-running.json",
+      "scope": "6-turn long-running branch; fork-point and final-position restores; sibling retained"
+    },
+    {
+      "id": "UI11",
+      "title": "MLX long-running branch",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-mlx-long-running.json",
+      "scope": "oversized MLX 6-turn long-running branch; forkpoint/final restores; sibling retained"
+    },
+    {
+      "id": "UI12",
+      "title": "long-running cross-backend matrix",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "expectedStatus": "PASS_WITH_BOUNDARY",
+      "artifact": "ui-branch-session-long-running-crossbackend-matrix.json",
+      "scope": "LLAMA vs oversized MLX six-turn outcome-shape matrix; same prompts and 4-token budget"
+    },
+    {
+      "id": "UI13",
+      "title": "MLX controlled memory-pressure action",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-mlx-memory-pressure.json",
+      "scope": "oversized MLX multi-branch release/restore pressure action; exact recovery and zero swap"
+    },
+    {
+      "id": "UI14",
+      "title": "LLAMA controlled memory-pressure action",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-llama-memory-pressure.json",
+      "scope": "LLAMA multi-branch release/restore pressure action; exact recovery and retained control/root"
+    },
+    {
+      "id": "UI15",
+      "title": "controlled memory-pressure cross-backend matrix",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "expectedStatus": "PASS_WITH_BOUNDARY",
+      "artifact": "ui-memory-pressure-crossbackend-matrix.json",
+      "scope": "LLAMA vs oversized MLX controlled pressure outcome shape; eight common checks"
+    }
+  ],
+  "coverage": {
+    "backends": [
+      "LLAMA GGUF",
+      "oversized MLX"
+    ],
+    "depth1Pilot": [
+      "UI1",
+      "UI2",
+      "UI3"
+    ],
+    "nestedAndRepeat": [
+      "UI4",
+      "UI5",
+      "UI6"
+    ],
+    "cancellation": [
+      "UI7",
+      "UI8",
+      "UI9"
+    ],
+    "longRunningBranch": [
+      "UI10",
+      "UI11"
+    ],
+    "longRunningCrossBackend": [
+      "UI12"
+    ],
+    "controlledMemoryPressure": [
+      "UI13"
+    ],
+    "llamaControlledMemoryPressure": [
+      "UI14"
+    ],
+    "controlledMemoryPressureCrossBackend": [
+      "UI15"
+    ]
+  },
+  "checks": {
+    "ALL_ENTRY_REPORTS_PASS": true,
+    "ALL_ENTRY_STATUSES_EXPECTED": true,
+    "DEPTH1_LLAMA_AND_MLX_PRESENT": true,
+    "DEPTH1_CROSSBACKEND_MATRIX_PRESENT": true,
+    "NESTED_LLAMA_AND_MLX_PRESENT": true,
+    "NESTED_CROSSBACKEND_MATRIX_PRESENT": true,
+    "CANCELLATION_LLAMA_AND_MLX_PRESENT": true,
+    "CANCELLATION_CROSSBACKEND_MATRIX_PRESENT": true,
+    "NO_PRODUCT_UI_CLAIM": true,
+    "NO_PERSISTENT_SESSION_CLAIM": true,
+    "LONG_RUNNING_LLAMA_PRESENT": true,
+    "ENTRY_COUNT_MATCHES": true,
+    "LONG_RUNNING_MLX_PRESENT": true,
+    "LONG_RUNNING_CROSSBACKEND_MATRIX_PRESENT": true,
+    "MEMORY_PRESSURE_MLX_PRESENT": true,
+    "MEMORY_PRESSURE_LLAMA_PRESENT": true,
+    "MEMORY_PRESSURE_CROSSBACKEND_MATRIX_PRESENT": true
+  },
+  "consolidatedFindings": {
+    "DEPTH1_SEMANTIC_MATRIX_PASS": true,
+    "NESTED_SEMANTIC_MATRIX_PASS": true,
+    "CANCELLATION_OUTCOME_SHAPE_MATRIX_PASS": true,
+    "ALL_REPORTS_ARE_HARNESS_LEVEL": true,
+    "LONG_RUNNING_BRANCH_RESTORES_FORKPOINT_AND_FINAL_POSITION": true,
+    "MLX_LONG_RUNNING_BRANCH_RESTORES_FORKPOINT_AND_FINAL_POSITION": true,
+    "LONG_RUNNING_CROSSBACKEND_OUTCOME_SHAPE_MATRIX_PASS": true,
+    "CONTROLLED_MEMORY_PRESSURE_RELEASE_RESTORE_PASS": true,
+    "LLAMA_CONTROLLED_MEMORY_PRESSURE_RELEASE_RESTORE_PASS": true,
+    "CONTROLLED_MEMORY_PRESSURE_CROSSBACKEND_OUTCOME_SHAPE_PASS": true
+  },
+  "openItems": [
+    "PRODUCT_UI_SURFACE",
+    "PERSISTENT_OR_MULTI_PROCESS_SESSIONS",
+    "ARBITRARY_DEPTH_BRANCH_GRAPH",
+    "SAME_MODEL_OR_SAME_CHECKPOINT_CROSS_BACKEND_CLOSURE",
+    "OS_MEMORY_PRESSURE_INJECTION_VALIDATION",
+    "PRODUCTION_CANCELLATION_READINESS"
+  ],
+  "nonClaims": [
+    "NOT_A_PRODUCT_UI",
+    "NOT_A_PERSISTENT_SESSION_IMPLEMENTATION",
+    "NOT_A_SAME_CHECKPOINT_CROSS_BACKEND_CLOSURE",
+    "NOT_A_PRODUCTION_CANCELLATION_READINESS_CLAIM",
+    "NOT_A_PERFORMANCE_BENCHMARK",
+    "NOT_AN_OS_MEMORY_PRESSURE_VALIDATION",
+    "NOT_A_LLAMA_NATIVE_CACHE_RELEASE_CLAIM",
+    "NOT_A_CROSSBACKEND_PHYSICAL_MECHANISM_CLOSURE",
+    "NOT_AN_ARBITRARY_DEPTH_GRAPH_VALIDATION"
+  ],
+  "overallPass": true
+}

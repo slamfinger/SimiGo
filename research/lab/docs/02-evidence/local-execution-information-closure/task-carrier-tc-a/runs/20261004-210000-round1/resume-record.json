@@ -1,0 +1,82 @@
+{
+  "phase": "ROUND1_RD9_RESUME_COMPLETE",
+  "created_at": "2026-10-05T00:23:50+08:00",
+  "authorization": "RESUME REMAINING 3 RD9 CONDITIONS / 180S INTERVAL",
+  "baseline_trace_size": 105108,
+  "baseline_trace_tail": "26-10-05 00:08:22.281] [MEM] settled active=0MB cache=0MB peak=20633MB footprint=107MB swapUsed=885MB\n[2026-10-05 00:08:22.281] NativeMLX stopped\n[2026-10-05 00:08:22.282] ℹ️ ✅ 大模型已完全卸载，显存/内存已清空\n[2026-10-05 00:13:55.597] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX\n[2026-10-05 00:13:55.597] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.95 topK=20 minP=0.0 rep=0.99999994 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true\n[2026-10-05 00:13:55.597] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false\n[2026-10-05 00:13:55.602] [MEM] beforeLoad active=0MB cache=0MB peak=20633MB footprint=125MB swapUsed=822MB\n[2026-10-05 00:13:59.476] NativeMLX ready: model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX port=8000\n[2026-10-05 00:13:59.477] [MEM] afterLoad active=19781MB cache=1621MB peak=20633MB footprint=21586MB swapUsed=822MB\n[2026-10-05 00:13:59.477] ℹ️ [READY] http://127.0.0.1:8000/v1\n",
+  "observer": "NOT RUN",
+  "store": "NOT RUN",
+  "interpretation": "NOT PERFORMED",
+  "conditions": [
+    {
+      "condition": "RD9-TOOL-PRESENT",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-PRESENT.prompt.txt",
+      "prompt_sha256": "731a97d387ece4b95c6ec111c9ebead7aa463aa9cf5f4ca1183ebdc6bdb57612",
+      "http_status": 200,
+      "elapsed_seconds": 2.674516,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "interval_before_next_seconds": 180,
+        "trace_byte_start": 105108,
+        "trace_byte_end": 105876,
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "isolation_lines": [
+          "[2026-10-05 00:17:42.944] [LC] STATE_TRANSITION r=ae7a3e s=openai from=QUEUED to=RUNNING",
+          "[2026-10-05 00:17:45.611] [MLX] session=simigo-tc-a-rd9toolpresent/0a2a68/main messages=1 exec=da68fc history=2 delta=1 reuse=false ttft=1918ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=930 promptTime=1.8s tps=41.0 rawEv=25 rawB=131 emitB=131",
+          "[2026-10-05 00:17:45.611] [LC] RELEASED r=ae7a3e s=openai reason=completed"
+        ]
+      },
+      "raw_output_initial_location": "docs/02-evidence/local-execution-information-closure/runs/20261004-210000-round1/RD9-TOOL-PRESENT",
+      "raw_output_canonical_location": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-PRESENT",
+      "relocation_reason": "resume runner resolved RUN_ROOT one level above canonical task-carrier root; files moved unmodified to canonical Round 1 directory"
+    },
+    {
+      "condition": "RD9-TOOL-ABSENT",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-ABSENT.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "http_status": 200,
+      "elapsed_seconds": 1.499906,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "interval_before_next_seconds": 180,
+        "trace_byte_start": 105876,
+        "trace_byte_end": 106586,
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "isolation_lines": [
+          "[2026-10-05 00:20:45.623] [LC] STATE_TRANSITION r=abd6d9 s=openai from=QUEUED to=RUNNING",
+          "[2026-10-05 00:20:47.120] [MLX] session=simigo-tc-a-rd9toolabsent/0372a9/main messages=1 exec=26b26c history=2 delta=1 reuse=false ttft=689ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=554 promptTime=0.7s tps=41.2 rawEv=28 rawB=145 emitB=145",
+          "[2026-10-05 00:20:47.120] [LC] RELEASED r=abd6d9 s=openai reason=completed"
+        ]
+      },
+      "raw_output_initial_location": "docs/02-evidence/local-execution-information-closure/runs/20261004-210000-round1/RD9-TOOL-ABSENT",
+      "raw_output_canonical_location": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-ABSENT",
+      "relocation_reason": "resume runner resolved RUN_ROOT one level above canonical task-carrier root; files moved unmodified to canonical Round 1 directory"
+    },
+    {
+      "condition": "RD9-TOOL-SUMMARY",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-SUMMARY.prompt.txt",
+      "prompt_sha256": "30a5e95f5147674005c0e0f5f423cd927ab684b5a90c142b4af138c9446f8843",
+      "http_status": 200,
+      "elapsed_seconds": 3.219727,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "interval_before_next_seconds": 0,
+        "trace_byte_start": 106586,
+        "trace_byte_end": 107300,
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "isolation_lines": [
+          "[2026-10-05 00:23:47.133] [LC] STATE_TRANSITION r=f32690 s=openai from=QUEUED to=RUNNING",
+          "[2026-10-05 00:23:50.351] [MLX] session=simigo-tc-a-rd9toolsummary/8f085e/main messages=1 exec=0fbdd7 history=2 delta=1 reuse=false ttft=2416ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=598 promptTime=2.4s tps=40.5 rawEv=28 rawB=145 emitB=145",
+          "[2026-10-05 00:23:50.351] [LC] RELEASED r=f32690 s=openai reason=completed"
+        ]
+      },
+      "raw_output_initial_location": "docs/02-evidence/local-execution-information-closure/runs/20261004-210000-round1/RD9-TOOL-SUMMARY",
+      "raw_output_canonical_location": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-SUMMARY",
+      "relocation_reason": "resume runner resolved RUN_ROOT one level above canonical task-carrier root; files moved unmodified to canonical Round 1 directory"
+    }
+  ],
+  "raw_output_relocation": "CONTENT_UNMODIFIED_PATH_CANONICALIZED"
+}

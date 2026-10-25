@@ -1,0 +1,9 @@
+revision_commit=806dd3eea55c
+prior_implementation=df7a6246c7a8
+protected_core_diff_bytes=0
+answer_constants=ABSENT
+direct_core_operations=ABSENT
+relation_store_force_unwrap=ABSENT
+c_b_disabled_relation_store=PASS
+tests=ALL_SUITES_PASS
+r_c1_attempt3=NOT_RUN

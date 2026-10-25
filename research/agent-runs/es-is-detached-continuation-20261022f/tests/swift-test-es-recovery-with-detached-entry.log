@@ -1,0 +1,173 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+Build complete! (0.66秒)
+Test Suite 'Selected tests' started at 2026-10-22 17:00:33.998.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-22 17:00:33.999.
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-22 17:00:33.999.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 17:00:33.999.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-22 17:00:34.121.
+Test Suite 'SimiGo2ExperimentalTests.xctest' started at 2026-10-22 17:00:34.122.
+Test Suite 'DetachedContinuationEntryTests' started at 2026-10-22 17:00:34.122.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testDetachedDriverRefusesNonEmptyConsumerStateDirectory]' started.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testDetachedDriverRefusesNonEmptyConsumerStateDirectory]' passed (0.073 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testOrdinaryExecutableEntryAdmitsAndRefusesWithoutAnyModelWork]' started.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testOrdinaryExecutableEntryAdmitsAndRefusesWithoutAnyModelWork]' passed (0.834 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testPerInstanceIdentityCreatesItsOwnColdStateFromInformationSpaceInput]' started.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testPerInstanceIdentityCreatesItsOwnColdStateFromInformationSpaceInput]' passed (0.533 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testPerInstanceIdentityStillRefusesBeforeTheModelWhenSettlementIsMissing]' started.
+Test Case '-[SimiGo2ExperimentalTests.DetachedContinuationEntryTests testPerInstanceIdentityStillRefusesBeforeTheModelWhenSettlementIsMissing]' passed (0.196 seconds).
+Test Suite 'DetachedContinuationEntryTests' passed at 2026-10-22 17:00:35.758.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 1.635 (1.636) seconds
+Test Suite 'DurableExecutionStateStoreTests' started at 2026-10-22 17:00:35.758.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testAtomicSnapshotRoundTripsSemanticStateAndAudit]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testAtomicSnapshotRoundTripsSemanticStateAndAudit]' passed (0.009 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCancelledCreateAfterPhysicalAdvanceMarksUncertain]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCancelledCreateAfterPhysicalAdvanceMarksUncertain]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testContinueDurableFailureAfterPhysicalAdvanceMarksUncertain]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testContinueDurableFailureAfterPhysicalAdvanceMarksUncertain]' passed (0.017 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCoordinatorRestoresHandlesAndContinuesAuditSequence]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCoordinatorRestoresHandlesAndContinuesAuditSequence]' passed (0.025 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCorruptSnapshotFailsClosed]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCorruptSnapshotFailsClosed]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testDurableCommitFailureDoesNotAdvanceAuditOrReportSuccess]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testDurableCommitFailureDoesNotAdvanceAuditOrReportSuccess]' passed (0.015 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testEmptyStoreLoadsEmptyState]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testEmptyStoreLoadsEmptyState]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testRestoreDurableCommitFailureMarksBindingUncertain]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testRestoreDurableCommitFailureMarksBindingUncertain]' passed (0.025 seconds).
+Test Suite 'DurableExecutionStateStoreTests' passed at 2026-10-22 17:00:35.850.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.092 (0.092) seconds
+Test Suite 'ExecutionContinuityCoordinatorTests' started at 2026-10-22 17:00:35.850.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testBindAndCaptureRoundTrip]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testBindAndCaptureRoundTrip]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testBindAtCurrentPositionLiftsIsolationWithoutRestore]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testBindAtCurrentPositionLiftsIsolationWithoutRestore]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCaptureRejectsPositionMismatch]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCaptureRejectsPositionMismatch]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCompensationFailureGatesBackendDependentOperationsUntilReestablished]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCompensationFailureGatesBackendDependentOperationsUntilReestablished]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCompensationFailureKeepsCoordinatorLogicalStateUncommitted]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCompensationFailureKeepsCoordinatorLogicalStateUncommitted]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testConcurrentForkRequestsForSameChildCommitExactlyOnce]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testConcurrentForkRequestsForSameChildCommitExactlyOnce]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testDiscardReleasesRepresentation]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testDiscardReleasesRepresentation]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkAfterRestoreUsesRepresentationMatchingForkedPosition]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkAfterRestoreUsesRepresentationMatchingForkedPosition]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkAtPositionWithoutRepresentationFailsClosed]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkAtPositionWithoutRepresentationFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkDerivesChildRepresentationFromParent]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkDerivesChildRepresentationFromParent]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkWithoutParentBindingIsLazy]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkWithoutParentBindingIsLazy]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testHookFailureWithSuccessfulCompensationPreservesRetryBehavior]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testHookFailureWithSuccessfulCompensationPreservesRetryBehavior]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testOneAuthoritativeLifecycleRecordPerTransition]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testOneAuthoritativeLifecycleRecordPerTransition]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testRestoreBindsTheCapturedRepresentationAtTheTargetPosition]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testRestoreBindsTheCapturedRepresentationAtTheTargetPosition]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testRestoreWithoutCapturedRepresentationFails]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testRestoreWithoutCapturedRepresentationFails]' passed (0.000 seconds).
+Test Suite 'ExecutionContinuityCoordinatorTests' passed at 2026-10-22 17:00:35.854.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'NativeCarrierLifecycleTests' started at 2026-10-22 17:00:35.854.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testCarriersAreIndependentPerExecution]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testCarriersAreIndependentPerExecution]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testFreshBackendStillServesRecovery]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testFreshBackendStillServesRecovery]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testHandoffIsolationRefusesSharedAndUnobservable]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testHandoffIsolationRefusesSharedAndUnobservable]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testNativeCarrierLifecycleSettlesReleasesThenRecoversOnFreshCarrier]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testNativeCarrierLifecycleSettlesReleasesThenRecoversOnFreshCarrier]' passed (0.426 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseCarrierMakesBoundReadFailClosed]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseCarrierMakesBoundReadFailClosed]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleasedCarrierCannotBeReArmed]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleasedCarrierCannotBeReArmed]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseFailureRefusesBeforeAnyFreshCarrierRecovery]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseFailureRefusesBeforeAnyFreshCarrierRecovery]' passed (0.195 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStorageIsolationEvaluatorCases]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStorageIsolationEvaluatorCases]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStubReleaseAndVerifyAgainstRealBackend]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStubReleaseAndVerifyAgainstRealBackend]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStubReleaseErrorPropagatesFailClosed]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStubReleaseErrorPropagatesFailClosed]' passed (0.000 seconds).
+Test Suite 'NativeCarrierLifecycleTests' passed at 2026-10-22 17:00:36.477.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.623 (0.623) seconds
+Test Suite 'ProductionInputAdmissionTests' started at 2026-10-22 17:00:36.477.
+Test Case '-[SimiGo2ExperimentalTests.ProductionInputAdmissionTests testOrdinaryTaskEntryRefusesInadmissibleSettlementBeforeGeneration]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionInputAdmissionTests testOrdinaryTaskEntryRefusesInadmissibleSettlementBeforeGeneration]' passed (0.791 seconds).
+Test Suite 'ProductionInputAdmissionTests' passed at 2026-10-22 17:00:37.268.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.791 (0.791) seconds
+Test Suite 'ProductionRuntimeFailureBoundaryTests' started at 2026-10-22 17:00:37.268.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testBlockedInformationDoesNotCreateSwiftLifecycle]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testBlockedInformationDoesNotCreateSwiftLifecycle]' passed (0.194 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testConfirmationFailurePersistsBlockedAndRollsRuntimeBack]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testConfirmationFailurePersistsBlockedAndRollsRuntimeBack]' passed (0.198 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testInjectedBackendReceivesSeedAndAdvancedRepresentation]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testInjectedBackendReceivesSeedAndAdvancedRepresentation]' passed (0.152 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testLogicalAdvanceFailurePersistsBlockedAndDiscardsRuntime]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testLogicalAdvanceFailurePersistsBlockedAndDiscardsRuntime]' passed (0.200 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testMissingExecutorPersistsBlockedWithoutSwiftLifecycle]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testMissingExecutorPersistsBlockedWithoutSwiftLifecycle]' passed (0.199 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testNextInputTokenizationFailurePersistsBlockedWithoutSwiftLifecycle]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testNextInputTokenizationFailurePersistsBlockedWithoutSwiftLifecycle]' passed (0.197 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testRepresentationBindingFailurePersistsBlockedAndDiscardsRuntime]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testRepresentationBindingFailurePersistsBlockedAndDiscardsRuntime]' passed (0.198 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testSeedTokenizationFailurePersistsBlockedAndDiscardsRuntime]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testSeedTokenizationFailurePersistsBlockedAndDiscardsRuntime]' passed (0.197 seconds).
+Test Suite 'ProductionRuntimeFailureBoundaryTests' passed at 2026-10-22 17:00:38.804.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 1.536 (1.536) seconds
+Test Suite 'ProductionRuntimeInformationIntegrationTests' started at 2026-10-22 17:00:38.804.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testContinueFailsClosedWhenESCheckpointStaleBeforeAnyAdvance]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testContinueFailsClosedWhenESCheckpointStaleBeforeAnyAdvance]' passed (0.475 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testDurableResumeFailsClosedWhenSettledCarrierUnavailableBeforeAnyAdvance]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testDurableResumeFailsClosedWhenSettledCarrierUnavailableBeforeAnyAdvance]' passed (0.295 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testInvalidValidityBlocksRealRuntimeWithoutAdvancingState]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testInvalidValidityBlocksRealRuntimeWithoutAdvancingState]' passed (0.148 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testMissingValidityPolicyBlocksRealRuntimeWithoutExecution]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testMissingValidityPolicyBlocksRealRuntimeWithoutExecution]' passed (0.147 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testNewExecutionStateRecoversSettledWorkFromInformationSpaceWithoutBypassFile]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testNewExecutionStateRecoversSettledWorkFromInformationSpaceWithoutBypassFile]' passed (0.646 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop]' passed (0.623 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryAcceptsConfirmationRecordNotRawAdvancementID]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryAcceptsConfirmationRecordNotRawAdvancementID]' passed (0.292 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryDependsOnlyOnDurableStateAndISNotBypassHandleFile]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryDependsOnlyOnDurableStateAndISNotBypassHandleFile]' passed (0.465 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCarriesNoSettlementCheckpoint]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCarriesNoSettlementCheckpoint]' passed (0.249 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCheckpointResultDigestTampered]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCheckpointResultDigestTampered]' passed (0.247 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESDurableHandleMissingDespiteSettledIS]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESDurableHandleMissingDespiteSettledIS]' passed (0.241 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESHasCheckpointButISHasNoSettledExecution]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESHasCheckpointButISHasNoSettledExecution]' passed (0.291 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceAdvancedBeyondESCheckpoint]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceAdvancedBeyondESCheckpoint]' passed (0.475 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceHasNoSettledWork]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceHasNoSettledWork]' passed (0.096 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryRequiresDurableStoreConfiguration]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryRequiresDurableStoreConfiguration]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement]' passed (0.245 seconds).
+Test Suite 'ProductionRuntimeInformationIntegrationTests' passed at 2026-10-22 17:00:43.742.
+	 Executed 16 tests, with 0 failures (0 unexpected) in 4.937 (4.938) seconds
+Test Suite 'SimiGo2ExperimentalTests.xctest' passed at 2026-10-22 17:00:43.742.
+	 Executed 62 tests, with 0 failures (0 unexpected) in 9.616 (9.620) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 17:00:43.742.
+	 Executed 62 tests, with 0 failures (0 unexpected) in 9.616 (9.621) seconds
+COMPENSATION_ENTER Optional("carrier_confirmation") true true
+COMPENSATION_ENTER Optional("logical_advance") false true
+COMPENSATION_ENTER Optional("tokenize_next_input") false false
+COMPENSATION_ENTER Optional("representation_binding") true true
+COMPENSATION_ENTER Optional("tokenize_seed") false false
+Test Suite 'Selected tests' started at 2026-10-22 17:00:43.802.
+Test Suite 'G3D1SupervisorTests.xctest' started at 2026-10-22 17:00:43.802.
+Test Suite 'G3D1SupervisorTests.xctest' passed at 2026-10-22 17:00:43.802.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 17:00:43.802.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds

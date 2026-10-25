@@ -1,0 +1,10 @@
+{
+  "model_hash" : "0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
+  "model_path" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "r0RunUUID" : "audit-20261001-5340FE99",
+  "role" : "form",
+  "s0_anchor" : "553f8b417df939e03b2749aaa6b98e98f5bb027b7d00550205e9d03e6eca3f78",
+  "s0_executionID" : "p71-s0-F44433DB",
+  "s0_position" : "2",
+  "s0_prefix_count" : "54"
+}

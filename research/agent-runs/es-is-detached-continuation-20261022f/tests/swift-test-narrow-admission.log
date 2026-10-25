@@ -1,0 +1,27 @@
+Building for debugging...
+[Computing dependencies]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+Build complete! (0.68秒)
+Test Suite 'Selected tests' started at 2026-10-22 15:52:52.211.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-22 15:52:52.212.
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-22 15:52:52.212.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 15:52:52.212.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-22 15:52:52.331.
+Test Suite 'SimiGo2ExperimentalTests.xctest' started at 2026-10-22 15:52:52.332.
+Test Suite 'ProductionInputAdmissionTests' started at 2026-10-22 15:52:52.332.
+Test Case '-[SimiGo2ExperimentalTests.ProductionInputAdmissionTests testOrdinaryTaskEntryRefusesInadmissibleSettlementBeforeGeneration]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionInputAdmissionTests testOrdinaryTaskEntryRefusesInadmissibleSettlementBeforeGeneration]' passed (0.877 seconds).
+Test Suite 'ProductionInputAdmissionTests' passed at 2026-10-22 15:52:53.209.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.877 (0.877) seconds
+Test Suite 'SimiGo2ExperimentalTests.xctest' passed at 2026-10-22 15:52:53.209.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.877 (0.877) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 15:52:53.209.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.877 (0.877) seconds
+Test Suite 'Selected tests' started at 2026-10-22 15:52:53.263.
+Test Suite 'G3D1SupervisorTests.xctest' started at 2026-10-22 15:52:53.264.
+Test Suite 'G3D1SupervisorTests.xctest' passed at 2026-10-22 15:52:53.264.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 15:52:53.264.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds

@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "verified_utc": "2026-10-22T02:53:33.973993+00:00",
+  "repo_root": "/Users/mr.simi/Documents/SimiGo-Lab",
+  "head_unchanged": true,
+  "branch_unchanged": true,
+  "staged_diff_unchanged": true,
+  "changed_file_count": 8,
+  "changed_files": [
+    {
+      "path": "execution-information-loop/admission_selftest.py",
+      "before": {
+        "path": "execution-information-loop/admission_selftest.py",
+        "exists": false
+      },
+      "after": {
+        "path": "execution-information-loop/admission_selftest.py",
+        "exists": true,
+        "mode": 420,
+        "size": 15553,
+        "kind": "file",
+        "sha256": "f84902887d4ccf079df055d12ea86cb086729746cf00c664fb73e7be9e1f3c8e"
+      }
+    },
+    {
+      "path": "execution-information-loop/production_runtime_bridge.py",
+      "before": {
+        "path": "execution-information-loop/production_runtime_bridge.py",
+        "exists": true,
+        "mode": 420,
+        "size": 38285,
+        "kind": "file",
+        "sha256": "dd06afc2e0005f495aeeb0087c8934983e6d38339bf63b0ee4cc997363d95039"
+      },
+      "after": {
+        "path": "execution-information-loop/production_runtime_bridge.py",
+        "exists": true,
+        "mode": 420,
+        "size": 51008,
+        "kind": "file",
+        "sha256": "45d89fab26b12972a19058b73de6941b8c0feea3a8b9d4aac3b3d4050445adf6"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Sources/RealModelHandoff/Causality.swift",
+      "before": {
+        "path": "simigo2-experimental/Sources/RealModelHandoff/Causality.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 29332,
+        "kind": "file",
+        "sha256": "fd1d6dfff667e75b45469667b34e4f746e64ec0e53a409f57f4ffe7a0be727c8"
+      },
+      "after": {
+        "path": "simigo2-experimental/Sources/RealModelHandoff/Causality.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 28335,
+        "kind": "file",
+        "sha256": "99b2aa5804e396fc6481b81303cc24ab65e1010941a08e703e69fa9aed0ef13e"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+      "before": {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 52911,
+        "kind": "file",
+        "sha256": "22c0aa1f32819f5be710de690a0abe23049f3007593116f07a00a9b7959f60b8"
+      },
+      "after": {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 68137,
+        "kind": "file",
+        "sha256": "994c90150f7782c9f22b5b8108e06bd3fb85aeb83a75d5f500fe2b87a272e4a7"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift",
+        "exists": false
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 8332,
+        "kind": "file",
+        "sha256": "2789320a4b3d809980a7db8b153ae7601f069bd03414461fceebeae81420bd8f"
+      }
+    },
+    {
+      "path": "simigo2-experimental/scripts/handoff_causality/derive_admission_conditions.py",
+      "before": {
+        "path": "simigo2-experimental/scripts/handoff_causality/derive_admission_conditions.py",
+        "exists": false
+      },
+      "after": {
+        "path": "simigo2-experimental/scripts/handoff_causality/derive_admission_conditions.py",
+        "exists": true,
+        "mode": 420,
+        "size": 4015,
+        "kind": "file",
+        "sha256": "7693e5752ca1e3790ee39c20a4db0db09fdf4c649e0c2df4763972e7f5878d1f"
+      }
+    },
+    {
+      "path": "simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py",
+      "before": {
+        "path": "simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py",
+        "exists": true,
+        "mode": 420,
+        "size": 14374,
+        "kind": "file",
+        "sha256": "72c683e416e142e03c161a820681c04ea3d9454b5826cf24fae2245726269935"
+      },
+      "after": {
+        "path": "simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py",
+        "exists": true,
+        "mode": 420,
+        "size": 14516,
+        "kind": "file",
+        "sha256": "7f4bcf7d30083170e8e557006b253cd78c72781d5d2616ac3832f639a361efb8"
+      }
+    },
+    {
+      "path": "simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py",
+      "before": {
+        "path": "simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py",
+        "exists": true,
+        "mode": 420,
+        "size": 33982,
+        "kind": "file",
+        "sha256": "d26f08e01f910763e8e05c445d3e74fe32f1cbb4832603639b30406a2e473520"
+      },
+      "after": {
+        "path": "simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py",
+        "exists": true,
+        "mode": 420,
+        "size": 37824,
+        "kind": "file",
+        "sha256": "852fc6ab399a89a793a9401d76b5a5174d584336285368f09462c21253ab0d5e"
+      }
+    }
+  ],
+  "issues": [],
+  "result": "PASS"
+}

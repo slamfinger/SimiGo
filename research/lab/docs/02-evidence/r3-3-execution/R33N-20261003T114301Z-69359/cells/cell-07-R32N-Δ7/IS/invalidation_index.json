@@ -1,0 +1,10 @@
+{
+  "records": [
+    {
+      "reason": "targets non-referenced key (R32N-Δ7)",
+      "record_id": "INV-R32N-Δ7",
+      "target": "unreferenced-1",
+      "type": "invalidation"
+    }
+  ]
+}

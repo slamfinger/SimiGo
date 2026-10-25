@@ -1,0 +1,8 @@
+snapshot_timestamp: 2026-09-22T01:43:30Z
+local_commit: 78d8ca1e58f1af7c668145569e37ec6170cd5ed1
+remote_synced: 78d8ca1e58f1af7c668145569e37ec6170cd5ed1
+python_version: Python 3.9.6
+runner: residency_policy_simulator_v6.py
+gate_scope: P3-A/B/C frozen references + structural policy sentinels
+gate_purpose: pre-runner-implementation frozen reference confirmation
+preregistered_gate: v0.3 PASS → IMPLEMENTATION UNLOCKED → v6 regression gate

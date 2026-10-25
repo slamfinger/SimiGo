@@ -1,0 +1,82 @@
+{
+  "boundary" : "PHASE_ISOLATED_ONE_TOKEN_PROFILE \/ SMALL_SAMPLE \/ NO_EXECUTION_STATE_ACTION \/ NOT_A_PERFORMANCE_BENCHMARK",
+  "generatedTokenIDs" : [
+    26753
+  ],
+  "maxSwapMiB" : 0,
+  "measuredSamples" : 1,
+  "measurements" : [
+    {
+      "profile" : {
+        "embedMs" : 19.431584,
+        "generatedTokenID" : 26753,
+        "inputTokenCount" : 64,
+        "logitsMs" : 7.440041,
+        "maxSwapMiB" : 0,
+        "peakFootprintMiB" : 8036,
+        "segmentTransitions" : 12,
+        "segments" : [
+          {
+            "forwardMs" : 358.476083,
+            "layerRange" : "0-7",
+            "materializeMs" : 1453.237167,
+            "materializeTransitionDelta" : 1,
+            "releaseMs" : 16.324208,
+            "segmentIndex" : 0
+          },
+          {
+            "forwardMs" : 272.5655,
+            "layerRange" : "8-15",
+            "materializeMs" : 1429.322375,
+            "materializeTransitionDelta" : 1,
+            "releaseMs" : 14.489125,
+            "segmentIndex" : 1
+          },
+          {
+            "forwardMs" : 351.308792,
+            "layerRange" : "16-23",
+            "materializeMs" : 1429.639416,
+            "materializeTransitionDelta" : 1,
+            "releaseMs" : 14.587583,
+            "segmentIndex" : 2
+          },
+          {
+            "forwardMs" : 262.669167,
+            "layerRange" : "24-31",
+            "materializeMs" : 1426.683375,
+            "materializeTransitionDelta" : 1,
+            "releaseMs" : 14.5965,
+            "segmentIndex" : 3
+          },
+          {
+            "forwardMs" : 343.804334,
+            "layerRange" : "32-39",
+            "materializeMs" : 1456.305834,
+            "materializeTransitionDelta" : 1,
+            "releaseMs" : 15.719375,
+            "segmentIndex" : 4
+          },
+          {
+            "forwardMs" : 260.478792,
+            "layerRange" : "40-47",
+            "materializeMs" : 1469.327084,
+            "materializeTransitionDelta" : 1,
+            "releaseMs" : 14.517541,
+            "segmentIndex" : 5
+          }
+        ],
+        "totalMs" : 10631.050916
+      },
+      "sampleIndex" : 0
+    }
+  ],
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "peakFootprintMiB" : 8036,
+  "prefixTokenLength" : 64,
+  "protocolVersion" : "LAB.MLX.O6.SEGMENT.PHASE.PROFILE.V1",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 12,
+  "status" : "PASS"
+}

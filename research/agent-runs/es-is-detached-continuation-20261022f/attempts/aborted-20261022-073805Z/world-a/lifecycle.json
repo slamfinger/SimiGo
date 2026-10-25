@@ -1,0 +1,213 @@
+{
+  "checks" : {
+    "consumer_created_new_state" : true,
+    "consumer_did_not_recompute_u1" : true,
+    "consumer_did_not_remint_u1_object" : true,
+    "consumer_generated_once" : true,
+    "consumer_reused_u1" : true,
+    "consumer_settled" : true,
+    "consumer_started_at_position_zero" : true,
+    "consumer_state_empty_before_start" : true,
+    "consumer_verifies_u1_signature" : true,
+    "distinct_execution_state_ids" : true,
+    "distinct_processes" : true,
+    "producer_exited_before_consumer_start" : true,
+    "producer_generated_once" : true,
+    "producer_settled" : true
+  },
+  "completed_at_utc" : "2026-10-22T07:31:43.869Z",
+  "consumer" : {
+    "counters" : {
+      "model_continuation_calls" : 1,
+      "tokenize_seed_calls" : 1,
+      "tokenize_text_calls" : 1
+    },
+    "evidence_before_start" : {
+      "u1_exit_code" : 0,
+      "u1_exited_at_utc" : "2026-10-22T07:31:23.205Z",
+      "u1_pid" : 64996,
+      "u2_state_empty_before_start" : true,
+      "u2_state_manifest_before" : {
+
+      }
+    },
+    "evidence_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/u2-evidence.json",
+    "execution_id" : "F-WORLD-A-CONSUMER",
+    "execution_state" : {
+      "advanced_lifecycle" : "active",
+      "advanced_position" : 1,
+      "advanced_state_id" : "world-a-u2",
+      "created" : true,
+      "execution_id" : "F-WORLD-A-CONSUMER",
+      "lifecycle_records" : [
+        {
+          "execution_id" : "F-WORLD-A-CONSUMER",
+          "operation" : "created",
+          "related_id" : null,
+          "result_lifecycle" : "attached",
+          "result_position" : 0,
+          "sequence" : 1
+        },
+        {
+          "execution_id" : "F-WORLD-A-CONSUMER",
+          "operation" : "continued",
+          "related_id" : null,
+          "result_lifecycle" : "active",
+          "result_position" : 1,
+          "sequence" : 2
+        }
+      ]
+    },
+    "exit_code" : 0,
+    "exited_at_utc" : "2026-10-22T07:31:43.868Z",
+    "pid" : 65201,
+    "settlement" : {
+      "actions" : [
+        {
+          "action" : "REUSE",
+          "item_id" : "TASK-SOURCE",
+          "result_digest" : "7a44da7b1bacfcd83e90c7b92dbcbdd0d039be34cad87d0b17ff8e753ad375de",
+          "settlement_object_id" : "7849185fd0bdc03992335d489e9e245a2b64d463ab28c148d77a55be67ecc29e",
+          "settlement_signature_object_id" : "b2e7e4cc3fc7afdadda8fe3684c0e5ebc6602b75ca390d587bd712e4b3b15e96"
+        },
+        {
+          "action" : "REUSE",
+          "item_id" : "TASK-U1",
+          "result_digest" : "28dd0ae6b8b23b40333e002d38068acb824500fe495eec6a2c941e414e7d6d43",
+          "settlement_object_id" : "7ca38ef56a335bf69537273f651f0e517cc9233e6998ffa56c634b0b6036c4a7",
+          "settlement_signature_object_id" : "ed866b1cbf1d4bd0e90f6edc3bb5b9a5bf333fc1e9224765007875e2ec0a4088"
+        },
+        {
+          "action" : "COMPUTE",
+          "item_id" : "TASK-U2",
+          "result_digest" : "111550ec5d79c9dc48c735cc90f694972e9fc94c9b7777f4c12e198e94d2d5b7",
+          "settlement_object_id" : "1ffbb7b0e51fbf62a5d104e7b852c47ebe9ae91579eaba88340050f2e239afe0",
+          "settlement_signature_object_id" : "1c1afa7f6f9f0c59af404054a4e80f8022e81619a1bfcdba9f72a1a774452647"
+        }
+      ],
+      "advanced_lifecycle" : "active",
+      "advanced_position" : 1,
+      "computed_item_ids" : [
+        "TASK-U2"
+      ],
+      "generated_token_count" : 64,
+      "is_confirmation_state_id" : "world-a-u2:runtime-applied",
+      "is_pending_state_id" : "world-a-u2",
+      "model_continuation_calls_this_call" : 1,
+      "reused_item_ids" : [
+        "TASK-SOURCE",
+        "TASK-U1"
+      ],
+      "settlement_signature_key_id" : "e-round-4e6516a38b84804b",
+      "settlement_signature_object_id" : "1c1afa7f6f9f0c59af404054a4e80f8022e81619a1bfcdba9f72a1a774452647",
+      "signed_settlement_object_id" : "1ffbb7b0e51fbf62a5d104e7b852c47ebe9ae91579eaba88340050f2e239afe0",
+      "tokenize_next_input_calls_this_call" : 1,
+      "tokenize_seed_calls_this_call" : 1,
+      "updated_prefix_token_count" : 158
+    },
+    "started_at_utc" : "2026-10-22T07:31:23.207Z",
+    "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/u2-state",
+    "state_manifest_after" : {
+      "execution-state.json" : "d64af067a610406058d01627e631d79bd833a639146c88e2d7fc7ba0f435627d"
+    },
+    "state_manifest_before" : {
+
+    },
+    "stderr" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/process-logs\/u2.stderr.log",
+    "stdout" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/process-logs\/u2.stdout.log",
+    "timed_out" : false
+  },
+  "database" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/carrier.sqlite",
+  "driver_pid" : 64993,
+  "producer" : {
+    "counters" : {
+      "model_continuation_calls" : 1,
+      "tokenize_seed_calls" : 1,
+      "tokenize_text_calls" : 1
+    },
+    "evidence_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/u1-evidence.json",
+    "execution_id" : "F-WORLD-A-PRODUCER",
+    "execution_state" : {
+      "advanced_lifecycle" : "active",
+      "advanced_position" : 1,
+      "advanced_state_id" : "world-a-u1",
+      "created" : true,
+      "execution_id" : "F-WORLD-A-PRODUCER",
+      "lifecycle_records" : [
+        {
+          "execution_id" : "F-WORLD-A-PRODUCER",
+          "operation" : "created",
+          "related_id" : null,
+          "result_lifecycle" : "attached",
+          "result_position" : 0,
+          "sequence" : 1
+        },
+        {
+          "execution_id" : "F-WORLD-A-PRODUCER",
+          "operation" : "continued",
+          "related_id" : null,
+          "result_lifecycle" : "active",
+          "result_position" : 1,
+          "sequence" : 2
+        }
+      ]
+    },
+    "exit_code" : 0,
+    "exited_at_utc" : "2026-10-22T07:31:23.205Z",
+    "pid" : 64996,
+    "settlement" : {
+      "actions" : [
+        {
+          "action" : "REUSE",
+          "item_id" : "TASK-SOURCE",
+          "result_digest" : "7a44da7b1bacfcd83e90c7b92dbcbdd0d039be34cad87d0b17ff8e753ad375de",
+          "settlement_object_id" : "7849185fd0bdc03992335d489e9e245a2b64d463ab28c148d77a55be67ecc29e",
+          "settlement_signature_object_id" : "b2e7e4cc3fc7afdadda8fe3684c0e5ebc6602b75ca390d587bd712e4b3b15e96"
+        },
+        {
+          "action" : "COMPUTE",
+          "item_id" : "TASK-U1",
+          "result_digest" : "28dd0ae6b8b23b40333e002d38068acb824500fe495eec6a2c941e414e7d6d43",
+          "settlement_object_id" : "7ca38ef56a335bf69537273f651f0e517cc9233e6998ffa56c634b0b6036c4a7",
+          "settlement_signature_object_id" : "ed866b1cbf1d4bd0e90f6edc3bb5b9a5bf333fc1e9224765007875e2ec0a4088"
+        }
+      ],
+      "advanced_lifecycle" : "active",
+      "advanced_position" : 1,
+      "computed_item_ids" : [
+        "TASK-U1"
+      ],
+      "generated_token_count" : 64,
+      "is_confirmation_state_id" : "world-a-u1:runtime-applied",
+      "is_pending_state_id" : "world-a-u1",
+      "model_continuation_calls_this_call" : 1,
+      "reused_item_ids" : [
+        "TASK-SOURCE"
+      ],
+      "settlement_signature_key_id" : "e-round-4e6516a38b84804b",
+      "settlement_signature_object_id" : "ed866b1cbf1d4bd0e90f6edc3bb5b9a5bf333fc1e9224765007875e2ec0a4088",
+      "signed_settlement_object_id" : "7ca38ef56a335bf69537273f651f0e517cc9233e6998ffa56c634b0b6036c4a7",
+      "tokenize_next_input_calls_this_call" : 1,
+      "tokenize_seed_calls_this_call" : 1,
+      "updated_prefix_token_count" : 208
+    },
+    "started_at_utc" : "2026-10-22T07:31:00.286Z",
+    "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/u1-state",
+    "state_manifest_after" : {
+      "execution-state.json" : "2c3edcf9be5d1aa9a0c1d36a25d0b23a73f34b3aec414ec617f7424834519b7c"
+    },
+    "state_manifest_before" : {
+
+    },
+    "stderr" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/process-logs\/u1.stderr.log",
+    "stdout" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a\/process-logs\/u1.stdout.log",
+    "timed_out" : false
+  },
+  "run_id" : "world-a",
+  "schema_id" : "SIMIGO-DETACHED-CONTINUATION-DRIVER-V1",
+  "started_at_utc" : "2026-10-22T07:31:00.284Z",
+  "u1_settlement_object_id_from_producer" : "7ca38ef56a335bf69537273f651f0e517cc9233e6998ffa56c634b0b6036c4a7",
+  "u1_settlement_object_id_verified_by_consumer" : "7ca38ef56a335bf69537273f651f0e517cc9233e6998ffa56c634b0b6036c4a7",
+  "verdict" : "OBSERVED",
+  "world_dir" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-detached-continuation-20261022f\/world-a"
+}

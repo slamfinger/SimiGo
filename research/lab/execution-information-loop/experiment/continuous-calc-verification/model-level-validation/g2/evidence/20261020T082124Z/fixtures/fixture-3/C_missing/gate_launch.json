@@ -1,0 +1,63 @@
+{
+  "argv": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/carrier_gate.py",
+    "--db",
+    "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/C_missing/g2.sqlite",
+    "--item",
+    "u1-result",
+    "--out",
+    "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/C_missing/gate.json",
+    "--phase1-record",
+    "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/B1/r1.json",
+    "--expect",
+    "refused"
+  ],
+  "budget_entry": {
+    "fixture_id": "fixture-3",
+    "gate_process_index": 5,
+    "variant": "C_missing"
+  },
+  "code": "SETTLEMENT_MISSING",
+  "copy_digest_after_refusal": "ef82a5cec94b876a290a1184050ae9e1cd8da62f24938885a83cde95c40fbcd7",
+  "copy_digest_before_refusal": "ef82a5cec94b876a290a1184050ae9e1cd8da62f24938885a83cde95c40fbcd7",
+  "decision": "REFUSED",
+  "exit_code": 0,
+  "expected_code": "SETTLEMENT_MISSING",
+  "model_loaded": false,
+  "mutation": {
+    "removed_identity": "settlement:u1-result"
+  },
+  "record": {
+    "all_checks_pass": false,
+    "checks": [
+      {
+        "check": "schema",
+        "ok": true
+      },
+      {
+        "check": "settlement_index_present",
+        "code": "SETTLEMENT_MISSING",
+        "detail": "index entry settlement:u1-result",
+        "ok": false
+      }
+    ],
+    "code": "SETTLEMENT_MISSING",
+    "database": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/C_missing/g2.sqlite",
+    "database_tree_digest_after": "7ce20f80193e092e227844e61e6c67ff4ac482d64f5a96c118a08a72a3a2c932",
+    "database_tree_digest_before": "7ce20f80193e092e227844e61e6c67ff4ac482d64f5a96c118a08a72a3a2c932",
+    "database_unchanged": true,
+    "decision": "REFUSED",
+    "detail": "index entry settlement:u1-result",
+    "expectation": "refused",
+    "expectation_met": true,
+    "model_loaded": false,
+    "pid": 52102,
+    "schema_id": "SIMIGO-G2-RESTORE-GATE-V1"
+  },
+  "record_path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/C_missing/gate.json",
+  "started_at_utc": "2026-10-20T08:23:18Z",
+  "stderr": "",
+  "stdout": "{\"decision\": \"REFUSED\", \"code\": \"SETTLEMENT_MISSING\"}",
+  "variant": "C_missing"
+}

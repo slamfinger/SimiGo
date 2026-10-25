@@ -1,0 +1,261 @@
+# SimiGo 1.7 Execution State Prefix Pool — Problem Definition & Design Draft
+
+**Date**: 2026-09-27 (revised same day after documentary correction by
+the author — see §0.1)
+**Status**: DEFINITION_DRAFT / AWAITING_REVIEW (implementation starts only
+after review approval — gate discipline)
+**Trigger**: user ruling 2026-09-27 — the oversized line is THEORY
+VALIDATION only; the daily small-scale path is the foundation. Bring
+Execution State to the daily v1.7 NativeMLX path.
+
+---
+
+## 0. Verified lineage (correction of record)
+
+The Execution State engineering chain was built and validated
+SMALL-MODEL-FIRST, across multiple architectures, with oversized as the
+FINAL stress step — not the other way round:
+
+```text
+E1 contract (zero-MLX)          VERIFIED 86/86
+E2 fake runtime                 VERIFIED 95/95
+E3 MLX adapter                  VERIFIED 84/84
+E4 continuity + residency       VERIFIED (INV-1 per-transition)
+L4-B  5 models × 10 transitions INV-3 byte reconciliation (250f683)
+L4-C  3 models × 3 prompts      full-path identity, token/logits
+                                bit-zero (aa30eb2): Qwen3-Coder (MoE
+                                switch), Nail-Qwen3.6 (MoE), Gemma4-12B
+                                (dense) — multiple architectures
+E5 end-to-end                   VERIFIED, EXECUTION_STATE_RUNTIME_LOOP_
+                                COMPLETE (2026-09-25)
+O0–O6 oversized                 LAST step only: capacity stress
+                                validation of the already-validated
+                                engine (2026-09-25/26)
+```
+
+Consequence for this gate: "Execution State 化 the daily path" is NOT
+importing unproven experimental technology into production. It is the
+PRODUCTIZATION of machinery already validated on exactly the daily class
+of models and architectures; the oversized run was the last-step
+validation, as ruled. What has never crossed into the v1.7 daily path is
+one specific piece: content-addressed REPRESENTATION SHARING across
+logical states (the v1.7 path gates KV reuse on session identity).
+
+## 0. Evidence (real-device, native_mlx_trace.log 2026-09-27 02:18–02:25)
+
+```text
+new session (first turn)      mode=cold, cacheEff=0.00, TTFT 47.6s
+                              (~6.2K context full cold prefill)
+same-session continuation     reuse=true, cacheEff=1.00, TTFT 0.478s
+                              (healthy — reuse machinery works)
+per-turn ~18K injection       cacheEff 0.57/0.70, TTFT 76.3s / 225s
+                              (delta is real compute; locality-free)
+app restart                   warmTokens=0 — every session cold again
+```
+
+Historical confirmation: 2026-09-13 already registered the "retry full
+cold-prefill death loop" investigation (reuseMiss visibility added);
+the structural gap itself was never registered as a product gap.
+
+## 1. Problem
+
+KV reuse in the v1.7 NativeMLX path is gated on SESSION IDENTITY:
+`sessions[executionKey.storageKey]` (NativeMLX.swift:566) — the logical
+session key co-owns the physical KV representation. Any new session key
+must re-materialize (cold-prefill) its full context even when its token
+prefix is bit-identical to an existing representation. Session identity
+is too coarse a logical boundary: physical representations cannot be
+shared across logically distinct but content-identical states.
+
+## 2. Thesis — Execution State applied at token granularity
+
+The Execution State principle (this lab's registered research line):
+logical execution states must consume physical representations by
+CONTENT, not by identity; representations are derived, bound, and
+released independently of who created them. Applied to the daily path:
+
+```text
+newSession(prompt)
+  = longestPrefixHit(prefixPool, tokens(prompt))   ← bind, zero compute
+  + prefill(delta only)                            ← the true remainder
+```
+
+This is the frozen research conclusion made actionable: the only legal
+saving is NOT recomputing an already-computed prefix (representation
+reuse); never computation skipping (G1.9-C: no execution locality).
+
+## 3. Mechanism (draft)
+
+```text
+PrefixPool
+  entry      = KV checkpoint at a block boundary of one prompt's token
+               sequence
+  key        = rolling hash chain over token ids
+               namespaced by (modelID, kvFingerprint)
+  boundary   = every 512 prompt tokens (aligned; final partial block
+               stored at turn commit)
+
+admission (bind)
+  tokenize incoming prompt → longest boundary match in namespace →
+  load checkpoint via the EXISTING performLoad/cacheLoad machinery
+  (kvFingerprint reconciliation already registered for rollforward) →
+  prefill delta only
+
+extend (derive)
+  turn commit exports NEW tail boundary checkpoints into the pool
+  (pool entries are immutable prefix views; no refcounting)
+
+eviction
+  prefix-tree LRU under the existing warmTokenBudget/KVTRIM budget;
+  admission evicts before importing under pressure (same policy family
+  as today's evictSessionsIfNeeded)
+
+precedence
+  existing same-session reuse stays FIRST (it is exact and cheapest);
+  pool lookup second; cold path unchanged when both miss
+```
+
+## 4. Invariants (draft)
+
+```text
+P-I1 bind correctness   a pool hit must reproduce a bit-identical
+                        continuation; per admission the loaded
+                        checkpoint's token count AND rolling hash are
+                        cross-checked against the incoming prompt
+                        prefix (the I-L3 lesson: verify the claim
+                        against the representation, never trust the key)
+P-I2 fidelity           entries namespaced by (modelID, kvFingerprint);
+                        cross-namespace hits impossible by construction
+P-I3 bounded memory     pool token total ≤ warmTokenBudget; eviction
+                        precedes admission under pressure; pool must
+                        not grow swap (verified against [MEM] records)
+P-I4 preservation       pool miss = exactly today's path; oversized
+                        segmented path UNTOUCHED; no client API change
+```
+
+## 5. Verification battery (draft)
+
+```text
+unit          hash-chain keying; longest-match admission; delta
+              accounting; eviction order; fingerprint isolation;
+              corruption of a checkpoint → loud miss (P-I1), not a
+              wrong continuation
+product E2E   two distinct sessions sharing system+document prefix →
+              second session TTFT ≈ delta prefill only; restart + same
+              prompt → pool persistence via disk checkpoints;
+              oversized E2E regression unchanged
+real device   registered BEFORE work: cold TTFT 47.6s @6.2K shared
+              context → target = delta × measured prefill rate;
+              [MEM] swap flat vs 02:18 baseline
+```
+
+## 6. Non-goals
+
+```text
+no cross-node sharing            single machine only
+no speculation                   exact-prefix reuse only — NOT a
+                                 predictor (G1.9-C stands)
+no oversized-path change         segment KV stays a separate GA item
+no KV mixing across fingerprints no quantization strategy blending
+no client-visible API change     transparent to OpenAI-compatible surface
+```
+
+## 7. Honest scope statement
+
+The pool removes the SHARED-PREFIX cold tax (47.6s class). It does NOT
+remove genuinely new tokens: the ~18K-per-turn injection class (76–225s)
+is real compute — G1.9-C proved no locality exists to exploit. That tax
+is addressable only client-side (context curation) or by prefill
+throughput work, both out of scope here.
+
+## 8. The routing decision (first-class review question)
+
+Two integration routes exist; both keep the pool concept identical. The
+difference is which engine serves daily small models:
+
+```text
+Route A — augment the ChatSession path
+  keep mlx-swift-lm ChatSession serving; add the prefix pool around it.
+  De-risked: v1.7 production already proves checkpoint restore +
+  delta-continue (rollforward conditional-restore performs exactly
+  load-checkpoint → continue on live traffic; cacheSave/cacheLoad run
+  per turn). The pool load mechanism is the same machinery keyed by
+  content instead of session identity. Smallest delta to daily traffic.
+
+Route B — serve daily models through the strict Execution State engine
+  the E3/E5-validated engine (multi-architecture identity-proven) takes
+  over fitting-model serving; all-resident for fitting models (segment
+  I/O only ever applied to oversized); the pool becomes the engine's
+  shared representation store per the E-line contracts
+  (ExecutionRepresentation capture/derive/restore — vocabulary already
+  exists and is validated). Larger product delta; strongest semantics;
+  consolidates the two serving paths long-term.
+```
+
+Reviewer decides A, B, or A-then-B. Non-binding author note: A ships the
+user-visible fix fastest; B is the destination consistent with "daily
+path IS the Execution State product".
+
+## 10. ROUTE B SELECTED — Implementation Plan — 2026-09-27
+
+User ruling: **Route B.** Architecture statement (refined during the
+pre-implementation audit, registered for review visibility):
+
+```text
+state layer    strict Execution State (E-line coordinator/contracts):
+               identity / position / lineage / bind-consume / restore
+executor       ChatSession (mlx-swift-lm registry) — architecture
+               coverage inherited from the same multi-architecture
+               base the E-line was validated on
+representation KV snapshots — ChatSession.saveCache(to:) /
+               ChatSession(container, cache:state:) are PRODUCTION-
+               PROVEN (v1.7 cacheSave/cacheLoad + rollforward:
+               import → delta-continue → warm first token)
+sharing        content-addressed prefix pool (this gate): rolling
+               hash-chain keys over token ids, namespaced by
+               (modelID, kvFingerprint — both already in
+               SessionCacheMetadata)
+all-resident   trivially true for daily models: ChatSession keeps KV
+               in memory; no segment machinery involved. The oversized
+               segmented engine is UNTOUCHED.
+principle      SimiGo decides in what resource state the model runs,
+               never what it computes (E-line architecture doc) — the
+               KV representation strategy is the fitting-model answer
+               to the resource-state question, exactly as the contract
+               comment anticipated ("a future KV strategy would carry
+               its own handle type").
+```
+
+### Stages
+
+```text
+B-1  PrefixPool core (zero-MLX, tests-first, E2 pattern)
+     rolling hash-chain keying; namespace isolation; longest-match
+     admission with P-I1 reconciliation (stored boundary hash MUST
+     equal the recomputed prefix hash of the incoming tokens — loud
+     miss otherwise); LRU eviction under token budget
+B-2  KV artifact adapter (Lab package): snapshot store wiring
+     saveCache/loadCache behind the pool's artifact handle; export at
+     turn commit (+ optional intra-turn checkpoints — default OFF,
+     review question #2 resolved conservatively); disk-backed →
+     restart survival for free
+B-3  Strict-ES session integration: daily sessions bind/consume pool
+     representations; turn commit exports the new tail boundary;
+     existing same-session reuse precedence preserved; INV + ledger
+     semantics unchanged
+B-4  Product routing: NativeMLX serves daily models through the
+     strict-ES layer; ChatSession direct path kept behind a flag;
+     oversized routing untouched
+B-5  Real-device battery (metrics registered BEFORE work):
+     cold 47.6s @6.2K shared context → target = snapshot load +
+     delta × prefill rate (~seconds); second shared-prefix session
+     TTFT ≈ delta only; restart + same prompt → warm (pool is
+     disk-backed); swap flat; determinism bit-identical
+```
+
+Registered honestly: snapshot import is disk I/O (large contexts =
+GBs of KV) — B-5 measures it against the recompute baseline; if load
+cost ever approaches recompute for a size class, the pool is simply
+not consulted for that size (policy floor, not correctness).
+
+Implementation status: **B-1 in progress this round** (tests-first).

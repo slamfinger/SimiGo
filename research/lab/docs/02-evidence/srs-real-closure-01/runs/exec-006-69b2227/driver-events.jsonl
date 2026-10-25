@@ -1,0 +1,14 @@
+{"event":"process_start","mode":"driver","ordinal":0,"pid":1540,"run_id":"driver"}
+{"argv":["/Applications/Xcode.app/Contents/Developer/usr/bin/python3","/private/tmp/srs-exec6-69b2227.DcFPnN/docs/02-evidence/srs-real-closure-01/fixture/runner/es_runner.py"],"event":"SPAWN","ordinal":1,"target":"materialize"}
+{"event":"EXIT","exit_code":0,"ordinal":2,"target":"materialize"}
+{"argv":["/Applications/Xcode.app/Contents/Developer/usr/bin/python3","/private/tmp/srs-exec6-69b2227.DcFPnN/docs/02-evidence/srs-real-closure-01/fixture/runner/es_runner.py"],"event":"SPAWN","ordinal":3,"target":"es1"}
+{"event":"EXIT","exit_code":0,"ordinal":4,"target":"es1"}
+{"event":"TAU_RUNTIME_COPIES_SUBSTITUTED","fixture_tau_originals_untouched":true,"ordinal":5,"srs_identity":"5e01d6ce03526c6ba6bf988a9caf6505af169c3155fe7bf4716ea717f893de8f","tau2_runtime":"/private/tmp/srs-exec6-69b2227.DcFPnN/docs/02-evidence/srs-real-closure-01/runs/exec-006-69b2227/tau2-runtime.json","tauN1_runtime":"/private/tmp/srs-exec6-69b2227.DcFPnN/docs/02-evidence/srs-real-closure-01/runs/exec-006-69b2227/tauN1-runtime.json"}
+{"argv":["/Applications/Xcode.app/Contents/Developer/usr/bin/python3","/private/tmp/srs-exec6-69b2227.DcFPnN/docs/02-evidence/srs-real-closure-01/fixture/runner/es_runner.py"],"event":"SPAWN","ordinal":6,"target":"es2"}
+{"event":"EXIT","exit_code":0,"ordinal":7,"target":"es2"}
+{"argv":["/Applications/Xcode.app/Contents/Developer/usr/bin/python3","/private/tmp/srs-exec6-69b2227.DcFPnN/docs/02-evidence/srs-real-closure-01/fixture/runner/es_runner.py"],"event":"SPAWN","ordinal":8,"target":"mutate-n1"}
+{"event":"EXIT","exit_code":0,"ordinal":9,"target":"mutate-n1"}
+{"argv":["/Applications/Xcode.app/Contents/Developer/usr/bin/python3","/private/tmp/srs-exec6-69b2227.DcFPnN/docs/02-evidence/srs-real-closure-01/fixture/runner/es_runner.py"],"event":"SPAWN","ordinal":10,"target":"esn"}
+{"event":"EXIT","exit_code":0,"ordinal":11,"target":"esn"}
+{"event":"OBSERVER_NEXT","note":"observer runs as a separate process after driver exit","ordinal":12}
+{"event":"DRIVER_EXIT","failed_steps":[],"ordinal":13}

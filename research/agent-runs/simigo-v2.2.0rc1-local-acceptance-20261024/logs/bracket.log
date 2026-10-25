@@ -1,0 +1,41 @@
+/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/driver/noninterference_bracket.sh: line 43: 53375 Terminated: 15          SIMIGO_HOME="$ROOT/home" SIMIGO_CACHE_ROOT="$ROOT/cache" SIMIGO_STATE_GRAPH_STORE="$ROOT/state-graph/reference-graph-v1.json" nohup "$BIN" > "$B/logs/bracket_launch_stdout.log" 2>&1
+# bracket start 2026-10-23T19:18:08Z
+DS_Store_before: bytes=34820 mtime=2026-10-24T01:30:44 sha=
+pre_snapshot_rc=0
+launcher_pid=53375 pid=53375
+exe_sha256_on_disk=cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f
+--- env (ps eww) ---
+SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3-bracket/cache
+SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3-bracket/home
+SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m3-bracket/state-graph/reference-graph-v1.json
+--- files created under isolated home ---
+m3-bracket/home
+m3-bracket/home/bin
+m3-bracket/home/build
+m3-bracket/home/locks
+m3-bracket/home/logs
+m3-bracket/home/logs/native_mlx_trace.log
+m3-bracket/home/manifests
+m3-bracket/home/manifests/bootstrap-report.json
+m3-bracket/home/simigo.sqlite3
+m3-bracket/home/simigo.sqlite3-shm
+m3-bracket/home/simigo.sqlite3-wal
+m3-bracket/home/sources
+m3-bracket/home/staging
+quit_result=exited
+DS_Store_after: bytes=34820 mtime=2026-10-24T01:30:44 sha=
+post_snapshot_rc=0
+{
+ "a": "bracket_pre",
+ "b": "bracket_post",
+ "violation_events": 0,
+ "distinct_violation_count": 0,
+ "real_user_state_write_count": 0,
+ "real_user_state_write_paths": [],
+ "expected_self_writes": 0,
+ "reference_changes": 0
+}
+bracket_violation_events=0
+bracket_real_user_state_write_count=0
+bracket_paths=[]
+BRACKET_DONE

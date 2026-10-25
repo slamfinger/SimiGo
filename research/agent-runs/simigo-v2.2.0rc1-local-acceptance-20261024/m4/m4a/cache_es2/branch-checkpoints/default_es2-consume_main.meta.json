@@ -1,0 +1,17 @@
+{
+  "cacheSHA256" : "9e23dda8579de12d0188c27ea74aca96da402788c8691c4bce014d665c765627",
+  "checkpointGeneration" : "72898de3-bd3b-4615-84bf-143a90072d58",
+  "history" : [
+    {
+      "content" : "Recovered prior result: hello. Output exactly one line and nothing else: RESULT=hello-U2",
+      "role" : "user"
+    },
+    {
+      "content" : "RESULT=hello-U2",
+      "role" : "assistant"
+    }
+  ],
+  "modelId" : "mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "savedAt" : "2026-10-23T19:08:53Z",
+  "storageKey" : "default\/es2-consume\/main"
+}

@@ -1,0 +1,1 @@
+60973e086f12583a20a6b578de33e678bd4a7e1846a7b6cd0084cd845eae90cd  /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app/Contents/MacOS/SimiGo

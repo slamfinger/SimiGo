@@ -1,0 +1,38 @@
+# M3 stage C probe round2 2026-10-23T17:33:32Z
+# target: installed RC binary /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+# method: poll this pid's listening socket, then probe the product HTTPServer
+# auth policy: NO relaxation. No valid LOCALB proof is fabricated.
+pid=77874
+bound_port=62566
+listening_socket_found=1
+--- bind (lsof) ---
+COMMAND   PID    USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+SimiGo  77874 mr.simi   11u  IPv6 0xe5f15265239e87d8      0t0  TCP *:62566 (LISTEN)
+--- bind address (netstat) ---
+tcp46      0      0  *.62566                *.*                    LISTEN     
+--- plain HTTP POST /v1/chat/completions (no proof) ---
+curl: (52) Empty reply from server
+http_status=000
+
+--- TLS handshake (openssl s_client, no client cert) ---
+unknown option -brief
+usage: s_client [-4 | -6] [-alpn protocols] [-bugs] [-CAfile file]
+    [-CApath directory] [-cert file] [-certform der | pem] [-check_ss_sig]
+    [-cipher cipherlist] [-connect host[:port]] [-crl_check]
+    [-crl_check_all] [-crlf] [-debug] [-dtls] [-dtls1] [-dtls1_2] [-extended_crl]
+    [-groups list] [-host host] [-ign_eof] [-ignore_critical]
+    [-issuer_checks] [-key keyfile] [-keyform der | pem]
+    [-keymatexport label] [-keymatexportlen len] [-legacy_server_connect]
+    [-msg] [-mtu mtu] [-nbio] [-nbio_test] [-no_comp] [-no_ign_eof]
+    [-no_legacy_server_connect] [-no_ticket] [-no_tls1] [-no_tls1_1]
+    [-no_tls1_2] [-no_tls1_3] [-pass arg] [-pause] [-policy_check]
+    [-port port] [-prexit] [-proxy host:port] [-quiet] [-reconnect]
+--- HTTPS GET /health with -k (no pin, no proof) ---
+http_status=200 tls_verify=18
+{"status":"ok","model":"mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit"}
+--- HTTPS POST /v1/chat/completions with bogus LOCALB proof-v2 ---
+http_status=503
+{"error":{"message":"LOCALB request authorization is not configured","code":null,"param":null,"type":"server_error"}}
+authorized_request_completed=0
+authorization_relaxed=0
+probe_result=UNAUTHORIZED_LEG_ONLY

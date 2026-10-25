@@ -1,0 +1,68 @@
+{
+  "accepted_information_scope_identifiers": [
+    "00a0690997961bfbe5ee003834793feec9489b6f27d000fffacc39bd96dd7b6c",
+    "5ea5e27b9c75d7c7c855f7f558dcc992c8bc57623770a7746b3b68bad27201f4",
+    "0139fea486cd749892330f1e7b28662ae9945d69fdab63cd4a4b9a31e9eb0d0d",
+    "b09fab728604ac7285708e49e787eed90c4f321dd346b72f8487b12d71e65670",
+    "e42d7624f796cb0af65e8ffb5ef83bec107c17f4095675d40743df7087b9c030",
+    "afdf584c2677e7b31083c10bd96ed04e1c2f4c41e10a92f5dc7808940437de51",
+    "e60fbfc2ed0313e8aadd67b6b03b626fc6b518b5533b1a0e8efd0676c09058e6",
+    "21237b1c88c6636aff28f99fce2bf79366c20acbd213ed40e7d74c7763887e06",
+    "49f34787f53e501736a82c0f0dc24bab556e6d8d5dd2cea5e451bd563ca94893",
+    "0257dfd77127fae3c84c3d83eb7f1af216c1e5ab00773a38f2d88906ea80dbf5",
+    "c21f07114f40985b771c2539ade952f8591ddb271bfc085b55da97775a58b11e",
+    "3dac1fd39b8b8633a310c89e21a771253cf23607a760fb4760100e19db1e04b1",
+    "1feca79743e89c8c4b394cb63e4d7cf41b1a2e9631a16fef0aefaba6fc6b3497",
+    "b2ae0b078eff1c5f067efbaaf90505172fadc35e1732264a36c482325c9182c5",
+    "1a04bfcc2edf9569587d0e957eeb90de4d13dc9862254e6a1bba7eb17051613c",
+    "b569dc6d6a044858eecdc512158875200ed006a3d0e557d3780848806949d44c",
+    "91ea34b9f30859896dd16c298eaccc255179ba652226ac99bc2f619a95eb0887",
+    "2c39975c8da23a592b197a3372c47ad2516d82eb12a8052a2033ad7bb8e397a0",
+    "e12c40ff07fbb068c37ef023edf2714f89ff8539cd9d15d84d23cf79ff9a3cfc",
+    "d6d45d2ce7b0237505fe33937c60775bab5222a4109c931ce307ffa95379d62a"
+  ],
+  "expected_no_change": false,
+  "fixture_role": "E-S",
+  "planted_changes": [
+    {
+      "change_class": "PC-MODIFY",
+      "change_id": "PC-MODIFY-CONTENT-0",
+      "expected_digest": "3eb52e19e4cf1859d3309b42355e85863d564c07b642ecc952b6ae5aa3e65174",
+      "new_locator": "objects/dd7ab6f3afe8ddf29bb6e2e56c132130b846efc4839ba203a736d9bee27880f9.json",
+      "old_locator": "objects/dd7ab6f3afe8ddf29bb6e2e56c132130b846efc4839ba203a736d9bee27880f9.json",
+      "stable_object_id": "00a0690997961bfbe5ee003834793feec9489b6f27d000fffacc39bd96dd7b6c"
+    },
+    {
+      "change_class": "PC-MODIFY",
+      "change_id": "PC-MODIFY-CONTENT-1",
+      "expected_digest": "8e8439799d6967c9a4ea1f1d4b3f450d3b3be8067400c82808c57797ae6b0d05",
+      "new_locator": "objects/c99033b3a39f6508ade55405eed3d462036f30943c0b3783bd610dc5550fd753.json",
+      "old_locator": "objects/c99033b3a39f6508ade55405eed3d462036f30943c0b3783bd610dc5550fd753.json",
+      "stable_object_id": "5ea5e27b9c75d7c7c855f7f558dcc992c8bc57623770a7746b3b68bad27201f4"
+    },
+    {
+      "change_class": "PC-MODIFY",
+      "change_id": "PC-MODIFY-METADATA",
+      "expected_metadata_revision": 2,
+      "new_locator": "objects/56afe97695b7e29f66129a128c48c768e1ec3021e85f0207f908599569f39d22.json",
+      "old_locator": "objects/56afe97695b7e29f66129a128c48c768e1ec3021e85f0207f908599569f39d22.json",
+      "stable_object_id": "0139fea486cd749892330f1e7b28662ae9945d69fdab63cd4a4b9a31e9eb0d0d"
+    },
+    {
+      "change_class": "PC-DELETE",
+      "change_id": "PC-DELETE",
+      "new_locator": null,
+      "old_locator": "objects/acc90f819eefb5adcc529b045de7abc68540025b824ee06d62ce26a7fa34b6e8.json",
+      "stable_object_id": "b09fab728604ac7285708e49e787eed90c4f321dd346b72f8487b12d71e65670"
+    },
+    {
+      "byte_size": 90,
+      "change_class": "PC-MOVE",
+      "change_id": "PC-MOVE-RENAME",
+      "content_sha256": "ce4b3da09791bf5226503ed355f31aa5b865a4849b866773580d575f31062aff",
+      "new_locator": "objects/e42d7624f796cb0af65e8ffb5ef83bec107c17f4095675d40743df7087b9c030.moved.json",
+      "old_locator": "objects/062d9de75b828c63b958a480771baa022a8f128496c38ec4ff75f1d5cdd3f42e.json",
+      "stable_object_id": "e42d7624f796cb0af65e8ffb5ef83bec107c17f4095675d40743df7087b9c030"
+    }
+  ]
+}

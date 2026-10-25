@@ -1,0 +1,426 @@
+{
+  "rc_id": "simigo-rc1-de362ef4-20261023",
+  "frozen_at": "2026-10-23T18:29:40+0800",
+  "repo": "/Users/mr.simi/Documents/SimiGo",
+  "head": "de362ef46118402b40356c8c9e3633395a151717",
+  "branch": "localb-b3-closure-20261016",
+  "staged_files": [],
+  "committed_this_turn": 0,
+  "pushed_this_turn": 0,
+  "change_set": {
+    "tracked_modified": 11,
+    "untracked_entries": 16,
+    "untracked_files_expanded": 23
+  },
+  "per_file_sha256": [
+    {
+      "path": "Packages/SimiGoRuntime/Package.swift",
+      "kind": "tracked",
+      "sha256": "e9afb4c66871262b6099f43231274eafa70197712259eec34ac2a152422e5949",
+      "bytes": 2008
+    },
+    {
+      "path": "SimiGo/App/Config.swift",
+      "kind": "tracked",
+      "sha256": "58418e9fd18db328deb9188f902df96e977cd7b65b6472668995708ea152a331",
+      "bytes": 9110
+    },
+    {
+      "path": "SimiGo/App/ExecutionStateGraph.swift",
+      "kind": "tracked",
+      "sha256": "c06cd59c3ccf5b6387c127ac8e91c0c877bf9bac4f09c91e982b1dfe31011007",
+      "bytes": 45317
+    },
+    {
+      "path": "SimiGo/App/Settings.swift",
+      "kind": "tracked",
+      "sha256": "cf2dbc19680eb90f710fea89d8983446fc84b6b6aa14c6aa169b6f91fa091733",
+      "bytes": 19431
+    },
+    {
+      "path": "SimiGo/App/StatusBarCoordinator.swift",
+      "kind": "tracked",
+      "sha256": "4537cf64eada127f1c6f1422b6d43383ce3eaa45c9d951a7ca25a021c8323c86",
+      "bytes": 7439
+    },
+    {
+      "path": "SimiGo/Inference/NativeMLX.swift",
+      "kind": "tracked",
+      "sha256": "24bd5a083306d98fd585ae8388890388ac62f7e1244f4b17008afbea9166a71b",
+      "bytes": 137934
+    },
+    {
+      "path": "SimiGo/Inference/NativeMLXPrefixPool.swift",
+      "kind": "tracked",
+      "sha256": "976e8aa5f16414213b42b20abf3de0f89a57d64d0cf1e1ea3a0d12aaa4047ada",
+      "bytes": 14058
+    },
+    {
+      "path": "SimiGo/Lifecycle/RuntimeTuning.swift",
+      "kind": "tracked",
+      "sha256": "879490c1e1c2af80f4f447848f872a553baeaa502a0f4feb27ddde626cd0cc49",
+      "bytes": 15287
+    },
+    {
+      "path": "SimiGo/System/EnvManager.swift",
+      "kind": "tracked",
+      "sha256": "c774534fc0a554bd7a2be0043a7d3a4b4751a10350db487d83df65f319fb6cbb",
+      "bytes": 31999
+    },
+    {
+      "path": "SimiGo/System/Service.swift",
+      "kind": "tracked",
+      "sha256": "41d855837d534f517d35f70e6e332f63eea8663ea6f49dbc10f0b8554fe8a022",
+      "bytes": 43275
+    },
+    {
+      "path": "SimiGoTests/ExecutionStateGraphTests.swift",
+      "kind": "tracked",
+      "sha256": "14bbb876da96b9481c0f088184a4ac9fdb0ee6f05ba55a36ab83ca47a70cb4b2",
+      "bytes": 6848
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Package.resolved",
+      "kind": "untracked",
+      "sha256": "5f8aa0a6f6328fb83188e841272db7f15289616c38eb16fadff98d0bdddec152",
+      "bytes": 3247
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/NativeDeclarativeResultContract.swift",
+      "kind": "untracked",
+      "sha256": "4a6cefed94faefe34deea566c02e29b1bc4153c6e802fb2c45d7ef9d19f0b639",
+      "bytes": 35937
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoBootstrap.swift",
+      "kind": "untracked",
+      "sha256": "5061b8f7b0496407d237f371996ace6f971d341636fea5e773c81216d7840e1b",
+      "bytes": 7679
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
+      "kind": "untracked",
+      "sha256": "0de632007c97181e95c7f58400099d6edf0d634ad28c1b91510ecd813ed6b55c",
+      "bytes": 54426
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift",
+      "kind": "untracked",
+      "sha256": "dedcbcd3d24bf3ac504079b743ca8876df407714ae80345cf219a77a56b2794f",
+      "bytes": 12526
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoModelDiscovery.swift",
+      "kind": "untracked",
+      "sha256": "74d0b59eedb0fa2acedce1bab20ff9b362a271ce7b6d6a1cb8e08caef7739522",
+      "bytes": 6595
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoPaths.swift",
+      "kind": "untracked",
+      "sha256": "2d1242324a0303ee9ea8dd414c2ae296a1256edce73e63e9255d659e33361202",
+      "bytes": 6179
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementAuthority.swift",
+      "kind": "untracked",
+      "sha256": "ea190d32ffce169be7898106fabcc74db367345dce2c537ef23ca09a15d685e1",
+      "bytes": 3475
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/NativeDeclarativeResultContractTests.swift",
+      "kind": "untracked",
+      "sha256": "a94717848d09ab8a576099596acab1b92b00038f6dd5c81407c6e7dbee690f44",
+      "bytes": 15261
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoBootstrapTests.swift",
+      "kind": "untracked",
+      "sha256": "b91fc01e88c8ea6f9fbf91fe079447a0201b67269431be16c73c7229d461326a",
+      "bytes": 10774
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseG2Tests.swift",
+      "kind": "untracked",
+      "sha256": "6cc353805fb14a9882434d65c4973735155259475795b9c06182dfa464f0ede0",
+      "bytes": 12081
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseTests.swift",
+      "kind": "untracked",
+      "sha256": "18ce01e6c7920c749dff333ad1c8a7345d46e09b7a9f2200287acd5ba155bf8f",
+      "bytes": 14759
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoEngineRecipeTests.swift",
+      "kind": "untracked",
+      "sha256": "f22a2e0080542b639bc42e54b519bfa29ff7ed005bac09b63a1fce6be8f62352",
+      "bytes": 10912
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoModelDiscoveryTests.swift",
+      "kind": "untracked",
+      "sha256": "5721a5e7387ad5372162238224a535ebb0d82aae660613015aa98f8903f89d89",
+      "bytes": 3891
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoPathsTests.swift",
+      "kind": "untracked",
+      "sha256": "4caadb59a0b7caad5ad3a791039a889ad9e167494693accf43163fd25f06edaa",
+      "bytes": 3454
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementAuthorityTests.swift",
+      "kind": "untracked",
+      "sha256": "ea76fa656769b83fd98630ec99118a74d905cd19ccc173fc233c3b24514184ef",
+      "bytes": 5540
+    },
+    {
+      "path": "SimiGo/App/SimiGoBootstrapRunner.swift",
+      "kind": "untracked",
+      "sha256": "22cf07921cacf2df787dd1ea9d3bea1c1274af0abe3c7038ecb7f19a5e3e450d",
+      "bytes": 1608
+    },
+    {
+      "path": "SimiGo/Headless/SimiGoG1G3Entry.swift",
+      "kind": "untracked",
+      "sha256": "55b416403e0f5cf91a1d107138d6cf14d4fa705130368f0430b43cb3ee6498c3",
+      "bytes": 35595
+    },
+    {
+      "path": "SimiGo/Inference/NativeMLXObservation.swift",
+      "kind": "untracked",
+      "sha256": "82bcad5323a97e3502f6253a7b9f4e6ef0ef85a83564b3963f5c2bab8ea84f68",
+      "bytes": 9498
+    },
+    {
+      "path": "SimiGoTests/ExternalAdoptionInferenceE2ETests.swift",
+      "kind": "untracked",
+      "sha256": "bcb15d459a72e256c74d23df653db1f13a3f07a50d4fc71df0454adae01afc4c",
+      "bytes": 20900
+    },
+    {
+      "path": "SimiGoTests/ExternalServerAdoptionTests.swift",
+      "kind": "untracked",
+      "sha256": "93927b9460cef099465920e24ca0178de8bbd2a29244adac917230e97e1fed7e",
+      "bytes": 3255
+    },
+    {
+      "path": "SimiGoTests/MemoryReliefRealModelTests.swift",
+      "kind": "untracked",
+      "sha256": "a45da7a21e6108d0ddea5690b91531287b5c17b7a524dc9ec71266930dde1d72",
+      "bytes": 7871
+    },
+    {
+      "path": "SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift",
+      "kind": "untracked",
+      "sha256": "ee3ddc9cc21562fffd1c6d85db5b300a41ce6ed924fb8940b2e98b4ba33865f9",
+      "bytes": 2136
+    }
+  ],
+  "tracked_patch": {
+    "file": "RC_TRACKED_DIFF.patch",
+    "sha256": "214a1736806ce1dc2d706b06ff542f9943f512b5e64423f2c67e125dec0be7ec",
+    "bytes": 67266
+  },
+  "build_configuration": {
+    "command": "xcodebuild build-for-testing -project SimiGo.xcodeproj -scheme SimiGo -configuration Debug -destination platform=macOS,arch=arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY= -enableCodeCoverage NO -derivedDataPath /Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/derived",
+    "configuration": "Debug",
+    "destination": "platform=macOS,arch=arm64",
+    "code_signing_allowed": "NO",
+    "derived_data_path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/derived",
+    "packages": [
+      {
+        "path": "Packages/SimiGoRuntime/Package.swift",
+        "sha256": "e9afb4c66871262b6099f43231274eafa70197712259eec34ac2a152422e5949",
+        "bytes": 2008
+      },
+      {
+        "path": "Packages/SimiGoRuntime/Package.resolved",
+        "sha256": "5f8aa0a6f6328fb83188e841272db7f15289616c38eb16fadff98d0bdddec152",
+        "bytes": 3247
+      }
+    ]
+  },
+  "model_identity": {
+    "repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "snapshot_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "files": [
+      {
+        "file": ".gitattributes",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/52373fe24473b1aa44333d318f578ae6bf04b49b",
+        "target_sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930",
+        "target_bytes": 1570
+      },
+      {
+        "file": "README.md",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/909ac139f50a5cafbf72a25ad873a3833b500207",
+        "target_sha256": "20a388597af42ed34dd2e1304ce68ed0ee4417c7892e8312e019bb49965c5ce0",
+        "target_bytes": 1017
+      },
+      {
+        "file": "added_tokens.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/b54f9135e44c1e81047e8d05cb027af8bc039eed",
+        "target_sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680",
+        "target_bytes": 707
+      },
+      {
+        "file": "chat_template.jinja",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/a017a30325eed7523eeeb6ec0380b9bdc79083c0",
+        "target_sha256": "672e747c77e990320152343b0a4951222e40de5645297905d89afba05586d827",
+        "target_bytes": 6722
+      },
+      {
+        "file": "config.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/b93d7f977ca0601b7cb4f0ceb1acfc27b071a2d1",
+        "target_sha256": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+        "target_bytes": 10897
+      },
+      {
+        "file": "generation_config.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/ba3e8d9206508daab666e1aaa9dcc9c435bfa541",
+        "target_sha256": "c99723ab3ba28630d26ae23def77603b540a46924895af5cf234740d3b27b51d",
+        "target_bytes": 180
+      },
+      {
+        "file": "merges.txt",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/31349551d90c7606f325fe0f11bbb8bd5fa0d7c7",
+        "target_sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+        "target_bytes": 1671853
+      },
+      {
+        "file": "model-00001-of-00004.safetensors",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "target_sha256": "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "target_bytes": 5321473414
+      },
+      {
+        "file": "model-00002-of-00004.safetensors",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "target_sha256": "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "target_bytes": 5366644780
+      },
+      {
+        "file": "model-00003-of-00004.safetensors",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "target_sha256": "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "target_bytes": 5276887419
+      },
+      {
+        "file": "model-00004-of-00004.safetensors",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "target_sha256": "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "target_bytes": 1216066381
+      },
+      {
+        "file": "model.safetensors.index.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/ae751718aa10529e1d9b20462884ace56189e304",
+        "target_sha256": "c100efb419233c6be585014ebd9f5a8c2a4fe9de63be6271172f0f70f1c315ea",
+        "target_bytes": 119598
+      },
+      {
+        "file": "qwen3coder_tool_parser.py",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/774f4bbf588d764cd190b4b0ca339b7eefb0daa2",
+        "target_sha256": "8265749a8e247732a9a0879278fe52efda2d1daa461ec8e3fb84d1e58b39531e",
+        "target_bytes": 28881
+      },
+      {
+        "file": "special_tokens_map.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/ac23c0aaa2434523c494330aeb79c58395378103",
+        "target_sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd",
+        "target_bytes": 613
+      },
+      {
+        "file": "tokenizer.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+        "target_sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+        "target_bytes": 11422654
+      },
+      {
+        "file": "tokenizer_config.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/0574f0fc0029433f5b6be5bb3cabac20c036398f",
+        "target_sha256": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd",
+        "target_bytes": 5405
+      },
+      {
+        "file": "vocab.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/4783fe10ac3adce15ac8f358ef5462739852c569",
+        "target_sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+        "target_bytes": 2776833
+      }
+    ],
+    "tokenizer_and_config_digests": [
+      {
+        "file": "config.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/b93d7f977ca0601b7cb4f0ceb1acfc27b071a2d1",
+        "target_sha256": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+        "target_bytes": 10897
+      },
+      {
+        "file": "generation_config.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/ba3e8d9206508daab666e1aaa9dcc9c435bfa541",
+        "target_sha256": "c99723ab3ba28630d26ae23def77603b540a46924895af5cf234740d3b27b51d",
+        "target_bytes": 180
+      },
+      {
+        "file": "merges.txt",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/31349551d90c7606f325fe0f11bbb8bd5fa0d7c7",
+        "target_sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+        "target_bytes": 1671853
+      },
+      {
+        "file": "tokenizer.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+        "target_sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+        "target_bytes": 11422654
+      },
+      {
+        "file": "tokenizer_config.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/0574f0fc0029433f5b6be5bb3cabac20c036398f",
+        "target_sha256": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd",
+        "target_bytes": 5405
+      },
+      {
+        "file": "vocab.json",
+        "kind": "symlink",
+        "target": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/blobs/4783fe10ac3adce15ac8f358ef5462739852c569",
+        "target_sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+        "target_bytes": 2776833
+      }
+    ]
+  },
+  "toolchain": {
+    "xcodebuild": "Xcode 27.1 | Build version 27A9275",
+    "swift": "swift-driver version: 1.168.6 Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1) | Target: arm64-apple-macosx27.0.0",
+    "macos": "27.0.1",
+    "arch": "arm64"
+  },
+  "limits": [
+    "this freeze records state; it does not by itself prove the build succeeds",
+    "untracked files cannot be carried by a git patch; their identity is the per-file digest",
+    "model weights are referenced from the HF cache and are NOT copied into this batch"
+  ]
+}

@@ -1,0 +1,54 @@
+=== Residency Policy Simulator v5(P3-C F2 Counter-Basis 2×2;设计 v0.3 PASS)===
+seed=42;nodes=32;trace=2000;B=12;W=200;DECAY=200;K=10;C_ext=0.69;C_rehy=0.72
+cells: A=window 无衰减(=V4) / B=window+条目级半衰(新) / C=cumulative 无衰减 / D=cumulative+半衰(=lfu_aging)
+
+-- Regression Gate:A ≡ V4 / D ≡ lfu_aging / C ≡ 诊断值 逐项封锁 --
+  A   hot: J=  548.7 (rehy=395 ext=383) frozen=(548.7, 395, 383) -> OK(含 v4 序列逐位)
+  D   hot: J=  544.4 (rehy=392 ext=380) frozen=(544.4, 392, 380) -> OK(含 v4 序列逐位)
+  C   hot: J=  544.4 (rehy=392 ext=380) diagnostic=(544.4, 392, 380) -> OK
+  A  tree: J= 1133.8 (rehy=810 ext=798) frozen=(1133.8, 810, 798) -> OK(含 v4 序列逐位)
+  D  tree: J= 1085.9 (rehy=776 ext=764) frozen=(1085.9, 776, 764) -> OK(含 v4 序列逐位)
+  C  tree: J= 1084.5 (rehy=775 ext=763) diagnostic=(1084.5, 775, 763) -> OK
+  参照   hot: lru=973.0799999999999 belady=475.34999999999997 -> OK
+  参照  tree: lru=1422.87 belady=740.43 -> OK
+*** Regression Gate PASS(A/D/C 逐项封锁确认)→ UNLOCK B ***
+
+-- B 采集(window + 条目级半衰;唯一新语义格)--
+  B   hot: J=  554.3 (rehy=399 ext=387)
+  B  tree: J= 1145.1 (rehy=818 ext=806)
+
+-- 2×2 grid(B=12,H=8;signed delta:+ = J 增加)--
+      cell    hot J   (rehy/ext)   tree J   (rehy/ext)
+         A    548.7 (395/383)   1133.8 (810/798)
+         B    554.3 (399/387)   1145.1 (818/806)
+         C    544.4 (392/380)   1084.5 (775/763)
+         D    544.4 (392/380)   1085.9 (776/764)
+
+  hot: F2-a = J(C)−J(A) = -4.2 J(window vs cumulative,有利 = window 降本)
+        F2-b = J(D)−J(C) = +0.0 J(decay vs no-decay,adverse = 半衰增本)
+        signed 校验 (C−A)+(D−C) = -4.2 = D−A = -4.2 -> OK(整数精确)
+        cross-basis contrast = (J(B)−J(A)) − F2-b = +5.6 J(描述性;非 factorial interaction)
+        R-W(|F2-a| ≥ 35.25): 不成立;R-D(|F2-b| ≥ 35.25): 不成立(两线独立)
+  tree: F2-a = J(C)−J(A) = -49.4 J(window vs cumulative,有利 = window 降本)
+        F2-b = J(D)−J(C) = +1.4 J(decay vs no-decay,adverse = 半衰增本)
+        signed 校验 (C−A)+(D−C) = -47.9 = D−A = -47.9 -> OK(整数精确)
+        cross-basis contrast = (J(B)−J(A)) − F2-b = +9.9 J(描述性;非 factorial interaction)
+        R-W(|F2-a| ≥ 35.25): 成立;R-D(|F2-b| ≥ 35.25): 不成立(两线独立)
+
+-- 机制哨兵(dd ≥ |Δrehy|;首分歧 = structural activation point)--
+    hot C vs A: dd=  21 |Δrehy|=  3 -> PASS;首分歧 step=1397(structural activation point)
+    hot D vs C: dd=   0 |Δrehy|=  0 -> PASS;首分歧 step=None(structural activation point)
+    hot B vs A: dd=  14 |Δrehy|=  4 -> PASS;首分歧 step=1228(structural activation point)
+   tree C vs A: dd= 615 |Δrehy|= 35 -> PASS;首分歧 step=218(structural activation point)
+   tree D vs C: dd= 399 |Δrehy|=  1 -> PASS;首分歧 step=200(structural activation point)
+   tree B vs A: dd= 368 |Δrehy|=  8 -> PASS;首分歧 step=204(structural activation point)
+
+-- tie_rate(纯辅助,禁归因)--
+    hot: A=0.037  B=0.041  C=0.026  D=0.026
+   tree: A=0.183  B=0.170  C=0.060  D=0.143
+
+确定性自检(B 格同配置重跑): PASS
+
+*** P3-C 2×2 执行完成(Regression Gate PASS 后采 B;全部读数
+*** = cost/effect decomposition,非 causal proof;结果文档
+*** 判读待审核终判)。***

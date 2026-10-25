@@ -1,0 +1,23 @@
+# round2 installed app identity 2026-10-23T17:24:25Z
+install_path=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app
+exe_sha256=dacf2fc353114088f7fd4079d8e75e8094c4af394c74d0809ccb2d65294dff1c
+dmg_sha256=ad959f72c77bb9bf8990f51f642c9f27b22c4c0b2b5ca9273ea78ca356e5bded
+exe_uuid=EE3B7D96-C979-33B5-B255-B708C4792C80
+bundle_id=SwiftUI.SimiGo
+marketing=2.2.0 build=26
+--- codesign ---
+Executable=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo
+Identifier=SwiftUI.SimiGo
+Format=app bundle with Mach-O thin (arm64)
+CodeDirectory v=20500 size=204954 flags=0x10000(runtime) hashes=6394+7 location=embedded
+Signature size=4789
+Authority=Apple Development: slamfinger@163.com (99T9X7WUK3)
+Authority=Apple Worldwide Developer Relations Certification Authority
+Authority=Apple Root CA
+--- verify ---
+/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: valid on disk
+/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: satisfies its Designated Requirement
+--- dylibs ---
+--- spctl ---
+/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: rejected
+origin=Apple Development: slamfinger@163.com (99T9X7WUK3)

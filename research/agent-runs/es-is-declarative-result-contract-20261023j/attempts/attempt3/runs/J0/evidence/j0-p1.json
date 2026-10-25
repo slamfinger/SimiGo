@@ -1,0 +1,451 @@
+{
+  "admitted_input_byte_length" : 409,
+  "admitted_input_sha256" : "ddae3ba92aedfd78cc5e0a312358cfe15e760c2f446f2671412f1a49b699ad0a",
+  "advancement_id" : "j0-p1",
+  "bindings" : [
+    {
+      "byte_length" : 5,
+      "byte_offset" : 22,
+      "item_id" : "J-63fbe989-ORIGIN",
+      "placeholder" : "origin",
+      "settlement_object_id" : "8efd9409c6ac3e09831eae3b252fc3eaa66b607ef076b6958e7fcf6453b72f40",
+      "value" : "NORTH",
+      "value_sha256" : "34a489fb589a0a73111285e0760d14d79669e3aa152c925d77ad193c2782580a"
+    },
+    {
+      "byte_length" : 1,
+      "byte_offset" : 44,
+      "item_id" : "J-63fbe989-ORIGIN",
+      "placeholder" : "origin_priority",
+      "settlement_object_id" : "8efd9409c6ac3e09831eae3b252fc3eaa66b607ef076b6958e7fcf6453b72f40",
+      "value" : "3",
+      "value_sha256" : "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce"
+    },
+    {
+      "byte_length" : 4,
+      "byte_offset" : 74,
+      "item_id" : "J-63fbe989-DEST",
+      "placeholder" : "destination",
+      "settlement_object_id" : "5000d020107c39eac51321402d25d04379624758e4159cfb84fb538b8ad1e3c4",
+      "value" : "EAST",
+      "value_sha256" : "03825024559394f1da8bcc3743ca996165add12b3f6fa9665e44104ae4e3e110"
+    },
+    {
+      "byte_length" : 1,
+      "byte_offset" : 95,
+      "item_id" : "J-63fbe989-DEST",
+      "placeholder" : "destination_priority",
+      "settlement_object_id" : "5000d020107c39eac51321402d25d04379624758e4159cfb84fb538b8ad1e3c4",
+      "value" : "5",
+      "value_sha256" : "ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d"
+    }
+  ],
+  "completed_at_utc" : "2026-10-22T16:26:32Z",
+  "consumed_prefix_length" : 24,
+  "counters" : {
+    "model_continuation_calls" : 1,
+    "tokenize_seed_calls" : 1,
+    "tokenize_text_calls" : 1
+  },
+  "database" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/runs\/J0\/carrier.sqlite",
+  "database_after" : {
+    "inode" : "110420439",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/runs\/J0\/carrier.sqlite",
+    "sha256" : "ba14fd08ba0d58cfe06de4c22507845dd48e6fcde1be855fa3c624e8f71921d9",
+    "size_bytes" : 73728
+  },
+  "database_before" : {
+    "inode" : "110420439",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/runs\/J0\/carrier.sqlite",
+    "sha256" : "0dce87f7cb00f82247b4d728f24bbe5e6fea695a486c119e29573615f6638bc6",
+    "size_bytes" : 61440
+  },
+  "database_unchanged" : false,
+  "declared_dependencies" : [
+    "J-63fbe989-ORIGIN",
+    "J-63fbe989-DEST"
+  ],
+  "demand_id" : "J-63fbe989-u1",
+  "dependency_settlement_object_ids" : {
+    "J-63fbe989-DEST" : "5000d020107c39eac51321402d25d04379624758e4159cfb84fb538b8ad1e3c4",
+    "J-63fbe989-ORIGIN" : "8efd9409c6ac3e09831eae3b252fc3eaa66b607ef076b6958e7fcf6453b72f40"
+  },
+  "duration_seconds" : 15.830332040786743,
+  "entry" : "SimiGoTaskRun",
+  "evaluated_at_utc" : "2026-10-22T16:26:17Z",
+  "execution_state" : {
+    "advanced_lifecycle" : "active",
+    "advanced_position" : 1,
+    "advanced_state_id" : "j0-p1",
+    "created" : true,
+    "execution_id" : "PRODUCTION-REAL-PALACE",
+    "lifecycle_records" : [
+      {
+        "execution_id" : "PRODUCTION-REAL-PALACE",
+        "operation" : "created",
+        "related_id" : null,
+        "result_lifecycle" : "attached",
+        "result_position" : 0,
+        "sequence" : 1
+      },
+      {
+        "execution_id" : "PRODUCTION-REAL-PALACE",
+        "operation" : "continued",
+        "related_id" : null,
+        "result_lifecycle" : "active",
+        "result_position" : 1,
+        "sequence" : 2
+      }
+    ]
+  },
+  "failure" : "",
+  "generated_text" : " ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5\nYou are executing one task step in a new execution instance.\nThe origin sector is SOUTH (route priority 2).\nThe destination sector is WEST",
+  "generated_text_sha256" : "b42f33cab704b20254d9c43a091d461ac24ddb4e674a3be078926f13c5acf260",
+  "generated_token_ids" : [
+    2726,
+    55529,
+    51995,
+    35941,
+    198,
+    62571,
+    85234,
+    6349,
+    198,
+    99111,
+    51995,
+    35941,
+    59384,
+    6349,
+    198,
+    47,
+    34886,
+    28,
+    20,
+    198,
+    2610,
+    525,
+    30220,
+    825,
+    3383,
+    3019,
+    304,
+    264,
+    501,
+    11320,
+    2867,
+    624,
+    785,
+    6238,
+    10486,
+    374,
+    79615,
+    320,
+    8966,
+    10619,
+    220,
+    17,
+    4292,
+    785,
+    9106,
+    10486,
+    374,
+    65090
+  ],
+  "generation_entered" : true,
+  "input_admission" : {
+    "bindings" : [
+      {
+        "byte_length" : 5,
+        "byte_offset" : 22,
+        "item_id" : "J-63fbe989-ORIGIN",
+        "placeholder" : "origin",
+        "result_field" : "origin_code",
+        "result_value_sha256" : "6e391096a6518e66d057a2f0ad0958df0771dd283acbc06bacb88f62b7e2cc7c",
+        "settlement_object_id" : "8efd9409c6ac3e09831eae3b252fc3eaa66b607ef076b6958e7fcf6453b72f40",
+        "value_sha256" : "34a489fb589a0a73111285e0760d14d79669e3aa152c925d77ad193c2782580a"
+      },
+      {
+        "byte_length" : 1,
+        "byte_offset" : 44,
+        "item_id" : "J-63fbe989-ORIGIN",
+        "placeholder" : "origin_priority",
+        "result_field" : "priority",
+        "result_value_sha256" : "6e391096a6518e66d057a2f0ad0958df0771dd283acbc06bacb88f62b7e2cc7c",
+        "settlement_object_id" : "8efd9409c6ac3e09831eae3b252fc3eaa66b607ef076b6958e7fcf6453b72f40",
+        "value_sha256" : "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce"
+      },
+      {
+        "byte_length" : 4,
+        "byte_offset" : 74,
+        "item_id" : "J-63fbe989-DEST",
+        "placeholder" : "destination",
+        "result_field" : "destination_code",
+        "result_value_sha256" : "d8a983ae860c25e96b7cad397b5421b441eb4866e847910c7beb37d90e23712d",
+        "settlement_object_id" : "5000d020107c39eac51321402d25d04379624758e4159cfb84fb538b8ad1e3c4",
+        "value_sha256" : "03825024559394f1da8bcc3743ca996165add12b3f6fa9665e44104ae4e3e110"
+      },
+      {
+        "byte_length" : 1,
+        "byte_offset" : 95,
+        "item_id" : "J-63fbe989-DEST",
+        "placeholder" : "destination_priority",
+        "result_field" : "priority",
+        "result_value_sha256" : "d8a983ae860c25e96b7cad397b5421b441eb4866e847910c7beb37d90e23712d",
+        "settlement_object_id" : "5000d020107c39eac51321402d25d04379624758e4159cfb84fb538b8ad1e3c4",
+        "value_sha256" : "ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d"
+      }
+    ],
+    "checks" : {
+      "all_declared_dependencies_admitted" : true,
+      "all_placeholders_bound" : true,
+      "dependency_object_sets_match" : true,
+      "object_identity_matches_bytes" : true,
+      "result_digests_match_values" : true,
+      "settlement_objects_readable" : true,
+      "settlement_signatures_valid" : true,
+      "source_versions_match_items" : true,
+      "validity_satisfied" : true
+    },
+    "declared_dependencies" : [
+      "J-63fbe989-ORIGIN",
+      "J-63fbe989-DEST"
+    ],
+    "dependency_settlement_object_ids" : {
+      "J-63fbe989-DEST" : "5000d020107c39eac51321402d25d04379624758e4159cfb84fb538b8ad1e3c4",
+      "J-63fbe989-ORIGIN" : "8efd9409c6ac3e09831eae3b252fc3eaa66b607ef076b6958e7fcf6453b72f40"
+    },
+    "input_byte_length" : 409,
+    "input_sha256" : "ddae3ba92aedfd78cc5e0a312358cfe15e760c2f446f2671412f1a49b699ad0a",
+    "settlement_signatures" : [
+      {
+        "algorithm" : "Ed25519",
+        "dependency_object_ids" : {
+
+        },
+        "evaluated_at_utc" : "2026-10-22T16:26:16Z",
+        "event_id" : "6394b4da668231ab6f7a6e4e660af98d776407f8d7358716ca59e7c390c6a403",
+        "event_sequence" : 1,
+        "item_id" : "J-63fbe989-DEST",
+        "key_id" : "e-round-77d935ce99712613",
+        "payload_sha256" : "3e0298db381f2f812d76e322c2e15b517b3283e8a32913b94daf8d5404dd4493",
+        "producer_execution_id" : "J-DEFINE-63FBE989",
+        "producer_kind" : "carrier_calculator",
+        "producer_run_id" : "j-define-63fbe989",
+        "result_value_sha256" : "d8a983ae860c25e96b7cad397b5421b441eb4866e847910c7beb37d90e23712d",
+        "settlement_object_id" : "5000d020107c39eac51321402d25d04379624758e4159cfb84fb538b8ad1e3c4",
+        "valid_until_utc" : "2030-12-31T23:59:59Z",
+        "verified" : true
+      },
+      {
+        "algorithm" : "Ed25519",
+        "dependency_object_ids" : {
+
+        },
+        "evaluated_at_utc" : "2026-10-22T16:26:16Z",
+        "event_id" : "f16014aa4ced6b13e8b8184e8ea5455e44c404ef6ab81b5632615dc695c43887",
+        "event_sequence" : 1,
+        "item_id" : "J-63fbe989-ORIGIN",
+        "key_id" : "e-round-77d935ce99712613",
+        "payload_sha256" : "b8e52cc190d1d7263843d054df8c5d59d3232dfbca35ae5b16c5719c449a9172",
+        "producer_execution_id" : "J-DEFINE-63FBE989",
+        "producer_kind" : "carrier_calculator",
+        "producer_run_id" : "j-define-63fbe989",
+        "result_value_sha256" : "6e391096a6518e66d057a2f0ad0958df0771dd283acbc06bacb88f62b7e2cc7c",
+        "settlement_object_id" : "8efd9409c6ac3e09831eae3b252fc3eaa66b607ef076b6958e7fcf6453b72f40",
+        "valid_until_utc" : "2030-12-31T23:59:59Z",
+        "verified" : true
+      }
+    ],
+    "task_item_id" : "J-63fbe989-U1",
+    "template_sha256" : "ac6a29787eea1d9dd1268729027bd2bf98635326bfe875800eea530974a15dfd"
+  },
+  "input_admission_refusal" : {
+
+  },
+  "input_admission_status" : "ADMITTED",
+  "max_tokens" : 48,
+  "model" : {
+    "snapshot_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "snapshot_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "weight_files" : [
+      {
+        "content" : "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "name" : "model-00001-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "name" : "model-00002-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "name" : "model-00003-of-00004.safetensors",
+        "size_bytes" : 76
+      },
+      {
+        "content" : "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "name" : "model-00004-of-00004.safetensors",
+        "size_bytes" : 76
+      }
+    ],
+    "weights_manifest_sha256" : "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5"
+  },
+  "model_load_seconds" : 2.4400709867477417,
+  "next_input_token_ids" : [
+    198,
+    785,
+    6238,
+    10486,
+    374,
+    74759,
+    320,
+    8966,
+    10619,
+    220,
+    18,
+    4292,
+    785,
+    9106,
+    10486,
+    374,
+    77625,
+    320,
+    8966,
+    10619,
+    220,
+    20,
+    4292,
+    32,
+    6021,
+    1376,
+    374,
+    5326,
+    438,
+    279,
+    6238,
+    10486,
+    11,
+    264,
+    3175,
+    77774,
+    3668,
+    11,
+    1221,
+    279,
+    9106,
+    10486,
+    624,
+    785,
+    6021,
+    75482,
+    279,
+    9106,
+    594,
+    10619,
+    624,
+    20841,
+    448,
+    6896,
+    3040,
+    5128,
+    323,
+    4302,
+    770,
+    510,
+    868,
+    55529,
+    38698,
+    8611,
+    10486,
+    397,
+    62571,
+    38698,
+    17997,
+    10486,
+    397,
+    99111,
+    38698,
+    8611,
+    29,
+    1784,
+    17997,
+    397,
+    47,
+    34886,
+    38698,
+    17997,
+    10619,
+    397,
+    16141,
+    25
+  ],
+  "pid" : 2188,
+  "provenance_identity" : {
+    "build_sha256" : "aa88b26097e190e022bda1188c294e0f5c7cd16b9154e7060632c07d7915bf14",
+    "execution_id" : "153b1038-69be-4366-8eb4-b77452c54011",
+    "process_id" : "2188",
+    "run_id" : "j-j0-p1"
+  },
+  "run_id" : "j-j0-p1",
+  "schema_id" : "SIMIGO-ORDINARY-TASK-ENTRY-V1",
+  "seed_sha256" : "7e83d01163953e25f7077cd5fe00a32c8810ec94488822603722f321c8431292",
+  "seed_source" : "builtin_cold_seed",
+  "settlement" : {
+    "actions" : [
+      {
+        "action" : "REUSE",
+        "item_id" : "J-63fbe989-ORIGIN",
+        "result_digest" : "6e391096a6518e66d057a2f0ad0958df0771dd283acbc06bacb88f62b7e2cc7c",
+        "settlement_object_id" : "8efd9409c6ac3e09831eae3b252fc3eaa66b607ef076b6958e7fcf6453b72f40",
+        "settlement_signature_object_id" : "201f99be6beef45badf65f2a7c2dc1bf2670bb8dab2df8b1f2e2c9f43fd5fbec"
+      },
+      {
+        "action" : "REUSE",
+        "item_id" : "J-63fbe989-DEST",
+        "result_digest" : "d8a983ae860c25e96b7cad397b5421b441eb4866e847910c7beb37d90e23712d",
+        "settlement_object_id" : "5000d020107c39eac51321402d25d04379624758e4159cfb84fb538b8ad1e3c4",
+        "settlement_signature_object_id" : "880ff84fa6389c080d030b3ceffbad8e2ab82d9e27593104cfa5ef15239a3d30"
+      },
+      {
+        "action" : "COMPUTE",
+        "item_id" : "J-63fbe989-U1",
+        "result_digest" : "95feba6429abd792476deea563966703cd869580c0e9b750c5d804fd2929b4e5",
+        "settlement_object_id" : "37f74b42e158adafb370779cd863d15383f2326025d917d2994d529777f9d40a",
+        "settlement_signature_object_id" : "e8a14114fc5318bea37df45c84b7d8eceaa61616052405002ebc004328166fe4"
+      }
+    ],
+    "advanced_lifecycle" : "active",
+    "advanced_position" : 1,
+    "computed_item_ids" : [
+      "J-63fbe989-U1"
+    ],
+    "generated_token_count" : 48,
+    "is_confirmation_state_id" : "j0-p1:runtime-applied",
+    "is_pending_state_id" : "j0-p1",
+    "model_continuation_calls_this_call" : 1,
+    "reused_item_ids" : [
+      "J-63fbe989-ORIGIN",
+      "J-63fbe989-DEST"
+    ],
+    "settlement_signature_key_id" : "e-round-77d935ce99712613",
+    "settlement_signature_object_id" : "e8a14114fc5318bea37df45c84b7d8eceaa61616052405002ebc004328166fe4",
+    "signed_settlement_object_id" : "37f74b42e158adafb370779cd863d15383f2326025d917d2994d529777f9d40a",
+    "tokenize_next_input_calls_this_call" : 1,
+    "tokenize_seed_calls_this_call" : 1,
+    "updated_prefix_token_count" : 158
+  },
+  "started_at_utc" : "2026-10-22T16:26:17Z",
+  "state_after" : {
+    "execution-state.json" : "edf816a9302495772f2fe46f90088ecc559eb9e904bfbb3ecaad127b6e3ef4c4"
+  },
+  "state_before" : {
+
+  },
+  "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/runs\/J0\/state\/j0-p1",
+  "state_unchanged" : false,
+  "task_item_id" : "J-63fbe989-U1",
+  "terminal_state" : "TASK_SETTLED",
+  "trust_anchor_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/trust\/settlement-trust-anchor.json",
+  "updated_prefix_token_count" : 158
+}

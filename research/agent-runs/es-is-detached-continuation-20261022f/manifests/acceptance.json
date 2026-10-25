@@ -1,0 +1,13 @@
+{
+  "result": "PASS",
+  "summary": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-detached-continuation-20261022f/summary.json",
+  "errors": [],
+  "condition_ids": [
+    "N1-MISSING-SETTLEMENT",
+    "N2-INVALID-SIGNATURE-OR-BYTE-TAMPER",
+    "N3-DEPENDENCY-MISMATCH",
+    "N4-PREFIX-AND-CROSS-WORLD-AUDIT",
+    "W-A",
+    "W-B"
+  ]
+}

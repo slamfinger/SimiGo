@@ -1,0 +1,2 @@
+/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/driver/probe_stage_c_launch.sh: line 22: 44399 Terminated: 15          SIMIGO_HOME="$M3C/home" SIMIGO_CACHE_ROOT="$M3C/cache" SIMIGO_STATE_GRAPH_STORE="$M3C/state-graph/reference-graph-v1.json" nohup "$BIN" > "$B/logs/stage_c_launch_stdout.log" 2>&1
+stage_c_launch_done

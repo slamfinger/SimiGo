@@ -1,0 +1,16 @@
+{
+  "status": "BLOCKED_BEFORE_FIRST_STEP",
+  "protocolVersion": "G1.9-O3C.STREAMING.V1",
+  "boundary": "STREAMING_FORWARD / CAPACITY_DISCIPLINE / MEASUREMENT_ONLY",
+  "modelID": "mlx-community/Qwen3-Coder-Next-4bit (snapshot 7b9321ea)",
+  "note": "Probe aborted at first segment materialization (stderr trace): skeleton + quantize + tensor location index (1891 tensors) succeeded; the naive per-tensor read loaded packed-U32 metadata ([dequantize] fatal). Two hard blockers registered for O3-C'' (per-tensor reader; backend segment-execution surface).",
+  "progress": [
+    "skeleton + per-layer quantize: OK",
+    "tensor location index: 1891 tensors: OK",
+    "streaming pass 1 / segment 0 materialization: FATAL (dequantize uint32 scales)"
+  ],
+  "blockers": [
+    "PerTensorSafetensorsReader missing (shard-granular toolchain)",
+    "segment-wise graph decomposition needs a Backend API surface (fileprivate layer stack)"
+  ]
+}

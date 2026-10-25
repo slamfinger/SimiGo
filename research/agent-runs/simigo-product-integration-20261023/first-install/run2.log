@@ -1,0 +1,46 @@
+Building for debugging...
+Build complete! (0.25秒)
+managed root: /Users/mr.simi/SimiGo-Agent-Runs/simigo-product-integration-20261023/first-install/.simigo
+database: /Users/mr.simi/SimiGo-Agent-Runs/simigo-product-integration-20261023/first-install/.simigo/simigo.sqlite3
+{
+  "issueCount" : 0,
+  "legacyMigrated" : false,
+  "modelsDiscovered" : 20,
+  "schemaVersion" : 1,
+  "steps" : [
+    {
+      "detail" : "created managed runtime directories under .simigo",
+      "id" : "ensure-dirs",
+      "status" : "ok"
+    },
+    {
+      "detail" : "schemaVersion=1",
+      "id" : "migrate-schema",
+      "status" : "ok"
+    },
+    {
+      "detail" : "no legacy graph supplied",
+      "id" : "import-legacy",
+      "status" : "skipped"
+    },
+    {
+      "detail" : "discovered 20 model file(s)",
+      "id" : "discover-models",
+      "status" : "ok"
+    },
+    {
+      "detail" : "indexed 0 work file(s)",
+      "id" : "index-work",
+      "status" : "skipped"
+    },
+    {
+      "detail" : "bootstrap-report.json",
+      "id" : "write-report",
+      "status" : "ok"
+    }
+  ],
+  "workFilesIndexed" : 0
+}
+--- VERIFY ---
+integrity_check=true execution_states=0 settlements=0 roots=1 external_files=20
+report_path=/Users/mr.simi/SimiGo-Agent-Runs/simigo-product-integration-20261023/first-install/.simigo/manifests/bootstrap-report.json

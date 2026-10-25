@@ -1,0 +1,5 @@
+acb0d1896cfe55b39d2ab4723ccf3435ae65ae9b7bedfda9cb228415b18c36ab  tools/rb1-harness/Sources/RB1Harness/main.swift
+08452a0e2e55159817f18b08025de36b0fe27fb38bc89c3c4114fe7fd0a44e04  docs/02-evidence/rb1-execution/RUN_PLAN_20261003.md
+ff8083645cf7ce426746a6e636d8e426a6aa392acda672d261b0ad694c12a6f0  docs/02-evidence/rb1-execution/workspace/entity-E.txt
+ce78c618ce499581063a9377d7f3b5cb803e056b898f5178de632410a320a33b  docs/02-evidence/rb1-execution/artifacts/experimental.sqlite
+74569c60eab39196ae828f5546015f58f192157349b3c7435ad4cd41867daf90  docs/02-evidence/rb1-execution/artifacts/negative.sqlite

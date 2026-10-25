@@ -1,0 +1,32 @@
+{
+  "counters": {
+    "model_generate_calls": 0,
+    "model_loads": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+  },
+  "db_post_sha256": "ffd83cb374732d962af7396447d543b943519b6914a8fd9b596ebf04faa835aa",
+  "db_pre_sha256": "ffd83cb374732d962af7396447d543b943519b6914a8fd9b596ebf04faa835aa",
+  "evidence_path_item": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I4/evidence/i4-missing-transitive-dependency-task-iu3.json",
+  "id": "I4-MISSING-TRANSITIVE-DEPENDENCY",
+  "kind": "negative_control",
+  "observations": {
+    "database_unchanged": true,
+    "generation_calls": 0,
+    "refusal_before_tokenize": true,
+    "refusal_stage": "SETTLEMENT_NOT_ADMITTED",
+    "removed_source": "TASK-ORIGIN",
+    "state_unchanged": true
+  },
+  "raw_log_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I4/logs/i4-missing-transitive-dependency-task-iu3.log"
+  ],
+  "refusal": {
+    "item_id": "TASK-ORIGIN",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "stage": "SETTLEMENT_NOT_ADMITTED"
+  },
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I4"
+}

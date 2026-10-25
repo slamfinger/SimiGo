@@ -1,0 +1,1264 @@
+diff --git a/Packages/SimiGoRuntime/Package.swift b/Packages/SimiGoRuntime/Package.swift
+index bd80249..66181a2 100644
+--- a/Packages/SimiGoRuntime/Package.swift
++++ b/Packages/SimiGoRuntime/Package.swift
+@@ -26,7 +26,11 @@ let package = Package(
+     ],
+     targets: [
+         .target(
+-            name: "SimiGoRuntimeContract"
++            name: "SimiGoRuntimeContract",
++            linkerSettings: [
++                // ES/IS authoritative persistence uses the system SQLite3 (MLX-free).
++                .linkedLibrary("sqlite3")
++            ]
+         ),
+         .target(
+             name: "SimiGo2Experimental",
+@@ -40,5 +44,9 @@ let package = Package(
+                 .product(name: "MLXNN", package: "mlx-swift")
+             ]
+         ),
++        .testTarget(
++            name: "SimiGoRuntimeContractTests",
++            dependencies: ["SimiGoRuntimeContract"]
++        ),
+     ]
+ )
+diff --git a/SimiGo/App/Config.swift b/SimiGo/App/Config.swift
+index 1526e7b..0434d6c 100644
+--- a/SimiGo/App/Config.swift
++++ b/SimiGo/App/Config.swift
+@@ -1,12 +1,15 @@
+ import Foundation
++import SimiGoRuntimeContract
+ 
+ public enum AppKey: String, CaseIterable, Sendable {
+     case modelPath = "SelectedModelPath"
++    case modelReference = "SelectedModelReference"
+     case mlxModelPath = "MLXModelPath"
+     case llamaModelPath = "LLaMAModelPath"
+     case backendSelection = "BackendSelection"
+     case cloudBaseURL = "CloudBaseURL"
+     case cloudModel = "CloudModel"
++    case selectedEngine = "SelectedEngine"
+     case llamaCppRoot = "LlamaCppRoot"
+     case llamaServerBin = "LlamaServerBin"
+     case apiListenMode = "APIListenMode"
+@@ -15,12 +18,16 @@ public enum AppKey: String, CaseIterable, Sendable {
+ 
+     nonisolated public var defaultValue: String? {
+         switch self {
++        case .selectedEngine:
++            return "mlx-native"
+         case .llamaCppRoot:
+             return "\(NSHomeDirectory())/llama.cpp"
+         case .llamaServerBin:
+             return "\(NSHomeDirectory())/llama.cpp/build/bin/llama-server"
+         case .modelPath:
+             return nil
++        case .modelReference:
++            return nil
+         case .mlxModelPath:
+             return nil
+         case .llamaModelPath:
+@@ -178,6 +185,44 @@ public struct AppConfig: Sendable {
+         }
+     }
+ 
++    // MARK: - Portable model reference (root_id + relative identity)
++
++    /// The durable, portable identity of the selected model. SimiGo persists
++    /// (root_id + relative_path), never an absolute local path as the authority;
++    /// the machine locator is resolved from the external Hugging Face cache at
++    /// runtime, and a model is never copied into `.simigo`.
++    nonisolated public static var selectedModelReference: ModelReference? {
++        get {
++            guard let raw = get(.modelReference), let data = raw.data(using: .utf8) else { return nil }
++            return try? JSONDecoder().decode(ModelReference.self, from: data)
++        }
++        set {
++            if let newValue, let data = try? JSONEncoder().encode(newValue),
++               let str = String(data: data, encoding: .utf8) {
++                set(str, for: .modelReference)
++            } else {
++                set(nil, for: .modelReference)
++            }
++        }
++    }
++
++    /// Resolve the persisted reference to a current-machine file URL, or nil when
++    /// it is absent under every external cache root (fail-closed, never invents).
++    nonisolated public static var resolvedSelectedModelURL: URL? {
++        guard let ref = selectedModelReference else { return nil }
++        return SimiGoModelDiscovery.resolve(ref)
++    }
++
++    /// Persist a portable reference derived from a selected absolute path when the
++    /// path lives under an external cache root; clears it otherwise.
++    nonisolated public static func persistReference(forAbsolutePath path: String) {
++        if let ref = SimiGoModelDiscovery.reference(forAbsolutePath: path) {
++            selectedModelReference = ref
++        } else {
++            selectedModelReference = nil
++        }
++    }
++
+     // MARK: - Model Config
+ 
+     nonisolated public static func savedConfig(for path: String) -> ModelConfig? {
+diff --git a/SimiGo/App/ExecutionStateGraph.swift b/SimiGo/App/ExecutionStateGraph.swift
+index a0edf89..c102eeb 100644
+--- a/SimiGo/App/ExecutionStateGraph.swift
++++ b/SimiGo/App/ExecutionStateGraph.swift
+@@ -1,6 +1,7 @@
+ import CryptoKit
+ import Combine
+ import SwiftUI
++import SimiGoRuntimeContract
+ 
+ /// SimiGo v2.1 Reference App.
+ ///
+@@ -61,11 +62,25 @@ struct ExecutionCheckpoint: Identifiable, Codable, Hashable {
+     let checksum: String
+ }
+ 
++/// A native-authorized, settled Information-Space result committed to the durable
++/// graph. It stores the canonical validated payload and its digest only — never
++/// the raw model text — and can only be produced through the settlement authority.
++struct SettlementReceipt: Identifiable, Codable, Hashable {
++    let id: UUID
++    let stateID: String
++    let schemaVersion: String
++    let payload: Data
++    let payloadDigest: String
++    let settledAt: Date
++}
++
+ struct ExecutionGraphDocument: Codable, Hashable {
+     var contractVersion = ESContract.version
+     var representationID = ESContract.representationID
+     var states: [ExecutionStateRecord] = []
+     var checkpoints: [ExecutionCheckpoint] = []
++    /// Optional for backward compatibility with pre-settlement graphs.
++    var settlements: [SettlementReceipt]? = nil
+ }
+ 
+ enum ExecutionGraphError: Error, Equatable {
+@@ -81,28 +96,60 @@ final class ExecutionStateGraphStore: ObservableObject {
+     @Published var operationError: String?
+ 
+     private let storeURL: URL
++    private let dbURL: URL
+     private let encoder: JSONEncoder
+     private let decoder: JSONDecoder
+ 
++    // MARK: - SQLite ES/IS authoritative store
++    //
++    // SQLite is the authoritative physical home for execution states, native
++    // authorized settlements, and external file / agent-session indexes. Opening
++    // is lazy and NON-FATAL: a corrupt or unwritable database is recorded in
++    // `persistError` and NEVER silently overwritten (fail closed). The native
++    // settlement gate has already refused unsafe values upstream, so this layer
++    // only commits results that cleared that gate.
++    private(set) var esis: SimiGoESISDatabase?
++    private var esisOpenAttempted = false
++    private var didImportLegacy = false
++    @Published private(set) var persistError: String?
++    private var legacyJSONData: Data?
++
+     var states: [ExecutionStateRecord] { document.states }
+     var checkpoints: [ExecutionCheckpoint] { document.checkpoints }
+ 
+-    init(storeURL: URL = ExecutionStateGraphStore.defaultStoreURL()) {
++    init(storeURL: URL = ExecutionStateGraphStore.defaultStoreURL(),
++         dbURL: URL = SimiGoPaths.databaseURL) {
+         self.storeURL = storeURL
++        self.dbURL = dbURL
+         encoder = JSONEncoder()
+         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+         decoder = JSONDecoder()
+ 
+-        guard FileManager.default.fileExists(atPath: storeURL.path) else { return }
+-        do {
+-            document = try decoder.decode(ExecutionGraphDocument.self, from: Data(contentsOf: storeURL))
+-            guard document.contractVersion == ESContract.version else {
+-                throw ExecutionGraphError.invalidCheckpoint("contract version mismatch")
++        // Legacy JSON is now ONLY a migration source: its bytes are captured, but
++        // the file is never deleted or overwritten in place until a validated
++        // hand-off to the authoritative store has provably covered it.
++        if FileManager.default.fileExists(atPath: storeURL.path) {
++            legacyJSONData = try? Data(contentsOf: storeURL)
++        }
++
++        // SQLite is the authoritative read store. Open it (importing any legacy
++        // graph transactionally + validated) and rebuild the live graph FROM
++        // SQLite — never from JSON — so the two can never drift apart.
++        if let db = ensureESIS() {
++            do {
++                let g = try db.readGraph()
++                let receipts = try db.readSettlementReceipts()
++                document = Self.graphDocument(states: g.states, checkpoints: g.checkpoints,
++                                              receipts: receipts)
++                retireLegacyJSONIfNeeded(authoritativeIDs: g.states.map { $0.id })
++            } catch {
++                loadError = "无法从 SQLite 权威库加载执行图：\(error.localizedDescription)"
++                document = ExecutionGraphDocument()
+             }
+-        } catch {
+-            // Fail closed: never overwrite an unreadable durable graph.
+-            loadError = "无法加载持久图：\(error.localizedDescription)"
+-            document = ExecutionGraphDocument()
++        } else {
++            // Fail-closed fallback: the authority is corrupt/unwritable. Serve the
++            // read-only legacy JSON so the app still opens; never retire it here.
++            loadLegacyJSONFallback()
+         }
+     }
+ 
+@@ -304,6 +351,130 @@ final class ExecutionStateGraphStore: ObservableObject {
+         }
+     }
+ 
++    // MARK: - Native-authorized settlement (pre-settlement authority)
++
++    /// Settle a producer's semantic result as a durable Information-Space record.
++    ///
++    /// `SimiGoSettlementAuthority` (native, MLX-free) is the single gate: it runs
++    /// BEFORE any `mutate`/`persist`, so a contract rejection — unknown constraint,
++    /// missing binding, canonicalization failure, or digest/derivation mismatch —
++    /// throws here and NOTHING is written. There is no Python fallback and no
++    /// partially settled record. Only the canonical validated payload is committed.
++    @discardableResult
++    func settleValidatedResult(
++        generatedText: String,
++        contractJSON: Data,
++        verifiedBindings: [String: NativeContractValue],
++        boundToState state: ExecutionStateRecord
++    ) throws -> SimiGoSettlementAuthority.SettledResult {
++        let settled = try SimiGoSettlementAuthority.authorize(
++            generatedText: generatedText,
++            contractJSON: contractJSON,
++            verifiedBindings: verifiedBindings
++        )
++        try mutate { document in
++            guard document.states.contains(where: { $0.id == state.id }) else {
++                throw ExecutionGraphError.invalidTransition("state not found")
++            }
++            let receipt = SettlementReceipt(
++                id: UUID(),
++                stateID: state.id,
++                schemaVersion: settled.schemaVersion,
++                payload: settled.validatedPayload,
++                payloadDigest: settled.payloadDigest,
++                settledAt: settled.settledAt
++            )
++            document.settlements = (document.settlements ?? []) + [receipt]
++        }
++        commitSettlementToAuthoritativeStore(settled, state: state)
++        return settled
++    }
++
++    /// The declared result-contract for reference-state settlement.
++    ///
++    /// A single required `content` field is extracted from a `RESULT=` line and is
++    /// constrained with `equals_binding` to commit to an Information-Space value
++    /// (`next_input`) that is already persisted with the graph. It exercises the
++    /// production-native constraint family only, so the gate never falls back to a
++    /// Python validator, and an unknown/mismatched value refuses fail-closed.
++    static let referenceResultContractJSON: Data = Data("{\"schema_version\":\"simigo.result-contract/v1\",\"fields\":{\"content\":{\"pattern\":\"^RESULT=(.+)$\",\"capture_group\":1,\"type\":\"string\",\"normalize\":\"trim\",\"nonempty\":true}},\"constraints\":[{\"kind\":\"equals_binding\",\"field\":\"content\",\"binding\":\"next_input\"}]}".utf8)
++
++    /// Production settlement entry for a reference state.
++    ///
++    /// This is the real production caller of `settleValidatedResult` (and therefore
++    /// of `SimiGoSettlementAuthority` / `NativeProducerResultContractGate` / the
++    /// authoritative SQLite commit). The producer's generated text is bound to the
++    /// state's already-settled `nextInput` — an IS value persisted with the graph.
++    /// If the generated content does not commit to that value, the native gate
++    /// throws BEFORE `settleValidatedResult` mutates or writes anything, so the
++    /// action is fail-closed end to end and produces no partially settled record.
++    @discardableResult
++    func settleProducerResult(
++        generatedText: String,
++        boundToState state: ExecutionStateRecord
++    ) throws -> SimiGoSettlementAuthority.SettledResult {
++        let bindings: [String: NativeContractValue] = ["next_input": .string(state.nextInput)]
++        return try settleValidatedResult(
++            generatedText: generatedText,
++            contractJSON: Self.referenceResultContractJSON,
++            verifiedBindings: bindings,
++            boundToState: state
++        )
++    }
++
++    // MARK: - Authoritative SQLite commit + legacy migration
++
++    /// Lazily open the authoritative SQLite store, run schema migrations, and on
++    /// first open transactionally migrate any pre-existing JSON reference graph
++    /// (validated row-by-row inside `importLegacyGraph`, rolled back on mismatch).
++    private func ensureESIS() -> SimiGoESISDatabase? {
++        if esisOpenAttempted { return esis }
++        esisOpenAttempted = true
++        do {
++            let db = try SimiGoESISDatabase(url: dbURL)
++            try db.runMigrations()
++            if (try db.count("execution_states")) == 0,
++               let legacy = legacyJSONData,
++               !(try JSONDecoder().decode(ExecutionGraphDocument.self, from: legacy)).states.isEmpty {
++                _ = try db.importLegacyGraph(jsonData: legacy, sourceLabel: storeURL.lastPathComponent)
++                didImportLegacy = true
++            }
++            esis = db
++            persistError = nil
++        } catch {
++            // Fail closed: never overwrite an unreadable / unwritable authority.
++            esis = nil
++            persistError = "SQLite ES/IS 不可用：\(error.localizedDescription)"
++        }
++        return esis
++    }
++
++    /// Mirror a gate-cleared settlement into the authoritative SQLite store.
++    /// Non-fatal to the UI graph: a write failure is surfaced via `persistError`
++    /// but never rolls back the already-authorized native settlement.
++    private func commitSettlementToAuthoritativeStore(
++        _ settled: SimiGoSettlementAuthority.SettledResult,
++        state: ExecutionStateRecord
++    ) {
++        guard let db = ensureESIS() else { return }
++        do {
++            try db.recordExecutionState(
++                id: state.id,
++                parentID: state.parentID,
++                modelIdentity: state.modelIdentity,
++                position: state.position,
++                continuationID: state.continuationID,
++                anchor: state.anchor,
++                lifecycle: state.lifecycle.rawValue,
++                createdAt: state.createdAt
++            )
++            _ = try db.recordNativeSettlement(settled, stateID: state.id)
++            persistError = nil
++        } catch {
++            persistError = "结算未能写入 SQLite ES/IS：\(error.localizedDescription)"
++        }
++    }
++
+     // MARK: - Atomic transition helper
+ 
+     private func mutate<T>(_ change: (inout ExecutionGraphDocument) throws -> T) throws -> T {
+@@ -320,6 +491,35 @@ final class ExecutionStateGraphStore: ObservableObject {
+     }
+ 
+     private func persist(_ document: ExecutionGraphDocument) throws {
++        // Write authority: the live execution graph (ES) is committed to SQLite.
++        // Settlements (IS) are owned by the native gate and written separately, so
++        // they are intentionally NOT part of this graph write.
++        if let db = ensureESIS() {
++            do {
++                let states = document.states.map {
++                    SimiGoESISDatabase.GraphState(
++                        id: $0.id, parentID: $0.parentID, modelIdentity: $0.modelIdentity,
++                        createdAt: $0.createdAt, position: $0.position,
++                        continuationID: $0.continuationID, nextInput: $0.nextInput,
++                        anchor: $0.anchor, prefix: $0.prefix, lifecycle: $0.lifecycle.rawValue,
++                        checkpointIDs: $0.checkpointIDs)
++                }
++                let cps = document.checkpoints.map {
++                    SimiGoESISDatabase.GraphCheckpoint(
++                        id: $0.id, stateID: $0.stateID, modelIdentity: $0.modelIdentity,
++                        position: $0.position, continuationID: $0.continuationID,
++                        nextInput: $0.nextInput, anchor: $0.anchor, prefix: $0.prefix,
++                        createdAt: $0.createdAt, checksum: $0.checksum)
++                }
++                try db.writeGraph(states: states, checkpoints: cps)
++                persistError = nil
++                retireLegacyJSONIfNeeded(authoritativeIDs: document.states.map { $0.id })
++                return
++            } catch {
++                persistError = "执行图未能写入 SQLite 权威库：\(error.localizedDescription)"
++                // Fall through to the JSON safety net so no durable state is lost.
++            }
++        }
+         do {
+             let directory = storeURL.deletingLastPathComponent()
+             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+@@ -329,6 +529,74 @@ final class ExecutionStateGraphStore: ObservableObject {
+         }
+     }
+ 
++    // MARK: - SQLite <-> document mapping and safe JSON retirement
++
++    /// Rebuild the app's working document from authoritative SQLite rows.
++    private static func graphDocument(
++        states: [SimiGoESISDatabase.GraphState],
++        checkpoints: [SimiGoESISDatabase.GraphCheckpoint],
++        receipts: [SimiGoESISDatabase.SettlementReceiptRow]
++    ) -> ExecutionGraphDocument {
++        var doc = ExecutionGraphDocument()
++        doc.states = states.map {
++            ExecutionStateRecord(
++                id: $0.id, parentID: $0.parentID, modelIdentity: $0.modelIdentity,
++                createdAt: $0.createdAt, position: $0.position,
++                continuationID: $0.continuationID, nextInput: $0.nextInput,
++                anchor: $0.anchor, prefix: $0.prefix,
++                lifecycle: ExecutionLifecycle(rawValue: $0.lifecycle) ?? .active,
++                checkpointIDs: $0.checkpointIDs)
++        }
++        doc.checkpoints = checkpoints.map {
++            ExecutionCheckpoint(
++                id: $0.id, stateID: $0.stateID, modelIdentity: $0.modelIdentity,
++                position: $0.position, continuationID: $0.continuationID,
++                nextInput: $0.nextInput, anchor: $0.anchor, prefix: $0.prefix,
++                createdAt: $0.createdAt, checksum: $0.checksum)
++        }
++        doc.settlements = receipts.map {
++            SettlementReceipt(
++                id: $0.id, stateID: $0.stateID, schemaVersion: $0.schemaVersion,
++                payload: $0.payload, payloadDigest: $0.payloadDigest, settledAt: $0.settledAt)
++        }
++        return doc
++    }
++
++    /// Retire the legacy JSON only when it is PROVABLY covered by the authority:
++    /// it was just imported, it holds no live states, or every one of its state ids
++    /// already exists in SQLite. Otherwise the file is preserved untouched (SQLite
++    /// still wins every read), so a validated hand-off can never lose data. The
++    /// retirement itself is a rename that PRESERVES bytes — never a delete or an
++    /// in-place overwrite.
++    private func retireLegacyJSONIfNeeded(authoritativeIDs: [String]) {
++        let fm = FileManager.default
++        guard fm.fileExists(atPath: storeURL.path), let raw = legacyJSONData else { return }
++        let legacyStates = (try? decoder.decode(ExecutionGraphDocument.self, from: raw))?.states ?? []
++        let covered = legacyStates.isEmpty
++            || didImportLegacy
++            || Set(legacyStates.map { $0.id }).isSubset(of: Set(authoritativeIDs))
++        guard covered else { return }
++        let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
++        let sidecar = storeURL.appendingPathExtension("migrated-\(stamp)")
++        try? fm.moveItem(at: storeURL, to: sidecar)
++        legacyJSONData = nil
++    }
++
++    /// Fail-closed read of the legacy JSON when the authority is unavailable.
++    private func loadLegacyJSONFallback() {
++        guard let raw = legacyJSONData else { return }
++        do {
++            let decoded = try decoder.decode(ExecutionGraphDocument.self, from: raw)
++            guard decoded.contractVersion == ESContract.version else {
++                throw ExecutionGraphError.invalidCheckpoint("contract version mismatch")
++            }
++            document = decoded
++        } catch {
++            loadError = "无法加载持久图：\(error.localizedDescription)"
++            document = ExecutionGraphDocument()
++        }
++    }
++
+     // MARK: - Representation rules
+ 
+     static func anchor(_ prefix: [String]) -> String {
+@@ -401,6 +669,7 @@ struct ExecutionStateGraphView: View {
+     @State private var selectedID: String?
+     @State private var continuationInput = ""
+     @State private var selectedCheckpointID: UUID?
++    @State private var settleInput = ""
+ 
+     /// 2026-10-16 收敛：窗口默认显示引擎真身（Live 只读投影）；
+     /// 契约参考图（ES Contract v1.0-amended 的产品化演示）保留为切换页。
+@@ -500,6 +769,7 @@ struct ExecutionStateGraphView: View {
+ 
+             continuationEditor
+             lifecycleActions(state)
++            settleSection(state)
+             restoreSection(state)
+             diagnostics
+ 
+@@ -573,6 +843,39 @@ struct ExecutionStateGraphView: View {
+         }
+     }
+ 
++    /// Settlement action wired to the production native pre-settlement authority.
++    ///
++    /// The button calls `store.settleProducerResult`, which runs the native result-
++    /// contract gate and only then commits to the authoritative SQLite store. On a
++    /// contract refusal the error is surfaced in `store.operationError` and NOTHING
++    /// is written (fail-closed), so this is a real, app-reachable production call
++    /// chain rather than an orphaned API.
++    private func settleSection(_ state: ExecutionStateRecord) -> some View {
++        let receipts = (store.document.settlements ?? []).filter { $0.stateID == state.id }
++        return VStack(alignment: .leading, spacing: 6) {
++            Text("Settle (Native Gate)").font(.headline)
++            Text("Producer result must commit to this State's IS next-input: \"\(state.nextInput)\"")
++                .font(.footnote)
++                .foregroundStyle(.secondary)
++            HStack {
++                TextField("RESULT=<text>", text: $settleInput)
++                    .textFieldStyle(.roundedBorder)
++                    .disabled(state.lifecycle == .discarded)
++                Button("Fill from IS") { settleInput = "RESULT=\(state.nextInput)" }
++                    .disabled(state.nextInput.isEmpty)
++            }
++            HStack {
++                Button("Settle via Native Gate") {
++                    run { _ = try store.settleProducerResult(generatedText: settleInput, boundToState: state) }
++                }
++                .disabled(state.nextInput.isEmpty || settleInput.isEmpty || state.lifecycle == .discarded)
++                Text(receipts.isEmpty ? "no settlement" : "\(receipts.count) settled")
++                    .font(.footnote)
++                    .foregroundStyle(receipts.isEmpty ? .secondary : .primary)
++            }
++        }
++    }
++
+     private func restoreSection(_ state: ExecutionStateRecord) -> some View {
+         let points = store.checkpoints(for: state.id)
+ 
+diff --git a/SimiGo/App/Settings.swift b/SimiGo/App/Settings.swift
+index b74aef5..e5ba11d 100644
+--- a/SimiGo/App/Settings.swift
++++ b/SimiGo/App/Settings.swift
+@@ -1,5 +1,6 @@
+ import SwiftUI
+ import AppKit
++import SimiGoRuntimeContract
+ 
+ struct Settings: View {
+     @EnvironmentObject var svc: Service
+@@ -15,6 +16,16 @@ struct Settings: View {
+         return "SimiGo v\(marketing) (build \(build))"
+     }()
+ 
++
++    private func engineStageLabel(_ stage: EngineStage) -> String {
++        switch stage {
++        case .absent: return "未检出"
++        case .downloaded: return "已下载（未构建）"
++        case .built: return "已构建（未适配）"
++        case .adapted: return "已适配 · 可用"
++        }
++    }
++
+     var body: some View {
+         ScrollView {
+             VStack(alignment: .leading, spacing: 16) {
+@@ -118,6 +129,50 @@ struct Settings: View {
+                     }
+                 }
+ 
++                // MARK: - 外部引擎 · 安装选择
++                sectionBox("外部引擎 · 安装选择") {
++                    VStack(alignment: .leading, spacing: 10) {
++                        Picker("引擎", selection: $envMgr.selectedEngineID) {
++                            ForEach(envMgr.availableEngines, id: \.id) { engine in
++                                Text(engine.displayName).tag(engine.id)
++                            }
++                        }
++                        .pickerStyle(.menu)
++
++                        Text("状态：\(engineStageLabel(envMgr.engineStage(for: envMgr.selectedEngineID)))")
++                            .font(.caption)
++                            .foregroundColor(.secondary)
++
++                        Text("下载、构建、与 SimiGo 适配是三个独立状态；外部服务端（如 Ollama / LM Studio / SGLang）由 SimiGo 采用而非构建，llama.cpp 等源码引擎按锁定版本配方构建。")
++                            .font(.caption2)
++                            .foregroundColor(.secondary)
++                            .fixedSize(horizontal: false, vertical: true)
++
++                        // requirement②：选择外部服务端必须真正接入推理，而不只是记录。
++                        // 复用已测的 OpenAI 兼容云端运行时：把采用端点/模型写入并切到「云端」。
++                        if let ep = envMgr.adoptedEndpoint(for: envMgr.selectedEngineID) {
++                            Divider().padding(.vertical, 2)
++                            Text("采用端点：\(ep.baseURL)\(ep.defaultModel.map { " · 默认模型 \($0)" } ?? "")")
++                                .font(.caption)
++                                .foregroundColor(.secondary)
++                            Button("采用此外部服务端（填入云端运行时并选为当前后端）") {
++                                _ = envMgr.applyExternalAdoption(of: envMgr.selectedEngineID, to: svc)
++                            }
++                            .buttonStyle(.bordered)
++                            Text("将「云端 API」的 Base URL 指向该本机服务端；到上方『云端 API』点「启动」即经此外部服务端推理（Ollama/LM Studio 均兼容 OpenAI 协议）。")
++                                .font(.caption2)
++                                .foregroundColor(.secondary)
++                                .fixedSize(horizontal: false, vertical: true)
++                        } else if envMgr.availableEngines.first(where: { $0.id == envMgr.selectedEngineID })?.kind == .externalServer {
++                            // fail-closed：外部服务端但未声明采用端点（如 SGLang）——绝不臆造 URL。
++                            Text("该外部服务端未声明采用端点（fail-closed）：请在引擎清单 engine-recipes.json 指定 endpointBaseURL 后再采用。")
++                                .font(.caption2)
++                                .foregroundColor(.orange)
++                                .fixedSize(horizontal: false, vertical: true)
++                        }
++                    }
++                }
++
+                 // MARK: - 统一命令控制台
+                 sectionBox("统一命令控制台") {
+                     VStack(alignment: .leading, spacing: 12) {
+diff --git a/SimiGo/App/StatusBarCoordinator.swift b/SimiGo/App/StatusBarCoordinator.swift
+index 3ecefca..f8a16ef 100644
+--- a/SimiGo/App/StatusBarCoordinator.swift
++++ b/SimiGo/App/StatusBarCoordinator.swift
+@@ -5,7 +5,36 @@ import Combine
+ @MainActor
+ final class AppDelegate: NSObject, NSApplicationDelegate {
+     func applicationDidFinishLaunching(_ notification: Notification) {
++        // G1/G3 controlled headless gate (env-gated). Default GUI path unchanged:
++        // only engages when SIMIGO_HEADLESS_ROLE is present, and fail-closes on an
++        // unsupported role / missing parameters BEFORE any model work.
++        let headless = SimiGoG1G3Entry.evaluate()
++        if headless.requested {
++            guard let role = headless.role else {
++                FileHandle.standardError.write(
++                    ("headless fail-closed: " + (headless.error ?? "unknown") + "\n").data(using: .utf8)!)
++                exit(2)
++            }
++            // Keep AppKit's main loop alive (do not pump a nested runloop here: that
++            // ends the accessory app). Returning from applicationDidFinishLaunching lets
++            // NSApp.run continue servicing the main queue, which drives the @MainActor
++            // task below; exit(code) terminates once the model work finishes. Requires a
++            // bundle id distinct from any running SimiGo instance to avoid the
++            // LaunchServices single-instance handoff.
++            FileHandle.standardError.write(("headless-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
++            Task { @MainActor in
++                FileHandle.standardError.write("headless-task-started\n".data(using: .utf8)!)
++                let code = await SimiGoG1G3Entry.run(role: role)
++                FileHandle.standardError.write(("headless-task-done rc=\(code)\n").data(using: .utf8)!)
++                exit(code)
++            }
++            return
++        }
+         StatusBarCoordinator.shared.start()
++        // Autonomous, idempotent first-run bootstrap off the main thread.
++        Task.detached(priority: .utility) {
++            _ = SimiGoBootstrapRunner.launchIfNeeded()
++        }
+     }
+ }
+ 
+diff --git a/SimiGo/Inference/NativeMLX.swift b/SimiGo/Inference/NativeMLX.swift
+index a271f59..504f1ea 100644
+--- a/SimiGo/Inference/NativeMLX.swift
++++ b/SimiGo/Inference/NativeMLX.swift
+@@ -14,6 +14,10 @@ import SimiGo2Experimental
+ /// Native MLX runtime. Inference state is owned by the official ChatSession API.
+ /// SimiGo retains only service state around that API.
+ public final class NativeMLX: Runtime, @unchecked Sendable {
++    /// Semantic KV-cache identity for THIS in-process runtime instance (owns one
++    /// ModelContainer / KV set). Instance-scoped and meaningful, NOT a raw memory
++    /// address, so cross-process cache non-sharing can be audited by comparing it.
++    public let cacheIdentity: String = "cache-" + UUID().uuidString.lowercased()
+     private nonisolated final class ManagedSession: @unchecked Sendable {
+         let session: ChatSession
+         var history: [Chat.Message]
+@@ -101,6 +105,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+     private let gateHolder = Mutex(SessionGenerationGate())
+     /// V1.6 S5：执行血统日志（有界 128 条；只记录查询，不参与决策）。
+     let lineage = ExecutionLineage()
++    /// G1/G3 §5 read-only observability recorder. It NEVER participates in
++    /// cache-hit decisions or the inference lifecycle — each hook is a single
++    /// increment beside an existing trace/engine value. See NativeMLXObservation.
++    public let observation = NativeMLXObservation()
+     private let traceLogger = RuntimeTraceLogger.shared
+     private let toolGovernance = ToolGovernance { line in
+         RuntimeTraceLogger.shared.trace(line)
+@@ -559,16 +567,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+             await gate.awaitDrain()
+ 
+             Memory.clearCache()
+-
+-            // P1 memory settle：等待 footprint/MLX 计数回稳（观测，不强制）。
++            // P1 memory settle（强制版 2026-10-23）：clearCache 只回收 MLX 缓存，
++            // 进程 malloc 已释放页仍滞留 → macOS 内存压力长时间黄色。主动请求分配器
++            // 归还空闲页（malloc_zone_pressure_relief）后再观测 footprint 回稳，缩短窗口。
++            malloc_zone_pressure_relief(nil, 0)
+             let settleDeadline = Date().addingTimeInterval(RuntimeTuning.memorySettleTimeoutSeconds)
+             var lastFootprint = RuntimeTuning.footprintBytes()
+             var stableRounds = 0
+             while Date() < settleDeadline, stableRounds < 4 {
+-                try? await Task.sleep(nanoseconds: 500_000_000)
++                try? await Task.sleep(nanoseconds: 250_000_000)
+                 let fp = RuntimeTuning.footprintBytes()
+-                stableRounds = fp == lastFootprint ? stableRounds + 1 : 0
+-                lastFootprint = fp
++                if fp != lastFootprint {
++                    stableRounds = 0
++                    lastFootprint = fp
++                } else {
++                    stableRounds += 1
++                    // 每轮再请求一次，推动 allocator 持续归还，加快压力回落。
++                    malloc_zone_pressure_relief(nil, 0)
++                }
+             }
+             logMemory("settled")
+ 
+@@ -603,6 +619,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                 }
+                 let elapsedMs = Int(Date().timeIntervalSince(resumeBegan) * 1000)
+                 traceLogger.trace("[LIFECYCLE] resume_done ms=\(elapsedMs)")
++                observation.noteResume()
+             } catch {
+                 self.state.withLock {
+                     $0.lifecycle = .suspended
+@@ -614,10 +631,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+         }
+     }
+ 
+-    /// 自适应闲置超时（2026-09-13，替代固定 600s）：max(600s 基线, 最贵会话
+-    /// 重建时长估算 + 60s 容错)。重建时长按 512 档实测吞吐取保守 150 tok/s
+-    /// 估算（121k 会话闲置 ~14.5 分钟才允许卸载）；小会话维持 600s 基线。
+-    /// 避免大会话刚闲置满固定阈值即被卸载、下轮再缴全额冷启动税。
++    /// 自适应闲置超时：min(cap=360s, max(floor=240s, 最贵会话重建时长估算 + 60s 容错))。
++    /// 重建时长按 512 档保守吞吐估算。上限封顶（idleResidencyCapSeconds=360）是为缓解
++    /// "推理结束后内存压力长时间黄色"——大会话不再滞留 ~14.5 分钟才卸载，最长 6 分钟；
++    /// 下限兜底（idleResidencyFloorSeconds=240）保证小会话工具/思考间隙不反复缴冷启动税。
++    /// （2026-10-23 由 max(600s…) 收紧为带 cap 的收敛窗口。）
+     private func adaptiveIdleTimeout() async -> TimeInterval {
+         #if DEBUG
+         if let override = RuntimeTuning.suspendIdleTimeoutOverrideSeconds {
+@@ -630,7 +648,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+             let tokens = (try? await managed.session.cacheStatus())?.processedTokenCount ?? 0
+             maxTokens = max(maxTokens, tokens)
+         }
+-        return max(600, Double(maxTokens) / RuntimeTuning.prefillThroughputFloor + 60)
++        let estimate = Double(maxTokens) / RuntimeTuning.prefillThroughputFloor + 60
++        // 收敛驻留窗口：floor 兜底小会话、cap 封顶大会话（内存黄色缓解，见 RuntimeTuning）。
++        return min(RuntimeTuning.idleResidencyCapSeconds,
++                   max(RuntimeTuning.idleResidencyFloorSeconds, estimate))
+     }
+ 
+     public func suspendIfIdle() async -> Bool {
+@@ -702,14 +723,36 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                     }
+                 }
+ 
+-                self.state.withLock {
+-                    $0.lifecycle = .suspended
+-                    $0.modelContainer = nil
+-                    $0.sessions.removeAll()
+-                    $0.lastActivity = Date()
++                // §8 G3 tier 1: observe the runtime state BEFORE and AFTER the
++                // suspend mutation, so the release below is measured, not asserted.
++                var sessionsBefore = 0
++                var containerPresentBefore = false
++                var sessionsAfter = -1
++                var containerAbsentAfter = false
++                let releasedCount = self.state.withLock { state -> Int in
++                    sessionsBefore = state.sessions.count
++                    containerPresentBefore = state.modelContainer != nil
++                    state.lifecycle = .suspended
++                    state.modelContainer = nil
++                    state.sessions.removeAll()
++                    state.lastActivity = Date()
++                    sessionsAfter = state.sessions.count
++                    containerAbsentAfter = state.modelContainer == nil
++                    return sessionsBefore
+                 }
++                // Logical REFERENCE release (NOT proof of physical memory return).
++                self.observation.noteReferenceRelease(
++                    sessionsReleased: releasedCount,
++                    sessionsAfter: sessionsAfter,
++                    containerPresentBefore: containerPresentBefore,
++                    containerAbsentAfter: containerAbsentAfter)
+                 Memory.clearCache()
++                // §8 G3 tier 2: explicit resource-reclaim OPERATION invoked (MLX cache).
++                self.observation.noteResourceReclaim()
++                // 强制分配器归还空闲页，避免挂起后内存压力长时间黄色（2026-10-23）。
++                malloc_zone_pressure_relief(nil, 0)
+                 self.traceLogger.trace("[LIFECYCLE] suspend_done")
++                self.observation.noteSuspend()
+                 return true
+             }
+         } catch {
+@@ -918,6 +961,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                 if processed == total || processed - prefillLogged.value >= 4096 {
+                 prefillLogged.set(processed)
+                 RuntimeTraceLogger.shared.trace("[MLX] prefill \(processed)/\(total)")
++                if processed == total { self.observation.notePrefillTotal(total) }
+             }
+         }
+         let toolSpecs = Self.makeToolSpecs(tools)
+@@ -1012,6 +1056,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                         " history=\(existing.history.count) incoming=\(incoming.count)" +
+                         " fpHistory=\(existing.kvFingerprint ?? "-") fpIncoming=\(kvFingerprint ?? "-")"
+                     )
++                    observation.noteReuseMiss()
+                 }
+             }
+             if let existing,
+@@ -1031,6 +1076,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                         incoming: incomingMessage
+                     )
+                 )
++                observation.notePrefixMismatch()
+             }
+             // Route B 前缀池（SIMIGO17）：冷重建前先查跨会话共享池。
+             // 命中即 cacheLoad 恢复同款形态（快照 KV + delta 契约），
+@@ -1080,11 +1126,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                             + " bindingGen=\(childBinding.generation)"
+                             + " refHash=\(String(poolAdmission.entry.boundaryHash, radix: 16))"
+                     )
++                    observation.notePoolBindHit()
+                 } catch {
+                     // P-I1 响亮失败已在适配器内自愈（条目已删）；
+                     // 本轮回退冷路径，绝不静默续算在未对账表示上。
+                     traceLogger.trace(
+                         "[MLX] poolBindFailed err=\(error.localizedDescription)")
++                    observation.notePoolBindFailed()
+                 }
+             }
+             if let restored = poolRestored {
+@@ -1107,6 +1155,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                     kvFingerprint: kvFingerprint
+                 )
+                 reusedSession = false
++                observation.noteColdRebuild()
+                 state.withLock { $0.sessions[mapKey] = managed }
+                 if mapKey != executionKey.storageKey {
+                     // 展示走 traceKey 紧凑形态（6 位），全量 UUID 不进 trace。
+@@ -1544,6 +1593,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                     container: container, managed: managed,
+                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
+                 managed.checkpointDirty = false
++                observation.noteCacheSave()
+                 Self.enforceDefaultBranchCheckpointRetention(
+                     retaining: state.withLock { Set($0.sessions.keys) })
+                 lineage.attachCheckpoint(
+@@ -1556,6 +1606,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+                 traceLogger.trace(
+                     "[MLX] action=checkpointFailed key=\(executionKey.traceKey)"
+                     + " err=\(error.localizedDescription)")
++                observation.noteCheckpointFailed()
+             }
+         }
+ 
+@@ -1571,6 +1622,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+         var reportedCacheHit = cachedPromptTokens
+         var reportedCacheEff = cacheEfficiency
+         var reportedMode = cacheReuseMode
++        observation.noteEngineTokens(prompt: promptTokens, cacheHit: reportedCacheHit,
++                                     generation: generationTokens, mode: reportedMode,
++                                     reused: reusedSession)
+         if cacheReuseMode == nil, managed.isRestoredSnapshot,
+            let n = cacheTokensBefore, n > 0, let d = promptTokens {
+             reportedCacheHit = n
+@@ -1720,6 +1774,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+         let freedTokens = removed.reduce(0) { $0 + $1.tokens }
+         for (_, session, _) in removed { await session.clear() }
+         Memory.clearCache()
++        // 强制分配器归还空闲页，缩短 LRU 换出后的内存压力黄色窗口（2026-10-23）。
++        malloc_zone_pressure_relief(nil, 0)
+         report.evicted = removed.count
+         report.evictedTokens = freedTokens
+         report.warmSessions = state.withLock { $0.sessions.count }
+@@ -2064,8 +2120,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
+     /// 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/（跨 suspend 持久；
+     /// suspend 会清空内存会话，落盘 checkpoint 是分支唯一的 durable 存活物）。
+     nonisolated public static func defaultBranchCheckpointStore() -> URL {
+-        let directory = FileManager.default.homeDirectoryForCurrentUser
+-            .appendingPathComponent(".simigo/branch-checkpoints", isDirectory: true)
++        let directory = SimiGoRuntimeCachePaths.branchCheckpointsRoot
+         try? FileManager.default.createDirectory(
+             at: directory, withIntermediateDirectories: true)
+         return directory
+diff --git a/SimiGo/Inference/NativeMLXPrefixPool.swift b/SimiGo/Inference/NativeMLXPrefixPool.swift
+index 8a1ec9b..dfc862a 100644
+--- a/SimiGo/Inference/NativeMLXPrefixPool.swift
++++ b/SimiGo/Inference/NativeMLXPrefixPool.swift
+@@ -80,8 +80,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
+         lock.lock()
+         defer { lock.unlock() }
+         if let store { return store }
+-        let root = FileManager.default.homeDirectoryForCurrentUser
+-            .appendingPathComponent(".simigo/prefix-pool")
++        let root = SimiGoRuntimeCachePaths.prefixPoolRoot
+         let store = PrefixSnapshotStore(
+             root: root, pool: ExecutionStatePrefixPool(
+                 tokenBudget: RuntimeTuning.prefixPoolTokenBudget,
+diff --git a/SimiGo/Lifecycle/RuntimeTuning.swift b/SimiGo/Lifecycle/RuntimeTuning.swift
+index c09f120..3c41a3a 100644
+--- a/SimiGo/Lifecycle/RuntimeTuning.swift
++++ b/SimiGo/Lifecycle/RuntimeTuning.swift
+@@ -194,6 +194,11 @@ nonisolated enum RuntimeTuning {
+ 
+     /// 预填吞吐保守下限（tok/s）——512 档实测 188，取 150 估算闲置会话重建时长。
+     static let prefillThroughputFloor = 150.0
++    /// 内存黄色缓解（2026-10-23 用户反馈：推理结束后内存压力长时间为黄色 → 缩短）。
++    /// 大会话自适应阈值此前可高达 ~14.5 分钟（121k tok ÷ 150 + 60）。给驻留窗口
++    /// 加**上限**收敛最长黄色时长；并把基线下调（仍高于常见追问间隔，避免即时冷启动税抖动）。
++    static var idleResidencyFloorSeconds: TimeInterval = 240
++    static var idleResidencyCapSeconds: TimeInterval = 360
+ 
+     /// P1 卸载后 memory settle 等待上限。
+     static var memorySettleTimeoutSeconds: TimeInterval = 10
+diff --git a/SimiGo/System/EnvManager.swift b/SimiGo/System/EnvManager.swift
+index 354355e..28e2679 100644
+--- a/SimiGo/System/EnvManager.swift
++++ b/SimiGo/System/EnvManager.swift
+@@ -1,5 +1,6 @@
+ import Foundation
+ import Combine
++import SimiGoRuntimeContract
+ 
+ /// Manages external process dependencies and the shared command console.
+ /// Native MLX itself does not require an external Python environment.
+@@ -23,11 +24,69 @@ public final class EnvManager: ObservableObject {
+     @Published public var commandStatus = "就绪"
+ 
+     // MARK: - Paths
+-    public static var simigoDir: String { "\(NSHomeDirectory())/.simigo" }
+-    public static var binDir: String { "\(simigoDir)/bin" }
+-    public static var modelsDir: String { "\(simigoDir)/models" }
+-    public static var logsDir: String { "\(simigoDir)/logs" }
+-    public static var nativeMLXTraceLog: String { "\(logsDir)/native_mlx_trace.log" }
++    // Single source of truth: SimiGoPaths (MLX-free runtime resolver). No `models`
++    // directory is ever created under the managed root — model weights stay external
++    // and are referenced from the Hugging Face cache / user-selected roots only.
++    public static var simigoDir: String { SimiGoPaths.managedRoot().path }
++    public static var binDir: String { SimiGoPaths.bin.path }
++    public static var logsDir: String { SimiGoPaths.logs.path }
++    public static var nativeMLXTraceLog: String { SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log").path }
++
++    // MARK: - Engine selection (install page)
++    /// Engines selectable at install time: bundled defaults plus any operator
++    /// manifest entries. NOT hardcoded to llama.cpp — add an engine via manifest.
++    public var availableEngines: [EngineRecipe] {
++        SimiGoEngineRegistry.load(manifestURL: SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName))
++    }
++
++    /// Currently chosen engine id (persisted to config).
++    @Published public var selectedEngineID: String = AppConfig.get(.selectedEngine) ?? "mlx-native" {
++        didSet { AppConfig.set(selectedEngineID, for: .selectedEngine) }
++    }
++
++    /// Resolve an engine's lifecycle stage. Downloaded / built / adapted stay three
++    /// DISTINCT states — a fetched source is not a built binary and neither is an
++    /// adapted SimiGo runtime.
++    public func engineStage(for id: String) -> EngineStage {
++        guard let recipe = availableEngines.first(where: { $0.id == id }) else { return .absent }
++        let binaryPresent = Self.findSystemLlamaServer() != nil
++        let sourcePinned = FileManager.default.fileExists(atPath: SimiGoPaths.sources.path)
++        let driverAdapted = id == "mlx-native" ? true : binaryPresent
++        return SimiGoEngineRegistry.resolveStage(recipe: recipe,
++                                                 sourcePresentAtPinnedRef: sourcePinned,
++                                                 binaryPresent: binaryPresent,
++                                                 driverAdapted: driverAdapted,
++                                                 healthChecked: binaryPresent)
++    }
++
++    /// requirement②: the concrete OpenAI-compatible endpoint SimiGo will adopt
++    /// for a SELECTED external server (ollama / LM Studio / …). `nil` means the
++    /// selected engine is not an endpoint-adoptable external server (native MLX,
++    /// source-build llama.cpp) or is fail-closed for lack of a manifest endpoint
++    /// (SGLang). The install UI uses this to wire the existing remote runtime,
++    /// so selecting a server actually routes inference instead of only logging.
++    public func adoptedEndpoint(for id: String) -> SimiGoEngineRegistry.AdoptedEndpoint? {
++        guard let recipe = availableEngines.first(where: { $0.id == id }) else { return nil }
++        return SimiGoEngineRegistry.adoptedEndpoint(for: recipe)
++    }
++
++    /// requirement②: apply the selected external server's resolved OpenAI-compatible
++    /// endpoint to the live runtime by configuring the existing, already-tested
++    /// `.cloud` remote backend. Business logic lives here (not in the SwiftUI view)
++    /// so it is the single source of truth and is directly testable. Returns `nil`
++    /// (fail-closed) when the engine is not an endpoint-adoptable external server,
++    /// leaving the Service untouched.
++    @MainActor
++    public func applyExternalAdoption(of id: String, to service: Service) -> SimiGoEngineRegistry.AdoptedEndpoint? {
++        guard let ep = adoptedEndpoint(for: id) else { return nil }
++        service.cloudBaseURL = ep.baseURL
++        if let m = ep.defaultModel { service.cloudModel = m }
++        service.backendSelection = .cloud
++        commandStatus = "已采用外部服务端"
++        statusMessage = "已采用外部服务端：\(ep.baseURL)"
++        appendCommandLog("🔌 采用 \(id) → 云端运行时指向 \(ep.baseURL)")
++        return ep
++    }
+ 
+     public static var llamaServerExecutable: String {
+         Self.findSystemLlamaServer() ?? "\(binDir)/llama-server"
+@@ -196,6 +255,25 @@ public final class EnvManager: ObservableObject {
+ 
+     // MARK: - llama.cpp Environment Setup
+     public func setupEnvironment() async {
++        // Dispatch by the selected engine's KIND. Native MLX needs no external
++        // binary; external servers (ollama / LM Studio / slang) are ADOPTED, not
++        // built here. Only source-build recipes fall through to the compile path.
++        let engine = selectedEngineID
++        if let recipe = availableEngines.first(where: { $0.id == engine }), recipe.kind != .sourceBuild {
++            switch recipe.kind {
++            case .nativeRuntime:
++                commandStatus = "就绪"
++                statusMessage = "Native MLX 内置，无需外部依赖"
++                appendCommandLog("✅ Native MLX 内置运行时，无需构建外部引擎。")
++            default:
++                let stage = engineStage(for: engine)
++                commandStatus = stage == .absent ? "未检测到外部服务端" : "已采用外部服务端"
++                statusMessage = commandStatus
++                appendCommandLog("ℹ️ \(recipe.displayName) 为外部服务端（stage=\(stage)）：请确认已安装，SimiGo 只采用不构建。")
++            }
++            checkStatus()
++            return
++        }
+ 
+         commandInput = "llama.cpp build"
+         commandStatus = "构建中"
+@@ -206,7 +284,7 @@ public final class EnvManager: ObservableObject {
+         do {
+             try fm.createDirectory(atPath: Self.simigoDir, withIntermediateDirectories: true)
+             try fm.createDirectory(atPath: Self.binDir, withIntermediateDirectories: true)
+-            try fm.createDirectory(atPath: Self.modelsDir, withIntermediateDirectories: true)
++            // No `.simigo/models`: models are never copied into the managed root.
+             try fm.createDirectory(atPath: Self.logsDir, withIntermediateDirectories: true)
+ 
+             guard let git = Self.findTool("git") else {
+@@ -217,23 +295,32 @@ public final class EnvManager: ObservableObject {
+                 throw NSError(domain: "EnvManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "未找到 cmake，请安装 cmake。"])
+             }
+ 
+-            let source = "\(Self.simigoDir)/llama.cpp"
++            // Locked version only: NO floating `git pull`. The pinned ref must come
++            // from the engine manifest / operator setting; an unlocked recipe is
++            // refused fail-closed instead of silently tracking upstream HEAD.
++            guard let llamaRecipe = SimiGoEngineRegistry.recipe(
++                    id: "llama.cpp",
++                    manifestURL: SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName)),
++                  llamaRecipe.isVersionLocked, let pinned = llamaRecipe.pinnedRef else {
++                throw NSError(domain: "EnvManager", code: 409, userInfo: [NSLocalizedDescriptionKey:
++                    "llama.cpp 未锁定版本：请在引擎清单 '\(SimiGoEngineRegistry.manifestName)' 指定 pinnedRef 后再构建（禁止随上游漂移）。"])
++            }
++            let source = SimiGoPaths.sources.appendingPathComponent("llama.cpp").path
++            let build = SimiGoPaths.build.appendingPathComponent("llama.cpp").path
+ 
+-            if !fm.fileExists(atPath: source) {
+-                appendCommandLog("📥 克隆 llama.cpp...")
+-                try await runCommand(git, args: ["clone", "https://github.com/ggml-org/llama.cpp.git", source])
++            if !fm.fileExists(atPath: "\(source)/.git") {
++                appendCommandLog("📥 锁定检出 llama.cpp @ \(pinned) …")
++                for args in llamaRecipe.lockedCheckoutCommands(git: git, targetDir: source) {
++                    try await runCommand(args[0], args: Array(args.dropFirst()))
++                }
+             } else {
+-                appendCommandLog("🔄 更新 llama.cpp...")
+-                try? await runCommand(git, args: ["-C", source, "pull", "--ff-only"])
++                appendCommandLog("🔒 校验 llama.cpp 检出到锁定版本 \(pinned) …")
++                try await runCommand(git, args: ["-C", source, "fetch", "--depth", "1", "origin", pinned])
++                try await runCommand(git, args: ["-C", source, "checkout", "--detach", pinned])
+             }
+ 
+-            let build = "\(source)/build"
+-
+             if fm.fileExists(atPath: "\(build)/CMakeCache.txt") {
+-                appendCommandLog("⚡ 检测到已有缓存，执行高效增量构建...")
+-            } else {
+-                appendCommandLog("🧹 清理旧构建缓存以解决符号冲突...")
+-                try? fm.removeItem(atPath: build)
++                appendCommandLog("⚡ 检测到已有构建缓存，执行增量构建…")
+             }
+ 
+             appendCommandLog("🛠️ 配置 Metal 构建...")
+@@ -290,15 +377,27 @@ public final class EnvManager: ObservableObject {
+                 throw NSError(domain: "EnvManager", code: 501, userInfo: [NSLocalizedDescriptionKey: "llama-server 构建完成，但未找到构建产物。"])
+             }
+ 
++            // "构建完成后删除缓存只保留二进制": the installed binary already lives in
++            // binDir, so drop exactly the cache set the recipe declares (single
++            // source of truth — a recipe that names other cache dirs is honored) and
++            // never a path the recipe did not list. bin/ is not in that set, so the
++            // retained binary can never be pruned.
++            appendCommandLog("🧹 构建完成，清理缓存仅保留二进制…")
++            for rel in llamaRecipe.cachePathsToRemoveAfterBuild {
++                precondition(!rel.hasPrefix("/") && !rel.contains(".."),
++                             "recipe cache path must be relative and contained")
++                let url = SimiGoPaths.managedRoot().appendingPathComponent(rel, isDirectory: true)
++                if fm.fileExists(atPath: url.path) { try? fm.removeItem(at: url) }
++            }
++            appendCommandLog("✅ 已清理引擎缓存：\(llamaRecipe.cachePathsToRemoveAfterBuild.joined(separator: ", "))（仅保留二进制）")
+ 
+-            let targetHf = "\(Self.binDir)/hf"
+-
+-            if fm.fileExists(atPath: targetHf) {
+-                appendCommandLog("⚡ 检测到已安装官方 hf 工具，跳过重复安装。")
++            // Hugging Face CLI: NEVER pipe a remote script to a shell (curl | bash).
++            // SimiGo only adopts an already-installed `hf`; if absent, HF model
++            // downloads stay unavailable until the user installs the official CLI.
++            if Self.findTool("hf") != nil {
++                appendCommandLog("⚡ 已检测到官方 hf 工具，模型下载可用。")
+             } else {
+-                appendCommandLog("📥 正在安装官方 Hugging Face CLI 到 \(Self.simigoDir)...")
+-                try await runCommand("/bin/zsh", args: ["-c", "curl -LsSf https://hf.co/cli/install.sh | INSTALL_PREFIX=\(Self.simigoDir) bash"])
+-                appendCommandLog("✅ 官方 hf 工具已就绪。")
++                appendCommandLog("ℹ️ 未检测到 hf CLI：出于安全（禁止 curl | bash）不自动安装。如需从 Hugging Face 下载模型，请自行安装官方 CLI。")
+             }
+ 
+ 
+diff --git a/SimiGo/System/Service.swift b/SimiGo/System/Service.swift
+index bb5b39a..db4f3a9 100644
+--- a/SimiGo/System/Service.swift
++++ b/SimiGo/System/Service.swift
+@@ -573,6 +573,23 @@ public final class Service: ObservableObject {
+             self.config = resolveConfig(for: savedPath)
+         }
+ 
++        // Unified path resolution: when the persisted portable reference resolves to
++        // a live model under the external cache, prefer it over any stale absolute
++        // path (this survives a cache relocation) and refresh the runtime locators.
++        if let url = AppConfig.resolvedSelectedModelURL {
++            let resolved = url.path
++            if resolved != modelPath, FileManager.default.fileExists(atPath: resolved) {
++                modelPath = resolved
++                AppConfig.set(resolved, for: .modelPath)
++                switch ModelDetector.detect(path: resolved).kind {
++                case .mlx: mlxModelPath = resolved; AppConfig.set(resolved, for: .mlxModelPath)
++                case .gguf: llamaModelPath = resolved; AppConfig.set(resolved, for: .llamaModelPath)
++                case .cloudOpenAI: break
++                }
++                self.config = resolveConfig(for: resolved)
++            }
++        }
++
+         let node = InferenceNodeConfiguration.fromEnvironment(defaultPort: AppConfig.apiPort)
+ 
+         InferenceNodeConfiguration.configure(
+@@ -660,6 +677,9 @@ public final class Service: ObservableObject {
+ 
+         modelPath = path
+         AppConfig.set(path, for: .modelPath)
++        // Portable identity: persist (root_id + relative) when the model lives in an
++        // external cache root; the absolute path remains only as a runtime locator.
++        AppConfig.persistReference(forAbsolutePath: path)
+     }
+ 
+     public func start(_ selection: BackendSelection) async {
+@@ -1166,7 +1186,8 @@ public final class Service: ObservableObject {
+ 
+                     // NativeMLX: 空闲超时挂起模型（Phase 1 实验）。
+                     // 仅释放模型驻留内存，HTTPServer 保持运行——不触发 restart。
+-                    // 超时为自适应：max(600s, 最贵会话重建时长估算+60s 容错)。
++                    // 超时为自适应：min(cap=360s, max(floor=240s, 最贵会话重建时长估算+60s 容错))
++                    // —— 2026-10-23 由原 max(600s…) 收紧为带上限的收敛窗口，缓解推理结束后内存压力长时间黄色。
+                     if self.backendKind == .mlx,
+                        let nativeMLX = runtime as? NativeMLX {
+                         // 健康循环只需“尝试挂起”，返回值用于静默处理。
+@@ -1211,11 +1232,11 @@ public final class Service: ObservableObject {
+ 
+     // MARK: - Health Check Tuning
+ 
+-    // 空闲挂起超时已改为自适应（NativeMLX.adaptiveIdleTimeout）：
+-    // max(600s 基线, 最贵会话重建时长估算 + 60s 容错)。保留 600s 下限的
+-    // 依据不变：agent 会话工具执行/思考间隙不应反复缴纳冷启动税；
+-    // 大上下文会话（如 121k，重建 ≈11 分钟）按估算自动延长闲置容忍。
+-    // 健康检查循环周期 30s，挂起延迟收敛到 idleTimeout～idleTimeout+30s。
++    // 空闲挂起超时自适应（NativeMLX.adaptiveIdleTimeout）：
++    // min(cap=360s, max(floor=240s, 最贵会话重建时长估算 + 60s))。带 cap 的收敛窗口
++    // 是为缓解"推理结束后内存压力长时间黄色"：大会话最长 6 分钟即卸载（原 ≈14.5 分钟）；
++    // floor 兜底保证小会话工具/思考间隙不反复缴冷启动税。
++    // 健康检查循环周期 30s，实际挂起延迟收敛到 idleTimeout～idleTimeout+30s（≤ 6.5 分钟）。
+ 
+     private func stopHealthCheck() {
+         healthTask?.cancel()
+diff --git a/SimiGoTests/ExecutionStateGraphTests.swift b/SimiGoTests/ExecutionStateGraphTests.swift
+index 8c01714..c2149d5 100644
+--- a/SimiGoTests/ExecutionStateGraphTests.swift
++++ b/SimiGoTests/ExecutionStateGraphTests.swift
+@@ -1,19 +1,26 @@
+ import XCTest
++import SimiGoRuntimeContract
+ @testable import SimiGo
+ 
+ final class ExecutionStateGraphTests: XCTestCase {
+     private var storeURL: URL!
++    private var dbURL: URL!
+ 
+     override func setUp() {
+         super.setUp()
+-        storeURL = FileManager.default.temporaryDirectory
++        // Hermetic: BOTH the JSON storeURL and the authoritative SQLite dbURL are
++        // scoped to a fresh per-test temp directory, so multiple store instances in
++        // a run never collide on the shared global authority (the store rebuilds its
++        // document from SQLite, not JSON, since the ES/IS integration).
++        let base = FileManager.default.temporaryDirectory
+             .appendingPathComponent("SimiGoStateGraphTests-\(UUID().uuidString)")
+-            .appendingPathComponent("graph.json")
++        storeURL = base.appendingPathComponent("graph.json")
++        dbURL = base.appendingPathComponent("estates.sqlite3")
+     }
+ 
+     @MainActor
+     func testCreateContinueForkKeepsParentClosureUntouched() throws {
+-        let store = ExecutionStateGraphStore(storeURL: storeURL)
++        let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+         let root = try store.create()
+         try store.continueState(root, input: "shared")
+         let parent = try XCTUnwrap(store.state(root.id))
+@@ -32,7 +39,7 @@ final class ExecutionStateGraphTests: XCTestCase {
+ 
+     @MainActor
+     func testSaveRestoreFailsClosedOnTamperedCheckpoint() throws {
+-        let store = ExecutionStateGraphStore(storeURL: storeURL)
++        let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+         let root = try store.create()
+         try store.continueState(root, input: "valid")
+         let checkpoint = try store.save(try XCTUnwrap(store.state(root.id)))
+@@ -60,13 +67,14 @@ final class ExecutionStateGraphTests: XCTestCase {
+ 
+     @MainActor
+     func testDurableGraphPersistsAcrossStoreInstances() throws {
+-        let first = ExecutionStateGraphStore(storeURL: storeURL)
++        let first = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+         let root = try first.create()
+         try first.continueState(root, input: "durable")
+         try first.save(try XCTUnwrap(first.state(root.id)))
+ 
+-        let second = ExecutionStateGraphStore(storeURL: storeURL)
++        let second = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+         XCTAssertEqual(second.document, first.document)
++
+         XCTAssertNil(second.loadError)
+         let restored = try second.restore(
+             try XCTUnwrap(second.state(root.id)),
+@@ -77,7 +85,7 @@ final class ExecutionStateGraphTests: XCTestCase {
+ 
+     @MainActor
+     func testDiscardRemovesGhostContinuationAndReleaseKeepsLogicalState() throws {
+-        let store = ExecutionStateGraphStore(storeURL: storeURL)
++        let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+         let root = try store.create()
+         try store.save(root)
+         let saved = try XCTUnwrap(store.state(root.id))
+@@ -105,4 +113,37 @@ final class ExecutionStateGraphTests: XCTestCase {
+         XCTAssertTrue(store.checkpoints(for: releasable.id).isEmpty)
+         XCTAssertEqual(store.state(releasable.id)?.lifecycle, .active)
+     }
++
++    /// Integration proof that the native settlement gate is wired into the app's
++    /// real production call chain (UI Settle action -> `settleProducerResult` ->
++    /// `SimiGoSettlementAuthority` -> authoritative SQLite IS commit), and that it
++    /// stays fail-closed. A temp `dbURL` keeps the run off the global store.
++    @MainActor
++    func testSettleProducerResultCommitsThroughNativeGateAndFailsClosed() throws {
++        let dbURL = FileManager.default.temporaryDirectory
++            .appendingPathComponent("SimiGoSettleTests-\(UUID().uuidString)")
++            .appendingPathComponent("estates.sqlite3")
++        let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
++        let root = try store.create()
++        try store.continueState(root, input: "shared")
++        let state = try XCTUnwrap(store.state(root.id))
++
++        // Fail-closed: a producer result that does not commit to the IS next-input
++        // is refused by the native gate and nothing is settled.
++        XCTAssertThrowsError(try store.settleProducerResult(generatedText: "RESULT=tampered", boundToState: state)) { error in
++            XCTAssertEqual((error as? NativeResultContractError)?.code, "PRODUCER_RESULT_BINDING_MISMATCH")
++        }
++        XCTAssertNil(store.document.settlements?.first(where: { $0.stateID == state.id }))
++
++        // Authorized: the validated payload commits to the graph and to SQLite IS.
++        let settled = try store.settleProducerResult(generatedText: "RESULT=shared", boundToState: state)
++        XCTAssertEqual(settled.trace.validationStatus, "VALID")
++        XCTAssertEqual(store.document.settlements?.filter { $0.stateID == state.id }.count, 1)
++
++        let db = try XCTUnwrap(store.esis)
++        let receipts = try db.readSettlementReceipts()
++        XCTAssertEqual(receipts.count, 1)
++        XCTAssertEqual(receipts.first?.payloadDigest, settled.payloadDigest)
++        XCTAssertEqual(receipts.first?.stateID, state.id)
++    }
+ }
