@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "verified_utc": "2026-10-22T09:23:56.414895+00:00",
+  "repo_root": "/Users/mr.simi/Documents/SimiGo-Lab",
+  "head_unchanged": true,
+  "branch_unchanged": true,
+  "staged_diff_unchanged": true,
+  "changed_file_count": 15,
+  "changed_files": [
+    {
+      "path": "simigo2-experimental/Package.swift",
+      "before": {
+        "path": "simigo2-experimental/Package.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 8973,
+        "kind": "file",
+        "sha256": "3ad5fe3d5b87432e31ed993558ad12f732f9ac6c705a6eb1d4fa0db15cf85362"
+      },
+      "after": {
+        "path": "simigo2-experimental/Package.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 9381,
+        "kind": "file",
+        "sha256": "f7a32aabb20bde8912c1085577181532332b0fe49946ab6e0ec054d198d6024c"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+      "before": {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 73929,
+        "kind": "file",
+        "sha256": "0f164728838119595650102661b8a1f790de874dbd5e4bfb6e42e50bb3941af9"
+      },
+      "after": {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 74916,
+        "kind": "file",
+        "sha256": "24d3daf3bb81ef708533ded935e1e5df44c7a84bf8c464c0a8dc50ae2049046b"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/SettlementProvenanceVerification.swift",
+      "before": {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/SettlementProvenanceVerification.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 19320,
+        "kind": "file",
+        "sha256": "3c07ababd7ee37658390bd4d030b1dbc7c55dadf2cb66be163556ec158332662"
+      },
+      "after": {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/SettlementProvenanceVerification.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 19570,
+        "kind": "file",
+        "sha256": "51f998114d77a0fc640911812ab87fa5916521b8acf43967d37ad3476d838d23"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGoDetachedDriver/main.swift",
+      "before": {
+        "path": "simigo2-experimental/Sources/SimiGoDetachedDriver/main.swift",
+        "exists": false
+      },
+      "after": {
+        "path": "simigo2-experimental/Sources/SimiGoDetachedDriver/main.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 17511,
+        "kind": "file",
+        "sha256": "2951cfceea8c23ac443fff0793f8ec33e1d555cbfcb1e35ab7d7eed878c72820"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGoTaskRun/main.swift",
+      "before": {
+        "path": "simigo2-experimental/Sources/SimiGoTaskRun/main.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 20036,
+        "kind": "file",
+        "sha256": "79c872a81a4973206897a4b77ebfc329974ec0b812205a7fbe8657f890f7d23c"
+      },
+      "after": {
+        "path": "simigo2-experimental/Sources/SimiGoTaskRun/main.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 21125,
+        "kind": "file",
+        "sha256": "ac946ee2fc7e36da80a50da9cdee57c02fab4bd6ff5f3d67fc6d1b8e1b4ff97e"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 14037,
+        "kind": "file",
+        "sha256": "b2227457961fcf65931cf0f0487b43d7aeba24b0fb7b2ee75b300435c9aa8ff1"
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 14287,
+        "kind": "file",
+        "sha256": "be00ab020d69f871469b385aeb08e421b32b4184338fff3a8681fa0de0b7274f"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/DetachedContinuationEntryTests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/DetachedContinuationEntryTests.swift",
+        "exists": false
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/DetachedContinuationEntryTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 20070,
+        "kind": "file",
+        "sha256": "e7100ebe29e19a80d482279517a0967930f9e58ff803ebeebc0b7c010d888f99"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 9796,
+        "kind": "file",
+        "sha256": "5bac6d5fdfd0ae7386e046d38d64953a62694f7466154b0167ed0008e2d004c4"
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 10032,
+        "kind": "file",
+        "sha256": "90220d7296fd068f34f43da9f4f0acb13fd69b81ff75b148284ab7a69aff4c0d"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 15217,
+        "kind": "file",
+        "sha256": "fdc2122c7e81d3227c1958b039c6b263ed0ef130a084cfcb6a245fa6ace4ab3a"
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 15496,
+        "kind": "file",
+        "sha256": "fe5a8dbb14cdb3def42beb411f694e2ef1079322436a7205179e04140c048220"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 9176,
+        "kind": "file",
+        "sha256": "84fda986744dd4be52e60024d4fa280cc013939ebb34ff4cd03647b856594db5"
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 9494,
+        "kind": "file",
+        "sha256": "454f908616e62b4fbdae5d67e1607da6a39e58f53a5d1df4e5c955c0842a3836"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 10184,
+        "kind": "file",
+        "sha256": "875faf929aa6470be86ee9e9a2aa9b17b90aa07d16297678b6a30a6e70bfafc8"
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 10461,
+        "kind": "file",
+        "sha256": "811ddd437d7617e6f7f1a5a670fe248bfacb2802a7720d12de780ea55b48b280"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 15339,
+        "kind": "file",
+        "sha256": "b4963fb08df7af483166244e6a063f5b9f4f6b19e4de023de8b3a088f5e2d395"
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 15611,
+        "kind": "file",
+        "sha256": "5e0ea46152918b655e55c3e00e08ab968b49f7b7ef835a18c56e9dd64c07bb7c"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 43839,
+        "kind": "file",
+        "sha256": "8d09d5828273d212905d6f5aa2f88dd83afb161eefbc053bf71638f3882a0eac"
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 44147,
+        "kind": "file",
+        "sha256": "9240e5e8b3cc2cbad295ab63fa7dbd27eefd72df7309fd6b98e8310d3927c143"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/SettlementTrustFixture.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/SettlementTrustFixture.swift",
+        "exists": false
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/SettlementTrustFixture.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 4124,
+        "kind": "file",
+        "sha256": "db8129744fe9a1563d38916a2d8d5952303cea048f2f2464bf517e0d40bf3031"
+      }
+    },
+    {
+      "path": "simigo2-experimental/scripts/ordinary_task/run_phase_f.py",
+      "before": {
+        "path": "simigo2-experimental/scripts/ordinary_task/run_phase_f.py",
+        "exists": false
+      },
+      "after": {
+        "path": "simigo2-experimental/scripts/ordinary_task/run_phase_f.py",
+        "exists": true,
+        "mode": 420,
+        "size": 56550,
+        "kind": "file",
+        "sha256": "0aa640d0744b126f919315ae4dc641f4cd77b806de7ae193b4da8fa9958c16b8"
+      }
+    }
+  ],
+  "issues": [],
+  "result": "PASS"
+}

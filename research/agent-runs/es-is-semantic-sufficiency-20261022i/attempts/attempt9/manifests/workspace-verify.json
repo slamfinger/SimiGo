@@ -1,0 +1,14 @@
+{
+  "PASS": true,
+  "allowed_changes": [
+    "execution-information-loop/i_semantic_sufficiency_selftest.py",
+    "execution-information-loop/production_runtime_bridge.py",
+    "simigo2-experimental/scripts/ordinary_task/run_phase_i.py"
+  ],
+  "changed_file_count": 3,
+  "file_count_after": 5197,
+  "file_count_before": 5195,
+  "head_after": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "head_before": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "unexpected_changes": []
+}

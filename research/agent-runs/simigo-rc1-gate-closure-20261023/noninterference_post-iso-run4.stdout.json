@@ -1,0 +1,10 @@
+{
+ "phase": "post-iso-run4",
+ "official_db_sha": "cac32deccd917074fe4eb72bbef7a9a90abc50f41c30ba47fb767ee52820dcbe",
+ "official_wal_sha": "62c988cbc183f791f3ed17d1e0497740a8f48c0bff92394701a0cee5cbec9b80",
+ "official_wal_bytes": 3955232,
+ "checkpoints_files": 37,
+ "checkpoints_bytes": 14896048796,
+ "prefix_pool_files": 45,
+ "agent_runs_files": 105845
+}

@@ -1,0 +1,5 @@
+$ driver J1-INCOMPLETE-FIELD attempt (kind=contract_test_model_free_candidate)
+candidate text omits the declared PRIORITY line
+exit=1
+payload={"command": "execute-with-model-result", "error": "PRODUCER_RESULT_FIELD_MISSING: field=priority required field was not present in generated text", "error_type": "ContractError", "ok": false}
+observations={"contract_dispatch_basis": "declared_contract", "expected_error_code": "PRODUCER_RESULT_FIELD_MISSING", "generation_calls": 0, "item_id_under_test": "J-1c0e32c7-U1", "model_loads": 0, "observed_error": "PRODUCER_RESULT_FIELD_MISSING: field=priority required field was not present in generated text", "producer_contract_rejects": true, "run_token": "1c0e32c7", "seed_tokenize_calls": 0, "signature_created": false, "test_kind": "contract_test_model_free_candidate", "text_tokenize_calls": 0, "valid_settlement_created": false}

@@ -1,0 +1,89 @@
+{
+ "gate": "per_layer_forward_calls",
+ "candidate_exe_sha256": "95224f06cf9c1387cd77c2582cec7d009584a28ce66ff4de76b405a764737fe6",
+ "rid": "lf1",
+ "captured_at": "2026-10-24T14:28:50+0800",
+ "verdict": "PASS",
+ "checks": {
+  "L1_shipped_pilot_ran": true,
+  "L2_numbers_trace_to_file": true,
+  "L3_trace_stable": true,
+  "L4_every_declared_layer_seen": true,
+  "L5_one_enter_per_layer_per_pass": true,
+  "L6_observation_changed_nothing": true,
+  "L7_layer_sequential": true,
+  "L8_no_number_from_driver": true,
+  "L9_candidate_is_the_new_build": true
+ },
+ "numbers": {
+  "num_hidden_layers": 48,
+  "model_type_from_config": "qwen3_moe",
+  "expert_count": 128,
+  "model_type_from_runtime": "Qwen3MoEModel",
+  "observed_scope": "DECODER_MLP_DOWN_PROJ / CORE_NOT_DIRECTLY_OBSERVED",
+  "instrumented_module_count": 48,
+  "cases": [
+   {
+    "prompt_id": "P1",
+    "forward_passes_per_repetition": [
+     2,
+     2
+    ],
+    "layers": 48,
+    "events": 192,
+    "per_layer_forward_calls_min": 4,
+    "per_layer_forward_calls_max": 4
+   },
+   {
+    "prompt_id": "P2",
+    "forward_passes_per_repetition": [
+     16,
+     16
+    ],
+    "layers": 48,
+    "events": 1536,
+    "per_layer_forward_calls_min": 32,
+    "per_layer_forward_calls_max": 32
+   },
+   {
+    "prompt_id": "P3",
+    "forward_passes_per_repetition": [
+     16,
+     16
+    ],
+    "layers": 48,
+    "events": 1536,
+    "per_layer_forward_calls_min": 32,
+    "per_layer_forward_calls_max": 32
+   }
+  ],
+  "layer_entered_events_total": 3264,
+  "per_layer_forward_calls_min": 4,
+  "per_layer_forward_calls_max": 32,
+  "layers_observed": 48,
+  "pass_shape_lengths": [
+   48
+  ],
+  "overhead_summary": {
+   "maxOverheadRatio": 1.2021162218153578,
+   "meanOverheadRatio": 1.1261791450527778,
+   "minOverheadRatio": 1.079877560920099,
+   "peakMemoryOverheadMegabytes": 3.484375
+  },
+  "estimated_values": 0
+ },
+ "contradictions": [],
+ "rules": {
+  "L1": "exit_code 0, evidence status OK, pilot status PASS",
+  "L2": "report sha256 recomputed == sha256 recorded by the process",
+  "L3": ">= 2 repetitions, constant non-zero pass count per case, declared == re-derived, trace stable",
+  "L4": "observed layer set == range(num_hidden_layers) from config.json",
+  "L5": "each layer entered exactly once per forward pass",
+  "L6": "token IDs identical and logits bitwise identical (passive observer)",
+  "L7": "each pass covers every layer once in ascending order",
+  "L8": "verifier's independent re-derivation equals the driver's block",
+  "L9": "raw exe sha256 == installed candidate exe sha256"
+ },
+ "what_this_is_not": "not a theoretical layer count, not a timing-derived estimate, and not a call-graph guess: each number is the number of retained `layerEntered` events emitted by the shipped observer for that decoder layer.",
+ "observed_scope_limit": "The observer sits on the decoder MLP down-projection (and the MoE switch_mlp down-projection); the decoder core itself is NOT directly observed. Expert-level demand is not instrumented."
+}

@@ -1,0 +1,10 @@
+# prior release app identity (preserved before overwrite)
+226945e28fe36bc24d68fe044ad371177544ea6e60cbf3b8e3b257aff082655b  build/release-v2.1/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo
+SimiGo
+4b73263a442ceeff565a25b3d8947e52b6cb135f066b7d9dbb4138fb176226d3  build/release-v2.1/Build/Products/Release/SimiGo.app/Contents/Info.plist
+Executable=/Users/mr.simi/Documents/SimiGo/build/release-v2.1/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo
+Identifier=SwiftUI.SimiGo
+Format=app bundle with Mach-O thin (arm64)
+CodeDirectory v=20500 size=172847 flags=0x10002(adhoc,runtime) hashes=5391+7 location=embedded
+Signature=adhoc
+Info.plist entries=20

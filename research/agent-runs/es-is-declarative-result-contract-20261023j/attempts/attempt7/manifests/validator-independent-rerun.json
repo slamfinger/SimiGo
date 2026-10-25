@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j"
+  ],
+  "checked_at_utc": "2026-10-22T16:50:34Z",
+  "exit_code": 0,
+  "note": "run after the driver finished, so the file checked here is the final on-disk summary.json (including its validator_final field)",
+  "result": {
+    "issue_count": 0,
+    "issues": [],
+    "result": "PASS"
+  },
+  "schema_id": "SIMIGO-J-INDEPENDENT-REVALIDATION-V1",
+  "summary_sha256": "0e0af64e4487cc06026a29bd533c9c9250229a737f4e97cb7f714408574162d5",
+  "validator": "execution-information-loop/validate_j_evidence.py",
+  "validator_sha256": "88c5659e88b2d3a7851ee96d9b46f2f21cf695624f02c2b4eb51123ae8161e26"
+}

@@ -1,0 +1,148 @@
+{
+  "branch_checkpoints_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/experiment\/rc2\/cache_es2\/branch-checkpoints",
+  "cache_identity_differs_from_es1" : true,
+  "cache_identity_env_present" : true,
+  "cache_identity_es2" : "cache-e0656c88-908d-4db8-b567-a647f066525e",
+  "counterfactual_baseline_value" : "world",
+  "es1_cache_identity_from_env" : "cache-71e4301d-3c82-4906-aa2a-3d36d263ce67",
+  "generated_text_u2" : "RESULT=hello-U2",
+  "input_env_keys" : [
+    "SIMIGO_CACHE_ROOT",
+    "SIMIGO_COUNTERFACTUAL_BASELINE_VALUE",
+    "SIMIGO_EXPERIMENT_ROOT",
+    "SIMIGO_HEADLESS_ES1_CACHE_IDENTITY",
+    "SIMIGO_HEADLESS_MODEL_PATH",
+    "SIMIGO_HEADLESS_ROLE",
+    "SIMIGO_HEADLESS_STATE_ID",
+    "SIMIGO_HOME",
+    "SIMIGO_RUN_ID"
+  ],
+  "is_database_url" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/experiment\/rc2\/home\/simigo.sqlite3",
+  "model_identity" : {
+    "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_repo_id" : "mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "model_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_root_id" : "huggingface-cache"
+  },
+  "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "observation" : {
+    "cache_hit_tokens_engine_reported" : 0,
+    "cache_reuse_mode_engine_reported" : "cold",
+    "definitions" : {
+      "cache_hit_tokens_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.cachedPromptTokenCount\/reportedCacheHit; tokens reused from KV, engine measured.",
+      "cache_reuse_mode_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.cacheReuseMode; cold => prior compute re-prefilled.",
+      "forward_calls" : "NOT_INSTRUMENTED (no per-forward hook in this layer; use generation_tokens as an ENGINE_RUNTIME token-granularity proxy, explicitly labelled).",
+      "generation_tokens_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.generationTokenCount; decode tokens ≈ forward passes at token granularity (approximate; per-layer forward NOT_INSTRUMENTED).",
+      "physical_page_return" : "NOT_INSTRUMENTED\/BLOCKED — malloc_zone_pressure_relief is only an allocator HINT; no independent evidence the OS reclaimed physical pages (footprint\/RSS diffs are explicitly excluded by the gate definition).",
+      "prefill_tokens_observed" : "LEVEL=ENGINE_RUNTIME; SOURCE=NativeMLX prefill.progress(total); actual tokens the engine prefilled for the executed request (not requested tokens).",
+      "reference_release" : "LEVEL=LIFECYCLE_EVENT; SOURCE=suspend path state mutation; sessions_before\/after and container_present_before\/absent_after are READ FROM RUNTIME STATE by the caller (not asserted by the recorder). model_container_ref_dropped is derived as present_before && absent_after. Proves in-process logical REFERENCE release only — NOT that ARC\/MLX freed memory back to the OS.",
+      "resource_reclaim" : "LEVEL=LIFECYCLE_EVENT; SOURCE=Memory.clearCache() returned; count of explicit MLX cache-reclaim OPERATIONS INVOKED on the production suspend path. Records invocation only — reclaimed bytes are not observable here, and this is NOT physical page return."
+    },
+    "events" : {
+      "cache_save_checkpoint" : 1,
+      "checkpoint_failed" : 0,
+      "cold_rebuild" : 1,
+      "lifecycle_resume" : 0,
+      "lifecycle_suspend" : 0,
+      "model_container_absent_after" : false,
+      "model_container_present_before" : false,
+      "model_container_ref_dropped" : false,
+      "pool_bind_failed" : 0,
+      "pool_bind_hit_cacheLoad" : 0,
+      "prefix_mismatch" : 0,
+      "reference_release" : 0,
+      "resource_reclaim" : 0,
+      "reuse_miss" : 0,
+      "sessions_after_release" : -1,
+      "sessions_released_at_release" : 0
+    },
+    "events_ordered" : [
+      {
+        "at_ms" : 2933,
+        "event" : "cold_rebuild",
+        "seq" : 1
+      },
+      {
+        "at_ms" : 4260,
+        "event" : "cache_save",
+        "seq" : 2
+      }
+    ],
+    "generate_passes" : 1,
+    "generation_tokens_engine_reported" : 5,
+    "observed_at_epoch_ms" : 1792753084972,
+    "pid" : 13218,
+    "prefill_tokens_observed" : 27,
+    "prompt_tokens_engine_reported" : 27,
+    "reused_session" : false
+  },
+  "path_class" : "restricted_production_path",
+  "pid" : 13218,
+  "prefill_forward_calls" : "PARTIAL_SEE_OBSERVATION_SNAPSHOT",
+  "prefix_pool_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/experiment\/rc2\/cache_es2\/prefix-pool",
+  "reading_state_id" : "S-0001",
+  "real_model_continuation" : true,
+  "result_reuse_via_IS" : true,
+  "role" : "consume",
+  "run_id" : "rc2",
+  "runtime_identity" : {
+    "build_configuration" : "DEBUG",
+    "build_id_sha256" : "4028ddb98dff3af60198c07f05fc711c12d698cfb22e924f32ddf21e425f9883",
+    "bundle_macho_images" : [
+      {
+        "bytes" : 40216,
+        "file" : "SimiGo",
+        "sha256" : "0461472f6f5d49c962b8127a3ae06abffe30e4cdef6758a8cd03f7a4d85cdc72"
+      },
+      {
+        "bytes" : 28448928,
+        "file" : "SimiGo.debug.dylib",
+        "sha256" : "28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e"
+      },
+      {
+        "bytes" : 16752,
+        "file" : "__preview.dylib",
+        "sha256" : "fccc7dea36533fb75faf21d350ae6709480528f5845490b6b3785fdd15b745b5"
+      }
+    ],
+    "executable_bytes" : 40216,
+    "executable_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/cleanroom\/derived\/Build\/Products\/Debug\/SimiGo.app\/Contents\/MacOS\/SimiGo",
+    "executable_sha256" : "0461472f6f5d49c962b8127a3ae06abffe30e4cdef6758a8cd03f7a4d85cdc72",
+    "os_version" : "Version 27.0.1 (Build 26A434)"
+  },
+  "settlement_digest_verified" : true,
+  "settlement_validity_valid" : true,
+  "simigo_home" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/experiment\/rc2\/home",
+  "status" : "OK",
+  "tokenizer_identity" : [
+    {
+      "file" : "tokenizer.json",
+      "sha256" : "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    {
+      "file" : "tokenizer_config.json",
+      "sha256" : "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+    },
+    {
+      "file" : "vocab.json",
+      "sha256" : "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ],
+  "u1_payload_digest_from_is" : "20b2dda940d741d9780897200aaef2ef356ab32b38c7de0d94306fb5a66b4a8e",
+  "u1_recovered_value" : "hello",
+  "u1_recovery_api" : "SimiGoESISDatabase.readSettlementReceipts() filtered by stateID, then SimiGoSettlementAuthority.payloadDigestMatches + settlementValidity",
+  "u1_value_differs_from_baseline" : true,
+  "u2_expected_value" : "hello-U2",
+  "u2_generation_tokens" : 5,
+  "u2_output_contains_expected_u2" : true,
+  "u2_output_contains_recovered_value" : true,
+  "u2_prompt_contains_recovered_value" : true,
+  "u2_prompt_text" : "Recovered prior result: hello. Output exactly one line and nothing else: RESULT=hello-U2",
+  "u2_prompt_tokens" : 27,
+  "u2_settlement_payload_digest" : "bccf6ef6e68dc8ce26c502a9ece224f4f65d5aadc6f88db90a127a07b286a8a4",
+  "u2_state_id" : "S-0002",
+  "u2_value_derivation" : "u2_expected = u1_recovered_value + \"-U2\"",
+  "value_carrying_env_channels" : [
+
+  ]
+}

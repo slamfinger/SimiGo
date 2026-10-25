@@ -1,0 +1,5 @@
+Building for debugging...
+Build complete! (0.28秒)
+{"workFilesIndexed":0,"finishedAt":"2026-10-22T20:26:09Z","modelsDiscovered":20,"steps":[{"status":"ok","id":"ensure-dirs","detail":"created managed runtime directories under .simigo"},{"status":"ok","id":"migrate-schema","detail":"schemaVersion=2"},{"status":"skipped","id":"import-legacy","detail":"no legacy graph supplied"},{"status":"ok","id":"discover-models","detail":"discovered 20 model file(s)"},{"status":"skipped","id":"index-work","detail":"indexed 0 work file(s)"},{"status":"ok","id":"write-report","detail":"bootstrap-report.json"}],"legacyMigrated":false,"startedAt":"2026-10-22T20:26:08Z","schemaVersion":2,"issueCount":0}
+--- VERIFY --- schema=2 integrity=true execution_states=0 settlements=0 roots=1 external_files=20
+report_path=/Users/mr.simi/SimiGo-Agent-Runs/simigo-product-integration-20261023/first-install-v2/.simigo/manifests/bootstrap-report.json

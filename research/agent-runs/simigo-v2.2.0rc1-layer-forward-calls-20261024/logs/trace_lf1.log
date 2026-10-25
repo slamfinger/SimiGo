@@ -1,0 +1,40 @@
+{
+ "rid": "lf1",
+ "exit_code": 0,
+ "wall_seconds": 32.8,
+ "pilot_status": "PASS",
+ "instrumented_modules": 48,
+ "report_sha256_matches": true,
+ "cases": [
+  {
+   "prompt": "P1",
+   "passes": [
+    2,
+    2
+   ],
+   "layers": 48,
+   "events": 192,
+   "ordered_passes": true
+  },
+  {
+   "prompt": "P2",
+   "passes": [
+    16,
+    16
+   ],
+   "layers": 48,
+   "events": 1536,
+   "ordered_passes": true
+  },
+  {
+   "prompt": "P3",
+   "passes": [
+    16,
+    16
+   ],
+   "layers": 48,
+   "events": 1536,
+   "ordered_passes": true
+  }
+ ]
+}

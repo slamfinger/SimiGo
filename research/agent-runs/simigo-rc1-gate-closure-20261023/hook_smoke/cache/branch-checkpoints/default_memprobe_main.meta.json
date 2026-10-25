@@ -1,0 +1,17 @@
+{
+  "cacheSHA256" : "579e93be3a8c258b8d628c224ab51e4360d51f2462e6b9cb9bad1b46d447ede2",
+  "checkpointGeneration" : "258dbafa-898c-46fb-a00a-afe07d563768",
+  "history" : [
+    {
+      "content" : "Output exactly one line and nothing else: RESULT=hello",
+      "role" : "user"
+    },
+    {
+      "content" : "RESULT=hello",
+      "role" : "assistant"
+    }
+  ],
+  "modelId" : "mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "savedAt" : "2026-10-23T12:05:14Z",
+  "storageKey" : "default\/memprobe\/main"
+}

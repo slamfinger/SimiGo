@@ -1,0 +1,65 @@
+{
+ "binary": {
+  "path": "simigo2-experimental/.build/debug/RealModelHandoff",
+  "sha256": "170885e8d7190d3d91268d180bd33725f0322d427dfb61bf760f4e7b3f6b2c9f",
+  "size_bytes": 103979312
+ },
+ "branch": "main",
+ "changed_files": [
+  {
+   "after_sha256": "dd06afc2e0005f495aeeb0087c8934983e6d38339bf63b0ee4cc997363d95039",
+   "after_size": 38285,
+   "before_sha256": "a39814ac730128bdbf72ecd09f1a8a16a08e72bbbf594b1402433ef8c4515420",
+   "before_size": 36656,
+   "path": "execution-information-loop/production_runtime_bridge.py",
+   "role": "random 128-bit nonce task mode, define_task conflict guard, --random-secret"
+  },
+  {
+   "after_sha256": "fd1d6dfff667e75b45469667b34e4f746e64ec0e53a409f57f4ffe7a0be727c8",
+   "after_size": 29332,
+   "before_sha256": "21687767ba5b52a97fcf5abcbc7b7921bee38085f69e5f28da8a2b47d9134c88",
+   "before_size": 26361,
+   "path": "simigo2-experimental/Sources/RealModelHandoff/Causality.swift",
+   "role": "Phase 1 recover/continue driver and Phase 2 U2 driver, counters, ES lifecycle, failure diagnostics"
+  },
+  {
+   "after_sha256": "272d9c3b7418d7000f092a2f00f1d32bc1a534f4481d7ca560ff6aae1d23c0b2",
+   "after_size": 31512,
+   "before_sha256": "219423a780b41e11f45f41c66bc7b20137c45a36a2b757b5ab19465a37c3bb79",
+   "before_size": 28878,
+   "path": "simigo2-experimental/Sources/RealModelHandoff/main.swift",
+   "role": "stage-A evidence sanitization (nonce not in pre-U2 surface), decode budget 64, next-input token ids"
+  },
+  {
+   "after_sha256": "22c0aa1f32819f5be710de690a0abe23049f3007593116f07a00a9b7959f60b8",
+   "after_size": 52911,
+   "before_sha256": "54ea93e81aa7f9b0ddf627bebc80a6ec866d3b92fd1c66ae9ee27f38b95dcb4c",
+   "before_size": 52079,
+   "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+   "role": "nextInputTokenIDs, lifecycleRecordSummary, randomSecret pass-through"
+  },
+  {
+   "after_sha256": "72c683e416e142e03c161a820681c04ea3d9454b5826cf24fae2245726269935",
+   "after_size": 14374,
+   "before_sha256": "ef16df32257518accf03bc8976fa9c554ff6741faacaeca9dedab790311bc4bc",
+   "before_size": 13240,
+   "path": "simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py",
+   "role": "Phase 1 baseline + A0-A4 driver"
+  },
+  {
+   "after_sha256": "d26f08e01f910763e8e05c445d3e74fe32f1cbb4832603639b30406a2e473520",
+   "after_size": 33982,
+   "before_sha256": "b38874e69ab24c5c87715041707a58e0097702d7dd3e4e160ec05d9ea32fbdd9",
+   "before_size": 21357,
+   "path": "simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py",
+   "role": "Phase 2 two-world runner, B0/B1/B3/B4; byte-identical to executed tools/phase2_runner.py"
+  }
+ ],
+ "executed_phase2_runner": {
+  "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/tools/phase2_runner.py",
+  "repo_copy_sha256": "d26f08e01f910763e8e05c445d3e74fe32f1cbb4832603639b30406a2e473520",
+  "sha256": "d26f08e01f910763e8e05c445d3e74fe32f1cbb4832603639b30406a2e473520"
+ },
+ "head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+ "schema_id": "SIMIGO-CAUSALITY-SOURCE-HASHES-V1"
+}

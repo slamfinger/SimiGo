@@ -1,0 +1,39 @@
+{
+ "purpose": "record which macOS privacy grants the GUI gate depends on are actually in place on this machine, so the gate's status is measured, not assumed",
+ "captured_at": "2026-10-24T18:27:29+0800",
+ "accessibility": {
+  "probe": "osascript: tell application \"System Events\" to count processes",
+  "granted": true,
+  "result": {
+   "argv": [
+    "osascript",
+    "-e",
+    "tell application \"System Events\" to count processes"
+   ],
+   "exit_code": 0,
+   "stdout": "92\n",
+   "stderr": "",
+   "wall_seconds": 0.27
+  }
+ },
+ "screen_recording": {
+  "probe": "screencapture -x /tmp/simigo_gui_probe_shot.png",
+  "granted": true,
+  "screenshot_exists": true,
+  "screenshot_bytes": 5249809,
+  "result": {
+   "argv": [
+    "screencapture",
+    "-x",
+    "/tmp/simigo_gui_probe_shot.png"
+   ],
+   "exit_code": 0,
+   "stdout": "",
+   "stderr": "",
+   "wall_seconds": 0.23
+  }
+ },
+ "what_this_probe_cannot_do": "it cannot grant either permission, and it does not launch the candidate app: a capture that fails here proves nothing about the product's GUI",
+ "consequence": "prerequisites appear in place; the gate still needs one real user operation inside the installed candidate before it can be judged",
+ "required_user_action": null
+}

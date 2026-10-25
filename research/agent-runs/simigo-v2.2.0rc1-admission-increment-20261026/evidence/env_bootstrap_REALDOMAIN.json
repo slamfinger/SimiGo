@@ -1,0 +1,32 @@
+{
+  "database" : {
+    "path" : "\/Users\/mr.simi\/.simigo\/simigo.sqlite3",
+    "schema_version" : 3,
+    "status" : "existing"
+  },
+  "engine_manifest" : {
+    "path" : "\/Users\/mr.simi\/.simigo\/manifests\/engine-recipes.json",
+    "pinned_ref" : "0878f7c304cc13915c831ae17694534c94940176",
+    "status" : "created"
+  },
+  "finished_at" : "2026-10-25T18:20:51Z",
+  "hf" : {
+    "path" : "\/opt\/homebrew\/bin\/hf",
+    "status" : "already_present"
+  },
+  "llama_cpp" : {
+    "llama_server" : "\/Users\/mr.simi\/.simigo\/bin\/llama-server",
+    "status" : "构建完成"
+  },
+  "localb" : {
+    "status" : "operational"
+  },
+  "localb_ceremony" : {
+    "ceremony" : "completed",
+    "lineage_id" : "094faf32-8c7f-4d81-a1bd-61efb6e4c754",
+    "status" : "operational",
+    "transport_spki_sha256" : "01a3f7a54ff945b35f8fabccb32a64b508359772f8748e9720efdf5b1718d29a"
+  },
+  "managed_root" : "\/Users\/mr.simi\/.simigo",
+  "started_at" : "2026-10-25T18:20:51Z"
+}

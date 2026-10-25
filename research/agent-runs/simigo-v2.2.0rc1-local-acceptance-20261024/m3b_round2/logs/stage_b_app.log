@@ -1,0 +1,2 @@
+2026-10-24 01:43:45.618 SimiGo[24453:3796463] SimiGo bootstrap: issueCount=0 models=20 work=0 legacyMigrated=false
+2026-10-24 01:44:11.722 SimiGo[24453:3796463] error messaging the mach port for IMKCFRunLoopWakeUpReliable

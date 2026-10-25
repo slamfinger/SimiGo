@@ -1,0 +1,93 @@
+{
+ "batch": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-gate-closure-20261023",
+ "checked_at": "2026-10-23T22:39:48+0800",
+ "manifest_rows": 222,
+ "items": [
+  {
+   "item": "manifest_rehash",
+   "ok": true,
+   "detail": "222 rows / 0 bad"
+  },
+  {
+   "item": "rc1_artifact_unchanged",
+   "ok": true,
+   "detail": "dylib=6e32892f tree=842f72a6"
+  },
+  {
+   "item": "isolated_build_stable_across_tests",
+   "ok": true,
+   "detail": "tree=a64e66a4 dylib=86edda59 files=129"
+  },
+  {
+   "item": "suite_parity_with_rc1",
+   "ok": true,
+   "detail": "rc1=(207, 14, 0) run1=(207, 14, 0) run3=(207, 14, 0) run4=(207, 14, 0)"
+  },
+  {
+   "item": "run2_shared_cache_failure_recorded",
+   "ok": true,
+   "detail": "run2=(207, 14, 1) (D4 depends on a cold prefix-pool; retained as evidence)"
+  },
+  {
+   "item": "test_assertions_unchanged",
+   "ok": true,
+   "detail": "0 XCTAssert lines changed"
+  },
+  {
+   "item": "isolation_sinks_materialised",
+   "ok": true,
+   "detail": "missing=[] pool=1 ckpt=14"
+  },
+  {
+   "item": "noninterference_zero_real_writes",
+   "ok": true,
+   "detail": "{\"run3\": [0, 0], \"run4\": [0, 0]}"
+  },
+  {
+   "item": "official_state_byte_invariant",
+   "ok": true,
+   "detail": "{\"simigo.sqlite3\": true, \"simigo.sqlite3-wal\": true, \"simigo.sqlite3-shm\": true, \"prefix-pool\": true, \"branch-checkpoints\": true}"
+  },
+  {
+   "item": "sealed_rc1_batch_manifest_intact",
+   "ok": true,
+   "detail": "601 rows / 0 bad"
+  },
+  {
+   "item": "release_decision_recorded",
+   "ok": true,
+   "detail": "level=controlled_research_and_integration_build ga=False constraints=['C1', 'C2', 'C3']"
+  },
+  {
+   "item": "test_isolation_constraint_documented",
+   "ok": true,
+   "detail": "readme=True contributing=True no_host_path=True worktree=True"
+  },
+  {
+   "item": "state_graph_override_verified",
+   "ok": true,
+   "detail": "sidecar=['reference-graph-v1.json.migrated-2026-10-23T12-05-38Z'] rows_imported=2 real_dir_mtime=Oct 23 10:38:51 2026"
+  },
+  {
+   "item": "memprobe_tiers",
+   "ok": true,
+   "detail": "PASS | PASS (LOGICAL tier only) | PASS (operation executed) | BLOCKED"
+  },
+  {
+   "item": "memprobe_bound_to_rc1_artifact",
+   "ok": true,
+   "detail": "mp1/mp2 identity match + unchanged"
+  },
+  {
+   "item": "git_invariants",
+   "ok": true,
+   "detail": "HEAD=de362ef staged=0 file(s)"
+  },
+  {
+   "item": "byte_reproducible_build_still_NOT_established",
+   "ok": true,
+   "detail": "unchanged by this batch: rebuild UUID/dylib size/tree differ; not claimed"
+  }
+ ],
+ "failed": []
+}

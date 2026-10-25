@@ -1,0 +1,46 @@
+{
+  "checks": {
+    "A_baseline_chain_all_reusable": true,
+    "A_composite_settled_and_signed": true,
+    "B_incomplete_iw1_rejected": true,
+    "C_iw3_closure_complete": true,
+    "D_iw1_refuses_missing_origin": true,
+    "D_iw3_refuses_missing_transitive_source": true,
+    "E_consumer_no_key_verifies": true
+  },
+  "created_at_utc": "2026-10-22T16:45:31Z",
+  "expected_route_key": "NORTH>EAST",
+  "graph": {
+    "sources": [
+      "TASK-ORIGIN",
+      "TASK-DEST"
+    ],
+    "structured_chain": [
+      "TASK-IU1",
+      "TASK-IU2",
+      "TASK-IU3"
+    ],
+    "transitive_closure_of_iw3": [
+      "TASK-ORIGIN",
+      "TASK-DEST",
+      "TASK-IU1",
+      "TASK-IU2",
+      "TASK-IU3"
+    ]
+  },
+  "model_generate_calls": 0,
+  "model_loads": 0,
+  "notes": [
+    "A_computed=[] A_reused=['TASK-DEST', 'TASK-IU1', 'TASK-IU2', 'TASK-IU3', 'TASK-ORIGIN']",
+    "B_ok=False b_error=PRODUCER_RESULT_FIELD_MISSING: field=priority required field was not present in generated text b_iw1_settled=False",
+    "C_closure=['TASK-DEST', 'TASK-IU1', 'TASK-IU2', 'TASK-ORIGIN']",
+    "D1_refusal_stage=SETTLEMENT_NOT_ADMITTED db_unchanged=True",
+    "D2_refusal_stage=SETTLEMENT_NOT_ADMITTED db_unchanged=True",
+    "E_ok=True"
+  ],
+  "schema_id": "SIMIGO-I-PREFLIGHT-SEMANTIC-SUFFICIENCY-V1",
+  "terminal_state": "OBSERVED",
+  "tokenize_seed_calls": 0,
+  "tokenize_text_calls": 0,
+  "verdict": "PASS"
+}

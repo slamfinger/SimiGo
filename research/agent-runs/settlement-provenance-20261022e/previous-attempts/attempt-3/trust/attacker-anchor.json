@@ -1,0 +1,6 @@
+{
+ "algorithm": "Ed25519",
+ "key_id": "e-round-dda59c01a0af2592",
+ "public_key_base64": "KGZJa8OUdnHY0C6hzGSMPI8RvPLzTFTgDGJL10gVchM=",
+ "schema_id": "EINFO-SETTLEMENT-TRUST-ANCHOR-V1"
+}

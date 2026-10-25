@@ -1,0 +1,36 @@
+{
+  "child_stdout": {
+    "bytes": 0,
+    "exists": true,
+    "path": "runs/J5/stdout/j5-u3-transitive-missing.stdout.bin",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "id": "J5-MISSING-TRANSITIVE-DEPENDENCY",
+  "kind": "negative_control",
+  "observations": {
+    "database_sha256_after": "8ad2e0955957bdb12856c71df2a91012b1db1a6dfb62c0062ac6c2aac3083e21",
+    "database_sha256_before": "8ad2e0955957bdb12856c71df2a91012b1db1a6dfb62c0062ac6c2aac3083e21",
+    "database_unchanged": true,
+    "generation_calls": 0,
+    "item_under_test": "J-86ef423f-U3",
+    "model_loads": 0,
+    "refusal_before_tokenize": true,
+    "refusal_stage": "SETTLEMENT_NOT_ADMITTED",
+    "removed_transitive_source": "J-86ef423f-ORIGIN",
+    "seed_tokenize_calls": 0,
+    "state_unchanged": true,
+    "text_tokenize_calls": 0
+  },
+  "raw_log_paths": [
+    "runs/J5/stdout/j5-u3-transitive-missing.stdout.bin",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/logs/J5-MISSING-TRANSITIVE-DEPENDENCY.driver.log"
+  ],
+  "refusal": {
+    "item_id": "J-86ef423f-ORIGIN",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "stage": "SETTLEMENT_NOT_ADMITTED"
+  },
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J5"
+}

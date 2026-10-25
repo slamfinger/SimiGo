@@ -1,0 +1,164 @@
+{
+ "admission_conditions": {
+  "B0-A": {
+   "continue_task_entered": true,
+   "dependency_settlement_object_ids": {
+    "TASK-SOURCE": "00e4a2f7772fd6bfe244652d9c725f6c431b2ccccc487aa323571712722e77e7",
+    "TASK-U1": "abc6c05001bc01c7da05bdddfe8712e220b9262adacc8710c06b73dfd980dfa3"
+   },
+   "expected_generation_calls": 1,
+   "expected_refusal_stage": null,
+   "expected_terminal_state": "PHASE2_OBSERVED_SUCCESS",
+   "expected_tokenize_seed_calls": 1,
+   "expected_tokenize_text_calls": 1,
+   "generation_entered": true,
+   "input_admission_status": "ADMITTED",
+   "input_sha256": "31c52016a05770dafb2815a1d7900ff7377fc520cdc40b89e5ed9be015a7d651",
+   "model_continuation_calls": 1,
+   "pass": true,
+   "production_continuation_invoked": true,
+   "refusal_reason": null,
+   "refusal_stage": null,
+   "terminal_state": "PHASE2_OBSERVED_SUCCESS",
+   "tokenize_seed_calls": 1,
+   "tokenize_text_calls": 1
+  },
+  "B0-B": {
+   "continue_task_entered": true,
+   "dependency_settlement_object_ids": {
+    "TASK-SOURCE": "832b7e88cd4cb515db97763a73ebabe9bd5a6c44f1ffd07315e6f73ac74dfc13",
+    "TASK-U1": "271bd0d6797d132537ab64aa20fa0ac195c346e603d7aeb10d9147e0f793acaf"
+   },
+   "expected_generation_calls": 1,
+   "expected_refusal_stage": null,
+   "expected_terminal_state": "PHASE2_OBSERVED_SUCCESS",
+   "expected_tokenize_seed_calls": 1,
+   "expected_tokenize_text_calls": 1,
+   "generation_entered": true,
+   "input_admission_status": "ADMITTED",
+   "input_sha256": "d45fd4395f9f487839ee428f0a1a5438c4060390dbeef25fa6558c1cf3c75aea",
+   "model_continuation_calls": 1,
+   "pass": true,
+   "production_continuation_invoked": true,
+   "refusal_reason": null,
+   "refusal_stage": null,
+   "terminal_state": "PHASE2_OBSERVED_SUCCESS",
+   "tokenize_seed_calls": 1,
+   "tokenize_text_calls": 1
+  },
+  "B1": {
+   "continue_task_entered": false,
+   "dependency_settlement_object_ids": null,
+   "expected_generation_calls": 0,
+   "expected_refusal_stage": "SETTLEMENT_NOT_ADMITTED",
+   "expected_terminal_state": "PHASE2_INPUT_ADMISSION_REFUSAL",
+   "expected_tokenize_seed_calls": 0,
+   "expected_tokenize_text_calls": 0,
+   "generation_entered": false,
+   "input_admission_status": "REFUSED",
+   "input_sha256": null,
+   "model_continuation_calls": 0,
+   "pass": true,
+   "production_continuation_invoked": true,
+   "refusal_reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+   "refusal_stage": "SETTLEMENT_NOT_ADMITTED",
+   "terminal_state": "PHASE2_INPUT_ADMISSION_REFUSAL",
+   "tokenize_seed_calls": 0,
+   "tokenize_text_calls": 0
+  },
+  "B3a": {
+   "continue_task_entered": false,
+   "dependency_settlement_object_ids": null,
+   "expected_generation_calls": 0,
+   "expected_refusal_stage": "SETTLEMENT_OBJECT_UNREADABLE",
+   "expected_terminal_state": "PHASE2_INPUT_ADMISSION_REFUSAL",
+   "expected_tokenize_seed_calls": 0,
+   "expected_tokenize_text_calls": 0,
+   "generation_entered": false,
+   "input_admission_status": "REFUSED",
+   "input_sha256": null,
+   "model_continuation_calls": 0,
+   "pass": true,
+   "production_continuation_invoked": true,
+   "refusal_reason": "ObjectByteMismatch: abc6c05001bc01c7da05bdddfe8712e220b9262adacc8710c06b73dfd980dfa3",
+   "refusal_stage": "SETTLEMENT_OBJECT_UNREADABLE",
+   "terminal_state": "PHASE2_INPUT_ADMISSION_REFUSAL",
+   "tokenize_seed_calls": 0,
+   "tokenize_text_calls": 0
+  },
+  "B3b": {
+   "continue_task_entered": true,
+   "dependency_settlement_object_ids": {
+    "TASK-SOURCE": "00e4a2f7772fd6bfe244652d9c725f6c431b2ccccc487aa323571712722e77e7",
+    "TASK-U1": "7f937107a6af4e7bd8fca1e5862201b24fe7f6c6bc04963784a80213b58c4f11"
+   },
+   "expected_generation_calls": 1,
+   "expected_refusal_stage": null,
+   "expected_terminal_state": "PHASE2_OBSERVED_SUBSTITUTION",
+   "expected_tokenize_seed_calls": 1,
+   "expected_tokenize_text_calls": 1,
+   "generation_entered": true,
+   "input_admission_status": "ADMITTED",
+   "input_sha256": "c0dc38caff9b743c005dde474cbd7f842fc26695ca84dba747d31da0c4d67d80",
+   "model_continuation_calls": 1,
+   "pass": true,
+   "production_continuation_invoked": true,
+   "refusal_reason": null,
+   "refusal_stage": null,
+   "terminal_state": "PHASE2_OBSERVED_SUBSTITUTION",
+   "tokenize_seed_calls": 1,
+   "tokenize_text_calls": 1
+  },
+  "B3c": {
+   "continue_task_entered": false,
+   "dependency_settlement_object_ids": null,
+   "expected_generation_calls": 0,
+   "expected_refusal_stage": "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
+   "expected_terminal_state": "PHASE2_INPUT_ADMISSION_REFUSAL",
+   "expected_tokenize_seed_calls": 0,
+   "expected_tokenize_text_calls": 0,
+   "generation_entered": false,
+   "input_admission_status": "REFUSED",
+   "input_sha256": null,
+   "model_continuation_calls": 0,
+   "pass": true,
+   "production_continuation_invoked": true,
+   "refusal_reason": "placeholder {secret} requires TASK-U1, which the current task item no longer declares",
+   "refusal_stage": "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
+   "terminal_state": "PHASE2_INPUT_ADMISSION_REFUSAL",
+   "tokenize_seed_calls": 0,
+   "tokenize_text_calls": 0
+  }
+ },
+ "all_pass": true,
+ "created_at_utc": "2026-10-22T02:51:10Z",
+ "evidence_provenance": {
+  "B0-A": {
+   "path": "phase2a/world-a/B0-A/evidence/phase2.json",
+   "sha256": "cebecfceb8aa69887ad5872b42e7d214f9067bbb0c1167adf96d7d92b91186a6"
+  },
+  "B0-B": {
+   "path": "phase2b/world-b/B0-B/evidence/phase2.json",
+   "sha256": "d5b834c1532e66604fae12121d1b069e04cbad471dcbda36b869ea5dff6689ec"
+  },
+  "B1-harness": {
+   "path": "phase2a/world-a/B1-harness/evidence/phase2.json",
+   "sha256": "606cb6ebe84bb5efb5e1b629d20c4fa4d537ddc0a6473afb82a8a2050e3afe16"
+  },
+  "B3a": {
+   "path": "phase2a/world-a/B3a/evidence/phase2.json",
+   "sha256": "d45a44208611305c18828bdf2db93c6cc5486b0f9e3e73657d5116de5310c537"
+  },
+  "B3b": {
+   "path": "phase2a/world-a/B3b/evidence/phase2.json",
+   "sha256": "c00180d48dd972a6e85141a0d72155a032c8dadbdcb3ee67aef38f1339b14ccc"
+  },
+  "B3c": {
+   "path": "phase2a/world-a/B3c/evidence/phase2.json",
+   "sha256": "3936631f1916f92192d4daff0e4a1c8a840a9234f6fa1e536ea57341c2eae095"
+  }
+ },
+ "reason": "The initial summarizer required tokenize_text_calls==0 for every condition; admitted conditions legitimately tokenize seed+input once. Re-derived from immutable per-case evidence; no condition was rerun and no evidence file was modified.",
+ "run_id": "handoff-causality-20261022c",
+ "schema_id": "SIMIGO-CAUSALITY-PHASE2-ADMISSION-V2"
+}

@@ -1,0 +1,167 @@
+From bd988c94255da39bd15936ebd03046564c17690f Mon Sep 17 00:00:00 2001
+From: "Mr.Simi" <mr.simi@MrSimideAir-5.local>
+Date: Mon, 26 Oct 2026 02:43:16 +0800
+Subject: [PATCH 6/7] fix(cloud): store the cloud API key in the managed root,
+ not the login Keychain
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Service.init -> CloudKeychain.readAPIKey hit the login Keychain on every
+real-domain launch. The item there was created by an earlier ad-hoc build,
+so its ACL answers any re-signed binary with a SecurityAgent prompt that no
+password satisfies (the same signature-lock that broke the LOCALB
+identities; the legacy items also cannot be deleted anymore). The
+credential now lives in a 0600 file at <managed root>/cloud/api-key —
+redirected by SIMIGO_HOME like every other managed path — and the login
+Keychain is never read or written. Operators re-enter the key once in
+settings; legacy Keychain items are left as inert data.
+---
+ SimiGo/App/CloudBackend.swift       | 71 ++++++++++++-----------------
+ SimiGoTests/CloudBackendTests.swift | 29 +++++++-----
+ 2 files changed, 47 insertions(+), 53 deletions(-)
+
+diff --git a/SimiGo/App/CloudBackend.swift b/SimiGo/App/CloudBackend.swift
+index 6e90a5e..492ed28 100644
+--- a/SimiGo/App/CloudBackend.swift
++++ b/SimiGo/App/CloudBackend.swift
+@@ -1,5 +1,5 @@
+ import Foundation
+-import Security
++import SimiGoRuntimeContract
+ 
+ public enum BackendSelection: String, CaseIterable, Sendable {
+     case mlx
+@@ -99,53 +99,42 @@ public struct CloudBackendConfiguration: Sendable {
+ }
+ 
+ enum CloudKeychain: Sendable {
+-    private static let service = "SimiGo"
+-    private static let account = "cloud.api-key"
+-
+-    /// An isolated managed root (`SIMIGO_HOME`) redirects every other persistent
+-    /// path, so it must redirect this store too. Reading the login Keychain from
+-    /// an isolated run is not free: the item's ACL answers a binary it has not
+-    /// seen before with an interactive SecurityAgent prompt, and `Service.init()`
+-    /// blocks inside `SecItemCopyMatching` until a human answers (observed on an
+-    /// unattended host as an unbounded mach_msg wait). In isolated mode the cloud
+-    /// credential is therefore absent instead of being read or written: no real
+-    /// secret is read, and no new secret is stored outside the login Keychain.
+-    private static var isIsolated: Bool {
+-        guard let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"] else { return false }
+-        return !home.isEmpty
++    /// The cloud API key lives in a 0600 file under the managed root
++    /// (`<root>/cloud/api-key`), redirected by `SIMIGO_HOME` like every other
++    /// managed path. It is NEVER read from or written to the login Keychain:
++    /// a login-Keychain item is bound to the code signature of whichever
++    /// ad-hoc build created it, so every re-signed build was met with a
++    /// SecurityAgent prompt that no password satisfies (observed 2026-10-26;
++    /// the same signature-ACL failure that locked the LOCALB identities).
++    /// Existing login-Keychain items are left untouched and simply unused.
++    private static var fileURL: URL {
++        SimiGoPaths.managedRoot()
++            .appendingPathComponent("cloud", isDirectory: true)
++            .appendingPathComponent("api-key", isDirectory: false)
+     }
+ 
+     static func readAPIKey() -> String {
+-        guard !isIsolated else { return "" }
+-        var query: [String: Any] = baseQuery
+-        query[kSecReturnData as String] = true
+-        query[kSecMatchLimit as String] = kSecMatchLimitOne
+-
+-        var result: AnyObject?
+-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+-        guard status == errSecSuccess, let data = result as? Data else { return "" }
++        guard let data = FileManager.default.contents(atPath: fileURL.path) else { return "" }
+         return String(data: data, encoding: .utf8) ?? ""
+     }
+ 
+     static func writeAPIKey(_ value: String) {
+-        guard !isIsolated else { return }
+-        let query = baseQuery
+-        SecItemDelete(query as CFDictionary)
+-
+         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+-        guard !trimmed.isEmpty else { return }
+-
+-        var attributes = query
+-        attributes[kSecValueData as String] = Data(trimmed.utf8)
+-        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+-        SecItemAdd(attributes as CFDictionary, nil)
+-    }
+-
+-    private static var baseQuery: [String: Any] {
+-        [
+-            kSecClass as String: kSecClassGenericPassword,
+-            kSecAttrService as String: service,
+-            kSecAttrAccount as String: account,
+-        ]
++        let url = fileURL
++        let fm = FileManager.default
++        do {
++            try fm.createDirectory(
++                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
++            if trimmed.isEmpty {
++                try? fm.removeItem(at: url)
++                return
++            }
++            try Data(trimmed.utf8).write(to: url, options: [.atomic])
++            try? fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
++        } catch {
++            // A failed credential write must never crash startup; the key is
++            // simply absent until the next successful write.
++            return
++        }
+     }
+ }
+diff --git a/SimiGoTests/CloudBackendTests.swift b/SimiGoTests/CloudBackendTests.swift
+index f8f1ef3..80f1930 100644
+--- a/SimiGoTests/CloudBackendTests.swift
++++ b/SimiGoTests/CloudBackendTests.swift
+@@ -1,4 +1,5 @@
+ import XCTest
++import SimiGoRuntimeContract
+ @testable import SimiGo
+ 
+ final class CloudBackendTests: XCTestCase {
+@@ -114,20 +115,24 @@ final class CloudBackendTests: XCTestCase {
+         XCTAssertNil((try json(#"{"model":"Localmodel","messages":[],"enable_thinking":true,"reasoning_effort":"high","reasoning":{"effort":"high"}}"#))["reasoning"])
+     }
+ 
+-    /// The isolation rule this build relies on: an isolated managed root must not
+-    /// reach the login Keychain at all. Reading a real credential from an
+-    /// unattended run blocks `Service.init()` behind a SecurityAgent ACL prompt
+-    /// (observed 2026-10-24: SecItemCopyMatching -> mach_msg, securityd
+-    /// "QueryKeychainUse::queryUser"), and writing would put a real secret into a
+-    /// throwaway root. The isolated runner sets SIMIGO_HOME, so this executes
+-    /// there and skips only on a developer's non-isolated run.
+-    func testIsolatedManagedRootNeverReadsOrWritesTheLoginKeychain() throws {
++    /// The cloud credential is a 0600 file under the managed root — never the
++    /// login Keychain, whose items are signature-locked to the creating build
++    /// (every re-signed build hit an unsatisfiable SecurityAgent prompt,
++    /// 2026-10-26). Round-trip, permissions, and clearing all happen inside the
++    /// managed root the runner redirects via SIMIGO_HOME.
++    func testCloudCredentialManagedFileRoundTrip() throws {
+         let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"] ?? ""
+         try XCTSkipIf(home.isEmpty, "requires the isolated runner's SIMIGO_HOME")
++        let probe = "probe-\(UUID().uuidString)"
++        CloudKeychain.writeAPIKey(probe)
++        XCTAssertEqual(CloudKeychain.readAPIKey(), probe,
++                       "write then read must round-trip through the managed file")
++        let url = SimiGoPaths.managedRoot()
++            .appendingPathComponent("cloud/api-key")
++        let perms = try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int
++        XCTAssertEqual(perms, 0o600, "the credential file must be owner-only")
++        CloudKeychain.writeAPIKey("")
+         XCTAssertEqual(CloudKeychain.readAPIKey(), "",
+-                       "an isolated root must not read the login Keychain")
+-        CloudKeychain.writeAPIKey("isolated-probe-\(UUID().uuidString)")
+-        XCTAssertEqual(CloudKeychain.readAPIKey(), "",
+-                       "an isolated root must not persist a cloud credential")
++                       "an empty write clears the credential")
+     }
+ }
+-- 
+2.54.0 (Apple Git-157)
+

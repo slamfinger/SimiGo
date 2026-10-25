@@ -1,0 +1,25 @@
+--- a/SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift
++++ b/SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift
+@@ -52,4 +52,22 @@
+         let d = SimiGoG1G3Entry.evaluate(env: full)
+         XCTAssertTrue(d.requested); XCTAssertEqual(d.role, .produce); XCTAssertNil(d.error)
+     }
++
++    /// The G1.9-A trace role drives the shipped `ExecutionTracePilot`, so it needs
++    /// a model but no target value: it produces a report, not a settlement.
++    func testTracepilotResolvesWithoutTargetValue() {
++        var e = full; e["SIMIGO_HEADLESS_ROLE"] = "tracepilot"
++        e.removeValue(forKey: "SIMIGO_HEADLESS_TARGET_VALUE")
++        let d = SimiGoG1G3Entry.evaluate(env: e)
++        XCTAssertTrue(d.requested); XCTAssertEqual(d.role, .tracepilot); XCTAssertNil(d.error)
++    }
++
++    /// ...but it must still fail closed before any model work when the model
++    /// path is absent, exactly like every other role.
++    func testTracepilotFailsClosedWithoutModelPath() {
++        var e = full; e["SIMIGO_HEADLESS_ROLE"] = "tracepilot"
++        e.removeValue(forKey: "SIMIGO_HEADLESS_MODEL_PATH")
++        let d = SimiGoG1G3Entry.evaluate(env: e)
++        XCTAssertTrue(d.requested); XCTAssertNil(d.role); XCTAssertNotNil(d.error)
++    }
+ }

@@ -1,0 +1,120 @@
+{
+  "branch_checkpoints_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/experiment\/rc1\/cache_es1\/branch-checkpoints",
+  "cache_identity" : "cache-bc555685-136d-4295-b473-723ab35b7798",
+  "generated_text" : "RESULT=hello",
+  "generation_tokens" : 3,
+  "is_database_url" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/experiment\/rc1\/home\/simigo.sqlite3",
+  "is_settlement_expected_value" : "hello",
+  "is_settlement_restored_readback" : true,
+  "model_identity" : {
+    "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_repo_id" : "mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "model_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_root_id" : "huggingface-cache"
+  },
+  "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "observation" : {
+    "cache_hit_tokens_engine_reported" : 0,
+    "cache_reuse_mode_engine_reported" : "cold",
+    "definitions" : {
+      "cache_hit_tokens_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.cachedPromptTokenCount\/reportedCacheHit; tokens reused from KV, engine measured.",
+      "cache_reuse_mode_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.cacheReuseMode; cold => prior compute re-prefilled.",
+      "forward_calls" : "NOT_INSTRUMENTED (no per-forward hook in this layer; use generation_tokens as an ENGINE_RUNTIME token-granularity proxy, explicitly labelled).",
+      "generation_tokens_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.generationTokenCount; decode tokens ≈ forward passes at token granularity (approximate; per-layer forward NOT_INSTRUMENTED).",
+      "physical_page_return" : "NOT_INSTRUMENTED\/BLOCKED — malloc_zone_pressure_relief is only an allocator HINT; no independent evidence the OS reclaimed physical pages (footprint\/RSS diffs are explicitly excluded by the gate definition).",
+      "prefill_tokens_observed" : "LEVEL=ENGINE_RUNTIME; SOURCE=NativeMLX prefill.progress(total); actual tokens the engine prefilled for the executed request (not requested tokens).",
+      "reference_release" : "LEVEL=LIFECYCLE_EVENT; SOURCE=suspend path state mutation; sessions_before\/after and container_present_before\/absent_after are READ FROM RUNTIME STATE by the caller (not asserted by the recorder). model_container_ref_dropped is derived as present_before && absent_after. Proves in-process logical REFERENCE release only — NOT that ARC\/MLX freed memory back to the OS.",
+      "resource_reclaim" : "LEVEL=LIFECYCLE_EVENT; SOURCE=Memory.clearCache() returned; count of explicit MLX cache-reclaim OPERATIONS INVOKED on the production suspend path. Records invocation only — reclaimed bytes are not observable here, and this is NOT physical page return."
+    },
+    "events" : {
+      "cache_save_checkpoint" : 1,
+      "checkpoint_failed" : 0,
+      "cold_rebuild" : 1,
+      "lifecycle_resume" : 0,
+      "lifecycle_suspend" : 0,
+      "model_container_absent_after" : false,
+      "model_container_present_before" : false,
+      "model_container_ref_dropped" : false,
+      "pool_bind_failed" : 0,
+      "pool_bind_hit_cacheLoad" : 0,
+      "prefix_mismatch" : 0,
+      "reference_release" : 0,
+      "resource_reclaim" : 0,
+      "reuse_miss" : 0,
+      "sessions_after_release" : -1,
+      "sessions_released_at_release" : 0
+    },
+    "events_ordered" : [
+      {
+        "at_ms" : 3398,
+        "event" : "cold_rebuild",
+        "seq" : 1
+      },
+      {
+        "at_ms" : 4968,
+        "event" : "cache_save",
+        "seq" : 2
+      }
+    ],
+    "generate_passes" : 1,
+    "generation_tokens_engine_reported" : 3,
+    "observed_at_epoch_ms" : 1792752190861,
+    "pid" : 63761,
+    "prefill_tokens_observed" : 19,
+    "prompt_tokens_engine_reported" : 19,
+    "reused_session" : false
+  },
+  "path_class" : "restricted_production_path",
+  "pid" : 63761,
+  "prefix_pool_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/experiment\/rc1\/cache_es1\/prefix-pool",
+  "produce_prompt_text" : "Output exactly one line and nothing else: RESULT=hello",
+  "prompt_tokens" : 19,
+  "reached_stage" : "start_ok",
+  "role" : "produce",
+  "run_id" : "rc1",
+  "runtime_identity" : {
+    "build_configuration" : "DEBUG",
+    "build_id_sha256" : "c2aa6809d2b27959580e0a0100d04f6c59928c48a064fe7af8b8035a552d7898",
+    "bundle_macho_images" : [
+      {
+        "bytes" : 40216,
+        "file" : "SimiGo",
+        "sha256" : "ef5f9d117caca57d7336af0d286f4c7032c7ad4bb915bd64a5edc7b144a58e37"
+      },
+      {
+        "bytes" : 28436352,
+        "file" : "SimiGo.debug.dylib",
+        "sha256" : "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b"
+      },
+      {
+        "bytes" : 16752,
+        "file" : "__preview.dylib",
+        "sha256" : "fccc7dea36533fb75faf21d350ae6709480528f5845490b6b3785fdd15b745b5"
+      }
+    ],
+    "executable_bytes" : 40216,
+    "executable_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/derived\/Build\/Products\/Debug\/SimiGo.app\/Contents\/MacOS\/SimiGo",
+    "executable_sha256" : "ef5f9d117caca57d7336af0d286f4c7032c7ad4bb915bd64a5edc7b144a58e37",
+    "os_version" : "Version 27.0.1 (Build 26A434)"
+  },
+  "settlement_payload_digest" : "20b2dda940d741d9780897200aaef2ef356ab32b38c7de0d94306fb5a66b4a8e",
+  "simigo_home" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-rc1-20261023\/experiment\/rc1\/home",
+  "state_id" : "S-0001",
+  "status" : "OK",
+  "target_value" : "hello",
+  "target_value_source" : "env SIMIGO_HEADLESS_TARGET_VALUE (no in-binary constant)",
+  "tokenizer_identity" : [
+    {
+      "file" : "tokenizer.json",
+      "sha256" : "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    {
+      "file" : "tokenizer_config.json",
+      "sha256" : "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+    },
+    {
+      "file" : "vocab.json",
+      "sha256" : "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ]
+}

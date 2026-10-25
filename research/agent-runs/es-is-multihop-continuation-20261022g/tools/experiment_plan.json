@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "round": "G",
+  "title": "Multi-hop detached continuation through PALACE Information Space",
+  "run_root": "$HOME/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g",
+  "core_question": "Can a result produced by U1 be settled in IS, reused by a fresh process to compute and settle U2, then reused by a second fresh process to compute U3, with U1/U2 never regenerated after their producer stages exit?",
+  "protected_roots": [
+    "$HOME/SimiGo-Agent-Runs/es-is-detached-continuation-20261022f",
+    "$HOME/SimiGo-Agent-Runs/handoff-causality-20261022a",
+    "$HOME/SimiGo-Agent-Runs/handoff-causality-20261022b",
+    "$HOME/SimiGo-Agent-Runs/handoff-causality-20261022c",
+    "$HOME/SimiGo-Agent-Runs/handoff-causality-20261022d",
+    "$HOME/SimiGo-Agent-Runs/settlement-provenance-20261022e",
+    "$HOME/SimiGo-Agent-Runs/run-20261022a"
+  ],
+  "conditions": [
+    {
+      "id": "G0_CHAIN_3_HOPS",
+      "type": "positive_end_to_end",
+      "attempts": 1,
+      "stages": [
+        "P1_U1",
+        "P2_U2",
+        "P3_U3"
+      ],
+      "must_use": "ordinary production continueTask and signed IS settlements",
+      "expected": {
+        "p1_u1_generate_calls": 1,
+        "p2_u1_generate_calls": 0,
+        "p2_u2_generate_calls": 1,
+        "p3_u1_generate_calls": 0,
+        "p3_u2_generate_calls": 0,
+        "p3_u3_generate_calls": 1,
+        "p2_reused_contains": [
+          "TASK-U1"
+        ],
+        "p2_computed_contains": [
+          "TASK-U2"
+        ],
+        "p3_computed_contains": [
+          "TASK-U3"
+        ],
+        "each_stage_starts_at_position": 0,
+        "each_stage_starts_with_empty_state": true,
+        "prefix_replay_tokens": 0,
+        "old_checkpoint_reads": 0,
+        "harness_direct_settlement_or_item_reads": 0,
+        "producer_exit_observed_before_next_process": true,
+        "p3_reused_or_verified_closure_contains": [
+          "TASK-U1",
+          "TASK-U2"
+        ]
+      },
+      "terminal_state_allowed": [
+        "OBSERVED",
+        "INVALID_CONDITION",
+        "BLOCKED_NOT_RUN",
+        "OBSERVED_FORMAT_FAILURE"
+      ]
+    },
+    {
+      "id": "G1_MISSING_TRANSITIVE_DEPENDENCY",
+      "type": "negative_dependency_closure",
+      "attempts": 1,
+      "mutation_target": "isolated database/state copy only",
+      "mutation": "remove or invalidate the U1 settlement/source binding required by the signed U2 dependency closure while leaving the U2 signed object itself present",
+      "expected": {
+        "production_admission_refusal": true,
+        "tokenize_seed_calls": 0,
+        "tokenize_text_calls": 0,
+        "model_generate_calls": 0,
+        "non_expected_database_side_effects": false,
+        "non_expected_state_side_effects": false,
+        "no_harness_fallback_read": true
+      },
+      "terminal_state_allowed": [
+        "OBSERVED",
+        "INVALID_CONDITION",
+        "BLOCKED_NOT_RUN",
+        "OBSERVED_FORMAT_FAILURE"
+      ]
+    },
+    {
+      "id": "N4_NONCE_AND_PREFIX_ISOLATION_AUDIT",
+      "type": "static_and_runtime_audit",
+      "attempts": 1,
+      "expected": {
+        "scan_scope_manifest_present": true,
+        "unapproved_occurrences": 0,
+        "cross_stage_nonce_leakage": 0,
+        "unapproved_prefix_or_completion_copy": 0
+      },
+      "terminal_state_allowed": [
+        "OBSERVED",
+        "INVALID_CONDITION",
+        "BLOCKED_NOT_RUN"
+      ]
+    }
+  ],
+  "claims": {
+    "C1": "Production recovery/admission contract",
+    "C2": "IS settlements and verified dependency closure as information source across two fresh-process boundaries",
+    "C3": "Observe existing per-path recompute/refusal semantics; do not change them",
+    "C4": "Existing signed provenance is a prerequisite; this round does not expand trust model or prove semantic correctness"
+  },
+  "non_claims": [
+    "No claim that all model FLOPs or all prompt prefill are eliminated; report model reload/token costs separately.",
+    "No claim of internal MLX KV deinit unless the actual resource owner release is observed.",
+    "No generalization to every model, backend, or arbitrary dependency graph from one tested chain.",
+    "No new anti-rollback, remote trust root, or T3 security scope."
+  ]
+}

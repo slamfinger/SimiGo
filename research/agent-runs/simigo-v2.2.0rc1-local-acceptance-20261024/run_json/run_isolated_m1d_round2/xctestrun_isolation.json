@@ -1,0 +1,27 @@
+{
+ "source_xctestrun": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/build/test/Build/Products/SimiGo_SimiGo_macosx27.0-arm64.xctestrun",
+ "source_sha256": "c5f53628ffc3d709ae1608149014397e9ba14117b8d43f6659b7da18586c50d3",
+ "isolated_xctestrun": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/build/test/Build/Products/xctestrun_isolated.xctestrun",
+ "isolated_sha256": "c6a1da7cc704c431fee437f3d8ac1f53ab3ccee68d49cedc375c66314136667d",
+ "test_targets_patched": 1,
+ "environment_before": {
+  "APP_DISTRIBUTOR_ID_OVERRIDE": "com.apple.AppStore",
+  "DYLD_INSERT_LIBRARIES": "/usr/lib/libRPAC.dylib",
+  "IDE_CHOSEN_LOGGING_METHOD": "1",
+  "OS_ACTIVITY_DT_MODE": "YES",
+  "PERFC_ENABLE_EXTENDED_DIAGNOSTIC_FORMAT": "1",
+  "PERFC_ENABLE_PROFILE_MODE": "1",
+  "PERFC_RESET_INSERT_LIBRARIES": "1",
+  "PERFC_SUPPRESS_SYSTEM_REPORTS": "1",
+  "SQLITE_ENABLE_THREAD_ASSERTIONS": "1",
+  "TERM": "dumb"
+ },
+ "injected_keys": {
+  "SIMIGO_HOME": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/run_isolated_m1d/isolation/home",
+  "SIMIGO_CACHE_ROOT": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/run_isolated_m1d/isolation/cache",
+  "SIMIGO_STATE_GRAPH_STORE": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/run_isolated_m1d/isolation/state-graph/reference-graph-v1.json"
+ },
+ "other_differences": [],
+ "placement_note": "__TESTROOT__ resolves relative to the xctestrun's directory; the isolated copy must stay beside the original.",
+ "generated_at": "2026-10-24T01:40:54+0800"
+}

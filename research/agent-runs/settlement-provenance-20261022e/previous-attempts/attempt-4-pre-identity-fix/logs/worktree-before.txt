@@ -1,0 +1,66 @@
+ M .gitignore
+ M execution-information-loop/carrier_loop.py
+ M execution-information-loop/carrier_selftest.py
+ M execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm3.sqlite
+ M execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm4.sqlite
+ M execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.last_judgment.json
+ M execution-information-loop/experiment/continuous-calc-verification/model-level-validation/selftest.py
+ M execution-information-loop/production_runtime_bridge.py
+ M execution-information-loop/real_palace_selftest.py
+ M simigo2-experimental/Package.swift
+ M simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+?? .phase1-phase2-design-completion.canvas.status.json
+?? docs/00-governance/SIMIGO2_G3_D1_ENTRY_BOUNDARY_DECISION_V0.1_20261021.md
+?? docs/00-governance/SIMIGO2_G3_D1_EXPERIMENT_PROTOCOL_V0.1_20261021.md
+?? docs/00-governance/SIMIGO2_G3_D1_EXPERIMENT_PROTOCOL_V0.1_20261021.sha256
+?? docs/00-governance/SIMIGO2_G3_RUNTIME_ISOLATION_D_AUTHORIZATION_BOUNDARY_V0.1_20261021.md
+?? docs/02-evidence/g3-d1-source-freeze/
+?? docs/06-closure/G3_C_CLOSURE_20261021.md
+?? execution-information-loop/ACCEPTANCE_REPORT_20261020.md
+?? execution-information-loop/G3_AUTHORIZATION_SUBMISSION_20261020.md
+?? execution-information-loop/SETTLEMENT_CONTRACT_CHANGELOG.md
+?? execution-information-loop/admission_selftest.py
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm2.sqlite
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/G2_CORE_API_REPLAY_20261020.md
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/G2_CORE_API_REPLAY_RESULT.json
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/carrier_gate_v2.py
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/replay_g2_as_core_api.py
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/test_carrier_gate_v2.py
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g3/
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/logs/arm1.jsonl
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/logs/arm2.jsonl
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/logs/arm3.jsonl
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/logs/arm4.jsonl
+?? execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/
+?? g3/
+?? simigo2-experimental/Sources/G3D1Supervisor/
+?? simigo2-experimental/Sources/G3D1Worker/
+?? simigo2-experimental/Sources/G3D1WorkerCore/
+?? simigo2-experimental/Sources/G3SwiftIsolationEntry/
+?? simigo2-experimental/Sources/RealModelHandoff/
+?? simigo2-experimental/Sources/SimiGoTaskRun/
+?? simigo2-experimental/Tests/G3D1SupervisorTests/
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3CancellationPointTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3GatedEntryAdmissionTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3GatewayTerminationTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3KVAllocationGatewayTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3MLXArrayStorageIdentityTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3MLXDuringGenerationRegistrationTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3NativeCacheDispatchTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3ObserverBindingTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3RefusalContainmentTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/G3RunSettlementTests.swift
+?? simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift
+?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3CommitLinearizationTests.swift
+?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3DualArmRunnerTests.swift
+?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3ExecutionDispatchTests.swift
+?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3IsolatedExecutionEntryTests.swift
+?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3PerArmCacheWiringTests.swift
+?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3SettlementAxesReportTests.swift
+?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/G3SettlementAxesTests.swift
+?? simigo2-experimental/Tests/SimiGoRuntimeContractTests/RuntimeIsolationGateTests.swift
+?? simigo2-experimental/scripts/handoff_causality/
+?? simigo2-experimental/scripts/ordinary_task/
+?? tools/g3_build_stamped.py
+?? tools/g3_execution_identity.py
+?? tools/g3_runner_manifest.py

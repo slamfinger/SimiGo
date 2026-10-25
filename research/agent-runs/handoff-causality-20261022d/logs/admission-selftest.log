@@ -1,0 +1,60 @@
+{
+ "conditions": [
+  {
+   "case": "happy",
+   "checks": {
+    "all_reported_checks_true": true,
+    "checksum_bound_from_source": true,
+    "database_bytes_unchanged": true,
+    "dependency_closure_complete": true,
+    "exit_code_is_0": true,
+    "object_identity_is_content_digest": true,
+    "offsets_match_admitted_values": true,
+    "ok_is_true": true,
+    "secret_bound_from_u1": true,
+    "two_bindings": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "missing-settlement",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "tampered-object-bytes",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "dependency-mismatch",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "verdict": "PASS"
+  }
+ ],
+ "verdict": "PASS"
+}

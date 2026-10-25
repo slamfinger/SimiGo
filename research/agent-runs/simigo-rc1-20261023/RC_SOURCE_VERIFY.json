@@ -1,0 +1,15 @@
+{
+ "rc_id": "simigo-rc1-de362ef4-20261023",
+ "freeze_sha256": "cc94652ad18e435c68abca1a0100148fa5857890b4b34aa91ca68f0e6c527cc9",
+ "repo": "/Users/mr.simi/Documents/SimiGo",
+ "files_checked": 34,
+ "files_missing": [],
+ "files_drifted": [],
+ "head_now": "de362ef46118402b40356c8c9e3633395a151717",
+ "head_at_freeze": "de362ef46118402b40356c8c9e3633395a151717",
+ "branch_at_freeze": "localb-b3-closure-20261016",
+ "head_matches_freeze": true,
+ "staged_files_now": 0,
+ "clean": true,
+ "meaning": "byte-identity of the named files at freeze time vs now; it does not prove the freeze enumerated every change."
+}

@@ -1,0 +1,4314 @@
+diff --git a/.gitignore b/.gitignore
+index accb93af..e7727c5b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -26,3 +26,6 @@ pre-research/**/*.sqlite
+ 
+ # G2 A2 materialized model copy (17.2 GB, byte-verified, never committed)
+ execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/artifact-model-*/
++
++# Local working copy of the mlx-swift fork (native G3 storage-identity accessor); see Package.swift path dependency
++/vendor/
+diff --git a/execution-information-loop/carrier_loop.py b/execution-information-loop/carrier_loop.py
+index 4958203b..f6f46d20 100644
+--- a/execution-information-loop/carrier_loop.py
++++ b/execution-information-loop/carrier_loop.py
+@@ -48,6 +48,148 @@ class ConcurrentStateTransition(Exception):
+ 
+ RUNTIME_APPLICATION_STATUSES = {"PENDING_SWIFT", "APPLIED_SWIFT"}
+ 
++# One settlement contract for every writer. External information and internal
++# computed results must arrive in the same envelope, otherwise the reuse
++# predicate can only ever match the dialect that wrote the record.
++SETTLEMENT_CONTRACT = "EINFO-SETTLEMENT-CONTRACT-V1"
++CARRIER_LOOP_CONTRACT_VERSION = "2"
++
++# Two digest domains that never mix: `source_payload_sha256` binds the input a
++# settlement was computed from, `result_value_sha256` binds the value it
++# produced. Neither domain may be compared against the other.
++SETTLEMENT_DIGEST_FIELDS = ("source_payload_sha256", "result_value_sha256")
++SETTLEMENT_RESULT_FIELDS = (
++    "value",
++    "source_payload_sha256",
++    "result_value_sha256",
++    "source_version",
++    "dependency_object_ids",
++    "evaluated_at_utc",
++    "valid_until_utc",
++    "validity_policy",
++)
++SETTLEMENT_BASIS_FIELDS = (
++    "source_payload_sha256",
++    "result_value_sha256",
++    "source_version",
++    "dependency_object_ids",
++    "evaluated_at_utc",
++    "valid_until_utc",
++    "validity_policy",
++)
++
++
++def _is_sha256_hex(value: Any) -> bool:
++    return (
++        isinstance(value, str)
++        and len(value) == 64
++        and all(character in "0123456789abcdef" for character in value)
++    )
++
++
++def _is_object_id_map(value: Any) -> bool:
++    return isinstance(value, dict) and all(
++        isinstance(key, str) and _is_sha256_hex(item) for key, item in value.items()
++    )
++
++
++class SettlementContractViolation(ValueError):
++    """A settlement payload does not satisfy the single settlement contract."""
++
++    def __init__(self, missing: list[str], mismatched: list[str], detail: str = ""):
++        self.missing = list(missing)
++        self.mismatched = list(mismatched)
++        message = "settlement contract violation"
++        if self.missing:
++            message += "; missing=%s" % ",".join(sorted(set(self.missing)))
++        if self.mismatched:
++            message += "; mismatched=%s" % ",".join(sorted(set(self.mismatched)))
++        if detail:
++            message += "; " + detail
++        super().__init__(message)
++
++
++def validate_settlement_payload(result: Any, basis: Any) -> None:
++    """Reject a settlement that no reader could reuse under the contract."""
++    if not isinstance(result, dict):
++        raise SettlementContractViolation(
++            ["result"], [], "result must be a JSON object"
++        )
++    if not isinstance(basis, dict):
++        raise SettlementContractViolation(["basis"], [], "basis must be a JSON object")
++    missing = ["result.%s" % field for field in SETTLEMENT_RESULT_FIELDS
++               if field not in result]
++    missing += ["basis.%s" % field for field in SETTLEMENT_BASIS_FIELDS
++                if field not in basis]
++    if missing:
++        raise SettlementContractViolation(missing, [])
++
++    mismatched: list[str] = []
++    for scope, payload in (("result", result), ("basis", basis)):
++        for field in SETTLEMENT_DIGEST_FIELDS:
++            if not _is_sha256_hex(payload[field]):
++                mismatched.append("%s.%s" % (scope, field))
++        if not isinstance(payload["source_version"], str) or not payload["source_version"]:
++            mismatched.append("%s.source_version" % scope)
++        if not _is_object_id_map(payload["dependency_object_ids"]):
++            mismatched.append("%s.dependency_object_ids" % scope)
++        try:
++            parse_utc(payload["evaluated_at_utc"])
++        except ValueError:
++            mismatched.append("%s.evaluated_at_utc" % scope)
++        if payload["valid_until_utc"] is not None:
++            try:
++                parse_utc(payload["valid_until_utc"])
++            except ValueError:
++                mismatched.append("%s.valid_until_utc" % scope)
++        try:
++            validity_policy_identity(payload["validity_policy"])
++        except ValueError:
++            mismatched.append("%s.validity_policy" % scope)
++
++    # Each digest domain is validated against its own subject: the recorded
++    # result digest must be the digest of the recorded value, and both scopes
++    # must agree on each domain independently.
++    try:
++        recorded_value_sha256 = digest(result["value"])
++    except (TypeError, ValueError):
++        recorded_value_sha256 = None
++        mismatched.append("result.value_not_canonical_json")
++    if recorded_value_sha256 is not None:
++        for scope, payload in (("result", result), ("basis", basis)):
++            if payload["result_value_sha256"] != recorded_value_sha256:
++                mismatched.append("%s.result_value_sha256!=digest(result.value)" % scope)
++    for field in SETTLEMENT_DIGEST_FIELDS:
++        if result[field] != basis[field]:
++            mismatched.append("result.%s!=basis.%s" % (field, field))
++    if result["source_version"] != basis["source_version"]:
++        mismatched.append("result.source_version!=basis.source_version")
++    if result["dependency_object_ids"] != basis["dependency_object_ids"]:
++        mismatched.append("result.dependency_object_ids!=basis.dependency_object_ids")
++    if result["evaluated_at_utc"] != basis["evaluated_at_utc"]:
++        mismatched.append("result.evaluated_at_utc!=basis.evaluated_at_utc")
++    if result["valid_until_utc"] != basis["valid_until_utc"]:
++        mismatched.append("result.valid_until_utc!=basis.valid_until_utc")
++    if result["validity_policy"] != basis["validity_policy"]:
++        mismatched.append("result.validity_policy!=basis.validity_policy")
++
++    try:
++        if (result["valid_until_utc"] is not None
++                and parse_utc(result["evaluated_at_utc"])
++                > parse_utc(result["valid_until_utc"])):
++            mismatched.append("valid_until_utc<=evaluated_at_utc")
++    except ValueError:
++        pass
++
++    try:
++        canonical(result)
++        canonical(basis)
++    except (TypeError, ValueError):
++        mismatched.append("payload_not_canonical_json")
++
++    if mismatched:
++        raise SettlementContractViolation([], mismatched)
++
+ 
+ def validity_policy_identity(policy: Any) -> dict:
+     """Validate and return a canonical validity-policy identity."""
+@@ -281,9 +423,13 @@ class CarrierInformationLoop:
+         result: dict,
+         basis: dict,
+     ) -> dict:
++        # Reject a contract violation before the carrier is touched: a
++        # malformed settlement must never reach the append-only ledger.
++        validate_settlement_payload(result, basis)
+         value = {
+             "schema_id": "EINFO-SETTLEMENT-V1",
+             "state": "SETTLED",
++            "settlement_contract": SETTLEMENT_CONTRACT,
+             "advancement_id": advancement_id,
+             "item_id": item_id,
+             "result": result,
+@@ -317,20 +463,34 @@ class CarrierInformationLoop:
+         target_item_id: str,
+         reason: str,
+         include_dependents: bool = True,
++        strict: bool = True,
+     ) -> dict:
++        """Invalidate `target_item_id` and everything that truly depends on it.
++
++        `strict` governs exactly one thing: whether an unknown target is an
++        error. With `strict=False` the pre-W4 computation and return shape are
++        reproduced as-is (an unknown target is echoed back as invalidated with
++        zero records written), which is what historical callers were written
++        against. New callers should keep the default, which reports the same
++        situation as the carrier's own `MissingLogicalEntry` instead of a
++        successful-looking no-op.
++        """
+         with self.carrier.atomic_write_group():
+             return self._invalidate_settlement_in_group(
+-                target_item_id, reason, include_dependents
++                target_item_id, reason, include_dependents, strict
+             )
+ 
+-    def _invalidate_settlement_in_group(
+-        self,
+-        target_item_id: str,
+-        reason: str,
+-        include_dependents: bool = True,
+-    ) -> dict:
+-        """Append explicit invalidation records for an item and its dependents."""
+-        items = {}
++    def _dependency_edges(self) -> dict[str, set[str]]:
++        """Dependency graph per item, as the union of two declared sources.
++
++        An item declares its dependencies in `dependencies`; the settlement it
++        produced declares the same relation in `basis.dependency_object_ids`.
++        A settlement written by an external writer can carry only the second,
++        which would leave a real dependency invisible to a graph built from
++        item objects alone. Union keeps the closure complete without inventing
++        edges: both keys are item ids the carrier itself recorded.
++        """
++        edges: dict[str, set[str]] = {}
+         for row in self.carrier.connection.execute(
+             "SELECT append_order,srs_identity,record_object "
+             "FROM is_index_entries WHERE srs_identity LIKE 'item:%' "
+@@ -338,7 +498,28 @@ class CarrierInformationLoop:
+         ):
+             item_id = row["srs_identity"][len("item:"):]
+             value = json.loads(self.carrier.get_object(row["record_object"]))
+-            items[item_id] = value["dependencies"]
++            edges[item_id] = set(value.get("dependencies") or ())
++        for item_id in edges:
++            settlement = self.current_settlement(item_id)
++            basis = settlement.get("basis") if isinstance(settlement, dict) else None
++            declared = basis.get("dependency_object_ids") if isinstance(basis, dict) else None
++            if isinstance(declared, dict):
++                edges[item_id].update(declared)
++        return edges
++
++    def _invalidate_settlement_in_group(
++        self,
++        target_item_id: str,
++        reason: str,
++        include_dependents: bool = True,
++        strict: bool = True,
++    ) -> dict:
++        """Append explicit invalidation records for an item and its dependents."""
++        items = self._dependency_edges()
++        if strict and target_item_id not in items:
++            raise MissingLogicalEntry(
++                "item:%s (unknown invalidation target)" % target_item_id
++            )
+         dependents: dict[str, list[str]] = {
+             item_id: [] for item_id in items
+         }
+@@ -575,6 +756,64 @@ class CarrierInformationLoop:
+         value["_object_id"] = row["record_object"]
+         return value
+ 
++    def _settlement_reuse_decision(
++        self,
++        settlement: Optional[dict],
++        item: dict,
++        dependency_object_ids: dict,
++        evaluated_at: datetime,
++    ) -> tuple[bool, Optional[str]]:
++        """Decide whether a settlement may be reused for the current source.
++
++        Returns (reusable, refusal_reason). An unreadable, opaque or expired
++        settlement is a refusal, never an exception: fail closed, but keep the
++        reason so the caller can record why the work was redone.
++        """
++        if settlement is None:
++            return False, "MISSING_OR_SUPERSEDED_SETTLEMENT"
++        if settlement.get("state") == "INVALID":
++            return False, "SETTLEMENT_INVALID"
++        if settlement.get("state") != "SETTLED":
++            return False, "SETTLEMENT_NOT_SETTLED"
++        if settlement.get("settlement_contract") != SETTLEMENT_CONTRACT:
++            return False, "SETTLEMENT_CONTRACT_OPAQUE"
++        result = settlement.get("result")
++        basis = settlement.get("basis")
++        if not isinstance(result, dict) or not isinstance(basis, dict):
++            return False, "SETTLEMENT_CONTRACT_MALFORMED"
++        if any(field not in result for field in SETTLEMENT_RESULT_FIELDS):
++            return False, "SETTLEMENT_CONTRACT_MALFORMED"
++        if any(field not in basis for field in SETTLEMENT_BASIS_FIELDS):
++            return False, "SETTLEMENT_CONTRACT_MALFORMED"
++        try:
++            settlement_value_sha256 = digest(result["value"])
++            settlement_valid_until = basis["valid_until_utc"]
++            if settlement_valid_until is not None and evaluated_at > parse_utc(
++                settlement_valid_until
++            ):
++                return False, "SETTLEMENT_EXPIRED"
++            source_payload_sha256 = digest(item["source_payload"])
++            reusable = (
++                result["source_payload_sha256"] == source_payload_sha256
++                and basis["source_payload_sha256"] == source_payload_sha256
++                and result["result_value_sha256"] == settlement_value_sha256
++                and basis["result_value_sha256"] == settlement_value_sha256
++                and result["source_version"] == item["source_version"]
++                and basis["source_version"] == item["source_version"]
++                and result["dependency_object_ids"] == dependency_object_ids
++                and basis["dependency_object_ids"] == dependency_object_ids
++                and result["valid_until_utc"] == settlement_valid_until
++                and item.get("valid_until_utc") == settlement_valid_until
++                and result["validity_policy"] == item.get("validity_policy")
++                and basis["validity_policy"] == item.get("validity_policy")
++                and parse_utc(result["evaluated_at_utc"]) <= evaluated_at
++            )
++        except (KeyError, TypeError, ValueError):
++            return False, "SETTLEMENT_CONTRACT_MALFORMED"
++        if not reusable:
++            return False, "SETTLEMENT_BASIS_MISMATCH"
++        return True, None
++
+     def execute_demand(
+         self,
+         demand_id: str,
+@@ -831,38 +1070,10 @@ class CarrierInformationLoop:
+ 
+             valid_until_utc = item.get("valid_until_utc")
+             settlement = self.current_settlement(item_id)
+-            reusable = False
+-            if settlement is not None and settlement.get("state") != "SETTLED":
+-                reusable = False
+-            elif settlement is not None:
+-                basis = settlement["basis"]
+-                try:
+-                    settlement_valid_until = basis["valid_until_utc"]
+-                    settlement_time_valid = True
+-                    if settlement_valid_until is not None:
+-                        settlement_time_valid = evaluated_at <= parse_utc(settlement_valid_until)
+-                    reusable = (
+-                        settlement["result"]["payload_digest"] == digest(item["source_payload"])
+-                        and settlement["result"]["source_version"] == item["source_version"]
+-                        and settlement["result"]["dependency_object_ids"] == dependency_object_ids
+-                        and basis["source_payload_sha256"] == digest(item["source_payload"])
+-                        and basis["source_version"] == item["source_version"]
+-                        and basis["dependency_object_ids"] == dependency_object_ids
+-                        and settlement["result"]["valid_until_utc"] == settlement_valid_until
+-                        and valid_until_utc == settlement_valid_until
+-                        and settlement["result"]["validity_policy"] == item.get("validity_policy")
+-                        and basis.get("validity_policy") == item.get("validity_policy")
+-                        and parse_utc(settlement["result"]["evaluated_at_utc"]) <= evaluated_at
+-                        and settlement_time_valid
+-                        and (
+-                            valid_until_utc is None
+-                            or evaluated_at <= parse_utc(valid_until_utc)
+-                        )
+-                    )
+-                except (KeyError, TypeError, ValueError):
+-                    reusable = False
+-            basis = settlement.get("basis") if settlement is not None else None
+-            payload_digest = digest(item["source_payload"])
++            reusable, reuse_refusal_reason = self._settlement_reuse_decision(
++                settlement, item, dependency_object_ids, evaluated_at
++            )
++            source_payload_sha256 = digest(item["source_payload"])
+             if reusable:
+                 result = settlement["result"]["value"]
+                 action = "REUSE"
+@@ -873,35 +1084,27 @@ class CarrierInformationLoop:
+             else:
+                 action_reason = (
+                     "VALIDITY_EXPIRED" if item_id in stale_item_ids
+-                    else "MISSING_OR_SUPERSEDED_SETTLEMENT"
++                    else (reuse_refusal_reason or "MISSING_OR_SUPERSEDED_SETTLEMENT")
+                 )
+                 result = calculator(item_id, item["source_payload"], dependency_values)
+                 action = "COMPUTE"
+                 computed.append(item_id)
++                settlement_basis = {
++                    "source_payload_sha256": source_payload_sha256,
++                    "result_value_sha256": digest(result),
++                    "source_version": item["source_version"],
++                    "dependency_object_ids": {
++                        key: dependency_object_ids[key] for key in dependency_values
++                    },
++                    "evaluated_at_utc": evaluated_at_utc,
++                    "valid_until_utc": valid_until_utc,
++                    "validity_policy": item.get("validity_policy"),
++                }
+                 settlement_record = self.settle(
+                     advancement_id,
+                     item_id,
+-                    {
+-                        "value": result,
+-                        "payload_digest": payload_digest,
+-                        "source_version": item["source_version"],
+-                        "dependency_object_ids": {
+-                            key: dependency_object_ids[key] for key in dependency_values
+-                        },
+-                        "evaluated_at_utc": evaluated_at_utc,
+-                        "valid_until_utc": valid_until_utc,
+-                        "validity_policy": item.get("validity_policy"),
+-                    },
+-                    {
+-                        "source_payload_sha256": payload_digest,
+-                        "source_version": item["source_version"],
+-                        "dependency_object_ids": {
+-                            key: dependency_object_ids[key] for key in dependency_values
+-                        },
+-                        "evaluated_at_utc": evaluated_at_utc,
+-                        "valid_until_utc": valid_until_utc,
+-                        "validity_policy": item.get("validity_policy"),
+-                    },
++                    {"value": result, **settlement_basis},
++                    settlement_basis,
+                 )
+             resolved[item_id] = {"value": result, "object_id": settlement_record["object_id"]}
+             actions.append({
+@@ -910,7 +1113,7 @@ class CarrierInformationLoop:
+                 "reason": None if action == "REUSE" else action_reason,
+                 "result_digest": digest(result),
+                 "settlement_object_id": settlement_record["object_id"],
+-                "source_payload_digest": payload_digest,
++                "source_payload_sha256": source_payload_sha256,
+             })
+             return {"value": result, "object_id": settlement_record["object_id"]}
+ 
+@@ -963,3 +1166,89 @@ class CarrierInformationLoop:
+             "advanced": True,
+             "execution_state": execution_state,
+         }
++
++
++def audit_settlement_contracts(database_path: str) -> dict:
++    """Classify the current settlement of each item without writing to the carrier.
++
++    Historical carriers may contain settlements written before the contract
++    existed. They stay readable, but they are reported as opaque so no caller
++    mistakes them for reusable work.
++    """
++    import sqlite3
++
++    uri = Path(database_path).resolve().as_uri() + "?mode=ro"
++    connection = sqlite3.connect(uri, uri=True)
++    connection.row_factory = sqlite3.Row
++    try:
++        rows = connection.execute(
++            "SELECT append_order,srs_identity,record_object "
++            "FROM is_index_entries WHERE srs_identity LIKE 'settlement:%' "
++            "ORDER BY append_order ASC"
++        ).fetchall()
++        latest: dict[str, dict] = {}
++        for row in rows:
++            item_id = row["srs_identity"][len("settlement:"):]
++            body = connection.execute(
++                "SELECT object_id,byte_size,content FROM is_objects WHERE object_id=?",
++                (row["record_object"],),
++            ).fetchone()
++            if body is None:
++                latest[item_id] = {
++                    "item_id": item_id,
++                    "object_id": row["record_object"],
++                    "classification": "MISSING_OBJECT",
++                }
++                continue
++            content = bytes(body["content"])
++            bytes_match = hashlib.sha256(content).hexdigest() == body["object_id"]
++            try:
++                value = json.loads(content)
++            except ValueError:
++                latest[item_id] = {
++                    "item_id": item_id,
++                    "object_id": body["object_id"],
++                    "classification": "UNREADABLE",
++                    "bytes_match_address": bytes_match,
++                }
++                continue
++            state = value.get("state")
++            contract = value.get("settlement_contract")
++            if state == "INVALID":
++                classification = "INVALIDATION_RECORD"
++            elif state != "SETTLED":
++                classification = "NOT_SETTLED"
++            elif contract != SETTLEMENT_CONTRACT:
++                classification = "OPAQUE"
++            else:
++                try:
++                    validate_settlement_payload(value.get("result"), value.get("basis"))
++                    classification = "CONFORMING"
++                except SettlementContractViolation:
++                    classification = "MALFORMED"
++            latest[item_id] = {
++                "item_id": item_id,
++                "object_id": body["object_id"],
++                "state": state,
++                "settlement_contract": contract,
++                "bytes_match_address": bytes_match,
++                "classification": classification,
++            }
++    finally:
++        connection.close()
++
++    settlements = [latest[item_id] for item_id in sorted(latest)]
++    counts: dict[str, int] = {}
++    for settlement in settlements:
++        key = settlement["classification"]
++        counts[key] = counts.get(key, 0) + 1
++    return {
++        "schema_id": "EINFO-SETTLEMENT-CONTRACT-AUDIT-V1",
++        "contract": SETTLEMENT_CONTRACT,
++        "carrier_contract_version": CARRIER_LOOP_CONTRACT_VERSION,
++        "database_path": str(Path(database_path).resolve()),
++        "settlements": settlements,
++        "counts": counts,
++        "all_conforming": bool(settlements)
++        and all(item["classification"] == "CONFORMING" for item in settlements),
++    }
+diff --git a/execution-information-loop/carrier_selftest.py b/execution-information-loop/carrier_selftest.py
+index 52b980ae..816951f6 100644
+--- a/execution-information-loop/carrier_selftest.py
++++ b/execution-information-loop/carrier_selftest.py
+@@ -13,8 +13,13 @@ import contextlib
+ from typing import Optional
+ from pathlib import Path
+ 
+-from carrier_loop import CarrierInformationLoop, digest
+-from db_is import DatabaseBackedIS
++from carrier_loop import (
++    CarrierInformationLoop,
++    SettlementContractViolation,
++    audit_settlement_contracts,
++    digest,
++)
++from db_is import DatabaseBackedIS, MissingLogicalEntry
+ 
+ 
+ def canonical(value) -> str:
+@@ -206,12 +211,280 @@ def append_race_recovery(
+     writer_loop.close()
+ 
+ 
++def contract_checks(validity_policy: dict) -> dict:
++    """Prove the single settlement contract is enforced at write and at reuse.
++
++    Runs on its own isolated carrier: a contract violation must leave the
++    append-only ledgers untouched, and a pre-contract settlement must stay
++    readable while never being reused as work.
++    """
++    checks = {}
++    with tempfile.TemporaryDirectory(prefix="simigo-einfo-contract-") as temporary:
++        database = str(Path(temporary) / "carrier_contract.sqlite")
++        loop = CarrierInformationLoop.create(database)
++        loop.define_demand(
++            "contract-demand",
++            continuation_point="contract-continuation",
++            pending_obligations=[],
++            continuation_conditions=[],
++            required_item_ids=["A"],
++        )
++        loop.put_source(
++            "contract-demand", "A", "manual_input", "v1", {"input": 3},
++            valid_until_utc="2030-12-31T23:59:59Z",
++            validity_policy=validity_policy,
++        )
++        loop.commit()
++
++        def ledger_counts() -> tuple:
++            return tuple(loop.carrier.connection.execute(
++                "SELECT (SELECT COUNT(*) FROM is_objects),"
++                "       (SELECT COUNT(*) FROM is_index_entries),"
++                "       (SELECT COUNT(*) FROM dependency_entries)"
++            ).fetchone())
++
++        before = ledger_counts()
++        source_payload_sha256 = digest({"input": 3})
++        value = {"answer": 6}
++        shared = {
++            "source_payload_sha256": source_payload_sha256,
++            "result_value_sha256": digest(value),
++            "source_version": "v1",
++            "dependency_object_ids": {},
++            "evaluated_at_utc": "2026-10-09T00:00:00Z",
++            "valid_until_utc": "2030-12-31T23:59:59Z",
++            "validity_policy": validity_policy,
++        }
++        good_result = {"value": value, **shared}
++        good_basis = dict(shared)
++
++        missing_result = dict(good_result)
++        missing_result.pop("result_value_sha256")
++        try:
++            loop.settle("adv-contract", "A", missing_result, good_basis)
++        except SettlementContractViolation as error:
++            checks["settlement_contract_rejects_missing_field"] = (
++                "result.result_value_sha256" in error.missing
++            )
++        else:
++            checks["settlement_contract_rejects_missing_field"] = False
++
++        try:
++            loop.settle(
++                "adv-contract", "A",
++                dict(good_result, source_payload_sha256="not-a-digest"), good_basis)
++        except SettlementContractViolation as error:
++            checks["settlement_contract_rejects_malformed_digest"] = (
++                "result.source_payload_sha256" in error.mismatched
++            )
++        else:
++            checks["settlement_contract_rejects_malformed_digest"] = False
++
++        # The two digest domains must never stand in for one another. A
++        # settlement that records the input digest as its result digest is a
++        # violation even though both strings are well-formed SHA-256.
++        swapped_result = dict(
++            good_result, result_value_sha256=source_payload_sha256
++        )
++        try:
++            loop.settle("adv-contract", "A", swapped_result, good_basis)
++        except SettlementContractViolation as error:
++            checks["settlement_contract_rejects_cross_domain_digest"] = (
++                "result.result_value_sha256!=digest(result.value)"
++                in error.mismatched
++                and "result.result_value_sha256!=basis.result_value_sha256"
++                in error.mismatched
++            )
++        else:
++            checks["settlement_contract_rejects_cross_domain_digest"] = False
++
++        checks["settlement_contract_violation_writes_nothing"] = (
++            ledger_counts() == before
++        )
++
++        # The two scopes are one envelope. If `result` and `basis` disagree
++        # about which source version or which evaluation instant the settlement
++        # describes, no reader can say what was settled, even though every
++        # field on its own is well-formed.
++        for label, field, other in (
++            ("source_version", "source_version", "v2"),
++            ("evaluated_at", "evaluated_at_utc", "2026-10-08T23:59:59Z"),
++        ):
++            scope_result = dict(good_result)
++            scope_result[field] = other
++            try:
++                loop.settle("adv-contract", "A", scope_result, good_basis)
++            except SettlementContractViolation as error:
++                checks["settlement_contract_rejects_cross_scope_%s" % label] = (
++                    "result.%s!=basis.%s" % (field, field) in error.mismatched
++                )
++            else:
++                checks["settlement_contract_rejects_cross_scope_%s" % label] = False
++
++        # A pre-contract settlement stays readable but must never be reused.
++        legacy_value = {
++            "schema_id": "EINFO-SETTLEMENT-V1",
++            "state": "SETTLED",
++            "advancement_id": "legacy",
++            "item_id": "A",
++            "result": {"prefix": [1, 2, 3]},
++            "basis": {"source_payload": {"input": 3}},
++        }
++        with loop.carrier.atomic_write_group():
++            legacy_id, _ = loop.carrier.atomic_dependency_materialization(
++                canonical(legacy_value).encode(),
++                {
++                    "dependency_id": "settlement:A",
++                    "content_address": "",
++                    "revision": len(
++                        loop.carrier.get_dependency_history("settlement:A")
++                    ) + 1,
++                    "reason": "legacy settlement",
++                },
++            )
++            loop.carrier.append_index_entry({
++                "srs_identity": "settlement:A",
++                "record_object": legacy_id,
++            })
++        loop.commit()
++
++        audit = audit_settlement_contracts(database)
++        checks["contract_audit_classifies_legacy_opaque"] = (
++            audit["counts"].get("OPAQUE") == 1
++        )
++
++        rerun = loop.execute_demand(
++            "contract-demand", "adv-contract-2", calculator,
++            evaluated_at_utc="2026-10-09T00:00:00Z",
++        )
++        action = rerun["actions"][0]
++        checks["opaque_settlement_is_not_reused"] = (
++            rerun["state"] == "ADVANCED"
++            and action["action"] == "COMPUTE"
++            and action.get("reason") == "SETTLEMENT_CONTRACT_OPAQUE"
++        )
++        loop.close()
++    return checks
++
++
++def invalidation_checks(validity_policy: dict) -> dict:
++    """Prove invalidation closes over real dependencies and nothing else.
++
++    Four properties: an unknown target is refused without writing, a dependency
++    that exists only in a settlement's basis still propagates, an item that does
++    not depend on the target is never invalidated, and `strict=False` reproduces
++    the pre-W4 return shape for callers written against it.
++
++    The basis-only item cannot be produced by `execute_demand`, which derives the
++    basis from the item's own dependency list. Its settlement is therefore
++    written directly, which is exactly the external-writer shape the union is
++    there to defend against.
++    """
++    checks = {}
++    with tempfile.TemporaryDirectory(prefix="simigo-einfo-invalidation-") as temporary:
++        database = str(Path(temporary) / "carrier_invalidation.sqlite")
++        loop = CarrierInformationLoop.create(database)
++        loop.define_demand(
++            "invalidation-demand",
++            continuation_point="invalidation-continuation",
++            pending_obligations=[],
++            continuation_conditions=[],
++            required_item_ids=["A"],
++        )
++
++        def put(item_id: str, dependencies: list) -> dict:
++            return loop.put_source(
++                "invalidation-demand", item_id, "manual_input", "v1",
++                {"item": item_id},
++                dependencies=list(dependencies),
++                valid_until_utc="2030-12-31T23:59:59Z",
++                validity_policy=validity_policy,
++            )
++
++        def settle(item_id: str, dependency_object_ids: dict) -> str:
++            payload = {"answer": item_id}
++            shared = {
++                "source_payload_sha256": digest({"item": item_id}),
++                "result_value_sha256": digest(payload),
++                "source_version": "v1",
++                "dependency_object_ids": dict(dependency_object_ids),
++                "evaluated_at_utc": "2026-10-09T00:00:00Z",
++                "valid_until_utc": "2030-12-31T23:59:59Z",
++                "validity_policy": validity_policy,
++            }
++            return loop.settle(
++                "adv-%s" % item_id, item_id,
++                {"value": payload, **shared}, dict(shared),
++            )["object_id"]
++
++        put("A", [])
++        a_object = settle("A", {})
++        put("B", ["A"])
++        b_object = settle("B", {"A": a_object})
++        put("C", ["B"])
++        settle("C", {"B": b_object})
++        put("D", [])
++        settle("D", {"A": a_object})
++        put("U", [])
++        settle("U", {})
++        loop.commit()
++
++        def ledger_counts() -> tuple:
++            return tuple(loop.carrier.connection.execute(
++                "SELECT (SELECT COUNT(*) FROM is_objects),"
++                "       (SELECT COUNT(*) FROM is_index_entries),"
++                "       (SELECT COUNT(*) FROM dependency_entries)"
++            ).fetchone())
++
++        before = ledger_counts()
++        try:
++            loop.invalidate_settlement("no-such-item", reason="typo")
++        except MissingLogicalEntry:
++            checks["unknown_target_raises_missing_logical_entry"] = True
++        else:
++            checks["unknown_target_raises_missing_logical_entry"] = False
++        checks["unknown_target_writes_nothing"] = ledger_counts() == before
++
++        # Historical callers were written against a dict that always came back.
++        legacy = loop.invalidate_settlement(
++            "no-such-item", reason="legacy", strict=False)
++        checks["non_strict_preserves_legacy_shape"] = (
++            set(legacy) == {"invalidated_item_ids", "invalidated_records", "reason"}
++            and legacy["invalidated_item_ids"] == ["no-such-item"]
++            and legacy["invalidated_records"] == []
++            and legacy["reason"] == "legacy"
++        )
++        checks["non_strict_writes_nothing"] = ledger_counts() == before
++
++        invalidation = loop.invalidate_settlement("A", reason="source-a-changed")
++        affected = set(invalidation["invalidated_item_ids"])
++        checks["basis_only_dependency_propagates"] = (
++            "D" in affected
++            and loop.current_settlement("D")
++            and loop.current_settlement("D").get("state") == "INVALID"
++        )
++        checks["declared_and_transitive_dependencies_propagate"] = (
++            {"A", "B", "C"} <= affected)
++        checks["unrelated_item_not_invalidated"] = (
++            "U" not in affected
++            and loop.current_settlement("U").get("state") == "SETTLED"
++        )
++        checks["invalidation_scope_is_exactly_the_closure"] = (
++            affected == {"A", "B", "C", "D"}
++            and len(invalidation["invalidated_records"]) == 4
++        )
++        loop.close()
++    return checks
++
++
+ def run() -> dict:
+     checks = {}
+     validity_policy = sealed_policy({
+         "policy_version": "carrier-selftest-v1",
+         "policy_source": "ISOLATED_SELFTEST",
+     })
++    checks.update(contract_checks(validity_policy))
++    checks.update(invalidation_checks(validity_policy))
+     with tempfile.TemporaryDirectory(prefix="simigo-einfo-carrier-") as temporary:
+         database = str(Path(temporary) / "carrier_information_space.sqlite")
+ 
+diff --git a/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm3.sqlite b/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm3.sqlite
+index a7eff073..d4c196e8 100644
+Binary files a/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm3.sqlite and b/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm3.sqlite differ
+diff --git a/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm4.sqlite b/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm4.sqlite
+index e69de29b..2b8ede6e 100644
+Binary files a/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm4.sqlite and b/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm4.sqlite differ
+diff --git a/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.last_judgment.json b/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.last_judgment.json
+index 98565495..996d2317 100644
+--- a/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.last_judgment.json
++++ b/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.last_judgment.json
+@@ -1 +1 @@
+-{"correctness_baseline": {"U_upstream": "U_upstream->hda266aeb", "U_parse": "U_parse->h1d3f0327", "U_summarize": "U_summarize->hd3057070"}, "judgment": {"A_真实模型路径": {"status": "PASS-部分", "fields": {}}, "H_选择性失效-Carrier(依赖语义预期=['U_parse', 'U_summarize', 'U_upstream'])[carrier_proxy=['U_parse', 'U_summarize', 'U_upstream']]": {"status": "PASS-部分", "fields": {}}, "H_选择性失效-Executor(真Calculator)[status=NOT_INSTRUMENTED]": {"status": "NOT VERIFIED", "fields": {}}, "H_选择性失效-整体(依赖传导全链重算)[PASS-部分]": {"status": "PASS-部分", "fields": {}}, "H/E/I_证据结构一致性": {"status": "PASS-部分", "fields": {"experiment_run_status": "done (single local model, real carrier)", "acceptance_status": "PASS-部分 (proxy-layer; H/E/I executor half uninstrumented)", "executor_instrumentation_status": "NOT_INSTRUMENTED (real Calculator wired:false; unit_real_prefix proxies model-work)", "rationale": "H carrier-proxy vs executor-truth, E cache-reuse-half (would-have-run counterfactual inferred), and I saved-work-estimate share ONE structural reason: cache precision is a proxy for compute, no real Swift Calculator. Not upgraded to PASS until B0 (real Calculator) runs."}}, "I_工作量收益(info-reuse 单位可测; 真 model-work saved 待 Swift 复核)": {"status": "PASS-部分", "fields": {}}, "J_可复现性(logs/*.jsonl 完整)": {"status": "PASS", "fields": {}}}}
+\ No newline at end of file
++{"correctness_baseline": {"U_upstream": "U_upstream->hda266aeb", "U_parse": "U_parse->h1d3f0327", "U_summarize": "U_summarize->hd3057070"}, "judgment": {"A_真实模型路径": {"status": "PASS-部分", "fields": {}}, "G_正确性(arm2=baseline prefix 级等价)": {"status": "PASS", "fields": {}}, "B_持久结算(IS sha256 恢复成功)": {"status": "PASS", "fields": {}}, "C_旧缓存隔离(新阶段 handle)": {"status": "PASS-部分", "fields": {}}, "D_结果恢复(IS 提供有效结果)": {"status": "PASS", "fields": {}}, "F_新阶段执行(新增单元由新阶段实跑)": {"status": "PASS", "fields": {}}, "E_避免重复计算(info-reuse 充分; compute-reuse 待 Swift 复核)": {"status": "PASS-部分", "fields": {}}, "H_选择性失效-Carrier(依赖语义预期=['U_parse', 'U_summarize', 'U_upstream'])[carrier_proxy=['U_parse', 'U_summarize', 'U_upstream']]": {"status": "PASS-部分", "fields": {}}, "H_选择性失效-Executor(真Calculator)[status=NOT_INSTRUMENTED]": {"status": "NOT VERIFIED", "fields": {}}, "H_选择性失效-整体(依赖传导全链重算)[PASS-部分]": {"status": "PASS-部分", "fields": {}}, "H_选择性失效-Diamond-Carrier(全传播=True|无过度传导=True⊕集合等=True)": {"status": "PASS", "fields": {}}, "H/E/I_证据结构一致性": {"status": "PASS-部分", "fields": {"experiment_run_status": "done (single local model, real carrier)", "acceptance_status": "PASS-部分 (proxy-layer; H/E/I executor half uninstrumented)", "executor_instrumentation_status": "NOT_INSTRUMENTED (real Calculator wired:false; unit_real_prefix proxies model-work)", "rationale": "H carrier-proxy vs executor-truth, E cache-reuse-half (would-have-run counterfactual inferred), and I saved-work-estimate share ONE structural reason: cache precision is a proxy for compute, no real Swift Calculator. Not upgraded to PASS until B0 (real Calculator) runs."}}, "I_工作量收益(info-reuse 单位可测; 真 model-work saved 待 Swift 复核)": {"status": "PASS-部分", "fields": {}}, "J_可复现性(logs/*.jsonl 完整)": {"status": "PASS", "fields": {}}}}
+\ No newline at end of file
+diff --git a/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/selftest.py b/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/selftest.py
+index 581342eb..363862c8 100644
+--- a/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/selftest.py
++++ b/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/selftest.py
+@@ -181,27 +181,53 @@ def new_db_path(tag: str) -> Path:
+ def build_and_settle(db: Path, tag: str) -> LOOP:
+     """Populate carrier: demand + 3 sources with deps, settle all three.
+ 
+-    real signature: put_source(demand_id, item_id, source_kind, source_version,
+-      source_payload, dependencies=[...]); settle(advancement_id, item_id, result, basis).
++    Every settlement uses the single settlement contract: the computed
++    token-prefix lives under `result.value` and the basis carries the source
++    identity the reuse predicate compares against. A settlement written in any
++    other shape would be readable but never reusable.
+     """
+     loop = LOOP.create(str(db)) if not db.exists() else LOOP.open(str(db))
+     loop.define_demand(TASK_DEMAND, continuation_point=f"{tag}-cp",
+                        pending_obligations=[], continuation_conditions=[], required_item_ids=[u["unit"] for u in UNITS])
+ 
+-    # U_upstream: no deps
+-    loop.put_source(TASK_DEMAND, "U_upstream", "text/plain", "v1", DOC_V1, dependencies=[])
+-    loop.settle(f"adv-{tag}", "U_upstream", dict(prefix=list(unit_real_prefix("U_upstream", DOC_V1, {})[0])),
+-                basis={"source_payload": DOC_V1})
++    evaluated_at = "2026-10-17T09:00:00Z"
++    settlement_object_ids: dict[str, str] = {}
+ 
+-    # U_parse depends on U_upstream (chain)
+-    loop.put_source(TASK_DEMAND, "U_parse", "text/plain", "v1", DOC_V1, dependencies=["U_upstream"])
+-    loop.settle(f"adv-{tag}", "U_parse", dict(prefix=list(unit_real_prefix("U_parse", DOC_V1, {})[0])),
+-                basis={"source_payload": DOC_V1})
++    def settle_unit(unit_id: str, source_payload: dict) -> None:
++        dependencies = next(u["deps"] for u in UNITS if u["unit"] == unit_id)
++        dependency_object_ids = {
++            dependency: settlement_object_ids[dependency]
++            for dependency in dependencies
++        }
++        payload_digest = carrier_loop.digest(source_payload)
++        value = {"prefix": list(unit_real_prefix(unit_id, source_payload, {})[0])}
++        shared = {
++            "source_payload_sha256": payload_digest,
++            "result_value_sha256": carrier_loop.digest(value),
++            "source_version": "v1",
++            "dependency_object_ids": dependency_object_ids,
++            "evaluated_at_utc": evaluated_at,
++            "valid_until_utc": VALID_UNTIL,
++            "validity_policy": POLICY,
++        }
++        settlement = loop.settle(
++            f"adv-{tag}", unit_id,
++            {"value": value, **shared},
++            dict(shared),
++        )
++        settlement_object_ids[unit_id] = settlement["object_id"]
++
++    loop.put_source(TASK_DEMAND, "U_upstream", "text/plain", "v1", DOC_V1,
++                    valid_until_utc=VALID_UNTIL, validity_policy=POLICY, dependencies=[])
++    settle_unit("U_upstream", DOC_V1)
+ 
+-    # U_summarize depends on U_parse (chain)
+-    loop.put_source(TASK_DEMAND, "U_summarize", "text/plain", "v1", DOC_V1, dependencies=["U_parse"])
+-    loop.settle(f"adv-{tag}", "U_summarize", dict(prefix=list(unit_real_prefix("U_summarize", DOC_V1, {})[0])),
+-                basis={"source_payload": DOC_V1})
++    loop.put_source(TASK_DEMAND, "U_parse", "text/plain", "v1", DOC_V1,
++                    valid_until_utc=VALID_UNTIL, validity_policy=POLICY, dependencies=["U_upstream"])
++    settle_unit("U_parse", DOC_V1)
++
++    loop.put_source(TASK_DEMAND, "U_summarize", "text/plain", "v1", DOC_V1,
++                    valid_until_utc=VALID_UNTIL, validity_policy=POLICY, dependencies=["U_parse"])
++    settle_unit("U_summarize", DOC_V1)
+ 
+     log_event(elt="build-settle", tag=tag, db=str(db))
+     return loop
+diff --git a/execution-information-loop/production_runtime_bridge.py b/execution-information-loop/production_runtime_bridge.py
+index 7479caf6..855a91f8 100644
+--- a/execution-information-loop/production_runtime_bridge.py
++++ b/execution-information-loop/production_runtime_bridge.py
+@@ -11,6 +11,8 @@ import argparse
+ import hashlib
+ import json
+ import os
++import re
++import secrets
+ import sys
+ from pathlib import Path
+ from typing import Optional
+@@ -46,6 +48,15 @@ REQUIRED_ITEMS = [
+     *[f"REAL-{index}" for index in range(1, 8)],
+ ]
+ 
++# Real-model handoff task (isolated run): one registered source, two model
++# items. The continuation point is deliberately the production one so the
++# existing Swift status/recovery/checkpoint authority reads the same lineage.
++TASK_SOURCE_ID = "TASK-SOURCE"
++TASK_U1_ID = "TASK-U1"
++TASK_U2_ID = "TASK-U2"
++TASK_DEMAND_U1 = "handoff-u1"
++TASK_DEMAND_U2 = "handoff-u2"
++
+ 
+ def emit(value: dict) -> None:
+     print(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+@@ -146,6 +157,9 @@ def _open_status(loop: CarrierInformationLoop) -> dict:
+         restored = loop.restore_continuation(CONTINUATION_POINT)
+         state: Optional[dict] = restored["state"]
+         required = restored["required_item_ids"]
++        # A real-model handoff may use its own demand on the same continuation
++        # point; report that demand rather than an unrelated one.
++        demand = restored["demand"]
+     except Exception:
+         restored = None
+         state = loop.latest_execution_state(CONTINUATION_POINT)
+@@ -456,6 +470,703 @@ def diagnostics(args: argparse.Namespace) -> None:
+     emit(value)
+ 
+ 
++def _task_material(
++    run_label: str,
++    secret_override: str | None = None,
++    random_secret: bool = False,
++) -> dict:
++    """Deterministic task material, so the run is reproducible from its label.
++
++    ``secret_override`` lets a controlled experiment bind a high-entropy nonce
++    to the SAME task shape.  It changes only the material, not the task graph.
++    ``random_secret`` generates a 128-bit nonce inside this process, so the
++    nonce never appears in a command line, environment variable or temp file;
++    it exists only in process memory and the source/settlement objects.
++    """
++    if random_secret and secret_override is not None:
++        raise ValueError("use either --random-secret or a secret override, not both")
++    if random_secret:
++        secret = secrets.token_hex(16)
++    elif secret_override is not None:
++        secret = secret_override
++        if not secret or len(secret) > 64 or not secret.isalnum():
++            raise ValueError("secret override must be 1-64 alphanumeric characters")
++    else:
++        secret = "K" + hashlib.sha256(
++            ("secret:" + run_label).encode("utf-8")
++        ).hexdigest()[:5].upper()
++    checksum = hashlib.sha256(
++        ("checksum:" + run_label).encode("utf-8")
++    ).hexdigest()[:4]
++    log_text = "\n".join([
++        "SIMIGO-SESSION-LOG-V1",
++        "run=%s" % run_label,
++        "site=lab-north",
++        "secret=%s" % secret,
++        "checksum=%s" % checksum,
++    ])
++    return {"secret": secret, "checksum": checksum, "log_text": log_text}
++
++
++def _settlement_basis(
++    source_payload: dict,
++    result_value: dict,
++    source_version: str,
++    dependency_object_ids: dict,
++    evaluated_at_utc: str,
++    valid_until_utc: str,
++    validity_policy: dict,
++) -> dict:
++    return {
++        "source_payload_sha256": digest(source_payload),
++        "result_value_sha256": digest(result_value),
++        "source_version": source_version,
++        "dependency_object_ids": dependency_object_ids,
++        "evaluated_at_utc": evaluated_at_utc,
++        "valid_until_utc": valid_until_utc,
++        "validity_policy": validity_policy,
++    }
++
++
++def define_task(args: argparse.Namespace) -> None:
++    """Create the isolated handoff task: registered source + two model items.
++
++    The source is settled here with the ordinary settlement contract (its
++    "computation" is deterministic registration). No execution state is
++    recorded, so this registration never impersonates runtime work.
++    """
++    validity_policy = load_deployment_validity_policy()
++    valid_until = deployment_default_validity(validity_policy)
++    if args.valid_until and args.valid_until != valid_until:
++        raise ValueError("command validity conflicts with deployment validity policy")
++    parse_utc(args.evaluated_at)
++    secret_override = getattr(args, "secret", None)
++    secret_file = getattr(args, "secret_file", None)
++    random_secret = bool(getattr(args, "random_secret", False))
++    if random_secret and (secret_override is not None or secret_file):
++        raise ValueError(
++            "use either --random-secret, --secret or --secret-file, not a combination"
++        )
++    if secret_file:
++        if secret_override is not None:
++            raise ValueError("use either --secret or --secret-file, not both")
++        secret_override = Path(secret_file).read_text(encoding="utf-8").strip()
++    material = _task_material(args.run_label, secret_override, random_secret)
++    log_text = material["log_text"]
++    source_version = "v1:%s" % args.run_label
++
++    loop = CarrierInformationLoop.create(args.database)
++    try:
++        source_payload = {
++            "schema_id": "SIMIGO-HANDOFF-SESSION-LOG-V1",
++            "run_label": args.run_label,
++            "site": "lab-north",
++            "log_text": log_text,
++        }
++        source = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_SOURCE_ID,
++            "session-log",
++            source_version,
++            source_payload,
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++        registration_value = {
++            "log_text_sha256": digest(log_text),
++            "secret_sha256": digest(material["secret"]),
++            "checksum": material["checksum"],
++            "site": "lab-north",
++            "run_label": args.run_label,
++        }
++        registration_basis = _settlement_basis(
++            source_payload,
++            registration_value,
++            source_version,
++            {},
++            args.evaluated_at,
++            valid_until,
++            validity_policy,
++        )
++        registration = loop.settle(
++            "handoff-registration",
++            TASK_SOURCE_ID,
++            {"value": registration_value, **registration_basis},
++            registration_basis,
++        )
++
++        seed_text = "\n".join([
++            "SIMIGO-REAL-MODEL-HANDOFF-V1",
++            "You are executing step 1 of a two-step task.",
++            "SESSION LOG:",
++            log_text,
++            "",
++            "Read the session log and extract the value of secret.",
++            "Reply with exactly one line and nothing else: SECRET=<secret>",
++            "Answer:",
++        ])
++        u1_payload = {
++            "schema_id": "SIMIGO-HANDOFF-STEP-V1",
++            "step": 1,
++            "model_task": "extract_secret",
++            "answer_format": "SECRET=<secret>",
++            "prompt_seed": seed_text,
++            "next_input": " ",
++            "source_item_id": TASK_SOURCE_ID,
++        }
++        u1 = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_U1_ID,
++            "model-task",
++            "v1",
++            u1_payload,
++            dependencies=[TASK_SOURCE_ID],
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++
++        u2_payload = {
++            "schema_id": "SIMIGO-HANDOFF-STEP-V1",
++            "step": 2,
++            "model_task": "compose_answer",
++            "answer_format": "ANSWER=<secret>-<checksum>",
++            "next_input_template": (
++                "\nStep 2: the secret from step 1 is {secret}. "
++                "The checksum from the session log is {checksum}.\n"
++                "Reply with exactly one line and nothing else: "
++                "ANSWER=<secret>-<checksum>\nAnswer:"
++            ),
++            "source_item_ids": [TASK_SOURCE_ID, TASK_U1_ID],
++            # Explicit input contract: each template placeholder names the
++            # settled dependency result field it consumes. The production
++            # resolver reads THIS declaration, so input construction is part of
++            # the task definition instead of caller-side interpolation.
++            "input_bindings": [
++                {
++                    "placeholder": "secret",
++                    "item_id": TASK_U1_ID,
++                    "result_field": "secret",
++                },
++                {
++                    "placeholder": "checksum",
++                    "item_id": TASK_SOURCE_ID,
++                    "result_field": "checksum",
++                },
++            ],
++        }
++        u2 = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_U2_ID,
++            "model-task",
++            "v1",
++            u2_payload,
++            dependencies=[TASK_SOURCE_ID, TASK_U1_ID],
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++
++        demand_u1 = loop.define_demand(
++            TASK_DEMAND_U1,
++            continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 1 on the real model"],
++            continuation_conditions=[
++                "registered source is reusable and the model result is settled"
++            ],
++            required_item_ids=[TASK_U1_ID],
++        )
++        demand_u2 = loop.define_demand(
++            TASK_DEMAND_U2,
++            continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 2 on the real model"],
++            continuation_conditions=[
++                "step 1 settlement is reused and step 2 is settled"
++            ],
++            required_item_ids=[TASK_U2_ID],
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "define-task",
++            "run_label": args.run_label,
++            "continuation_point": CONTINUATION_POINT,
++            "source": source,
++            "registration_settlement_object_id": registration["object_id"],
++            "u1": u1,
++            "u2": u2,
++            "demand_u1": demand_u1,
++            "demand_u2": demand_u2,
++            "log_text_sha256": digest(log_text),
++            "secret_sha256": digest(material["secret"]),
++            "checksum": material["checksum"],
++            "random_secret": random_secret,
++            "nonce_bits": 128 if random_secret else None,
++        })
++    finally:
++        loop.close()
++
++
++def read_item(args: argparse.Namespace) -> None:
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        item = loop.current_item(args.item_id)
++        if item is None:
++            raise ValueError(f"unknown item: {args.item_id}")
++        settlement = loop.current_settlement(args.item_id)
++        emit({
++            "ok": True,
++            "command": "read-item",
++            "item": item,
++            "settlement_state": settlement.get("state") if settlement else None,
++            "settlement_object_id": (
++                settlement.get("_object_id") if settlement else None
++            ),
++        })
++    finally:
++        loop.close()
++
++
++def read_settlement(args: argparse.Namespace) -> None:
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        settlement = loop.current_settlement(args.item_id)
++        if settlement is None:
++            raise ValueError(f"item has no settlement: {args.item_id}")
++        emit({
++            "ok": True,
++            "command": "read-settlement",
++            "item_id": args.item_id,
++            "settlement": settlement,
++        })
++    finally:
++        loop.close()
++
++
++class AdmissionRefusal(RuntimeError):
++    """A settlement could not be admitted for model input construction.
++
++    Raised BEFORE any model work so the caller can record a pre-generation
++    refusal instead of discovering the defect after paying for a generation.
++    """
++
++    def __init__(self, stage: str, reason: str, detail: object = None) -> None:
++        super().__init__("%s: %s" % (stage, reason))
++        self.stage = stage
++        self.reason = reason
++        self.detail = detail
++
++
++PLACEHOLDER_PATTERN = re.compile(r"\{([a-z][a-z0-9_]*)\}")
++
++
++def _resolve_settled_dependency(
++    loop: CarrierInformationLoop,
++    item_id: str,
++    evaluated_at,
++    visiting: set,
++    resolved: dict,
++) -> Optional[dict]:
++    """Read one settled dependency from IS, using the SAME reuse decision as
++    `execute_demand` (`_settlement_reuse_decision`) instead of a second
++    validator. Any mismatch is a refusal, never a silent substitution."""
++    if item_id in resolved:
++        return resolved[item_id]
++    if item_id in visiting:
++        raise AdmissionRefusal("DEPENDENCY_CYCLE", "cycle at %s" % item_id)
++    visiting.add(item_id)
++    item = loop.current_item(item_id)
++    if item is None:
++        raise AdmissionRefusal("MISSING_ITEM", "unknown item: %s" % item_id)
++    dependency_object_ids: dict[str, str] = {}
++    for dependency_id in item["dependencies"]:
++        dependency = _resolve_settled_dependency(
++            loop, dependency_id, evaluated_at, visiting, resolved
++        )
++        if dependency is None:
++            return None
++        dependency_object_ids[dependency_id] = dependency["object_id"]
++    try:
++        settlement = loop.current_settlement(item_id)
++    except Exception as error:  # noqa: BLE001 - tampered bytes must refuse, not crash
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_UNREADABLE",
++            "%s: %s" % (type(error).__name__, error),
++            {"item_id": item_id},
++        ) from error
++    reusable, refusal_reason = loop._settlement_reuse_decision(
++        settlement, item, dependency_object_ids, evaluated_at
++    )
++    if not reusable:
++        raise AdmissionRefusal(
++            "SETTLEMENT_NOT_ADMITTED",
++            refusal_reason or "SETTLEMENT_BASIS_MISMATCH",
++            {"item_id": item_id, "settlement_state": (settlement or {}).get("state")},
++        )
++    object_id = settlement["_object_id"]
++    try:
++        content = loop.carrier.get_object(object_id)
++    except Exception as error:  # noqa: BLE001 - fail closed on any read defect
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_UNREADABLE",
++            "%s: %s" % (type(error).__name__, error),
++            {"item_id": item_id, "object_id": object_id},
++        ) from error
++    object_sha256 = hashlib.sha256(
++        content.encode("utf-8") if isinstance(content, str) else bytes(content)
++    ).hexdigest()
++    if object_sha256 != object_id:
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_ID_MISMATCH",
++            "object bytes hash to %s but identity declares %s"
++            % (object_sha256, object_id),
++            {"item_id": item_id},
++        )
++    result = settlement["result"]
++    if digest(result["value"]) != result["result_value_sha256"]:
++        raise AdmissionRefusal(
++            "SETTLEMENT_RESULT_DIGEST_MISMATCH",
++            "stored value does not hash to the declared result digest",
++            {"item_id": item_id},
++        )
++    resolved[item_id] = {
++        "item_id": item_id,
++        "value": result["value"],
++        "object_id": object_id,
++        "object_sha256": object_sha256,
++        "result_value_sha256": result["result_value_sha256"],
++        "source_version": result["source_version"],
++        "dependency_object_ids": result["dependency_object_ids"],
++        "settlement_state": settlement.get("state"),
++    }
++    return resolved[item_id]
++
++
++def resolve_model_input(args: argparse.Namespace) -> None:
++    """Resolve, admit and materialize the model input for one task item.
++
++    This is the production input path: the caller names the task item, and the
++    executor reads the item's declared dependencies from IS, admits each
++    settlement through the ordinary reuse decision, and expands the item's own
++    template. The caller never supplies the values or the text.
++    """
++    evaluated_at = parse_utc(args.evaluated_at)
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        try:
++            item = loop.current_item(args.item_id)
++        except Exception as error:  # noqa: BLE001 - corrupt item refuses, not crash
++            raise AdmissionRefusal(
++                "TASK_ITEM_UNREADABLE",
++                "%s: %s" % (type(error).__name__, error),
++                {"item_id": args.item_id},
++            ) from error
++        if item is None:
++            raise AdmissionRefusal("MISSING_ITEM", "unknown item: %s" % args.item_id)
++        payload = item.get("source_payload") or {}
++        # A task item declares its model input as either a dependency-bound
++        # template (`next_input_template` + `input_bindings`) or, when it
++        # consumes no settled value, as a literal prompt (`next_input`). Both
++        # are task-definition data read from IS; the caller supplies neither.
++        template = payload.get("next_input_template")
++        if not isinstance(template, str) or not template:
++            template = payload.get("next_input")
++        bindings_spec = payload.get("input_bindings", [])
++        if not isinstance(template, str) or not template:
++            raise AdmissionRefusal(
++                "TEMPLATE_MISSING", "item declares no model input template"
++            )
++        if not isinstance(bindings_spec, list):
++            raise AdmissionRefusal(
++                "BINDINGS_MALFORMED", "input_bindings is not a list"
++            )
++
++        resolved: dict[str, dict] = {}
++        for dependency_id in item["dependencies"]:
++            _resolve_settled_dependency(
++                loop, dependency_id, evaluated_at, set(), resolved
++            )
++
++        by_placeholder: dict[str, tuple] = {}
++        for spec in bindings_spec:
++            if not isinstance(spec, dict):
++                raise AdmissionRefusal("BINDINGS_MALFORMED", "binding is not an object")
++            placeholder = spec.get("placeholder")
++            dependency_id = spec.get("item_id")
++            result_field = spec.get("result_field")
++            if not all(isinstance(value, str) and value
++                       for value in (placeholder, dependency_id, result_field)):
++                raise AdmissionRefusal(
++                    "BINDINGS_MALFORMED", "binding is missing placeholder/item_id/result_field"
++                )
++            if dependency_id not in item["dependencies"]:
++                raise AdmissionRefusal(
++                    "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
++                    "placeholder {%s} requires %s, which the current task item no "
++                    "longer declares" % (placeholder, dependency_id),
++                    {
++                        "item_id": args.item_id,
++                        "declared_dependencies": list(item["dependencies"]),
++                        "binding_dependency": dependency_id,
++                    },
++                )
++            if dependency_id not in resolved:
++                raise AdmissionRefusal(
++                    "BINDING_DEPENDENCY_UNSETTLED",
++                    "%s is not settled" % dependency_id,
++                )
++            dependency_value = resolved[dependency_id]["value"]
++            if result_field not in dependency_value:
++                raise AdmissionRefusal(
++                    "BINDING_FIELD_MISSING",
++                    "%s result has no field %s" % (dependency_id, result_field),
++                )
++            value = dependency_value[result_field]
++            if not isinstance(value, str) or not value:
++                raise AdmissionRefusal(
++                    "BINDING_VALUE_INVALID",
++                    "%s.%s is not a non-empty string" % (dependency_id, result_field),
++                )
++            by_placeholder[placeholder] = (spec, value, resolved[dependency_id])
++
++        placeholders = [match.group(1) for match in PLACEHOLDER_PATTERN.finditer(template)]
++        unbound = sorted({name for name in placeholders if name not in by_placeholder})
++        if unbound:
++            raise AdmissionRefusal(
++                "UNBOUND_TEMPLATE_PLACEHOLDER",
++                "no admitted settlement binding for %s" % ", ".join(unbound),
++                {"unbound_placeholders": unbound},
++            )
++
++        pieces: list[str] = []
++        bindings: list[dict] = []
++        cursor = 0
++        consumed = 0
++        for match in PLACEHOLDER_PATTERN.finditer(template):
++            literal = template[consumed:match.start()]
++            pieces.append(literal)
++            cursor += len(literal.encode("utf-8"))
++            spec, value, dependency = by_placeholder[match.group(1)]
++            encoded = value.encode("utf-8")
++            bindings.append({
++                "placeholder": spec["placeholder"],
++                "item_id": spec["item_id"],
++                "result_field": spec["result_field"],
++                "value": value,
++                "value_sha256": hashlib.sha256(encoded).hexdigest(),
++                "settlement_object_id": dependency["object_id"],
++                "settlement_object_sha256": dependency["object_sha256"],
++                "result_value_sha256": dependency["result_value_sha256"],
++                "byte_offset": cursor,
++                "byte_length": len(encoded),
++            })
++            pieces.append(value)
++            cursor += len(encoded)
++            consumed = match.end()
++        tail = template[consumed:]
++        pieces.append(tail)
++        cursor += len(tail.encode("utf-8"))
++        input_text = "".join(pieces)
++        input_bytes = input_text.encode("utf-8")
++        if len(input_bytes) != cursor:
++            raise AdmissionRefusal(
++                "INPUT_LENGTH_MISMATCH", "materialized input length disagrees"
++            )
++
++        dependencies = [
++            {
++                "item_id": dependency["item_id"],
++                "settlement_object_id": dependency["object_id"],
++                "settlement_object_sha256": dependency["object_sha256"],
++                "result_value_sha256": dependency["result_value_sha256"],
++                "source_version": dependency["source_version"],
++                "dependency_object_ids": dependency["dependency_object_ids"],
++                "settlement_state": dependency["settlement_state"],
++            }
++            for dependency in resolved.values()
++        ]
++        emit({
++            "ok": True,
++            "command": "resolve-model-input",
++            "item_id": args.item_id,
++            "evaluated_at_utc": args.evaluated_at,
++            "declared_dependencies": list(item["dependencies"]),
++            "template": template,
++            "template_sha256": hashlib.sha256(template.encode("utf-8")).hexdigest(),
++            "input_text": input_text,
++            "input_sha256": hashlib.sha256(input_bytes).hexdigest(),
++            "input_byte_length": len(input_bytes),
++            "bindings": bindings,
++            "dependencies": dependencies,
++            "checks": {
++                "all_declared_dependencies_admitted": True,
++                "settlement_objects_readable": True,
++                "object_identity_matches_bytes": True,
++                "result_digests_match_values": True,
++                "source_versions_match_items": True,
++                "dependency_object_sets_match": True,
++                "validity_satisfied": True,
++                "all_placeholders_bound": True,
++            },
++        })
++    finally:
++        loop.close()
++
++
++def _validate_model_value(
++    item_id: str,
++    value: dict,
++    dependency_values: dict,
++) -> None:
++    """Task result validator: the model value must agree with settled deps.
++
++    This is NOT a computation. It refuses a value that the model could not
++    have produced from the settled dependency results, so an externally
++    supplied model output can never be settled against unrelated information.
++    """
++    generated_tokens = value.get("generated_token_ids")
++    if not isinstance(generated_tokens, list) or not generated_tokens:
++        raise ValueError("model value carries no generated tokens")
++    if not isinstance(value.get("model_snapshot_revision"), str) or not value[
++        "model_snapshot_revision"
++    ]:
++        raise ValueError("model value carries no model snapshot identity")
++    if item_id == TASK_U1_ID:
++        source_value = dependency_values.get(TASK_SOURCE_ID)
++        if not isinstance(source_value, dict):
++            raise ValueError("step 1 requires the settled session-log dependency")
++        secret = value.get("secret")
++        if not isinstance(secret, str) or not secret:
++            raise ValueError("model value carries no extracted secret")
++        if digest(secret) != source_value.get("secret_sha256"):
++            raise ValueError(
++                "extracted secret does not match the settled session-log commitment"
++            )
++        return
++    if item_id == TASK_U2_ID:
++        log_value = dependency_values.get(TASK_SOURCE_ID)
++        u1_value = dependency_values.get(TASK_U1_ID)
++        if not isinstance(log_value, dict) or not isinstance(u1_value, dict):
++            raise ValueError("step 2 requires both settled dependencies")
++        expected = "%s-%s" % (u1_value.get("secret"), log_value.get("checksum"))
++        if value.get("answer") != expected:
++            raise ValueError(
++                "model answer does not match the settled secret and checksum"
++            )
++        return
++    raise ValueError(f"unrecognized model task item: {item_id}")
++
++
++def execute_with_model_result(args: argparse.Namespace) -> None:
++    """Settle a model-produced result through the ordinary demand machinery.
++
++    The model ran in the Swift runtime BEFORE this call. The calculator is
++    restricted to exactly the item the model computed: if any dependency is
++    not reusable, the demand machinery asks the calculator for it and this
++    command fails closed instead of settling work the model never performed.
++    """
++    validity_policy = load_deployment_validity_policy()
++    with open(args.value_file, "r", encoding="utf-8") as handle:
++        value = json.load(handle)
++    if not isinstance(value, dict):
++        raise ValueError("model result value must be a JSON object")
++
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        def calculator(item_id: str, source_payload: dict, dependency_values: dict) -> dict:
++            if item_id != args.item_id:
++                raise ValueError(
++                    "model result is only valid for %s; dependency %s was not reusable"
++                    % (args.item_id, item_id)
++                )
++            _validate_model_value(item_id, value, dependency_values)
++            return value
++
++        result = loop.execute_demand(
++            args.demand_id,
++            args.advancement,
++            calculator,
++            evaluated_at_utc=args.evaluated_at,
++            expected_validity_policy_sha256=validity_policy["policy_sha256"],
++            require_deployment_policy=True,
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "execute-with-model-result",
++            "item_id": args.item_id,
++            "demand_id": args.demand_id,
++            "result": result,
++        })
++    finally:
++        loop.close()
++
++
++def execute_probe(args: argparse.Namespace) -> None:
++    """Model-free dependency-closure probe: settle whatever is not reusable.
++
++    Used on an isolated COPY of a run database after invalidation, to prove
++    which items the dependency closure actually recomputes. It never loads a
++    model and never touches the authoritative run database.
++    """
++    validity_policy = (
++        load_deployment_validity_policy()
++        if os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH")
++        else None
++    )
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        def calculator(item_id: str, source_payload: dict, dependency_values: dict) -> dict:
++            return {
++                "probe_marker": digest({
++                    "item_id": item_id,
++                    "source_payload_sha256": digest(source_payload),
++                    "dependency_item_ids": sorted(dependency_values),
++                })
++            }
++
++        result = loop.execute_demand(
++            args.demand_id,
++            args.advancement,
++            calculator,
++            evaluated_at_utc=args.evaluated_at,
++            expected_validity_policy_sha256=(
++                validity_policy["policy_sha256"] if validity_policy else None
++            ),
++            require_deployment_policy=bool(validity_policy),
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "execute-probe",
++            "demand_id": args.demand_id,
++            "result": result,
++        })
++    finally:
++        loop.close()
++
++
++def snapshot_database(args: argparse.Namespace) -> None:
++    """Consistent SQLite backup, so probes never run on a live file copy."""
++    import sqlite3
++
++    destination = Path(args.destination)
++    if destination.exists() or destination.is_symlink():
++        raise FileExistsError(destination)
++    source = sqlite3.connect(str(Path(args.database).resolve()))
++    target = sqlite3.connect(str(destination))
++    try:
++        source.backup(target)
++        target.commit()
++    finally:
++        target.close()
++        source.close()
++    emit({
++        "ok": True,
++        "command": "snapshot-database",
++        "source": str(Path(args.database).resolve()),
++        "destination": str(destination.resolve()),
++    })
++
++
+ def main() -> int:
+     parser = argparse.ArgumentParser()
+     subparsers = parser.add_subparsers(dest="command", required=True)
+@@ -520,9 +1231,84 @@ def main() -> int:
+     diagnostics_parser.add_argument("--evaluated-at", required=True)
+     diagnostics_parser.set_defaults(handler=diagnostics)
+ 
++    define_task_parser = subparsers.add_parser("define-task")
++    define_task_parser.add_argument("--database", required=True)
++    define_task_parser.add_argument("--evaluated-at", required=True)
++    define_task_parser.add_argument("--run-label", required=True)
++    define_task_parser.add_argument(
++        "--secret",
++        default=None,
++        help="controlled nonce override; does not change the task graph",
++    )
++    define_task_parser.add_argument(
++        "--secret-file",
++        default=None,
++        help="read the nonce from a file so it never appears in the command line",
++    )
++    define_task_parser.add_argument(
++        "--random-secret",
++        action="store_true",
++        help=(
++            "generate a 128-bit nonce inside this process; the raw nonce is "
++            "never emitted, passed on a command line or written to a temp file"
++        ),
++    )
++    define_task_parser.add_argument("--valid-until")
++    define_task_parser.set_defaults(handler=define_task)
++
++    read_item_parser = subparsers.add_parser("read-item")
++    read_item_parser.add_argument("--database", required=True)
++    read_item_parser.add_argument("--item-id", required=True)
++    read_item_parser.set_defaults(handler=read_item)
++
++    read_settlement_parser = subparsers.add_parser("read-settlement")
++    read_settlement_parser.add_argument("--database", required=True)
++    read_settlement_parser.add_argument("--item-id", required=True)
++    read_settlement_parser.set_defaults(handler=read_settlement)
++
++    resolve_input_parser = subparsers.add_parser("resolve-model-input")
++    resolve_input_parser.add_argument("--database", required=True)
++    resolve_input_parser.add_argument("--item-id", required=True)
++    resolve_input_parser.add_argument("--evaluated-at", required=True)
++    resolve_input_parser.set_defaults(handler=resolve_model_input)
++
++    model_result_parser = subparsers.add_parser("execute-with-model-result")
++    model_result_parser.add_argument("--database", required=True)
++    model_result_parser.add_argument("--demand-id", required=True)
++    model_result_parser.add_argument("--advancement", required=True)
++    model_result_parser.add_argument("--evaluated-at", required=True)
++    model_result_parser.add_argument("--item-id", required=True)
++    model_result_parser.add_argument("--value-file", required=True)
++    model_result_parser.set_defaults(handler=execute_with_model_result)
++
++    probe_parser = subparsers.add_parser("execute-probe")
++    probe_parser.add_argument("--database", required=True)
++    probe_parser.add_argument("--demand-id", required=True)
++    probe_parser.add_argument("--advancement", required=True)
++    probe_parser.add_argument("--evaluated-at", required=True)
++    probe_parser.set_defaults(handler=execute_probe)
++
++    snapshot_parser = subparsers.add_parser("snapshot-database")
++    snapshot_parser.add_argument("--database", required=True)
++    snapshot_parser.add_argument("--destination", required=True)
++    snapshot_parser.set_defaults(handler=snapshot_database)
++
+     args = parser.parse_args()
+     try:
+         args.handler(args)
++    except AdmissionRefusal as error:
++        emit({
++            "ok": False,
++            "command": args.command,
++            "error_type": type(error).__name__,
++            "error": str(error),
++            "refusal": {
++                "stage": error.stage,
++                "reason": error.reason,
++                "detail": error.detail,
++            },
++        })
++        return 1
+     except Exception as error:
+         emit({
+             "ok": False,
+diff --git a/execution-information-loop/real_palace_selftest.py b/execution-information-loop/real_palace_selftest.py
+index 0ac4dc6d..ddc8f0d2 100644
+--- a/execution-information-loop/real_palace_selftest.py
++++ b/execution-information-loop/real_palace_selftest.py
+@@ -9,31 +9,53 @@ import tempfile
+ from pathlib import Path
+ 
+ from carrier_loop import CarrierInformationLoop
+-from real_palace_loop import RealPalaceSource, RealPalaceConsumptionLoop
++from real_palace_loop import (
++    RealPalaceConsumptionLoop, RealPalaceSource, structural_validity_policy,
++)
+ 
+ EXPECTED_SNAPSHOT_SHA256 = "8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444"
++# Resolve the sealed snapshot from the repository root, never from the caller's
++# working directory: the harness must be runnable from anywhere.
++REPO_ROOT = Path(__file__).resolve().parents[1]
++SEALED_SNAPSHOT = REPO_ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
++VALID_UNTIL = "2030-12-31T23:59:59Z"
+ 
+ 
+ def actions(result):
+     return {item["item_id"]: item["action"] for item in result["actions"]}
+ 
+ 
++def record_advance(prefix: str, result: dict, loop, checks: dict) -> None:
++    """Record whether a demand advanced and whether its runtime was confirmed.
++
++    A non-ADVANCED result is reported with its own state and failure_reason
++    instead of being indexed blindly: a blocked demand has no computed or
++    reused item list, and reading one would hide the real cause.
++    """
++    checks[f"{prefix}_advanced"] = result.get("state") == "ADVANCED"
++    if checks[f"{prefix}_advanced"]:
++        checks[f"{prefix}_runtime_confirmed"] = loop.confirm_runtime(result) is not None
++    else:
++        checks[f"{prefix}_runtime_confirmed"] = False
++
++
+ def run() -> dict:
+     checks = {}
+     run_results = {}
+     with tempfile.TemporaryDirectory(prefix="real-palace-loop-") as temporary:
+         database = str(Path(temporary) / "real_palace_information_space.sqlite")
+         carrier = CarrierInformationLoop.create(database)
+-        source = RealPalaceSource(
+-            "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite",
+-            EXPECTED_SNAPSHOT_SHA256,
+-        )
++        source = RealPalaceSource(str(SEALED_SNAPSHOT), EXPECTED_SNAPSHOT_SHA256)
+         loop = RealPalaceConsumptionLoop(carrier, source)
+ 
++        # The isolated harness declares the window and the policy it is judged
++        # against, so the forward path never starts out as BLOCKED.
++        policy = structural_validity_policy()
+         records = loop.materialize_sources(
+             "demand-real-001",
+             count=7,
+-            valid_until_utc="2030-12-31T23:59:59Z",
++            valid_until_utc=VALID_UNTIL,
++            validity_policy=policy,
+         )
+         checks["seven_real_sources"] = len(records) == 7
+         checks["all_real_records"] = all(
+@@ -46,10 +68,7 @@ def run() -> dict:
+         reopened_carrier = CarrierInformationLoop.open(database)
+         reopened_loop = RealPalaceConsumptionLoop(
+             reopened_carrier,
+-            RealPalaceSource(
+-                "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite",
+-                EXPECTED_SNAPSHOT_SHA256,
+-            ),
++            RealPalaceSource(str(SEALED_SNAPSHOT), EXPECTED_SNAPSHOT_SHA256),
+         )
+         required = ["REAL-COLLECTION", "REAL-SEGMENT"] + [
+             f"REAL-{index}" for index in range(1, 8)
+@@ -70,6 +89,7 @@ def run() -> dict:
+             evaluated_at_utc="2026-10-09T00:00:00Z",
+         )
+         run_results["first"] = first
++        record_advance("first", first, reopened_loop, checks)
+         checks["first_run_computes_real_structural_graph"] = actions(first) == {
+             item_id: "COMPUTE" for item_id in required
+         }
+@@ -77,10 +97,7 @@ def run() -> dict:
+         reopened_carrier.close()
+ 
+         reuse_carrier = CarrierInformationLoop.open(database)
+-        reuse_source = RealPalaceSource(
+-            "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite",
+-            EXPECTED_SNAPSHOT_SHA256,
+-        )
++        reuse_source = RealPalaceSource(str(SEALED_SNAPSHOT), EXPECTED_SNAPSHOT_SHA256)
+         reuse_loop = RealPalaceConsumptionLoop(reuse_carrier, reuse_source)
+         second = reuse_loop.execute_real_demand(
+             "demand-real-001",
+@@ -89,6 +106,7 @@ def run() -> dict:
+             evaluated_at_utc="2026-10-09T00:01:00Z",
+         )
+         run_results["second"] = second
++        record_advance("second", second, reuse_loop, checks)
+         checks["second_run_reuses_real_structural_graph"] = actions(second) == {
+             item_id: "REUSE" for item_id in required
+         }
+@@ -98,10 +116,7 @@ def run() -> dict:
+         invalidation_carrier = CarrierInformationLoop.open(database)
+         invalidation_loop = RealPalaceConsumptionLoop(
+             invalidation_carrier,
+-            RealPalaceSource(
+-                "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite",
+-                EXPECTED_SNAPSHOT_SHA256,
+-            ),
++            RealPalaceSource(str(SEALED_SNAPSHOT), EXPECTED_SNAPSHOT_SHA256),
+         )
+         invalidation = invalidation_loop.invalidate_settlement(
+             "REAL-SEGMENT", "explicit structural segment invalidation"
+@@ -113,6 +128,7 @@ def run() -> dict:
+             evaluated_at_utc="2026-10-09T00:02:00Z",
+         )
+         run_results["third"] = third
++        record_advance("third", third, invalidation_loop, checks)
+         checks["structural_invalidation_propagates_segment_closure"] = (
+             actions(third)["REAL-COLLECTION"] == "REUSE"
+             and actions(third)["REAL-SEGMENT"] == "COMPUTE"
+@@ -147,6 +163,10 @@ def run() -> dict:
+         "checks": checks,
+         "invalidation": invalidation,
+         "run_results": run_results,
++        "declared_validity": {
++            "valid_until_utc": VALID_UNTIL,
++            "validity_policy_sha256": policy["policy_sha256"],
++        },
+         "result": "PASS" if checks["closed_loop_real_source_mapping"] else "FAIL",
+     }
+ 
+diff --git a/simigo2-experimental/Package.swift b/simigo2-experimental/Package.swift
+index 8f3ca384..cdce525d 100644
+--- a/simigo2-experimental/Package.swift
++++ b/simigo2-experimental/Package.swift
+@@ -12,9 +12,26 @@ let package = Package(
+         .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
+         .executable(name: "simigo2ctl", targets: ["simigo2ctl"]),
+         .executable(name: "ActualMLXSmokeChild", targets: ["ActualMLXSmokeChild"]),
++        // Real-model ES -> IS -> fresh-ES handoff: stage A settles a model result
++        // into IS and releases the carrier, stage C recovers a fresh ES in a new
++        // process and continues with only the remaining model work.
++        .executable(name: "RealModelHandoff", targets: ["RealModelHandoff"]),
++        // Ordinary task entry: one process runs one task item through the
++        // production continuation, which resolves and admits the item's
++        // declared dependency settlements from IS before any generation. It
++        // contains no handoff orchestration and receives no input text.
++        .executable(name: "SimiGoTaskRun", targets: ["SimiGoTaskRun"]),
+         .executable(name: "EngineBaselineCrashChild", targets: ["EngineBaselineCrashChild"]),
+         .executable(name: "MaterializationQuarantineCrashChild", targets: ["MaterializationQuarantineCrashChild"]),
+         .executable(name: "ExecutionStateChaosChild", targets: ["ExecutionStateChaosChild"]),
++        .executable(name: "g3-swift-isolation-entry", targets: ["G3SwiftIsolationEntry"]),
++        // G6/G7b: the real D1 worker and supervisor. Both are contract-only
++        // (SimiGoRuntimeContract), so they cannot reach the ungated executor
++        // surface (SimiGo2Experimental) and are model-free: the isolation gate
++        // refuses under the empty trust registry before any model call or
++        // binding consumption (G8a). Their identity is bound by G3_EXPECT_EXEC_SHA256.
++        .executable(name: "G3D1Worker", targets: ["G3D1Worker"]),
++        .executable(name: "G3D1Supervisor", targets: ["G3D1Supervisor"]),
+         .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
+     ],
+     dependencies: [
+@@ -74,6 +91,30 @@ let package = Package(
+                 .product(name: "Tokenizers", package: "swift-transformers")
+             ]
+         ),
++        .executableTarget(
++            name: "RealModelHandoff",
++            dependencies: [
++                "SimiGo2Experimental",
++                "SimiGoRuntimeContract",
++                .product(name: "MLX", package: "mlx-swift"),
++                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
++                .product(name: "MLXLLM", package: "mlx-swift-lm"),
++                .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
++                .product(name: "Tokenizers", package: "swift-transformers")
++            ]
++        ),
++        .executableTarget(
++            name: "SimiGoTaskRun",
++            dependencies: [
++                "SimiGo2Experimental",
++                "SimiGoRuntimeContract",
++                .product(name: "MLX", package: "mlx-swift"),
++                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
++                .product(name: "MLXLLM", package: "mlx-swift-lm"),
++                .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
++                .product(name: "Tokenizers", package: "swift-transformers")
++            ]
++        ),
+         .executableTarget(
+             name: "SimiGo2App",
+             dependencies: ["SimiGo2Experimental"]
+@@ -90,6 +131,34 @@ let package = Package(
+             name: "ExecutionStateChaosChild",
+             dependencies: ["SimiGo2Experimental"]
+         ),
++        // Native G3 isolation-gate control point, invoked by the Python research
++        // harness. MLX-free and model-free: it only exercises the gate's control
++        // flow (attestation -> requireIsolation -> generation), so the boundary
++        // is callable and testable without loading a model or the MLX runtime.
++        .executableTarget(
++            name: "G3SwiftIsolationEntry",
++            dependencies: ["SimiGoRuntimeContract"]
++        ),
++        // G3D1WorkerCore: the shared, contract-only logic for the D1 worker and
++        // supervisor (identity self-check, one-shot authorization, model-free
++        // gated dual-arm control flow, auditable records). It MUST NOT depend on
++        // SimiGo2Experimental — that is the G8b-A boundary the manifest checks.
++        .target(
++            name: "G3D1WorkerCore",
++            dependencies: ["SimiGoRuntimeContract"]
++        ),
++        .executableTarget(
++            name: "G3D1Worker",
++            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
++        ),
++        .executableTarget(
++            name: "G3D1Supervisor",
++            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
++        ),
++        .testTarget(
++            name: "G3D1SupervisorTests",
++            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
++        ),
+         .testTarget(
+             name: "SimiGoRuntimeContractTests",
+             dependencies: ["SimiGoRuntimeContract"]
+@@ -98,11 +167,11 @@ let package = Package(
+             name: "SimiGo2ExperimentalTests",
+             dependencies: [
+                 "SimiGo2Experimental", "SimiGoRuntimeContract",
+-                // NativeMLXCarrierReleaseTests drives the real MLX runtime (genuine
+-                // KVCacheSimple + write observer + storage identity) with synthetic
+-                // CPU tensors and no model weights, so the test target links the MLX
+-                // products directly. No executable target or G3/D1 config changes.
+                 .product(name: "MLX", package: "mlx-swift"),
++                // The real KV cache under test (KVCacheSimple.update) lives in
++                // MLXLMCommon; linking it lets the during-generation allocation
++                // gateway be exercised against the genuine cache lifecycle without
++                // loading a model.
+                 .product(name: "MLXLMCommon", package: "mlx-swift-lm")
+             ]
+         )
+diff --git a/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift b/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+index 40a78ca1..d9b9b66d 100644
+--- a/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
++++ b/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+@@ -40,6 +40,17 @@ public enum ProductionRuntimeInformationError: Error, Equatable, Sendable {
+   /// it would resume work inconsistent with IS — rejected before any new side
+   /// effect.
+   case settlementCheckpointMismatch(executionID: String, field: String)
++  /// The bridge refused a request with a structured admission verdict (stage,
++  /// reason, optional item id) instead of an opaque failure message.
++  case bridgeRefused(command: String, stage: String, reason: String, itemID: String?)
++  /// IS holds no admissible settlement for one of the task item's declared
++  /// input dependencies (missing, invalid, expired, byte-tampered, or no longer
++  /// matching the item's version/dependency set). Refused BEFORE tokenization
++  /// and model generation, so an unadmitted input never pays a generation cost.
++  case informationSpaceInputAdmissionRefused(itemID: String, stage: String, reason: String)
++  /// The admitted input could not be reproduced from the returned bindings:
++  /// input digest, byte range, value digest, or object identity disagreed.
++  case informationSpaceInputBindingMismatch(field: String)
+ }
+ 
+ public protocol ProductionRuntimeModelContinuationExecutor: Sendable {
+@@ -64,6 +75,130 @@ public struct ProductionRuntimeBridgeReport: Equatable, Sendable {
+   public let resultDigest: String
+ }
+ 
++/// One settlement action the Information Space actually took while resolving a
++/// task demand. `settlementObjectID` identifies the physical settlement record
++/// the value came from, so a later stage can prove it reused the SAME settled
++/// object instead of merely reaching an equal answer.
++public struct ProductionTaskSettlementAction: Equatable, Sendable {
++  public let itemID: String
++  public let action: String
++  public let settlementObjectID: String
++  public let resultDigest: String
++
++  public init(itemID: String, action: String, settlementObjectID: String, resultDigest: String) {
++    self.itemID = itemID
++    self.action = action
++    self.settlementObjectID = settlementObjectID
++    self.resultDigest = resultDigest
++  }
++}
++
++/// Evidence for one real-model task advancement: what the model consumed, what
++/// it produced, which items the Information Space reused vs recomputed, and the
++/// IS runtime-application confirmation the ES checkpoint is bound to.
++public struct ProductionTaskContinuationReport: Equatable, Sendable {
++  public let demandID: String
++  public let taskItemID: String
++  public let created: Bool
++  public let computedItemIDs: [String]
++  public let reusedItemIDs: [String]
++  public let settlementActions: [ProductionTaskSettlementAction]
++  public let resultDigest: String
++  public let isPendingStateID: String
++  public let isConfirmationStateID: String
++  public let advancedPosition: Int64
++  public let advancedLifecycle: String
++  public let consumedPrefixLength: Int
++  public let nextInputTokenCount: Int
++  public let nextInputTokenIDs: [Int]
++  public let generatedTokenIDs: [Int]
++  public let generatedText: String
++  public let updatedPrefixTokenCount: Int
++  public let tokenizeSeedCallCount: Int
++  public let tokenizeNextInputCallCount: Int
++  public let modelContinuationCallCount: Int
++}
++
++/// One admitted substitution in the model input. `byteOffset`/`byteLength`
++/// address the value inside the UTF-8 input bytes, so the executor can prove
++/// that the identity it admitted is exactly the bytes the model receives.
++public struct ProductionTaskInputBinding: Equatable, Sendable {
++  public let placeholder: String
++  public let itemID: String
++  public let resultField: String
++  public let value: String
++  public let valueSHA256: String
++  public let settlementObjectID: String
++  public let settlementObjectSHA256: String
++  public let resultValueSHA256: String
++  public let byteOffset: Int
++  public let byteLength: Int
++}
++
++/// The production input admission for one task item: which settled objects were
++/// admitted, what the executor verified, and the exact input materialized from
++/// the item's own template.
++public struct ProductionTaskInputAdmission: Equatable, Sendable {
++  public let taskItemID: String
++  public let declaredDependencies: [String]
++  public let templateSHA256: String
++  public let inputText: String
++  public let inputSHA256: String
++  public let inputByteLength: Int
++  public let bindings: [ProductionTaskInputBinding]
++  public let dependencySettlementObjectIDs: [String: String]
++  public let checks: [String: Bool]
++
++  public func value(forPlaceholder placeholder: String) -> String? {
++    bindings.first { $0.placeholder == placeholder }?.value
++  }
++
++  /// Machine-readable evidence: identities and digests only, never the raw
++  /// admitted values (they are already carried by the input the model saw).
++  public func evidenceDictionary() -> [String: Any] {
++    [
++      "task_item_id": taskItemID,
++      "declared_dependencies": declaredDependencies,
++      "template_sha256": templateSHA256,
++      "input_sha256": inputSHA256,
++      "input_byte_length": inputByteLength,
++      "dependency_settlement_object_ids": dependencySettlementObjectIDs,
++      "checks": checks,
++      "bindings": bindings.map { binding in
++        [
++          "placeholder": binding.placeholder,
++          "item_id": binding.itemID,
++          "result_field": binding.resultField,
++          "value_sha256": binding.valueSHA256,
++          "settlement_object_id": binding.settlementObjectID,
++          "result_value_sha256": binding.resultValueSHA256,
++          "byte_offset": binding.byteOffset,
++          "byte_length": binding.byteLength,
++        ]
++      },
++    ]
++  }
++}
++
++/// The result of one production continuation whose input was resolved and
++/// admitted from the Information Space: the ES handle, the settlement report,
++/// and the exact admission identity the model consumed.
++public struct ProductionTaskInformationContinuation: Equatable, Sendable {
++  public let handle: ExecutionStateHandle
++  public let report: ProductionTaskContinuationReport
++  public let admission: ProductionTaskInputAdmission
++
++  public init(
++    handle: ExecutionStateHandle,
++    report: ProductionTaskContinuationReport,
++    admission: ProductionTaskInputAdmission
++  ) {
++    self.handle = handle
++    self.report = report
++    self.admission = admission
++  }
++}
++
+ public struct SerializedProductionExecutionState: Codable, Equatable, Sendable {
+   public let id: String
+   public let lineageRoot: String
+@@ -306,6 +441,17 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable
+       throw ProductionRuntimeInformationError.invalidBridgeResponse(command: command)
+     }
+     guard process.terminationStatus == 0, decoded["ok"] as? Bool == true else {
++      if let refusal = decoded["refusal"] as? [String: Any],
++         let stage = refusal["stage"] as? String,
++         let reason = refusal["reason"] as? String {
++        let detail = refusal["detail"] as? [String: Any]
++        throw ProductionRuntimeInformationError.bridgeRefused(
++          command: command,
++          stage: stage,
++          reason: reason,
++          itemID: detail?["item_id"] as? String
++        )
++      }
+       let message = decoded["error"] as? String ?? String(decoding: error.fileHandleForReading.availableData, as: UTF8.self)
+       throw ProductionRuntimeInformationError.bridgeFailed(
+         command: command,
+@@ -420,6 +566,22 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable
+     runtime.recordsSnapshot.filter { $0.executionID == executionID }
+   }
+ 
++  /// Serialized lifecycle transitions for experiment evidence. This is a
++  /// read-only projection of the coordinator's authoritative records; it does
++  /// not add, alter, or replay a transition.
++  public func lifecycleRecordSummary() -> [[String: Any]] {
++    runtime.recordsSnapshot.map { record in
++      [
++        "sequence": record.sequence,
++        "operation": record.operation.rawValue,
++        "execution_id": record.executionID.rawValue,
++        "related_id": record.relatedID?.rawValue ?? NSNull(),
++        "result_lifecycle": record.resultLifecycle.rawValue,
++        "result_position": Int(record.resultPosition.value),
++      ]
++    }
++  }
++
+   func runtimeHandle(executionID: ExecutionID) -> ExecutionStateHandle? {
+     runtime.handle(executionID)
+   }
+@@ -873,4 +1035,562 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable
+       )
+     )
+   }
++
++  // MARK: - Real-model task continuation (model result settled into IS)
++
++  /// Run one task step on the real model executor and settle ITS RESULT into the
++  /// Information Space through the ordinary demand machinery.
++  ///
++  /// Ordering is deliberate and differs from ``continueWithRealInformation``:
++  /// the model produces the value FIRST (from the ES's bound representation),
++  /// then the value is settled, then the ES advances and rebinds the advanced
++  /// representation, then IS confirms runtime application. The bridge accepts a
++  /// model result only for exactly one item; if any dependency is not reusable
++  /// the settlement refuses instead of covering work the model never did.
++  ///
++  /// `handle == nil` creates a fresh ES seeded with `seedText`. Passing a
++  /// recovered handle resumes the durable representation; a missing persisted
++  /// representation fails closed rather than fabricating a seed prefix.
++  ///
++  /// The model input is NEVER supplied by the caller: this entry resolves and
++  /// admits it from the Information Space for `taskItemID` before any new side
++  /// effect, so every ordinary task execution consumes the item's declared
++  /// dependency settlements through the same admission contract. A missing,
++  /// invalid, expired, byte-tampered or dependency-mismatched settlement
++  /// refuses here, before tokenization and before generation.
++  public func continueTask(
++    database: URL,
++    handle: ExecutionStateHandle?,
++    advancementID: String,
++    evaluatedAtUTC: String,
++    demandID: String,
++    taskItemID: String,
++    seedText: String?,
++    maxTokens: Int = 32,
++    modelValue: (ExecutionContinuationResult, ProductionTaskInputAdmission) throws -> [String: Any]
++  ) async throws -> ProductionTaskInformationContinuation {
++    let admission = try resolveTaskInput(
++      database: database, taskItemID: taskItemID, evaluatedAtUTC: evaluatedAtUTC)
++    // Fail closed BEFORE any new side effect when this ES already carries a
++    // settlement checkpoint that no longer matches IS's current settled state.
++    if let checkpoint = runtime.settlementCheckpoint(for: Self.executionID) {
++      let preExecutionISState = try informationSpaceLatestExecutionState(database: database)
++      try validateSettlementAgainstInformationSpace(
++        checkpoint: checkpoint,
++        isState: preExecutionISState,
++        handle: handle
++      )
++      if stateStore != nil, let handle,
++         (try? backend.boundPrefix(for: handle)) == nil,
++         !runtime.hasPersistedRepresentation(
++          executionID: handle.id, position: handle.position) {
++        throw ProductionRuntimeInformationError.persistedRepresentationUnavailable(
++          executionID: handle.id.rawValue,
++          position: handle.position.value
++        )
++      }
++    }
++    guard let modelExecutor else {
++      throw ProductionRuntimeInformationError.modelExecutorUnavailable
++    }
++
++    var tokenizeSeedCallCount = 0
++    var tokenizeNextInputCallCount = 0
++    var modelContinuationCallCount = 0
++    tokenizeNextInputCallCount += 1
++    let nextInputTokens = try await modelExecutor.tokenizeText(admission.inputText)
++
++    var created = false
++    var current: ExecutionStateHandle?
++    var priorRepresentation: ExecutionRepresentation?
++    var advanced: ExecutionStateHandle?
++    var modelResult: ExecutionContinuationResult?
++    var failureStage: String?
++    var settledConfirmationState: [String: Any]?
++    var bridgeComputed: [String] = []
++    var bridgeReused: [String] = []
++    var bridgeActions: [ProductionTaskSettlementAction] = []
++    var bridgeResultDigest = ""
++    var pendingStateID = ""
++    var valueFileURL: URL?
++
++    func failPending(_ stage: String, _ reason: String) throws {
++      _ = try runBridge("record-blocked", arguments: [
++        "--database", database.path,
++        "--state-id", "\(pendingStateID.isEmpty ? advancementID : pendingStateID):\(stage)-failed",
++        "--prior-state-id", pendingStateID.isEmpty ? advancementID : pendingStateID,
++        "--reason", "\(stage): \(reason)",
++      ])
++    }
++
++    do {
++      failureStage = "runtime_create_or_attach"
++      if let handle {
++        if runtime.handle(handle.id) != nil {
++          current = try await runtime.reattach(handle)
++        } else {
++          current = try await runtime.attach(handle)
++        }
++        guard let attached = current else {
++          throw ProductionRuntimeInformationError.modelExecutionFailed(reason: "runtime handle unavailable")
++        }
++        // Recovery priority: rebind the PERSISTED representation. Re-tokenizing
++        // a seed here would fabricate a prefix and masquerade as recovered work.
++        if (try? backend.boundPrefix(for: attached)) == nil {
++          failureStage = "representation_recovery_rebind"
++          let reboundFromDurableState = try await runtime.restorePersistedBinding(
++            executionID: attached.id,
++            position: attached.position
++          )
++          guard reboundFromDurableState, stateStore != nil else {
++            throw ProductionRuntimeInformationError.persistedRepresentationUnavailable(
++              executionID: attached.id.rawValue,
++              position: attached.position.value
++            )
++          }
++        }
++      } else {
++        guard let seedText else {
++          throw ProductionRuntimeInformationError.modelExecutionFailed(
++            reason: "a fresh execution requires seed text")
++        }
++        failureStage = "tokenize_seed"
++        tokenizeSeedCallCount += 1
++        let seedTokens = try await modelExecutor.tokenizeSeedText(seedText)
++        created = true
++        failureStage = "runtime_create_or_attach"
++        let fresh = try await runtime.create(
++          id: Self.executionID,
++          position: ExecutionPosition(0),
++          continuation: ExecutionContinuation(
++            nextInput: "\(Self.continuationPoint)-initial",
++            continuationID: "\(Self.continuationPoint)-initial-cont"
++          )
++        )
++        current = fresh
++        failureStage = "representation_binding"
++        try await runtime.bindRepresentation(
++          executionID: fresh.id,
++          position: fresh.position,
++          payload: MLXPrefixPayload(tokenPrefix: seedTokens)
++        )
++      }
++      guard let current else {
++        throw ProductionRuntimeInformationError.modelExecutionFailed(reason: "runtime handle unavailable")
++      }
++      failureStage = "capture_pre_model_representation"
++      priorRepresentation = try await backend.captureRepresentation(for: current)
++
++      failureStage = "model_execution"
++      modelContinuationCallCount += 1
++      let produced = try await modelExecutor.continueExecution(
++        current,
++        nextInputTokens: nextInputTokens,
++        maxTokens: maxTokens
++      )
++      modelResult = produced
++
++      failureStage = "model_result_preparation"
++      let value = try modelValue(produced, admission)
++      let valueData = try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
++      let valueURL = FileManager.default.temporaryDirectory
++        .appendingPathComponent("simigo-model-result-\(UUID().uuidString).json")
++      try valueData.write(to: valueURL, options: .atomic)
++      valueFileURL = valueURL
++
++      failureStage = "information_settlement"
++      let response = try runBridge("execute-with-model-result", arguments: [
++        "--database", database.path,
++        "--demand-id", demandID,
++        "--advancement", advancementID,
++        "--evaluated-at", evaluatedAtUTC,
++        "--item-id", taskItemID,
++        "--value-file", valueURL.path,
++      ])
++      guard let result = response["result"] as? [String: Any] else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute-with-model-result")
++      }
++      let state = result["state"] as? String ?? "UNKNOWN"
++      guard result["advanced"] as? Bool == true, state == "ADVANCED" else {
++        throw ProductionRuntimeInformationError.blockedInformationDemand(
++          command: advancementID,
++          state: state,
++          validityFailureItemIDs: result["validity_failure_item_ids"] as? [String] ?? []
++        )
++      }
++      guard let executionState = result["execution_state"] as? [String: Any],
++            let unwrappedPendingStateID = executionState["state_id"] as? String else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute-with-model-result")
++      }
++      pendingStateID = unwrappedPendingStateID
++      bridgeComputed = result["computed_item_ids"] as? [String] ?? []
++      bridgeReused = result["reused_item_ids"] as? [String] ?? []
++      bridgeActions = (result["actions"] as? [[String: Any]] ?? []).map { action in
++        ProductionTaskSettlementAction(
++          itemID: action["item_id"] as? String ?? "",
++          action: action["action"] as? String ?? "",
++          settlementObjectID: action["settlement_object_id"] as? String ?? "",
++          resultDigest: action["result_digest"] as? String ?? ""
++        )
++      }
++      let resultPayload = result["result"] as? [String: Any] ?? [:]
++      let resultData = try JSONSerialization.data(withJSONObject: resultPayload, options: [.sortedKeys])
++      bridgeResultDigest = SHA256.hash(data: resultData).map { String(format: "%02x", $0) }.joined()
++
++      failureStage = "logical_advance"
++      advanced = try await runtime.continueExecution(
++        current,
++        continuation: ExecutionContinuation(
++          nextInput: "\(Self.continuationPoint):\(advancementID)",
++          continuationID: "\(Self.continuationPoint):\(advancementID):cont"
++        )
++      )
++      failureStage = "representation_binding"
++      guard let unwrappedAdvanced = advanced, let unwrappedModelResult = modelResult else {
++        throw ProductionRuntimeInformationError.modelExecutionFailed(
++          reason: "runtime continuation result missing")
++      }
++      try await runtime.bindRepresentation(
++        executionID: unwrappedAdvanced.id,
++        position: unwrappedAdvanced.position,
++        payload: unwrappedModelResult.updatedPayload
++      )
++      failureStage = "post_bind_verification"
++      _ = try backend.boundPrefix(for: unwrappedAdvanced)
++      failureStage = "carrier_confirmation"
++      let confirmationResponse = try runBridge(
++        "confirm-runtime-application",
++        arguments: ["--database", database.path, "--state-id", pendingStateID]
++      )
++      settledConfirmationState = confirmationResponse["execution_state"] as? [String: Any]
++    } catch {
++      failureStage = failureStage ?? "unclassified"
++      try? failPending(failureStage!, String(describing: error))
++      if let priorRepresentation {
++        try? await backend.restoreRepresentation(priorRepresentation)
++      }
++      if let base = current {
++        try? await runtime.restore(
++          base,
++          request: ExecutionRestoreRequest(
++            targetPosition: base.position,
++            continuation: base.continuation
++          )
++        )
++      }
++      if let terminal = advanced ?? current {
++        try? await runtime.discard(terminal)
++        backend.consumeBinding(for: terminal)
++      }
++      if let valueFileURL { try? FileManager.default.removeItem(at: valueFileURL) }
++      throw ProductionRuntimeInformationError.modelExecutionFailed(
++        reason: "[\(failureStage ?? "unclassified")] \(error)"
++      )
++    }
++    if let valueFileURL { try? FileManager.default.removeItem(at: valueFileURL) }
++
++    // Bind the ES↔IS checkpoint to the authoritative confirmation record, so a
++    // later recovery can prove the recovered ES matches IS's latest settlement.
++    if stateStore != nil,
++       let confirmedState = settledConfirmationState,
++       let confirmationStateID = confirmedState["state_id"] as? String,
++       let confirmationPriorID = confirmedState["prior_state_id"] as? String,
++       let isResultDigest = confirmedState["result_digest"] as? String,
++       let isValidityBasis = confirmedState["demand_digest"] as? String,
++       let advancedHandle = advanced {
++      try await runtime.recordSettlementCheckpoint(
++        ExecutionContinuityCoordinator.SettlementCheckpoint(
++          executionID: advancedHandle.id,
++          position: advancedHandle.position,
++          lastSettledAdvancementID: advancementID,
++          isOriginalStateID: confirmationPriorID,
++          isConfirmationStateID: confirmationStateID,
++          resultDigest: isResultDigest,
++          validityBasis: isValidityBasis
++        )
++      )
++    }
++
++    guard let advancedHandle = advanced,
++          let produced = modelResult,
++          let confirmation = settledConfirmationState,
++          let confirmationStateID = confirmation["state_id"] as? String,
++          let updatedPrefix = (produced.updatedPayload as? MLXPrefixPayload)?.tokenPrefix else {
++      throw ProductionRuntimeInformationError.modelExecutionFailed(
++        reason: "task continuation evidence unavailable")
++    }
++    let report = ProductionTaskContinuationReport(
++      demandID: demandID,
++      taskItemID: taskItemID,
++      created: created,
++      computedItemIDs: bridgeComputed,
++      reusedItemIDs: bridgeReused,
++      settlementActions: bridgeActions,
++      resultDigest: bridgeResultDigest,
++      isPendingStateID: pendingStateID,
++      isConfirmationStateID: confirmationStateID,
++      advancedPosition: advancedHandle.position.value,
++      advancedLifecycle: advancedHandle.lifecycle.rawValue,
++      consumedPrefixLength: produced.consumedPrefixLength,
++      nextInputTokenCount: produced.nextInputTokenCount,
++      nextInputTokenIDs: nextInputTokens,
++      generatedTokenIDs: produced.generatedTokenIDs,
++      generatedText: produced.generatedText,
++      updatedPrefixTokenCount: updatedPrefix.count,
++      tokenizeSeedCallCount: tokenizeSeedCallCount,
++      tokenizeNextInputCallCount: tokenizeNextInputCallCount,
++      modelContinuationCallCount: modelContinuationCallCount
++    )
++    return ProductionTaskInformationContinuation(
++      handle: advancedHandle, report: report, admission: admission)
++  }
++
++  // MARK: - Information Space input admission (production task path)
++
++  private static func sha256Hex(_ data: Data) -> String {
++    SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
++  }
++
++  /// Template placeholders are the task item's OWN declaration (`{name}`); the
++  /// production resolver expands them from admitted settlements only.
++  private static let inputPlaceholderPattern: NSRegularExpression = {
++    // Compile-time constant: an invalid pattern is a programming error.
++    try! NSRegularExpression(pattern: "\\{([a-z][a-z0-9_]*)\\}")
++  }()
++
++  private static func expandInputTemplate(
++    _ template: String,
++    values: [String: String]
++  ) -> String? {
++    let text = template as NSString
++    let matches = inputPlaceholderPattern.matches(
++      in: template, range: NSRange(location: 0, length: text.length))
++    var expanded = ""
++    var cursor = 0
++    for match in matches {
++      expanded += text.substring(
++        with: NSRange(location: cursor, length: match.range.location - cursor))
++      let name = text.substring(with: match.range(at: 1))
++      guard let value = values[name] else { return nil }
++      expanded += value
++      cursor = match.range.location + match.range.length
++    }
++    expanded += text.substring(from: cursor)
++    return expanded
++  }
++
++  /// Resolve and ADMIT the model input for one task item from the Information
++  /// Space, before any tokenization or generation.
++  ///
++  /// The production resolver reads the item's declared dependency closure,
++  /// admits every settled dependency through the ordinary settlement reuse
++  /// decision, and expands the item's own template. This method then verifies
++  /// the returned material byte-for-byte: the object identity IS the content
++  /// digest, the admitted value occupies exactly the declared byte range, and
++  /// re-expanding the template reproduces the same input. The identity the
++  /// executor admitted is therefore exactly the bytes handed to the model.
++  public func resolveTaskInput(
++    database: URL,
++    taskItemID: String,
++    evaluatedAtUTC: String
++  ) throws -> ProductionTaskInputAdmission {
++    let response: [String: Any]
++    do {
++      response = try runBridge("resolve-model-input", arguments: [
++        "--database", database.path,
++        "--item-id", taskItemID,
++        "--evaluated-at", evaluatedAtUTC,
++      ])
++    } catch ProductionRuntimeInformationError.bridgeRefused(
++      _, let stage, let reason, let itemID
++    ) {
++      throw ProductionRuntimeInformationError.informationSpaceInputAdmissionRefused(
++        itemID: itemID ?? taskItemID, stage: stage, reason: reason)
++    }
++    guard let inputText = response["input_text"] as? String,
++          let inputSHA256 = response["input_sha256"] as? String,
++          let inputByteLength = response["input_byte_length"] as? Int,
++          let template = response["template"] as? String,
++          let templateSHA256 = response["template_sha256"] as? String,
++          let declaredDependencies = response["declared_dependencies"] as? [String],
++          let rawBindings = response["bindings"] as? [[String: Any]],
++          let rawDependencies = response["dependencies"] as? [[String: Any]],
++          let rawChecks = response["checks"] as? [String: Any] else {
++      throw ProductionRuntimeInformationError.invalidBridgeResponse(
++        command: "resolve-model-input")
++    }
++
++    let inputData = Data(inputText.utf8)
++    guard Self.sha256Hex(inputData) == inputSHA256 else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "input_sha256")
++    }
++    guard inputData.count == inputByteLength else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "input_byte_length")
++    }
++    guard Self.sha256Hex(Data(template.utf8)) == templateSHA256 else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "template_sha256")
++    }
++    // Every admission check the resolver reports must be present and true; an
++    // unknown-but-false check also refuses rather than being ignored.
++    let requiredChecks = [
++      "settlement_objects_readable",
++      "object_identity_matches_bytes",
++      "result_digests_match_values",
++      "source_versions_match_items",
++      "dependency_object_sets_match",
++      "validity_satisfied",
++      "all_placeholders_bound",
++    ]
++    for name in requiredChecks {
++      guard rawChecks[name] as? Bool == true else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "admission_check:\(name)")
++      }
++    }
++    for (name, value) in rawChecks where value as? Bool != true {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "admission_check:\(name)")
++    }
++
++    var bindings: [ProductionTaskInputBinding] = []
++    var boundValues: [String: String] = [:]
++    for raw in rawBindings {
++      guard let placeholder = raw["placeholder"] as? String,
++            let itemID = raw["item_id"] as? String,
++            let resultField = raw["result_field"] as? String,
++            let value = raw["value"] as? String,
++            let valueSHA256 = raw["value_sha256"] as? String,
++            let settlementObjectID = raw["settlement_object_id"] as? String,
++            let settlementObjectSHA256 = raw["settlement_object_sha256"] as? String,
++            let resultValueSHA256 = raw["result_value_sha256"] as? String,
++            let byteOffset = raw["byte_offset"] as? Int,
++            let byteLength = raw["byte_length"] as? Int else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(
++          command: "resolve-model-input")
++      }
++      let valueData = Data(value.utf8)
++      guard Self.sha256Hex(valueData) == valueSHA256 else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "value_sha256:\(placeholder)")
++      }
++      // The object id IS the content digest: an identity that no longer hashes
++      // to its own bytes cannot be the settled object it claims to be.
++      guard settlementObjectID == settlementObjectSHA256 else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "object_identity:\(placeholder)")
++      }
++      guard byteOffset >= 0, byteLength == valueData.count,
++            byteOffset + byteLength <= inputData.count else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "byte_range:\(placeholder)")
++      }
++      guard inputData.subdata(
++        in: byteOffset..<(byteOffset + byteLength)) == valueData else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "byte_slice:\(placeholder)")
++      }
++      guard declaredDependencies.contains(itemID) else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "binding_dependency:\(placeholder)")
++      }
++      guard boundValues[placeholder] == nil else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "duplicate_placeholder:\(placeholder)")
++      }
++      boundValues[placeholder] = value
++      bindings.append(ProductionTaskInputBinding(
++        placeholder: placeholder,
++        itemID: itemID,
++        resultField: resultField,
++        value: value,
++        valueSHA256: valueSHA256,
++        settlementObjectID: settlementObjectID,
++        settlementObjectSHA256: settlementObjectSHA256,
++        resultValueSHA256: resultValueSHA256,
++        byteOffset: byteOffset,
++        byteLength: byteLength))
++    }
++
++    var dependencyObjectIDs: [String: String] = [:]
++    for raw in rawDependencies {
++      guard let itemID = raw["item_id"] as? String,
++            let objectID = raw["settlement_object_id"] as? String,
++            let objectSHA256 = raw["settlement_object_sha256"] as? String else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(
++          command: "resolve-model-input")
++      }
++      guard objectID == objectSHA256 else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "dependency_object_identity:\(itemID)")
++      }
++      dependencyObjectIDs[itemID] = objectID
++    }
++    guard dependencyObjectIDs.count == declaredDependencies.count,
++          Set(dependencyObjectIDs.keys) == Set(declaredDependencies) else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "dependency_closure")
++    }
++    guard let expanded = Self.expandInputTemplate(template, values: boundValues) else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "template_placeholder_unbound")
++    }
++    guard expanded == inputText else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "template_expansion")
++    }
++
++    var checks: [String: Bool] = [:]
++    for (name, value) in rawChecks { checks[name] = value as? Bool }
++    return ProductionTaskInputAdmission(
++      taskItemID: taskItemID,
++      declaredDependencies: declaredDependencies,
++      templateSHA256: templateSHA256,
++      inputText: inputText,
++      inputSHA256: inputSHA256,
++      inputByteLength: inputByteLength,
++      bindings: bindings,
++      dependencySettlementObjectIDs: dependencyObjectIDs,
++      checks: checks
++    )
++  }
++
++  // MARK: - Task bridge accessors
++
++  @discardableResult
++  public func defineTask(
++    database: URL,
++    evaluatedAtUTC: String,
++    runLabel: String,
++    secret: String? = nil,
++    randomSecret: Bool = false
++  ) throws -> [String: Any] {
++    var arguments = [
++      "--database", database.path,
++      "--evaluated-at", evaluatedAtUTC,
++      "--run-label", runLabel,
++    ]
++    if randomSecret {
++      arguments += ["--random-secret"]
++    } else if let secret {
++      arguments += ["--secret", secret]
++    }
++    return try runBridge("define-task", arguments: arguments)
++  }
++
++  public func readItem(database: URL, itemID: String) throws -> [String: Any] {
++    try runBridge("read-item", arguments: [
++      "--database", database.path,
++      "--item-id", itemID,
++    ])
++  }
++
++  public func readSettlement(database: URL, itemID: String) throws -> [String: Any] {
++    try runBridge("read-settlement", arguments: [
++      "--database", database.path,
++      "--item-id", itemID,
++    ])
++  }
+ }
+--- /dev/null
++++ b/simigo2-experimental/Sources/SimiGoTaskRun/main.swift
+@@ -0,0 +1,394 @@
++import Crypto
++import Foundation
++import MLX
++import MLXHuggingFace
++import MLXLLM
++import MLXLMCommon
++import Tokenizers
++import os
++import SimiGo2Experimental
++import SimiGoRuntimeContract
++
++// ORDINARY TASK ENTRY
++//
++// One process executes exactly one task item on the real model:
++//
++//   1. read the item's OWN task definition (prompt seed + result contract),
++//   2. call the production `continueTask` entry, which resolves and admits the
++//      item's declared dependency settlements from the Information Space,
++//   3. tokenize and generate, settle the model result, advance the ES, and
++//      confirm the IS runtime application.
++//
++// This binary contains no handoff orchestration: it never reads a settlement,
++// never expands an input template, and never receives an input text or a
++// settled value through argv, environment or a side file. The only inputs are
++// the task item identity and the model snapshot.
++
++/// A fresh execution instance's own preamble. It is not a task input: the
++/// admitted task input is appended by the production entry.
++let coldSeed = """
++SIMIGO-ORDINARY-TASK-COLD-V1
++You are executing one task step in a new execution instance.
++"""
++
++struct Options {
++  let database: URL
++  let modelDir: URL
++  let labRoot: URL
++  let stateDir: URL
++  let output: URL
++  let itemID: String
++  let demandID: String
++  let advancementID: String
++  let evaluatedAtUTC: String
++  let maxTokens: Int
++
++  init(_ arguments: [String]) throws {
++    var values: [String: String] = [:]
++    var index = 0
++    while index < arguments.count {
++      let key = arguments[index]
++      guard key.hasPrefix("--"), index + 1 < arguments.count else {
++        throw TaskEntryError("usage: SimiGoTaskRun --database ... --item ...")
++      }
++      values[String(key.dropFirst(2))] = arguments[index + 1]
++      index += 2
++    }
++    func required(_ name: String) throws -> String {
++      guard let value = values[name], !value.isEmpty else {
++        throw TaskEntryError("missing --\(name)")
++      }
++      return value
++    }
++    database = URL(fileURLWithPath: try required("database"))
++    modelDir = URL(fileURLWithPath: try required("model-dir"), isDirectory: true)
++    labRoot = URL(fileURLWithPath: try required("lab-root"), isDirectory: true)
++    stateDir = URL(fileURLWithPath: try required("state-dir"), isDirectory: true)
++    output = URL(fileURLWithPath: try required("out"))
++    itemID = try required("item")
++    demandID = try required("demand")
++    advancementID = try required("advancement")
++    evaluatedAtUTC = try required("evaluated-at")
++    maxTokens = Int(values["max-tokens"] ?? "24") ?? 24
++  }
++}
++
++final class CountingModelExecutor:
++  ProductionRuntimeModelContinuationExecutor, @unchecked Sendable
++{
++  private struct Counters {
++    var tokenizeText = 0
++    var tokenizeSeed = 0
++    var continuation = 0
++  }
++
++  private let base: MLXPrefixRecomputeExecutor
++  private let counters = OSAllocatedUnfairLock(initialState: Counters())
++
++  init(base: MLXPrefixRecomputeExecutor) {
++    self.base = base
++  }
++
++  var snapshot: [String: Int] {
++    counters.withLock { value in
++      [
++        "tokenize_text_calls": value.tokenizeText,
++        "tokenize_seed_calls": value.tokenizeSeed,
++        "model_continuation_calls": value.continuation,
++      ]
++    }
++  }
++
++  func tokenizeText(_ text: String) async throws -> [Int] {
++    counters.withLock { $0.tokenizeText += 1 }
++    return try await base.tokenizeText(text)
++  }
++
++  func tokenizeSeedText(_ text: String) async throws -> [Int] {
++    counters.withLock { $0.tokenizeSeed += 1 }
++    return try await base.tokenizeSeedText(text)
++  }
++
++  func continueExecution(
++    _ state: ExecutionStateHandle,
++    nextInputTokens: [Int],
++    maxTokens: Int
++  ) async throws -> ExecutionContinuationResult {
++    counters.withLock { $0.continuation += 1 }
++    return try await base.continueExecution(
++      state, nextInputTokens: nextInputTokens, maxTokens: maxTokens)
++  }
++}
++
++func utcNow() -> String {
++  let formatter = ISO8601DateFormatter()
++  formatter.formatOptions = [.withInternetDateTime]
++  return formatter.string(from: Date())
++}
++
++func sha256Hex(_ data: Data) -> String {
++  SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
++}
++
++func sha256File(_ url: URL) throws -> String {
++  let handle = try FileHandle(forReadingFrom: url)
++  defer { try? handle.close() }
++  var hash = SHA256()
++  while true {
++    guard let chunk = try handle.read(upToCount: 1024 * 1024), !chunk.isEmpty else {
++      break
++    }
++    hash.update(data: chunk)
++  }
++  return hash.finalize().map { String(format: "%02x", $0) }.joined()
++}
++
++func fileIdentity(_ url: URL) throws -> [String: Any] {
++  let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
++  let size = (attributes[.size] as? NSNumber)?.int64Value ?? -1
++  let inode = (attributes[.systemFileNumber] as? NSNumber)?.int64Value ?? -1
++  return [
++    "path": url.path,
++    "size_bytes": size,
++    "inode": String(inode),
++    "sha256": try sha256File(url),
++  ]
++}
++
++func directoryIdentity(_ directory: URL) throws -> [String: String] {
++  guard let enumerator = FileManager.default.enumerator(
++    at: directory, includingPropertiesForKeys: [.isRegularFileKey]) else {
++    return [:]
++  }
++  let base = directory.standardizedFileURL.path
++  var identity: [String: String] = [:]
++  for case let url as URL in enumerator {
++    guard try url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else {
++      continue
++    }
++    let path = url.standardizedFileURL.path
++    let relative = path.hasPrefix(base + "/") ? String(path.dropFirst(base.count + 1)) : path
++    identity[relative] = try sha256File(url)
++  }
++  return identity
++}
++
++func modelIdentity(_ snapshot: URL) throws -> [String: Any] {
++  let fileManager = FileManager.default
++  let names = try fileManager.contentsOfDirectory(atPath: snapshot.path).sorted()
++  var lines: [String] = []
++  var weightFiles: [[String: Any]] = []
++  for name in names where name.hasSuffix(".safetensors") {
++    let url = snapshot.appendingPathComponent(name)
++    let attributes = try fileManager.attributesOfItem(atPath: url.path)
++    let size = (attributes[.size] as? NSNumber)?.int64Value ?? -1
++    let destination = try? fileManager.destinationOfSymbolicLink(atPath: url.path)
++    let content = destination.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "file"
++    lines.append("\(name):\(content):\(size)")
++    weightFiles.append(["name": name, "content": content, "size_bytes": size])
++  }
++  guard !weightFiles.isEmpty else {
++    throw TaskEntryError("model snapshot carries no safetensors weights")
++  }
++  return [
++    "snapshot_path": snapshot.path,
++    "snapshot_revision": snapshot.lastPathComponent,
++    "weights_manifest_sha256": sha256Hex(
++      Data(lines.joined(separator: "\n").utf8)),
++    "weight_files": weightFiles,
++  ]
++}
++
++func writeEvidence(_ record: [String: Any], to url: URL) throws {
++  try FileManager.default.createDirectory(
++    at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
++  let data = try JSONSerialization.data(
++    withJSONObject: record, options: [.prettyPrinted, .sortedKeys])
++  try data.write(to: url, options: .atomic)
++}
++
++func run(_ arguments: [String]) async throws {
++  let options = try Options(arguments)
++  let startedAt = utcNow()
++  let start = Date()
++  let fileManager = FileManager.default
++  try fileManager.createDirectory(at: options.stateDir, withIntermediateDirectories: true)
++
++  let databaseBefore = try fileIdentity(options.database)
++  let stateBefore = try directoryIdentity(options.stateDir)
++
++  let loadStart = Date()
++  let container = try await LLMModelFactory.shared.loadContainer(
++    from: options.modelDir, using: #huggingFaceTokenizerLoader())
++  let loadSeconds = Date().timeIntervalSince(loadStart)
++  let identity = try modelIdentity(options.modelDir)
++
++  let backend = MLXExecutionStateBackend()
++  let executor = CountingModelExecutor(
++    base: MLXPrefixRecomputeExecutor(container: container, backend: backend))
++  let configuration = ProductionRuntimeLaunchConfiguration(
++    runtimeRoot: options.labRoot.appendingPathComponent("execution-information-loop"),
++    pythonExecutable: URL(fileURLWithPath: "/usr/bin/python3"),
++    snapshotPath: options.labRoot.appendingPathComponent(
++      "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"),
++    validityPolicyPath: options.labRoot.appendingPathComponent(
++      "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json"))
++  let integration = try ProductionRuntimeInformationIntegration(
++    configuration: configuration,
++    modelExecutor: executor,
++    backend: backend,
++    semanticStateDirectory: options.stateDir,
++    resetToFreshBaseline: true)
++
++  // The item's OWN task definition: its prompt seed and its result contract.
++  // No settlement is read and no template is expanded here.
++  let itemResponse = try integration.readItem(database: options.database, itemID: options.itemID)
++  guard let item = itemResponse["item"] as? [String: Any],
++        let payload = item["source_payload"] as? [String: Any] else {
++    throw TaskEntryError("task item \(options.itemID) has no readable definition")
++  }
++  let declaredSeed = payload["prompt_seed"] as? String
++  let seedText = declaredSeed ?? coldSeed
++  let contract = try TaskResultContract(payload: payload)
++
++  var outcome: ProductionTaskInformationContinuation?
++  var refusal: [String: Any] = [:]
++  var failure = ""
++  do {
++    outcome = try await integration.continueTask(
++      database: options.database,
++      handle: nil,
++      advancementID: options.advancementID,
++      evaluatedAtUTC: options.evaluatedAtUTC,
++      demandID: options.demandID,
++      taskItemID: options.itemID,
++      seedText: seedText,
++      maxTokens: options.maxTokens
++    ) { produced, admitted in
++      try contract.value(
++        for: produced, admitted: admitted, modelIdentity: identity)
++    }
++  } catch let error as ProductionRuntimeInformationError {
++    switch error {
++    case .informationSpaceInputAdmissionRefused(let itemID, let stage, let reason):
++      refusal = ["kind": "ADMISSION_REFUSED", "item_id": itemID,
++                 "stage": stage, "reason": reason]
++    case .informationSpaceInputBindingMismatch(let field):
++      refusal = ["kind": "BINDING_MISMATCH", "field": field]
++    default:
++      failure = String(describing: error)
++    }
++  } catch {
++    failure = String(describing: error)
++  }
++
++  let databaseAfter = try fileIdentity(options.database)
++  let stateAfter = try directoryIdentity(options.stateDir)
++  let admitted = outcome?.admission
++  let report = outcome?.report
++  let admissionStatus: String
++  if admitted != nil {
++    admissionStatus = "ADMITTED"
++  } else if let kind = refusal["kind"] as? String {
++    admissionStatus = kind
++  } else {
++    admissionStatus = "NOT_ATTEMPTED"
++  }
++
++  var record: [String: Any] = [
++    "schema_id": "SIMIGO-ORDINARY-TASK-ENTRY-V1",
++    "entry": "SimiGoTaskRun",
++    "pid": Int(ProcessInfo.processInfo.processIdentifier),
++    "started_at_utc": startedAt,
++    "completed_at_utc": utcNow(),
++    "duration_seconds": Date().timeIntervalSince(start),
++    "task_item_id": options.itemID,
++    "demand_id": options.demandID,
++    "advancement_id": options.advancementID,
++    "evaluated_at_utc": options.evaluatedAtUTC,
++    "max_tokens": options.maxTokens,
++    "model": identity,
++    "model_load_seconds": loadSeconds,
++    "seed_source": declaredSeed == nil ? "builtin_cold_seed" : "item.prompt_seed",
++    "seed_sha256": sha256Hex(Data(seedText.utf8)),
++    "database": options.database.path,
++    "database_before": databaseBefore,
++    "database_after": databaseAfter,
++    "database_unchanged": (databaseBefore["sha256"] as? String)
++      == (databaseAfter["sha256"] as? String),
++    "state_directory": options.stateDir.path,
++    "state_before": stateBefore,
++    "state_after": stateAfter,
++    "state_unchanged": stateBefore == stateAfter,
++    "counters": executor.snapshot,
++    "generation_entered": (executor.snapshot["model_continuation_calls"] ?? 0) > 0,
++    "input_admission_status": admissionStatus,
++    "input_admission": admitted?.evidenceDictionary() ?? [:],
++    "input_admission_refusal": refusal,
++    "failure": failure,
++  ]
++  if let admitted {
++    record["declared_dependencies"] = admitted.declaredDependencies
++    record["dependency_settlement_object_ids"] = admitted.dependencySettlementObjectIDs
++    record["admitted_input_sha256"] = admitted.inputSHA256
++    record["admitted_input_byte_length"] = admitted.inputByteLength
++    record["bindings"] = admitted.bindings.map { binding in
++      [
++        "placeholder": binding.placeholder,
++        "item_id": binding.itemID,
++        "value": binding.value,
++        "value_sha256": binding.valueSHA256,
++        "settlement_object_id": binding.settlementObjectID,
++        "byte_offset": binding.byteOffset,
++        "byte_length": binding.byteLength,
++      ]
++    }
++  }
++  if let report {
++    record["settlement"] = [
++      "computed_item_ids": report.computedItemIDs,
++      "reused_item_ids": report.reusedItemIDs,
++      "actions": report.settlementActions.map { action in
++        [
++          "item_id": action.itemID,
++          "action": action.action,
++          "settlement_object_id": action.settlementObjectID,
++          "result_digest": action.resultDigest,
++        ]
++      },
++      "is_pending_state_id": report.isPendingStateID,
++      "is_confirmation_state_id": report.isConfirmationStateID,
++      "advanced_position": report.advancedPosition,
++      "advanced_lifecycle": report.advancedLifecycle,
++      "generated_token_count": report.generatedTokenIDs.count,
++      "updated_prefix_token_count": report.updatedPrefixTokenCount,
++      "tokenize_seed_calls_this_call": report.tokenizeSeedCallCount,
++      "tokenize_next_input_calls_this_call": report.tokenizeNextInputCallCount,
++      "model_continuation_calls_this_call": report.modelContinuationCallCount,
++    ]
++    record["generated_text"] = report.generatedText
++    record["generated_text_sha256"] = sha256Hex(Data(report.generatedText.utf8))
++    record["generated_token_ids"] = report.generatedTokenIDs
++  }
++  record["terminal_state"] = report != nil ? "TASK_SETTLED"
++    : (refusal.isEmpty ? "TASK_FAILED" : "INPUT_ADMISSION_REFUSED")
++
++  try writeEvidence(record, to: options.output)
++  if report == nil {
++    throw TaskEntryError(
++      failure.isEmpty ? "task did not settle: \(refusal)" : failure)
++  }
++}
++
++@main
++struct SimiGoTaskRun {
++  static func main() async {
++    do {
++      try await run(Array(CommandLine.arguments.dropFirst()))
++    } catch {
++      FileHandle.standardError.write(
++        Data(("error: \(error)\n").utf8))
++      exit(1)
++    }
++  }
++}
+--- /dev/null
++++ b/simigo2-experimental/Sources/SimiGoTaskRun/TaskResultContract.swift
+@@ -0,0 +1,90 @@
++import Foundation
++import SimiGo2Experimental
++
++struct TaskEntryError: Error, CustomStringConvertible {
++  let description: String
++  init(_ description: String) { self.description = description }
++}
++
++/// The task item's OWN declaration of how its model output becomes the
++/// settlement result value. A task that declares no contract settles the raw
++/// generated text and token ids; a task that declares named fields settles the
++/// values captured by those declared patterns.
++///
++/// The entry never carries task-specific extraction logic: the field names and
++/// patterns come from the item's `source_payload.result_contract`, exactly like
++/// its input template and bindings come from the item's own declaration.
++struct TaskResultContract {
++  struct Field {
++    let name: String
++    let expression: NSRegularExpression
++  }
++
++  let fields: [Field]
++
++  init(payload: [String: Any]) throws {
++    guard let contract = payload["result_contract"] as? [String: Any] else {
++      fields = []
++      return
++    }
++    guard let rawFields = contract["fields"] as? [[String: Any]] else {
++      throw TaskEntryError("result_contract has no fields list")
++    }
++    fields = try rawFields.map { raw in
++      guard let name = raw["name"] as? String, !name.isEmpty,
++            let pattern = raw["pattern"] as? String, !pattern.isEmpty else {
++        throw TaskEntryError("result_contract field needs name and pattern")
++      }
++      do {
++        return Field(name: name, expression: try NSRegularExpression(pattern: pattern))
++      } catch {
++        throw TaskEntryError("result_contract field \(name) has an invalid pattern: \(error)")
++      }
++    }
++  }
++
++  /// Build the settlement value from the produced result alone. The admitted
++  /// input identity is included so the settlement record itself names the
++  /// dependency objects and input bytes the model consumed.
++  func value(
++    for produced: ExecutionContinuationResult,
++    admitted: ProductionTaskInputAdmission,
++    modelIdentity: [String: Any]
++  ) throws -> [String: Any] {
++    var value: [String: Any] = [
++      "raw_generated_text": produced.generatedText,
++      "generated_token_ids": produced.generatedTokenIDs,
++      "generated_token_count": produced.generatedTokenIDs.count,
++      "model_snapshot_revision": modelIdentity["snapshot_revision"] as? String ?? "",
++      "model_weights_manifest_sha256":
++        modelIdentity["weights_manifest_sha256"] as? String ?? "",
++      "model_call_index": 1,
++      "admitted_input_sha256": admitted.inputSHA256,
++      "admitted_dependency_settlement_object_ids":
++        admitted.dependencySettlementObjectIDs,
++    ]
++    for field in fields {
++      guard let captured = Self.capture(
++        field.expression, in: produced.generatedText) else {
++        throw TaskEntryError(
++          "model output does not contain declared result field \(field.name): "
++            + produced.generatedText)
++      }
++      value[field.name] = captured
++    }
++    return value
++  }
++
++  private static func capture(
++    _ expression: NSRegularExpression,
++    in text: String
++  ) -> String? {
++    let range = NSRange(location: 0, length: (text as NSString).length)
++    guard let match = expression.firstMatch(in: text, range: range),
++          match.numberOfRanges > 1,
++          let captured = Range(match.range(at: 1), in: text) else {
++      return nil
++    }
++    return String(text[captured])
++  }
++}
+--- /dev/null
++++ b/simigo2-experimental/scripts/ordinary_task/preflight_fixture.py
+@@ -0,0 +1,103 @@
++#!/usr/bin/env python3
++"""Model-free preflight for the D-round ordinary-task fixture.
++
++Creates a fresh carrier database with the ordinary task definition, then asks
++the production bridge to resolve TASK-U1's model input. Success proves the
++source registration, validity policy and dependency basis are admissible
++before any model load is paid for. TASK-U2 must refuse at this point because
++TASK-U1 has not been settled yet.
++"""
++from __future__ import annotations
++
++import json
++import os
++import subprocess
++import sys
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parent))
++import run_phase_d as runner  # noqa: E402
++
++
++def resolve(lab_root: Path, database: Path, item_id: str) -> dict:
++    policy = lab_root / "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json"
++    environment = os.environ.copy()
++    environment["SIMIGO_INFO_VALIDITY_POLICY_PATH"] = str(policy)
++    completed = subprocess.run(
++        [
++            "/usr/bin/python3",
++            str(lab_root / "execution-information-loop/production_runtime_bridge.py"),
++            "resolve-model-input",
++            "--database", str(database),
++            "--item-id", item_id,
++            "--evaluated-at", runner.utc_now(),
++        ],
++        capture_output=True,
++        text=True,
++        env=environment,
++        check=False,
++    )
++    output = None
++    for line in completed.stdout.splitlines():
++        if line.strip().startswith("{"):
++            output = json.loads(line)
++    return {
++        "item_id": item_id,
++        "exit_code": completed.returncode,
++        "stderr": completed.stderr.strip(),
++        "response": output,
++    }
++
++
++def main() -> int:
++    lab_root = Path(sys.argv[1]).expanduser().resolve()
++    work = Path(sys.argv[2]).expanduser().resolve()
++    work.mkdir(parents=True, exist_ok=True)
++    database = work / "carrier.sqlite"
++    if database.exists():
++        raise SystemExit("refusing to reuse %s" % database)
++
++    definition = runner.define_ordinary_task(database, lab_root, "d-preflight")
++    u1 = resolve(lab_root, database, "TASK-U1")
++    u2 = resolve(lab_root, database, "TASK-U2")
++    response = u1["response"] or {}
++    checks = response.get("checks") or {}
++    record = {
++        "schema_id": "SIMIGO-ORDINARY-TASK-PREFLIGHT-V1",
++        "definition": definition,
++        "u1": {
++            "exit_code": u1["exit_code"],
++            "declared_dependencies": response.get("declared_dependencies"),
++            "input_sha256": response.get("input_sha256"),
++            "input_byte_length": response.get("input_byte_length"),
++            "checks": checks,
++            "binding_item_ids": [item.get("item_id") for item in response.get("bindings") or []],
++            "dependency_object_ids": {
++                item.get("item_id"): item.get("settlement_object_id")
++                for item in response.get("dependencies") or []
++            },
++            "stderr": u1["stderr"],
++        },
++        "u2_before_u1": {
++            "exit_code": u2["exit_code"],
++            "refusal_stage": ((u2["response"] or {}).get("refusal") or {}).get("stage"),
++            "refusal_reason": ((u2["response"] or {}).get("refusal") or {}).get("reason"),
++        },
++        "checks": {
++            "u1_admitted": u1["exit_code"] == 0 and bool(checks) and all(checks.values()),
++            "u1_bound_to_source": [item.get("item_id") for item in response.get("bindings") or []]
++            == [runner.ITEM_SOURCE],
++            "u2_refused_before_u1_settlement": u2["exit_code"] == 1
++            and ((u2["response"] or {}).get("refusal") or {}).get("stage")
++            == "SETTLEMENT_NOT_ADMITTED",
++        },
++    }
++    record["verdict"] = "PASS" if all(record["checks"].values()) else "FAIL"
++    runner.write_json(work / "preflight.json", record)
++    print(json.dumps(record["checks"], indent=1, sort_keys=True))
++    print(record["verdict"])
++    return 0 if record["verdict"] == "PASS" else 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+--- /dev/null
++++ b/simigo2-experimental/scripts/ordinary_task/run_phase_d.py
+@@ -0,0 +1,985 @@
++#!/usr/bin/env python3
++"""D-round runner: ordinary task entry end-to-end (no handoff orchestration).
++
++Each world is defined by the Information Space's own public API, then executed
++ONLY through `SimiGoTaskRun`, the ordinary production task entry. The runner
++never supplies an input text, a settled value, a template or a nonce to the
++entry; it only names the task item and the model snapshot.
++
++Conditions:
++  B0-A / B0-B   two worlds, new independent nonces, U1 then U2 through the
++                ordinary entry.
++  B1-missing    U1 settlement removed before U2.
++  B2-tampered   U1 settlement object bytes flipped before U2.
++  B3-dependency U2's declared dependency set rewritten before U2.
++
++The runner writes only below --run-root.
++"""
++from __future__ import annotations
++
++import argparse
++import hashlib
++import json
++import os
++import re
++import secrets
++import shutil
++import sqlite3
++import subprocess
++import sys
++import time
++from datetime import datetime, timezone
++from pathlib import Path
++
++CONTINUATION_POINT = "bounded-production-runtime-integration"
++ITEM_SOURCE = "TASK-SOURCE"
++ITEM_U1 = "TASK-U1"
++ITEM_U2 = "TASK-U2"
++DEMAND_U1 = "task-u1"
++DEMAND_U2 = "task-u2"
++SETTLEMENT_U1 = "settlement:TASK-U1"
++SETTLEMENT_SOURCE = "settlement:TASK-SOURCE"
++
++
++def utc_now() -> str:
++    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
++
++
++def digest(value) -> str:
++    return hashlib.sha256(
++        json.dumps(value, ensure_ascii=False, sort_keys=True,
++                   separators=(",", ":")).encode("utf-8")
++    ).hexdigest()
++
++
++def sha256_file(path: Path) -> str:
++    h = hashlib.sha256()
++    with path.open("rb") as handle:
++        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
++            h.update(chunk)
++    return h.hexdigest()
++
++
++def write_json(path: Path, value: dict) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(json.dumps(value, indent=1, sort_keys=True) + "\n", encoding="utf-8")
++
++
++def read_json(path: Path) -> dict:
++    return json.loads(path.read_text(encoding="utf-8"))
++
++
++def sqlite_backup(source: Path, destination: Path) -> None:
++    destination.parent.mkdir(parents=True, exist_ok=True)
++    if destination.exists():
++        raise FileExistsError(destination)
++    src = sqlite3.connect(str(source))
++    dst = sqlite3.connect(str(destination))
++    try:
++        src.backup(dst)
++        dst.commit()
++    finally:
++        dst.close()
++        src.close()
++
++
++def connect_readonly(path: Path) -> sqlite3.Connection:
++    connection = sqlite3.connect("file:%s?mode=ro" % path, uri=True)
++    connection.row_factory = sqlite3.Row
++    return connection
++
++
++def run_process(command: list[str], log_path: Path, timeout: int) -> dict:
++    log_path.parent.mkdir(parents=True, exist_ok=True)
++    started = time.time()
++    with log_path.open("wb") as log:
++        process = subprocess.Popen(
++            command, cwd=str(Path(command[0]).parent), stdout=log,
++            stderr=subprocess.STDOUT, env=os.environ.copy())
++        timed_out = False
++        try:
++            exit_code = process.wait(timeout=timeout)
++        except subprocess.TimeoutExpired:
++            timed_out = True
++            process.kill()
++            exit_code = process.wait()
++    return {
++        "argv": command,
++        "pid": process.pid,
++        "exit_code": exit_code,
++        "timed_out": timed_out,
++        "wall_seconds": round(time.time() - started, 3),
++        "log": str(log_path),
++        "log_sha256": sha256_file(log_path),
++        "started_at_utc": utc_now(),
++    }
++
++
++# --------------------------------------------------------------------------
++# task definition (fixture) — built with the IS's own public API
++# --------------------------------------------------------------------------
++
++
++def load_validity_policy(lab_root: Path) -> dict:
++    path = lab_root / "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json"
++    policy = json.loads(path.read_text(encoding="utf-8"))
++    policy["policy_sha256"] = digest(
++        {key: value for key, value in policy.items() if key != "policy_sha256"})
++    return policy
++
++
++def settlement_basis(source_payload, result_value, source_version,
++                     dependency_object_ids, evaluated_at, valid_until, policy):
++    return {
++        "source_payload_sha256": digest(source_payload),
++        "result_value_sha256": digest(result_value),
++        "source_version": source_version,
++        "dependency_object_ids": dependency_object_ids,
++        "evaluated_at_utc": evaluated_at,
++        "valid_until_utc": valid_until,
++        "validity_policy": policy,
++    }
++
++
++def define_ordinary_task(database: Path, lab_root: Path, run_label: str) -> dict:
++    sys.path.insert(0, str(lab_root / "execution-information-loop"))
++    from carrier_loop import CarrierInformationLoop  # noqa: PLC0415
++
++    policy = load_validity_policy(lab_root)
++    valid_until = policy["default_valid_until_utc"]
++    evaluated_at = utc_now()
++    secret = secrets.token_hex(8)
++    checksum = hashlib.sha256(("checksum:" + secret).encode()).hexdigest()[:4]
++    log_text = "\n".join([
++        "SIMIGO-ORDINARY-TASK-LOG-V1",
++        "run=%s" % run_label,
++        "site=lab-north",
++        "secret=%s" % secret,
++        "checksum=%s" % checksum,
++    ])
++    loop = CarrierInformationLoop.create(str(database))
++    try:
++        source_payload = {
++            "schema_id": "SIMIGO-ORDINARY-SOURCE-V1",
++            "run_label": run_label,
++            "site": "lab-north",
++            "log_text": log_text,
++        }
++        source_version = "v1:%s" % run_label
++        loop.put_source(
++            CONTINUATION_POINT, ITEM_SOURCE, "session-log", source_version,
++            source_payload, valid_until_utc=valid_until, validity_policy=policy)
++        source_value = {
++            "log_text": log_text,
++            "secret_sha256": digest(secret),
++            "checksum": checksum,
++            "site": "lab-north",
++            "run_label": run_label,
++        }
++        source_basis = settlement_basis(
++            source_payload, source_value, source_version, {}, evaluated_at,
++            valid_until, policy)
++        registration = loop.settle(
++            "task-registration", ITEM_SOURCE,
++            {"value": source_value, **source_basis}, source_basis)
++
++        u1_payload = {
++            "schema_id": "SIMIGO-ORDINARY-STEP-V1",
++            "step": 1,
++            "model_task": "extract_secret",
++            "answer_format": "SECRET=<secret>",
++            "next_input_template": (
++                "\nSESSION LOG:\n{log_text}\n\n"
++                "The session log contains exactly one line of the form "
++                "'secret=<value>', where <value> is a 16-character lowercase "
++                "hex string.\n"
++                "Copy that value exactly. Do not compute, shorten or reformat it.\n"
++                "Reply with exactly one line and nothing else: SECRET=<value>\n"
++                "Answer:"
++            ),
++            "input_bindings": [
++                {"placeholder": "log_text", "item_id": ITEM_SOURCE,
++                 "result_field": "log_text"},
++            ],
++            "result_contract": {
++                "fields": [{"name": "secret", "pattern": "SECRET=([0-9a-f]{16})"}],
++            },
++            "source_item_ids": [ITEM_SOURCE],
++        }
++        u1 = loop.put_source(
++            CONTINUATION_POINT, ITEM_U1, "model-task", "v1", u1_payload,
++            dependencies=[ITEM_SOURCE], valid_until_utc=valid_until,
++            validity_policy=policy)
++
++        u2_payload = {
++            "schema_id": "SIMIGO-ORDINARY-STEP-V1",
++            "step": 2,
++            "model_task": "compose_answer",
++            "answer_format": "ANSWER=<secret>-<checksum>",
++            "next_input_template": (
++                "\nStep 2: the secret from step 1 is {secret}. "
++                "The checksum from the session log is {checksum}.\n"
++                "Reply with exactly one line and nothing else: "
++                "ANSWER=<secret>-<checksum>\nAnswer:"
++            ),
++            "input_bindings": [
++                {"placeholder": "secret", "item_id": ITEM_U1,
++                 "result_field": "secret"},
++                {"placeholder": "checksum", "item_id": ITEM_SOURCE,
++                 "result_field": "checksum"},
++            ],
++            "result_contract": {
++                "fields": [{"name": "answer",
++                            "pattern": "(?:ANSWER=)?([0-9a-f]{16}-[0-9a-f]{4})"}],
++            },
++            "source_item_ids": [ITEM_SOURCE, ITEM_U1],
++        }
++        u2 = loop.put_source(
++            CONTINUATION_POINT, ITEM_U2, "model-task", "v1", u2_payload,
++            dependencies=[ITEM_SOURCE, ITEM_U1], valid_until_utc=valid_until,
++            validity_policy=policy)
++
++        loop.define_demand(
++            DEMAND_U1, continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 1 on the real model"],
++            continuation_conditions=["the source registration is reusable"],
++            required_item_ids=[ITEM_U1])
++        loop.define_demand(
++            DEMAND_U2, continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 2 on the real model"],
++            continuation_conditions=["step 1 settlement is reused"],
++            required_item_ids=[ITEM_U2])
++        loop.commit()
++    finally:
++        loop.close()
++    return {
++        "run_label": run_label,
++        "secret_sha256": digest(secret),
++        "checksum": checksum,
++        "log_text_sha256": digest(log_text),
++        "source_settlement_object_id": registration["object_id"],
++        "u1_item_object_id": u1["object_id"],
++        "u2_item_object_id": u2["object_id"],
++        "u1_template_sha256": hashlib.sha256(
++            u1_payload["next_input_template"].encode()).hexdigest(),
++        "u2_template_sha256": hashlib.sha256(
++            u2_payload["next_input_template"].encode()).hexdigest(),
++    }
++
++
++# --------------------------------------------------------------------------
++# evidence readers
++# --------------------------------------------------------------------------
++
++
++def current_object(connection: sqlite3.Connection, dependency_id: str):
++    row = connection.execute(
++        "SELECT content_address FROM dependency_entries WHERE dependency_id=? "
++        "ORDER BY append_order DESC LIMIT 1", (dependency_id,)).fetchone()
++    if row is None:
++        return None
++    content = connection.execute(
++        "SELECT content FROM is_objects WHERE object_id=?", (row["content_address"],)
++    ).fetchone()
++    if content is None:
++        return None
++    value = json.loads(bytes(content["content"]))
++    value["_object_id"] = row["content_address"]
++    return value
++
++
++def current_item(connection: sqlite3.Connection, item_id: str):
++    row = connection.execute(
++        "SELECT record_object FROM is_index_entries WHERE srs_identity=? "
++        "ORDER BY append_order DESC LIMIT 1", ("item:" + item_id,)).fetchone()
++    if row is None:
++        return None
++    content = connection.execute(
++        "SELECT content FROM is_objects WHERE object_id=?", (row["record_object"],)
++    ).fetchone()
++    if content is None:
++        return None
++    value = json.loads(bytes(content["content"]))
++    value["_object_id"] = row["record_object"]
++    return value
++
++
++def task_state(database: Path) -> dict:
++    connection = connect_readonly(database)
++    try:
++        return {
++            "u1_settlement": current_object(connection, SETTLEMENT_U1),
++            "source_settlement": current_object(connection, SETTLEMENT_SOURCE),
++            "u2_item": current_item(connection, ITEM_U2),
++        }
++    finally:
++        connection.close()
++
++
++def settlement_value(database: Path, item_id: str) -> dict:
++    connection = connect_readonly(database)
++    try:
++        settlement = current_object(connection, "settlement:" + item_id)
++    finally:
++        connection.close()
++    return (settlement or {}).get("result", {}).get("value", {})
++
++
++# --------------------------------------------------------------------------
++# isolated mutations
++# --------------------------------------------------------------------------
++
++
++def mutate_remove_u1(database: Path) -> dict:
++    connection = sqlite3.connect(str(database))
++    try:
++        dependency = connection.execute(
++            "DELETE FROM dependency_entries WHERE dependency_id=?",
++            (SETTLEMENT_U1,)).rowcount
++        index = connection.execute(
++            "DELETE FROM is_index_entries WHERE srs_identity=?",
++            (SETTLEMENT_U1,)).rowcount
++        connection.commit()
++        return {"deleted_dependency_rows": dependency, "deleted_index_rows": index}
++    finally:
++        connection.close()
++
++
++def mutate_tamper_u1(database: Path) -> dict:
++    connection = sqlite3.connect(str(database))
++    try:
++        row = connection.execute(
++            "SELECT content_address FROM dependency_entries WHERE dependency_id=? "
++            "ORDER BY append_order DESC LIMIT 1", (SETTLEMENT_U1,)).fetchone()
++        if row is None:
++            raise RuntimeError("U1 settlement missing before tamper")
++        object_id = row[0]
++        original = bytes(connection.execute(
++            "SELECT content FROM is_objects WHERE object_id=?", (object_id,)
++        ).fetchone()[0])
++        tampered = bytearray(original)
++        tampered[len(tampered) // 2] ^= 0x01
++        connection.execute(
++            "UPDATE is_objects SET content=? WHERE object_id=?",
++            (bytes(tampered), object_id))
++        connection.commit()
++        return {
++            "object_id": object_id,
++            "original_sha256": hashlib.sha256(original).hexdigest(),
++            "tampered_sha256": hashlib.sha256(bytes(tampered)).hexdigest(),
++        }
++    finally:
++        connection.close()
++
++
++def mutate_dependency_set(database: Path, lab_root: Path) -> dict:
++    sys.path.insert(0, str(lab_root / "execution-information-loop"))
++    from carrier_loop import CarrierInformationLoop  # noqa: PLC0415
++
++    loop = CarrierInformationLoop.open(str(database))
++    try:
++        item = loop.current_item(ITEM_U2)
++        if item is None:
++            raise RuntimeError("TASK-U2 missing before dependency rewrite")
++        previous = list(item["dependencies"])
++        result = loop.put_source(
++            item["demand_id"], ITEM_U2, item["source_kind"],
++            item["source_version"], item["source_payload"],
++            dependencies=[ITEM_SOURCE], valid_until_utc=item["valid_until_utc"],
++            validity_policy=item["validity_policy"])
++        loop.commit()
++        return {
++            "previous_dependencies": previous,
++            "new_dependencies": [ITEM_SOURCE],
++            "new_item_object_id": result["object_id"],
++        }
++    finally:
++        loop.close()
++
++
++# --------------------------------------------------------------------------
++# nonce surface audit (before U2 starts)
++# --------------------------------------------------------------------------
++
++
++def files_contain(directory: Path, needle: str) -> list[str]:
++    hits: list[str] = []
++    if directory.is_file():
++        candidates = [directory]
++    elif directory.exists():
++        candidates = sorted(path for path in directory.rglob("*") if path.is_file())
++    else:
++        return hits
++    for path in candidates:
++        try:
++            if needle in path.read_bytes().decode("utf-8", errors="ignore"):
++                hits.append(str(path))
++        except OSError:
++            continue
++    return hits
++
++
++def audit_nonce(world: Path, other_world: Path, planned_argv: list[str]) -> dict:
++    """Audit every U2 *input* surface before U2 starts.
++
++    The U1 evidence file is the U1 entry's own output record, not a channel
++    the U2 entry receives: U2's argv names only its own --out and a fresh
++    --state-dir, and the entry source has no evidence-read path. It is
++    therefore reported explicitly as an allowlisted occurrence rather than
++    silently ignored. Everything the U2 process can actually receive or the
++    other world contains must be free of this world's nonce.
++    """
++    connection = connect_readonly(world / "carrier.sqlite")
++    try:
++        settlement = current_object(connection, SETTLEMENT_U1)
++    finally:
++        connection.close()
++    if settlement is None:
++        raise RuntimeError("U1 settlement missing for nonce audit")
++    nonce = settlement["result"]["value"]["secret"]
++    argv_text = "\0".join(planned_argv)
++    env_text = "\0".join("%s=%s" % (key, value) for key, value in os.environ.items())
++    u2_output = world / "evidence" / "u2.json"
++    u2_log = world / "logs" / "u2.log"
++    violations = {
++        "argv": nonce in argv_text,
++        "environment": nonce in env_text,
++        "u2_state_directory": bool(files_contain(world / "state" / "u2", nonce)),
++        "u2_output_path": (u2_output.exists()
++                           and bool(files_contain(u2_output, nonce))),
++        "u2_process_log": (u2_log.exists()
++                           and bool(files_contain(u2_log, nonce))),
++        "other_world_database": bool(
++            nonce in (other_world / "carrier.sqlite").read_bytes()
++            .decode("utf-8", errors="ignore")),
++        "other_world_state": bool(files_contain(other_world / "state", nonce)),
++        "other_world_evidence": bool(files_contain(other_world / "evidence", nonce)),
++        "other_world_logs": bool(files_contain(other_world / "logs", nonce)),
++        "attempt_directories": bool(
++            files_contain(world.parent / "attempts", nonce)),
++    }
++    u1_evidence = world / "evidence" / "u1.json"
++    return {
++        "schema_id": "SIMIGO-ORDINARY-TASK-B4-V1",
++        "world": world.name,
++        "audited_at_utc": utc_now(),
++        "nonce_sha256": hashlib.sha256(nonce.encode()).hexdigest(),
++        "nonce_length": len(nonce),
++        "allowlisted_occurrences": {
++            "primary_database": str(world / "carrier.sqlite"),
++            "source_payload_log_text": True,
++            "source_registration_value": True,
++            "u1_settlement_result": True,
++            "u1_model_input_and_state": True,
++            "same_world_u1_evidence": str(u1_evidence),
++            "same_world_u1_evidence_contains_nonce": bool(
++                u1_evidence.exists() and files_contain(u1_evidence, nonce)),
++        },
++        "u2_input_surfaces": [
++            "argv", "environment", "state/u2", "evidence/u2.json",
++            "logs/u2.log", "world-b carrier.sqlite", "world-b state",
++            "world-b evidence", "world-b logs", "worlds/attempts",
++        ],
++        "surface_contains_nonce": violations,
++        "cross_contaminated": any(violations.values()),
++        "verdict": "CLEAN" if not any(violations.values()) else "CONTAMINATED",
++    }
++
++
++# --------------------------------------------------------------------------
++# orchestration
++# --------------------------------------------------------------------------
++
++
++def run_entry(binary: Path, case_dir: Path, lab_root: Path, model_dir: Path,
++              item: str, demand: str, advancement: str, state_name: str,
++              max_tokens: int) -> dict:
++    state_dir = case_dir / "state" / state_name
++    state_dir.mkdir(parents=True, exist_ok=True)
++    evidence_path = case_dir / "evidence" / ("%s.json" % state_name)
++    command = [
++        str(binary),
++        "--database", str(case_dir / "carrier.sqlite"),
++        "--item", item,
++        "--demand", demand,
++        "--advancement", advancement,
++        "--evaluated-at", utc_now(),
++        "--model-dir", str(model_dir),
++        "--lab-root", str(lab_root),
++        "--state-dir", str(state_dir),
++        "--out", str(evidence_path),
++        "--max-tokens", str(max_tokens),
++    ]
++    metadata = run_process(command, case_dir / "logs" / ("%s.log" % state_name), 1800)
++    evidence = read_json(evidence_path) if evidence_path.exists() else None
++    metadata.update({
++        "state_directory": str(state_dir),
++        "evidence_path": str(evidence_path),
++        "evidence_sha256": sha256_file(evidence_path) if evidence_path.exists() else None,
++        "terminal_state": evidence.get("terminal_state") if evidence else "NO_EVIDENCE",
++        "evidence": evidence,
++    })
++    return metadata
++
++
++def safe_condition(name: str, function) -> dict:
++    try:
++        return function()
++    except Exception as error:  # noqa: BLE001 - preserve, never retry
++        import traceback
++        return {
++            "terminal_state": "HARNESS_FAIL",
++            "failure": "%s: %s" % (type(error).__name__, error),
++            "failure_traceback": traceback.format_exc(),
++        }
++
++
++def answer_of(evidence: dict) -> str:
++    text = evidence.get("generated_text") or ""
++    match = re.search(r"ANSWER=([A-Za-z0-9]+-[A-Za-z0-9]+)", text)
++    return match.group(1) if match else ""
++
++
++def positive_checks(definition: dict, u1: dict, u2: dict, database: Path) -> dict:
++    ev1 = u1.get("evidence") or {}
++    ev2 = u2.get("evidence") or {}
++    state = task_state(database)
++    u1_settlement = state["u1_settlement"] or {}
++    source_settlement = state["source_settlement"] or {}
++    u1_value = (u1_settlement.get("result") or {}).get("value", {})
++    u2_value = settlement_value(database, ITEM_U2)
++    secret = u1_value.get("secret", "")
++    checksum = (source_settlement.get("result") or {}).get("value", {}).get("checksum", "")
++    expected = "%s-%s" % (secret, checksum)
++    answer = answer_of(ev2)
++    counters1 = ev1.get("counters") or {}
++    counters2 = ev2.get("counters") or {}
++    u1_actions = (ev1.get("settlement") or {}).get("actions") or []
++    admission1 = ev1.get("input_admission") or {}
++    admission2 = ev2.get("input_admission") or {}
++    checks1 = admission1.get("checks") or {}
++    checks2 = admission2.get("checks") or {}
++    return {
++        "u1_settled": ev1.get("terminal_state") == "TASK_SETTLED",
++        "u1_generation_exactly_once": counters1.get("model_continuation_calls") == 1
++        and counters1.get("tokenize_text_calls") == 1
++        and counters1.get("tokenize_seed_calls") == 1,
++        "u1_admission_admitted": ev1.get("input_admission_status") == "ADMITTED",
++        "u1_admission_checks_all_true": bool(checks1) and all(checks1.values()),
++        "u1_admitted_sha_matches_evidence": bool(ev1.get("admitted_input_sha256"))
++        and ev1.get("admitted_input_sha256") == (admission1.get("input_sha256")),
++        "u1_settled_input_matches_admitted": bool(ev1.get("admitted_input_sha256"))
++        and u1_value.get("admitted_input_sha256") == ev1.get("admitted_input_sha256"),
++        "u1_settled_dependency_matches_source":
++            (u1_value.get("admitted_dependency_settlement_object_ids") or {})
++            .get(ITEM_SOURCE) == source_settlement.get("_object_id"),
++        "u1_bound_source_log_text": [
++            binding.get("item_id") for binding in (ev1.get("bindings") or [])
++        ] == [ITEM_SOURCE],
++        "u1_settlement_object_matches_state": any(
++            action.get("item_id") == ITEM_U1
++            and action.get("settlement_object_id") == u1_settlement.get("_object_id")
++            for action in u1_actions),
++        "u2_settled": ev2.get("terminal_state") == "TASK_SETTLED",
++        "u2_generation_exactly_once": counters2.get("model_continuation_calls") == 1
++        and counters2.get("tokenize_text_calls") == 1
++        and counters2.get("tokenize_seed_calls") == 1,
++        "u2_admission_admitted": ev2.get("input_admission_status") == "ADMITTED",
++        "u2_admission_checks_all_true": bool(checks2) and all(checks2.values()),
++        "u2_admitted_sha_matches_evidence": bool(ev2.get("admitted_input_sha256"))
++        and ev2.get("admitted_input_sha256") == (admission2.get("input_sha256")),
++        "u2_settled_input_matches_admitted": bool(ev2.get("admitted_input_sha256"))
++        and u2_value.get("admitted_input_sha256") == ev2.get("admitted_input_sha256"),
++        "u2_settled_dependencies_match_admitted":
++            bool(ev2.get("dependency_settlement_object_ids"))
++            and u2_value.get("admitted_dependency_settlement_object_ids")
++            == ev2.get("dependency_settlement_object_ids"),
++        "u2_declared_dependencies": sorted(
++            ev2.get("declared_dependencies") or []) == [ITEM_SOURCE, ITEM_U1],
++        "u2_secret_bound_to_u1_settlement":
++            (ev2.get("dependency_settlement_object_ids") or {}).get(ITEM_U1)
++            == u1_settlement.get("_object_id"),
++        "u2_checksum_bound_to_source_settlement":
++            (ev2.get("dependency_settlement_object_ids") or {}).get(ITEM_SOURCE)
++            == source_settlement.get("_object_id"),
++        "u2_input_contains_admitted_secret": bool(secret)
++        and any(binding.get("placeholder") == "secret" and binding.get("value") == secret
++                for binding in (ev2.get("bindings") or [])),
++        "u2_input_contains_admitted_checksum": bool(checksum)
++        and any(binding.get("placeholder") == "checksum" and binding.get("value") == checksum
++                for binding in (ev2.get("bindings") or [])),
++        "u2_answer_matches_settled_value": bool(answer) and answer == expected,
++        "u2_settled_answer_equals_generated": bool(answer)
++        and answer == u2_value.get("answer", ""),
++        "u2_template_unchanged": definition["u2_template_sha256"]
++        == hashlib.sha256(
++            ((state["u2_item"] or {}).get("source_payload") or {})
++            .get("next_input_template", "").encode()).hexdigest(),
++    }
++
++
++def extract_target_block(package_text: str, name: str) -> str:
++    marker = 'name: "%s"' % name
++
++    def balanced(start: int) -> str:
++        depth = 0
++        for offset in range(start, len(package_text)):
++            character = package_text[offset]
++            if character == "(":
++                depth += 1
++            elif character == ")":
++                depth -= 1
++                if depth == 0:
++                    return package_text[start:offset + 1]
++        return ""
++
++    for opener in (".executableTarget(", ".target("):
++        index = package_text.find(opener)
++        while index >= 0:
++            block = balanced(index)
++            if marker in block:
++                return block
++            index = package_text.find(opener, index + 1)
++    return ""
++
++
++def path_independence(lab_root: Path, binary: Path, results: dict) -> dict:
++    """Prove the D entry is a separate target with no handoff orchestration."""
++    package_root = lab_root / "simigo2-experimental"
++    sources = [
++        package_root / "Sources/SimiGoTaskRun/main.swift",
++        package_root / "Sources/SimiGoTaskRun/TaskResultContract.swift",
++    ]
++    forbidden_tokens = {
++        "readSettlement(": False,
++        "next_input_template": False,
++        "input_bindings": False,
++        "replacingOccurrences": False,
++        "ProcessInfo.processInfo.environment": False,
++        "RealModelHandoff": False,
++    }
++    source_identity: dict[str, str] = {}
++    for path in sources:
++        text = path.read_text(encoding="utf-8")
++        source_identity[str(path.relative_to(lab_root))] = hashlib.sha256(
++            text.encode("utf-8")).hexdigest()
++        for token in forbidden_tokens:
++            if token in text:
++                forbidden_tokens[token] = True
++    target_block = extract_target_block(
++        (package_root / "Package.swift").read_text(encoding="utf-8"),
++        "SimiGoTaskRun")
++    invoked = []
++    for value in results.values():
++        candidates = []
++        if isinstance(value.get("entry"), dict):
++            candidates.append(value["entry"])
++        for key in ("u1", "u2"):
++            if isinstance(value.get(key), dict):
++                candidates.append(value[key])
++        for entry in candidates:
++            if entry.get("argv"):
++                invoked.append(entry["argv"][0])
++    handoff_used = any("RealModelHandoff" in command for command in invoked)
++    checks = {
++        "entry_source_has_no_settlement_read":
++            not forbidden_tokens["readSettlement("]
++            and not forbidden_tokens["next_input_template"]
++            and not forbidden_tokens["input_bindings"],
++        "entry_source_has_no_template_interpolation":
++            not forbidden_tokens["replacingOccurrences"],
++        "entry_source_reads_no_environment":
++            not forbidden_tokens["ProcessInfo.processInfo.environment"],
++        "entry_target_does_not_link_handoff":
++            bool(target_block) and "RealModelHandoff" not in target_block
++            and not forbidden_tokens["RealModelHandoff"],
++        "only_the_ordinary_entry_was_invoked": bool(invoked)
++        and not handoff_used,
++    }
++    return {
++        "schema_id": "SIMIGO-ORDINARY-TASK-PATH-INDEPENDENCE-V1",
++        "entry_binary": str(binary),
++        "entry_target": "SimiGoTaskRun",
++        "entry_sources": source_identity,
++        "forbidden_source_tokens": forbidden_tokens,
++        "target_block": target_block,
++        "invoked_entry_commands": sorted(set(invoked)),
++        "handoff_binary_invoked": handoff_used,
++        "checks": checks,
++        "verdict": "PASS" if all(checks.values()) else "FAIL",
++    }
++
++
++def negative_checks(entry: dict, expected_stage: str) -> dict:
++    evidence = entry.get("evidence") or {}
++    counters = evidence.get("counters") or {}
++    refusal = evidence.get("input_admission_refusal") or {}
++    return {
++        "refused_before_generation": evidence.get("terminal_state") == "INPUT_ADMISSION_REFUSED",
++        "admission_status_refused": evidence.get("input_admission_status") == "ADMISSION_REFUSED",
++        "stage_matches": refusal.get("stage") == expected_stage,
++        "tokenize_text_zero": counters.get("tokenize_text_calls") == 0,
++        "tokenize_seed_zero": counters.get("tokenize_seed_calls") == 0,
++        "generation_zero": counters.get("model_continuation_calls") == 0,
++        "generation_not_entered": evidence.get("generation_entered") is False,
++        "database_unchanged": evidence.get("database_unchanged") is True,
++        "state_unchanged": evidence.get("state_unchanged") is True,
++    }
++
++
++def compare_worlds(world_a: dict, world_b: dict) -> dict:
++    ev_a = world_a["u2"].get("evidence") or {}
++    ev_b = world_b["u2"].get("evidence") or {}
++    answer_a = answer_of(ev_a)
++    answer_b = answer_of(ev_b)
++    checks = {
++        "u2_templates_identical":
++            world_a["definition"]["u2_template_sha256"]
++            == world_b["definition"]["u2_template_sha256"],
++        "cold_seeds_identical": ev_a.get("seed_sha256") == ev_b.get("seed_sha256")
++        and ev_a.get("seed_source") == "builtin_cold_seed"
++        and ev_b.get("seed_source") == "builtin_cold_seed",
++        "u1_settlements_differ":
++            (ev_a.get("dependency_settlement_object_ids") or {}).get(ITEM_U1)
++            != (ev_b.get("dependency_settlement_object_ids") or {}).get(ITEM_U1)
++            and bool((ev_a.get("dependency_settlement_object_ids") or {}).get(ITEM_U1))
++            and bool((ev_b.get("dependency_settlement_object_ids") or {}).get(ITEM_U1)),
++        "u2_inputs_differ": ev_a.get("admitted_input_sha256")
++        != ev_b.get("admitted_input_sha256")
++        and bool(ev_a.get("admitted_input_sha256"))
++        and bool(ev_b.get("admitted_input_sha256")),
++        "outputs_differ": bool(answer_a) and bool(answer_b) and answer_a != answer_b,
++        "each_output_matches_its_own_world":
++            answer_a == world_a["expected_answer"] and answer_b == world_b["expected_answer"],
++    }
++    checks["world_pair_distinguished"] = all([
++        checks["u2_templates_identical"], checks["cold_seeds_identical"],
++        checks["u1_settlements_differ"], checks["u2_inputs_differ"],
++        checks["outputs_differ"], checks["each_output_matches_its_own_world"]])
++    return checks
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--run-root", required=True)
++    parser.add_argument("--lab-root", required=True)
++    parser.add_argument("--model-dir", required=True)
++    parser.add_argument("--max-tokens", type=int, default=32)
++    arguments = parser.parse_args()
++
++    run_root = Path(arguments.run_root).expanduser().resolve()
++    lab_root = Path(arguments.lab_root).expanduser().resolve()
++    model_dir = Path(arguments.model_dir).expanduser().resolve()
++    binary = lab_root / "simigo2-experimental/.build/debug/SimiGoTaskRun"
++    if not binary.is_file():
++        raise SystemExit("ordinary entry binary missing: %s" % binary)
++
++    worlds_root = run_root / "worlds"
++    negative_root = run_root / "phase2"
++    for directory in (worlds_root, negative_root):
++        if directory.exists() and any(directory.iterdir()):
++            raise SystemExit("refusing to overwrite %s" % directory)
++        directory.mkdir(parents=True, exist_ok=True)
++
++    results: dict[str, dict] = {}
++    worlds: dict[str, dict] = {}
++
++    for name, label in (("world-a", "d-world-a"), ("world-b", "d-world-b")):
++        attempts = []
++        settled = None
++        for attempt in range(1, 4):
++            world = worlds_root / name
++            if world.exists():
++                archive = worlds_root / "attempts" / (
++                    "%s-attempt-%d" % (name, attempt - 1))
++                archive.parent.mkdir(parents=True, exist_ok=True)
++                if archive.exists():
++                    raise SystemExit("refusing to overwrite %s" % archive)
++                world.rename(archive)
++            world.mkdir()
++            definition = define_ordinary_task(
++                world / "carrier.sqlite", lab_root, label)
++            u1 = run_entry(binary, world, lab_root, model_dir, ITEM_U1, DEMAND_U1,
++                           "d-%s-u1-a%d" % (name, attempt), "u1",
++                           arguments.max_tokens)
++            attempts.append({
++                "attempt": attempt,
++                "world_path": str(world),
++                "terminal_state": u1["terminal_state"],
++                "exit_code": u1["exit_code"],
++                "evidence_path": u1["evidence_path"],
++                "evidence_sha256": u1["evidence_sha256"],
++                "log": u1["log"],
++                "log_sha256": u1["log_sha256"],
++                "failure": (u1.get("evidence") or {}).get("failure"),
++            })
++            if u1["terminal_state"] == "TASK_SETTLED":
++                settled = {"world": world, "definition": definition, "u1": u1}
++                break
++            if u1["terminal_state"] == "INPUT_ADMISSION_REFUSED":
++                # A refusal is a mechanism result, not model variance: never retry.
++                break
++        if settled is None:
++            write_json(run_root / "summary.json", {
++                "schema_id": "SIMIGO-ORDINARY-TASK-SUMMARY-V1",
++                "terminal_state": "BLOCKED_NOT_RUN",
++                "world": name,
++                "attempts": attempts,
++            })
++            return 1
++        worlds[name] = {
++            "definition": settled["definition"],
++            "u1": settled["u1"],
++            "world": settled["world"],
++            "path": str(settled["world"]),
++            "attempts": attempts,
++        }
++
++    # Snapshot each world's IS state AFTER U1 and BEFORE U2, so the negative
++    # conditions share exactly the state the positive U2 would have consumed.
++    for name in worlds:
++        world = worlds_root / name
++        sqlite_backup(world / "carrier.sqlite",
++                      run_root / "phase2" / ("base-%s.sqlite" % name))
++
++    planned_argv = [
++        str(binary), "--database", "<case>", "--item", ITEM_U2,
++        "--demand", DEMAND_U2, "--advancement", "<id>", "--evaluated-at", "<utc>",
++        "--model-dir", str(model_dir), "--lab-root", str(lab_root),
++        "--state-dir", "<case>/state/u2", "--out", "<case>/evidence/u2.json",
++    ]
++    b4 = {
++        "W_A": audit_nonce(worlds_root / "world-a", worlds_root / "world-b", planned_argv),
++        "W_B": audit_nonce(worlds_root / "world-b", worlds_root / "world-a", planned_argv),
++    }
++    write_json(run_root / "logs" / "nonce-surface-audit.json", b4)
++    if b4["W_A"]["cross_contaminated"] or b4["W_B"]["cross_contaminated"]:
++        write_json(run_root / "summary.json", {
++            "schema_id": "SIMIGO-ORDINARY-TASK-SUMMARY-V1",
++            "terminal_state": "INVALID_CONDITION",
++            "B4": b4,
++        })
++        return 1
++
++    for name in worlds:
++        world = worlds_root / name
++        u2 = run_entry(binary, world, lab_root, model_dir, ITEM_U2, DEMAND_U2,
++                       "d-%s-u2" % name, "u2", arguments.max_tokens)
++        worlds[name]["u2"] = u2
++        state = task_state(world / "carrier.sqlite")
++        u1_value = ((state["u1_settlement"] or {}).get("result") or {}).get(
++            "value", {})
++        source_value = ((state["source_settlement"] or {}).get("result") or {}).get(
++            "value", {})
++        worlds[name]["expected_answer"] = "%s-%s" % (
++            u1_value.get("secret", ""), source_value.get("checksum", ""))
++        worlds[name]["positive_checks"] = positive_checks(
++            worlds[name]["definition"], u1=worlds[name]["u1"], u2=u2,
++            database=world / "carrier.sqlite")
++
++    for name in worlds:
++        results["B0-%s" % name[-1].upper()] = {
++            "terminal_state": worlds[name]["u2"]["terminal_state"],
++            "u1": {key: value for key, value in worlds[name]["u1"].items()
++                   if key != "evidence"},
++            "u2": {key: value for key, value in worlds[name]["u2"].items()
++                   if key != "evidence"},
++            "positive_checks": worlds[name]["positive_checks"],
++        }
++
++    b2 = compare_worlds(worlds["world-a"], worlds["world-b"])
++    write_json(run_root / "phase2" / "B2-world-comparison.json", b2)
++
++    negative = [
++        ("B1-missing", "SETTLEMENT_NOT_ADMITTED", mutate_remove_u1),
++        ("B2-tampered", "SETTLEMENT_OBJECT_UNREADABLE", mutate_tamper_u1),
++        ("B3-dependency", "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
++         lambda path: mutate_dependency_set(path, lab_root)),
++    ]
++    for case, stage, mutation in negative:
++        def execute(case=case, stage=stage, mutation=mutation):
++            case_dir = negative_root / case
++            case_dir.mkdir()
++            shutil.copyfile(run_root / "phase2" / "base-world-a.sqlite",
++                            case_dir / "carrier.sqlite")
++            applied = mutation(case_dir / "carrier.sqlite")
++            entry = run_entry(binary, case_dir, lab_root, model_dir, ITEM_U2,
++                              DEMAND_U2, "d-%s-u2" % case, "u2",
++                              arguments.max_tokens)
++            checks = negative_checks(entry, stage)
++            return {
++                "terminal_state": entry["terminal_state"],
++                "mutation": applied,
++                "entry": {key: value for key, value in entry.items()
++                          if key != "evidence"},
++                "refusal": (entry.get("evidence") or {}).get("input_admission_refusal"),
++                "counters": (entry.get("evidence") or {}).get("counters"),
++                "checks": checks,
++                "verdict": "PASS" if all(checks.values()) else "FAIL",
++            }
++        results[case] = safe_condition(case, execute)
++
++    positive_all = all(
++        all(worlds[name]["positive_checks"].values()) for name in worlds)
++    negative_all = all(
++        results[case].get("verdict") == "PASS"
++        for case in ("B1-missing", "B2-tampered", "B3-dependency"))
++    independence = path_independence(lab_root, binary, results)
++    independence_ok = independence["verdict"] == "PASS"
++    summary = {
++        "schema_id": "SIMIGO-ORDINARY-TASK-SUMMARY-V1",
++        "run_id": run_root.name,
++        "created_at_utc": utc_now(),
++        "terminal_state": ("OBSERVED"
++                           if positive_all and negative_all and independence_ok
++                           else "INCOMPLETE"),
++        "run_root": str(run_root),
++        "entry": {
++            "binary": str(binary),
++            "binary_sha256": sha256_file(binary),
++            "binary_size_bytes": binary.stat().st_size,
++            "target": "SimiGoTaskRun",
++        },
++        "worlds": {
++            name: {
++                "definition": worlds[name]["definition"],
++                "attempts": worlds[name]["attempts"],
++                "u1": {key: value for key, value in worlds[name]["u1"].items()
++                       if key != "evidence"},
++                "u2": {key: value for key, value in worlds[name]["u2"].items()
++                       if key != "evidence"},
++                "expected_answer": worlds[name]["expected_answer"],
++                "positive_checks": worlds[name]["positive_checks"],
++            }
++            for name in worlds
++        },
++        "b2": b2,
++        "b4": b4,
++        "path_independence": independence,
++        "conditions": results,
++        "claims": {
++            "D1_ordinary_entry_performs_input_admission":
++                "OBSERVED_IN_THE_ORDINARY_TASK_ENTRY"
++                if positive_all else "NOT_ESTABLISHED",
++            "D2_dual_world_causality":
++                "OBSERVED_FOR_TWO_INDEPENDENT_SETTLEMENTS"
++                if b2["world_pair_distinguished"] else "NOT_ESTABLISHED",
++            "D3_pre_generation_refusal":
++                "OBSERVED_BEFORE_TOKENIZE_AND_GENERATION"
++                if negative_all else "NOT_ESTABLISHED",
++            "D4_path_independence":
++                "ENTRY_IS_A_SEPARATE_TARGET_WITHOUT_HANDOFF_ORCHESTRATION"
++                if independence_ok else "NOT_ESTABLISHED",
++        },
++    }
++    write_json(run_root / "summary.json", summary)
++    write_json(run_root / "phase2" / "conditions.json", {
++        "schema_id": "SIMIGO-ORDINARY-TASK-CONDITIONS-V1",
++        "created_at_utc": utc_now(),
++        "results": results,
++    })
++    return 0 if summary["terminal_state"] == "OBSERVED" else 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())

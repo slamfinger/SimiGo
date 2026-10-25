@@ -1,0 +1,12 @@
+# binary identity for run rc2 (2026-10-23T18:57:35)
+src_app=/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/cleanroom/derived/Build/Products/Debug/SimiGo.app
+src_exe_mtime=2026-10-23T18:55:07
+src_SimiGo_sha256=0461472f6f5d49c962b8127a3ae06abffe30e4cdef6758a8cd03f7a4d85cdc72
+src_SimiGo_uuid=6BC0DFE4-D7A9-35F3-A0BE-65631C77A83E
+iso_SimiGo_sha256=0461472f6f5d49c962b8127a3ae06abffe30e4cdef6758a8cd03f7a4d85cdc72
+iso_SimiGo_uuid=6BC0DFE4-D7A9-35F3-A0BE-65631C77A83E
+src_SimiGo_debug_dylib_sha256=28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e
+src_SimiGo_debug_dylib_uuid=3E3519F5-BAC9-3AAE-8889-88DACAA0B560
+iso_SimiGo_debug_dylib_sha256=28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e
+iso_SimiGo_debug_dylib_uuid=3E3519F5-BAC9-3AAE-8889-88DACAA0B560
+xcodebuild=Xcode 27.1 Build version 27A9275 

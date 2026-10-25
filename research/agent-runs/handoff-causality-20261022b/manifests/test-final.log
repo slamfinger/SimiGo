@@ -1,0 +1,63 @@
+CMD: swift test --filter ProductionRuntimeInformationIntegrationTests
+START_UTC: 2026-10-21T18:06:22Z
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[3 / 25] ActualMLXSmokeChild-product
+Build complete! (0.71秒)
+Test Suite 'Selected tests' started at 2026-10-22 02:06:27.468.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-22 02:06:27.469.
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-22 02:06:27.469.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 02:06:27.469.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+Test Suite 'Selected tests' started at 2026-10-22 02:06:27.591.
+Test Suite 'SimiGo2ExperimentalTests.xctest' started at 2026-10-22 02:06:27.592.
+Test Suite 'ProductionRuntimeInformationIntegrationTests' started at 2026-10-22 02:06:27.592.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testContinueFailsClosedWhenESCheckpointStaleBeforeAnyAdvance]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testContinueFailsClosedWhenESCheckpointStaleBeforeAnyAdvance]' passed (0.530 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testDurableResumeFailsClosedWhenSettledCarrierUnavailableBeforeAnyAdvance]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testDurableResumeFailsClosedWhenSettledCarrierUnavailableBeforeAnyAdvance]' passed (0.279 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testInvalidValidityBlocksRealRuntimeWithoutAdvancingState]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testInvalidValidityBlocksRealRuntimeWithoutAdvancingState]' passed (0.142 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testMissingValidityPolicyBlocksRealRuntimeWithoutExecution]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testMissingValidityPolicyBlocksRealRuntimeWithoutExecution]' passed (0.138 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testNewExecutionStateRecoversSettledWorkFromInformationSpaceWithoutBypassFile]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testNewExecutionStateRecoversSettledWorkFromInformationSpaceWithoutBypassFile]' passed (0.614 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop]' passed (0.505 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryAcceptsConfirmationRecordNotRawAdvancementID]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryAcceptsConfirmationRecordNotRawAdvancementID]' passed (0.274 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryDependsOnlyOnDurableStateAndISNotBypassHandleFile]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryDependsOnlyOnDurableStateAndISNotBypassHandleFile]' passed (0.447 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCarriesNoSettlementCheckpoint]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCarriesNoSettlementCheckpoint]' passed (0.237 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCheckpointResultDigestTampered]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCheckpointResultDigestTampered]' passed (0.237 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESDurableHandleMissingDespiteSettledIS]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESDurableHandleMissingDespiteSettledIS]' passed (0.232 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESHasCheckpointButISHasNoSettledExecution]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESHasCheckpointButISHasNoSettledExecution]' passed (0.279 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceAdvancedBeyondESCheckpoint]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceAdvancedBeyondESCheckpoint]' passed (0.449 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceHasNoSettledWork]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceHasNoSettledWork]' passed (0.093 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryRequiresDurableStoreConfiguration]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryRequiresDurableStoreConfiguration]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement]' passed (0.231 seconds).
+Test Suite 'ProductionRuntimeInformationIntegrationTests' passed at 2026-10-22 02:06:32.281.
+	 Executed 16 tests, with 0 failures (0 unexpected) in 4.688 (4.689) seconds
+Test Suite 'SimiGo2ExperimentalTests.xctest' passed at 2026-10-22 02:06:32.281.
+	 Executed 16 tests, with 0 failures (0 unexpected) in 4.688 (4.689) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 02:06:32.281.
+	 Executed 16 tests, with 0 failures (0 unexpected) in 4.688 (4.690) seconds
+Test Suite 'Selected tests' started at 2026-10-22 02:06:32.341.
+Test Suite 'G3D1SupervisorTests.xctest' started at 2026-10-22 02:06:32.341.
+Test Suite 'G3D1SupervisorTests.xctest' passed at 2026-10-22 02:06:32.341.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 02:06:32.341.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+EXIT: 0
+END_UTC: 2026-10-21T18:06:32Z

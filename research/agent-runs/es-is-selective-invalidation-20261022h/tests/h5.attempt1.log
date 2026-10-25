@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/h_selective_invalidation_selftest.py", line 319, in <module>
+    raise SystemExit(main())
+  File "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/h_selective_invalidation_selftest.py", line 161, in main
+    secret_a = "a" + sha256_bytes(b"secret-a").hexdigest()[:12]
+AttributeError: 'str' object has no attribute 'hexdigest'

@@ -1,0 +1,208 @@
+{
+  "dependencies" : [
+    {
+      "identity" : "mlx-swift",
+      "requirement" : {
+        "revision" : [
+          "ef5f1b6bb24e27922189316362f3057c64261704"
+        ]
+      },
+      "type" : "sourceControl",
+      "url" : "https://github.com/slamfinger/mlx-swift"
+    },
+    {
+      "identity" : "mlx-swift-lm",
+      "requirement" : {
+        "revision" : [
+          "bc64ee696de102ad43fd76dd6ac01dc37f6427d3"
+        ]
+      },
+      "type" : "sourceControl",
+      "url" : "https://github.com/slamfinger/mlx-swift-lm.git"
+    },
+    {
+      "identity" : "swift-transformers",
+      "requirement" : {
+        "range" : [
+          {
+            "lower_bound" : "1.3.3",
+            "upper_bound" : "2.0.0"
+          }
+        ]
+      },
+      "type" : "sourceControl",
+      "url" : "https://github.com/huggingface/swift-transformers.git"
+    }
+  ],
+  "manifest_display_name" : "SimiGoRuntime",
+  "name" : "SimiGoRuntime",
+  "path" : "/Users/mr.simi/SimiGo-Agent-Runs/simigo-runtime-contract-tests-20261024/src/contract-checkout/Packages/SimiGoRuntime",
+  "platforms" : [
+    {
+      "name" : "macos",
+      "version" : "14.0"
+    }
+  ],
+  "products" : [
+    {
+      "name" : "SimiGo2Experimental",
+      "targets" : [
+        "SimiGo2Experimental"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "SimiGoRuntimeContract",
+      "targets" : [
+        "SimiGoRuntimeContract"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    }
+  ],
+  "targets" : [
+    {
+      "c99name" : "SimiGoRuntimeContractTests",
+      "module_type" : "SwiftTarget",
+      "name" : "SimiGoRuntimeContractTests",
+      "path" : "Tests/SimiGoRuntimeContractTests",
+      "sources" : [
+        "NativeDeclarativeResultContractTests.swift",
+        "SimiGoBootstrapTests.swift",
+        "SimiGoESISDatabaseG2Tests.swift",
+        "SimiGoESISDatabaseTests.swift",
+        "SimiGoEngineRecipeTests.swift",
+        "SimiGoModelDiscoveryTests.swift",
+        "SimiGoPathsTests.swift",
+        "SimiGoSettlementAuthorityTests.swift"
+      ],
+      "target_dependencies" : [
+        "SimiGoRuntimeContract"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "SimiGoRuntimeContract",
+      "module_type" : "SwiftTarget",
+      "name" : "SimiGoRuntimeContract",
+      "path" : "Sources/SimiGoRuntimeContract",
+      "product_memberships" : [
+        "SimiGo2Experimental",
+        "SimiGoRuntimeContract"
+      ],
+      "sources" : [
+        "ExecutionContinuityContract.swift",
+        "ExecutionStateBackendContract.swift",
+        "NativeDeclarativeResultContract.swift",
+        "RuntimeBackendContract.swift",
+        "SimiGoBootstrap.swift",
+        "SimiGoESISDatabase.swift",
+        "SimiGoEngineRecipe.swift",
+        "SimiGoModelDiscovery.swift",
+        "SimiGoPaths.swift",
+        "SimiGoSettlementAuthority.swift"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "SimiGo2Experimental",
+      "module_type" : "SwiftTarget",
+      "name" : "SimiGo2Experimental",
+      "path" : "Sources/SimiGo2Experimental",
+      "product_dependencies" : [
+        "MLX",
+        "MLXLMCommon",
+        "MLXLLM",
+        "MLXHuggingFace",
+        "Tokenizers",
+        "MLXNN"
+      ],
+      "product_memberships" : [
+        "SimiGo2Experimental"
+      ],
+      "sources" : [
+        "AsyncLock.swift",
+        "ChatTemplateGeneration.swift",
+        "CrossBackendLogitProbe.swift",
+        "CrossBackendMarginProbe.swift",
+        "CrossBackendTokenProbe.swift",
+        "E5ExecutionStateScenario.swift",
+        "ExecutionBindingRegistry.swift",
+        "ExecutionContinuityCoordinator.swift",
+        "ExecutionResidencyPlanner.swift",
+        "ExecutionState.swift",
+        "ExecutionStateMaterializationExperiment.swift",
+        "ExecutionStatePrefixPool.swift",
+        "ExperimentSchema.swift",
+        "Instrumentation/GroupExecutionTraceProbe.swift",
+        "Instrumentation/InstrumentationIdentityProbe.swift",
+        "Instrumentation/MeasuredExecutionTracePilot.swift",
+        "Instrumentation/MeasuredTraceCollection.swift",
+        "L4Identity.swift",
+        "L4Reconciliation.swift",
+        "LLAMAServerExecutionStateAB.swift",
+        "LLAMAServerExecutionStateAdapter.swift",
+        "LLAMAServerExecutionStateBackend.swift",
+        "LLAMAServerExecutionStateCancellation.swift",
+        "LLAMAServerExecutionStateExecutor.swift",
+        "LLAMAServerExecutionStateForkRestore.swift",
+        "LayerDemandCSV.swift",
+        "LayerDemandExperimentRunner.swift",
+        "LayerGroup.swift",
+        "LayerPolicy.swift",
+        "LayerResidencyEngine.swift",
+        "MLXExecutionStateBackend.swift",
+        "MLXExecutionStateCostProfile.swift",
+        "MLXGroupGate.swift",
+        "MLXGroupInferenceGate.swift",
+        "MLXGroupLifecycleExperiment.swift",
+        "MLXGroupResidencyBenchmark.swift",
+        "MLXParameterSwapGate.swift",
+        "MLXPrefixRecomputeExecutor.swift",
+        "MLXResidencyBackend.swift",
+        "MaterializationCoordinator.swift",
+        "ModelInventoryReference.swift",
+        "NamedSourceConformanceProfile.swift",
+        "O2BaselineProbe.swift",
+        "O3CSegmentWiseProbe.swift",
+        "O3CStreamingForward.swift",
+        "O3SkeletonProbe.swift",
+        "O4GenerationProbe.swift",
+        "O4OversizedGenerationProbe.swift",
+        "O6CancellationAB.swift",
+        "O6ExecutionStateOversized.swift",
+        "O6FixedPrefixPhaseStudy.swift",
+        "O6SegmentPhaseProfiler.swift",
+        "OversizedSegmentMaterializer.swift",
+        "OversizedSegmentedEngine.swift",
+        "OversizedTokenLedger.swift",
+        "PerTensorSafetensorsReader.swift",
+        "PlannerBudgetSweep.swift",
+        "PrefixSnapshotStore.swift",
+        "RepresentationCaptureAudit.swift",
+        "ResidencyBenchmark.swift",
+        "ResidencyContractStateMachine.swift",
+        "ResidencyController.swift",
+        "ResidencyPolicyKind.swift",
+        "SafetensorsGroupMaterializer.swift",
+        "SafetensorsInventory.swift",
+        "StateSequenceSweep.swift",
+        "UIBranchSessions.swift",
+        "UnsafeSendableBox.swift",
+        "WorkloadTrace.swift"
+      ],
+      "target_dependencies" : [
+        "SimiGoRuntimeContract"
+      ],
+      "type" : "library"
+    }
+  ],
+  "tools_version" : "5.9"
+}

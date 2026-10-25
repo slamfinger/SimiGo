@@ -1,0 +1,554 @@
+2026-10-23 13:52:25.343 xcodebuild[64439:1655053]  DVTErrorPresenter: Unable to load simulator devices.
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+Failure Reason: The version of the CoreSimulator framework installed on this Mac is out-of-date and not supported by this version of Xcode.
+Recovery Suggestion: Please ensure that you have installed all available updates to your Mac's software, and that you are running the most recent version of Xcode supported by macOS.
+--
+CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+--
+
+2026-10-23 13:52:25.343 xcodebuild[64439:1655053]  iOSSimulator: [SimServiceContext sharedServiceContextForDeveloperDir:error:] returned nil (Error Domain=DVTCoreSimulatorAdditionsErrorDomain Code=3 "CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2)." UserInfo={NSLocalizedDescription=CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).}). Simulator device support disabled.
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test -project SimiGo.xcodeproj -scheme SimiGo -configuration Debug -destination platform=macOS,arch=arm64 "-only-testing:SimiGoTests/MemoryReliefRealModelTests" -enableCodeCoverage NO CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=
+
+Build settings from command line:
+    CODE_SIGN_IDENTITY = 
+    CODE_SIGNING_ALLOWED = NO
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  Jinja: https://github.com/huggingface/swift-jinja.git @ 2.5.1
+  SimiGoRuntime: /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime @ local
+  swift-numerics: https://github.com/apple/swift-numerics @ 1.1.1
+  swift-collections: https://github.com/apple/swift-collections.git @ 1.7.1
+  yyjson: https://github.com/ibireme/yyjson.git @ 0.12.0
+  LOCALBCore: /Users/mr.simi/Documents/SimiGo/Packages/LOCALBCore @ local
+  swift-syntax: https://github.com/swiftlang/swift-syntax.git @ 603.0.2
+  mlx-swift: https://github.com/slamfinger/mlx-swift @ ef5f1b6
+  swift-asn1: https://github.com/apple/swift-asn1.git @ 1.7.3
+  swift-huggingface: https://github.com/huggingface/swift-huggingface.git @ 0.11.0
+  mlx-swift-lm: https://github.com/slamfinger/mlx-swift-lm.git @ bc64ee6
+  swift-crypto: https://github.com/apple/swift-crypto.git @ 4.5.2
+  EventSource: https://github.com/mattt/EventSource.git @ 1.5.1
+  swift-transformers: https://github.com/huggingface/swift-transformers.git @ 1.3.4
+  swift-certificates: https://github.com/apple/swift-certificates.git @ 1.21.0
+
+note: Using codesigning identity override: 
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (70 targets)
+    Target 'SimiGoTests' in project 'SimiGo'
+        ➜ Explicit dependency on target 'SimiGo' in project 'SimiGo'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+    Target 'SimiGo' in project 'SimiGo'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXVLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Transformers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'LOCALBCore-product' in project 'LOCALBCore'
+    Target 'LOCALBCore-product' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'LOCALBCore' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'LOCALBCore' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'X509' in project 'swift-certificates'
+        ➜ Explicit dependency on target '_CertificateInternals' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras-product' in project 'swift-crypto'
+    Target 'X509' in project 'swift-certificates'
+        ➜ Explicit dependency on target '_CertificateInternals' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras-product' in project 'swift-crypto'
+    Target '_CryptoExtras-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target '_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'swift-crypto_CryptoExtras' in project 'swift-crypto' (no dependencies)
+    Target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+    Target 'swift-crypto_CryptoBoringWrapper' in project 'swift-crypto' (no dependencies)
+    Target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+    Target 'swift-crypto_CCryptoBoringSSLShims' in project 'swift-crypto' (no dependencies)
+    Target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CCryptoBoringSSL' in project 'swift-crypto'
+    Target 'swift-crypto_CCryptoBoringSSL' in project 'swift-crypto' (no dependencies)
+    Target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'SwiftASN1' in project 'swift-asn1'
+    Target 'SwiftASN1' in project 'swift-asn1' (no dependencies)
+    Target '_CertificateInternals' in project 'swift-certificates' (no dependencies)
+    Target 'SimiGoRuntimeContract-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+    Target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGo2Experimental' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+    Target 'SimiGo2Experimental' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+    Target 'SimiGoRuntimeContract' in project 'SimiGoRuntime' (no dependencies)
+    Target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXCXGrammar' in project 'mlx-swift-lm' (no dependencies)
+    Target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm' (no dependencies)
+    Target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'Hub-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Transformers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Models' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Models' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'yyjson-product' in project 'yyjson'
+        ➜ Explicit dependency on target 'yyjson' in project 'yyjson'
+    Target 'yyjson' in project 'yyjson' (no dependencies)
+    Target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'swift-crypto_Crypto' in project 'swift-crypto' (no dependencies)
+    Target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'EventSource' in project 'EventSource'
+    Target 'EventSource' in project 'EventSource' (no dependencies)
+    Target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'InternalCollectionsUtilities' in project 'swift-collections' (no dependencies)
+    Target 'swift-transformers_Hub' in project 'swift-transformers' (no dependencies)
+    Target 'MLXVLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXVLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXVLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXOptimizers-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'Numerics-product' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+    Target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+    Target '_NumericsShims' in project 'swift-numerics' (no dependencies)
+    Target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'mlx-swift_Cmlx' in project 'mlx-swift'
+    Target 'mlx-swift_Cmlx' in project 'mlx-swift' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+    cd /Users/mr.simi/Documents/SimiGo/SimiGo.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -o /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+
+SwiftDriver SimiGoTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGoTests -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/yyjson-7MDMN8K1FW5EH1HUOKQRHJ66N.pcm
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ SimiGoTests (in target 'SimiGoTests' from project 'SimiGo')
+
+SwiftCompile normal arm64 (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    
+
+SwiftCompile normal arm64 Compiling\ MemoryReliefRealModelTests.swift /Users/mr.simi/Documents/SimiGo/SimiGoTests/MemoryReliefRealModelTests.swift (in target 'SimiGoTests' from project 'SimiGo')
+
+SwiftCompile normal arm64 /Users/mr.simi/Documents/SimiGo/SimiGoTests/MemoryReliefRealModelTests.swift (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-SwiftPerFileCompile MemoryReliefRealModelTests.swift
+
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/MemoryReliefRealModelTests.swift:109:32: warning: capture of 'store' with non-Sendable type 'LOCALBTransportIdentityStore' in a '@Sendable' closure [#SendableClosureCaptures]
+107 |                 service: "com.simigo.tests.memrelief.\(UUID().uuidString)",
+108 |                 account: "tls")
+109 |             addTeardownBlock { store.deleteAll() }
+    |                                `- warning: capture of 'store' with non-Sendable type 'LOCALBTransportIdentityStore' in a '@Sendable' closure [#SendableClosureCaptures]
+110 |             return try store.loadOrCreate()
+111 |         }
+
+LOCALBCore.LOCALBTransportIdentityStore:1:15: note: struct 'LOCALBTransportIdentityStore' does not conform to the 'Sendable' protocol
+ 1 | public struct LOCALBTransportIdentityStore {
+   |               `- note: struct 'LOCALBTransportIdentityStore' does not conform to the 'Sendable' protocol
+ 2 |     public let service: String
+ 3 |     public let account: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/MemoryReliefRealModelTests.swift:1:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'LOCALBCore' [#AddPreconcurrencyImport]
+  1 | import LOCALBCore
+    | `- warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'LOCALBCore' [#AddPreconcurrencyImport]
+  2 | import XCTest
+  3 | 
+
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/MemoryReliefRealModelTests.swift:78:23: warning: main actor-isolated initializer 'init(info:config:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 76 |         let baseline = RuntimeTuning.footprintBytes()
+ 77 | 
+ 78 |         let runtime = NativeMLX(
+    |                       `- warning: main actor-isolated initializer 'init(info:config:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 79 |             info: ModelInfo(path: modelPath, kind: .mlx),
+ 80 |             config: Self.greedyConfig())
+
+[#AddPreconcurrencyImport]: <https://docs.swift.org/compiler/documentation/diagnostics/add-preconcurrency-import>
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+SwiftDriverJobDiscovery normal arm64 Emitting module for SimiGoTests (in target 'SimiGoTests' from project 'SimiGo')
+
+SwiftDriver\ Compilation\ Requirements SimiGoTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGoTests -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+Copy /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGoTests.swiftmodule/arm64-apple-macos.swiftmodule /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.swiftmodule (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.swiftmodule /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGoTests.swiftmodule/arm64-apple-macos.swiftmodule
+
+Copy /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGoTests.swiftmodule/arm64-apple-macos.abi.json /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.abi.json (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.abi.json /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGoTests.swiftmodule/arm64-apple-macos.abi.json
+
+Copy /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGoTests.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.swiftsourceinfo (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.swiftsourceinfo /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGoTests.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling MemoryReliefRealModelTests.swift (in target 'SimiGoTests' from project 'SimiGo')
+
+SwiftDriver\ Compilation SimiGoTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGoTests -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/empty-SimiGoTests.plist (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/empty-SimiGoTests.plist -producttype com.apple.product-type.bundle.unit-test -expandbuildsettings -platform macosx -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Resources/mlx-swift_Cmlx.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Resources/swift-crypto_CCryptoBoringSSL.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Resources/swift-crypto_CCryptoBoringSSLShims.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Resources/swift-crypto_Crypto.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Resources/swift-crypto_CryptoBoringWrapper.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Resources/swift-crypto_CryptoExtras.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Resources/swift-transformers_Hub.bundle -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Info.plist
+
+Ld /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/MacOS/SimiGoTests normal (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos26.4 -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -L/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -filelist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.LinkFileList -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @loader_path/../Frameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -dead_strip -bundle_loader /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo -Xlinker -object_path_lto -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -dependency_info -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.swiftmodule -lc++ -lc++ -lc++ -lc++ -lc++ -framework Foundation -framework Metal -framework Accelerate -lc++ -lsqlite3 -lsqlite3 -framework Foundation -framework Metal -framework Accelerate -lc++ -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/MLX.framework/Versions/A/MLX /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Cmlx.framework/Versions/A/Cmlx /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Numerics_-3D5A696188114EB2_PackageProduct.framework/Versions/A/Numerics_-3D5A696188114EB2_PackageProduct /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/SimiGo2Experimental_-B024901A205185_PackageProduct.framework/Versions/A/SimiGo2Experimental_-B024901A205185_PackageProduct /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/MLXLLM_1A30A827AD79DC_PackageProduct.framework/Versions/A/MLXLLM_1A30A827AD79DC_PackageProduct /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/MLXHuggingFace_-3B75F061593E10C9_PackageProduct.framework/Versions/A/MLXHuggingFace_-3B75F061593E10C9_PackageProduct /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/MLXLMCommon.framework/Versions/A/MLXLMCommon /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/MLXNN.framework/Versions/A/MLXNN /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Numerics_-3D5A696188114EB2_PackageProduct.framework/Versions/A/Numerics_-3D5A696188114EB2_PackageProduct /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/MLXOptimizers_-2DFC7FD263EE29CC_PackageProduct.framework/Versions/A/MLXOptimizers_-2DFC7FD263EE29CC_PackageProduct /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/MacOS/SimiGoTests
+
+CopySwiftLibs /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/MacOS/SimiGoTests --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Frameworks --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/PlugIns --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Library/SystemExtensions --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Extensions --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/SimiGo2Experimental_-B024901A205185_PackageProduct.framework --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/MLXLLM_1A30A827AD79DC_PackageProduct.framework --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/MLXHuggingFace_-3B75F061593E10C9_PackageProduct.framework --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework --platform macosx --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'SimiGoTests' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain --module-name SimiGoTests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk --xcode-version 27A9275 --platform-family macOS --deployment-target 26.4 --bundle-identifier SwiftUI.SimiGoTests --output /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/Resources --target-triple arm64-apple-macos26.4 --binary-file /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns/SimiGoTests.xctest/Contents/MacOS/SimiGoTests --dependency-file /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests_dependency_info.dat --stringsdata-file /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.SwiftFileList --metadata-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests.DependencyMetadataFileList --static-metadata-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/SimiGoTests.DependencyStaticMetadataFileList --swift-const-vals-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGoTests.build/Objects-normal/arm64/SimiGoTests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-10-23 13:52:30.783 appintentsmetadataprocessor[64455:1655202] Starting appintentsmetadataprocessor export
+2026-10-23 13:52:30.785 appintentsmetadataprocessor[64455:1655202] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+
+Validate /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-validationUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app -no-validate-extension -infoplist-subpath Contents/Info.plist
+
+RegisterWithLaunchServices /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-lsregisterurl --record-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/XCBuildData/registered-launchservices.txt -- /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SDKExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Package.swift: warning: DEFINES_MODULE was set, but no umbrella header could be found to generate the module map (in target 'Cmlx' from project 'mlx-swift')
+objc[64457]: Class _TtC10Tokenizers12BPETokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471b530) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058ce4e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers13BertTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471b6d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058ce688). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers14BasicTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471b7d0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058ce780). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers18WordpieceTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471b878) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058ce828). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers16WordPieceDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471b9d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058ce988). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers15DecoderSequence is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471ba98) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cea48). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers16ByteLevelDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471bb40) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058ceaf0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers14ReplaceDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471bbf0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058ceba0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers19ByteFallbackDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471bc98) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cec48). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers11FuseDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471bd38) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cece8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers12StripDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471bdd8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058ced88). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers16MetaspaceDecoder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471be90) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cee40). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers18NormalizerSequence is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c030) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cefe0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers17PrependNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c0d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf088). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers17ReplaceNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c180) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf130). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers19LowercaseNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c228) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf1d8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers13NFDNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c2c8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf278). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers13NFCNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c368) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf318). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers14NFKDNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c408) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf3b8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers14NFKCNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c4a8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf458). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers14BertNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c548) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf4f8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers21PrecompiledNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c630) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf5e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers22StripAccentsNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c6d0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf680). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers15StripNormalizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c770) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf720). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers18TemplateProcessing is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c870) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf820). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers22ByteLevelPostProcessor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c920) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf8d0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers17RobertaProcessing is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471c9c0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cf970). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers14BertProcessing is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471ca98) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cfa48). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers18SequenceProcessing is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471cb48) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cfaf8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers16BertPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471cc28) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cfbd8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers20PreTokenizerSequence is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471ccc8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cfc78). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers22WhitespacePreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471cd70) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cfd20). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers21MetaspacePreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471ce10) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cfdc0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers21ByteLevelPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471ced0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cfe80). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers23PunctuationPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471cf90) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cff40). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers18DigitsPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471d030) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058cffe0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers17SplitPreTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471d0d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d0088). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers16TokenLatticeNode is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471d278) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d0228). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers19PreTrainedTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471d4d0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d0480). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers11T5Tokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471d6c0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d0670). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers24LlamaPreTrainedTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471d7d8) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d0788). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC10Tokenizers16UnigramTokenizer is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471da68) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d0a18). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC3HubP33_4E8177DE4B0CCDEC2313116019A1E23612BundleFinder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471db88) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d1090). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC3Hub33LanguageModelConfigurationFromHub is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471dff0) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d14f8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC3Hub22DownloadProgressBridge is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471e330) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d1838). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtCV3Hub6HubApiP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C17NetworkStateActor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471e550) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d1a58). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtCV3Hub6HubApiP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C14NetworkMonitor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471e660) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d1b68). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C16RedirectDelegate is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471b398) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058a7440). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C20RedirectSessionActor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471e738) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d1c40). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C19HubRepoIDCacheActor is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x10471e800) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d1d08). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC21SimiGoRuntimeContract18SimiGoESISDatabase is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/SimiGo2Experimental_-B024901A205185_PackageProduct.framework/Versions/A/SimiGo2Experimental_-B024901A205185_PackageProduct (0x10ce2d288) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d26e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[64457]: Class _TtC6CryptoP33_A42746B7D10D5535030B0E00E43C4C0312BundleFinder is implemented in both /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks/Crypto_17A3B1FFC41E47_PackageProduct.framework/Versions/A/Crypto_17A3B1FFC41E47_PackageProduct (0x102620370) and /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1058d7e08). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+2026-10-23 13:52:31.202907+0800 SimiGo[64457:1655282] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:52:31.203069+0800 SimiGo[64457:1655282] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:52:31.203348+0800 SimiGo[64457:1655283] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:52:31.203362+0800 SimiGo[64457:1655283] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:52:31.203685+0800 SimiGo[64457:1655284] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:52:31.203695+0800 SimiGo[64457:1655284] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:52:31.203966+0800 SimiGo[64457:1655284] [Connection] Will NOT re-try to establish the connection
+2026-10-23 13:52:31.203983+0800 SimiGo[64457:1655282] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:52:31.203990+0800 SimiGo[64457:1655282] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-23 13:52:31.269928+0800 SimiGo[64457:1655259] SimiGo bootstrap: issueCount=0 models=20 work=0 legacyMigrated=false
+Test Suite 'Selected tests' started at 2026-10-23 13:52:31.283.
+Test Suite 'SimiGoTests.xctest' started at 2026-10-23 13:52:31.283.
+Test Suite 'MemoryReliefRealModelTests' started at 2026-10-23 13:52:31.283.
+Test Case '-[SimiGoTests.MemoryReliefRealModelTests testSuspendReleasesResidentModelMemory]' started.
+2026-10-23 13:52:31.287169+0800 SimiGo[64457:1655284] [logging-persist] cannot open file at line 53009 of [8fa8248e30]
+2026-10-23 13:52:31.287179+0800 SimiGo[64457:1655284] [logging-persist] os_unix.c:53009: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+✅ [HTTPServer] 监听 127.0.0.1:0 model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[MEM-RELIEF] baseline=25MiB loaded=16604MiB afterSuspend=122MiB released=16482MiB
+🛑 [HTTPServer] listener stopped
+[MEM-RELIEF] afterStop=169MiB
+Test Case '-[SimiGoTests.MemoryReliefRealModelTests testSuspendReleasesResidentModelMemory]' passed (15.252 seconds).
+Test Suite 'MemoryReliefRealModelTests' passed at 2026-10-23 13:52:46.535.
+	 Executed 1 test, with 0 failures (0 unexpected) in 15.252 (15.253) seconds
+Test Suite 'SimiGoTests.xctest' passed at 2026-10-23 13:52:46.536.
+	 Executed 1 test, with 0 failures (0 unexpected) in 15.252 (15.253) seconds
+Test Suite 'Selected tests' passed at 2026-10-23 13:52:46.536.
+	 Executed 1 test, with 0 failures (0 unexpected) in 15.252 (15.254) seconds
+2026-10-23 13:52:46.830 xcodebuild[64439:1655036] [MT] IDETestOperationsObserverDebug: 15.978 elapsed -- Testing started completed.
+2026-10-23 13:52:46.830 xcodebuild[64439:1655036] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-23 13:52:46.830 xcodebuild[64439:1655036] [MT] IDETestOperationsObserverDebug: 15.978 sec, +15.978 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Logs/Test/Test-SimiGo-2026.10.23_13-52-27-+0800.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started

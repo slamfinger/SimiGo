@@ -1,0 +1,143 @@
+{
+ "all_checks_pass": true,
+ "answer": "both statuses exist and mean different things. A configured authorization whose proof fails throws localbRequestRejected -> 401. 503 is reserved for 'this host has no request authorization configured at all', which is scenario S5. The operator table's 503 matches S5, not S2. The product was not changed.",
+ "checks": {
+  "auth_checks_run_before_dispatch": true,
+  "both_unavailable_throws_are_behind_the_nil_authorization_guard": true,
+  "client_supplied_spki_is_never_read": true,
+  "proof_failures_generated_nothing": true,
+  "proof_failures_observed_with_the_rejected_case_status": true,
+  "proof_gate_status_is_401": true,
+  "status_map_read_from_source": true,
+  "transport_trust_comes_from_the_accepting_listener": true,
+  "trusted_checkpoint_is_passed_to_authorize": true,
+  "unactivated_status_and_message_match_the_unavailable_case": true,
+  "unconfigured_authorization_status_is_503": true
+ },
+ "gate": "product_service_http_status_convention",
+ "observed": {
+  "challenge_replay": {
+   "error": "LOCALB_CLIENT_CHALLENGE_INVALID",
+   "expected_status_by_source": 401,
+   "raised_by": "localbRequestRejected(reason:) - LOCALBStatus.rawValue from LOCALBCore",
+   "status": 401,
+   "trace_delta": 0
+  },
+  "fabricated_proof": {
+   "error": "LOCALB_CLIENT_REQUEST_SIGNATURE_INVALID",
+   "expected_status_by_source": 401,
+   "raised_by": "localbRequestRejected(reason:) - LOCALBStatus.rawValue from LOCALBCore",
+   "status": 401,
+   "trace_delta": 0
+  },
+  "no_proof_headers": {
+   "error": "LOCALB_CLIENT_PROOF_MISSING",
+   "expected_status_by_source": 401,
+   "raised_by": "localbRequestRejected(reason:) - literal in HTTPServer.swift",
+   "status": 401,
+   "trace_delta": 0
+  },
+  "unactivated_challenge_route": {
+   "error": "LOCALB request authorization is not configured",
+   "expected_status_by_source": 503,
+   "message_matches_source": true,
+   "raised_by": "localbAuthorizationUnavailable - guard let authorization == nil",
+   "status": 503,
+   "trace_delta": null
+  }
+ },
+ "operator_table": {
+  "expected": "HTTP 503",
+  "product_changed_to_match": false,
+  "resolution": "the expectation names the S5 status; the proof gate itself is 401. Recorded as a wording deviation, not repaired by changing the product.",
+  "row": "invalid proof"
+ },
+ "question": "the operator table says an invalid proof must answer HTTP 503; the candidate answered 401 to three proof failures and 503 only when no authorization was configured - which of those is the product's rule?",
+ "source": {
+  "anchors": {
+   "localbAuthorizationUnavailable_throws": [
+    {
+     "guard": {
+      "line": 1332,
+      "text": "guard let authorization = localbRequestAuthorization else {"
+     },
+     "message": "LOCALB request authorization is not configured",
+     "throw_line": 1333
+    },
+    {
+     "guard": {
+      "line": 1434,
+      "text": "guard let authorization = localbRequestAuthorization else {"
+     },
+     "message": "LOCALB request authorization is not configured",
+     "throw_line": 1435
+    }
+   ],
+   "localbRequestRejected_PROOF_MISSING": [
+    1345
+   ],
+   "localbRequestRejected_from_LOCALBStatus": [
+    1401
+   ],
+   "signer_challenge_invalid": [
+    {
+     "line": 74,
+     "path": "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift"
+    }
+   ],
+   "signer_clientRequestSignatureInvalid": [
+    {
+     "line": 76,
+     "path": "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift"
+    }
+   ],
+   "spki_never_read_comment": {
+    "first_line": [
+     1326
+    ],
+    "tail_line": [
+     1327
+    ]
+   },
+   "transport_trust_guard": [
+    1328,
+    1431
+   ],
+   "trustedCheckpoint_argument": [
+    1398,
+    1486
+   ]
+  },
+  "files": [
+   {
+    "git_blob": "722ff34edf130d5f1000851cdca5580419c40616",
+    "git_head_blob": "722ff34edf130d5f1000851cdca5580419c40616",
+    "path": "SimiGo/Protocol/HTTPServer.swift",
+    "sha256": "d478e0e8fb0709ce27a10ef48c1aeb0a4bb761b0a0c37d0c7bdb253068f32af0",
+    "worktree_clean": true
+   },
+   {
+    "git_blob": "ca80c7966406e957e3edf4d55adcc7f8a3247cd0",
+    "git_head_blob": "fde95d047711bb179eaf2ad06e779624ab86a9c0",
+    "path": "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift",
+    "sha256": "5ab94dff66e3b48528d3c03ec8126bef637ff6b5947a4e0e35dcd250a01e279c",
+    "worktree_clean": false
+   }
+  ],
+  "head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+  "message_map_at_line": 142,
+  "repo": "/Users/mr.simi/Documents/SimiGo",
+  "status_code_map": {
+   "badRequest": 400,
+   "clientDisconnected": 400,
+   "expectationFailed": 417,
+   "localbAuthorizationUnavailable": 503,
+   "localbRequestRejected": 401,
+   "localbRouteDenied": 403,
+   "localbTransportNotTrusted": 403,
+   "payloadTooLarge": 413,
+   "unsupportedTransferEncoding": 501
+  },
+  "status_code_map_at_line": 119
+ }
+}

@@ -1,0 +1,70 @@
+{
+ "checks": {
+  "branch_matches_freeze": true,
+  "bundle_file_count_reproduces": true,
+  "bundle_manifest_matches_record": true,
+  "changed_file_digests_reproduce": true,
+  "codesign_verifies_now": true,
+  "dirty_set_matches_freeze": true,
+  "dmg_digest_reproduces": true,
+  "executable_digest_reproduces": true,
+  "executable_size_reproduces": true,
+  "executable_uuid_recorded": true,
+  "head_matches_freeze": true,
+  "info_plist_digest_reproduces": true,
+  "model_file_digests_reproduce": true,
+  "model_files_present": true,
+  "model_single_revision": true,
+  "model_symlinks_unchanged": true
+ },
+ "detail": {
+  "artifact": {
+   "bundle_file_count": 19,
+   "bundle_manifest": {
+    "changed": [],
+    "extra": [],
+    "missing": [],
+    "recomputed_tree_digest": "bd520f473991613b21413c8c666fa6d856a51125367158fdea671b8ea03013e5",
+    "recorded_tree_digest": "bd520f473991613b21413c8c666fa6d856a51125367158fdea671b8ea03013e5",
+    "recorded_tree_digest_reproducible": true
+   },
+   "codesign_stderr": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: valid on disk\n/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: satisfies its Designated Requirement",
+   "codesign_verify_rc": 0,
+   "dmg_sha256": "ad959f72c77bb9bf8990f51f642c9f27b22c4c0b2b5ca9273ea78ca356e5bded",
+   "exe_sha256": "dacf2fc353114088f7fd4079d8e75e8094c4af394c74d0809ccb2d65294dff1c",
+   "executable_uuid": "EE3B7D96-C979-33B5-B255-B708C4792C80"
+  },
+  "model": {
+   "digest_mismatch": [],
+   "files": 17,
+   "missing": [],
+   "relinked": [],
+   "revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d"
+  },
+  "source": {
+   "branch": "localb-b3-closure-20261016",
+   "changed_file_digest_drift": [],
+   "dirty_count": 5,
+   "dirty_paths": [
+    "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
+    "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift",
+    "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift",
+    "SimiGo.xcodeproj/project.pbxproj",
+    "SimiGo/Headless/SimiGoG1G3Entry.swift"
+   ],
+   "frozen_dirty_count": 5,
+   "frozen_dirty_paths": [
+    "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
+    "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift",
+    "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift",
+    "SimiGo.xcodeproj/project.pbxproj",
+    "SimiGo/Headless/SimiGoG1G3Entry.swift"
+   ],
+   "frozen_head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+   "head": "f18d65f8f312ffbb837fdf5e07125af044833854"
+  }
+ },
+ "generated_at": "2026-10-24T01:51:14+0800",
+ "note": "Every identity is recomputed from disk in this run; no value is copied from a verdict file.",
+ "verdict": "PASS"
+}

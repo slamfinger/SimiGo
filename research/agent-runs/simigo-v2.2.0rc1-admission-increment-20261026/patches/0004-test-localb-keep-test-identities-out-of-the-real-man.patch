@@ -1,0 +1,104 @@
+From 6f6bf3500406c918f9bc3174d1c8980427ccd11c Mon Sep 17 00:00:00 2001
+From: "Mr.Simi" <mr.simi@MrSimideAir-5.local>
+Date: Mon, 26 Oct 2026 02:18:28 +0800
+Subject: [PATCH 4/7] test(localb): keep test identities out of the real
+ managed keychain store
+
+Default-constructed stores now resolve to the REAL managed file store
+(~/.simigo/localb); tests constructing stores without an explicit
+keychainPath were writing identities into it (the same leak pattern that
+left ~3600 test items in the real login keychain). Every test store now
+uses a throwaway file keychain, with reload-style tests sharing one
+per-test path so cross-instance semantics stay observable. 41/41 green.
+---
+ .../LOCALBHostBootstrapTests.swift               |  6 +++++-
+ .../LOCALBTLSTransportIntegrationTests.swift     |  6 +++++-
+ .../LOCALBTransportIdentityStoreTests.swift      | 16 +++++++++++++---
+ 3 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift
+index fbf433a..9f13aae 100644
+--- a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift
++++ b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift
+@@ -44,9 +44,13 @@ final class LOCALBHostBootstrapTests: XCTestCase {
+     }
+ 
+     private func makeTransportStore() -> LOCALBTransportIdentityStore {
++        // Throwaway file keychain: the default path is the REAL managed store
++        // and must never receive test identities.
+         let store = LOCALBTransportIdentityStore(
+             service: "com.simigo.tests.localb-bootstrap.\(UUID().uuidString)",
+-            account: "tls"
++            account: "tls",
++            keychainPath: NSTemporaryDirectory()
++                + "/localb-tests-\(UUID().uuidString).keychain-db"
+         )
+         addTeardownBlock { store.deleteAll() }
+         return store
+diff --git a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTLSTransportIntegrationTests.swift b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTLSTransportIntegrationTests.swift
+index f5674b5..09557f7 100644
+--- a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTLSTransportIntegrationTests.swift
++++ b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTLSTransportIntegrationTests.swift
+@@ -8,10 +8,14 @@ import XCTest
+ /// REAL NWProtocolTLS local identity — real handshake, real Keychain identity,
+ /// client-side SPKI pinning. No mock identities are used anywhere here.
+ final class LOCALBTLSTransportIntegrationTests: XCTestCase {
++    private lazy var scratchKeychainPath: String =
++        NSTemporaryDirectory() + "/localb-tests-\(UUID().uuidString).keychain-db"
++
+     private func makeStore() -> LOCALBTransportIdentityStore {
+         LOCALBTransportIdentityStore(
+             service: "com.simigo.tests.localb-tls.\(UUID().uuidString)",
+-            account: "tls"
++            account: "tls",
++            keychainPath: scratchKeychainPath
+         )
+     }
+ 
+diff --git a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
+index c7fd839..c4d2bde 100644
+--- a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
++++ b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
+@@ -7,10 +7,20 @@ import XCTest
+ @testable import LOCALBCore
+ 
+ final class LOCALBTransportIdentityStoreTests: XCTestCase {
++    /// Tests NEVER use the default keychain path: the default is the REAL
++    /// managed file store (~/.simigo/localb), and a default-constructed store
++    /// would pollute it (the historical source of leaked test items in user
++    /// keychains). One throwaway file keychain PER TEST (stores constructed by
++    /// different makeStore() calls inside the same test share it, so reload
++    /// semantics stay observable).
++    private lazy var scratchKeychainPath: String =
++        NSTemporaryDirectory() + "/localb-tests-\(UUID().uuidString).keychain-db"
++
+     private func makeStore() -> LOCALBTransportIdentityStore {
+         LOCALBTransportIdentityStore(
+             service: "com.simigo.tests.localb-transport.\(UUID().uuidString)",
+-            account: "tls"
++            account: "tls",
++            keychainPath: scratchKeychainPath
+         )
+     }
+ 
+@@ -25,7 +35,7 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+         // A new store instance (simulating process restart) must load the
+         // SAME identity bytes — no silent regeneration.
+         let reloaded = try LOCALBTransportIdentityStore(
+-            service: store.service, account: store.account
++            service: store.service, account: store.account, keychainPath: scratchKeychainPath
+         ).loadExisting()
+         XCTAssertEqual(reloaded.certificateDER, first.certificateDER)
+         XCTAssertEqual(reloaded.spkiSHA256Hex, first.spkiSHA256Hex)
+@@ -230,7 +240,7 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+         // (d) Restart (a fresh store instance) loads the NEW identity — not
+         // the old one and not any transient identity.
+         let restarted = try LOCALBTransportIdentityStore(
+-            service: store.service, account: store.account
++            service: store.service, account: store.account, keychainPath: scratchKeychainPath
+         ).loadExisting()
+         XCTAssertEqual(restarted.spkiSHA256Hex, rotated.new.spkiSHA256Hex)
+     }
+-- 
+2.54.0 (Apple Git-157)
+

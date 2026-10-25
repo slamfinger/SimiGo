@@ -1,0 +1,720 @@
+{
+ "artifacts": {
+  "artifact_index": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/artifact-index.json",
+  "controls_index": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/controls/index.json",
+  "host_resources": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/host-resources.json",
+  "invalid_notes": [
+   "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/NOTE-invalid-r1.json",
+   "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/invalid-r1/NOTE.json",
+   "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/invalid-r2/NOTE.json"
+  ],
+  "model_identity": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/model-identity.json",
+  "phase1_summary": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/summary.json",
+  "phase2_final_summary": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/r4/summary.json",
+  "phase2_replicate_summary": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/r3/summary.json",
+  "run_invocations": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/run-invocations.json",
+  "source_hashes": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/source-hashes.json",
+  "stage_a_launch": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/logs/stage-a-launch.json"
+ },
+ "build": {
+  "binary_sha256": "170885e8d7190d3d91268d180bd33725f0322d427dfb61bf760f4e7b3f6b2c9f",
+  "binary_size_bytes": 103979312,
+  "command": "swift build --product RealModelHandoff",
+  "completed_at_utc": "2026-10-21T18:06:17Z",
+  "exit_code": 0,
+  "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/build-final.log",
+  "result": "SUCCESS"
+ },
+ "conclusions": {
+  "C1": {
+   "boundary": "This is the production Swift recoverExecutionState path under the tested demand and baseline; it does not establish admission behavior for other demands or future policy changes.",
+   "evidence": [
+    "A0 recovered position 1 and advanced to 2 with one generation and REUSE of TASK-U1",
+    "A1 settlementCheckpointMissing:PRODUCTION-REAL-PALACE",
+    "A2a settlementCheckpointMismatch:...:result_digest",
+    "A2b settlementCheckpointMismatch:...:validity_basis",
+    "A3 informationSpaceHasNoSettledExecution:ADVANCED",
+    "A4 durableExecutionStateMissing:PRODUCTION-REAL-PALACE",
+    "A1-A4: 0 generation calls, continueTask not entered, DB/state bytes unchanged"
+   ],
+   "label": "OBSERVED_PRODUCTION_RECOVERY_ADMISSION",
+   "statement": "In the tested stage-A-only baseline, the production recoverExecutionState contract admitted continuation only when the durable checkpoint matched the settled IS state; each isolated checkpoint/IS/state-store defect was rejected before continueTask and before model generation."
+  },
+  "C2": {
+   "boundary": "The handoff harness explicitly reads settlements and interpolates the U2 input; this does not prove that the generic execution loop independently sources U2 input from IS. B1-loop shows the generic loop recomputing instead.",
+   "evidence": [
+    "B2 all nine checks true",
+    "W_A U1 settlement e966c5ee... reused, U2 computed; input 0b3a9962..., answer bcb738d7...-9dcf",
+    "W_B U1 settlement bed8be8b... reused, U2 computed; input 86f6f47c..., answer cb661e20...-9dcf",
+    "W_A/W_B: U1 generation 0 during U2 phase; U2 generation 1; created@0 -> continued@1; no reattached@1",
+    "B4 CLEAN for both worlds; nonce length 32 and absent from template, seed, argv, env, state, logs and the other world"
+   ],
+   "label": "SUPPORTED_IN_TESTED_HANDOFF_PATH_ONLY",
+   "statement": "In the real-model handoff path, U2's secret came from the corresponding U1 IS settlement and its checksum from the TASK-SOURCE settlement; the two worlds used byte-identical U2 templates and cold seeds, produced different inputs and outputs, and each output followed its own settlement."
+  },
+  "C3": {
+   "boundary": "Observed behavior only; no missing-settlement policy was implemented or changed.",
+   "evidence": [
+    "B1-harness PHASE2_READ_REFUSAL: read-settlement:1:item has no settlement: TASK-U1; generation 0/0; DB/state unchanged",
+    "B1-loop computed [TASK-U1,TASK-U2], reused [TASK-SOURCE], advanced true"
+   ],
+   "label": "OBSERVED_DIFFERENT_BEHAVIOR_BY_PATH",
+   "statement": "With the U1 settlement removed, the handoff harness refused at read time (0/0 generations, no fallback to the U1 item/source), while the generic execute_demand probe recomputed TASK-U1 and TASK-U2 (REUSE TASK-SOURCE) and advanced."
+  },
+  "C4": {
+   "boundary": "Digest/dependency/validity checks validate bytes and declared constraints, not that the value genuinely resulted from the declared U1 computation. No provenance signature was added.",
+   "evidence": [
+    "B3a read refusal; tampered sha 484124a3... while the object id still declared e966c5ee...; generation 0/0; DB/state unchanged",
+    "B3b accepted substitution: new object 27e75111..., U1 REUSE of that object, output e5634964...-9dcf matches the substituted secret",
+    "B3c post-generation refusal: U2 generation 1, error step 2 requires both settled dependencies; DB unchanged but an ES state file was created and discarded (created@0, no continued@1)"
+   ],
+   "label": "DIGEST_VALIDITY_DOES_NOT_ESTABLISH_U1_PROVENANCE",
+   "statement": "Byte tampering was rejected at read time, but a digest-valid semantic substitution that retained source/dependency/validity metadata was accepted and U2 followed the substituted secret. A dependency-pointer mismatch was rejected only after U2 generation."
+  }
+ },
+ "created_at_utc": "2026-10-21T18:10:06Z",
+ "execution_order": [
+  "phase1 (stage-A-only baseline, A0-A4)",
+  "phase2 (two independent worlds, B0/B2/B1/B3/B4)"
+ ],
+ "limitations": [
+  "C2 applies to the tested handoff path only; the generic loop recomputes (B1-loop) and was not changed.",
+  "B3b shows that digest-valid substitution is accepted; this is a C4 authenticity limit, not proof of U1 provenance.",
+  "B3c is a post-generation rejection (U2 generation 1), not a pre-generation gate; it created then discarded a fresh ES state file while leaving the DB unchanged.",
+  "The logical executionID PRODUCTION-REAL-PALACE is reused; Phase 2 independence is claimed only at the OS-process/state-directory level, not as a new logical ES lineage.",
+  "Phase 1 outputs were generated in the repository experiment directory and relocated to phase1/prepack/; path fields inside the evidence still point to the original location.",
+  "The first workspace-guard verify failed only because its allowlist omitted the two driver scripts; the final verify passed with the complete implementation allowlist. Both reports are preserved.",
+  "r3 and r4 are both valid Phase 2 runs; r4 is the final run because it adds next-input token ids and ES lifecycle records. No invalid run was overwritten.",
+  "B4 for W_A and B0-A share the same second-resolution timestamp (18:01:39Z); the runner writes B4.json and rejects contamination before launching B0-A, so audit order is by runner control flow, not by the timestamp alone.",
+  "The workspace-guard snapshot was taken at 17:42Z, after the Phase 1 implementation and run (17:35-17:37Z) and before the Phase 2 edits. Its pre-edit coverage of Phase 1 is therefore retrospective; the final PASS covers the six changed files and frozen paths for the Phase 2 window, with HEAD/branch/staged diff unchanged.",
+  "Per-condition evidence JSON records schema, run label, condition, terminal state, model identity, counters, DB/state manifests and errors, but it does not embed the Git HEAD/dirty-tree fingerprint. HEAD, branch, binary hash and per-file before/after hashes are recorded in manifests/source-hashes.json and manifests/workspace-after-final.json; the raw evidence files were not rewritten.",
+  "Phase 1 r1 was invalidated by an A0 bridge demand mismatch and a verifier that did not assert failure absence; r2 is the valid replacement and r1 is preserved with a NOTE."
+ ],
+ "phase1": {
+  "baseline": {
+   "database_sha256": "02c51b7b28fcec95f81747cf5160cc3827e6f11b7084ac917a42f5d6ffcdccf0",
+   "label": "phase1-baseline-20261022b",
+   "original_path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022b-phase1-baseline",
+   "position": 1,
+   "preserved_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-baseline",
+   "stage_a_terminal_state": "STAGE_A_PASS",
+   "state_sha256": "fb01e0b4d9bf57908558989324094097a747b79e4c3bce2477cff11012bf833f"
+  },
+  "cases": {
+   "A0": {
+    "advanced_position": 2,
+    "bound_prefix_token_count": 132,
+    "computed_item_ids": [
+     "TASK-U2"
+    ],
+    "continue_task_entered": true,
+    "counters": {
+     "model_continuation_calls": 1,
+     "tokenize_seed_calls": 0,
+     "tokenize_text_calls": 1
+    },
+    "database_sha256_after": "610bc07b10acb53ef22965d51042b3a7a51158b1826cce06f13c3575818ecb5b",
+    "database_sha256_before": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_unchanged_by_attempt": false,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A0.json",
+    "evidence_sha256": "03bf77b3e27c1c24f9e02d36b84c7c26a51841e57921d62b7fa817eb8837364c",
+    "failure_label": null,
+    "intervention": [
+     {
+      "copy": "baseline unchanged"
+     }
+    ],
+    "next_input_token_count": 49,
+    "output_answer": "K540CA-c09c",
+    "recovered_position": 1,
+    "recovery_succeeded": true,
+    "reused_item_ids": [
+     "TASK-SOURCE",
+     "TASK-U1"
+    ],
+    "state_unchanged_by_attempt": false,
+    "terminal_state": "PHASE1_OBSERVED",
+    "u2_settlement_actions": 3
+   },
+   "A1": {
+    "advanced_position": null,
+    "bound_prefix_token_count": -1,
+    "computed_item_ids": null,
+    "continue_task_entered": false,
+    "counters": {
+     "model_continuation_calls": 0,
+     "tokenize_seed_calls": 0,
+     "tokenize_text_calls": 0
+    },
+    "database_sha256_after": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_sha256_before": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_unchanged_by_attempt": true,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A1.json",
+    "evidence_sha256": "6bec6a8b0ad0c1863f7a361c5b116e0fffb2e596235bbc5f097ba148003d4e1b",
+    "failure_label": "settlementCheckpointMissing:PRODUCTION-REAL-PALACE",
+    "intervention": [
+     {
+      "after": [],
+      "before": {
+       "executionID": "PRODUCTION-REAL-PALACE",
+       "isConfirmationStateID": "handoff-a-u1-phase1-baseline-20261022b:runtime-applied",
+       "isOriginalStateID": "handoff-a-u1-phase1-baseline-20261022b",
+       "lastSettledAdvancementID": "handoff-a-u1-phase1-baseline-20261022b",
+       "position": 1,
+       "resultDigest": "77163e98472871fe74b15fee16ff4f2843b55aef26ec57b972a3d2b2c515cf33",
+       "validityBasis": "c81e7b5682add59eef8bf551a03edf6b18dd12ab50f0bf527bb23e3bc57656d8"
+      },
+      "field": "settlementCheckpoints"
+     }
+    ],
+    "next_input_token_count": null,
+    "output_answer": null,
+    "recovered_position": -1,
+    "recovery_succeeded": false,
+    "reused_item_ids": null,
+    "state_unchanged_by_attempt": true,
+    "terminal_state": "PHASE1_OBSERVED",
+    "u2_settlement_actions": 0
+   },
+   "A2a": {
+    "advanced_position": null,
+    "bound_prefix_token_count": -1,
+    "computed_item_ids": null,
+    "continue_task_entered": false,
+    "counters": {
+     "model_continuation_calls": 0,
+     "tokenize_seed_calls": 0,
+     "tokenize_text_calls": 0
+    },
+    "database_sha256_after": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_sha256_before": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_unchanged_by_attempt": true,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A2a.json",
+    "evidence_sha256": "c5a2647ed6048635cb830c72fac79341c2ef824a961244c405f857398c62caf5",
+    "failure_label": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:result_digest",
+    "intervention": [
+     {
+      "after": "afdbf3f278e7d18ba912d7e6eb6b1634e100cbac36530e7ee7b0302d31616b61",
+      "before": "77163e98472871fe74b15fee16ff4f2843b55aef26ec57b972a3d2b2c515cf33",
+      "field": "resultDigest"
+     }
+    ],
+    "next_input_token_count": null,
+    "output_answer": null,
+    "recovered_position": -1,
+    "recovery_succeeded": false,
+    "reused_item_ids": null,
+    "state_unchanged_by_attempt": true,
+    "terminal_state": "PHASE1_OBSERVED",
+    "u2_settlement_actions": 0
+   },
+   "A2b": {
+    "advanced_position": null,
+    "bound_prefix_token_count": -1,
+    "computed_item_ids": null,
+    "continue_task_entered": false,
+    "counters": {
+     "model_continuation_calls": 0,
+     "tokenize_seed_calls": 0,
+     "tokenize_text_calls": 0
+    },
+    "database_sha256_after": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_sha256_before": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_unchanged_by_attempt": true,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A2b.json",
+    "evidence_sha256": "7d84c55dd16a6a0c8eaaedc7193c1ab3342919d9e468bb7f06dbef1c627b4b28",
+    "failure_label": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
+    "intervention": [
+     {
+      "after": "029fb7461baaaaf43546dd89078f733f106bd2f0dce8f720bd3ec35987488d59",
+      "before": "c81e7b5682add59eef8bf551a03edf6b18dd12ab50f0bf527bb23e3bc57656d8",
+      "field": "validityBasis"
+     }
+    ],
+    "next_input_token_count": null,
+    "output_answer": null,
+    "recovered_position": -1,
+    "recovery_succeeded": false,
+    "reused_item_ids": null,
+    "state_unchanged_by_attempt": true,
+    "terminal_state": "PHASE1_OBSERVED",
+    "u2_settlement_actions": 0
+   },
+   "A3": {
+    "advanced_position": null,
+    "bound_prefix_token_count": -1,
+    "computed_item_ids": null,
+    "continue_task_entered": false,
+    "counters": {
+     "model_continuation_calls": 0,
+     "tokenize_seed_calls": 0,
+     "tokenize_text_calls": 0
+    },
+    "database_sha256_after": "ad2a4668f8696628e830b491298743c3c630340f156b31821b1a7fd79b1508de",
+    "database_sha256_before": "ad2a4668f8696628e830b491298743c3c630340f156b31821b1a7fd79b1508de",
+    "database_unchanged_by_attempt": true,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A3.json",
+    "evidence_sha256": "20c8ee881b8c19ce329592bec325cda3b3cc16bde88244eb02aa4c15fc631377",
+    "failure_label": "informationSpaceHasNoSettledExecution:ADVANCED",
+    "intervention": [
+     {
+      "deleted": {
+       "append_order": 9,
+       "record_object": "1544764f7d2cb6f7a1affb20c77a01febec3d1bbbf752ed0903126dac3abc9ee",
+       "srs_identity": "execution_state:bounded-production-runtime-integration:handoff-a-u1-phase1-baseline-20261022b:runtime-applied"
+      },
+      "remaining_execution_state_rows": [
+       {
+        "append_order": 8,
+        "srs_identity": "execution_state:bounded-production-runtime-integration:handoff-a-u1-phase1-baseline-20261022b"
+       }
+      ],
+      "table": "is_index_entries"
+     }
+    ],
+    "next_input_token_count": null,
+    "output_answer": null,
+    "recovered_position": -1,
+    "recovery_succeeded": false,
+    "reused_item_ids": null,
+    "state_unchanged_by_attempt": true,
+    "terminal_state": "PHASE1_OBSERVED",
+    "u2_settlement_actions": 0
+   },
+   "A4": {
+    "advanced_position": null,
+    "bound_prefix_token_count": -1,
+    "computed_item_ids": null,
+    "continue_task_entered": false,
+    "counters": {
+     "model_continuation_calls": 0,
+     "tokenize_seed_calls": 0,
+     "tokenize_text_calls": 0
+    },
+    "database_sha256_after": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_sha256_before": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "database_unchanged_by_attempt": true,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/prepack/run-20261022b-phase1-r2/evidence/A4.json",
+    "evidence_sha256": "39d208e5414dbd6a8114af453316c739c0f80bd6a9fe0df5f6040f112acba239",
+    "failure_label": "durableExecutionStateMissing:PRODUCTION-REAL-PALACE",
+    "intervention": [
+     {
+      "state_directory": "empty"
+     }
+    ],
+    "next_input_token_count": null,
+    "output_answer": null,
+    "recovered_position": -1,
+    "recovery_succeeded": false,
+    "reused_item_ids": null,
+    "state_unchanged_by_attempt": true,
+    "terminal_state": "PHASE1_OBSERVED",
+    "u2_settlement_actions": 0
+   }
+  },
+  "interpretation": "Production recoverExecutionState admitted only A0; A1/A2a/A2b/A3/A4 failed closed with the exact checkpoint/IS/durable-state labels before continueTask and before any model generation, with database and durable-state bytes unchanged by the attempt.",
+  "invalid_runs": [
+   {
+    "path": "phase1/prepack/run-20261022b-phase1",
+    "reason": "A0 bridge demand mismatch (unknown demand: phase1-u2) and verification did not assert failure absence; replaced by r2.",
+    "status": "INVALID_CONDITION"
+   }
+  ],
+  "status": "OBSERVED",
+  "summary_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase1/summary.json",
+  "valid_run": "phase1/prepack/run-20261022b-phase1-r2"
+ },
+ "phase2": {
+  "B2": {
+   "checks": {
+    "cold_seed_identical": true,
+    "outputs_differ": true,
+    "settlements_differ": true,
+    "u2_inputs_differ": true,
+    "u2_template_identical": true,
+    "world_a_output_follows_its_settlement": true,
+    "world_a_reused_u1_and_generated_u2": true,
+    "world_b_output_follows_its_settlement": true,
+    "world_b_reused_u1_and_generated_u2": true
+   },
+   "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/B2.json",
+   "terminal_state": "C2_DIFFERENTIAL_ESTABLISHED"
+  },
+  "B4": {
+   "W_A": {
+    "cross_contaminated": false,
+    "nonce_length": 32,
+    "surface_contains_nonce": {
+     "argv": false,
+     "cold_seed": false,
+     "environment": false,
+     "other_world_database": false,
+     "other_world_logs": false,
+     "other_world_state": false,
+     "pre_u2_evidence": false,
+     "pre_u2_logs": false,
+     "temporary_files": false,
+     "u2_base_template": false,
+     "u2_state_directory": false
+    },
+    "verdict": "CLEAN"
+   },
+   "W_B": {
+    "cross_contaminated": false,
+    "nonce_length": 32,
+    "surface_contains_nonce": {
+     "argv": false,
+     "cold_seed": false,
+     "environment": false,
+     "other_world_database": false,
+     "other_world_logs": false,
+     "other_world_state": false,
+     "pre_u2_evidence": false,
+     "pre_u2_logs": false,
+     "temporary_files": false,
+     "u2_base_template": false,
+     "u2_state_directory": false
+    },
+    "verdict": "CLEAN"
+   }
+  },
+  "claims": {
+   "B0-A": "PHASE2_OBSERVED_SUCCESS",
+   "B0-B": "PHASE2_OBSERVED_SUCCESS",
+   "C1": "OBSERVED_IN_PHASE1 (see phase1 evidence)",
+   "C2": "SUPPORTED_IN_THE_TESTED_HANDOFF_PATH_ONLY",
+   "C3": "OBSERVED_DIFFERENT_BEHAVIOR_BY_PATH",
+   "C3_evidence": {
+    "generic_loop_computed_items": [
+     "TASK-U1",
+     "TASK-U2"
+    ],
+    "generic_loop_recomputed_u1": true,
+    "handoff_generation_calls": 0,
+    "handoff_refused": true
+   },
+   "C4": "DIGEST_VALIDITY_DOES_NOT_ESTABLISH_U1_PROVENANCE",
+   "C4_evidence": {
+    "b3b_accepted_substitution": true,
+    "b3b_authenticity_label": "SUBSTITUTED_VALUE_IS_DIGEST_VALID_BUT_NOT_LINEAGE_AUTHENTIC",
+    "b3b_output_matches_substituted_value": true
+   }
+  },
+  "conditions": {
+   "B0-A": {
+    "database_unchanged": false,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/evidence/phase2.json",
+    "evidence_sha256": "56d8b1e6ccdc67ccc32aeca050853ae1a4243efeda22823bf5ebd54cee33a24b",
+    "log_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "model_continuation_calls": 1,
+    "role": "control, W_A",
+    "state_unchanged": false,
+    "terminal_state": "PHASE2_OBSERVED_SUCCESS",
+    "u1_generation_calls_during_u2_phase": 0,
+    "u2_generation_calls_during_u2_phase": 1
+   },
+   "B0-B": {
+    "database_unchanged": false,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/evidence/phase2.json",
+    "evidence_sha256": "27269f1e5069024c3654ddeac677b7debbff5f59975f048468d1f08f1414270c",
+    "log_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "model_continuation_calls": 1,
+    "role": "control, W_B",
+    "state_unchanged": false,
+    "terminal_state": "PHASE2_OBSERVED_SUCCESS",
+    "u1_generation_calls_during_u2_phase": 0,
+    "u2_generation_calls_during_u2_phase": 1
+   },
+   "B1-harness": {
+    "database_unchanged": true,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/evidence/phase2.json",
+    "evidence_sha256": "f3746e0e963dc76479f3198ed5ae1c8e0af15cf8182196c2f169832109bbee71",
+    "log_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "model_continuation_calls": 0,
+    "mutation": {
+     "deleted_dependency_rows": 1,
+     "deleted_index_rows": 1,
+     "u1_item_retained": true,
+     "u1_source_retained": true
+    },
+    "read_failure": "bridgeFailed:read-settlement:1:item has no settlement: TASK-U1",
+    "state_unchanged": true,
+    "terminal_state": "PHASE2_READ_REFUSAL",
+    "u1_generation_calls_during_u2_phase": null,
+    "u2_generation_calls_during_u2_phase": null
+   },
+   "B1-loop": {
+    "advanced": true,
+    "computed_item_ids": [
+     "TASK-U1",
+     "TASK-U2"
+    ],
+    "log_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-loop/logs/execute-probe.log",
+    "log_sha256": "d262f7255e081bfedf9cd96f3bd5d76efca984ed1f5a8dc9f3506b24335376da",
+    "model_continuation_calls": null,
+    "mutation": {
+     "deleted_dependency_rows": 1,
+     "deleted_index_rows": 1,
+     "u1_item_retained": true,
+     "u1_source_retained": true
+    },
+    "note": "calculator execute_demand path; no model generation counter applies",
+    "reused_item_ids": [
+     "TASK-SOURCE"
+    ],
+    "role": "generic loop path, separate from handoff harness",
+    "terminal_state": "OBSERVED"
+   },
+   "B3a": {
+    "database_unchanged": true,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/evidence/phase2.json",
+    "evidence_sha256": "30825c00bb97725cd5831860d769a8e470a9a1041c7e093909ca7e51a78aae90",
+    "log_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "model_continuation_calls": 0,
+    "mutation": {
+     "object_id": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+     "object_id_still_declared": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+     "original_sha256": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+     "tampered_sha256": "484124a3c285e21a78cdbfbf24e388db43441042467aae8ec993b2a93fcdb560"
+    },
+    "read_failure": "bridgeFailed:read-settlement:1:e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+    "state_unchanged": true,
+    "terminal_state": "PHASE2_READ_REFUSAL",
+    "u1_generation_calls_during_u2_phase": null,
+    "u2_generation_calls_during_u2_phase": null
+   },
+   "B3b": {
+    "answer": "e563496421c8ccaa5ab3fa2c12ace75e-9dcf",
+    "c4_authenticity": "SUBSTITUTED_VALUE_IS_DIGEST_VALID_BUT_NOT_LINEAGE_AUTHENTIC",
+    "database_unchanged": false,
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/evidence/phase2.json",
+    "evidence_sha256": "e87b26602722347130bcd0de8cbbc8bddb6d06fac868b540fb34979b0d00a700",
+    "log_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "matches_settled_expected": true,
+    "model_continuation_calls": 1,
+    "mutation": {
+     "new_object_id": "27e75111ac28a01e28f704b81d4906dc7737cb917662325906893d4877790ebd",
+     "original_object_id": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+     "original_result_value_sha256": "2448898fac9d62a97403f575ac6ba747959cc765102e6b7de514e045b2e35130",
+     "retained_source_metadata": {
+      "dependency_object_ids": {
+       "TASK-SOURCE": "051c922e39f4a088ffa678378cbc4639b437297e69d3b2f324ee62486992af14"
+      },
+      "source_payload_sha256": "e1360255f260d844c051d54e055e1d1a2018882aeb54dd89345b5f8764a2e299",
+      "source_version": "v1",
+      "valid_until_utc": "2030-12-31T23:59:59Z",
+      "validity_policy": {
+       "default_valid_until_utc": "2030-12-31T23:59:59Z",
+       "dependency_propagation": "ALL_TRANSITIVE",
+       "missing_policy": "REJECT",
+       "policy_sha256": "1b3a89871bcbe4ca5dcaf80eddab34baa84fce0431883ff19b08e226dbd60bd9",
+       "policy_source": "ISOLATED_MLX_SMOKE_ONLY",
+       "policy_version": "actual-mlx-smoke-v1",
+       "schema_id": "SIMIGO-INFO-VALIDITY-POLICY-V1"
+      }
+     },
+     "substituted_result_value_sha256": "93a5069e0fe4c1218675ae023ad9eb757a270be969403190d0bc35d5f5d2bc1c",
+     "substituted_secret_sha256": "cb4320173d57e9ee962c4cdfe3a7d37f22d6448173a7a962012c9f1db83ba57c"
+    },
+    "state_unchanged": false,
+    "terminal_state": "PHASE2_OBSERVED_SUBSTITUTION",
+    "u1_generation_calls_during_u2_phase": 0,
+    "u2_generation_calls_during_u2_phase": 1
+   },
+   "B3c": {
+    "database_unchanged": true,
+    "es_lifecycle": {
+     "continued_at_position_1": false,
+     "created_at_position_0": true,
+     "entry": "created@0",
+     "exit": "NOT_OBSERVED",
+     "no_reattached_at_1": true,
+     "reattached_at_position_1": false
+    },
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/evidence/phase2.json",
+    "evidence_sha256": "c9682c80f7b2b876f489e075db776c58da39da058d521a75654e653016fb2450",
+    "log_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "model_continuation_calls": 1,
+    "mutation": {
+     "new_dependencies": [
+      "TASK-SOURCE"
+     ],
+     "new_item_object_id": "c64a2df35b5419afb667fdd27f9105e906776f4726f39431149ac647c5eff1d4",
+     "new_revision": 2,
+     "previous_dependencies": [
+      "TASK-SOURCE",
+      "TASK-U1"
+     ]
+    },
+    "post_generation": true,
+    "settlement_failure": "modelExecutionFailed:[information_settlement] bridgeFailed(command: \"execute-with-model-result\", exitCode: 1, message: \"step 2 requires both settled dependencies\")",
+    "state_unchanged": false,
+    "terminal_state": "PHASE2_SETTLEMENT_REFUSAL",
+    "u1_generation_calls_during_u2_phase": 0,
+    "u2_generation_calls_during_u2_phase": 1
+   }
+  },
+  "final_summary_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/r4/summary.json",
+  "invalid_runs": [
+   {
+    "path": "phase2a/invalid-r1 + phase2b/invalid-r1",
+    "reason": "B4 found the raw U1 nonce in pre-U2 stage-A evidence (continuation.generated_text); stage-A evidence was sanitized and the run replaced by r2.",
+    "status": "INVALID_CONDITION"
+   },
+   {
+    "path": "phase2a/invalid-r2 + phase2b/invalid-r2",
+    "reason": "--max-tokens 32 truncated the 32-hex secret + checksum; B1 hit a sqlite row_factory TypeError. Decode budget and mutation fixed; r2 replaced by r3.",
+    "status": "INVALID_CONDITION"
+   }
+  ],
+  "status": "OBSERVED",
+  "valid_final_run": "phase2a/world-a-r4 + phase2b/world-b-r4",
+  "valid_replicate_run": "phase2a/world-a-r3 + phase2b/world-b-r3",
+  "worlds": {
+   "W_A": {
+    "answer": "bcb738d7a870c0f233e8ba186b5cf9d1-9dcf",
+    "answer_sha256": "4aad6776cbb00619f77379abd8d8e549d4255ee07c48cde68edfbc974d0a55b1",
+    "b4_nonce_sha256": "442c5126f4a061a56ccbe8af69e7dbf6fd6f8e673f6be850b70b00bbc8ae8c40",
+    "b4_verdict": "CLEAN",
+    "es_lifecycle": {
+     "continued_at_position_1": true,
+     "created_at_position_0": true,
+     "entry": "created@0",
+     "exit": "continued@1",
+     "no_reattached_at_1": true,
+     "reattached_at_position_1": false
+    },
+    "fresh_state_directory_empty": true,
+    "matches_settled_expected": true,
+    "output_follows_is_settlement": true,
+    "stage_a_alive_after_exit": false,
+    "stage_a_evidence": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/run/evidence/stage-a.json",
+    "stage_a_evidence_sha256": "2cc4bb2d721506ace7c5e93df9356142f8f2584463188298e32a288f7d6f207f",
+    "stage_a_pid": 81208,
+    "u1_action": "REUSE",
+    "u1_settlement_object_id": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+    "u2_action": "COMPUTE",
+    "u2_input_sha256": "0b3a9962bf701e915a0e4096d6ccfe5363a8193f1b56eca9bd1678db0875a9a6",
+    "u2_input_token_count": 73,
+    "u2_pid": 81488,
+    "u2_settlement_object_id": "af2f0d99b9f3a87fc56be3bed0f9c9e16683378c05d8c3ba2b7b4391dd8bb231"
+   },
+   "W_B": {
+    "answer": "cb661e20ed6a53aa8c4b16029e3cfa9d-9dcf",
+    "answer_sha256": "1c17b000c381fcfdce360468a46127700c006e4a31ed1b27b135792c0d80ce26",
+    "b4_nonce_sha256": "300b70cea39777bfdebad04d02582fb7ae599b8beaa1e396067b29de66b74090",
+    "b4_verdict": "CLEAN",
+    "es_lifecycle": {
+     "continued_at_position_1": true,
+     "created_at_position_0": true,
+     "entry": "created@0",
+     "exit": "continued@1",
+     "no_reattached_at_1": true,
+     "reattached_at_position_1": false
+    },
+    "fresh_state_directory_empty": true,
+    "matches_settled_expected": true,
+    "output_follows_is_settlement": true,
+    "stage_a_alive_after_exit": false,
+    "stage_a_evidence": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/run/evidence/stage-a.json",
+    "stage_a_evidence_sha256": "996606452338dd054eb361a72ab2a66ef838f570798e203e3ddc1d3bbf491930",
+    "stage_a_pid": 81474,
+    "u1_action": "REUSE",
+    "u1_settlement_object_id": "bed8be8bf5c5f7c68218f2c653260f8958306daf50ba280fa3b79619a5ece51b",
+    "u2_action": "COMPUTE",
+    "u2_input_sha256": "86f6f47caf2c285d4905e65316179864ef20f40dcfcdd24cf0d5c8e788c23645",
+    "u2_input_token_count": 72,
+    "u2_pid": 82985,
+    "u2_settlement_object_id": "a6ce81998d26ecdc1042425a9ac951abc2d07de78f7105cbcc9df7eb7c6a7201"
+   }
+  }
+ },
+ "research_question": "Can a settled, semantically sufficient result detach from the old execution context and be restored through physical PALACE Information Space in a genuinely new execution instance for incremental continuation?",
+ "run_id": "handoff-causality-20261022b",
+ "schema_id": "SIMIGO-HANDOFF-CAUSALITY-RUN-SUMMARY-V1",
+ "source_changes": {
+  "files": [
+   {
+    "description": "runtime 128-bit nonce mode (--random-secret), define_task conflict guard, nonce_bits output",
+    "path": "execution-information-loop/production_runtime_bridge.py"
+   },
+   {
+    "description": "stage-A evidence sanitization so the U1 nonce is not in the pre-U2 surface; decode budget 64; next-input token ids",
+    "path": "simigo2-experimental/Sources/RealModelHandoff/main.swift"
+   },
+   {
+    "description": "Phase 1 recover/continue driver; Phase 2 U2 driver; generation counters; ES lifecycle; failure diagnostics",
+    "path": "simigo2-experimental/Sources/RealModelHandoff/Causality.swift"
+   },
+   {
+    "description": "nextInputTokenIDs, lifecycleRecordSummary, randomSecret pass-through",
+    "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift"
+   },
+   {
+    "description": "Phase 1 stage-A baseline and A0-A4 interventions",
+    "path": "simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py"
+   },
+   {
+    "description": "Phase 2 two-world runner, B0/B1/B3/B4; byte-identical to the executed tools/phase2_runner.py (sha256 d26f08e0...)",
+    "path": "simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py"
+   }
+  ],
+  "manifest": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/source-hashes.json",
+  "not_committed_or_staged": true
+ },
+ "tests": {
+  "command": "swift test --filter ProductionRuntimeInformationIntegrationTests",
+  "completed_at_utc": "2026-10-21T18:06:32Z",
+  "duration_seconds": 4.688,
+  "executed": 16,
+  "failures": 0,
+  "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/test-final.log",
+  "result": "PASS"
+ },
+ "workspace_guard": {
+  "final_verify": {
+   "allowlist": [
+    "execution-information-loop/production_runtime_bridge.py",
+    "simigo2-experimental/Sources/RealModelHandoff/*",
+    "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+    "simigo2-experimental/scripts/handoff_causality/*"
+   ],
+   "changed_file_count": 6,
+   "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/workspace-after-final.json",
+   "result": "PASS",
+   "verified_utc": "2026-10-21T18:06:50.439608+00:00"
+  },
+  "first_verify": {
+   "explanation": "The first verify used the initial allowlist, which omitted the two driver scripts created after the snapshot. No protected path changed and HEAD/branch/staged diff were unchanged.",
+   "issues": [
+    {
+     "kind": "CHANGE_OUTSIDE_ALLOWLIST",
+     "path": "simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py"
+    },
+    {
+     "kind": "CHANGE_OUTSIDE_ALLOWLIST",
+     "path": "simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py"
+    }
+   ],
+   "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/workspace-after.json",
+   "result": "FAIL",
+   "verified_utc": "2026-10-21T18:03:57.724685+00:00"
+  },
+  "head_branch_staged_unchanged": true,
+  "protected_paths_changed": false,
+  "snapshot": {
+   "branch": "main",
+   "created_utc": "2026-10-21T17:42:13.274188+00:00",
+   "head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+   "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/manifests/workspace-before.json",
+   "protected_path_count": 3703,
+   "staged_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+ }
+}

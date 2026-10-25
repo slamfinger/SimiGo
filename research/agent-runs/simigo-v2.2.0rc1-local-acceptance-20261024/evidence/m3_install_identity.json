@@ -1,0 +1,116 @@
+{
+ "build_version": "26",
+ "bundle_file_count": 19,
+ "bundle_id": "SwiftUI.SimiGo",
+ "bundle_tree_digest_algorithm": "sha256 over concat('<relpath>\\0<bytes>\\0<sha256>\\n'), files walked in sorted order",
+ "bundle_tree_sha256": "25b6a2f41946e14b52ea325fc7e1912a73ad2953d27879fe289ef02e18e3b608",
+ "codesign_dv": "Executable=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app/Contents/MacOS/SimiGo\nIdentifier=SwiftUI.SimiGo\nFormat=app bundle with Mach-O thin (arm64)\nCodeDirectory v=20500 size=205007 flags=0x10002(adhoc,runtime) hashes=6396+7 location=embedded\nSignature=adhoc\nInfo.plist entries=20\nTeamIdentifier=not set\nRuntime Version=27.0.0\nSealed Resources version=2 rules=13 files=15\nInternal requirements count=0 size=12\nTotal signatures=1\nChosen signature=1",
+ "codesign_verify": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: valid on disk\n/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: satisfies its Designated Requirement",
+ "dmg_sha256": "e3c9f077d8423a9235e4be4b335f3fa01def12b0ce20f21db037221d26712319",
+ "executable_bytes": 104991440,
+ "executable_sha256": "cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f",
+ "executable_uuid": "5AAD0DF1-3860-3B16-B25F-A6C4AD4AF9E4",
+ "files": [
+  {
+   "bytes": 1307,
+   "path": "Contents/Info.plist",
+   "sha256": "b28d134f8dc9ad8f9ccf66d5d2f2c794dea7a8688410d5f481500c117599efb2"
+  },
+  {
+   "bytes": 8,
+   "path": "Contents/PkgInfo",
+   "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0"
+  },
+  {
+   "bytes": 104991440,
+   "path": "Contents/MacOS/SimiGo",
+   "sha256": "cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f"
+  },
+  {
+   "bytes": 1124,
+   "path": "Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Info.plist",
+   "sha256": "b005f285457e34088bde3ef84072b8df1197f2364e5a5c22e48ce3708815beac"
+  },
+  {
+   "bytes": 2401016,
+   "path": "Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib",
+   "sha256": "282550b064507602f7da8cfa2dab2ca8f10341c2802191234a1cbf17f892952f"
+  },
+  {
+   "bytes": 1154,
+   "path": "Contents/Resources/swift-crypto_CCryptoBoringSSL.bundle/Contents/Info.plist",
+   "sha256": "da843b605692762a65cf1f29d0d0e6b7a0ab10a58cabbd787262dbad45bc7f09"
+  },
+  {
+   "bytes": 398,
+   "path": "Contents/Resources/swift-crypto_CCryptoBoringSSL.bundle/Contents/Resources/PrivacyInfo.xcprivacy",
+   "sha256": "42fb8a30dd8d7ba0900e1bf17fe64ed8c12cfdb8a9c791ab6b4e1eceb0f299c0"
+  },
+  {
+   "bytes": 1164,
+   "path": "Contents/Resources/swift-crypto_CCryptoBoringSSLShims.bundle/Contents/Info.plist",
+   "sha256": "822c65171e22b94594af90a3a9495d9c1d144e68be3d2a5fee8a893ca304c78c"
+  },
+  {
+   "bytes": 398,
+   "path": "Contents/Resources/swift-crypto_CCryptoBoringSSLShims.bundle/Contents/Resources/PrivacyInfo.xcprivacy",
+   "sha256": "42fb8a30dd8d7ba0900e1bf17fe64ed8c12cfdb8a9c791ab6b4e1eceb0f299c0"
+  },
+  {
+   "bytes": 1134,
+   "path": "Contents/Resources/swift-crypto_Crypto.bundle/Contents/Info.plist",
+   "sha256": "ba7a90525925a48e67a4c462b3e92c05c8ab2d29670653fa07274a9f8fff46c1"
+  },
+  {
+   "bytes": 398,
+   "path": "Contents/Resources/swift-crypto_Crypto.bundle/Contents/Resources/PrivacyInfo.xcprivacy",
+   "sha256": "42fb8a30dd8d7ba0900e1bf17fe64ed8c12cfdb8a9c791ab6b4e1eceb0f299c0"
+  },
+  {
+   "bytes": 1160,
+   "path": "Contents/Resources/swift-crypto_CryptoBoringWrapper.bundle/Contents/Info.plist",
+   "sha256": "3ad7047797c36f22fac1e121a43775a3be0210c465cd44f3223b0e74ec4e1767"
+  },
+  {
+   "bytes": 398,
+   "path": "Contents/Resources/swift-crypto_CryptoBoringWrapper.bundle/Contents/Resources/PrivacyInfo.xcprivacy",
+   "sha256": "42fb8a30dd8d7ba0900e1bf17fe64ed8c12cfdb8a9c791ab6b4e1eceb0f299c0"
+  },
+  {
+   "bytes": 1146,
+   "path": "Contents/Resources/swift-crypto_CryptoExtras.bundle/Contents/Info.plist",
+   "sha256": "72e33a8bac5583c6a0f5cc99e0d7ca8639d25fa71383df0c802efe2a150804ae"
+  },
+  {
+   "bytes": 398,
+   "path": "Contents/Resources/swift-crypto_CryptoExtras.bundle/Contents/Resources/PrivacyInfo.xcprivacy",
+   "sha256": "42fb8a30dd8d7ba0900e1bf17fe64ed8c12cfdb8a9c791ab6b4e1eceb0f299c0"
+  },
+  {
+   "bytes": 1140,
+   "path": "Contents/Resources/swift-transformers_Hub.bundle/Contents/Info.plist",
+   "sha256": "1f72570bb4e6b4cfca6b6044fca83199526b46b296134464d62ba55458dd51b8"
+  },
+  {
+   "bytes": 234,
+   "path": "Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources/gpt2_tokenizer_config.json",
+   "sha256": "551e26ec611d8d0c8edc3ef72e518a38418cb71f40de1347dd486a595e1557d7"
+  },
+  {
+   "bytes": 20746,
+   "path": "Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources/t5_tokenizer_config.json",
+   "sha256": "e0aff0b1de9071e30d9a60a199303b6abe916a64a19932bd1c46992279b41a1f"
+  },
+  {
+   "bytes": 7202,
+   "path": "Contents/_CodeSignature/CodeResources",
+   "sha256": "d4598360ce4dd535f6f75e3a43f03d417235d521704396a6fd84bca6e1febc78"
+  }
+ ],
+ "generated_at": "2026-10-24T03:00:00+0800",
+ "info_plist_sha256": "b28d134f8dc9ad8f9ccf66d5d2f2c794dea7a8688410d5f481500c117599efb2",
+ "install_path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app",
+ "marketing_version": "2.2.0",
+ "source_dmg": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo-v2.2.0rc1.dmg",
+ "spctl_assess": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: rejected"
+}

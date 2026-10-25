@@ -1,0 +1,13 @@
+--- a/simigo2-experimental/Sources/SimiGo2Experimental/SettlementProvenanceVerification.swift
++++ b/simigo2-experimental/Sources/SimiGo2Experimental/SettlementProvenanceVerification.swift
+@@ -75,6 +75,10 @@
+     var record: [String: Any] = [
+       "item_id": itemID,
+       "settlement_object_id": settlementObjectID,
++      // An instance exists only after this settlement's detached Ed25519
++      // signature verified against the deployment trust anchor, so the record
++      // states the verification outcome instead of leaving it implicit.
++      "verified": true,
+       "key_id": keyID,
+       "algorithm": algorithm,
+       "event_id": eventID,

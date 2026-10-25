@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "verified_utc": "2026-10-22T11:10:09.280123+00:00",
+  "repo_root": "/Users/mr.simi/Documents/SimiGo-Lab",
+  "head_unchanged": true,
+  "branch_unchanged": true,
+  "staged_diff_unchanged": true,
+  "changed_file_count": 6,
+  "changed_files": [
+    {
+      "path": "execution-information-loop/admission_selftest.py",
+      "before": {
+        "path": "execution-information-loop/admission_selftest.py",
+        "exists": true,
+        "mode": 420,
+        "size": 22010,
+        "kind": "file",
+        "sha256": "3baead5fd7655d22472f4cb0df7327e05c678a13b519231a2896744e8ae6769e"
+      },
+      "after": {
+        "path": "execution-information-loop/admission_selftest.py",
+        "exists": true,
+        "mode": 420,
+        "size": 32092,
+        "kind": "file",
+        "sha256": "e152d542d68203d50fa74b5e57eb9c6c1adab824072c8ebbd5668f73466ce1c7"
+      }
+    },
+    {
+      "path": "execution-information-loop/production_runtime_bridge.py",
+      "before": {
+        "path": "execution-information-loop/production_runtime_bridge.py",
+        "exists": true,
+        "mode": 420,
+        "size": 57452,
+        "kind": "file",
+        "sha256": "d87e045bfa7c2a05792d98338ae67bad9cd34d6ec0ca63efafe365f259711dbb"
+      },
+      "after": {
+        "path": "execution-information-loop/production_runtime_bridge.py",
+        "exists": true,
+        "mode": 420,
+        "size": 58393,
+        "kind": "file",
+        "sha256": "cdc8b01cd3cd60813acf0c7192f0deb0973d8acb9d90e264e184af6a7dc7a4ab"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+      "before": {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 74916,
+        "kind": "file",
+        "sha256": "24d3daf3bb81ef708533ded935e1e5df44c7a84bf8c464c0a8dc50ae2049046b"
+      },
+      "after": {
+        "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 75732,
+        "kind": "file",
+        "sha256": "af0f68c7531b8766350b1f568643d37171b08be06d021ec3c37e9fa72b786dc5"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGoDetachedDriver/main.swift",
+      "before": {
+        "path": "simigo2-experimental/Sources/SimiGoDetachedDriver/main.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 17511,
+        "kind": "file",
+        "sha256": "2951cfceea8c23ac443fff0793f8ec33e1d555cbfcb1e35ab7d7eed878c72820"
+      },
+      "after": {
+        "path": "simigo2-experimental/Sources/SimiGoDetachedDriver/main.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 24502,
+        "kind": "file",
+        "sha256": "41356ecade95a54ffcfdbadc22e0393e36d98fb7643be1f73fe657cda608724c"
+      }
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MultihopContinuationEntryTests.swift",
+      "before": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MultihopContinuationEntryTests.swift",
+        "exists": false
+      },
+      "after": {
+        "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/MultihopContinuationEntryTests.swift",
+        "exists": true,
+        "mode": 420,
+        "size": 20251,
+        "kind": "file",
+        "sha256": "1abddb7b407bbb6ebdc8bf250907b16a5b91260a1ba7e4d1e9a032449d065492"
+      }
+    },
+    {
+      "path": "simigo2-experimental/scripts/ordinary_task/run_phase_g.py",
+      "before": {
+        "path": "simigo2-experimental/scripts/ordinary_task/run_phase_g.py",
+        "exists": false
+      },
+      "after": {
+        "path": "simigo2-experimental/scripts/ordinary_task/run_phase_g.py",
+        "exists": true,
+        "mode": 420,
+        "size": 46816,
+        "kind": "file",
+        "sha256": "a7aafe95176dd1f7b227e10ad5b4c4073577614534b5af2178e3e7367698819e"
+      }
+    }
+  ],
+  "issues": [],
+  "result": "PASS"
+}

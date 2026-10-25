@@ -1,0 +1,38 @@
+[2026-10-24 19:48:23.531] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 19:48:43.628] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 19:48:43.628] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.95 topK=40 minP=0.0 rep=1.0999999 pres=0.10000002 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-10-24 19:48:43.629] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-10-24 19:48:43.637] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=119MB swapUsed=1951MB
+[2026-10-24 19:48:48.336] [MLX] loadRoute text-first composite=true model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 19:48:49.069] ❌ ❌ 启动失败: The operation couldn’t be completed. (LOCALBCore.LOCALBStatus error 57.)
+[2026-10-24 19:48:49.069] [MEM] beforeUnload active=0MB cache=4106MB peak=20126MB footprint=4240MB swapUsed=3588MB
+[2026-10-24 19:48:56.002] [MEM] settled active=0MB cache=0MB peak=20126MB footprint=77MB swapUsed=3412MB
+[2026-10-24 19:48:56.002] NativeMLX stopped
+[2026-10-24 19:49:03.096] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 19:49:03.096] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.95 topK=40 minP=0.0 rep=1.0999999 pres=0.10000002 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-10-24 19:49:03.096] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-10-24 19:49:03.101] [MEM] beforeLoad active=0MB cache=0MB peak=20126MB footprint=81MB swapUsed=3404MB
+[2026-10-24 19:49:07.240] [MLX] loadRoute text-first composite=true model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 19:49:07.710] ❌ ❌ 启动失败: The operation couldn’t be completed. (LOCALBCore.LOCALBStatus error 57.)
+[2026-10-24 19:49:07.710] [MEM] beforeUnload active=0MB cache=4106MB peak=20126MB footprint=4375MB swapUsed=4250MB
+[2026-10-24 19:49:10.413] [MEM] settled active=0MB cache=0MB peak=20126MB footprint=213MB swapUsed=4218MB
+[2026-10-24 19:49:10.413] NativeMLX stopped
+[2026-10-24 19:49:23.695] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX
+[2026-10-24 19:49:23.695] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.95 topK=20 minP=0.0 rep=0.99999994 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-10-24 19:49:23.696] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-10-24 19:49:23.701] [MEM] beforeLoad active=0MB cache=0MB peak=20126MB footprint=271MB swapUsed=4202MB
+[2026-10-24 19:49:28.067] [MLX] loadRoute text-first composite=true model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX
+[2026-10-24 19:49:28.547] ❌ ❌ 启动失败: The operation couldn’t be completed. (LOCALBCore.LOCALBStatus error 57.)
+[2026-10-24 19:49:28.547] [MEM] beforeUnload active=0MB cache=4175MB peak=20633MB footprint=4382MB swapUsed=5207MB
+[2026-10-24 19:49:32.057] [MEM] settled active=0MB cache=0MB peak=20633MB footprint=175MB swapUsed=5183MB
+[2026-10-24 19:49:32.057] NativeMLX stopped
+[2026-10-24 19:50:32.960] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX
+[2026-10-24 19:50:40.527] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX
+[2026-10-24 19:50:40.528] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.95 topK=20 minP=0.0 rep=0.99999994 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-10-24 19:50:40.528] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-10-24 19:50:40.536] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=112MB swapUsed=4607MB
+[2026-10-24 19:50:45.037] [MLX] loadRoute text-first composite=true model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX
+[2026-10-24 19:50:45.532] ❌ ❌ 启动失败: The operation couldn’t be completed. (LOCALBCore.LOCALBStatus error 57.)
+[2026-10-24 19:50:45.532] [MEM] beforeUnload active=0MB cache=4175MB peak=20633MB footprint=4327MB swapUsed=5992MB
+[2026-10-24 19:50:49.326] [MEM] settled active=0MB cache=0MB peak=20633MB footprint=41MB swapUsed=5992MB
+[2026-10-24 19:50:49.327] NativeMLX stopped

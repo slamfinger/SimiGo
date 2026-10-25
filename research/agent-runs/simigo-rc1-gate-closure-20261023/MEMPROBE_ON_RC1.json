@@ -1,0 +1,292 @@
+{
+ "purpose": "Gate-closure item 2: run the G3 memory-tier probe on the SAME RC1 build product that passed the full suite (no rebuild, no re-sign, no copy) and bind the result to RC_IDENTITY.json's binary identity.",
+ "rc1_binary_under_test": {
+  "app_bundle": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/derived/Build/Products/Debug/SimiGo.app",
+  "dylib_sha256": "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b",
+  "dylib_uuid": "DEB5F8F9-6CB7-3275-B5C5-8C1DDCE60E90",
+  "dylib_bytes": 28436352,
+  "bundle_tree_sha256": "842f72a68b7936fd6d5e33bb64af43b300920ec0c32fe6788574212a0df4bdc6",
+  "files_in_bundle": 129,
+  "rc_id": "simigo-rc1-de362ef4-20261023"
+ },
+ "runs": {
+  "mp1": {
+   "wall_clock": {
+    "start": "2026-10-23T19:28:33",
+    "end": "2026-10-23T19:28:41"
+   },
+   "exit": "mp rc=0",
+   "artifact_identity_before": {
+    "bundle_tree_sha256": "842f72a68b7936fd6d5e33bb64af43b300920ec0c32fe6788574212a0df4bdc6",
+    "files_in_bundle": 129,
+    "dylib_sha256": "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b",
+    "dylib_uuid": "DEB5F8F9-6CB7-3275-B5C5-8C1DDCE60E90"
+   },
+   "artifact_identity_after": {
+    "bundle_tree_sha256": "842f72a68b7936fd6d5e33bb64af43b300920ec0c32fe6788574212a0df4bdc6",
+    "files_in_bundle": 129,
+    "dylib_sha256": "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b",
+    "dylib_uuid": "DEB5F8F9-6CB7-3275-B5C5-8C1DDCE60E90"
+   },
+   "artifact_unchanged_by_experiment": true,
+   "matches_rc1_identity": true,
+   "self_reported_images_match_disk": true,
+   "evidence": {
+    "status": "OK",
+    "path_class": "restricted_production_path",
+    "warm_generated": "RESULT=hello",
+    "post_resume_generated": "RESULT=hello",
+    "reference_release_observed": true,
+    "resource_reclaim_observed": true,
+    "model_container_ref_dropped": true,
+    "suspend_returned_true": true,
+    "events": {
+     "cache_save_checkpoint": 2,
+     "checkpoint_failed": 0,
+     "cold_rebuild": 2,
+     "lifecycle_resume": 1,
+     "lifecycle_suspend": 1,
+     "model_container_absent_after": true,
+     "model_container_present_before": true,
+     "model_container_ref_dropped": true,
+     "pool_bind_failed": 0,
+     "pool_bind_hit_cacheLoad": 0,
+     "prefix_mismatch": 0,
+     "reference_release": 1,
+     "resource_reclaim": 1,
+     "reuse_miss": 0,
+     "sessions_after_release": 0,
+     "sessions_released_at_release": 1
+    },
+    "events_ordered": [
+     {
+      "at_ms": 3222,
+      "event": "cold_rebuild",
+      "seq": 1
+     },
+     {
+      "at_ms": 4742,
+      "event": "cache_save",
+      "seq": 2
+     },
+     {
+      "at_ms": 4794,
+      "event": "reference_release",
+      "seq": 3
+     },
+     {
+      "at_ms": 4801,
+      "event": "resource_reclaim",
+      "seq": 4
+     },
+     {
+      "at_ms": 4801,
+      "event": "lifecycle_suspend",
+      "seq": 5
+     },
+     {
+      "at_ms": 7027,
+      "event": "lifecycle_resume",
+      "seq": 6
+     },
+     {
+      "at_ms": 7027,
+      "event": "cold_rebuild",
+      "seq": 7
+     },
+     {
+      "at_ms": 8018,
+      "event": "cache_save",
+      "seq": 8
+     }
+    ],
+    "generate_passes": 2,
+    "prefill_tokens_observed": 19,
+    "generation_tokens_engine_reported": 3,
+    "footprint_pre_bytes": 17413158088,
+    "footprint_post_suspend_bytes": 12941143032,
+    "footprint_delta_bytes": 4472015056,
+    "physical_page_return_note": "footprint delta recorded as SUPPORTING only; per gate def RSS/footprint/exit alone cannot PASS physical_page_return (malloc relief is a hint, no independent OS page-reclaim proof)."
+   },
+   "external_os_series": {
+    "sampler_rows": 6,
+    "rss_peak_bytes": 8585216,
+    "rss_series_bytes": [
+     8552448,
+     8585216,
+     8585216,
+     8454144,
+     7028736,
+     7028736
+    ],
+    "free_pages_bytes_min": 132972544,
+    "free_pages_bytes_max": 17435246592,
+    "free_pages_bytes_last_while_running": 296009728,
+    "interpretation": "The external RSS peak occurs DURING/AFTER the suspend step, not before it, and system free pages do not rise at the suspend boundary. The sampler is a 1 s series against a suspend window of a few seconds, so it cannot resolve page return inside that window - and what it does show does NOT corroborate a system-level page release. Recorded as non-corroborating, not as proof."
+   },
+   "real_user_state_writes": {
+    "count": 1,
+    "paths": [
+     "/Users/mr.simi/.simigo/logs/native_mlx_trace.log"
+    ],
+    "violation_events": 2,
+    "expected_self_writes": 28
+   }
+  },
+  "mp2": {
+   "wall_clock": {
+    "start": "2026-10-23T19:33:49",
+    "end": "2026-10-23T19:33:56"
+   },
+   "exit": "mp rc=0",
+   "artifact_identity_before": {
+    "bundle_tree_sha256": "842f72a68b7936fd6d5e33bb64af43b300920ec0c32fe6788574212a0df4bdc6",
+    "files_in_bundle": 129,
+    "dylib_sha256": "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b",
+    "dylib_uuid": "DEB5F8F9-6CB7-3275-B5C5-8C1DDCE60E90"
+   },
+   "artifact_identity_after": {
+    "bundle_tree_sha256": "842f72a68b7936fd6d5e33bb64af43b300920ec0c32fe6788574212a0df4bdc6",
+    "files_in_bundle": 129,
+    "dylib_sha256": "6e32892fe776f30bac69596d78d2d774513a656db901339ecfb7d7f3e0ad1b7b",
+    "dylib_uuid": "DEB5F8F9-6CB7-3275-B5C5-8C1DDCE60E90"
+   },
+   "artifact_unchanged_by_experiment": true,
+   "matches_rc1_identity": true,
+   "self_reported_images_match_disk": true,
+   "evidence": {
+    "status": "OK",
+    "path_class": "restricted_production_path",
+    "warm_generated": "RESULT=hello",
+    "post_resume_generated": "RESULT=hello",
+    "reference_release_observed": true,
+    "resource_reclaim_observed": true,
+    "model_container_ref_dropped": true,
+    "suspend_returned_true": true,
+    "events": {
+     "cache_save_checkpoint": 2,
+     "checkpoint_failed": 0,
+     "cold_rebuild": 2,
+     "lifecycle_resume": 1,
+     "lifecycle_suspend": 1,
+     "model_container_absent_after": true,
+     "model_container_present_before": true,
+     "model_container_ref_dropped": true,
+     "pool_bind_failed": 0,
+     "pool_bind_hit_cacheLoad": 0,
+     "prefix_mismatch": 0,
+     "reference_release": 1,
+     "resource_reclaim": 1,
+     "reuse_miss": 0,
+     "sessions_after_release": 0,
+     "sessions_released_at_release": 1
+    },
+    "events_ordered": [
+     {
+      "at_ms": 2742,
+      "event": "cold_rebuild",
+      "seq": 1
+     },
+     {
+      "at_ms": 3870,
+      "event": "cache_save",
+      "seq": 2
+     },
+     {
+      "at_ms": 3923,
+      "event": "reference_release",
+      "seq": 3
+     },
+     {
+      "at_ms": 3929,
+      "event": "resource_reclaim",
+      "seq": 4
+     },
+     {
+      "at_ms": 3929,
+      "event": "lifecycle_suspend",
+      "seq": 5
+     },
+     {
+      "at_ms": 6136,
+      "event": "lifecycle_resume",
+      "seq": 6
+     },
+     {
+      "at_ms": 6137,
+      "event": "cold_rebuild",
+      "seq": 7
+     },
+     {
+      "at_ms": 7016,
+      "event": "cache_save",
+      "seq": 8
+     }
+    ],
+    "generate_passes": 2,
+    "prefill_tokens_observed": 19,
+    "generation_tokens_engine_reported": 3,
+    "footprint_pre_bytes": 17420530792,
+    "footprint_post_suspend_bytes": 12349319704,
+    "footprint_delta_bytes": 5071211088,
+    "physical_page_return_note": "footprint delta recorded as SUPPORTING only; per gate def RSS/footprint/exit alone cannot PASS physical_page_return (malloc relief is a hint, no independent OS page-reclaim proof)."
+   },
+   "external_os_series": {
+    "sampler_rows": 10,
+    "rss_peak_bytes": 11813175296,
+    "rss_series_bytes": [
+     1015808,
+     3588505600,
+     8946466816,
+     8156413952,
+     3711713280,
+     11813175296,
+     10555424768
+    ],
+    "free_pages_bytes_min": 84475904,
+    "free_pages_bytes_max": 17746100224,
+    "free_pages_bytes_last_while_running": 17707204608,
+    "interpretation": "The external RSS peak occurs DURING/AFTER the suspend step, not before it, and system free pages do not rise at the suspend boundary. The sampler is a 1 s series against a suspend window of a few seconds, so it cannot resolve page return inside that window - and what it does show does NOT corroborate a system-level page release. Recorded as non-corroborating, not as proof."
+   },
+   "real_user_state_writes": {
+    "count": 1,
+    "paths": [
+     "/Users/mr.simi/.simigo/logs/native_mlx_trace.log"
+    ],
+    "violation_events": 2,
+    "expected_self_writes": 28
+   }
+  }
+ },
+ "tier_verdicts": {
+  "A_old_kv_unreachable": {
+   "verdict": "PASS",
+   "basis": "established on the RC1 flow at DISK+PROCESS level with an empty ES2 cache root (SIMIGO_CACHE_ROOT isolation); re-asserted by the G3 recomputation in this batch, not re-measured here."
+  },
+  "B_reference_release": {
+   "verdict": "PASS (LOGICAL tier only)",
+   "basis": "memprobe observed sessions_released=1, model_container_ref_dropped=true, events_ordered reference_release at 4794 ms; this is runtime-state release, NOT page return."
+  },
+  "C_resource_reclaim_operation": {
+   "verdict": "PASS (operation executed)",
+   "basis": "resource_reclaim event at 4801 ms in the ordered lifecycle log (explicit cache-clear op); records that the op ran, not what the OS did with the pages."
+  },
+  "D_physical_page_return": {
+   "verdict": "BLOCKED",
+   "basis": "No qualified OS-level page-reclaim proof. The product's footprint drop (4.72 GB) is a self-reported task_vm_info number; the independent sampler did not observe a system-level page release at the suspend boundary. Verdict unchanged by design."
+  }
+ },
+ "verdict_summary": "On the RC1 artifact itself: references released (logical), reclaim operation executed, physical page return NOT established. The memory-release claim that is supported is therefore the two-operation lifecycle claim, exactly as in the earlier build - now bound to this binary's bytes.",
+ "side_effects_observed": {
+  "real_user_state_writes": {
+   "count": 1,
+   "paths": [
+    "/Users/mr.simi/.simigo/logs/native_mlx_trace.log"
+   ],
+   "violation_events": 2,
+   "expected_self_writes": 28
+  },
+  "explanation": "Exactly one real-home file was appended: ~/.simigo/logs/native_mlx_trace.log. Cause: the RC1 binary resolves its trace log through a hardcoded home path (SimiGo/Observability/TraceLogger.swift:25), so SIMIGO_HOME cannot redirect it. This is the concrete evidence behind gate-closure item 1."
+ },
+ "boundary": "The probe still uses the settlement contract's bounded value path (target value == the value the state carries); it does not show that an arbitrary task artifact can be settled and reused independently of the expected value."
+}

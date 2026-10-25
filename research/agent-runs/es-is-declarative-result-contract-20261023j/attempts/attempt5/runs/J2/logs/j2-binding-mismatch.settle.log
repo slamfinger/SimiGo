@@ -1,0 +1,6 @@
+$ bridge execute-with-model-result --database /Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J2/carrier.sqlite --demand-id J-1275b777-u1-contract --advancement j2-u1-binding-mismatch --evaluated-at 2026-10-22T16:35:42Z --item-id J-1275b777-U1 --value-file /Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J2/j2-u1-binding-mismatch-value.json --provenance-file /Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J2/j2-u1-binding-mismatch-provenance.json --run-id j-candidate-j2-u1-binding-mismatch --execution-id j-candidate-j2-u1-binding-mismatch --build-sha256 4e891d17f75ac3022073742b9bb79cea4e09e33d92dc92f9c8c07ac1ea759519 --producer-process-id 6953
+---stdout---
+{"command":"execute-with-model-result","error":"PRODUCER_RESULT_BINDING_MISMATCH: field=priority actual '3' != bound value '5'","error_type":"ContractError","ok":false}
+
+---stderr---
+

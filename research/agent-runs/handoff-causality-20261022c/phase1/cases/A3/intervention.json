@@ -1,0 +1,33 @@
+{
+  "case": "A3",
+  "changes": [
+    {
+      "deleted": {
+        "append_order": 9,
+        "record_object": "aed864859e965ecc6d6ac094156623cff97bc948f69d5cf5cafd1648a62cdb41",
+        "srs_identity": "execution_state:bounded-production-runtime-integration:handoff-a-u1-phase1-baseline-20261022c:runtime-applied"
+      },
+      "remaining_execution_state_rows": [
+        {
+          "append_order": 8,
+          "srs_identity": "execution_state:bounded-production-runtime-integration:handoff-a-u1-phase1-baseline-20261022c"
+        }
+      ],
+      "table": "is_index_entries"
+    }
+  ],
+  "database_after": {
+    "device": "16777233",
+    "inode": "110251819",
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A3/carrier.sqlite",
+    "sha256": "f360807807424b5336ce2a3a376c40501328a67498cf47caee296b243be64ce2",
+    "size_bytes": 36864
+  },
+  "state_after": [
+    {
+      "path": "execution-state.json",
+      "sha256": "d9b19afae61d2e741908abbd53bab7ec26519c5968a54b32a73d7cbd66a0bfc4",
+      "size_bytes": 3274
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+CMD: swift build --product RealModelHandoff
+START_UTC: 2026-10-21T18:06:13Z
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[3 / 59] mlx-swift_Cmlx
+[3 / 58]
+Build complete! (0.79秒)
+EXIT: 0
+END_UTC: 2026-10-21T18:06:17Z

@@ -1,0 +1,22 @@
+[2026-10-24 19:00:12.331] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=132MB swapUsed=1975MB
+[2026-10-24 19:00:15.023] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 19:00:15.025] NativeMLX ready: model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit port=0
+[2026-10-24 19:00:15.025] [MEM] afterLoad active=16385MB cache=0MB peak=16385MB footprint=16494MB swapUsed=1975MB
+[2026-10-24 19:00:15.025] [LC] STATE_TRANSITION r=g1-mem s=mempro from=CREATED to=RUNNING
+[2026-10-24 19:00:15.025] [MLX] poolRescan entries=0
+[2026-10-24 19:00:15.026] [MLX] prefillStep=2048 est=13 reuse=false
+[2026-10-24 19:00:16.026] [MLX] prefill 19/19
+[2026-10-24 19:00:16.171] [MLX] poolExport messages=2 refHash=3b4947891b8872b2
+[2026-10-24 19:00:16.175] [MLX] cacheSave session=mprobe/main history=2
+[2026-10-24 19:00:16.175] [MLX] session=mprobe/main messages=1 exec=fe57fa history=2 delta=1 reuse=false ttft=1091ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=19 promptTime=1.1s tps=63.3 rawEv=3 rawB=12 emitB=12
+[2026-10-24 19:00:16.175] [LC] RELEASED r=g1-mem s=mempro reason=g1g3-memprobe-warm
+[2026-10-24 19:04:25.093] [LIFECYCLE] suspend_done
+[2026-10-24 19:04:25.094] [LIFECYCLE] resume_started
+[2026-10-24 19:04:27.713] [LIFECYCLE] resume_done ms=2619
+[2026-10-24 19:04:27.713] [LC] STATE_TRANSITION r=g1-mem s=mempro from=CREATED to=RUNNING
+[2026-10-24 19:04:27.713] [MLX] prefillStep=2048 est=13 reuse=false
+[2026-10-24 19:04:28.527] [MLX] prefill 19/19
+[2026-10-24 19:04:28.792] [MLX] poolExport messages=2 refHash=3b4947891b8872b2
+[2026-10-24 19:04:28.797] [MLX] cacheSave session=mprobe/main history=2
+[2026-10-24 19:04:28.797] [MLX] session=mprobe/main messages=1 exec=e8b12e history=2 delta=1 reuse=false ttft=1021ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=19 promptTime=1.0s tps=62.9 rawEv=3 rawB=12 emitB=12
+[2026-10-24 19:04:28.797] [LC] RELEASED r=g1-mem s=mempro reason=g1g3-memprobe-resume

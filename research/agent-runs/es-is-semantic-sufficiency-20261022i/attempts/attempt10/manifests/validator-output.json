@@ -1,0 +1,11 @@
+{
+  "result": "FAIL",
+  "issue_count": 4,
+  "issues": [
+    "I0 semantic_trace.u1_settlement.signature_verified must be true",
+    "I0 semantic_trace.u2_settlement.signature_verified must be true",
+    "I0 semantic_trace.u3_settlement.signature_verified must be true",
+    "guard validator must be PASS"
+  ]
+}
+

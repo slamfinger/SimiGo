@@ -1,0 +1,20 @@
+{
+  "id": "I0-STRUCTURED-CHAIN",
+  "kind": "real_model",
+  "notes": [
+    "--skip-real"
+  ],
+  "observations": {
+    "harness_direct_result_reads": 0,
+    "old_state_or_prefix_copied": false,
+    "p2_u1_regeneration_count": 0,
+    "p3_u1_regeneration_count": 0,
+    "p3_u2_regeneration_count": 0,
+    "process_count": 0,
+    "u1_generation_count": 0,
+    "u2_generation_count": 0,
+    "u3_generation_count": 0
+  },
+  "raw_log_paths": [],
+  "terminal_state": "BLOCKED_NOT_RUN"
+}

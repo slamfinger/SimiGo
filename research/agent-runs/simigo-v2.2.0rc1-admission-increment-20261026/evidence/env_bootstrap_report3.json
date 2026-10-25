@@ -1,0 +1,31 @@
+{
+  "database" : {
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/simigo.sqlite3",
+    "schema_version" : 3,
+    "status" : "existing",
+    "work_root" : {
+      "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/workdir",
+      "registered" : true,
+      "root_id" : "work-00000000f64f456a"
+    }
+  },
+  "engine_manifest" : {
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/manifests\/engine-recipes.json",
+    "status" : "present"
+  },
+  "finished_at" : "2026-10-25T18:11:55Z",
+  "hf" : {
+    "path" : "\/opt\/homebrew\/bin\/hf",
+    "status" : "already_present"
+  },
+  "llama_cpp" : {
+    "llama_server" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2\/bin\/llama-server",
+    "status" : "构建失败"
+  },
+  "localb" : {
+    "recovery" : "run first-run ceremony: SIMIGO_LOCALB_MGMT=prepare, then activate (real root: SIMIGO_LOCALB_ALLOW_REAL_ROOT=1)",
+    "status" : "not_initialized"
+  },
+  "managed_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root2",
+  "started_at" : "2026-10-25T18:10:39Z"
+}

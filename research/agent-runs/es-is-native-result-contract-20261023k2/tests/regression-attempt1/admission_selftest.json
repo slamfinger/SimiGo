@@ -1,0 +1,733 @@
+{
+ "conditions": [
+  {
+   "bindings": [
+    {
+     "byte_length": 32,
+     "byte_offset": 35,
+     "item_id": "TASK-U1",
+     "placeholder": "secret",
+     "result_value_sha256": "7739e9aaf4113c59d9f06e5ad7794fa18179ce200600add9bdf6594baae9e207",
+     "settlement_object_id": "08a343bbe1f5e6b0895d351a6db53aa8590c0bf974de32f27c1e71d0ca7d2292"
+    },
+    {
+     "byte_length": 4,
+     "byte_offset": 106,
+     "item_id": "TASK-SOURCE",
+     "placeholder": "checksum",
+     "result_value_sha256": "6933a3cc3d306608a258aebe497261887e0f0d8503f39beeff8c7bedf9745f59",
+     "settlement_object_id": "38147a089ba64d7e887e107b658bc186398d478dc07bc152001298c7063cb465"
+    }
+   ],
+   "case": "happy",
+   "checks": {
+    "all_reported_checks_true": true,
+    "checksum_bound_from_source": true,
+    "database_bytes_unchanged": true,
+    "dependency_closure_complete": true,
+    "exit_code_is_0": true,
+    "object_identity_is_content_digest": true,
+    "offsets_match_admitted_values": true,
+    "ok_is_true": true,
+    "secret_bound_from_u1": true,
+    "two_bindings": true
+   },
+   "exit_code": 0,
+   "input_sha256": "3a8a44bb698ded7c6d99d4b27a0b43ce619e8ca07072ae934c7121e50fbdeb03",
+   "verdict": "PASS"
+  },
+  {
+   "case": "missing-settlement",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "database_sha256_after": "044a13bd34fb6ec05682c859a8ec5f71208f6e8f0f51b494c8aaf220692c9f2d",
+   "database_sha256_before": "044a13bd34fb6ec05682c859a8ec5f71208f6e8f0f51b494c8aaf220692c9f2d",
+   "entries_after": [
+    "carrier.sqlite"
+   ],
+   "entries_before": [
+    "carrier.sqlite"
+   ],
+   "exit_code": 1,
+   "expected_reason_prefix": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+   "expected_stage": "SETTLEMENT_NOT_ADMITTED",
+   "mutation": {
+    "deleted_dependency_rows": 1,
+    "deleted_index_rows": 1
+   },
+   "payload": {
+    "command": "resolve-model-input",
+    "error": "SETTLEMENT_NOT_ADMITTED: MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "error_type": "AdmissionRefusal",
+    "ok": false,
+    "refusal": {
+     "detail": {
+      "item_id": "TASK-U1",
+      "settlement_state": null
+     },
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "stage": "SETTLEMENT_NOT_ADMITTED"
+    }
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "tampered-object-bytes",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "database_sha256_after": "0b3e15fa99b2bddf9de923b8e0a47e83886f919b57495bfe73ea27374f5dd693",
+   "database_sha256_before": "0b3e15fa99b2bddf9de923b8e0a47e83886f919b57495bfe73ea27374f5dd693",
+   "entries_after": [
+    "carrier.sqlite"
+   ],
+   "entries_before": [
+    "carrier.sqlite"
+   ],
+   "exit_code": 1,
+   "expected_reason_prefix": null,
+   "expected_stage": "SETTLEMENT_OBJECT_UNREADABLE",
+   "mutation": {
+    "object_id": "08a343bbe1f5e6b0895d351a6db53aa8590c0bf974de32f27c1e71d0ca7d2292",
+    "original_sha256": "08a343bbe1f5e6b0895d351a6db53aa8590c0bf974de32f27c1e71d0ca7d2292",
+    "tampered_sha256": "d8af03a461772d538c3d1c101c98df9e90d053313d4c01ee88d30b41f8d8a252"
+   },
+   "payload": {
+    "command": "resolve-model-input",
+    "error": "SETTLEMENT_OBJECT_UNREADABLE: ObjectByteMismatch: 08a343bbe1f5e6b0895d351a6db53aa8590c0bf974de32f27c1e71d0ca7d2292",
+    "error_type": "AdmissionRefusal",
+    "ok": false,
+    "refusal": {
+     "detail": {
+      "item_id": "TASK-U1"
+     },
+     "reason": "ObjectByteMismatch: 08a343bbe1f5e6b0895d351a6db53aa8590c0bf974de32f27c1e71d0ca7d2292",
+     "stage": "SETTLEMENT_OBJECT_UNREADABLE"
+    }
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "dependency-mismatch",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "database_sha256_after": "6e364a9e9b86c11e21a7f9974432fc6509e960a99f35a9c3c927babb4d2069b8",
+   "database_sha256_before": "6e364a9e9b86c11e21a7f9974432fc6509e960a99f35a9c3c927babb4d2069b8",
+   "entries_after": [
+    "carrier.sqlite"
+   ],
+   "entries_before": [
+    "carrier.sqlite"
+   ],
+   "exit_code": 1,
+   "expected_reason_prefix": null,
+   "expected_stage": "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
+   "mutation": {
+    "new_dependencies": [
+     "TASK-SOURCE"
+    ],
+    "new_item_object_id": "9bb35b94056df461754cd0387ba9985b75b835fa6f333e15eae6897f68c8d60a",
+    "new_revision": 2,
+    "previous_dependencies": [
+     "TASK-SOURCE",
+     "TASK-U1"
+    ]
+   },
+   "payload": {
+    "command": "resolve-model-input",
+    "error": "INPUT_BINDING_DEPENDENCY_NOT_DECLARED: placeholder {secret} requires TASK-U1, which the current task item no longer declares",
+    "error_type": "AdmissionRefusal",
+    "ok": false,
+    "refusal": {
+     "detail": {
+      "binding_dependency": "TASK-U1",
+      "declared_dependencies": [
+       "TASK-SOURCE"
+      ],
+      "item_id": "TASK-U2"
+     },
+     "reason": "placeholder {secret} requires TASK-U1, which the current task item no longer declares",
+     "stage": "INPUT_BINDING_DEPENDENCY_NOT_DECLARED"
+    }
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "forged-u1-settlement",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "database_sha256_after": "d83012423fca1d3911f7ab86847d71486db8ae5259f39fd2aecd1d10ff24a8f2",
+   "database_sha256_before": "d83012423fca1d3911f7ab86847d71486db8ae5259f39fd2aecd1d10ff24a8f2",
+   "entries_after": [
+    "carrier.sqlite"
+   ],
+   "entries_before": [
+    "carrier.sqlite"
+   ],
+   "exit_code": 1,
+   "expected_reason_prefix": null,
+   "expected_stage": "SETTLEMENT_SIGNATURE_INVALID",
+   "mutation": {
+    "forged_object_id": "0e8d990df60c50c22371dc6f501743e5f1f7b096c8d53d3b0f65ad8df9a93796",
+    "forged_result_value_sha256": "983a385f2b7dc08487ff1276b753aafaddd1e1942e64f03cd48ba6c909a2cebe",
+    "forged_secret": "forged-08a343bbe1f5e6b0895d351a",
+    "previous_object_id": "08a343bbe1f5e6b0895d351a6db53aa8590c0bf974de32f27c1e71d0ca7d2292",
+    "signature_reused": true
+   },
+   "payload": {
+    "command": "resolve-model-input",
+    "error": "SETTLEMENT_SIGNATURE_INVALID: SETTLEMENT_SIGNATURE_INVALID",
+    "error_type": "AdmissionRefusal",
+    "ok": false,
+    "refusal": {
+     "detail": {
+      "item_id": "TASK-U1",
+      "settlement_state": "SETTLED"
+     },
+     "reason": "SETTLEMENT_SIGNATURE_INVALID",
+     "stage": "SETTLEMENT_SIGNATURE_INVALID"
+    }
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "multihop-happy",
+   "checks": {
+    "answer_bound_from_u2": true,
+    "closure_includes_u1_and_u2": true,
+    "database_bytes_unchanged": true,
+    "declares_only_u2": true,
+    "exit_code_is_0": true,
+    "ok_is_true": true
+   },
+   "exit_code": 0,
+   "mutation": {},
+   "payload": {
+    "bindings": [
+     {
+      "byte_length": 21,
+      "byte_offset": 44,
+      "item_id": "TASK-U2",
+      "placeholder": "answer",
+      "result_field": "answer",
+      "result_value_sha256": "8424764ce1621965e8cd80aba0c429687a97006988009658b8515e1a80f8cdba",
+      "settlement_object_id": "caf2c2633509c2f4e16f79a6c37d6521fb5eed06b1925bc85d6fce0fb3affa70",
+      "settlement_object_sha256": "caf2c2633509c2f4e16f79a6c37d6521fb5eed06b1925bc85d6fce0fb3affa70",
+      "value": "692800305ec6d223-222a",
+      "value_sha256": "16e01092c1ec830deace186b719261efa1f444ae318cc61c4d0b28cfe938c0d2"
+     }
+    ],
+    "checks": {
+     "all_declared_dependencies_admitted": true,
+     "all_placeholders_bound": true,
+     "dependency_object_sets_match": true,
+     "object_identity_matches_bytes": true,
+     "result_digests_match_values": true,
+     "settlement_objects_readable": true,
+     "settlement_signatures_valid": true,
+     "source_versions_match_items": true,
+     "validity_satisfied": true
+    },
+    "command": "resolve-model-input",
+    "declared_dependencies": [
+     "TASK-U2"
+    ],
+    "dependencies": [
+     {
+      "dependency_object_ids": {},
+      "evaluated_at_utc": "2026-10-22T18:45:18Z",
+      "item_id": "TASK-SOURCE",
+      "result_value_sha256": "93ff588cb7bea494d41cb856404d08adae2856e21426417b6cca523f78a45f67",
+      "settlement_object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+      "settlement_object_sha256": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+      "settlement_signature": {
+       "algorithm": "Ed25519",
+       "item_id": "TASK-SOURCE",
+       "key_id": "admission-selftest-key",
+       "payload": {
+        "advancement_id": "handoff-registration",
+        "algorithm": "Ed25519",
+        "item_id": "TASK-SOURCE",
+        "key_id": "admission-selftest-key",
+        "provenance": {
+         "dependencies": {},
+         "event": {
+          "previous_settlement_object_id": null,
+          "sequence": 1,
+          "settlement_event_id": "fbb48338285869c9825ab69d9722a6701a08a28eaa4a1b9856a52cfde3f61536"
+         },
+         "model": null,
+         "output": null,
+         "producer": {
+          "build_sha256": "36da6b3b287d07b9af214d773a311814ec76ddb529c4e9022da4bf624e1d97ef",
+          "execution_id": "admission-selftest-execution",
+          "kind": "carrier_calculator",
+          "process_id": "64101",
+          "run_id": "admission-selftest"
+         },
+         "result_value_sha256": "93ff588cb7bea494d41cb856404d08adae2856e21426417b6cca523f78a45f67",
+         "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+         "source": {
+          "object_id": "d1e295b0df684d1717f6dafc76ea51b29f0b909678122276180071592006130c",
+          "payload_sha256": "10c237a8cc5a15681aa5f7b41a1656ae1e6653ebf689055a9fdcef8cfba650a2",
+          "version": "v1:multihop-selftest"
+         },
+         "task": {
+          "item_id": "TASK-SOURCE",
+          "item_object_id": "d1e295b0df684d1717f6dafc76ea51b29f0b909678122276180071592006130c",
+          "payload_sha256": "d1e295b0df684d1717f6dafc76ea51b29f0b909678122276180071592006130c"
+         },
+         "validity": {
+          "evaluated_at_utc": "2026-10-22T18:45:18Z",
+          "valid_until_utc": "2030-12-31T23:59:59Z",
+          "validity_policy_sha256": "31a341908d3cb9777ad24cc3337dc3f3f9d5cdeb77614d22c754501867a55b3d"
+         }
+        },
+        "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+        "settlement_contract": "EINFO-SETTLEMENT-CONTRACT-V1",
+        "settlement_object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+        "settlement_schema_id": "EINFO-SETTLEMENT-V1"
+       },
+       "payload_canonical_base64": "eyJhZHZhbmNlbWVudF9pZCI6ImhhbmRvZmYtcmVnaXN0cmF0aW9uIiwiYWxnb3JpdGhtIjoiRWQyNTUxOSIsIml0ZW1faWQiOiJUQVNLLVNPVVJDRSIsImtleV9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdC1rZXkiLCJwcm92ZW5hbmNlIjp7ImRlcGVuZGVuY2llcyI6e30sImV2ZW50Ijp7InByZXZpb3VzX3NldHRsZW1lbnRfb2JqZWN0X2lkIjpudWxsLCJzZXF1ZW5jZSI6MSwic2V0dGxlbWVudF9ldmVudF9pZCI6ImZiYjQ4MzM4Mjg1ODY5Yzk4MjVhYjY5ZDk3MjJhNjcwMWEwOGEyOGVhYTRhMWI5ODU2YTUyY2ZkZTNmNjE1MzYifSwibW9kZWwiOm51bGwsIm91dHB1dCI6bnVsbCwicHJvZHVjZXIiOnsiYnVpbGRfc2hhMjU2IjoiMzZkYTZiM2IyODdkMDdiOWFmMjE0ZDc3M2EzMTE4MTRlYzc2ZGRiNTI5YzRlOTAyMmRhNGJmNjI0ZTFkOTdlZiIsImV4ZWN1dGlvbl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdC1leGVjdXRpb24iLCJraW5kIjoiY2Fycmllcl9jYWxjdWxhdG9yIiwicHJvY2Vzc19pZCI6IjY0MTAxIiwicnVuX2lkIjoiYWRtaXNzaW9uLXNlbGZ0ZXN0In0sInJlc3VsdF92YWx1ZV9zaGEyNTYiOiI5M2ZmNTg4Y2I3YmVhNDk0ZDQxY2I4NTY0MDRkMDhhZGFlMjg1NmUyMTQyNjQxN2I2Y2NhNTIzZjc4YTQ1ZjY3Iiwic2NoZW1hX2lkIjoiRUlORk8tU0VUVExFTUVOVC1QUk9WRU5BTkNFLVYxIiwic291cmNlIjp7Im9iamVjdF9pZCI6ImQxZTI5NWIwZGY2ODRkMTcxN2Y2ZGFmYzc2ZWE1MWIyOWYwYjkwOTY3ODEyMjI3NjE4MDA3MTU5MjAwNjEzMGMiLCJwYXlsb2FkX3NoYTI1NiI6IjEwYzIzN2E4Y2M1YTE1NjgxYWE1ZjdiNDFhMTY1NmFlMWU2NjUzZWJmNjg5MDU1YTlmZGNlZjhjZmJhNjUwYTIiLCJ2ZXJzaW9uIjoidjE6bXVsdGlob3Atc2VsZnRlc3QifSwidGFzayI6eyJpdGVtX2lkIjoiVEFTSy1TT1VSQ0UiLCJpdGVtX29iamVjdF9pZCI6ImQxZTI5NWIwZGY2ODRkMTcxN2Y2ZGFmYzc2ZWE1MWIyOWYwYjkwOTY3ODEyMjI3NjE4MDA3MTU5MjAwNjEzMGMiLCJwYXlsb2FkX3NoYTI1NiI6ImQxZTI5NWIwZGY2ODRkMTcxN2Y2ZGFmYzc2ZWE1MWIyOWYwYjkwOTY3ODEyMjI3NjE4MDA3MTU5MjAwNjEzMGMifSwidmFsaWRpdHkiOnsiZXZhbHVhdGVkX2F0X3V0YyI6IjIwMjYtMTAtMjJUMTg6NDU6MThaIiwidmFsaWRfdW50aWxfdXRjIjoiMjAzMC0xMi0zMVQyMzo1OTo1OVoiLCJ2YWxpZGl0eV9wb2xpY3lfc2hhMjU2IjoiMzFhMzQxOTA4ZDNjYjk3NzdhZDI0Y2MzMzM3ZGMzZjNmOWQ1Y2RlYjc3NjE0ZDIyYzc1NDUwMTg2N2E1NWIzZCJ9fSwic2NoZW1hX2lkIjoiRUlORk8tU0VUVExFTUVOVC1QUk9WRU5BTkNFLVYxIiwic2V0dGxlbWVudF9jb250cmFjdCI6IkVJTkZPLVNFVFRMRU1FTlQtQ09OVFJBQ1QtVjEiLCJzZXR0bGVtZW50X29iamVjdF9pZCI6ImEwOWQ4MGIyMWFmZDQ2YzA2MGU2ZWIwZDM2YmM3YmY0ZGNjYjM1NTkzZjdmYTE0ZGY4YTM2MjcwMmQwZTA5NjEiLCJzZXR0bGVtZW50X3NjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtVjEifQ==",
+       "schema_id": "EINFO-SETTLEMENT-SIGNATURE-V1",
+       "settlement_object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+       "signature_base64": "b9Xkd7/WVvUYvSi0Sj9UHrbdWlJYatEoUGZKO4t9i5+ZMPux+sO900HF/YQAsItSevJGUU2RrfCSKRUAI/ccBA==",
+       "signature_object_id": "134836e8f388587cb8badb3546d63c7924643b1d4cd9bc53974d1c6de0440cc4"
+      },
+      "settlement_state": "SETTLED",
+      "source_version": "v1:multihop-selftest",
+      "valid_until_utc": "2030-12-31T23:59:59Z"
+     },
+     {
+      "dependency_object_ids": {
+       "TASK-SOURCE": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961"
+      },
+      "evaluated_at_utc": "2026-10-22T18:45:18Z",
+      "item_id": "TASK-U1",
+      "result_value_sha256": "118275a76851ae78d2000d9a07d5ead0ff3566473a135ae1cf4007aef811b135",
+      "settlement_object_id": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836",
+      "settlement_object_sha256": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836",
+      "settlement_signature": {
+       "algorithm": "Ed25519",
+       "item_id": "TASK-U1",
+       "key_id": "admission-selftest-key",
+       "payload": {
+        "advancement_id": "multihop-u1",
+        "algorithm": "Ed25519",
+        "item_id": "TASK-U1",
+        "key_id": "admission-selftest-key",
+        "provenance": {
+         "dependencies": {
+          "TASK-SOURCE": {
+           "object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+           "result_value_sha256": "93ff588cb7bea494d41cb856404d08adae2856e21426417b6cca523f78a45f67"
+          }
+         },
+         "event": {
+          "previous_settlement_object_id": null,
+          "sequence": 1,
+          "settlement_event_id": "c4b6123eb9d5fdbdc35120dde7b0edd5941ec59388fbc8a25444f7beff615008"
+         },
+         "model": {
+          "snapshot_revision": "multihop-fixture-revision",
+          "weights_manifest_sha256": "multihop-fixture-weights"
+         },
+         "output": {
+          "generated_token_count": 3,
+          "generated_token_ids_sha256": "a41ad919bdd6044484ca97585e715e69b10493c6d5c044d08d761bffcfc835dd"
+         },
+         "producer": {
+          "build_sha256": "36da6b3b287d07b9af214d773a311814ec76ddb529c4e9022da4bf624e1d97ef",
+          "execution_id": "admission-selftest-execution",
+          "kind": "model_task",
+          "process_id": "64098",
+          "run_id": "admission-selftest"
+         },
+         "result_value_sha256": "118275a76851ae78d2000d9a07d5ead0ff3566473a135ae1cf4007aef811b135",
+         "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+         "source": {
+          "object_id": "a0d901ab8e47ed6102d0319bc25b4975b0208f44d66aa66d59f82cc070ba76b1",
+          "payload_sha256": "e952bb3e0bf11762ceff5bda77fab6c8261b72b0bb99478565a47bc3630acf9b",
+          "version": "v1"
+         },
+         "task": {
+          "item_id": "TASK-U1",
+          "item_object_id": "a0d901ab8e47ed6102d0319bc25b4975b0208f44d66aa66d59f82cc070ba76b1",
+          "payload_sha256": "a0d901ab8e47ed6102d0319bc25b4975b0208f44d66aa66d59f82cc070ba76b1"
+         },
+         "validity": {
+          "evaluated_at_utc": "2026-10-22T18:45:18Z",
+          "valid_until_utc": "2030-12-31T23:59:59Z",
+          "validity_policy_sha256": "31a341908d3cb9777ad24cc3337dc3f3f9d5cdeb77614d22c754501867a55b3d"
+         }
+        },
+        "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+        "settlement_contract": "EINFO-SETTLEMENT-CONTRACT-V1",
+        "settlement_object_id": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836",
+        "settlement_schema_id": "EINFO-SETTLEMENT-V1"
+       },
+       "payload_canonical_base64": "eyJhZHZhbmNlbWVudF9pZCI6Im11bHRpaG9wLXUxIiwiYWxnb3JpdGhtIjoiRWQyNTUxOSIsIml0ZW1faWQiOiJUQVNLLVUxIiwia2V5X2lkIjoiYWRtaXNzaW9uLXNlbGZ0ZXN0LWtleSIsInByb3ZlbmFuY2UiOnsiZGVwZW5kZW5jaWVzIjp7IlRBU0stU09VUkNFIjp7Im9iamVjdF9pZCI6ImEwOWQ4MGIyMWFmZDQ2YzA2MGU2ZWIwZDM2YmM3YmY0ZGNjYjM1NTkzZjdmYTE0ZGY4YTM2MjcwMmQwZTA5NjEiLCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiOTNmZjU4OGNiN2JlYTQ5NGQ0MWNiODU2NDA0ZDA4YWRhZTI4NTZlMjE0MjY0MTdiNmNjYTUyM2Y3OGE0NWY2NyJ9fSwiZXZlbnQiOnsicHJldmlvdXNfc2V0dGxlbWVudF9vYmplY3RfaWQiOm51bGwsInNlcXVlbmNlIjoxLCJzZXR0bGVtZW50X2V2ZW50X2lkIjoiYzRiNjEyM2ViOWQ1ZmRiZGMzNTEyMGRkZTdiMGVkZDU5NDFlYzU5Mzg4ZmJjOGEyNTQ0NGY3YmVmZjYxNTAwOCJ9LCJtb2RlbCI6eyJzbmFwc2hvdF9yZXZpc2lvbiI6Im11bHRpaG9wLWZpeHR1cmUtcmV2aXNpb24iLCJ3ZWlnaHRzX21hbmlmZXN0X3NoYTI1NiI6Im11bHRpaG9wLWZpeHR1cmUtd2VpZ2h0cyJ9LCJvdXRwdXQiOnsiZ2VuZXJhdGVkX3Rva2VuX2NvdW50IjozLCJnZW5lcmF0ZWRfdG9rZW5faWRzX3NoYTI1NiI6ImE0MWFkOTE5YmRkNjA0NDQ4NGNhOTc1ODVlNzE1ZTY5YjEwNDkzYzZkNWMwNDRkMDhkNzYxYmZmY2ZjODM1ZGQifSwicHJvZHVjZXIiOnsiYnVpbGRfc2hhMjU2IjoiMzZkYTZiM2IyODdkMDdiOWFmMjE0ZDc3M2EzMTE4MTRlYzc2ZGRiNTI5YzRlOTAyMmRhNGJmNjI0ZTFkOTdlZiIsImV4ZWN1dGlvbl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdC1leGVjdXRpb24iLCJraW5kIjoibW9kZWxfdGFzayIsInByb2Nlc3NfaWQiOiI2NDA5OCIsInJ1bl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdCJ9LCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiMTE4Mjc1YTc2ODUxYWU3OGQyMDAwZDlhMDdkNWVhZDBmZjM1NjY0NzNhMTM1YWUxY2Y0MDA3YWVmODExYjEzNSIsInNjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtUFJPVkVOQU5DRS1WMSIsInNvdXJjZSI6eyJvYmplY3RfaWQiOiJhMGQ5MDFhYjhlNDdlZDYxMDJkMDMxOWJjMjViNDk3NWIwMjA4ZjQ0ZDY2YWE2NmQ1OWY4MmNjMDcwYmE3NmIxIiwicGF5bG9hZF9zaGEyNTYiOiJlOTUyYmIzZTBiZjExNzYyY2VmZjViZGE3N2ZhYjZjODI2MWI3MmIwYmI5OTQ3ODU2NWE0N2JjMzYzMGFjZjliIiwidmVyc2lvbiI6InYxIn0sInRhc2siOnsiaXRlbV9pZCI6IlRBU0stVTEiLCJpdGVtX29iamVjdF9pZCI6ImEwZDkwMWFiOGU0N2VkNjEwMmQwMzE5YmMyNWI0OTc1YjAyMDhmNDRkNjZhYTY2ZDU5ZjgyY2MwNzBiYTc2YjEiLCJwYXlsb2FkX3NoYTI1NiI6ImEwZDkwMWFiOGU0N2VkNjEwMmQwMzE5YmMyNWI0OTc1YjAyMDhmNDRkNjZhYTY2ZDU5ZjgyY2MwNzBiYTc2YjEifSwidmFsaWRpdHkiOnsiZXZhbHVhdGVkX2F0X3V0YyI6IjIwMjYtMTAtMjJUMTg6NDU6MThaIiwidmFsaWRfdW50aWxfdXRjIjoiMjAzMC0xMi0zMVQyMzo1OTo1OVoiLCJ2YWxpZGl0eV9wb2xpY3lfc2hhMjU2IjoiMzFhMzQxOTA4ZDNjYjk3NzdhZDI0Y2MzMzM3ZGMzZjNmOWQ1Y2RlYjc3NjE0ZDIyYzc1NDUwMTg2N2E1NWIzZCJ9fSwic2NoZW1hX2lkIjoiRUlORk8tU0VUVExFTUVOVC1QUk9WRU5BTkNFLVYxIiwic2V0dGxlbWVudF9jb250cmFjdCI6IkVJTkZPLVNFVFRMRU1FTlQtQ09OVFJBQ1QtVjEiLCJzZXR0bGVtZW50X29iamVjdF9pZCI6IjFkNTA4MzQxY2JiZGY2Mjk3ODFhMjM1YmE1NjY5MTYzOWMzNGRlODJjM2JiZjk2NjQ2ZjgxM2VhYzM4ZmE4MzYiLCJzZXR0bGVtZW50X3NjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtVjEifQ==",
+       "schema_id": "EINFO-SETTLEMENT-SIGNATURE-V1",
+       "settlement_object_id": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836",
+       "signature_base64": "p+koMLmMS0mSa8/+vBV9E+tZOFc5whQ2LJhM06HQZ0DXd36evNMbjfwldIjD69s+nKdoiS/0JwRK1Pk8ywvEBQ==",
+       "signature_object_id": "a0c26064ffe8d4f63a3f043ad6990fc5509cfef213ead4aa80af3c10cf6ece74"
+      },
+      "settlement_state": "SETTLED",
+      "source_version": "v1",
+      "valid_until_utc": "2030-12-31T23:59:59Z"
+     },
+     {
+      "dependency_object_ids": {
+       "TASK-SOURCE": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+       "TASK-U1": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836"
+      },
+      "evaluated_at_utc": "2026-10-22T18:45:18Z",
+      "item_id": "TASK-U2",
+      "result_value_sha256": "8424764ce1621965e8cd80aba0c429687a97006988009658b8515e1a80f8cdba",
+      "settlement_object_id": "caf2c2633509c2f4e16f79a6c37d6521fb5eed06b1925bc85d6fce0fb3affa70",
+      "settlement_object_sha256": "caf2c2633509c2f4e16f79a6c37d6521fb5eed06b1925bc85d6fce0fb3affa70",
+      "settlement_signature": {
+       "algorithm": "Ed25519",
+       "item_id": "TASK-U2",
+       "key_id": "admission-selftest-key",
+       "payload": {
+        "advancement_id": "multihop-u2",
+        "algorithm": "Ed25519",
+        "item_id": "TASK-U2",
+        "key_id": "admission-selftest-key",
+        "provenance": {
+         "dependencies": {
+          "TASK-SOURCE": {
+           "object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+           "result_value_sha256": "93ff588cb7bea494d41cb856404d08adae2856e21426417b6cca523f78a45f67"
+          },
+          "TASK-U1": {
+           "object_id": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836",
+           "result_value_sha256": "118275a76851ae78d2000d9a07d5ead0ff3566473a135ae1cf4007aef811b135"
+          }
+         },
+         "event": {
+          "previous_settlement_object_id": null,
+          "sequence": 1,
+          "settlement_event_id": "2baa792bf51afdd8688b839e42679377ec7a4ff8907f34cffaf4b49288360364"
+         },
+         "model": {
+          "snapshot_revision": "multihop-fixture-revision",
+          "weights_manifest_sha256": "multihop-fixture-weights"
+         },
+         "output": {
+          "generated_token_count": 3,
+          "generated_token_ids_sha256": "a41ad919bdd6044484ca97585e715e69b10493c6d5c044d08d761bffcfc835dd"
+         },
+         "producer": {
+          "build_sha256": "36da6b3b287d07b9af214d773a311814ec76ddb529c4e9022da4bf624e1d97ef",
+          "execution_id": "admission-selftest-execution",
+          "kind": "model_task",
+          "process_id": "64098",
+          "run_id": "admission-selftest"
+         },
+         "result_value_sha256": "8424764ce1621965e8cd80aba0c429687a97006988009658b8515e1a80f8cdba",
+         "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+         "source": {
+          "object_id": "7c8d0d05ce9d1f23117244fd9cb86ae6846f99940a37a90753d1f6fb8a9b236b",
+          "payload_sha256": "c56d63a91c5b285520b069ccbce97e9cd57b5fc19bcbd972e319fee709827c72",
+          "version": "v1"
+         },
+         "task": {
+          "item_id": "TASK-U2",
+          "item_object_id": "7c8d0d05ce9d1f23117244fd9cb86ae6846f99940a37a90753d1f6fb8a9b236b",
+          "payload_sha256": "7c8d0d05ce9d1f23117244fd9cb86ae6846f99940a37a90753d1f6fb8a9b236b"
+         },
+         "validity": {
+          "evaluated_at_utc": "2026-10-22T18:45:18Z",
+          "valid_until_utc": "2030-12-31T23:59:59Z",
+          "validity_policy_sha256": "31a341908d3cb9777ad24cc3337dc3f3f9d5cdeb77614d22c754501867a55b3d"
+         }
+        },
+        "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+        "settlement_contract": "EINFO-SETTLEMENT-CONTRACT-V1",
+        "settlement_object_id": "caf2c2633509c2f4e16f79a6c37d6521fb5eed06b1925bc85d6fce0fb3affa70",
+        "settlement_schema_id": "EINFO-SETTLEMENT-V1"
+       },
+       "payload_canonical_base64": "eyJhZHZhbmNlbWVudF9pZCI6Im11bHRpaG9wLXUyIiwiYWxnb3JpdGhtIjoiRWQyNTUxOSIsIml0ZW1faWQiOiJUQVNLLVUyIiwia2V5X2lkIjoiYWRtaXNzaW9uLXNlbGZ0ZXN0LWtleSIsInByb3ZlbmFuY2UiOnsiZGVwZW5kZW5jaWVzIjp7IlRBU0stU09VUkNFIjp7Im9iamVjdF9pZCI6ImEwOWQ4MGIyMWFmZDQ2YzA2MGU2ZWIwZDM2YmM3YmY0ZGNjYjM1NTkzZjdmYTE0ZGY4YTM2MjcwMmQwZTA5NjEiLCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiOTNmZjU4OGNiN2JlYTQ5NGQ0MWNiODU2NDA0ZDA4YWRhZTI4NTZlMjE0MjY0MTdiNmNjYTUyM2Y3OGE0NWY2NyJ9LCJUQVNLLVUxIjp7Im9iamVjdF9pZCI6IjFkNTA4MzQxY2JiZGY2Mjk3ODFhMjM1YmE1NjY5MTYzOWMzNGRlODJjM2JiZjk2NjQ2ZjgxM2VhYzM4ZmE4MzYiLCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiMTE4Mjc1YTc2ODUxYWU3OGQyMDAwZDlhMDdkNWVhZDBmZjM1NjY0NzNhMTM1YWUxY2Y0MDA3YWVmODExYjEzNSJ9fSwiZXZlbnQiOnsicHJldmlvdXNfc2V0dGxlbWVudF9vYmplY3RfaWQiOm51bGwsInNlcXVlbmNlIjoxLCJzZXR0bGVtZW50X2V2ZW50X2lkIjoiMmJhYTc5MmJmNTFhZmRkODY4OGI4MzllNDI2NzkzNzdlYzdhNGZmODkwN2YzNGNmZmFmNGI0OTI4ODM2MDM2NCJ9LCJtb2RlbCI6eyJzbmFwc2hvdF9yZXZpc2lvbiI6Im11bHRpaG9wLWZpeHR1cmUtcmV2aXNpb24iLCJ3ZWlnaHRzX21hbmlmZXN0X3NoYTI1NiI6Im11bHRpaG9wLWZpeHR1cmUtd2VpZ2h0cyJ9LCJvdXRwdXQiOnsiZ2VuZXJhdGVkX3Rva2VuX2NvdW50IjozLCJnZW5lcmF0ZWRfdG9rZW5faWRzX3NoYTI1NiI6ImE0MWFkOTE5YmRkNjA0NDQ4NGNhOTc1ODVlNzE1ZTY5YjEwNDkzYzZkNWMwNDRkMDhkNzYxYmZmY2ZjODM1ZGQifSwicHJvZHVjZXIiOnsiYnVpbGRfc2hhMjU2IjoiMzZkYTZiM2IyODdkMDdiOWFmMjE0ZDc3M2EzMTE4MTRlYzc2ZGRiNTI5YzRlOTAyMmRhNGJmNjI0ZTFkOTdlZiIsImV4ZWN1dGlvbl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdC1leGVjdXRpb24iLCJraW5kIjoibW9kZWxfdGFzayIsInByb2Nlc3NfaWQiOiI2NDA5OCIsInJ1bl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdCJ9LCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiODQyNDc2NGNlMTYyMTk2NWU4Y2Q4MGFiYTBjNDI5Njg3YTk3MDA2OTg4MDA5NjU4Yjg1MTVlMWE4MGY4Y2RiYSIsInNjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtUFJPVkVOQU5DRS1WMSIsInNvdXJjZSI6eyJvYmplY3RfaWQiOiI3YzhkMGQwNWNlOWQxZjIzMTE3MjQ0ZmQ5Y2I4NmFlNjg0NmY5OTk0MGEzN2E5MDc1M2QxZjZmYjhhOWIyMzZiIiwicGF5bG9hZF9zaGEyNTYiOiJjNTZkNjNhOTFjNWIyODU1MjBiMDY5Y2NiY2U5N2U5Y2Q1N2I1ZmMxOWJjYmQ5NzJlMzE5ZmVlNzA5ODI3YzcyIiwidmVyc2lvbiI6InYxIn0sInRhc2siOnsiaXRlbV9pZCI6IlRBU0stVTIiLCJpdGVtX29iamVjdF9pZCI6IjdjOGQwZDA1Y2U5ZDFmMjMxMTcyNDRmZDljYjg2YWU2ODQ2Zjk5OTQwYTM3YTkwNzUzZDFmNmZiOGE5YjIzNmIiLCJwYXlsb2FkX3NoYTI1NiI6IjdjOGQwZDA1Y2U5ZDFmMjMxMTcyNDRmZDljYjg2YWU2ODQ2Zjk5OTQwYTM3YTkwNzUzZDFmNmZiOGE5YjIzNmIifSwidmFsaWRpdHkiOnsiZXZhbHVhdGVkX2F0X3V0YyI6IjIwMjYtMTAtMjJUMTg6NDU6MThaIiwidmFsaWRfdW50aWxfdXRjIjoiMjAzMC0xMi0zMVQyMzo1OTo1OVoiLCJ2YWxpZGl0eV9wb2xpY3lfc2hhMjU2IjoiMzFhMzQxOTA4ZDNjYjk3NzdhZDI0Y2MzMzM3ZGMzZjNmOWQ1Y2RlYjc3NjE0ZDIyYzc1NDUwMTg2N2E1NWIzZCJ9fSwic2NoZW1hX2lkIjoiRUlORk8tU0VUVExFTUVOVC1QUk9WRU5BTkNFLVYxIiwic2V0dGxlbWVudF9jb250cmFjdCI6IkVJTkZPLVNFVFRMRU1FTlQtQ09OVFJBQ1QtVjEiLCJzZXR0bGVtZW50X29iamVjdF9pZCI6ImNhZjJjMjYzMzUwOWMyZjRlMTZmNzlhNmMzN2Q2NTIxZmI1ZWVkMDZiMTkyNWJjODVkNmZjZTBmYjNhZmZhNzAiLCJzZXR0bGVtZW50X3NjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtVjEifQ==",
+       "schema_id": "EINFO-SETTLEMENT-SIGNATURE-V1",
+       "settlement_object_id": "caf2c2633509c2f4e16f79a6c37d6521fb5eed06b1925bc85d6fce0fb3affa70",
+       "signature_base64": "uYosI8Vx9DclmwZVw6ZhuHW0nhOOqGJqf3UzFHcwT0n+nNrF8xDmyYWYDsIuqJ2y6Ry/FOEjtr1oP15rWBGYAA==",
+       "signature_object_id": "0eaa5ea48e47020a69f8a573ec94dead68aa3b7b9795abc69bb6a8a5743bde5e"
+      },
+      "settlement_state": "SETTLED",
+      "source_version": "v1",
+      "valid_until_utc": "2030-12-31T23:59:59Z"
+     }
+    ],
+    "evaluated_at_utc": "2026-10-22T18:45:18Z",
+    "input_byte_length": 168,
+    "input_sha256": "ea0c49d5db89295b93f7ab2efd6f43122fd921c9019689891581b890f9f95a4f",
+    "input_text": "\nStep 3: the composed answer from step 2 is 692800305ec6d223-222a.\nReply with exactly one line and nothing else: STAMP=<the 16 hex characters before the hyphen>\nAnswer:",
+    "item_id": "TASK-U3",
+    "ok": true,
+    "settlement_signatures": [
+     {
+      "algorithm": "Ed25519",
+      "item_id": "TASK-SOURCE",
+      "key_id": "admission-selftest-key",
+      "payload": {
+       "advancement_id": "handoff-registration",
+       "algorithm": "Ed25519",
+       "item_id": "TASK-SOURCE",
+       "key_id": "admission-selftest-key",
+       "provenance": {
+        "dependencies": {},
+        "event": {
+         "previous_settlement_object_id": null,
+         "sequence": 1,
+         "settlement_event_id": "fbb48338285869c9825ab69d9722a6701a08a28eaa4a1b9856a52cfde3f61536"
+        },
+        "model": null,
+        "output": null,
+        "producer": {
+         "build_sha256": "36da6b3b287d07b9af214d773a311814ec76ddb529c4e9022da4bf624e1d97ef",
+         "execution_id": "admission-selftest-execution",
+         "kind": "carrier_calculator",
+         "process_id": "64101",
+         "run_id": "admission-selftest"
+        },
+        "result_value_sha256": "93ff588cb7bea494d41cb856404d08adae2856e21426417b6cca523f78a45f67",
+        "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+        "source": {
+         "object_id": "d1e295b0df684d1717f6dafc76ea51b29f0b909678122276180071592006130c",
+         "payload_sha256": "10c237a8cc5a15681aa5f7b41a1656ae1e6653ebf689055a9fdcef8cfba650a2",
+         "version": "v1:multihop-selftest"
+        },
+        "task": {
+         "item_id": "TASK-SOURCE",
+         "item_object_id": "d1e295b0df684d1717f6dafc76ea51b29f0b909678122276180071592006130c",
+         "payload_sha256": "d1e295b0df684d1717f6dafc76ea51b29f0b909678122276180071592006130c"
+        },
+        "validity": {
+         "evaluated_at_utc": "2026-10-22T18:45:18Z",
+         "valid_until_utc": "2030-12-31T23:59:59Z",
+         "validity_policy_sha256": "31a341908d3cb9777ad24cc3337dc3f3f9d5cdeb77614d22c754501867a55b3d"
+        }
+       },
+       "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+       "settlement_contract": "EINFO-SETTLEMENT-CONTRACT-V1",
+       "settlement_object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+       "settlement_schema_id": "EINFO-SETTLEMENT-V1"
+      },
+      "payload_canonical_base64": "eyJhZHZhbmNlbWVudF9pZCI6ImhhbmRvZmYtcmVnaXN0cmF0aW9uIiwiYWxnb3JpdGhtIjoiRWQyNTUxOSIsIml0ZW1faWQiOiJUQVNLLVNPVVJDRSIsImtleV9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdC1rZXkiLCJwcm92ZW5hbmNlIjp7ImRlcGVuZGVuY2llcyI6e30sImV2ZW50Ijp7InByZXZpb3VzX3NldHRsZW1lbnRfb2JqZWN0X2lkIjpudWxsLCJzZXF1ZW5jZSI6MSwic2V0dGxlbWVudF9ldmVudF9pZCI6ImZiYjQ4MzM4Mjg1ODY5Yzk4MjVhYjY5ZDk3MjJhNjcwMWEwOGEyOGVhYTRhMWI5ODU2YTUyY2ZkZTNmNjE1MzYifSwibW9kZWwiOm51bGwsIm91dHB1dCI6bnVsbCwicHJvZHVjZXIiOnsiYnVpbGRfc2hhMjU2IjoiMzZkYTZiM2IyODdkMDdiOWFmMjE0ZDc3M2EzMTE4MTRlYzc2ZGRiNTI5YzRlOTAyMmRhNGJmNjI0ZTFkOTdlZiIsImV4ZWN1dGlvbl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdC1leGVjdXRpb24iLCJraW5kIjoiY2Fycmllcl9jYWxjdWxhdG9yIiwicHJvY2Vzc19pZCI6IjY0MTAxIiwicnVuX2lkIjoiYWRtaXNzaW9uLXNlbGZ0ZXN0In0sInJlc3VsdF92YWx1ZV9zaGEyNTYiOiI5M2ZmNTg4Y2I3YmVhNDk0ZDQxY2I4NTY0MDRkMDhhZGFlMjg1NmUyMTQyNjQxN2I2Y2NhNTIzZjc4YTQ1ZjY3Iiwic2NoZW1hX2lkIjoiRUlORk8tU0VUVExFTUVOVC1QUk9WRU5BTkNFLVYxIiwic291cmNlIjp7Im9iamVjdF9pZCI6ImQxZTI5NWIwZGY2ODRkMTcxN2Y2ZGFmYzc2ZWE1MWIyOWYwYjkwOTY3ODEyMjI3NjE4MDA3MTU5MjAwNjEzMGMiLCJwYXlsb2FkX3NoYTI1NiI6IjEwYzIzN2E4Y2M1YTE1NjgxYWE1ZjdiNDFhMTY1NmFlMWU2NjUzZWJmNjg5MDU1YTlmZGNlZjhjZmJhNjUwYTIiLCJ2ZXJzaW9uIjoidjE6bXVsdGlob3Atc2VsZnRlc3QifSwidGFzayI6eyJpdGVtX2lkIjoiVEFTSy1TT1VSQ0UiLCJpdGVtX29iamVjdF9pZCI6ImQxZTI5NWIwZGY2ODRkMTcxN2Y2ZGFmYzc2ZWE1MWIyOWYwYjkwOTY3ODEyMjI3NjE4MDA3MTU5MjAwNjEzMGMiLCJwYXlsb2FkX3NoYTI1NiI6ImQxZTI5NWIwZGY2ODRkMTcxN2Y2ZGFmYzc2ZWE1MWIyOWYwYjkwOTY3ODEyMjI3NjE4MDA3MTU5MjAwNjEzMGMifSwidmFsaWRpdHkiOnsiZXZhbHVhdGVkX2F0X3V0YyI6IjIwMjYtMTAtMjJUMTg6NDU6MThaIiwidmFsaWRfdW50aWxfdXRjIjoiMjAzMC0xMi0zMVQyMzo1OTo1OVoiLCJ2YWxpZGl0eV9wb2xpY3lfc2hhMjU2IjoiMzFhMzQxOTA4ZDNjYjk3NzdhZDI0Y2MzMzM3ZGMzZjNmOWQ1Y2RlYjc3NjE0ZDIyYzc1NDUwMTg2N2E1NWIzZCJ9fSwic2NoZW1hX2lkIjoiRUlORk8tU0VUVExFTUVOVC1QUk9WRU5BTkNFLVYxIiwic2V0dGxlbWVudF9jb250cmFjdCI6IkVJTkZPLVNFVFRMRU1FTlQtQ09OVFJBQ1QtVjEiLCJzZXR0bGVtZW50X29iamVjdF9pZCI6ImEwOWQ4MGIyMWFmZDQ2YzA2MGU2ZWIwZDM2YmM3YmY0ZGNjYjM1NTkzZjdmYTE0ZGY4YTM2MjcwMmQwZTA5NjEiLCJzZXR0bGVtZW50X3NjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtVjEifQ==",
+      "schema_id": "EINFO-SETTLEMENT-SIGNATURE-V1",
+      "settlement_object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+      "signature_base64": "b9Xkd7/WVvUYvSi0Sj9UHrbdWlJYatEoUGZKO4t9i5+ZMPux+sO900HF/YQAsItSevJGUU2RrfCSKRUAI/ccBA==",
+      "signature_object_id": "134836e8f388587cb8badb3546d63c7924643b1d4cd9bc53974d1c6de0440cc4"
+     },
+     {
+      "algorithm": "Ed25519",
+      "item_id": "TASK-U1",
+      "key_id": "admission-selftest-key",
+      "payload": {
+       "advancement_id": "multihop-u1",
+       "algorithm": "Ed25519",
+       "item_id": "TASK-U1",
+       "key_id": "admission-selftest-key",
+       "provenance": {
+        "dependencies": {
+         "TASK-SOURCE": {
+          "object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+          "result_value_sha256": "93ff588cb7bea494d41cb856404d08adae2856e21426417b6cca523f78a45f67"
+         }
+        },
+        "event": {
+         "previous_settlement_object_id": null,
+         "sequence": 1,
+         "settlement_event_id": "c4b6123eb9d5fdbdc35120dde7b0edd5941ec59388fbc8a25444f7beff615008"
+        },
+        "model": {
+         "snapshot_revision": "multihop-fixture-revision",
+         "weights_manifest_sha256": "multihop-fixture-weights"
+        },
+        "output": {
+         "generated_token_count": 3,
+         "generated_token_ids_sha256": "a41ad919bdd6044484ca97585e715e69b10493c6d5c044d08d761bffcfc835dd"
+        },
+        "producer": {
+         "build_sha256": "36da6b3b287d07b9af214d773a311814ec76ddb529c4e9022da4bf624e1d97ef",
+         "execution_id": "admission-selftest-execution",
+         "kind": "model_task",
+         "process_id": "64098",
+         "run_id": "admission-selftest"
+        },
+        "result_value_sha256": "118275a76851ae78d2000d9a07d5ead0ff3566473a135ae1cf4007aef811b135",
+        "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+        "source": {
+         "object_id": "a0d901ab8e47ed6102d0319bc25b4975b0208f44d66aa66d59f82cc070ba76b1",
+         "payload_sha256": "e952bb3e0bf11762ceff5bda77fab6c8261b72b0bb99478565a47bc3630acf9b",
+         "version": "v1"
+        },
+        "task": {
+         "item_id": "TASK-U1",
+         "item_object_id": "a0d901ab8e47ed6102d0319bc25b4975b0208f44d66aa66d59f82cc070ba76b1",
+         "payload_sha256": "a0d901ab8e47ed6102d0319bc25b4975b0208f44d66aa66d59f82cc070ba76b1"
+        },
+        "validity": {
+         "evaluated_at_utc": "2026-10-22T18:45:18Z",
+         "valid_until_utc": "2030-12-31T23:59:59Z",
+         "validity_policy_sha256": "31a341908d3cb9777ad24cc3337dc3f3f9d5cdeb77614d22c754501867a55b3d"
+        }
+       },
+       "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+       "settlement_contract": "EINFO-SETTLEMENT-CONTRACT-V1",
+       "settlement_object_id": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836",
+       "settlement_schema_id": "EINFO-SETTLEMENT-V1"
+      },
+      "payload_canonical_base64": "eyJhZHZhbmNlbWVudF9pZCI6Im11bHRpaG9wLXUxIiwiYWxnb3JpdGhtIjoiRWQyNTUxOSIsIml0ZW1faWQiOiJUQVNLLVUxIiwia2V5X2lkIjoiYWRtaXNzaW9uLXNlbGZ0ZXN0LWtleSIsInByb3ZlbmFuY2UiOnsiZGVwZW5kZW5jaWVzIjp7IlRBU0stU09VUkNFIjp7Im9iamVjdF9pZCI6ImEwOWQ4MGIyMWFmZDQ2YzA2MGU2ZWIwZDM2YmM3YmY0ZGNjYjM1NTkzZjdmYTE0ZGY4YTM2MjcwMmQwZTA5NjEiLCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiOTNmZjU4OGNiN2JlYTQ5NGQ0MWNiODU2NDA0ZDA4YWRhZTI4NTZlMjE0MjY0MTdiNmNjYTUyM2Y3OGE0NWY2NyJ9fSwiZXZlbnQiOnsicHJldmlvdXNfc2V0dGxlbWVudF9vYmplY3RfaWQiOm51bGwsInNlcXVlbmNlIjoxLCJzZXR0bGVtZW50X2V2ZW50X2lkIjoiYzRiNjEyM2ViOWQ1ZmRiZGMzNTEyMGRkZTdiMGVkZDU5NDFlYzU5Mzg4ZmJjOGEyNTQ0NGY3YmVmZjYxNTAwOCJ9LCJtb2RlbCI6eyJzbmFwc2hvdF9yZXZpc2lvbiI6Im11bHRpaG9wLWZpeHR1cmUtcmV2aXNpb24iLCJ3ZWlnaHRzX21hbmlmZXN0X3NoYTI1NiI6Im11bHRpaG9wLWZpeHR1cmUtd2VpZ2h0cyJ9LCJvdXRwdXQiOnsiZ2VuZXJhdGVkX3Rva2VuX2NvdW50IjozLCJnZW5lcmF0ZWRfdG9rZW5faWRzX3NoYTI1NiI6ImE0MWFkOTE5YmRkNjA0NDQ4NGNhOTc1ODVlNzE1ZTY5YjEwNDkzYzZkNWMwNDRkMDhkNzYxYmZmY2ZjODM1ZGQifSwicHJvZHVjZXIiOnsiYnVpbGRfc2hhMjU2IjoiMzZkYTZiM2IyODdkMDdiOWFmMjE0ZDc3M2EzMTE4MTRlYzc2ZGRiNTI5YzRlOTAyMmRhNGJmNjI0ZTFkOTdlZiIsImV4ZWN1dGlvbl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdC1leGVjdXRpb24iLCJraW5kIjoibW9kZWxfdGFzayIsInByb2Nlc3NfaWQiOiI2NDA5OCIsInJ1bl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdCJ9LCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiMTE4Mjc1YTc2ODUxYWU3OGQyMDAwZDlhMDdkNWVhZDBmZjM1NjY0NzNhMTM1YWUxY2Y0MDA3YWVmODExYjEzNSIsInNjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtUFJPVkVOQU5DRS1WMSIsInNvdXJjZSI6eyJvYmplY3RfaWQiOiJhMGQ5MDFhYjhlNDdlZDYxMDJkMDMxOWJjMjViNDk3NWIwMjA4ZjQ0ZDY2YWE2NmQ1OWY4MmNjMDcwYmE3NmIxIiwicGF5bG9hZF9zaGEyNTYiOiJlOTUyYmIzZTBiZjExNzYyY2VmZjViZGE3N2ZhYjZjODI2MWI3MmIwYmI5OTQ3ODU2NWE0N2JjMzYzMGFjZjliIiwidmVyc2lvbiI6InYxIn0sInRhc2siOnsiaXRlbV9pZCI6IlRBU0stVTEiLCJpdGVtX29iamVjdF9pZCI6ImEwZDkwMWFiOGU0N2VkNjEwMmQwMzE5YmMyNWI0OTc1YjAyMDhmNDRkNjZhYTY2ZDU5ZjgyY2MwNzBiYTc2YjEiLCJwYXlsb2FkX3NoYTI1NiI6ImEwZDkwMWFiOGU0N2VkNjEwMmQwMzE5YmMyNWI0OTc1YjAyMDhmNDRkNjZhYTY2ZDU5ZjgyY2MwNzBiYTc2YjEifSwidmFsaWRpdHkiOnsiZXZhbHVhdGVkX2F0X3V0YyI6IjIwMjYtMTAtMjJUMTg6NDU6MThaIiwidmFsaWRfdW50aWxfdXRjIjoiMjAzMC0xMi0zMVQyMzo1OTo1OVoiLCJ2YWxpZGl0eV9wb2xpY3lfc2hhMjU2IjoiMzFhMzQxOTA4ZDNjYjk3NzdhZDI0Y2MzMzM3ZGMzZjNmOWQ1Y2RlYjc3NjE0ZDIyYzc1NDUwMTg2N2E1NWIzZCJ9fSwic2NoZW1hX2lkIjoiRUlORk8tU0VUVExFTUVOVC1QUk9WRU5BTkNFLVYxIiwic2V0dGxlbWVudF9jb250cmFjdCI6IkVJTkZPLVNFVFRMRU1FTlQtQ09OVFJBQ1QtVjEiLCJzZXR0bGVtZW50X29iamVjdF9pZCI6IjFkNTA4MzQxY2JiZGY2Mjk3ODFhMjM1YmE1NjY5MTYzOWMzNGRlODJjM2JiZjk2NjQ2ZjgxM2VhYzM4ZmE4MzYiLCJzZXR0bGVtZW50X3NjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtVjEifQ==",
+      "schema_id": "EINFO-SETTLEMENT-SIGNATURE-V1",
+      "settlement_object_id": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836",
+      "signature_base64": "p+koMLmMS0mSa8/+vBV9E+tZOFc5whQ2LJhM06HQZ0DXd36evNMbjfwldIjD69s+nKdoiS/0JwRK1Pk8ywvEBQ==",
+      "signature_object_id": "a0c26064ffe8d4f63a3f043ad6990fc5509cfef213ead4aa80af3c10cf6ece74"
+     },
+     {
+      "algorithm": "Ed25519",
+      "item_id": "TASK-U2",
+      "key_id": "admission-selftest-key",
+      "payload": {
+       "advancement_id": "multihop-u2",
+       "algorithm": "Ed25519",
+       "item_id": "TASK-U2",
+       "key_id": "admission-selftest-key",
+       "provenance": {
+        "dependencies": {
+         "TASK-SOURCE": {
+          "object_id": "a09d80b21afd46c060e6eb0d36bc7bf4dccb35593f7fa14df8a362702d0e0961",
+          "result_value_sha256": "93ff588cb7bea494d41cb856404d08adae2856e21426417b6cca523f78a45f67"
+         },
+         "TASK-U1": {
+          "object_id": "1d508341cbbdf629781a235ba56691639c34de82c3bbf96646f813eac38fa836",
+          "result_value_sha256": "118275a76851ae78d2000d9a07d5ead0ff3566473a135ae1cf4007aef811b135"
+         }
+        },
+        "event": {
+         "previous_settlement_object_id": null,
+         "sequence": 1,
+         "settlement_event_id": "2baa792bf51afdd8688b839e42679377ec7a4ff8907f34cffaf4b49288360364"
+        },
+        "model": {
+         "snapshot_revision": "multihop-fixture-revision",
+         "weights_manifest_sha256": "multihop-fixture-weights"
+        },
+        "output": {
+         "generated_token_count": 3,
+         "generated_token_ids_sha256": "a41ad919bdd6044484ca97585e715e69b10493c6d5c044d08d761bffcfc835dd"
+        },
+        "producer": {
+         "build_sha256": "36da6b3b287d07b9af214d773a311814ec76ddb529c4e9022da4bf624e1d97ef",
+         "execution_id": "admission-selftest-execution",
+         "kind": "model_task",
+         "process_id": "64098",
+         "run_id": "admission-selftest"
+        },
+        "result_value_sha256": "8424764ce1621965e8cd80aba0c429687a97006988009658b8515e1a80f8cdba",
+        "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+        "source": {
+         "object_id": "7c8d0d05ce9d1f23117244fd9cb86ae6846f99940a37a90753d1f6fb8a9b236b",
+         "payload_sha256": "c56d63a91c5b285520b069ccbce97e9cd57b5fc19bcbd972e319fee709827c72",
+         "version": "v1"
+        },
+        "task": {
+         "item_id": "TASK-U2",
+         "item_object_id": "7c8d0d05ce9d1f23117244fd9cb86ae6846f99940a37a90753d1f6fb8a9b236b",
+         "payload_sha256": "7c8d0d05ce9d1f23117244fd9cb86ae6846f99940a37a90753d1f6fb8a9b236b"
+        },
+        "validity": {
+         "evaluated_at_utc": "2026-10-22T18:45:18Z",
+         "valid_until_utc": "2030-12-31T23:59:59Z",
+         "validity_policy_sha256": "31a341908d3cb9777ad24cc3337dc3f3f9d5cdeb77614d22c754501867a55b3d"
+        }
+       },
+       "schema_id": "EINFO-SETTLEMENT-PROVENANCE-V1",
+       "settlement_contract": "EINFO-SETTLEMENT-CONTRACT-V1",
+       "settlement_object_id": "caf2c2633509c2f4e16f79a6c37d6521fb5eed06b1925bc85d6fce0fb3affa70",
+       "settlement_schema_id": "EINFO-SETTLEMENT-V1"
+      },
+      "payload_canonical_base64": "eyJhZHZhbmNlbWVudF9pZCI6Im11bHRpaG9wLXUyIiwiYWxnb3JpdGhtIjoiRWQyNTUxOSIsIml0ZW1faWQiOiJUQVNLLVUyIiwia2V5X2lkIjoiYWRtaXNzaW9uLXNlbGZ0ZXN0LWtleSIsInByb3ZlbmFuY2UiOnsiZGVwZW5kZW5jaWVzIjp7IlRBU0stU09VUkNFIjp7Im9iamVjdF9pZCI6ImEwOWQ4MGIyMWFmZDQ2YzA2MGU2ZWIwZDM2YmM3YmY0ZGNjYjM1NTkzZjdmYTE0ZGY4YTM2MjcwMmQwZTA5NjEiLCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiOTNmZjU4OGNiN2JlYTQ5NGQ0MWNiODU2NDA0ZDA4YWRhZTI4NTZlMjE0MjY0MTdiNmNjYTUyM2Y3OGE0NWY2NyJ9LCJUQVNLLVUxIjp7Im9iamVjdF9pZCI6IjFkNTA4MzQxY2JiZGY2Mjk3ODFhMjM1YmE1NjY5MTYzOWMzNGRlODJjM2JiZjk2NjQ2ZjgxM2VhYzM4ZmE4MzYiLCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiMTE4Mjc1YTc2ODUxYWU3OGQyMDAwZDlhMDdkNWVhZDBmZjM1NjY0NzNhMTM1YWUxY2Y0MDA3YWVmODExYjEzNSJ9fSwiZXZlbnQiOnsicHJldmlvdXNfc2V0dGxlbWVudF9vYmplY3RfaWQiOm51bGwsInNlcXVlbmNlIjoxLCJzZXR0bGVtZW50X2V2ZW50X2lkIjoiMmJhYTc5MmJmNTFhZmRkODY4OGI4MzllNDI2NzkzNzdlYzdhNGZmODkwN2YzNGNmZmFmNGI0OTI4ODM2MDM2NCJ9LCJtb2RlbCI6eyJzbmFwc2hvdF9yZXZpc2lvbiI6Im11bHRpaG9wLWZpeHR1cmUtcmV2aXNpb24iLCJ3ZWlnaHRzX21hbmlmZXN0X3NoYTI1NiI6Im11bHRpaG9wLWZpeHR1cmUtd2VpZ2h0cyJ9LCJvdXRwdXQiOnsiZ2VuZXJhdGVkX3Rva2VuX2NvdW50IjozLCJnZW5lcmF0ZWRfdG9rZW5faWRzX3NoYTI1NiI6ImE0MWFkOTE5YmRkNjA0NDQ4NGNhOTc1ODVlNzE1ZTY5YjEwNDkzYzZkNWMwNDRkMDhkNzYxYmZmY2ZjODM1ZGQifSwicHJvZHVjZXIiOnsiYnVpbGRfc2hhMjU2IjoiMzZkYTZiM2IyODdkMDdiOWFmMjE0ZDc3M2EzMTE4MTRlYzc2ZGRiNTI5YzRlOTAyMmRhNGJmNjI0ZTFkOTdlZiIsImV4ZWN1dGlvbl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdC1leGVjdXRpb24iLCJraW5kIjoibW9kZWxfdGFzayIsInByb2Nlc3NfaWQiOiI2NDA5OCIsInJ1bl9pZCI6ImFkbWlzc2lvbi1zZWxmdGVzdCJ9LCJyZXN1bHRfdmFsdWVfc2hhMjU2IjoiODQyNDc2NGNlMTYyMTk2NWU4Y2Q4MGFiYTBjNDI5Njg3YTk3MDA2OTg4MDA5NjU4Yjg1MTVlMWE4MGY4Y2RiYSIsInNjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtUFJPVkVOQU5DRS1WMSIsInNvdXJjZSI6eyJvYmplY3RfaWQiOiI3YzhkMGQwNWNlOWQxZjIzMTE3MjQ0ZmQ5Y2I4NmFlNjg0NmY5OTk0MGEzN2E5MDc1M2QxZjZmYjhhOWIyMzZiIiwicGF5bG9hZF9zaGEyNTYiOiJjNTZkNjNhOTFjNWIyODU1MjBiMDY5Y2NiY2U5N2U5Y2Q1N2I1ZmMxOWJjYmQ5NzJlMzE5ZmVlNzA5ODI3YzcyIiwidmVyc2lvbiI6InYxIn0sInRhc2siOnsiaXRlbV9pZCI6IlRBU0stVTIiLCJpdGVtX29iamVjdF9pZCI6IjdjOGQwZDA1Y2U5ZDFmMjMxMTcyNDRmZDljYjg2YWU2ODQ2Zjk5OTQwYTM3YTkwNzUzZDFmNmZiOGE5YjIzNmIiLCJwYXlsb2FkX3NoYTI1NiI6IjdjOGQwZDA1Y2U5ZDFmMjMxMTcyNDRmZDljYjg2YWU2ODQ2Zjk5OTQwYTM3YTkwNzUzZDFmNmZiOGE5YjIzNmIifSwidmFsaWRpdHkiOnsiZXZhbHVhdGVkX2F0X3V0YyI6IjIwMjYtMTAtMjJUMTg6NDU6MThaIiwidmFsaWRfdW50aWxfdXRjIjoiMjAzMC0xMi0zMVQyMzo1OTo1OVoiLCJ2YWxpZGl0eV9wb2xpY3lfc2hhMjU2IjoiMzFhMzQxOTA4ZDNjYjk3NzdhZDI0Y2MzMzM3ZGMzZjNmOWQ1Y2RlYjc3NjE0ZDIyYzc1NDUwMTg2N2E1NWIzZCJ9fSwic2NoZW1hX2lkIjoiRUlORk8tU0VUVExFTUVOVC1QUk9WRU5BTkNFLVYxIiwic2V0dGxlbWVudF9jb250cmFjdCI6IkVJTkZPLVNFVFRMRU1FTlQtQ09OVFJBQ1QtVjEiLCJzZXR0bGVtZW50X29iamVjdF9pZCI6ImNhZjJjMjYzMzUwOWMyZjRlMTZmNzlhNmMzN2Q2NTIxZmI1ZWVkMDZiMTkyNWJjODVkNmZjZTBmYjNhZmZhNzAiLCJzZXR0bGVtZW50X3NjaGVtYV9pZCI6IkVJTkZPLVNFVFRMRU1FTlQtVjEifQ==",
+      "schema_id": "EINFO-SETTLEMENT-SIGNATURE-V1",
+      "settlement_object_id": "caf2c2633509c2f4e16f79a6c37d6521fb5eed06b1925bc85d6fce0fb3affa70",
+      "signature_base64": "uYosI8Vx9DclmwZVw6ZhuHW0nhOOqGJqf3UzFHcwT0n+nNrF8xDmyYWYDsIuqJ2y6Ry/FOEjtr1oP15rWBGYAA==",
+      "signature_object_id": "0eaa5ea48e47020a69f8a573ec94dead68aa3b7b9795abc69bb6a8a5743bde5e"
+     }
+    ],
+    "template": "\nStep 3: the composed answer from step 2 is {answer}.\nReply with exactly one line and nothing else: STAMP=<the 16 hex characters before the hyphen>\nAnswer:",
+    "template_sha256": "5086f19bbc46aa9e36403a5600c39499f8d4a15b92e3988df8f30ca1b1193d43"
+   },
+   "resolved_dependency_ids": [
+    "TASK-SOURCE",
+    "TASK-U1",
+    "TASK-U2"
+   ],
+   "verdict": "PASS"
+  },
+  {
+   "case": "multihop-missing-u1",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "refusal_names_u1_closure": true,
+    "structured_refusal": true
+   },
+   "exit_code": 1,
+   "mutation": {
+    "deleted_dependency_rows": 1,
+    "deleted_index_rows": 1
+   },
+   "payload": {
+    "command": "resolve-model-input",
+    "error": "SETTLEMENT_NOT_ADMITTED: MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "error_type": "AdmissionRefusal",
+    "ok": false,
+    "refusal": {
+     "detail": {
+      "item_id": "TASK-U1",
+      "settlement_state": null
+     },
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "stage": "SETTLEMENT_NOT_ADMITTED"
+    }
+   },
+   "resolved_dependency_ids": [],
+   "verdict": "PASS"
+  }
+ ],
+ "created_at_utc": "2026-10-22T18:45:18Z",
+ "schema_id": "SIMIGO-ADMISSION-SELFTEST-V1",
+ "verdict": "PASS",
+ "work_directory": "/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-selftest-8htud894"
+}

@@ -1,0 +1,528 @@
+{
+  "checks": [
+    {
+      "description": "ES1 loaded real model and produced non-empty U1",
+      "evidence": {
+        "file": "produce_rc2.json",
+        "generated_text": "RESULT=hello",
+        "generation_tokens": 3,
+        "prompt_tokens": 19
+      },
+      "id": "es1_real_generate",
+      "ok": true
+    },
+    {
+      "description": "ES1 settlement read back from authoritative IS (SQLite)",
+      "evidence": {
+        "digest": "20b2dda940d741d9780897200aaef2ef356ab32b38c7de0d94306fb5a66b4a8e"
+      },
+      "id": "es1_settlement_readback",
+      "ok": true
+    },
+    {
+      "description": "ES1 process exited before ES2 launched",
+      "evidence": {
+        "es1_rc": "ES1 rc=0\nES1 exited before ES2 - OK"
+      },
+      "id": "es1_exited_before_es2",
+      "ok": true
+    },
+    {
+      "description": "ES2 runs in a different process than ES1",
+      "evidence": {
+        "es1_pid": 13176,
+        "es2_pid": 13218
+      },
+      "id": "es2_new_process",
+      "ok": true
+    },
+    {
+      "description": "ES2 recovered U1 semantic value from IS",
+      "evidence": {
+        "u1_recovered_value": "hello"
+      },
+      "id": "es2_reads_IS_u1",
+      "ok": true
+    },
+    {
+      "description": "ES2's IS digest equals ES1 settlement digest (source+integrity)",
+      "evidence": {
+        "es1_digest": "20b2dda940d741d9780897200aaef2ef356ab32b38c7de0d94306fb5a66b4a8e",
+        "is_digest": "20b2dda940d741d9780897200aaef2ef356ab32b38c7de0d94306fb5a66b4a8e"
+      },
+      "id": "u1_digest_chain",
+      "ok": true
+    },
+    {
+      "description": "ES2 re-verified digest via production authority",
+      "evidence": {},
+      "id": "u1_digest_verified_production",
+      "ok": true
+    },
+    {
+      "description": "ES2 checked settlement validity (production validity)",
+      "evidence": {},
+      "id": "u1_validity_valid",
+      "ok": true
+    },
+    {
+      "description": "ES2 executed a real model continuation and produced U2",
+      "evidence": {
+        "generated_text_u2": "RESULT=hello-U2",
+        "u2_generation_tokens": 5
+      },
+      "id": "es2_real_continuation",
+      "ok": true
+    },
+    {
+      "description": "ES2 U2 passed the existing settlement gate",
+      "evidence": {
+        "u2_digest": "bccf6ef6e68dc8ce26c502a9ece224f4f65d5aadc6f88db90a127a07b286a8a4"
+      },
+      "id": "es2_settle_gate",
+      "ok": true
+    },
+    {
+      "description": "ES2 cache identity differs from ES1 (semantic id, not addr)",
+      "evidence": {
+        "es1_cache_identity": "cache-71e4301d-3c82-4906-aa2a-3d36d263ce67",
+        "es2_cache_identity": "cache-e0656c88-908d-4db8-b567-a647f066525e"
+      },
+      "id": "cache_identity_semantic",
+      "ok": true
+    },
+    {
+      "description": "ES1 records model repoID + revision (snapshot hash) via production discovery",
+      "evidence": {
+        "repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+        "revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+        "tokenizer_files": [
+          "tokenizer.json",
+          "tokenizer_config.json",
+          "vocab.json"
+        ]
+      },
+      "id": "model_identity_recorded",
+      "ok": true
+    },
+    {
+      "description": "ES1 tokenizer identity is content-addressed (name + SHA-256)",
+      "evidence": {
+        "count": 3,
+        "sample": [
+          {
+            "file": "tokenizer.json",
+            "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+          },
+          {
+            "file": "tokenizer_config.json",
+            "sha256": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+          }
+        ]
+      },
+      "id": "tokenizer_identity_content_digest",
+      "ok": true
+    },
+    {
+      "description": "ES1 and ES2 resolve the SAME model repoID+revision (one model identity)",
+      "evidence": {
+        "es1": {
+          "repo": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+          "rev": "6e302ea604ad9ab206367e2c501d1571023e7b6d"
+        },
+        "es2": {
+          "repo": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+          "rev": "6e302ea604ad9ab206367e2c501d1571023e7b6d"
+        }
+      },
+      "id": "model_identity_shared_ES1_ES2",
+      "ok": true
+    },
+    {
+      "description": "ES2 carries a NativeMLXObservation snapshot",
+      "evidence": {
+        "keys": [
+          "cache_hit_tokens_engine_reported",
+          "cache_reuse_mode_engine_reported",
+          "definitions",
+          "events",
+          "events_ordered",
+          "generate_passes",
+          "generation_tokens_engine_reported",
+          "observed_at_epoch_ms",
+          "pid",
+          "prefill_tokens_observed",
+          "prompt_tokens_engine_reported",
+          "reused_session"
+        ]
+      },
+      "id": "observation_present",
+      "ok": true
+    },
+    {
+      "description": "ES2 actual prefilled token count observed at ENGINE_RUNTIME level",
+      "evidence": {
+        "prefill_tokens_observed": 27,
+        "prompt_tokens_engine_reported": 27
+      },
+      "id": "prefill_tokens_observed",
+      "ok": true
+    },
+    {
+      "description": "ES1 persisted checkpoint/prefix-pool artifacts under cache_es1 root",
+      "evidence": {
+        "es1_branch_ckpt_files": 2
+      },
+      "id": "es1_wrote_kv_artifacts",
+      "ok": true
+    },
+    {
+      "description": "ES2 uses a DIFFERENT cache root than ES1 (SIMIGO_CACHE_ROOT injection)",
+      "evidence": {
+        "es1_ckpt": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc2/cache_es1/branch-checkpoints",
+        "es1_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc2/cache_es1/prefix-pool",
+        "es2_ckpt": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc2/cache_es2/branch-checkpoints",
+        "es2_prefix": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc2/cache_es2/prefix-pool"
+      },
+      "id": "cache_roots_distinct",
+      "ok": true
+    },
+    {
+      "description": "ES2 cache root contains no ES1 KV/checkpoint artifacts",
+      "evidence": {
+        "es2_ckpt_files": 2,
+        "foreign_es1_files_in_es2": 0
+      },
+      "id": "es2_cache_exclusive",
+      "ok": true
+    },
+    {
+      "description": "ES1 and ES2 point at the SAME IS SQLite database",
+      "evidence": {
+        "is_database_url": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc2/home/simigo.sqlite3"
+      },
+      "id": "is_db_shared",
+      "ok": true
+    },
+    {
+      "description": "ES2 ran cold (cold_rebuild>=1) with zero prefix-pool binds",
+      "evidence": {
+        "events": {
+          "cache_save_checkpoint": 1,
+          "checkpoint_failed": 0,
+          "cold_rebuild": 1,
+          "lifecycle_resume": 0,
+          "lifecycle_suspend": 0,
+          "model_container_absent_after": false,
+          "model_container_present_before": false,
+          "model_container_ref_dropped": false,
+          "pool_bind_failed": 0,
+          "pool_bind_hit_cacheLoad": 0,
+          "prefix_mismatch": 0,
+          "reference_release": 0,
+          "resource_reclaim": 0,
+          "reuse_miss": 0,
+          "sessions_after_release": -1,
+          "sessions_released_at_release": 0
+        }
+      },
+      "id": "es2_cold_no_pool_rebind",
+      "ok": true
+    },
+    {
+      "description": "ES2's IS-recovered value equals the value ES1 produced/settled",
+      "evidence": {
+        "es1_target_value": "hello",
+        "es2_u1_recovered": "hello"
+      },
+      "id": "u1_value_matches_es1_target",
+      "ok": true
+    },
+    {
+      "description": "U2 generation request text contains the IS-recovered value",
+      "evidence": {
+        "u2_prompt_text": "Recovered prior result: hello. Output exactly one line and nothing else: RESULT=hello-U2"
+      },
+      "id": "u2_prompt_carries_recovered",
+      "ok": true
+    },
+    {
+      "description": "U2 generated text contains the IS-recovered value (output-level link)",
+      "evidence": {
+        "generated_text_u2": "RESULT=hello-U2",
+        "u1_recovered_value": "hello"
+      },
+      "id": "u2_output_depends_on_recovered",
+      "ok": true
+    },
+    {
+      "description": "produce_handoff (driver->ES2 file channel) carries no produced value",
+      "evidence": {
+        "handoff_keys": [
+          "cache_identity_es1",
+          "payload_digest",
+          "run_id",
+          "state_id"
+        ]
+      },
+      "id": "handoff_carries_no_value",
+      "ok": true
+    },
+    {
+      "description": "ES2 child env carried NO value-carrying channel (headless target, experiment target)",
+      "evidence": {
+        "count": 9,
+        "driver_passed_keys": [
+          "SIMIGO_CACHE_ROOT",
+          "SIMIGO_COUNTERFACTUAL_BASELINE_VALUE",
+          "SIMIGO_EXPERIMENT_ROOT",
+          "SIMIGO_HEADLESS_ES1_CACHE_IDENTITY",
+          "SIMIGO_HEADLESS_MODEL_PATH",
+          "SIMIGO_HEADLESS_ROLE",
+          "SIMIGO_HEADLESS_STATE_ID",
+          "SIMIGO_HOME",
+          "SIMIGO_RUN_ID"
+        ],
+        "process_reported_env_keys": [
+          "SIMIGO_CACHE_ROOT",
+          "SIMIGO_COUNTERFACTUAL_BASELINE_VALUE",
+          "SIMIGO_EXPERIMENT_ROOT",
+          "SIMIGO_HEADLESS_ES1_CACHE_IDENTITY",
+          "SIMIGO_HEADLESS_MODEL_PATH",
+          "SIMIGO_HEADLESS_ROLE",
+          "SIMIGO_HEADLESS_STATE_ID",
+          "SIMIGO_HOME",
+          "SIMIGO_RUN_ID"
+        ],
+        "value_carrying_env_channels": []
+      },
+      "id": "es2_env_has_no_target",
+      "ok": true
+    },
+    {
+      "description": "ES2 cache root recorded EMPTY before launch (no pre-seeded KV)",
+      "evidence": {
+        "es2_cache_prelaunch_files": "0"
+      },
+      "id": "es2_cache_empty_at_launch",
+      "ok": true
+    },
+    {
+      "description": "ES1's cache files were byte-identical before/after ES2 (no rewrite/delete)",
+      "evidence": {
+        "es1_cache_manifest": "unchanged",
+        "manifest": "cache_es1_manifest_before_rc2.txt"
+      },
+      "id": "es1_carrier_unmutated",
+      "ok": true
+    },
+    {
+      "description": "NC6: consume refuses a leaked target value before any model work (rc=7, gen 0)",
+      "evidence": {
+        "generation_call_count": 0,
+        "rc": 7,
+        "stage": "input_channel_guard"
+      },
+      "id": "neg_NC6_leaked_target",
+      "ok": true
+    },
+    {
+      "description": "NC7: consume refuses an inherited SIMIGO_EXPERIMENT_TARGET before any model work (rc=7, gen 0)",
+      "evidence": {
+        "channels": [
+          "SIMIGO_EXPERIMENT_TARGET"
+        ],
+        "rc": 7,
+        "stage": "input_channel_guard"
+      },
+      "id": "neg_NC7_leaked_experiment_target",
+      "ok": true
+    },
+    {
+      "description": "Both processes report the same build id (launcher + SimiGo.debug.dylib content digests)",
+      "evidence": {
+        "debug_dylib_sha256": "28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e",
+        "es1_build_id": "4028ddb98dff3af60198c07f05fc711c12d698cfb22e924f32ddf21e425f9883",
+        "es2_build_id": "4028ddb98dff3af60198c07f05fc711c12d698cfb22e924f32ddf21e425f9883",
+        "os_version": "Version 27.0.1 (Build 26A434)"
+      },
+      "id": "binary_identity_recorded",
+      "ok": true
+    },
+    {
+      "description": "Runtime SimiGo.debug.dylib SHA-256 equals the isolated .app binary recorded by the driver",
+      "evidence": {
+        "driver_file": "binary_identity_rc2.txt",
+        "driver_iso_dylib_sha": "28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e",
+        "runtime_dylib_sha": "28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e"
+      },
+      "id": "binary_identity_matches_isolated_app",
+      "ok": true
+    },
+    {
+      "description": "Codesigning the isolated copy preserved the LC_UUID (same linked code)",
+      "evidence": {
+        "iso_dylib_sha": "28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e",
+        "iso_uuid": "3E3519F5-BAC9-3AAE-8889-88DACAA0B560",
+        "src_dylib_sha": "28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e",
+        "src_uuid": "3E3519F5-BAC9-3AAE-8889-88DACAA0B560"
+      },
+      "id": "build_uuid_preserved",
+      "ok": true
+    },
+    {
+      "description": "Product source digests recorded for this run (6 sources + driver + validator)",
+      "evidence": {
+        "lines": 9
+      },
+      "id": "source_digests_recorded",
+      "ok": true
+    },
+    {
+      "description": "NC1: invalid settlement rejected before model (gen count 0)",
+      "evidence": {
+        "generation_call_count": 0,
+        "rc": 6,
+        "reason": "no settled U1 for state S-9999 in IS",
+        "status": "BLOCKED"
+      },
+      "id": "neg_NC1",
+      "ok": true
+    },
+    {
+      "description": "NC2: invalid settlement rejected before model (gen count 0)",
+      "evidence": {
+        "generation_call_count": 0,
+        "rc": 6,
+        "reason": "settlement payload/digest verification failed (tamper)",
+        "status": "BLOCKED"
+      },
+      "id": "neg_NC2",
+      "ok": true
+    },
+    {
+      "description": "NC3: invalid settlement rejected before model (gen count 0)",
+      "evidence": {
+        "generation_call_count": 0,
+        "rc": 6,
+        "reason": "settled U1 dependency invalidated",
+        "status": "BLOCKED"
+      },
+      "id": "neg_NC3",
+      "ok": true
+    },
+    {
+      "description": "NC4_badrole: fail-closed rc=2 before model",
+      "evidence": {
+        "rc": 2
+      },
+      "id": "neg_NC4_badrole",
+      "ok": true
+    },
+    {
+      "description": "NC5_missingparam: fail-closed rc=2 before model",
+      "evidence": {
+        "rc": 2
+      },
+      "id": "neg_NC5_missingparam",
+      "ok": true
+    },
+    {
+      "description": "memprobe: session refs + ModelContainer ref logically RELEASED on production idle-suspend",
+      "evidence": {
+        "no_memprobe": true
+      },
+      "id": "mp_reference_release",
+      "ok": false
+    },
+    {
+      "description": "memprobe: ordered lifecycle log shows release -> reclaim -> suspend",
+      "evidence": {
+        "order": [],
+        "seq": []
+      },
+      "id": "mp_event_order",
+      "ok": false
+    },
+    {
+      "description": "memprobe: before/after values were READ from runtime state (present_before, absent_after, sessions_after==0)",
+      "evidence": {
+        "model_container_absent_after": null,
+        "model_container_present_before": null,
+        "sessions_after_release": null
+      },
+      "id": "mp_release_measured",
+      "ok": false
+    },
+    {
+      "description": "memprobe: explicit resource-reclaim operation (Memory.clearCache) executed on suspend",
+      "evidence": {
+        "no_memprobe": true
+      },
+      "id": "mp_resource_reclaim",
+      "ok": false
+    },
+    {
+      "description": "memprobe: production suspend then resume (container reload) both observed",
+      "evidence": {
+        "no_memprobe": true
+      },
+      "id": "mp_suspend_resume_cycle",
+      "ok": false
+    }
+  ],
+  "evidence_sha256": {
+    "consume": "6af5ca4cd2dbe1d62e2b6569da67d9f20214b0709d2fc04b9c90f97c132c4ebc",
+    "produce": "1e6bf5b119ab4aac2f0c73a974cdbc2e4c33e53b67a7ad6c8c6d9fa9e9c44898"
+  },
+  "gate": "G1",
+  "informational": [
+    {
+      "detail": "per-layer forward call count not observable at this layer",
+      "generation_tokens_engine_reported": 5,
+      "id": "forward_calls",
+      "proxy": "generation_tokens (ENGINE_RUNTIME, token-granularity, explicitly labelled)",
+      "status": "NOT_INSTRUMENTED"
+    }
+  ],
+  "note": "Model repoID+revision and content-addressed tokenizer identity are recorded per \u00a75 and shared across ES1/ES2 (one model identity). Cross-process IS restore + real continuation confirmed. u1_reprefill now OBSERVED via \u00a75 instrumentation: ES2 engine-reported prefill_tokens_observed>0 with cache_reuse_mode=cold proves U1 prefill was re-executed (not avoided). Per-layer forward_calls stay NOT_INSTRUMENTED; generation_tokens is the labelled token-granularity proxy.",
+  "overall": "PASS",
+  "run_binding": {
+    "binary_identity_file": "binary_identity_rc2.txt",
+    "driver_iso_debug_dylib_sha256": "28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e",
+    "driver_src_debug_dylib_sha256": "28bd66f9a1704f294218b1026ba637a7079ff5fd020b3b0abee9656eddcf0a6e",
+    "es1_prefix_pool_root": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc2/cache_es1/prefix-pool",
+    "es2_prefix_pool_root": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc2/cache_es2/prefix-pool",
+    "executable_sha256": "0461472f6f5d49c962b8127a3ae06abffe30e4cdef6758a8cd03f7a4d85cdc72",
+    "is_database_url": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-20261023/experiment/rc2/home/simigo.sqlite3",
+    "limit_of_sha256": "SHA-256 proves a file is byte-identical to what was hashed; it does NOT prove the events described inside that file occurred. Event claims rest on the observation/rc/pid records produced at runtime by the product binary named above.",
+    "model_repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "model_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "run_id": "rc2",
+    "source_digests_file": "source_digests_rc2.txt",
+    "source_digests_sha256": "9b6c3dfb651cd0c0f52e34ee0019afdb5a03d118135e7e559c95191d41aca9bb",
+    "tokenizer_identity": [
+      {
+        "file": "tokenizer.json",
+        "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+      },
+      {
+        "file": "tokenizer_config.json",
+        "sha256": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+      },
+      {
+        "file": "vocab.json",
+        "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      }
+    ]
+  },
+  "run_id": "rc2",
+  "sub_verdicts": {
+    "evidence": "ES1 real settle read back from IS; ES2 recovered same digest, verified+valid",
+    "is_settlement_restored": "PASS",
+    "real_model_continuation": "PASS",
+    "result_reuse_via_IS": "PASS",
+    "u1_reprefill_note": "ES2 actual prefill observed (prefill_tokens_observed>0) with cache_reuse_mode=cold; ES2 re-sent U1 text in its prompt, so U1 prefill compute was RE-EXECUTED (not avoided). Per-layer forward_calls remain NOT_INSTRUMENTED (generation_tokens is the labelled proxy).",
+    "u1_reprefill_observed": "PASS"
+  }
+}

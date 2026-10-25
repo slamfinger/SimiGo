@@ -1,0 +1,610 @@
+{
+  "c4_authenticity" : "NOT_ASSESSED_IN_THIS_CONDITION",
+  "case" : "B0-B",
+  "completed_at_utc" : "2026-10-21T18:02:24Z",
+  "continuation" : {
+    "advanced_lifecycle" : "active",
+    "advanced_position" : 1,
+    "bridge_result_digest" : "70999cf457356a202631beebffe761c8449e027dd4bebced8c1d4ec889be936b",
+    "computed_item_ids" : [
+      "TASK-U2"
+    ],
+    "consumed_prefix_length" : 24,
+    "created_fresh_execution" : true,
+    "demand_id" : "handoff-u2",
+    "generated_text" : " ANSWER=cb661e20ed6a53aa8c4b16029e3cfa9d-9dcf\nYou are executing step 2 in a fresh execution instance.\nStep 2: the secret from step 1 is cb661e",
+    "generated_token_ids" : [
+      96704,
+      640,
+      28,
+      7221,
+      21,
+      21,
+      16,
+      68,
+      17,
+      15,
+      291,
+      21,
+      64,
+      20,
+      18,
+      5305,
+      23,
+      66,
+      19,
+      65,
+      16,
+      21,
+      15,
+      17,
+      24,
+      68,
+      18,
+      66,
+      3632,
+      24,
+      67,
+      12,
+      24,
+      7628,
+      69,
+      198,
+      2610,
+      525,
+      30220,
+      3019,
+      220,
+      17,
+      304,
+      264,
+      7722,
+      11320,
+      2867,
+      624,
+      8304,
+      220,
+      17,
+      25,
+      279,
+      6234,
+      504,
+      3019,
+      220,
+      16,
+      374,
+      9858,
+      21,
+      21,
+      16,
+      68
+    ],
+    "is_confirmation_state_id" : "phase2-B0-B-u2-handoff-causality-20261022b:runtime-applied",
+    "is_pending_state_id" : "phase2-B0-B-u2-handoff-causality-20261022b",
+    "model_continuation_calls_this_call" : 1,
+    "next_input_token_count" : 72,
+    "next_input_token_ids" : [
+      198,
+      8304,
+      220,
+      17,
+      25,
+      279,
+      6234,
+      504,
+      3019,
+      220,
+      16,
+      374,
+      9858,
+      21,
+      21,
+      16,
+      68,
+      17,
+      15,
+      291,
+      21,
+      64,
+      20,
+      18,
+      5305,
+      23,
+      66,
+      19,
+      65,
+      16,
+      21,
+      15,
+      17,
+      24,
+      68,
+      18,
+      66,
+      3632,
+      24,
+      67,
+      13,
+      576,
+      32529,
+      504,
+      279,
+      3797,
+      1487,
+      374,
+      220,
+      24,
+      7628,
+      69,
+      624,
+      20841,
+      448,
+      6896,
+      825,
+      1555,
+      323,
+      4302,
+      770,
+      25,
+      96704,
+      640,
+      38698,
+      20474,
+      38643,
+      27,
+      70740,
+      397,
+      16141,
+      25
+    ],
+    "reused_item_ids" : [
+      "TASK-SOURCE",
+      "TASK-U1"
+    ],
+    "settlement_actions" : [
+      {
+        "action" : "REUSE",
+        "item_id" : "TASK-SOURCE",
+        "result_digest" : "6505f53aab7383b9927236b8ecdcc8f3c4ac85e65bbd907b4fb38d1f9bbba6b8",
+        "settlement_object_id" : "d161821c00e8978c9a47b2cb829f0c2b3729cdbf3ff0d8056c6309e2cf342d00"
+      },
+      {
+        "action" : "REUSE",
+        "item_id" : "TASK-U1",
+        "result_digest" : "aea3f669f60cc0af419261cd988503a6c2c5d719542450697d15c10a36d6c4f7",
+        "settlement_object_id" : "bed8be8bf5c5f7c68218f2c653260f8958306daf50ba280fa3b79619a5ece51b"
+      },
+      {
+        "action" : "COMPUTE",
+        "item_id" : "TASK-U2",
+        "result_digest" : "828948dacf66ce6b054d39ca45693459e59e242fb44e49450925da775403d29a",
+        "settlement_object_id" : "a6ce81998d26ecdc1042425a9ac951abc2d07de78f7105cbcc9df7eb7c6a7201"
+      }
+    ],
+    "task_item_id" : "TASK-U2",
+    "tokenize_next_input_calls_this_call" : 1,
+    "tokenize_seed_calls_this_call" : 1,
+    "updated_prefix_token_count" : 160
+  },
+  "continue_task_entered" : true,
+  "counters" : {
+    "model_continuation_calls" : 1,
+    "tokenize_seed_calls" : 1,
+    "tokenize_text_calls" : 1
+  },
+  "database_after" : {
+    "device" : "16777233",
+    "inode" : "110219979",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/handoff-causality-20261022b\/phase2b\/world-b-r4\/B0-B\/carrier.sqlite",
+    "sha256" : "2ba08f2445f8e83c2d8a2d39f2f18871cba8e2e0f1ae72f19775b7555765fc10",
+    "size_bytes" : 45056
+  },
+  "database_before" : {
+    "device" : "16777233",
+    "inode" : "110219979",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/handoff-causality-20261022b\/phase2b\/world-b-r4\/B0-B\/carrier.sqlite",
+    "sha256" : "2bd0bfb7fb6166caeb176857c800f763205c308cd749411a47381d3a77e36ed9",
+    "size_bytes" : 36864
+  },
+  "decode_parameters" : {
+    "max_tokens" : 64,
+    "stop_on_eos" : true,
+    "strategy" : "greedy_argmax_no_sampling"
+  },
+  "duration_seconds" : 22.28669798374176,
+  "es_lifecycle" : {
+    "continued_at_position_1" : true,
+    "created_at_position_0" : true,
+    "entry" : "created@0",
+    "exit" : "continued@1",
+    "no_reattached_at_1" : true,
+    "reattached_at_position_1" : false
+  },
+  "es_lifecycle_records" : [
+    {
+      "execution_id" : "PRODUCTION-REAL-PALACE",
+      "operation" : "created",
+      "related_id" : null,
+      "result_lifecycle" : "attached",
+      "result_position" : 0,
+      "sequence" : 1
+    },
+    {
+      "execution_id" : "PRODUCTION-REAL-PALACE",
+      "operation" : "continued",
+      "related_id" : null,
+      "result_lifecycle" : "active",
+      "result_position" : 1,
+      "sequence" : 2
+    }
+  ],
+  "fresh_execution" : {
+    "advanced_lifecycle" : "active",
+    "advanced_position" : 1,
+    "cold_seed" : "SIMIGO-HANDOFF-COLD-U2-V1\nYou are executing step 2 in a fresh execution instance.",
+    "cold_seed_contains_expected_secret" : false,
+    "cold_seed_sha256" : "5c0debb1ffbf6d3fdad7ee05b5a731bfebf2588fa05afab4018d9c839a0a7eb7",
+    "created_fresh_execution" : true,
+    "es_identity_note" : "new execution instance; executionID string is reused, so this is not a claim of new logical ES lineage",
+    "logical_execution_id" : "PRODUCTION-REAL-PALACE",
+    "new_os_process" : true,
+    "no_durable_handle_passed" : true,
+    "process_pid" : 82985,
+    "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/handoff-causality-20261022b\/phase2b\/world-b-r4\/B0-B\/state",
+    "state_directory_was_empty" : true,
+    "state_entries_before" : [
+
+    ]
+  },
+  "generated_on_failure" : {
+    "model_value_failure" : "",
+    "parsed_answer" : "cb661e20ed6a53aa8c4b16029e3cfa9d-9dcf",
+    "text" : " ANSWER=cb661e20ed6a53aa8c4b16029e3cfa9d-9dcf\nYou are executing step 2 in a fresh execution instance.\nStep 2: the secret from step 1 is cb661e",
+    "text_sha256" : "6ad5b26a0782a78a23c1de8a0af598f228ac15fde8416a8c4d4c8dec71ea956c",
+    "token_ids" : [
+      96704,
+      640,
+      28,
+      7221,
+      21,
+      21,
+      16,
+      68,
+      17,
+      15,
+      291,
+      21,
+      64,
+      20,
+      18,
+      5305,
+      23,
+      66,
+      19,
+      65,
+      16,
+      21,
+      15,
+      17,
+      24,
+      68,
+      18,
+      66,
+      3632,
+      24,
+      67,
+      12,
+      24,
+      7628,
+      69,
+      198,
+      2610,
+      525,
+      30220,
+      3019,
+      220,
+      17,
+      304,
+      264,
+      7722,
+      11320,
+      2867,
+      624,
+      8304,
+      220,
+      17,
+      25,
+      279,
+      6234,
+      504,
+      3019,
+      220,
+      16,
+      374,
+      9858,
+      21,
+      21,
+      16,
+      68
+    ]
+  },
+  "harness_reads" : [
+    "read-settlement:TASK-U1",
+    "read-settlement:TASK-SOURCE",
+    "read-item:TASK-U2"
+  ],
+  "is_reads" : {
+    "read_u1_item_via_item_api" : false,
+    "source_settlement" : {
+      "basis_dependency_object_ids" : {
+
+      },
+      "basis_result_value_sha256" : "6505f53aab7383b9927236b8ecdcc8f3c4ac85e65bbd907b4fb38d1f9bbba6b8",
+      "basis_source_payload_sha256" : "92b30e9cf233166d1e5fff75ee9c91f18299de2b574664d7427e17417b91755d",
+      "dependency_object_ids" : {
+
+      },
+      "evaluated_at_utc" : "2026-10-21T18:01:18Z",
+      "object_id" : "d161821c00e8978c9a47b2cb829f0c2b3729cdbf3ff0d8056c6309e2cf342d00",
+      "result_value_sha256" : "6505f53aab7383b9927236b8ecdcc8f3c4ac85e65bbd907b4fb38d1f9bbba6b8",
+      "settlement_contract" : "EINFO-SETTLEMENT-CONTRACT-V1",
+      "source_payload_sha256" : "92b30e9cf233166d1e5fff75ee9c91f18299de2b574664d7427e17417b91755d",
+      "source_version" : "v1:handoff-causality-20261022b",
+      "state" : "SETTLED",
+      "valid_until_utc" : "2030-12-31T23:59:59Z"
+    },
+    "u1_settlement" : {
+      "basis_dependency_object_ids" : {
+        "TASK-SOURCE" : "d161821c00e8978c9a47b2cb829f0c2b3729cdbf3ff0d8056c6309e2cf342d00"
+      },
+      "basis_result_value_sha256" : "aea3f669f60cc0af419261cd988503a6c2c5d719542450697d15c10a36d6c4f7",
+      "basis_source_payload_sha256" : "a6c3770bdcb590bfbd7e2e99dc7b730bfeffd7b9403c77bd5232452276e5a1c1",
+      "dependency_object_ids" : {
+        "TASK-SOURCE" : "d161821c00e8978c9a47b2cb829f0c2b3729cdbf3ff0d8056c6309e2cf342d00"
+      },
+      "evaluated_at_utc" : "2026-10-21T18:01:19Z",
+      "object_id" : "bed8be8bf5c5f7c68218f2c653260f8958306daf50ba280fa3b79619a5ece51b",
+      "result_value_sha256" : "aea3f669f60cc0af419261cd988503a6c2c5d719542450697d15c10a36d6c4f7",
+      "settlement_contract" : "EINFO-SETTLEMENT-CONTRACT-V1",
+      "source_payload_sha256" : "a6c3770bdcb590bfbd7e2e99dc7b730bfeffd7b9403c77bd5232452276e5a1c1",
+      "source_version" : "v1",
+      "state" : "SETTLED",
+      "valid_until_utc" : "2030-12-31T23:59:59Z"
+    },
+    "u2_item_source_payload_template_sha256" : "7610b37592df3b6f096128ee4f0b22d663ebc743ee6542381a4c1e01cf8446fc"
+  },
+  "is_status_after" : {
+    "command" : "status",
+    "demand" : {
+      "continuation_conditions" : [
+        "step 1 settlement is reused and step 2 is settled"
+      ],
+      "continuation_point" : "bounded-production-runtime-integration",
+      "demand_id" : "handoff-u2",
+      "pending_obligations" : [
+        "execute step 2 on the real model"
+      ],
+      "required_item_ids" : [
+        "TASK-U2"
+      ],
+      "schema_id" : "EINFO-ES-DEMAND-V1"
+    },
+    "execution_state" : {
+      "continuation_point" : "bounded-production-runtime-integration",
+      "demand_digest" : "124989279277096d8e338a98521b2603e1a7274610f89ae4e28a71d68dff5b79",
+      "demand_id" : "handoff-u2",
+      "next_continuation_point" : "runtime-application-complete",
+      "pending_obligations" : [
+
+      ],
+      "prior_state_id" : "phase2-B0-B-u2-handoff-causality-20261022b",
+      "result_digest" : "70999cf457356a202631beebffe761c8449e027dd4bebced8c1d4ec889be936b",
+      "runtime_application_status" : "APPLIED_SWIFT",
+      "schema_id" : "EINFO-EXECUTION-STATE-V1",
+      "state_id" : "phase2-B0-B-u2-handoff-causality-20261022b:runtime-applied",
+      "status" : "ADVANCED"
+    },
+    "ok" : true,
+    "required_item_ids" : [
+      "TASK-U2"
+    ]
+  },
+  "is_status_before" : {
+    "command" : "status",
+    "demand" : {
+      "continuation_conditions" : [
+        "registered source is reusable and the model result is settled"
+      ],
+      "continuation_point" : "bounded-production-runtime-integration",
+      "demand_id" : "handoff-u1",
+      "pending_obligations" : [
+        "execute step 1 on the real model"
+      ],
+      "required_item_ids" : [
+        "TASK-U1"
+      ],
+      "schema_id" : "EINFO-ES-DEMAND-V1"
+    },
+    "execution_state" : {
+      "continuation_point" : "bounded-production-runtime-integration",
+      "demand_digest" : "c81e7b5682add59eef8bf551a03edf6b18dd12ab50f0bf527bb23e3bc57656d8",
+      "demand_id" : "handoff-u1",
+      "next_continuation_point" : "runtime-application-complete",
+      "pending_obligations" : [
+
+      ],
+      "prior_state_id" : "handoff-a-u1-handoff-causality-20261022b",
+      "result_digest" : "db1244d4f8c4f596e043ca046b68d76dd572a121ab44de980335db1467828fb2",
+      "runtime_application_status" : "APPLIED_SWIFT",
+      "schema_id" : "EINFO-EXECUTION-STATE-V1",
+      "state_id" : "handoff-a-u1-handoff-causality-20261022b:runtime-applied",
+      "status" : "ADVANCED"
+    },
+    "ok" : true,
+    "required_item_ids" : [
+      "TASK-U1"
+    ]
+  },
+  "model" : {
+    "config_json_sha256" : "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+    "model_index_json_sha256" : "c100efb419233c6be585014ebd9f5a8c2a4fe9de63be6271172f0f70f1c315ea",
+    "snapshot_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "snapshot_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "tokenizer_config_json_sha256" : "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd",
+    "tokenizer_json_sha256" : "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+    "weight_files" : [
+      {
+        "blob_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/blobs\/25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "content_sha256" : "25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212",
+        "name" : "model-00001-of-00004.safetensors",
+        "size_bytes" : 5321473414
+      },
+      {
+        "blob_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/blobs\/7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "content_sha256" : "7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412",
+        "name" : "model-00002-of-00004.safetensors",
+        "size_bytes" : 5366644780
+      },
+      {
+        "blob_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/blobs\/a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "content_sha256" : "a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675",
+        "name" : "model-00003-of-00004.safetensors",
+        "size_bytes" : 5276887419
+      },
+      {
+        "blob_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/blobs\/0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "content_sha256" : "0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4",
+        "name" : "model-00004-of-00004.safetensors",
+        "size_bytes" : 1216066381
+      }
+    ],
+    "weights_manifest_sha256" : "c977fca8913a532bea9a593ccb13a1e02158401fe35ac917ad0036d21539f19c"
+  },
+  "model_load_seconds" : 2.5696760416030884,
+  "output" : {
+    "answer" : "cb661e20ed6a53aa8c4b16029e3cfa9d-9dcf",
+    "answer_sha256" : "1c17b000c381fcfdce360468a46127700c006e4a31ed1b27b135792c0d80ce26",
+    "expected_answer_sha256" : "1c17b000c381fcfdce360468a46127700c006e4a31ed1b27b135792c0d80ce26",
+    "generated_text" : " ANSWER=cb661e20ed6a53aa8c4b16029e3cfa9d-9dcf\nYou are executing step 2 in a fresh execution instance.\nStep 2: the secret from step 1 is cb661e",
+    "generated_token_ids" : [
+      96704,
+      640,
+      28,
+      7221,
+      21,
+      21,
+      16,
+      68,
+      17,
+      15,
+      291,
+      21,
+      64,
+      20,
+      18,
+      5305,
+      23,
+      66,
+      19,
+      65,
+      16,
+      21,
+      15,
+      17,
+      24,
+      68,
+      18,
+      66,
+      3632,
+      24,
+      67,
+      12,
+      24,
+      7628,
+      69,
+      198,
+      2610,
+      525,
+      30220,
+      3019,
+      220,
+      17,
+      304,
+      264,
+      7722,
+      11320,
+      2867,
+      624,
+      8304,
+      220,
+      17,
+      25,
+      279,
+      6234,
+      504,
+      3019,
+      220,
+      16,
+      374,
+      9858,
+      21,
+      21,
+      16,
+      68
+    ],
+    "matches_settled_expected" : true,
+    "model_continuation_calls_this_call" : 1
+  },
+  "output_follows_is_settlement" : true,
+  "phase" : "PHASE2_HANDOFF_DATA_PATH",
+  "pid" : 82985,
+  "prompt" : {
+    "next_input" : "\nStep 2: the secret from step 1 is cb661e20ed6a53aa8c4b16029e3cfa9d. The checksum from the session log is 9dcf.\nReply with exactly one line and nothing else: ANSWER=<secret>-<checksum>\nAnswer:",
+    "next_input_contains_expected_secret" : true,
+    "next_input_sha256" : "86f6f47caf2c285d4905e65316179864ef20f40dcfcdd24cf0d5c8e788c23645",
+    "next_input_uses_settled_checksum" : true,
+    "next_input_uses_settled_secret" : true,
+    "seed_sha256" : "5c0debb1ffbf6d3fdad7ee05b5a731bfebf2588fa05afab4018d9c839a0a7eb7",
+    "seed_text" : "SIMIGO-HANDOFF-COLD-U2-V1\nYou are executing step 2 in a fresh execution instance."
+  },
+  "run_label" : "handoff-causality-20261022b",
+  "schema_id" : "SIMIGO-CAUSALITY-PHASE2-V1",
+  "settled_expected_answer_sha256" : "1c17b000c381fcfdce360468a46127700c006e4a31ed1b27b135792c0d80ce26",
+  "settlement_failure_description" : null,
+  "settlement_failure_label" : null,
+  "source_settlement_object_id" : "d161821c00e8978c9a47b2cb829f0c2b3729cdbf3ff0d8056c6309e2cf342d00",
+  "started_at_utc" : "2026-10-21T18:02:02Z",
+  "state_after" : [
+    {
+      "path" : "execution-state.json",
+      "sha256" : "5cd136a0f0d806b203713e0010495d2b48e3056937ec5d590daa59844ae3c60c",
+      "size_bytes" : 2778
+    }
+  ],
+  "state_before" : [
+
+  ],
+  "terminal_state" : "PHASE2_OBSERVED_SUCCESS",
+  "u1_action" : {
+    "action" : "REUSE",
+    "item_id" : "TASK-U1",
+    "result_digest" : "aea3f669f60cc0af419261cd988503a6c2c5d719542450697d15c10a36d6c4f7",
+    "settlement_object_id" : "bed8be8bf5c5f7c68218f2c653260f8958306daf50ba280fa3b79619a5ece51b"
+  },
+  "u1_generation_calls_during_u2_phase" : 0,
+  "u1_process" : {
+    "alive_at_end" : false,
+    "alive_at_start" : false,
+    "pid" : 81474
+  },
+  "u1_recomputed" : false,
+  "u1_reused" : true,
+  "u1_settlement_object_id" : "bed8be8bf5c5f7c68218f2c653260f8958306daf50ba280fa3b79619a5ece51b",
+  "u2_action" : {
+    "action" : "COMPUTE",
+    "item_id" : "TASK-U2",
+    "result_digest" : "828948dacf66ce6b054d39ca45693459e59e242fb44e49450925da775403d29a",
+    "settlement_object_id" : "a6ce81998d26ecdc1042425a9ac951abc2d07de78f7105cbcc9df7eb7c6a7201"
+  },
+  "u2_generation_calls_during_u2_phase" : 1
+}

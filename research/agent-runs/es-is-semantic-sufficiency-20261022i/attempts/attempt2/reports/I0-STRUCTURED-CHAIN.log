@@ -1,0 +1,2 @@
+condition I0-STRUCTURED-CHAIN attempt 99
+observations={"process_count": 0, "u1_generation_count": 0, "u2_generation_count": 0, "u3_generation_count": 0, "p2_u1_regeneration_count": 0, "p3_u1_regeneration_count": 0, "p3_u2_regeneration_count": 0, "harness_direct_result_reads": 0, "old_state_or_prefix_copied": false}

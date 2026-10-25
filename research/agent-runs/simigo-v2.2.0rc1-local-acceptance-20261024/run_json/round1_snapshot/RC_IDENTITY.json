@@ -1,0 +1,214 @@
+{
+ "build": {
+  "command": "xcodebuild -project SimiGo.xcodeproj -scheme SimiGo -configuration Release -derivedDataPath build/release-v2.1 build",
+  "log": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/logs/release_build.log",
+  "log_sha256": "fc61ad1eb46c37eab2990a03867b99b84ae6be6c2d98e52a1365aa27d9ebb3dc",
+  "succeeded": true
+ },
+ "bundle": {
+  "bundle_file_count": 19,
+  "bundle_manifest_verified_in_m5": true,
+  "bundle_tree_sha256_recorded": "299c4496ee1b3cd4f728b32048b41b00c05ad26945f675bca2928aa1d9faa71a",
+  "executable_bytes": 104980320,
+  "executable_sha256": "69f7c5934fc55a87502de2141c034293000b3ea4767a310a671f4fa388713b76",
+  "executable_uuid": "4B45B5D2-75E4-3EAD-823D-57AA20DC2AC6",
+  "info_plist_sha256": "b28d134f8dc9ad8f9ccf66d5d2f2c794dea7a8688410d5f481500c117599efb2",
+  "install_path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app"
+ },
+ "candidate": "v2.2.0rc1",
+ "dependencies": {
+  "declared": [
+   {
+    "repo": "https://github.com/slamfinger/mlx-swift",
+    "requirement": "revision ef5f1b6bb24e27922189316362f3057c64261704"
+   },
+   {
+    "repo": "https://github.com/slamfinger/mlx-swift-lm",
+    "requirement": "revision bc64ee696de102ad43fd76dd6ac01dc37f6427d3"
+   },
+   {
+    "repo": "https://github.com/huggingface/swift-transformers",
+    "requirement": "upToNextMajorVersion 1.3.3"
+   }
+  ],
+  "local_packages": [
+   "Packages/SimiGoRuntime",
+   "Packages/LOCALBCore"
+  ],
+  "package_resolved_sha256": "60df52a9af7d392bce3f3e98ace85c477ef3c3f14d2dda5ba77e23ab6502c443",
+  "resolved": {
+   "eventsource": {
+    "revision": "86b5096ac59ab46e66bd1f6377c604bc1dab0bc2",
+    "version": "1.5.1"
+   },
+   "mlx-swift": {
+    "revision": "ef5f1b6bb24e27922189316362f3057c64261704",
+    "version": null
+   },
+   "mlx-swift-lm": {
+    "revision": "bc64ee696de102ad43fd76dd6ac01dc37f6427d3",
+    "version": null
+   },
+   "swift-asn1": {
+    "revision": "3b6410f7dee09eb33cdd26260c5fd47fda19b0e2",
+    "version": "1.7.3"
+   },
+   "swift-certificates": {
+    "revision": "ff86b924ead66f853b8baf91f3c41926a8f36177",
+    "version": "1.21.0"
+   },
+   "swift-collections": {
+    "revision": "98ef3c98609a1e31b7e157b5b619579001a789d6",
+    "version": "1.7.1"
+   },
+   "swift-crypto": {
+    "revision": "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
+    "version": "4.5.2"
+   },
+   "swift-huggingface": {
+    "revision": "f2f99991f2d7d8fdb3187e4fd539cd2facf5c13d",
+    "version": "0.11.0"
+   },
+   "swift-jinja": {
+    "revision": "4588064a20f3fc093c95f2f7d3359999bf30cae5",
+    "version": "2.5.1"
+   },
+   "swift-numerics": {
+    "revision": "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+    "version": "1.1.1"
+   },
+   "swift-syntax": {
+    "revision": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+    "version": "603.0.2"
+   },
+   "swift-transformers": {
+    "revision": "c21fdcde390313a6d98d8e33a346f2c3486c3ab0",
+    "version": "1.3.4"
+   },
+   "yyjson": {
+    "revision": "8b4a38dc994a110abaec8a400615567bd996105f",
+    "version": "0.12.0"
+   }
+  }
+ },
+ "generated_at": "2026-10-24T01:10:05+0800",
+ "lab_source": {
+  "ahead": 4,
+  "behind": 0,
+  "branch": "main",
+  "changed_file_count": 167,
+  "head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "repo": "/Users/mr.simi/Documents/SimiGo-Lab",
+  "upstream": "origin/main"
+ },
+ "m5_recheck": {
+  "checks": {
+   "branch_matches_freeze": true,
+   "bundle_file_count_reproduces": true,
+   "bundle_manifest_matches_record": true,
+   "changed_file_digests_reproduce": true,
+   "codesign_verifies_now": true,
+   "dirty_set_matches_freeze": true,
+   "dmg_digest_reproduces": true,
+   "executable_digest_reproduces": true,
+   "executable_size_reproduces": true,
+   "executable_uuid_recorded": true,
+   "head_matches_freeze": true,
+   "info_plist_digest_reproduces": true,
+   "model_file_digests_reproduce": true,
+   "model_files_present": true,
+   "model_single_revision": true,
+   "model_symlinks_unchanged": true
+  },
+  "file": "evidence/recheck_artifacts.json",
+  "verdict": "PASS"
+ },
+ "model": {
+  "file_count": 17,
+  "repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "snapshot_path": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "tokenizer_digests": {
+   "added_tokens.json": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680",
+   "merges.txt": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+   "special_tokens_map.json": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd",
+   "tokenizer.json": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+   "tokenizer_config.json": "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  }
+ },
+ "note": "Binary identity is recorded separately from source identity: this manifest binds the artifacts actually installed and exercised, not the source tree alone.",
+ "package": {
+  "dmg": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo-v2.2.0rc1.dmg",
+  "dmg_bytes": 31969350,
+  "dmg_sha256": "f90d0dc16fe6b3ba6fb35177c41b288680f00e41f4c47b6dcd29031ba1645259",
+  "log": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/logs/package_dmg.log",
+  "log_sha256": "d54a09d702f8a46d2ba2928c860a709fce40d79cc541787e082edde43e655a35",
+  "script": "tools/package_dmg.sh 2.2.0rc1"
+ },
+ "signing": {
+  "authority": "Apple Development: slamfinger@163.com (99T9X7WUK3)",
+  "cdhash": "8fd223a35b65c7db9602eee74e04edcc5eaa8b88",
+  "flags": "0x10000(runtime)",
+  "notarization": "not notarized (local ad-hoc/development signature); Gatekeeper rejection is an environment constraint, recorded not hidden",
+  "runtime": "27.0.0",
+  "spctl": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: rejected",
+  "team_identifier": "YPXU8M53F9",
+  "verify": [
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: valid on disk",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: satisfies its Designated Requirement"
+  ]
+ },
+ "source": {
+  "ahead": 3,
+  "behind": 0,
+  "branch": "localb-b3-closure-20261016",
+  "changed_file_count": 5,
+  "changed_file_digests": {
+   "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift": "d9b705a80c57a7b090047e94c0a60e09bcf9c622f5e31112bdd96979d7c979a2",
+   "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift": "6e5e7db8baad6f53be44cafbe6e707cf44b72f7b3e291448d5ea23358928dfa0",
+   "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift": "d6e74096bf668f0f983749e7100984d63ae1b027eeef30a6911a1137be620da2",
+   "SimiGo.xcodeproj/project.pbxproj": "49b6d1791902e7437e38dba2bcc39ddecf51c43a98b470e60637307925bcb563",
+   "SimiGo/Headless/SimiGoG1G3Entry.swift": "a1f3d8af21486c9a93a8f156057fc092e9fa26245012826373a8ffb2f9d2353b"
+  },
+  "head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+  "repo": "/Users/mr.simi/Documents/SimiGo",
+  "staged_files": [],
+  "tracked_diff": {
+   "bytes": 13761,
+   "sha256": "dd5ce5e77f8e415bbcae24ec7e8b242145c19769a09081962a92cdab7a674cac"
+  },
+  "tracked_modified": [
+   "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
+   "SimiGo.xcodeproj/project.pbxproj",
+   "SimiGo/Headless/SimiGoG1G3Entry.swift"
+  ],
+  "untracked_expanded": [
+   "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift",
+   "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift"
+  ],
+  "upstream": "origin/localb-b3-closure-20261016"
+ },
+ "test_and_experiment_evidence": {
+  "acceptance": "acceptance_report.json",
+  "app_suite_isolated": "run_isolated_m1d/isolation_run_m1d.json (207 executed / 14 skipped / 0 failures)",
+  "non_interference": "evidence/noninterference_{pre,post}_m4.json + noninterference_diff_m4.json",
+  "package_suite": "logs/pkg_tests_m1.log (85 tests, 0 failures)",
+  "report": "REPORT.md",
+  "research_chain": "m4/m4a, m4/m4b"
+ },
+ "toolchain": {
+  "macos_build_version": "26A434",
+  "macos_product_version": "27.0.1",
+  "sdk": "27.0",
+  "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1) Target: arm64-apple-macosx27.0.0",
+  "uname": "Darwin MrSimideMacBook-Air-5.local 27.0.0 Darwin Kernel Version 27.0.0: Tue Aug 11 21:02:59 PDT 2026; root:xnu-13432.1.9~1/RELEASE_ARM64_T8142 arm64",
+  "xcodebuild": "Xcode 27.1 Build version 27A9275"
+ },
+ "version": {
+  "build_version": "26",
+  "bundle_id": "SwiftUI.SimiGo",
+  "marketing_version": "2.2.0",
+  "note": "Apple-conformant numeric fields only; the rc1 label lives in artifact names, this manifest and the reports."
+ }
+}

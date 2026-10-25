@@ -1,0 +1,690 @@
+{
+ "batch": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-runtime-contract-tests-20261024",
+ "object": {
+  "repo": "/Users/mr.simi/Documents/SimiGo",
+  "commit": "f18d65f8f312ffbb837fdf5e07125af044833854",
+  "package": "Packages/SimiGoRuntime",
+  "package_swift_sha256": "e9afb4c66871262b6099f43231274eafa70197712259eec34ac2a152422e5949"
+ },
+ "verdict": "PASS",
+ "checks_passed": 31,
+ "checks_total": 31,
+ "checks": [
+  {
+   "check": "package_declares_test_target",
+   "ok": true,
+   "detail": "type=test"
+  },
+  {
+   "check": "test_target_has_8_sources",
+   "ok": true,
+   "detail": "NativeDeclarativeResultContractTests.swift, SimiGoBootstrapTests.swift, SimiGoESISDatabaseG2Tests.swift, SimiGoESISDatabaseTests.swift, SimiGoEngineRecipeTests.swift, SimiGoModelDiscoveryTests.swift, SimiGoPathsTests.swift, SimiGoSettlementAuthorityTests.swift"
+  },
+  {
+   "check": "declared_test_files_8",
+   "ok": true,
+   "detail": "8 files"
+  },
+  {
+   "check": "declared_test_methods_total",
+   "ok": true,
+   "detail": "77"
+  },
+  {
+   "check": "run1_checkout_head",
+   "ok": true,
+   "detail": "f18d65f8f312ffbb837fdf5e07125af044833854"
+  },
+  {
+   "check": "run1_checkout_clean",
+   "ok": true,
+   "detail": "0 dirty lines"
+  },
+  {
+   "check": "run1_package_swift_sha",
+   "ok": true,
+   "detail": "e9afb4c66871262b6099f43231274eafa70197712259eec34ac2a152422e5949"
+  },
+  {
+   "check": "run1_deps_match_pins",
+   "ok": true,
+   "detail": "12 checkouts vs 12 pins"
+  },
+  {
+   "check": "run1_exit_zero",
+   "ok": true,
+   "detail": "rc=None source=process exit observed by the executing shell; log verdict is 'All tests' passed"
+  },
+  {
+   "check": "run1_executed_77",
+   "ok": true,
+   "detail": "parsed=77 reported=77"
+  },
+  {
+   "check": "run1_zero_failures",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "check": "run1_zero_skipped",
+   "ok": true,
+   "detail": "skipped=0"
+  },
+  {
+   "check": "run1_eight_suites",
+   "ok": true,
+   "detail": "8"
+  },
+  {
+   "check": "run1_declared_equals_executed",
+   "ok": true,
+   "detail": "per-suite set comparison"
+  },
+  {
+   "check": "run1_isolation_untouched",
+   "ok": true,
+   "detail": "0 files"
+  },
+  {
+   "check": "run1_no_user_state_write",
+   "ok": true,
+   "detail": "writes=0 events=0"
+  },
+  {
+   "check": "run1_reference_unchanged",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "check": "run2_checkout_head",
+   "ok": true,
+   "detail": "f18d65f8f312ffbb837fdf5e07125af044833854"
+  },
+  {
+   "check": "run2_checkout_clean",
+   "ok": true,
+   "detail": "0 dirty lines"
+  },
+  {
+   "check": "run2_package_swift_sha",
+   "ok": true,
+   "detail": "e9afb4c66871262b6099f43231274eafa70197712259eec34ac2a152422e5949"
+  },
+  {
+   "check": "run2_deps_match_pins",
+   "ok": true,
+   "detail": "12 checkouts vs 12 pins"
+  },
+  {
+   "check": "run2_exit_zero",
+   "ok": true,
+   "detail": "rc=0 source=logs/swift_test.rc"
+  },
+  {
+   "check": "run2_executed_77",
+   "ok": true,
+   "detail": "parsed=77 reported=77"
+  },
+  {
+   "check": "run2_zero_failures",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "check": "run2_zero_skipped",
+   "ok": true,
+   "detail": "skipped=0"
+  },
+  {
+   "check": "run2_eight_suites",
+   "ok": true,
+   "detail": "8"
+  },
+  {
+   "check": "run2_declared_equals_executed",
+   "ok": true,
+   "detail": "per-suite set comparison"
+  },
+  {
+   "check": "run2_isolation_untouched",
+   "ok": true,
+   "detail": "0 files"
+  },
+  {
+   "check": "run2_no_user_state_write",
+   "ok": true,
+   "detail": "writes=0 events=0"
+  },
+  {
+   "check": "run2_reference_unchanged",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "check": "runs_agree_on_suite_counts",
+   "ok": true,
+   "detail": "run1 vs run2"
+  }
+ ],
+ "declared": {
+  "NativeDeclarativeResultContractTests.swift": {
+   "class": "DeclarativeNativeResultContractTests",
+   "tests": [
+    "testAmbiguousRequiredFieldFailsExactlyOnePolicy",
+    "testBindingMismatchFailsClosed",
+    "testDerivedFieldMismatchFailsClosed",
+    "testDigestCanonicalJSONMatchesPythonForNestedNonASCII",
+    "testDigestEqualsBindingMatchesCanonicalStringDigest",
+    "testDigestEqualsBindingMismatchFailsClosed",
+    "testDigestEqualsBindingRequiresVerifiedBinding",
+    "testEnumAndBooleanTypes",
+    "testEqualsFieldAndLiteralConstraints",
+    "testFirstPolicyKeepsFirstMatch",
+    "testIntegerRangeFailsClosed",
+    "testMissingBindingFailsClosedWithProducerStage",
+    "testMissingRequiredFieldFailsClosed",
+    "testNamedCaptureGroupWorks",
+    "testOptionalFieldCanBeAbsent",
+    "testUnknownConstraintStillFailsClosed",
+    "testUnknownKeysFailClosed",
+    "testUnknownSchemaVersionFailsClosed",
+    "testValidDeclaredFieldsBindingsAndDerivedRoute",
+    "testValidatedPayloadContainsOnlyNativeContractValues",
+    "testValidationIsIndependentOfRuntimeTaskID"
+   ]
+  },
+  "SimiGoBootstrapTests.swift": {
+   "class": "SimiGoBootstrapTests",
+   "tests": [
+    "testBootstrapMigratesLegacyOnceAndSkipsOnReRun",
+    "testBootstrapNeverCreatesWorkOrModelsDirectories",
+    "testBootstrapProducesMachineReadableReportAndIsIdempotent",
+    "testBootstrapRecordsFailureThenRecoversOnReRun",
+    "testDiscoveryReadsHFStyleLayoutAsRootRelativeRefs",
+    "testWorkFilesAreIndexedByRootRelativeAndNeverCopied"
+   ]
+  },
+  "SimiGoESISDatabaseG2Tests.swift": {
+   "class": "SimiGoESISDatabaseG2Tests",
+   "tests": [
+    "testG2DualSourceCoexistenceWorkAndSession",
+    "testG2ExternalFileIndexStoresNoBytes",
+    "testG2LocalInvalidationOnlyAffectsClosurePreservesUnrelated",
+    "testG2LocalUpdateWritesAreAtomicUnderFailure",
+    "testG2ReconcileMissingWatcherEventInvalidatesRemovedFile",
+    "testG2RepeatScanIdempotentNoInvalidationWhenUnchanged",
+    "testG2TransitiveDependencyClosureInvalidatesDownstream"
+   ]
+  },
+  "SimiGoESISDatabaseTests.swift": {
+   "class": "SimiGoESISDatabaseTests",
+   "tests": [
+    "testContractVersionMismatchRollsBackEntirely",
+    "testCorruptFileFailsClosed",
+    "testForeignKeyViolationRollsBackEntirely",
+    "testFreshDatabaseMigratesAndPassesIntegrity",
+    "testLegacyImportIsLosslessForGraphRebuild",
+    "testLegacyImportWithReadBackAndReceipt",
+    "testRecordNativeSettlementAsWriteAuthority",
+    "testSettlementGateCommitsToAuthorityAndFailsClosedOnReadBack",
+    "testWriteGraphIdempotentAndReconcilesRemovals",
+    "testWriteGraphKeepsStatesReferencedBySettlements",
+    "testWriteGraphThenReadBackPreservesFullRepresentation"
+   ]
+  },
+  "SimiGoEngineRecipeTests.swift": {
+   "class": "SimiGoEngineRecipeTests",
+   "tests": [
+    "testAutomatedDownloadIsFailClosedWithoutChecksum",
+    "testCacheCleanupKeepsOnlyBinary",
+    "testExternalServerWithoutEndpointIsFailClosed",
+    "testExternalServersResolveConcreteAdoptEndpoint",
+    "testFloatingBranchIsNotLocked",
+    "testImmutableRefsAreLocked",
+    "testLockedCheckoutNeverPullsFloatingBranch",
+    "testManifestOverridesAndExtensibility",
+    "testManifestSuppliesAdoptEndpoint",
+    "testPruneCacheKeepingBinaryRunsAndIsFailSafe",
+    "testRecipeDecodesWithoutEndpointKeys",
+    "testRegistryIsNotHardcodedToLlama_ExternalServersSelectable",
+    "testSourceBuildAndNativeNeverAdoptOverEndpoint",
+    "testThreeDistinctStagesNeverCollapse"
+   ]
+  },
+  "SimiGoModelDiscoveryTests.swift": {
+   "class": "SimiGoModelDiscoveryTests",
+   "tests": [
+    "testAbsoluteOutsideAnyRootYieldsNoReference",
+    "testAbsoluteToReferenceRoundTrips",
+    "testResolveFailsClosedWhenAbsent",
+    "testResolveFindsModelUnderExternalCache",
+    "testResolveRejectsPathEscape",
+    "testResolveRejectsUnknownRoot"
+   ]
+  },
+  "SimiGoPathsTests.swift": {
+   "class": "SimiGoPathsTests",
+   "tests": [
+    "testAbsoluteInputRejected",
+    "testHFCacheCandidatesPrecedeEnvironment",
+    "testManagedRootHonorsSimigoHomeOverride",
+    "testNoWorkOrModelsUnderManagedRoot",
+    "testRelativeEscapeRejected",
+    "testUnicodeAndSpacePathsResolve",
+    "testValidAndContainedDotDotResolveWithinRoot"
+   ]
+  },
+  "SimiGoSettlementAuthorityTests.swift": {
+   "class": "SimiGoSettlementAuthorityTests",
+   "tests": [
+    "testAuthorizeProducesCanonicalValidatedSettlement",
+    "testBindingMismatchRefusesBeforeSettlement",
+    "testDigestBindingAuthorizeAndRefuse",
+    "testMissingBindingRefusesBeforeSettlement",
+    "testUnknownConstraintRefusesBeforeSettlement"
+   ]
+  }
+ },
+ "runs": {
+  "run1": {
+   "rc": null,
+   "rc_source": "process exit observed by the executing shell; log verdict is 'All tests' passed",
+   "stdout_all_passed": true,
+   "suites": {
+    "DeclarativeNativeResultContractTests": {
+     "executed": 21,
+     "passed": 21,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAmbiguousRequiredFieldFailsExactlyOnePolicy",
+      "testBindingMismatchFailsClosed",
+      "testDerivedFieldMismatchFailsClosed",
+      "testDigestCanonicalJSONMatchesPythonForNestedNonASCII",
+      "testDigestEqualsBindingMatchesCanonicalStringDigest",
+      "testDigestEqualsBindingMismatchFailsClosed",
+      "testDigestEqualsBindingRequiresVerifiedBinding",
+      "testEnumAndBooleanTypes",
+      "testEqualsFieldAndLiteralConstraints",
+      "testFirstPolicyKeepsFirstMatch",
+      "testIntegerRangeFailsClosed",
+      "testMissingBindingFailsClosedWithProducerStage",
+      "testMissingRequiredFieldFailsClosed",
+      "testNamedCaptureGroupWorks",
+      "testOptionalFieldCanBeAbsent",
+      "testUnknownConstraintStillFailsClosed",
+      "testUnknownKeysFailClosed",
+      "testUnknownSchemaVersionFailsClosed",
+      "testValidatedPayloadContainsOnlyNativeContractValues",
+      "testValidationIsIndependentOfRuntimeTaskID",
+      "testValidDeclaredFieldsBindingsAndDerivedRoute"
+     ]
+    },
+    "SimiGoBootstrapTests": {
+     "executed": 6,
+     "passed": 6,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testBootstrapMigratesLegacyOnceAndSkipsOnReRun",
+      "testBootstrapNeverCreatesWorkOrModelsDirectories",
+      "testBootstrapProducesMachineReadableReportAndIsIdempotent",
+      "testBootstrapRecordsFailureThenRecoversOnReRun",
+      "testDiscoveryReadsHFStyleLayoutAsRootRelativeRefs",
+      "testWorkFilesAreIndexedByRootRelativeAndNeverCopied"
+     ]
+    },
+    "SimiGoESISDatabaseG2Tests": {
+     "executed": 7,
+     "passed": 7,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testG2DualSourceCoexistenceWorkAndSession",
+      "testG2ExternalFileIndexStoresNoBytes",
+      "testG2LocalInvalidationOnlyAffectsClosurePreservesUnrelated",
+      "testG2LocalUpdateWritesAreAtomicUnderFailure",
+      "testG2ReconcileMissingWatcherEventInvalidatesRemovedFile",
+      "testG2RepeatScanIdempotentNoInvalidationWhenUnchanged",
+      "testG2TransitiveDependencyClosureInvalidatesDownstream"
+     ]
+    },
+    "SimiGoESISDatabaseTests": {
+     "executed": 11,
+     "passed": 11,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testContractVersionMismatchRollsBackEntirely",
+      "testCorruptFileFailsClosed",
+      "testForeignKeyViolationRollsBackEntirely",
+      "testFreshDatabaseMigratesAndPassesIntegrity",
+      "testLegacyImportIsLosslessForGraphRebuild",
+      "testLegacyImportWithReadBackAndReceipt",
+      "testRecordNativeSettlementAsWriteAuthority",
+      "testSettlementGateCommitsToAuthorityAndFailsClosedOnReadBack",
+      "testWriteGraphIdempotentAndReconcilesRemovals",
+      "testWriteGraphKeepsStatesReferencedBySettlements",
+      "testWriteGraphThenReadBackPreservesFullRepresentation"
+     ]
+    },
+    "SimiGoEngineRecipeTests": {
+     "executed": 14,
+     "passed": 14,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAutomatedDownloadIsFailClosedWithoutChecksum",
+      "testCacheCleanupKeepsOnlyBinary",
+      "testExternalServersResolveConcreteAdoptEndpoint",
+      "testExternalServerWithoutEndpointIsFailClosed",
+      "testFloatingBranchIsNotLocked",
+      "testImmutableRefsAreLocked",
+      "testLockedCheckoutNeverPullsFloatingBranch",
+      "testManifestOverridesAndExtensibility",
+      "testManifestSuppliesAdoptEndpoint",
+      "testPruneCacheKeepingBinaryRunsAndIsFailSafe",
+      "testRecipeDecodesWithoutEndpointKeys",
+      "testRegistryIsNotHardcodedToLlama_ExternalServersSelectable",
+      "testSourceBuildAndNativeNeverAdoptOverEndpoint",
+      "testThreeDistinctStagesNeverCollapse"
+     ]
+    },
+    "SimiGoModelDiscoveryTests": {
+     "executed": 6,
+     "passed": 6,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAbsoluteOutsideAnyRootYieldsNoReference",
+      "testAbsoluteToReferenceRoundTrips",
+      "testResolveFailsClosedWhenAbsent",
+      "testResolveFindsModelUnderExternalCache",
+      "testResolveRejectsPathEscape",
+      "testResolveRejectsUnknownRoot"
+     ]
+    },
+    "SimiGoPathsTests": {
+     "executed": 7,
+     "passed": 7,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAbsoluteInputRejected",
+      "testHFCacheCandidatesPrecedeEnvironment",
+      "testManagedRootHonorsSimigoHomeOverride",
+      "testNoWorkOrModelsUnderManagedRoot",
+      "testRelativeEscapeRejected",
+      "testUnicodeAndSpacePathsResolve",
+      "testValidAndContainedDotDotResolveWithinRoot"
+     ]
+    },
+    "SimiGoSettlementAuthorityTests": {
+     "executed": 5,
+     "passed": 5,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAuthorizeProducesCanonicalValidatedSettlement",
+      "testBindingMismatchRefusesBeforeSettlement",
+      "testDigestBindingAuthorizeAndRefuse",
+      "testMissingBindingRefusesBeforeSettlement",
+      "testUnknownConstraintRefusesBeforeSettlement"
+     ]
+    }
+   },
+   "executed": 77,
+   "reported_total": 77,
+   "reported_failures": 0,
+   "test_binary": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-runtime-contract-tests-20261024/scratch/out/Products/Debug/SimiGoRuntimeContractTests.xctest/Contents/MacOS/SimiGoRuntimeContractTests",
+   "test_binary_sha256": "3462e3f56f4af290674354dbb9bdb0215eecd3133419405303982df6275a1e9c",
+   "isolation_files": 0,
+   "real_user_state_write_count": 0,
+   "violation_events": 0,
+   "reference_changes": 0,
+   "log_sha256": {
+    "swift_test.stdout.log": "fdb0db20e3e6c35b80c0f3833f5cc10fbd60ad235a99843ba214424fea5e0f4b",
+    "swift_test.stderr.log": "3c4343a92ac4e624767b947d23af7dac58696e63b7a4412e8116ce2ce29716fa"
+   },
+   "time": {
+    "real": "92.21",
+    "user": "363.20",
+    "sys": "38.14"
+   }
+  },
+  "run2": {
+   "rc": 0,
+   "rc_source": "logs/swift_test.rc",
+   "stdout_all_passed": true,
+   "suites": {
+    "DeclarativeNativeResultContractTests": {
+     "executed": 21,
+     "passed": 21,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAmbiguousRequiredFieldFailsExactlyOnePolicy",
+      "testBindingMismatchFailsClosed",
+      "testDerivedFieldMismatchFailsClosed",
+      "testDigestCanonicalJSONMatchesPythonForNestedNonASCII",
+      "testDigestEqualsBindingMatchesCanonicalStringDigest",
+      "testDigestEqualsBindingMismatchFailsClosed",
+      "testDigestEqualsBindingRequiresVerifiedBinding",
+      "testEnumAndBooleanTypes",
+      "testEqualsFieldAndLiteralConstraints",
+      "testFirstPolicyKeepsFirstMatch",
+      "testIntegerRangeFailsClosed",
+      "testMissingBindingFailsClosedWithProducerStage",
+      "testMissingRequiredFieldFailsClosed",
+      "testNamedCaptureGroupWorks",
+      "testOptionalFieldCanBeAbsent",
+      "testUnknownConstraintStillFailsClosed",
+      "testUnknownKeysFailClosed",
+      "testUnknownSchemaVersionFailsClosed",
+      "testValidatedPayloadContainsOnlyNativeContractValues",
+      "testValidationIsIndependentOfRuntimeTaskID",
+      "testValidDeclaredFieldsBindingsAndDerivedRoute"
+     ]
+    },
+    "SimiGoBootstrapTests": {
+     "executed": 6,
+     "passed": 6,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testBootstrapMigratesLegacyOnceAndSkipsOnReRun",
+      "testBootstrapNeverCreatesWorkOrModelsDirectories",
+      "testBootstrapProducesMachineReadableReportAndIsIdempotent",
+      "testBootstrapRecordsFailureThenRecoversOnReRun",
+      "testDiscoveryReadsHFStyleLayoutAsRootRelativeRefs",
+      "testWorkFilesAreIndexedByRootRelativeAndNeverCopied"
+     ]
+    },
+    "SimiGoESISDatabaseG2Tests": {
+     "executed": 7,
+     "passed": 7,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testG2DualSourceCoexistenceWorkAndSession",
+      "testG2ExternalFileIndexStoresNoBytes",
+      "testG2LocalInvalidationOnlyAffectsClosurePreservesUnrelated",
+      "testG2LocalUpdateWritesAreAtomicUnderFailure",
+      "testG2ReconcileMissingWatcherEventInvalidatesRemovedFile",
+      "testG2RepeatScanIdempotentNoInvalidationWhenUnchanged",
+      "testG2TransitiveDependencyClosureInvalidatesDownstream"
+     ]
+    },
+    "SimiGoESISDatabaseTests": {
+     "executed": 11,
+     "passed": 11,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testContractVersionMismatchRollsBackEntirely",
+      "testCorruptFileFailsClosed",
+      "testForeignKeyViolationRollsBackEntirely",
+      "testFreshDatabaseMigratesAndPassesIntegrity",
+      "testLegacyImportIsLosslessForGraphRebuild",
+      "testLegacyImportWithReadBackAndReceipt",
+      "testRecordNativeSettlementAsWriteAuthority",
+      "testSettlementGateCommitsToAuthorityAndFailsClosedOnReadBack",
+      "testWriteGraphIdempotentAndReconcilesRemovals",
+      "testWriteGraphKeepsStatesReferencedBySettlements",
+      "testWriteGraphThenReadBackPreservesFullRepresentation"
+     ]
+    },
+    "SimiGoEngineRecipeTests": {
+     "executed": 14,
+     "passed": 14,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAutomatedDownloadIsFailClosedWithoutChecksum",
+      "testCacheCleanupKeepsOnlyBinary",
+      "testExternalServersResolveConcreteAdoptEndpoint",
+      "testExternalServerWithoutEndpointIsFailClosed",
+      "testFloatingBranchIsNotLocked",
+      "testImmutableRefsAreLocked",
+      "testLockedCheckoutNeverPullsFloatingBranch",
+      "testManifestOverridesAndExtensibility",
+      "testManifestSuppliesAdoptEndpoint",
+      "testPruneCacheKeepingBinaryRunsAndIsFailSafe",
+      "testRecipeDecodesWithoutEndpointKeys",
+      "testRegistryIsNotHardcodedToLlama_ExternalServersSelectable",
+      "testSourceBuildAndNativeNeverAdoptOverEndpoint",
+      "testThreeDistinctStagesNeverCollapse"
+     ]
+    },
+    "SimiGoModelDiscoveryTests": {
+     "executed": 6,
+     "passed": 6,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAbsoluteOutsideAnyRootYieldsNoReference",
+      "testAbsoluteToReferenceRoundTrips",
+      "testResolveFailsClosedWhenAbsent",
+      "testResolveFindsModelUnderExternalCache",
+      "testResolveRejectsPathEscape",
+      "testResolveRejectsUnknownRoot"
+     ]
+    },
+    "SimiGoPathsTests": {
+     "executed": 7,
+     "passed": 7,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAbsoluteInputRejected",
+      "testHFCacheCandidatesPrecedeEnvironment",
+      "testManagedRootHonorsSimigoHomeOverride",
+      "testNoWorkOrModelsUnderManagedRoot",
+      "testRelativeEscapeRejected",
+      "testUnicodeAndSpacePathsResolve",
+      "testValidAndContainedDotDotResolveWithinRoot"
+     ]
+    },
+    "SimiGoSettlementAuthorityTests": {
+     "executed": 5,
+     "passed": 5,
+     "failed": 0,
+     "skipped": 0,
+     "names": [
+      "testAuthorizeProducesCanonicalValidatedSettlement",
+      "testBindingMismatchRefusesBeforeSettlement",
+      "testDigestBindingAuthorizeAndRefuse",
+      "testMissingBindingRefusesBeforeSettlement",
+      "testUnknownConstraintRefusesBeforeSettlement"
+     ]
+    }
+   },
+   "executed": 77,
+   "reported_total": 77,
+   "reported_failures": 0,
+   "test_binary": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-runtime-contract-tests-20261024/run2/scratch/out/Products/Debug/SimiGoRuntimeContractTests.xctest/Contents/MacOS/SimiGoRuntimeContractTests",
+   "test_binary_sha256": "5e1301ea2d743d27bbc0979d058758fddfc111a1463d92ae90a8fa5e65611a1c",
+   "isolation_files": 0,
+   "real_user_state_write_count": 0,
+   "violation_events": 0,
+   "reference_changes": 0,
+   "log_sha256": {
+    "swift_test.stdout.log": "228ac543e0740cafb0396d375d3d80ad64a4a75f317c45bbf2922f9ba9d91708",
+    "swift_test.stderr.log": "828270e3fb6772337a74528a85bb6cb79dbd6695c0bd67fb927e9d7cc95f5c31"
+   },
+   "time": {
+    "real": "98.32",
+    "user": "366.08",
+    "sys": "37.44"
+   }
+  }
+ },
+ "checkout_facts": {
+  "run1": {
+   "head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+   "dirty_lines": 0,
+   "package_swift_sha256": "e9afb4c66871262b6099f43231274eafa70197712259eec34ac2a152422e5949",
+   "pins": {
+    "eventsource": "86b5096ac59ab46e66bd1f6377c604bc1dab0bc2",
+    "mlx-swift": "ef5f1b6bb24e27922189316362f3057c64261704",
+    "mlx-swift-lm": "bc64ee696de102ad43fd76dd6ac01dc37f6427d3",
+    "swift-asn1": "3b6410f7dee09eb33cdd26260c5fd47fda19b0e2",
+    "swift-collections": "98ef3c98609a1e31b7e157b5b619579001a789d6",
+    "swift-crypto": "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
+    "swift-huggingface": "0ece9a1ef443309d26a69af9897ee8ad82f43a9a",
+    "swift-jinja": "4588064a20f3fc093c95f2f7d3359999bf30cae5",
+    "swift-numerics": "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+    "swift-syntax": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+    "swift-transformers": "c21fdcde390313a6d98d8e33a346f2c3486c3ab0",
+    "yyjson": "8b4a38dc994a110abaec8a400615567bd996105f"
+   },
+   "checkouts": {
+    "EventSource": "86b5096ac59ab46e66bd1f6377c604bc1dab0bc2",
+    "mlx-swift": "ef5f1b6bb24e27922189316362f3057c64261704",
+    "mlx-swift-lm": "bc64ee696de102ad43fd76dd6ac01dc37f6427d3",
+    "swift-asn1": "3b6410f7dee09eb33cdd26260c5fd47fda19b0e2",
+    "swift-collections": "98ef3c98609a1e31b7e157b5b619579001a789d6",
+    "swift-crypto": "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
+    "swift-huggingface": "0ece9a1ef443309d26a69af9897ee8ad82f43a9a",
+    "swift-jinja": "4588064a20f3fc093c95f2f7d3359999bf30cae5",
+    "swift-numerics": "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+    "swift-syntax": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+    "swift-transformers": "c21fdcde390313a6d98d8e33a346f2c3486c3ab0",
+    "yyjson": "8b4a38dc994a110abaec8a400615567bd996105f"
+   }
+  },
+  "run2": {
+   "head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+   "dirty_lines": 0,
+   "package_swift_sha256": "e9afb4c66871262b6099f43231274eafa70197712259eec34ac2a152422e5949",
+   "pins": {
+    "eventsource": "86b5096ac59ab46e66bd1f6377c604bc1dab0bc2",
+    "mlx-swift": "ef5f1b6bb24e27922189316362f3057c64261704",
+    "mlx-swift-lm": "bc64ee696de102ad43fd76dd6ac01dc37f6427d3",
+    "swift-asn1": "3b6410f7dee09eb33cdd26260c5fd47fda19b0e2",
+    "swift-collections": "98ef3c98609a1e31b7e157b5b619579001a789d6",
+    "swift-crypto": "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
+    "swift-huggingface": "0ece9a1ef443309d26a69af9897ee8ad82f43a9a",
+    "swift-jinja": "4588064a20f3fc093c95f2f7d3359999bf30cae5",
+    "swift-numerics": "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+    "swift-syntax": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+    "swift-transformers": "c21fdcde390313a6d98d8e33a346f2c3486c3ab0",
+    "yyjson": "8b4a38dc994a110abaec8a400615567bd996105f"
+   },
+   "checkouts": {
+    "EventSource": "86b5096ac59ab46e66bd1f6377c604bc1dab0bc2",
+    "mlx-swift": "ef5f1b6bb24e27922189316362f3057c64261704",
+    "mlx-swift-lm": "bc64ee696de102ad43fd76dd6ac01dc37f6427d3",
+    "swift-asn1": "3b6410f7dee09eb33cdd26260c5fd47fda19b0e2",
+    "swift-collections": "98ef3c98609a1e31b7e157b5b619579001a789d6",
+    "swift-crypto": "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
+    "swift-huggingface": "0ece9a1ef443309d26a69af9897ee8ad82f43a9a",
+    "swift-jinja": "4588064a20f3fc093c95f2f7d3359999bf30cae5",
+    "swift-numerics": "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+    "swift-syntax": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+    "swift-transformers": "c21fdcde390313a6d98d8e33a346f2c3486c3ab0",
+    "yyjson": "8b4a38dc994a110abaec8a400615567bd996105f"
+   }
+  }
+ }
+}

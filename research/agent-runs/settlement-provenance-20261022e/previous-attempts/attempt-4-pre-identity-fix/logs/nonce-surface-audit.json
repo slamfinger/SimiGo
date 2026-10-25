@@ -1,0 +1,34 @@
+{
+ "W_A": {
+  "cross_contaminated": false,
+  "nonce_length": 16,
+  "nonce_sha256": "64d26455cd50384c07db1a126f16e23248b71d697c757f31d77c7a51300fa7ba",
+  "schema_id": "SIMIGO-E-ROUND-NONCE-AUDIT-V1",
+  "surface_contains_nonce": {
+   "argv": false,
+   "environment": false,
+   "other_world_database": false,
+   "other_world_evidence": false,
+   "other_world_logs": false,
+   "other_world_state": false
+  },
+  "verdict": "CLEAN",
+  "world": "world-a"
+ },
+ "W_B": {
+  "cross_contaminated": false,
+  "nonce_length": 16,
+  "nonce_sha256": "90aba3227ef4c8fcaf63a74077d2ca7557c57f907809b63f161163adea557238",
+  "schema_id": "SIMIGO-E-ROUND-NONCE-AUDIT-V1",
+  "surface_contains_nonce": {
+   "argv": false,
+   "environment": false,
+   "other_world_database": false,
+   "other_world_evidence": false,
+   "other_world_logs": false,
+   "other_world_state": false
+  },
+  "verdict": "CLEAN",
+  "world": "world-b"
+ }
+}

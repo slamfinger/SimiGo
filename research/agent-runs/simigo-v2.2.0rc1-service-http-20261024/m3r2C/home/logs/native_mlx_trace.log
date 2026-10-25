@@ -1,0 +1,2 @@
+[2026-10-24 13:36:37.350] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=16MB swapUsed=4014MB
+[2026-10-24 13:36:39.764] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit

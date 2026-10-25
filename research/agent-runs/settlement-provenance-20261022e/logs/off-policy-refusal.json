@@ -1,0 +1,86 @@
+{
+ "checks": {
+  "authoritative_world_unchanged": true,
+  "off_policy_calculator_covers_dependency_closure": true,
+  "off_policy_no_trust_anchor_or_signer": true,
+  "off_policy_recomputes_instead_of_reusing": true,
+  "off_policy_refuses_signed_source_reuse": true,
+  "off_policy_refuses_signed_u1_reuse": true,
+  "off_policy_replacement_is_unsigned_and_distinct": true,
+  "off_recomputation_is_refused_by_verify": true,
+  "verify_policy_loads_anchor_without_private_key": true,
+  "verify_policy_reuses_signed_settlement": true
+ },
+ "demand_id": "task-u1",
+ "evidence": {
+  "authoritative_world": {
+   "path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a/carrier.sqlite",
+   "sha256_after": "a4a19f3e5a54da314e9518625ca294e53c134dd150b74825ce067859f185900b",
+   "sha256_before": "a4a19f3e5a54da314e9518625ca294e53c134dd150b74825ce067859f185900b"
+  },
+  "off": {
+   "action_reasons": {
+    "TASK-SOURCE": [
+     "COMPUTE",
+     "SETTLEMENT_SIGNATURE_UNVERIFIABLE"
+    ],
+    "TASK-U1": [
+     "COMPUTE",
+     "SETTLEMENT_BASIS_MISMATCH"
+    ]
+   },
+   "calculator_calls": [
+    "TASK-SOURCE",
+    "TASK-U1"
+   ],
+   "computed_item_ids": [
+    "TASK-SOURCE",
+    "TASK-U1"
+   ],
+   "demand_action": "COMPUTE",
+   "demand_reason": "SETTLEMENT_BASIS_MISMATCH",
+   "policy": "off",
+   "replacement_has_provenance": false,
+   "replacement_settlement_object_id": "590baf83df337f244c9a3ef3b158accab0056c40523bf64d5ccf6192f576bfb0",
+   "replacement_signature_declares_object_id": "c81903413cdfad1565d1639e62430e4ebdd37981289c2c7276ac1af980d7dde2",
+   "replacement_signature_object_id": "4851da6d6c3bb2d97cfe9800cd745bc832fdc04722720917e6d0690597269f68",
+   "reused_item_ids": [],
+   "signed_settlement_object_id": "c81903413cdfad1565d1639e62430e4ebdd37981289c2c7276ac1af980d7dde2",
+   "signer_loaded": false,
+   "source_reuse_decision": [
+    false,
+    "SETTLEMENT_SIGNATURE_UNVERIFIABLE"
+   ],
+   "trust_anchor_loaded": false,
+   "u1_reuse_decision": [
+    false,
+    "SETTLEMENT_SIGNATURE_UNVERIFIABLE"
+   ]
+  },
+  "off_then_verify": {
+   "policy": "verify",
+   "reuse_decision": [
+    false,
+    "SETTLEMENT_SIGNATURE_MISSING"
+   ],
+   "trust_anchor_loaded": true
+  },
+  "verify": {
+   "policy": "verify",
+   "reuse_decision": [
+    true,
+    null
+   ],
+   "signer_loaded": false,
+   "trust_anchor_loaded": true
+  }
+ },
+ "item_id": "TASK-U1",
+ "not_claimed": [
+  "that policy=off is a verification mode",
+  "semantic correctness of a signed value"
+ ],
+ "schema_id": "SIMIGO-E-ROUND-OFF-POLICY-PROBE-V1",
+ "verdict": "PASS",
+ "world": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a/carrier.sqlite"
+}

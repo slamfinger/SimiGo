@@ -1,0 +1,32 @@
+{
+  "counters": {
+    "model_generate_calls": 0,
+    "model_loads": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+  },
+  "db_post_sha256": "f51f1ef4b1ee1c4231a918e0f41ff50f3abda3bc64086d264d8a13f0132f88da",
+  "db_pre_sha256": "f51f1ef4b1ee1c4231a918e0f41ff50f3abda3bc64086d264d8a13f0132f88da",
+  "evidence_path_item": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I1/evidence/i1-missing-source-b-task-iu1.json",
+  "id": "I1-MISSING-SOURCE-B",
+  "kind": "negative_control",
+  "observations": {
+    "database_unchanged": true,
+    "generation_calls": 0,
+    "refusal_before_tokenize": true,
+    "refusal_stage": "SETTLEMENT_NOT_ADMITTED",
+    "removed_source": "TASK-DEST",
+    "state_unchanged": true
+  },
+  "raw_log_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I1/logs/i1-missing-source-b-task-iu1.log"
+  ],
+  "refusal": {
+    "item_id": "TASK-DEST",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "stage": "SETTLEMENT_NOT_ADMITTED"
+  },
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I1"
+}

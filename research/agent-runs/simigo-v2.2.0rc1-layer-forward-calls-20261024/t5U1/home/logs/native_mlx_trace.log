@@ -1,0 +1,17 @@
+[2026-10-24 16:56:05.913] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 16:56:05.914] ℹ️ [CFG] source=recommended model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 16:56:05.914] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.9 topK=20 minP=0.05 rep=1.05 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-10-24 16:56:05.915] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8500 advertised=127.0.0.1:8500 lan=false
+[2026-10-24 16:56:05.923] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=16MB swapUsed=4065MB
+[2026-10-24 16:56:09.512] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 16:56:09.529] NativeMLX ready: model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit port=8500
+[2026-10-24 16:56:09.529] [MEM] afterLoad active=16385MB cache=0MB peak=16385MB footprint=16494MB swapUsed=4065MB
+[2026-10-24 16:56:09.529] ℹ️ [READY] http://127.0.0.1:8500/v1
+[2026-10-24 16:56:10.812] [PROTOCOL] arrive r=a36d88 endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-24 16:56:10.813] [LC] STATE_TRANSITION r=a36d88 s=openai from=QUEUED to=RUNNING
+[2026-10-24 16:56:10.814] [MLX] poolRescan entries=0
+[2026-10-24 16:56:10.815] [MLX] prefillStep=2048 est=8 reuse=false
+[2026-10-24 16:56:12.596] [MLX] prefill 17/17
+[2026-10-24 16:56:13.061] [MLX] poolExport messages=2 refHash=2a85dacea50727
+[2026-10-24 16:56:13.061] [MLX] session=2ecc49/main messages=1 exec=c5eea6 history=2 delta=1 reuse=false ttft=2152ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=17 promptTime=2.1s tps=58.0 rawEv=5 rawB=15 emitB=15
+[2026-10-24 16:56:13.061] [LC] RELEASED r=a36d88 s=openai reason=completed

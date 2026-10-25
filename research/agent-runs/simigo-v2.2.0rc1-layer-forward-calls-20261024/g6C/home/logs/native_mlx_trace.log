@@ -1,0 +1,10 @@
+[2026-10-24 15:56:33.482] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-10-24 15:56:33.483] ℹ️ [CFG] source=recommended model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 15:56:33.483] ℹ️ [CFG] ctx=131072 gpu=99 temp=1.0 topP=0.9 topK=20 minP=0.05 rep=1.05 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-10-24 15:56:33.483] ℹ️ [NODE] backend=MLX Native bind=127.0.0.1:8412 advertised=127.0.0.1:8412 lan=false
+[2026-10-24 15:56:33.488] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=16MB swapUsed=3156MB
+[2026-10-24 15:56:36.154] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 15:56:36.404] ❌ ❌ 启动失败: The operation couldn’t be completed. (LOCALBCore.LOCALBStatus error 57.)
+[2026-10-24 15:56:36.404] [MEM] beforeUnload active=0MB cache=4168MB peak=16385MB footprint=4228MB swapUsed=3156MB
+[2026-10-24 15:56:41.439] [MEM] settled active=0MB cache=0MB peak=16385MB footprint=58MB swapUsed=3156MB
+[2026-10-24 15:56:41.440] NativeMLX stopped

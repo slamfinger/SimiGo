@@ -1,0 +1,17 @@
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Package.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Sources/SimiGo2Experimental/SettlementProvenanceVerification.swift
+  CREATED_IN_F_FULL_CONTENT_DIFF  simigo2-experimental/Sources/SimiGoDetachedDriver/main.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Sources/SimiGoTaskRun/main.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift
+  CREATED_IN_F_FULL_CONTENT_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/DetachedContinuationEntryTests.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift
+      VERIFIED_F_ROUND_ONLY_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift
+  CREATED_IN_F_FULL_CONTENT_DIFF  simigo2-experimental/Tests/SimiGo2ExperimentalTests/SettlementTrustFixture.swift
+  CREATED_IN_F_FULL_CONTENT_DIFF  simigo2-experimental/scripts/ordinary_task/run_phase_f.py
+
+verified f-round-only diffs: 11   created-in-F full-content diffs: 4   unreconstructed: 0

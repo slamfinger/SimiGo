@@ -1,0 +1,983 @@
+diff --git a/execution-information-loop/production_runtime_bridge.py b/execution-information-loop/production_runtime_bridge.py
+index 7479caf6..ea0e047f 100644
+--- a/execution-information-loop/production_runtime_bridge.py
++++ b/execution-information-loop/production_runtime_bridge.py
+@@ -11,6 +11,8 @@ import argparse
+ import hashlib
+ import json
+ import os
++import re
++import secrets
+ import sys
+ from pathlib import Path
+ from typing import Optional
+@@ -28,6 +30,7 @@ sys.path.insert(0, str(RUNTIME_ROOT / "lib"))
+ 
+ from carrier_loop import CarrierInformationLoop, digest, parse_utc  # noqa: E402
+ from real_palace_loop import RealPalaceConsumptionLoop, RealPalaceSource  # noqa: E402
++from settlement_provenance import signature_descriptor as _settlement_signature_descriptor  # noqa: E402
+ 
+ SNAPSHOT_PATH = Path(
+     os.environ.get(
+@@ -46,6 +49,17 @@ REQUIRED_ITEMS = [
+     *[f"REAL-{index}" for index in range(1, 8)],
+ ]
+ 
++# Real-model handoff task (isolated run): one registered source, two model
++# items. The continuation point is deliberately the production one so the
++# existing Swift status/recovery/checkpoint authority reads the same lineage.
++TASK_SOURCE_ID = "TASK-SOURCE"
++TASK_U1_ID = "TASK-U1"
++TASK_U2_ID = "TASK-U2"
++TASK_U3_ID = "TASK-U3"
++TASK_DEMAND_U1 = "handoff-u1"
++TASK_DEMAND_U2 = "handoff-u2"
++TASK_DEMAND_U3 = "handoff-u3"
++
+ 
+ def emit(value: dict) -> None:
+     print(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+@@ -89,8 +103,13 @@ def current_deployment_policy() -> Optional[dict]:
+     )
+ 
+ 
+-def open_loop(database_path: str) -> tuple[CarrierInformationLoop, RealPalaceConsumptionLoop]:
+-    loop = CarrierInformationLoop.open(database_path)
++def open_loop(
++    database_path: str, *, require_provenance: bool = False
++) -> tuple[CarrierInformationLoop, RealPalaceConsumptionLoop]:
++    loop = CarrierInformationLoop.open(
++        database_path,
++        provenance_policy="required" if require_provenance else "off",
++    )
+     source = RealPalaceSource(str(SNAPSHOT_PATH), SNAPSHOT_SHA256)
+     return loop, RealPalaceConsumptionLoop(loop, source)
+ 
+@@ -146,6 +165,9 @@ def _open_status(loop: CarrierInformationLoop) -> dict:
+         restored = loop.restore_continuation(CONTINUATION_POINT)
+         state: Optional[dict] = restored["state"]
+         required = restored["required_item_ids"]
++        # A real-model handoff may use its own demand on the same continuation
++        # point; report that demand rather than an unrelated one.
++        demand = restored["demand"]
+     except Exception:
+         restored = None
+         state = loop.latest_execution_state(CONTINUATION_POINT)
+@@ -202,7 +224,7 @@ def audit(args: argparse.Namespace) -> None:
+ 
+ 
+ def execute(args: argparse.Namespace) -> None:
+-    loop, source = open_loop(args.database)
++    loop, source = open_loop(args.database, require_provenance=True)
+     # The digest—not merely this pre-transaction read—is bound into the
+     # carrier transaction. A committed concurrent policy change therefore
+     # fails closed inside execute_demand before any calculator or settlement.
+@@ -456,6 +478,817 @@ def diagnostics(args: argparse.Namespace) -> None:
+     emit(value)
+ 
+ 
++def _task_material(
++    run_label: str,
++    secret_override: str | None = None,
++    random_secret: bool = False,
++) -> dict:
++    """Deterministic task material, so the run is reproducible from its label.
++
++    ``secret_override`` lets a controlled experiment bind a high-entropy nonce
++    to the SAME task shape.  It changes only the material, not the task graph.
++    ``random_secret`` generates a 128-bit nonce inside this process, so the
++    nonce never appears in a command line, environment variable or temp file;
++    it exists only in process memory and the source/settlement objects.
++    """
++    if random_secret and secret_override is not None:
++        raise ValueError("use either --random-secret or a secret override, not both")
++    if random_secret:
++        secret = secrets.token_hex(16)
++    elif secret_override is not None:
++        secret = secret_override
++        if not secret or len(secret) > 64 or not secret.isalnum():
++            raise ValueError("secret override must be 1-64 alphanumeric characters")
++    else:
++        secret = "K" + hashlib.sha256(
++            ("secret:" + run_label).encode("utf-8")
++        ).hexdigest()[:5].upper()
++    checksum = hashlib.sha256(
++        ("checksum:" + run_label).encode("utf-8")
++    ).hexdigest()[:4]
++    log_text = "\n".join([
++        "SIMIGO-SESSION-LOG-V1",
++        "run=%s" % run_label,
++        "site=lab-north",
++        "secret=%s" % secret,
++        "checksum=%s" % checksum,
++    ])
++    return {"secret": secret, "checksum": checksum, "log_text": log_text}
++
++
++def _settlement_basis(
++    source_payload: dict,
++    result_value: dict,
++    source_version: str,
++    dependency_object_ids: dict,
++    evaluated_at_utc: str,
++    valid_until_utc: str,
++    validity_policy: dict,
++) -> dict:
++    return {
++        "source_payload_sha256": digest(source_payload),
++        "result_value_sha256": digest(result_value),
++        "source_version": source_version,
++        "dependency_object_ids": dependency_object_ids,
++        "evaluated_at_utc": evaluated_at_utc,
++        "valid_until_utc": valid_until_utc,
++        "validity_policy": validity_policy,
++    }
++
++
++def define_task(args: argparse.Namespace) -> None:
++    """Create the isolated handoff task: registered source + two model items.
++
++    The source is settled here with the ordinary settlement contract (its
++    "computation" is deterministic registration). No execution state is
++    recorded, so this registration never impersonates runtime work.
++    """
++    validity_policy = load_deployment_validity_policy()
++    valid_until = deployment_default_validity(validity_policy)
++    if args.valid_until and args.valid_until != valid_until:
++        raise ValueError("command validity conflicts with deployment validity policy")
++    parse_utc(args.evaluated_at)
++    secret_override = getattr(args, "secret", None)
++    secret_file = getattr(args, "secret_file", None)
++    random_secret = bool(getattr(args, "random_secret", False))
++    if random_secret and (secret_override is not None or secret_file):
++        raise ValueError(
++            "use either --random-secret, --secret or --secret-file, not a combination"
++        )
++    if secret_file:
++        if secret_override is not None:
++            raise ValueError("use either --secret or --secret-file, not both")
++        secret_override = Path(secret_file).read_text(encoding="utf-8").strip()
++    material = _task_material(args.run_label, secret_override, random_secret)
++    log_text = material["log_text"]
++    source_version = "v1:%s" % args.run_label
++
++    loop = CarrierInformationLoop.create(args.database)
++    try:
++        source_payload = {
++            "schema_id": "SIMIGO-HANDOFF-SESSION-LOG-V1",
++            "run_label": args.run_label,
++            "site": "lab-north",
++            "log_text": log_text,
++        }
++        source = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_SOURCE_ID,
++            "session-log",
++            source_version,
++            source_payload,
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++        registration_value = {
++            "log_text_sha256": digest(log_text),
++            "secret_sha256": digest(material["secret"]),
++            "checksum": material["checksum"],
++            "site": "lab-north",
++            "run_label": args.run_label,
++        }
++        registration_basis = _settlement_basis(
++            source_payload,
++            registration_value,
++            source_version,
++            {},
++            args.evaluated_at,
++            valid_until,
++            validity_policy,
++        )
++        registration_result = {"value": registration_value, **registration_basis}
++        registration = loop.settle(
++            "handoff-registration",
++            TASK_SOURCE_ID,
++            registration_result,
++            registration_basis,
++            (
++                loop.settlement_provenance_for(
++                    TASK_SOURCE_ID, registration_result, {}, {}
++                )
++                if loop.provenance_policy != "off"
++                else None
++            ),
++        )
++
++        seed_text = "\n".join([
++            "SIMIGO-REAL-MODEL-HANDOFF-V1",
++            "You are executing step 1 of a two-step task.",
++            "SESSION LOG:",
++            log_text,
++            "",
++            "Read the session log and extract the value of secret.",
++            "Reply with exactly one line and nothing else: SECRET=<secret>",
++            "Answer:",
++        ])
++        u1_payload = {
++            "schema_id": "SIMIGO-HANDOFF-STEP-V1",
++            "step": 1,
++            "model_task": "extract_secret",
++            "answer_format": "SECRET=<secret>",
++            "prompt_seed": seed_text,
++            "next_input": " ",
++            "source_item_id": TASK_SOURCE_ID,
++        }
++        u1 = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_U1_ID,
++            "model-task",
++            "v1",
++            u1_payload,
++            dependencies=[TASK_SOURCE_ID],
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++
++        u2_payload = {
++            "schema_id": "SIMIGO-HANDOFF-STEP-V1",
++            "step": 2,
++            "model_task": "compose_answer",
++            "answer_format": "ANSWER=<secret>-<checksum>",
++            "next_input_template": (
++                "\nStep 2: the secret from step 1 is {secret}. "
++                "The checksum from the session log is {checksum}.\n"
++                "Reply with exactly one line and nothing else: "
++                "ANSWER=<secret>-<checksum>\nAnswer:"
++            ),
++            "source_item_ids": [TASK_SOURCE_ID, TASK_U1_ID],
++            # Explicit input contract: each template placeholder names the
++            # settled dependency result field it consumes. The production
++            # resolver reads THIS declaration, so input construction is part of
++            # the task definition instead of caller-side interpolation.
++            "input_bindings": [
++                {
++                    "placeholder": "secret",
++                    "item_id": TASK_U1_ID,
++                    "result_field": "secret",
++                },
++                {
++                    "placeholder": "checksum",
++                    "item_id": TASK_SOURCE_ID,
++                    "result_field": "checksum",
++                },
++            ],
++        }
++        u2 = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_U2_ID,
++            "model-task",
++            "v1",
++            u2_payload,
++            dependencies=[TASK_SOURCE_ID, TASK_U1_ID],
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++
++        demand_u1 = loop.define_demand(
++            TASK_DEMAND_U1,
++            continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 1 on the real model"],
++            continuation_conditions=[
++                "registered source is reusable and the model result is settled"
++            ],
++            required_item_ids=[TASK_U1_ID],
++        )
++        demand_u2 = loop.define_demand(
++            TASK_DEMAND_U2,
++            continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 2 on the real model"],
++            continuation_conditions=[
++                "step 1 settlement is reused and step 2 is settled"
++            ],
++            required_item_ids=[TASK_U2_ID],
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "define-task",
++            "run_label": args.run_label,
++            "continuation_point": CONTINUATION_POINT,
++            "source": source,
++            "registration_settlement_object_id": registration["object_id"],
++            "u1": u1,
++            "u2": u2,
++            "demand_u1": demand_u1,
++            "demand_u2": demand_u2,
++            "log_text_sha256": digest(log_text),
++            "secret_sha256": digest(material["secret"]),
++            "checksum": material["checksum"],
++            "random_secret": random_secret,
++            "nonce_bits": 128 if random_secret else None,
++        })
++    finally:
++        loop.close()
++
++
++def read_item(args: argparse.Namespace) -> None:
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        item = loop.current_item(args.item_id)
++        if item is None:
++            raise ValueError(f"unknown item: {args.item_id}")
++        settlement = loop.current_settlement(args.item_id)
++        emit({
++            "ok": True,
++            "command": "read-item",
++            "item": item,
++            "settlement_state": settlement.get("state") if settlement else None,
++            "settlement_object_id": (
++                settlement.get("_object_id") if settlement else None
++            ),
++        })
++    finally:
++        loop.close()
++
++
++def read_settlement(args: argparse.Namespace) -> None:
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        settlement = loop.current_settlement(args.item_id)
++        if settlement is None:
++            raise ValueError(f"item has no settlement: {args.item_id}")
++        emit({
++            "ok": True,
++            "command": "read-settlement",
++            "item_id": args.item_id,
++            "settlement": settlement,
++        })
++    finally:
++        loop.close()
++
++
++class AdmissionRefusal(RuntimeError):
++    """A settlement could not be admitted for model input construction.
++
++    Raised BEFORE any model work so the caller can record a pre-generation
++    refusal instead of discovering the defect after paying for a generation.
++    """
++
++    def __init__(self, stage: str, reason: str, detail: object = None) -> None:
++        super().__init__("%s: %s" % (stage, reason))
++        self.stage = stage
++        self.reason = reason
++        self.detail = detail
++
++
++PLACEHOLDER_PATTERN = re.compile(r"\{([a-z][a-z0-9_]*)\}")
++
++
++def _resolve_settled_dependency(
++    loop: CarrierInformationLoop,
++    item_id: str,
++    evaluated_at,
++    visiting: set,
++    resolved: dict,
++) -> Optional[dict]:
++    """Read one settled dependency from IS, using the SAME reuse decision as
++    `execute_demand` (`_settlement_reuse_decision`) instead of a second
++    validator. Any mismatch is a refusal, never a silent substitution."""
++    if item_id in resolved:
++        return resolved[item_id]
++    if item_id in visiting:
++        raise AdmissionRefusal("DEPENDENCY_CYCLE", "cycle at %s" % item_id)
++    visiting.add(item_id)
++    item = loop.current_item(item_id)
++    if item is None:
++        raise AdmissionRefusal("MISSING_ITEM", "unknown item: %s" % item_id)
++    dependency_object_ids: dict[str, str] = {}
++    for dependency_id in item["dependencies"]:
++        dependency = _resolve_settled_dependency(
++            loop, dependency_id, evaluated_at, visiting, resolved
++        )
++        if dependency is None:
++            return None
++        dependency_object_ids[dependency_id] = dependency["object_id"]
++    try:
++        settlement = loop.current_settlement(item_id)
++    except Exception as error:  # noqa: BLE001 - tampered bytes must refuse, not crash
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_UNREADABLE",
++            "%s: %s" % (type(error).__name__, error),
++            {"item_id": item_id},
++        ) from error
++    dependency_values = {
++        dependency_id: resolved[dependency_id]["value"]
++        for dependency_id in dependency_object_ids
++    }
++    reusable, refusal_reason = loop._settlement_reuse_decision(
++        settlement, item, dependency_object_ids, evaluated_at, dependency_values
++    )
++    if not reusable:
++        signature_stages = {
++            "SETTLEMENT_SIGNATURE_MISSING",
++            "SETTLEMENT_SIGNATURE_INVALID",
++            "SETTLEMENT_TRUST_ANCHOR_INVALID",
++            "SETTLEMENT_PROVENANCE_MISMATCH",
++            "SETTLEMENT_EVENT_CHAIN_INVALID",
++        }
++        raise AdmissionRefusal(
++            refusal_reason if refusal_reason in signature_stages else "SETTLEMENT_NOT_ADMITTED",
++            refusal_reason or "SETTLEMENT_BASIS_MISMATCH",
++            {"item_id": item_id, "settlement_state": (settlement or {}).get("state")},
++        )
++    object_id = settlement["_object_id"]
++    try:
++        content = loop.carrier.get_object(object_id)
++    except Exception as error:  # noqa: BLE001 - fail closed on any read defect
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_UNREADABLE",
++            "%s: %s" % (type(error).__name__, error),
++            {"item_id": item_id, "object_id": object_id},
++        ) from error
++    object_sha256 = hashlib.sha256(
++        content.encode("utf-8") if isinstance(content, str) else bytes(content)
++    ).hexdigest()
++    if object_sha256 != object_id:
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_ID_MISMATCH",
++            "object bytes hash to %s but identity declares %s"
++            % (object_sha256, object_id),
++            {"item_id": item_id},
++        )
++    result = settlement["result"]
++    if digest(result["value"]) != result["result_value_sha256"]:
++        raise AdmissionRefusal(
++            "SETTLEMENT_RESULT_DIGEST_MISMATCH",
++            "stored value does not hash to the declared result digest",
++            {"item_id": item_id},
++        )
++    signature = loop.current_settlement_signature(item_id)
++    resolved[item_id] = {
++        "item_id": item_id,
++        "value": result["value"],
++        "object_id": object_id,
++        "object_sha256": object_sha256,
++        "result_value_sha256": result["result_value_sha256"],
++        "source_version": result["source_version"],
++        "dependency_object_ids": result["dependency_object_ids"],
++        "evaluated_at_utc": result["evaluated_at_utc"],
++        "valid_until_utc": result["valid_until_utc"],
++        "settlement_state": settlement.get("state"),
++        "settlement_signature": (
++            _settlement_signature_descriptor(signature) if signature else None
++        ),
++    }
++    return resolved[item_id]
++
++
++def resolve_model_input(args: argparse.Namespace) -> None:
++    """Resolve, admit and materialize the model input for one task item.
++
++    This is the production input path: the caller names the task item, and the
++    executor reads the item's declared dependencies from IS, admits each
++    settlement through the ordinary reuse decision, and expands the item's own
++    template. The caller never supplies the values or the text.
++    """
++    evaluated_at = parse_utc(args.evaluated_at)
++    # ``verify`` never loads the signing key: admitting a settled result needs
++    # the public trust anchor only, so the consumer cannot mint provenance.
++    loop = CarrierInformationLoop.open(args.database, provenance_policy="verify")
++    try:
++        try:
++            item = loop.current_item(args.item_id)
++        except Exception as error:  # noqa: BLE001 - corrupt item refuses, not crash
++            raise AdmissionRefusal(
++                "TASK_ITEM_UNREADABLE",
++                "%s: %s" % (type(error).__name__, error),
++                {"item_id": args.item_id},
++            ) from error
++        if item is None:
++            raise AdmissionRefusal("MISSING_ITEM", "unknown item: %s" % args.item_id)
++        payload = item.get("source_payload") or {}
++        # A task item declares its model input as either a dependency-bound
++        # template (`next_input_template` + `input_bindings`) or, when it
++        # consumes no settled value, as a literal prompt (`next_input`). Both
++        # are task-definition data read from IS; the caller supplies neither.
++        template = payload.get("next_input_template")
++        if not isinstance(template, str) or not template:
++            template = payload.get("next_input")
++        bindings_spec = payload.get("input_bindings", [])
++        if not isinstance(template, str) or not template:
++            raise AdmissionRefusal(
++                "TEMPLATE_MISSING", "item declares no model input template"
++            )
++        if not isinstance(bindings_spec, list):
++            raise AdmissionRefusal(
++                "BINDINGS_MALFORMED", "input_bindings is not a list"
++            )
++
++        resolved: dict[str, dict] = {}
++        for dependency_id in item["dependencies"]:
++            _resolve_settled_dependency(
++                loop, dependency_id, evaluated_at, set(), resolved
++            )
++
++        by_placeholder: dict[str, tuple] = {}
++        for spec in bindings_spec:
++            if not isinstance(spec, dict):
++                raise AdmissionRefusal("BINDINGS_MALFORMED", "binding is not an object")
++            placeholder = spec.get("placeholder")
++            dependency_id = spec.get("item_id")
++            result_field = spec.get("result_field")
++            if not all(isinstance(value, str) and value
++                       for value in (placeholder, dependency_id, result_field)):
++                raise AdmissionRefusal(
++                    "BINDINGS_MALFORMED", "binding is missing placeholder/item_id/result_field"
++                )
++            if dependency_id not in item["dependencies"]:
++                raise AdmissionRefusal(
++                    "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
++                    "placeholder {%s} requires %s, which the current task item no "
++                    "longer declares" % (placeholder, dependency_id),
++                    {
++                        "item_id": args.item_id,
++                        "declared_dependencies": list(item["dependencies"]),
++                        "binding_dependency": dependency_id,
++                    },
++                )
++            if dependency_id not in resolved:
++                raise AdmissionRefusal(
++                    "BINDING_DEPENDENCY_UNSETTLED",
++                    "%s is not settled" % dependency_id,
++                )
++            dependency_value = resolved[dependency_id]["value"]
++            if result_field not in dependency_value:
++                raise AdmissionRefusal(
++                    "BINDING_FIELD_MISSING",
++                    "%s result has no field %s" % (dependency_id, result_field),
++                )
++            value = dependency_value[result_field]
++            if not isinstance(value, str) or not value:
++                raise AdmissionRefusal(
++                    "BINDING_VALUE_INVALID",
++                    "%s.%s is not a non-empty string" % (dependency_id, result_field),
++                )
++            by_placeholder[placeholder] = (spec, value, resolved[dependency_id])
++
++        placeholders = [match.group(1) for match in PLACEHOLDER_PATTERN.finditer(template)]
++        unbound = sorted({name for name in placeholders if name not in by_placeholder})
++        if unbound:
++            raise AdmissionRefusal(
++                "UNBOUND_TEMPLATE_PLACEHOLDER",
++                "no admitted settlement binding for %s" % ", ".join(unbound),
++                {"unbound_placeholders": unbound},
++            )
++
++        pieces: list[str] = []
++        bindings: list[dict] = []
++        cursor = 0
++        consumed = 0
++        for match in PLACEHOLDER_PATTERN.finditer(template):
++            literal = template[consumed:match.start()]
++            pieces.append(literal)
++            cursor += len(literal.encode("utf-8"))
++            spec, value, dependency = by_placeholder[match.group(1)]
++            encoded = value.encode("utf-8")
++            bindings.append({
++                "placeholder": spec["placeholder"],
++                "item_id": spec["item_id"],
++                "result_field": spec["result_field"],
++                "value": value,
++                "value_sha256": hashlib.sha256(encoded).hexdigest(),
++                "settlement_object_id": dependency["object_id"],
++                "settlement_object_sha256": dependency["object_sha256"],
++                "result_value_sha256": dependency["result_value_sha256"],
++                "byte_offset": cursor,
++                "byte_length": len(encoded),
++            })
++            pieces.append(value)
++            cursor += len(encoded)
++            consumed = match.end()
++        tail = template[consumed:]
++        pieces.append(tail)
++        cursor += len(tail.encode("utf-8"))
++        input_text = "".join(pieces)
++        input_bytes = input_text.encode("utf-8")
++        if len(input_bytes) != cursor:
++            raise AdmissionRefusal(
++                "INPUT_LENGTH_MISMATCH", "materialized input length disagrees"
++            )
++
++        dependencies = [
++            {
++                "item_id": dependency["item_id"],
++                "settlement_object_id": dependency["object_id"],
++                "settlement_object_sha256": dependency["object_sha256"],
++                "result_value_sha256": dependency["result_value_sha256"],
++                "source_version": dependency["source_version"],
++                "dependency_object_ids": dependency["dependency_object_ids"],
++                "evaluated_at_utc": dependency["evaluated_at_utc"],
++                "valid_until_utc": dependency["valid_until_utc"],
++                "settlement_state": dependency["settlement_state"],
++                "settlement_signature": dependency.get("settlement_signature"),
++            }
++            for dependency in resolved.values()
++        ]
++        emit({
++            "ok": True,
++            "command": "resolve-model-input",
++            "item_id": args.item_id,
++            "evaluated_at_utc": args.evaluated_at,
++            "declared_dependencies": list(item["dependencies"]),
++            "template": template,
++            "template_sha256": hashlib.sha256(template.encode("utf-8")).hexdigest(),
++            "input_text": input_text,
++            "input_sha256": hashlib.sha256(input_bytes).hexdigest(),
++            "input_byte_length": len(input_bytes),
++            "bindings": bindings,
++            "dependencies": dependencies,
++            "settlement_signatures": [
++                dependency["settlement_signature"]
++                for dependency in resolved.values()
++                if dependency.get("settlement_signature") is not None
++            ],
++            "checks": {
++                "all_declared_dependencies_admitted": True,
++                "settlement_objects_readable": True,
++                "object_identity_matches_bytes": True,
++                "result_digests_match_values": True,
++                "source_versions_match_items": True,
++                "dependency_object_sets_match": True,
++                "validity_satisfied": True,
++                "all_placeholders_bound": True,
++                "settlement_signatures_valid": True,
++            },
++        })
++    finally:
++        loop.close()
++
++
++def _validate_model_value(
++    item_id: str,
++    value: dict,
++    dependency_values: dict,
++) -> None:
++    """Task result validator: the model value must agree with settled deps.
++
++    This is NOT a computation. It refuses a value that the model could not
++    have produced from the settled dependency results, so an externally
++    supplied model output can never be settled against unrelated information.
++    """
++    generated_tokens = value.get("generated_token_ids")
++    if not isinstance(generated_tokens, list) or not generated_tokens:
++        raise ValueError("model value carries no generated tokens")
++    if not isinstance(value.get("model_snapshot_revision"), str) or not value[
++        "model_snapshot_revision"
++    ]:
++        raise ValueError("model value carries no model snapshot identity")
++    if item_id == TASK_U1_ID:
++        source_value = dependency_values.get(TASK_SOURCE_ID)
++        if not isinstance(source_value, dict):
++            raise ValueError("step 1 requires the settled session-log dependency")
++        secret = value.get("secret")
++        if not isinstance(secret, str) or not secret:
++            raise ValueError("model value carries no extracted secret")
++        if digest(secret) != source_value.get("secret_sha256"):
++            raise ValueError(
++                "extracted secret does not match the settled session-log commitment"
++            )
++        return
++    if item_id == TASK_U2_ID:
++        log_value = dependency_values.get(TASK_SOURCE_ID)
++        u1_value = dependency_values.get(TASK_U1_ID)
++        if not isinstance(log_value, dict) or not isinstance(u1_value, dict):
++            raise ValueError("step 2 requires both settled dependencies")
++        expected = "%s-%s" % (u1_value.get("secret"), log_value.get("checksum"))
++        if value.get("answer") != expected:
++            raise ValueError(
++                "model answer does not match the settled secret and checksum"
++            )
++        return
++    if item_id == TASK_U3_ID:
++        # U3 consumes only its DIRECT dependency U2, but admitting U2 through
++        # the ordinary reuse decision recursively resolves U2's own closure
++        # (SOURCE + U1). The stamp must be derivable from the settled U2 answer
++        # so U3 can never be settled against an unverified or missing closure.
++        u2_value = dependency_values.get(TASK_U2_ID)
++        if not isinstance(u2_value, dict):
++            raise ValueError("step 3 requires the settled U2 dependency")
++        answer = u2_value.get("answer")
++        if not isinstance(answer, str) or "-" not in answer:
++            raise ValueError("settled U2 dependency carries no well-formed answer")
++        if value.get("stamp") != answer.split("-", 1)[0]:
++            raise ValueError(
++                "model stamp does not derive from the settled U2 answer"
++            )
++        return
++    raise ValueError(f"unrecognized model task item: {item_id}")
++
++
++def _load_model_provenance_override(args: argparse.Namespace, value: dict) -> dict:
++    """Validate the producer attestation without trusting it as a result.
++
++    The model value is still validated by ``_validate_model_value``.  This
++    helper only checks that the execution/model identity supplied by the Swift
++    producer is well-formed and agrees with the value it accompanies; the
++    settlement path then signs the full declaration the carrier builds.
++    """
++    raw = json.loads(Path(args.provenance_file).read_text(encoding="utf-8"))
++    if not isinstance(raw, dict):
++        raise ValueError("provenance override must be a JSON object")
++    unexpected = set(raw) - {"producer", "model", "output"}
++    if unexpected:
++        raise ValueError("provenance override has unsupported fields: %s" % sorted(unexpected))
++    producer = raw.get("producer")
++    if not isinstance(producer, dict):
++        raise ValueError("provenance producer is missing")
++    if producer.get("kind") != "model_task":
++        raise ValueError("provenance producer kind must be model_task")
++    for field in ("run_id", "execution_id", "process_id", "build_sha256"):
++        if not isinstance(producer.get(field), str) or not producer[field]:
++            raise ValueError("provenance producer.%s is missing" % field)
++    for field, expected in (
++        ("run_id", args.run_id),
++        ("execution_id", args.execution_id),
++        ("build_sha256", args.build_sha256),
++        ("process_id", args.producer_process_id),
++    ):
++        if expected is not None and producer[field] != expected:
++            raise ValueError("provenance producer.%s does not match the entry" % field)
++    model = raw.get("model")
++    if not isinstance(model, dict):
++        raise ValueError("provenance model is missing")
++    for field in ("snapshot_revision", "weights_manifest_sha256"):
++        if not isinstance(model.get(field), str) or not model[field]:
++            raise ValueError("provenance model.%s is missing" % field)
++    if model["snapshot_revision"] != value.get("model_snapshot_revision"):
++        raise ValueError("provenance model identity disagrees with the model value")
++    if args.model_manifest:
++        manifest = json.loads(Path(args.model_manifest).read_text(encoding="utf-8"))
++        if manifest.get("snapshot_revision") != model["snapshot_revision"]:
++            raise ValueError("model snapshot is not the trusted deployment snapshot")
++        if manifest.get("weights_manifest_sha256") != model["weights_manifest_sha256"]:
++            raise ValueError("model weights are not the trusted deployment weights")
++    output = raw.get("output")
++    if not isinstance(output, dict):
++        raise ValueError("provenance output is missing")
++    expected_tokens_sha256 = digest(value.get("generated_token_ids"))
++    if output.get("generated_token_ids_sha256") != expected_tokens_sha256:
++        raise ValueError("provenance output digest disagrees with the model value")
++    if output.get("generated_token_count") != len(value.get("generated_token_ids") or []):
++        raise ValueError("provenance output token count disagrees with the model value")
++    return raw
++
++
++def execute_with_model_result(args: argparse.Namespace) -> None:
++    """Settle a model-produced result through the ordinary demand machinery.
++
++    The model ran in the Swift runtime BEFORE this call. The calculator is
++    restricted to exactly the item the model computed: if any dependency is
++    not reusable, the demand machinery asks the calculator for it and this
++    command fails closed instead of settling work the model never performed.
++    """
++    validity_policy = load_deployment_validity_policy()
++    with open(args.value_file, "r", encoding="utf-8") as handle:
++        value = json.load(handle)
++    if not isinstance(value, dict):
++        raise ValueError("model result value must be a JSON object")
++    provenance_override = _load_model_provenance_override(args, value)
++
++    loop = CarrierInformationLoop.open(args.database, provenance_policy="required")
++    try:
++        def calculator(item_id: str, source_payload: dict, dependency_values: dict) -> dict:
++            if item_id != args.item_id:
++                raise ValueError(
++                    "model result is only valid for %s; dependency %s was not reusable"
++                    % (args.item_id, item_id)
++                )
++            _validate_model_value(item_id, value, dependency_values)
++            return value
++
++        result = loop.execute_demand(
++            args.demand_id,
++            args.advancement,
++            calculator,
++            evaluated_at_utc=args.evaluated_at,
++            expected_validity_policy_sha256=validity_policy["policy_sha256"],
++            require_deployment_policy=True,
++            provenance_overrides={args.item_id: provenance_override},
++        )
++        settlement = loop.current_settlement(args.item_id)
++        signature = loop.current_settlement_signature(args.item_id)
++        if settlement is None or signature is None:
++            raise ValueError("model settlement is not signed; refusing to report success")
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "execute-with-model-result",
++            "item_id": args.item_id,
++            "demand_id": args.demand_id,
++            "result": result,
++            "settlement_signature": _settlement_signature_descriptor(signature),
++        })
++    finally:
++        loop.close()
++
++
++def execute_probe(args: argparse.Namespace) -> None:
++    """Model-free dependency-closure probe: settle whatever is not reusable.
++
++    Used on an isolated COPY of a run database after invalidation, to prove
++    which items the dependency closure actually recomputes. It never loads a
++    model and never touches the authoritative run database.
++    """
++    validity_policy = (
++        load_deployment_validity_policy()
++        if os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH")
++        else None
++    )
++    loop = CarrierInformationLoop.open(args.database, provenance_policy="required")
++    try:
++        def calculator(item_id: str, source_payload: dict, dependency_values: dict) -> dict:
++            return {
++                "probe_marker": digest({
++                    "item_id": item_id,
++                    "source_payload_sha256": digest(source_payload),
++                    "dependency_item_ids": sorted(dependency_values),
++                })
++            }
++
++        result = loop.execute_demand(
++            args.demand_id,
++            args.advancement,
++            calculator,
++            evaluated_at_utc=args.evaluated_at,
++            expected_validity_policy_sha256=(
++                validity_policy["policy_sha256"] if validity_policy else None
++            ),
++            require_deployment_policy=bool(validity_policy),
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "execute-probe",
++            "demand_id": args.demand_id,
++            "result": result,
++        })
++    finally:
++        loop.close()
++
++
++def snapshot_database(args: argparse.Namespace) -> None:
++    """Consistent SQLite backup, so probes never run on a live file copy."""
++    import sqlite3
++
++    destination = Path(args.destination)
++    if destination.exists() or destination.is_symlink():
++        raise FileExistsError(destination)
++    source = sqlite3.connect(str(Path(args.database).resolve()))
++    target = sqlite3.connect(str(destination))
++    try:
++        source.backup(target)
++        target.commit()
++    finally:
++        target.close()
++        source.close()
++    emit({
++        "ok": True,
++        "command": "snapshot-database",
++        "source": str(Path(args.database).resolve()),
++        "destination": str(destination.resolve()),
++    })
++
++
+ def main() -> int:
+     parser = argparse.ArgumentParser()
+     subparsers = parser.add_subparsers(dest="command", required=True)
+@@ -520,9 +1353,90 @@ def main() -> int:
+     diagnostics_parser.add_argument("--evaluated-at", required=True)
+     diagnostics_parser.set_defaults(handler=diagnostics)
+ 
++    define_task_parser = subparsers.add_parser("define-task")
++    define_task_parser.add_argument("--database", required=True)
++    define_task_parser.add_argument("--evaluated-at", required=True)
++    define_task_parser.add_argument("--run-label", required=True)
++    define_task_parser.add_argument(
++        "--secret",
++        default=None,
++        help="controlled nonce override; does not change the task graph",
++    )
++    define_task_parser.add_argument(
++        "--secret-file",
++        default=None,
++        help="read the nonce from a file so it never appears in the command line",
++    )
++    define_task_parser.add_argument(
++        "--random-secret",
++        action="store_true",
++        help=(
++            "generate a 128-bit nonce inside this process; the raw nonce is "
++            "never emitted, passed on a command line or written to a temp file"
++        ),
++    )
++    define_task_parser.add_argument("--valid-until")
++    define_task_parser.set_defaults(handler=define_task)
++
++    read_item_parser = subparsers.add_parser("read-item")
++    read_item_parser.add_argument("--database", required=True)
++    read_item_parser.add_argument("--item-id", required=True)
++    read_item_parser.set_defaults(handler=read_item)
++
++    read_settlement_parser = subparsers.add_parser("read-settlement")
++    read_settlement_parser.add_argument("--database", required=True)
++    read_settlement_parser.add_argument("--item-id", required=True)
++    read_settlement_parser.set_defaults(handler=read_settlement)
++
++    resolve_input_parser = subparsers.add_parser("resolve-model-input")
++    resolve_input_parser.add_argument("--database", required=True)
++    resolve_input_parser.add_argument("--item-id", required=True)
++    resolve_input_parser.add_argument("--evaluated-at", required=True)
++    resolve_input_parser.set_defaults(handler=resolve_model_input)
++
++    model_result_parser = subparsers.add_parser("execute-with-model-result")
++    model_result_parser.add_argument("--database", required=True)
++    model_result_parser.add_argument("--demand-id", required=True)
++    model_result_parser.add_argument("--advancement", required=True)
++    model_result_parser.add_argument("--evaluated-at", required=True)
++    model_result_parser.add_argument("--item-id", required=True)
++    model_result_parser.add_argument("--value-file", required=True)
++    model_result_parser.add_argument("--provenance-file", required=True)
++    model_result_parser.add_argument("--run-id")
++    model_result_parser.add_argument("--execution-id")
++    model_result_parser.add_argument("--build-sha256")
++    model_result_parser.add_argument("--producer-process-id")
++    model_result_parser.add_argument("--model-manifest")
++    model_result_parser.set_defaults(handler=execute_with_model_result)
++
++    probe_parser = subparsers.add_parser("execute-probe")
++    probe_parser.add_argument("--database", required=True)
++    probe_parser.add_argument("--demand-id", required=True)
++    probe_parser.add_argument("--advancement", required=True)
++    probe_parser.add_argument("--evaluated-at", required=True)
++    probe_parser.set_defaults(handler=execute_probe)
++
++    snapshot_parser = subparsers.add_parser("snapshot-database")
++    snapshot_parser.add_argument("--database", required=True)
++    snapshot_parser.add_argument("--destination", required=True)
++    snapshot_parser.set_defaults(handler=snapshot_database)
++
+     args = parser.parse_args()
+     try:
+         args.handler(args)
++    except AdmissionRefusal as error:
++        emit({
++            "ok": False,
++            "command": args.command,
++            "error_type": type(error).__name__,
++            "error": str(error),
++            "refusal": {
++                "stage": error.stage,
++                "reason": error.reason,
++                "detail": error.detail,
++            },
++        })
++        return 1
+     except Exception as error:
+         emit({
+             "ok": False,

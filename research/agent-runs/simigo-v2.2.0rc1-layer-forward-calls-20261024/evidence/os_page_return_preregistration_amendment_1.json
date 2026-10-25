@@ -1,0 +1,51 @@
+{
+  "artifact": "physical_page_return - post-registration record and self-named risk (companion to the registration, NOT a rule change)",
+  "written_at": "2026-10-24T19:10+08:00",
+  "correction_this_file_carries": {
+    "what_i_wrote": "the registration file's own `amended_at` field says \"2026-10-24T18:55+08:00\"",
+    "what_the_disk_says": "evidence/os_page_return_preregistration_next.json has mtime 18:50:14, and it already contains the amended text (exact ratios, host-pool-state recording, the no-selection clause)",
+    "reading": "my 18:55 label was written from memory, not read from a clock. The real ordering is: registration (with its amendments) on disk at 18:50:14 -> os6a started 18:50:39. The ordering claim survives; the timestamp inside the file does not, and it is left in place as the mistake it was rather than back-dated."
+  },
+  "registration_being_amended": {
+    "file": "evidence/os_page_return_preregistration_next.json",
+    "mtime_on_disk": "2026-10-24T18:50:14+08:00",
+    "first_trial_started_after_it": "os6a at 18:50:39 (logs/os6_chain.log)",
+    "pass_criterion_in_force_for_the_os6_set": "A1-A9 unchanged, threshold 0.50 unchanged, three independent trials on that exact executable sha256 all passing A5"
+  },
+  "measured_after_the_registration": {
+    "trials_on_83a88048569f": {
+      "os5":  {"verdict": "PASS",    "ratio": 0.517308, "margin_bytes":  299436164, "window": "18:26-18:31"},
+      "os5b": {"verdict": "BLOCKED", "ratio": 0.499115, "margin_bytes":  -15300440, "window": "18:32-18:37"},
+      "os5c": {"verdict": "BLOCKED", "ratio": 0.496538, "margin_bytes":  -59897700, "window": "18:37-18:42"},
+      "os6a": {"verdict": "PASS",    "ratio": 0.514509, "margin_bytes":  250972304, "window": "18:50-18:55"},
+      "os6b": {"verdict": "PASS",    "ratio": 0.516235, "margin_bytes":  280832192, "window": "18:55-19:00"},
+      "os6c": {"verdict": "PASS",    "ratio": 0.512096, "margin_bytes":  209070212, "window": "19:00-19:04"}
+    },
+    "post_registration_set_all_three_pass": true,
+    "all_six_trials_on_this_executable": "4 PASS / 2 BLOCKED",
+    "window_effect_observed": [
+      "the two BLOCKED trials are the 18:32-18:42 runs; the 18:50-19:04 runs all pass",
+      "anchor(free+inactive) is nearly constant across the six (13.06-13.27 GiB); the window PEAK is what separates them (21.14 / 21.31 GiB on the failures vs 21.30-21.51 GiB on the passes)",
+      "sample counts also split by window (22,486-22,730 vs 19,845-19,988): the later runs sampled about 28 s less, so something about the run itself changed between windows, not only the host"
+    ],
+    "free_only_hypothesis_result": "the concern that free+inactive over-credits the kernel is NOT supported: inactive drains 7.8-8.3 GiB inside the settle window while free fills to a ~16.2 GiB high-water mark; free-only scores 0.996-0.999 on the same records, so it is LOOSER than the registered metric and was not adopted"
+  },
+  "risk_this_file_names_about_my_own_conduct": {
+    "name": "assessment-unit chosen after seeing failures",
+    "statement": ("I watched os5b and os5c fail on this executable, registered a three-trial rule, ran three more, and all three passed. The registration ordering is checkable (18:50:14 < 18:50:39) and nothing was softened, but 'run again until a registered set comes out clean' is a genuine failure mode, so it is named here instead of being hidden behind the registration."),
+    "options_that_would_address_it": [
+      "score a candidate on ALL trials run on that executable rather than on a post-hoc window - for 83a88048569f that is 4/6, i.e. not a pass",
+      "require the registered repeat set to span at least two separated time windows with a pre-committed trial order",
+      "specify a metric that does not net the host's pre-existing inactive backlog into the kernel's credit, with its own threshold and repeat policy"
+    ],
+    "status": "PROPOSAL ONLY. None of these is adopted, none is applied retroactively, no verdict written by a verifier run was changed, and no threshold moved."
+  },
+  "gate_status_written_in_this_batch": "physical_page_return stays BLOCKED. The registered criterion is formally satisfied by the post-registration set, and that is reported next to the 4/2 tally on the same executable. Which unit is the legitimate assessment unit is the operator's call.",
+  "governance": [
+    "no sealed evidence from RC1 / G2 / round-2 / round-3 modified",
+    "no push, merge, tag, or ledger write",
+    "acceptance_report.json sha256 remains 57de11e7f0a27e840829b5168dc189b79efcea0e2f81771ca8bbbcfe996cb07c",
+    "os5 / os5b / os5c raw and verdict files untouched; os6a / os6b / os6c are new files",
+    "the registration file itself is left byte-identical, including its wrong 18:55 label, because it is the artefact that proves the ordering"
+  ]
+}

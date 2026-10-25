@@ -1,0 +1,197 @@
+{
+ "a_phase": "pre-cleanroom-experiment",
+ "b_phase": "post-cleanroom-experiment",
+ "a_taken_at": "2026-10-23T18:57:34+0800",
+ "b_taken_at": "2026-10-23T18:59:11+0800",
+ "allowlisted_prefixes": [
+  "simigo-rc1-20261023"
+ ],
+ "entries": {
+  "/Users/mr.simi/.simigo/branch-checkpoints": {
+   "status": "DIR",
+   "a_files": 37,
+   "b_files": 37,
+   "a_bytes": 14896048796,
+   "b_bytes": 14896048796,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected_change": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/manifests": {
+   "status": "DIR",
+   "a_files": 1,
+   "b_files": 1,
+   "a_bytes": 800,
+   "b_bytes": 800,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected_change": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/prefix-pool": {
+   "status": "DIR",
+   "a_files": 45,
+   "b_files": 45,
+   "a_bytes": 16499561724,
+   "b_bytes": 16499561724,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected_change": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/.simigo/simigo.sqlite3": {
+   "status": "FILE",
+   "a_sha256": "cac32deccd917074fe4eb72bbef7a9a90abc50f41c30ba47fb767ee52820dcbe",
+   "b_sha256": "cac32deccd917074fe4eb72bbef7a9a90abc50f41c30ba47fb767ee52820dcbe",
+   "a_bytes": 90112,
+   "b_bytes": 90112,
+   "unchanged": true
+  },
+  "/Users/mr.simi/.simigo/simigo.sqlite3-shm": {
+   "status": "FILE",
+   "a_sha256": "760edbfc79c73e125cb3fa2e6eb99b030bae2374f9c2c2d0bda9dfde8d26d227",
+   "b_sha256": "760edbfc79c73e125cb3fa2e6eb99b030bae2374f9c2c2d0bda9dfde8d26d227",
+   "a_bytes": 32768,
+   "b_bytes": 32768,
+   "unchanged": true
+  },
+  "/Users/mr.simi/.simigo/simigo.sqlite3-wal": {
+   "status": "FILE",
+   "a_sha256": "62c988cbc183f791f3ed17d1e0497740a8f48c0bff92394701a0cee5cbec9b80",
+   "b_sha256": "62c988cbc183f791f3ed17d1e0497740a8f48c0bff92394701a0cee5cbec9b80",
+   "a_bytes": 3955232,
+   "b_bytes": 3955232,
+   "unchanged": true
+  },
+  "/Users/mr.simi/Library/Application Support/SimiGo": {
+   "status": "DIR",
+   "a_files": 1,
+   "b_files": 1,
+   "a_bytes": 1068,
+   "b_bytes": 1068,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 0,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected_change": []
+   },
+   "clean": true
+  },
+  "/Users/mr.simi/SimiGo-Agent-Runs": {
+   "status": "DIR",
+   "a_files": 73154,
+   "b_files": 73213,
+   "a_bytes": 8361421138,
+   "b_bytes": 8389939730,
+   "unexpected_new": 0,
+   "unexpected_deleted": 0,
+   "unexpected_modified": 0,
+   "expected_change_count": 60,
+   "unexpected_details": {
+    "new": [],
+    "deleted": [],
+    "modified": [],
+    "expected_change": [
+     "simigo-rc1-20261023/driver/launch_rc1_primary.sh",
+     "simigo-rc1-20261023/experiment/rc2/binary_identity_rc2.txt",
+     "simigo-rc1-20261023/experiment/rc2/cache_es1/branch-checkpoints/default_es1-produce_main.meta.json",
+     "simigo-rc1-20261023/experiment/rc2/cache_es1/branch-checkpoints/default_es1-produce_main.safetensors",
+     "simigo-rc1-20261023/experiment/rc2/cache_es1/prefix-pool/7cc94e3f614b3e35/3b4947891b8872b2-4.json",
+     "simigo-rc1-20261023/experiment/rc2/cache_es1/prefix-pool/7cc94e3f614b3e35/3b4947891b8872b2-4.safetensors",
+     "simigo-rc1-20261023/experiment/rc2/cache_es1_manifest_after_rc2.txt",
+     "simigo-rc1-20261023/experiment/rc2/cache_es1_manifest_before_rc2.txt",
+     "simigo-rc1-20261023/experiment/rc2/cache_es1_unchanged_during_es2_rc2.txt",
+     "simigo-rc1-20261023/experiment/rc2/cache_es2/branch-checkpoints/default_es2-consume_main.meta.json",
+     "simigo-rc1-20261023/experiment/rc2/cache_es2/branch-checkpoints/default_es2-consume_main.safetensors",
+     "simigo-rc1-20261023/experiment/rc2/cache_es2/prefix-pool/7cc94e3f614b3e35/6eed00164a7fcba6-4.json",
+     "simigo-rc1-20261023/experiment/rc2/cache_es2/prefix-pool/7cc94e3f614b3e35/6eed00164a7fcba6-4.safetensors",
+     "simigo-rc1-20261023/experiment/rc2/consume_rc2.json",
+     "simigo-rc1-20261023/experiment/rc2/consume_rc2_ncinval.json",
+     "simigo-rc1-20261023/experiment/rc2/consume_rc2_ncleak.json",
+     "simigo-rc1-20261023/experiment/rc2/consume_rc2_ncleak2.json",
+     "simigo-rc1-20261023/experiment/rc2/consume_rc2_ncmiss.json",
+     "simigo-rc1-20261023/experiment/rc2/consume_rc2_nctamper.json",
+     "simigo-rc1-20261023/experiment/rc2/es1.log",
+     "simigo-rc1-20261023/experiment/rc2/es1_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/es1_start.txt",
+     "simigo-rc1-20261023/experiment/rc2/es2.log",
+     "simigo-rc1-20261023/experiment/rc2/es2_cache_prelaunch_rc2.txt",
+     "simigo-rc1-20261023/experiment/rc2/es2_env_keys_rc2.txt",
+     "simigo-rc1-20261023/experiment/rc2/es2_inherited_env_keys_rc2.txt",
+     "simigo-rc1-20261023/experiment/rc2/es2_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/es2_start.txt",
+     "simigo-rc1-20261023/experiment/rc2/es2_state_id_source_rc2.txt",
+     "simigo-rc1-20261023/experiment/rc2/g1_report.json",
+     "simigo-rc1-20261023/experiment/rc2/g3_report.json",
+     "simigo-rc1-20261023/experiment/rc2/home/simigo.sqlite3",
+     "simigo-rc1-20261023/experiment/rc2/home/simigo.sqlite3-shm",
+     "simigo-rc1-20261023/experiment/rc2/home/simigo.sqlite3-wal",
+     "simigo-rc1-20261023/experiment/rc2/home_inval/simigo.sqlite3",
+     "simigo-rc1-20261023/experiment/rc2/home_inval/simigo.sqlite3-shm",
+     "simigo-rc1-20261023/experiment/rc2/home_inval/simigo.sqlite3-wal",
+     "simigo-rc1-20261023/experiment/rc2/home_tamper/simigo.sqlite3",
+     "simigo-rc1-20261023/experiment/rc2/home_tamper/simigo.sqlite3-shm",
+     "simigo-rc1-20261023/experiment/rc2/home_tamper/simigo.sqlite3-wal",
+     "simigo-rc1-20261023/experiment/rc2/nc1_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/nc2_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/nc3_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/nc4_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/nc5_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/nc6_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/nc7_rc.txt",
+     "simigo-rc1-20261023/experiment/rc2/nc_badrole.log",
+     "simigo-rc1-20261023/experiment/rc2/nc_inval.log",
+     "simigo-rc1-20261023/experiment/rc2/nc_leak.log",
+     "simigo-rc1-20261023/experiment/rc2/nc_leak2.log",
+     "simigo-rc1-20261023/experiment/rc2/nc_missing.log",
+     "simigo-rc1-20261023/experiment/rc2/nc_missingparam.log",
+     "simigo-rc1-20261023/experiment/rc2/nc_tamper.log",
+     "simigo-rc1-20261023/experiment/rc2/produce_handoff_rc2.json",
+     "simigo-rc1-20261023/experiment/rc2/produce_rc2.json",
+     "simigo-rc1-20261023/experiment/rc2/source_digests_rc2.txt",
+     "simigo-rc1-20261023/noninterference_pre-cleanroom-experiment.json",
+     "simigo-rc1-20261023/rc_driver_run_rc2.log",
+     {
+      "rel": "simigo-rc1-20261023/driver/make_rc_identity.py",
+      "a": {
+       "bytes": 16113,
+       "sha256": null
+      },
+      "b": {
+       "bytes": 18532,
+       "sha256": null
+      }
+     }
+    ]
+   },
+   "clean": true
+  }
+ },
+ "violations": 0
+}

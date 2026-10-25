@@ -1,0 +1,31 @@
+{
+ "phase": "contract_tests_post",
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-runtime-contract-tests-20261024/post_snapshot.json",
+ "real_roots": [
+  "/Users/mr.simi/.simigo",
+  "/Users/mr.simi/Library/Application Support/SimiGo"
+ ],
+ "entries": [
+  {
+   "path": "/Users/mr.simi/.simigo",
+   "role": "real_state",
+   "exists": true,
+   "files": 8971,
+   "bytes": 32398426016
+  },
+  {
+   "path": "/Users/mr.simi/Library/Application Support/SimiGo",
+   "role": "real_state",
+   "exists": true,
+   "files": 1,
+   "bytes": 1068
+  },
+  {
+   "path": "/Users/mr.simi/.cache/huggingface",
+   "role": "reference",
+   "exists": true,
+   "files": 951,
+   "bytes": 242509940763
+  }
+ ]
+}

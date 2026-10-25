@@ -1,0 +1,13 @@
+{
+ "candidate": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app",
+ "health_status_on_serve_port": null,
+ "isolated_home": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/m3_ordinary/home",
+ "localb_directory_created": false,
+ "localb_directory_entries": [],
+ "management_env_present": false,
+ "process_exit_code": -15,
+ "process_still_running_after_wait": true,
+ "trusted_checkpoint_present": false,
+ "verdict": "no auto-activation",
+ "waited_seconds": 45
+}

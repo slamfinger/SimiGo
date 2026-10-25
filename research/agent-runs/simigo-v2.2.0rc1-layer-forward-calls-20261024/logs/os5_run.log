@@ -1,0 +1,10 @@
+{
+ "rid": "os5",
+ "child": {
+  "pid": 81632,
+  "exit_code": 0,
+  "wall_seconds": 257.7
+ },
+ "samples": 22730,
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/os_page_return_raw_os5.json"
+}

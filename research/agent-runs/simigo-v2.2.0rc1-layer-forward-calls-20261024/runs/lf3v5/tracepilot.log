@@ -1,0 +1,4 @@
+headless-entered role=tracepilot pid=24055
+headless-task-started
+wrote evidence /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/lf3v5/tracepilot_lf3v5.json
+headless-task-done rc=0

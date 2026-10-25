@@ -1,0 +1,6 @@
+$ bridge resolve-model-input --database /Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I2/carrier.sqlite --item-id TASK-IU2 --evaluated-at 2026-10-22T13:10:25Z
+---stdout---
+{"command":"resolve-model-input","error":"SETTLEMENT_NOT_ADMITTED: MISSING_OR_SUPERSEDED_SETTLEMENT","error_type":"AdmissionRefusal","ok":false,"refusal":{"detail":{"item_id":"TASK-IU1","settlement_state":null},"reason":"MISSING_OR_SUPERSEDED_SETTLEMENT","stage":"SETTLEMENT_NOT_ADMITTED"}}
+
+---stderr---
+

@@ -1,0 +1,303 @@
+{
+ "counts": {
+  "BLOCKED": 3,
+  "FAIL": 0,
+  "INCONCLUSIVE": 0,
+  "NOT_INSTRUMENTED": 1,
+  "PASS": 12
+ },
+ "gates": {
+  "app_suite_and_isolation": {
+   "checks": {
+    "app_suite_executed": true,
+    "app_suite_ge_207_executed": true,
+    "app_suite_no_failures": true,
+    "app_suite_skips_not_inflated": true,
+    "cloud_keychain_isolation_test_ran": true,
+    "executed_count": [
+     208,
+     14,
+     0
+    ],
+    "isolated_run_present": true,
+    "isolation_root_fresh": true,
+    "no_real_user_state_write": true,
+    "no_violation_events": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "artifact_identity_recomputed": {
+   "checks": {
+    "branch_matches_freeze": true,
+    "bundle_file_count_reproduces": true,
+    "bundle_manifest_matches_record": true,
+    "changed_file_digests_reproduce": true,
+    "codesign_verifies_now": true,
+    "dirty_set_matches_freeze": true,
+    "dmg_digest_reproduces": true,
+    "executable_digest_reproduces": true,
+    "executable_size_reproduces": true,
+    "executable_uuid_recorded": true,
+    "head_matches_freeze": true,
+    "info_plist_digest_reproduces": true,
+    "model_file_digests_reproduce": true,
+    "model_files_present": true,
+    "model_single_revision": true,
+    "model_symlinks_unchanged": true,
+    "recheck_present": true,
+    "recheck_verdict_pass": true
+   },
+   "note": "Every source, model, DMG and installed-bundle identity is re-derived from disk in evidence/recheck_artifacts.json; a mismatch fails this gate.",
+   "verdict": "PASS"
+  },
+  "build_and_package": {
+   "checks": {
+    "build_version_26": true,
+    "bundle_id_is_product": true,
+    "bundle_tree_digest_recorded": true,
+    "codesign_valid": true,
+    "dmg_present": true,
+    "executable_digest_recorded": true,
+    "gatekeeper_assessed": true,
+    "install_identity_present": true,
+    "marketing_version_2_2_0": true,
+    "release_build_succeeded": true
+   },
+   "note": "gatekeeper_assessed only records that a local, non-notarized RC is rejected by Gatekeeper; it is an environment constraint, not a build failure.",
+   "verdict": "PASS"
+  },
+  "experiment_non_interference": {
+   "checks": {
+    "bracket_recheck_zero_writes": true,
+    "bracket_used_same_installed_binary": true,
+    "diff": true,
+    "post": true,
+    "pre": true,
+    "product_state_writes_zero": true,
+    "raw_real_user_state_write_count": 0,
+    "raw_violation_events": 0,
+    "reference_changes_zero": true,
+    "residual_classified_finder_metadata": true
+   },
+   "note": "Raw pre/post over the whole evidence window is reported unchanged: 1 real-root write, on ~/.simigo/.DS_Store. That file is a Finder view-metadata container (verified by its Bud1 header at verify time, not by assertion), it was rewritten at 01:30:44 - inside a window with no candidate process alive - and a bracket pair taken immediately around one launch of the same installed binary reports 0 writes. Every product state path (sqlite3, -wal, -shm, prefix-pool, branch-checkpoints, manifests, Application Support, HF reference root) is unmodified. evidence/noninterference_residual_analysis.md holds the full attribution and the re-test condition; nothing was allowlisted to reach this verdict.",
+   "verdict": "PASS"
+  },
+  "install_and_operate": {
+   "checks": {
+    "bootstrap_models_discovered": true,
+    "bootstrap_no_issues": true,
+    "bootstrap_report_present": true,
+    "bootstrap_schema_v3": true,
+    "gui_prompt_ran_real_model": false,
+    "installed_binary_ran": true,
+    "isolation_env_seen_by_app": true
+   },
+   "note": "The installed, independently path'd app resolves the three isolated roots, completes bootstrap (20 models, schema v3, 0 issues), creates its sqlite database, quits and restarts from the same bundle. Two blockers used to hide this: (1) round 3 found Service.init() blocking forever inside SecItemCopyMatching because CloudKeychain read the real login Keychain and the item's ACL answered the new binary with an interactive SecurityAgent prompt (securityd: 'QueryKeychainUse::queryUser'); that isolation gap is fixed in this build - CloudKeychain is inert when SIMIGO_HOME is set - and is covered by testIsolatedManagedRootNeverReadsOrWritesTheLoginKeychain. (2) The user-visible prompt leg is still unproven: this host grants the driver no Screen Recording, so although the 8 GUI attempts now reach the AX tree (2 menu bars, 6 items) and AXPress succeeds, no window appears, screencapture fails ('could not create image from display') and no keystroke can be typed into a prompt field. An unproven leg stays BLOCKED rather than being inferred from stage A.",
+   "verdict": "BLOCKED"
+  },
+  "keychain_non_interference": {
+   "checks": {
+    "baseline_present": true,
+    "cloud_keychain_isolation_covered_by_app_test": true,
+    "isolated_runs_wrote_scoped_keychain_files": true,
+    "keychain_isolated_by_simigo_home": true,
+    "keychain_report_present": true,
+    "legacy_round2_item_count": 45,
+    "new_item_count": 0,
+    "no_items_removed_or_rewritten": true,
+    "no_new_login_keychain_items": true,
+    "production_credentials_untouched": true,
+    "scoped_store_covered_by_package_test": true
+   },
+   "note": "Round 2 found every headless run creating a one-time LOCALB transport identity in the real login Keychain (45 items: 3 per process, index + key + certificate), because SIMIGO_HOME redirected every filesystem root but not the Keychain. Round 3 fixes the product, not the measurement: LOCALBTransportIdentityStore resolves its identity into <SIMIGO_HOME>/localb/transport-identity.keychain-db whenever the managed root is isolated, and scopes every SecItem call (kSecUseKeychain for adds, kSecMatchSearchList for copy/update/delete, SecIdentityCreateWithCertificate(keychain) for the TLS identity). The audit is now a metadata delta against a baseline captured before the runs; the 45 round-1/2 items are left in place as evidence rather than deleted. Production credentials (com.simigo.localb-*) are untouched. Round 4 adds the second half of the same isolation rule: CloudKeychain (service SimiGo, cloud.api-key) is inert while SIMIGO_HOME is set, because an isolated run that reads the real credential both blocks Service.init() behind an ACL prompt and pulls a user secret into the candidate's window.",
+   "verdict": "PASS"
+  },
+  "negative_controls_refuse_before_generation": {
+   "checks": {
+    "consume_m4a_ncinval.json": {
+     "blocked": true,
+     "expected_stage": "is_verify_u1",
+     "generation_call_count_zero": true,
+     "stage": "is_verify_u1",
+     "stage_matches": true
+    },
+    "consume_m4a_ncleak.json": {
+     "blocked": true,
+     "expected_stage": "input_channel_guard",
+     "generation_call_count_zero": true,
+     "stage": "input_channel_guard",
+     "stage_matches": true
+    },
+    "consume_m4a_ncmiss.json": {
+     "blocked": true,
+     "expected_stage": "is_verify_u1",
+     "generation_call_count_zero": true,
+     "stage": "is_verify_u1",
+     "stage_matches": true
+    },
+    "consume_m4a_ncmodel.json": {
+     "blocked": true,
+     "expected_stage": "is_binding_verify",
+     "generation_call_count_zero": true,
+     "stage": "is_binding_verify",
+     "stage_matches": true
+    },
+    "consume_m4a_nctamper.json": {
+     "blocked": true,
+     "expected_stage": "is_verify_u1",
+     "generation_call_count_zero": true,
+     "stage": "is_verify_u1",
+     "stage_matches": true
+    }
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "package_suite": {
+   "checks": {
+    "localbcore_41_executed": true,
+    "localbcore_log_present": true,
+    "package_total_executed": 126,
+    "package_zero_failures": true,
+    "simigoruntime_85_executed": true,
+    "simigoruntime_log_present": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "per_layer_forward_calls": {
+   "checks": {
+    "instrumented": false
+   },
+   "note": "No per-layer forward-count instrumentation exists in the product.",
+   "verdict": "NOT_INSTRUMENTED"
+  },
+  "physical_page_return": {
+   "checks": {
+    "footprint_only": true,
+    "os_level_page_return_evidence": false
+   },
+   "note": "No OS-level page-return evidence was collected; footprint/exit is supporting only.",
+   "verdict": "BLOCKED"
+  },
+  "product_service_http": {
+   "checks": {
+    "authorization_surface_recorded": true,
+    "authorized_lane_passes_in_test_target": true,
+    "authorized_request_completed": false,
+    "listening_socket_found": false,
+    "no_authorization_relaxation": false,
+    "probe_present": true,
+    "tls_only_transport": false,
+    "unconfigured_authorization_refused": false
+   },
+   "note": "Round 2 reached the installed app's real HTTPServer (ephemeral port observed via lsof on the running pid, TLS-only: plaintext gets an empty reply) and its authorized lane is refused exactly as designed: a POST carrying a fabricated LOCALB proof returns 503 'LOCALB request authorization is not configured' because this build ships no surface that performs the activation ceremony (app_target_call_sites=0 in evidence/localb_authorization_path.txt), so the guard fires before any proof is evaluated. The same product code does serve authorized requests once activated - proven by the product's own tests in the round-2 test binary. Closing this gate needs a shipped activation surface, not a weakened guard.",
+   "verdict": "BLOCKED"
+  },
+  "research_chain_controlled_difference": {
+   "checks": {
+    "controlled_difference_observed": true,
+    "counterfactual_baseline_differs": true,
+    "diff_es1_settlement_value_a": "hello",
+    "diff_es1_settlement_value_b": "delta9",
+    "diff_es2_output_a": "RESULT=hello-U2",
+    "diff_es2_output_b": "RESULT=delta9-U2",
+    "es1_exited_before_es2": true,
+    "es1_identity_bound": true,
+    "es1_rc_zero": true,
+    "es1_readback_from_is": true,
+    "es1_real_generation": true,
+    "es1_settled": true,
+    "es1_status_ok": true,
+    "es2_binding_ok": true,
+    "es2_digest_verified": true,
+    "es2_fresh_cache": true,
+    "es2_new_pid": true,
+    "es2_no_value_channel": true,
+    "es2_output_expected": true,
+    "es2_prompt_carries_value": true,
+    "es2_rc_zero": true,
+    "es2_real_continuation": true,
+    "es2_recovered_from_is": true,
+    "es2_status_ok": true,
+    "es2_u2_settled": true,
+    "es2_validity_verified": true,
+    "u1_differs_from_baseline": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "research_chain_negative_controls": {
+   "checks": {
+    "m4a_nc1_rc_6": true,
+    "m4a_nc2_rc_6": true,
+    "m4a_nc3_rc_6": true,
+    "m4a_nc4_rc_6": true,
+    "m4a_nc5_rc_2": true,
+    "m4a_nc6_rc_2": true,
+    "m4a_nc7_rc_7": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "research_chain_primary": {
+   "checks": {
+    "counterfactual_baseline_differs": true,
+    "es1_exited_before_es2": true,
+    "es1_identity_bound": true,
+    "es1_rc_zero": true,
+    "es1_readback_from_is": true,
+    "es1_real_generation": true,
+    "es1_settled": true,
+    "es1_status_ok": true,
+    "es2_binding_ok": true,
+    "es2_digest_verified": true,
+    "es2_fresh_cache": true,
+    "es2_new_pid": true,
+    "es2_no_value_channel": true,
+    "es2_output_expected": true,
+    "es2_prompt_carries_value": true,
+    "es2_rc_zero": true,
+    "es2_real_continuation": true,
+    "es2_recovered_from_is": true,
+    "es2_status_ok": true,
+    "es2_u2_settled": true,
+    "es2_validity_verified": true,
+    "u1_differs_from_baseline": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  },
+  "resource_lifecycle": {
+   "checks": {
+    "container_absent_after": true,
+    "container_present_before": true,
+    "container_ref_dropped": true,
+    "lifecycle_resume_event_observed": true,
+    "lifecycle_suspend_event_observed": true,
+    "memprobe_ran": true,
+    "no_release_timing_seam": true,
+    "reference_release_observed": true,
+    "resource_reclaim_observed": true,
+    "resume_generate_observed": true,
+    "sessions_released_ge_1": true,
+    "suspend_returned_true": true,
+    "waited_out_production_idle_floor": true,
+    "warm_generate_observed": true
+   },
+   "note": "Round 2: the Release binary has no idle-timing seam, so the probe waits out the production adaptive idle floor (240 s) and then calls the unmodified suspendIfIdle(); every observed value below comes from that path. A FAIL here means the shipped suspend/reclaim path did not actually take effect.",
+   "verdict": "PASS"
+  },
+  "source_and_model_frozen": {
+   "checks": {
+    "model_identity_present": true,
+    "source_freeze_present": true
+   },
+   "note": "",
+   "verdict": "PASS"
+  }
+ },
+ "generated_at": "2026-10-24T03:43:27+0800",
+ "overall": "BLOCKED"
+}

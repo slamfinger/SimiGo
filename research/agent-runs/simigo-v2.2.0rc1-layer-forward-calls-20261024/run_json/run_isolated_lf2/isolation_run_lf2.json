@@ -1,0 +1,42 @@
+{
+ "tag": "lf2",
+ "evidence_dir": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/run_isolated_lf2",
+ "exit_code": 0,
+ "duration_s": 106,
+ "executed_skipped_failures": [
+  210,
+  14,
+  0
+ ],
+ "xctestrun_isolated_sha256": "7bdab03901b056b41eac9afc34f99b2bb3fb545a5db5b529623284fb493fe24c",
+ "fresh_isolation_root": true,
+ "isolation_content_bytes": {
+  "home": 636005,
+  "cache": 20342239496,
+  "state-graph": 0
+ },
+ "noninterference": {
+  "real_user_state_write_count": 0,
+  "real_user_state_write_paths": [],
+  "violation_events": 0,
+  "distinct_violation_count": 0,
+  "expected_self_writes": 0,
+  "reference_changes": 0,
+  "swept_real_roots": [
+   "/Users/mr.simi/.simigo",
+   "/Users/mr.simi/Library/Application Support/SimiGo"
+  ]
+ },
+ "checks": {
+  "test_execute_succeeded": true,
+  "exit_code_zero": true,
+  "counts_parsed": true,
+  "no_failures": true,
+  "xctestrun_only_three_roots": true,
+  "isolation_home_used_by_app": true,
+  "isolation_cache_used_by_app": true,
+  "no_real_user_state_write": true,
+  "no_unexpected_write": true
+ },
+ "passed": true
+}

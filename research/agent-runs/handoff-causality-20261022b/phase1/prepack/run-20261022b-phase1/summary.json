@@ -1,0 +1,76 @@
+{
+  "all_observed_as_expected": true,
+  "baseline_dir": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022b-phase1-baseline",
+  "baseline_label": "phase1-baseline-20261022b",
+  "cases": {
+    "A0": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": true,
+        "matches_expected": true,
+        "model_continuation_calls": 1,
+        "prefix_tail_matches": true,
+        "recovered_position": true,
+        "recovery_succeeded": true
+      }
+    },
+    "A1": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "settlementCheckpointMissing:",
+        "failure_label": "settlementCheckpointMissing:PRODUCTION-REAL-PALACE",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    },
+    "A2a": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:result_digest",
+        "failure_label": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:result_digest",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    },
+    "A2b": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
+        "failure_label": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    },
+    "A3": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "informationSpaceHasNoSettledExecution:",
+        "failure_label": "informationSpaceHasNoSettledExecution:ADVANCED",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    },
+    "A4": {
+      "process_returncode": 0,
+      "terminal_state": "PHASE1_OBSERVED",
+      "verification": {
+        "continue_task_entered": false,
+        "expected_failure_prefix": "durableExecutionStateMissing:PRODUCTION-REAL-PALACE",
+        "failure_label": "durableExecutionStateMissing:PRODUCTION-REAL-PALACE",
+        "matches_expected": true,
+        "model_continuation_calls": 0
+      }
+    }
+  },
+  "completed_at_utc": "2026-10-21T17:35:55Z",
+  "schema_id": "SIMIGO-CAUSALITY-PHASE1-SUMMARY-V1"
+}

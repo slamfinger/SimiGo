@@ -1,0 +1,18 @@
+[gate] A1_prepare rc=0 payload=yes
+[gate] A2_activate rc=0 payload=yes
+[gate] client keygen rc=0
+[gate] A3_serve pid=99290 port=8600 role=serve
+[gate] client spki rc=0
+[gate] A4_pair_issue rc=0 payload=yes
+[gate] client pair-sign rc=0
+[gate] A5_pair_approve rc=0 payload=yes
+[gate] client request rc=0
+[gate] probe rc=0
+[gate] A3_serve exited rc=-15
+[gate] B1_prepare_noactivate rc=0 payload=yes
+[gate] client keygen rc=0
+[gate] B2_serve_noauth pid=99313 port=8601 role=serve
+[gate] probe rc=0
+[gate] B2_serve_noauth exited rc=-15
+[gate] C1_serve_unprepared pid=99322 port=8602 role=serve
+[gate] wrote evidence/gate_ai/service_http_gate_installed.json

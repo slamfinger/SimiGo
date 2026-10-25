@@ -1,0 +1,57 @@
+{
+  "advancement_id" : "h4-u1",
+  "completed_at_utc" : "2026-10-22T12:11:35Z",
+  "counters" : {
+    "model_continuation_calls" : 0,
+    "tokenize_seed_calls" : 0,
+    "tokenize_text_calls" : 0
+  },
+  "database" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/runs\/H4\/carrier.sqlite",
+  "database_after" : {
+    "inode" : "110357109",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/runs\/H4\/carrier.sqlite",
+    "sha256" : "0008b46dba6e69d22edbf7e4d8c37ad650df65389fb50829eb8217f21313b0cb",
+    "size_bytes" : 106496
+  },
+  "database_before" : {
+    "inode" : "110357109",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/runs\/H4\/carrier.sqlite",
+    "sha256" : "0008b46dba6e69d22edbf7e4d8c37ad650df65389fb50829eb8217f21313b0cb",
+    "size_bytes" : 106496
+  },
+  "database_unchanged" : true,
+  "demand_id" : "handoff-u1",
+  "duration_seconds" : 0.057021021842956543,
+  "entry" : "SimiGoTaskRun",
+  "evaluated_at_utc" : "2026-10-22T12:11:35Z",
+  "execution_id" : "PRODUCTION-REAL-PALACE",
+  "failure" : "",
+  "generation_entered" : false,
+  "input_admission" : {
+
+  },
+  "input_admission_refusal" : {
+    "item_id" : "TASK-SOURCE",
+    "kind" : "ADMISSION_REFUSED",
+    "reason" : "SETTLEMENT_SIGNATURE_INVALID",
+    "stage" : "SETTLEMENT_SIGNATURE_INVALID"
+  },
+  "input_admission_status" : "ADMISSION_REFUSED",
+  "mode" : "admission_probe",
+  "model_loaded" : false,
+  "pid" : 87321,
+  "run_id" : "e-h4-u1",
+  "schema_id" : "SIMIGO-ORDINARY-TASK-ENTRY-V1",
+  "started_at_utc" : "2026-10-22T12:11:35Z",
+  "state_after" : {
+
+  },
+  "state_before" : {
+
+  },
+  "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/runs\/H4\/state\/h4-u1",
+  "state_unchanged" : true,
+  "task_item_id" : "TASK-U1",
+  "terminal_state" : "INPUT_ADMISSION_REFUSED",
+  "trust_anchor_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-selective-invalidation-20261022h\/trust\/settlement-trust-anchor.json"
+}

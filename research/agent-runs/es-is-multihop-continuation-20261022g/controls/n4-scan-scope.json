@@ -1,0 +1,54 @@
+{
+ "allowed_surfaces": [
+  "carrier.sqlite",
+  "u1-evidence.json",
+  "u2-evidence.json",
+  "u3-evidence.json",
+  "u1-state",
+  "u2-state",
+  "u3-state",
+  "process-logs",
+  "logs",
+  "lifecycle.json"
+ ],
+ "excluded_surfaces": [
+  "carrier.sqlite",
+  "u1-evidence.json",
+  "u2-evidence.json",
+  "u3-evidence.json",
+  "u1-state",
+  "u2-state",
+  "u3-state",
+  "process-logs",
+  "logs",
+  "lifecycle.json"
+ ],
+ "needles": {
+  "secret_sha256": "70df8b7eaf66cb0e7e4d5a22971fdcd8886ae0ee1cd5f280ab09b66d88a32579",
+  "world_nonce_sha256": "d9bb24138e9661c5ff54abf59c1e01d76501cabe043159b576015cfed3ba516b"
+ },
+ "scan_root": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g/stages/chain",
+ "scanned_file_count": 15,
+ "scanned_files": [
+  "carrier.sqlite",
+  "lifecycle.json",
+  "logs/driver.log",
+  "process-logs/u1.stderr.log",
+  "process-logs/u1.stdout.log",
+  "process-logs/u2.stderr.log",
+  "process-logs/u2.stdout.log",
+  "process-logs/u3.stderr.log",
+  "process-logs/u3.stdout.log",
+  "u1-evidence.json",
+  "u1-state/execution-state.json",
+  "u2-evidence.json",
+  "u2-state/execution-state.json",
+  "u3-evidence.json",
+  "u3-state/execution-state.json"
+ ],
+ "template_surfaces": [
+  "u2_template",
+  "u3_template",
+  "cold_seed"
+ ]
+}

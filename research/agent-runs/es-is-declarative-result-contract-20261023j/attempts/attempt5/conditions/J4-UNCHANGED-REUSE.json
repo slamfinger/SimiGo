@@ -1,0 +1,28 @@
+{
+  "id": "J4-UNCHANGED-REUSE",
+  "kind": "model_free_control",
+  "observations": {
+    "all_eligible_items_reused": true,
+    "computed_item_ids": [],
+    "database_sha256_after": "e9557bcb9eb93be4f8c63c0d01f763101349c932a06b2f8171e8d12313ba5496",
+    "database_sha256_before": "47f2fb6ce153470e0fda162a63ca22cd6fa926c122d52722ff48c03f27d0b1fb",
+    "generation_calls": 0,
+    "model_loads": 0,
+    "probe_uses_production_reuse_decision": true,
+    "reused_item_ids": [
+      "J-3d02b935-DEST",
+      "J-3d02b935-ORIGIN",
+      "J-3d02b935-U1",
+      "J-3d02b935-U2",
+      "J-3d02b935-U3"
+    ],
+    "seed_tokenize_calls": 0,
+    "text_tokenize_calls": 0
+  },
+  "raw_log_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J4/logs/j4-probe.log",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/logs/J4-UNCHANGED-REUSE.driver.log"
+  ],
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J4"
+}

@@ -1,0 +1,17 @@
+{
+  "schema_id": "SIMIGO-E-ROUND-TRUST-ROOT-V1",
+  "key_id": "e-round-5ca36cc5bcde2b7f",
+  "key_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/trust/settlement-signing-key.json",
+  "key_sha256": "65ee9bdc4dde78faf74773dd43b415d04fe3acbc9085e82fa43268c6dbd9664b",
+  "key_mode": "0o600",
+  "anchor_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/trust/settlement-trust-anchor.json",
+  "anchor_sha256": "19d5fd366346c2dde05a7da3c7bec49ada122b64bea0ae430f85f356248217d8",
+  "anchor_mode": "0o444",
+  "public_key_base64": "CFn8Zpz/OB4UljuU1QL4yTpTN0+SftPyOlkXHXY6+G4=",
+  "public_key_sha256": "5ca36cc5bcde2b7f8268d6373d81502d85f8e801df76ef7dfba081f964ed479c",
+  "attacker_anchor_path": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/trust/attacker-anchor.json",
+  "attacker_anchor_sha256": "889c94ff734d5b78176e0c44fbc712a3848da16b8c3a90816b2a1620f6ccd402",
+  "attacker_public_key_sha256": "310e1323fda820ed0410113ad0a2812b162acaac6eb6835df4a891e80377a36c",
+  "private_key_location": "filesystem only; never a database row",
+  "build_sha256": "96ae515977f880f708530806076f188ddbd775703b510b04e23f428086cab6ca"
+}

@@ -1,0 +1,23 @@
+{
+  "contract_dispatch_basis": "declared_contract",
+  "exit_code": 0,
+  "failure": "",
+  "generated_text": " ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nPRIORITY=5\nYou are executing one task step in a new execution instance.\nThe origin sector is SOUTH (route priority 2).\nThe destination sector is WEST",
+  "input_admission_status": "ADMITTED",
+  "item": "J-166d2611-U1",
+  "native_gate": "native.SimiGoResultContracts",
+  "native_gate_ran": true,
+  "native_rejection": {},
+  "native_status": "VALID",
+  "native_values": {
+    "destination_code": "EAST",
+    "origin_code": "NORTH",
+    "priority": "5",
+    "route_key": "NORTH>EAST"
+  },
+  "native_verified_bindings_count": 3,
+  "settlement_created": true,
+  "signature_created": true,
+  "stderr_tail": "",
+  "terminal_state": "TASK_SETTLED"
+}

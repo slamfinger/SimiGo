@@ -1,0 +1,5 @@
+$ driver J2-BINDING-MISMATCH attempt (kind=contract_test_model_free_candidate)
+candidate text claims the origin priority although the contract binds the destination's admitted priority
+exit=1
+payload={"command": "execute-with-model-result", "error": "PRODUCER_RESULT_BINDING_MISMATCH: field=priority actual '3' != bound value '5'", "error_type": "ContractError", "ok": false}
+observations={"contract_dispatch_basis": "declared_contract", "expected_error_code": "PRODUCER_RESULT_BINDING_MISMATCH", "generation_calls": 0, "item_id_under_test": "J-a56c0729-U1", "model_loads": 0, "observed_error": "PRODUCER_RESULT_BINDING_MISMATCH: field=priority actual '3' != bound value '5'", "producer_contract_rejects": true, "run_token": "a56c0729", "seed_tokenize_calls": 0, "signature_created": false, "test_kind": "contract_test_model_free_candidate", "text_tokenize_calls": 0, "valid_settlement_created": false}

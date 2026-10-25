@@ -1,0 +1,81 @@
+{
+ "gate": "layer_forward_instrumentation_attribution",
+ "verdict": "PASS",
+ "checks": {
+  "P6_installed_candidate_unmoved_by_test_edit": true
+ },
+ "entries": [
+  {
+   "name": "app_instrumentation_driver",
+   "target": "app",
+   "affects_installed_binary": true,
+   "checks": {
+    "P1_pre_edit_copy_matches_recorded_sha": true,
+    "P2_patch_applies_clean": true,
+    "P3_patched_bytes_equal_worktree_file": true,
+    "P4_patch_touches_one_path": true,
+    "P5_worktree_matches_post_edit_sha": true
+   },
+   "passed": true,
+   "patch": {
+    "path": "LAYER_FORWARD_INSTRUMENTATION.patch",
+    "sha256": "94a996a6e6e135a14680bd691a7d9aaae72f8d63d380659df83dee4d41369fc9",
+    "lines": 153,
+    "added": 112,
+    "removed": 1,
+    "paths": [
+     "SimiGo/Headless/SimiGoG1G3Entry.swift"
+    ]
+   },
+   "path": "SimiGo/Headless/SimiGoG1G3Entry.swift",
+   "pre_edit_sha256": "9a1e2b1670995b4b4f941ece79eb6f196769aeea22ae501668b5ceacbe55bfa4",
+   "post_edit_sha256": "25c4e967bcfaa88b61259b116951558360e1c8ad8cadfbcec4d792a1eb3f7122",
+   "patched_copy_sha256": "25c4e967bcfaa88b61259b116951558360e1c8ad8cadfbcec4d792a1eb3f7122",
+   "pre_edit_origin": "rebuilt by reversing this batch's edits, sha checked against the value recorded before the first edit",
+   "patch_stdout": "patching file 'SimiGo/Headless/SimiGoG1G3Entry.swift'",
+   "rejects": []
+  },
+  {
+   "name": "trace_role_test_coverage",
+   "target": "test_bundle",
+   "affects_installed_binary": false,
+   "checks": {
+    "P1_pre_edit_copy_matches_recorded_sha": true,
+    "P2_patch_applies_clean": true,
+    "P3_patched_bytes_equal_worktree_file": true,
+    "P4_patch_touches_one_path": true,
+    "P5_worktree_matches_post_edit_sha": true
+   },
+   "passed": true,
+   "patch": {
+    "path": "TESTS_TRACE_ROLE_COVERAGE.patch",
+    "sha256": "9423a8778632fc6ad32bced08d91875f4d735d277d6ab047baf4ec84a1699bdf",
+    "lines": 25,
+    "added": 18,
+    "removed": 0,
+    "paths": [
+     "SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift"
+    ]
+   },
+   "path": "SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift",
+   "pre_edit_sha256": "ee3ddc9cc21562fffd1c6d85db5b300a41ce6ed924fb8940b2e98b4ba33865f9",
+   "post_edit_sha256": "69f5f2d2b063b9b351a34e66e668f99366c2c942d3795c74883137d6cc7de320",
+   "patched_copy_sha256": "69f5f2d2b063b9b351a34e66e668f99366c2c942d3795c74883137d6cc7de320",
+   "pre_edit_origin": "git show HEAD:<path> (the file was clean in the worktree before this batch)",
+   "patch_stdout": "patching file 'SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift'",
+   "rejects": []
+  }
+ ],
+ "install_identity": {
+  "compared_keys": 19,
+  "changed_keys": [],
+  "comparison": "before_test_change vs recomputed_after_test_change"
+ },
+ "source": {
+  "repo": "/Users/mr.simi/Documents/SimiGo",
+  "head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+  "branch": "localb-b3-closure-20261016"
+ },
+ "why_not_git_diff": "The worktree already carried 15 uncommitted entries before this batch. `git diff` over the same app file reports the union of those pre-existing changes and this batch's edit (+237/-12); only the replayed patch (+112/-1) is attributable to this batch. See evidence/worktree_before_build.txt and evidence/worktree_after_test_change.txt.",
+ "note": "A passing attribution check does not make the forward-call gate pass. It only fixes what this batch changed; the gate verdict comes from layer_forward_calls_verdict.json."
+}

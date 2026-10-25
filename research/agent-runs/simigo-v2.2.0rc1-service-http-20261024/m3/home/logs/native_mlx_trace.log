@@ -1,0 +1,19 @@
+[2026-10-24 13:18:13.526] [MEM] beforeLoad active=0MB cache=0MB peak=0MB footprint=16MB swapUsed=2859MB
+[2026-10-24 13:18:17.202] [MLX] loadRoute text-first composite=false model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+[2026-10-24 13:18:17.223] NativeMLX ready: model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit port=8000
+[2026-10-24 13:18:17.223] [MEM] afterLoad active=16385MB cache=0MB peak=16385MB footprint=16494MB swapUsed=2859MB
+[2026-10-24 13:19:00.953] [PROTOCOL] arrive r=a6d9ac endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-24 13:19:00.953] [LC] STATE_TRANSITION r=a6d9ac s=openai from=QUEUED to=RUNNING
+[2026-10-24 13:19:00.955] [MLX] poolRescan entries=0
+[2026-10-24 13:19:00.956] [MLX] prefillStep=2048 est=8 reuse=false
+[2026-10-24 13:19:04.531] [MLX] prefill 17/17
+[2026-10-24 13:19:05.069] [MLX] poolExport messages=2 refHash=2a85dacea50727
+[2026-10-24 13:19:05.069] [MLX] session=2d74bc/main messages=1 exec=057369 history=2 delta=1 reuse=false ttft=4008ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=17 promptTime=3.8s tps=53.7 rawEv=5 rawB=15 emitB=15
+[2026-10-24 13:19:05.069] [LC] RELEASED r=a6d9ac s=openai reason=completed
+[2026-10-24 13:19:18.294] [PROTOCOL] arrive r=842d06 endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-24 13:19:18.295] [LC] STATE_TRANSITION r=842d06 s=openai from=QUEUED to=RUNNING
+[2026-10-24 13:19:18.295] [MLX] prefillStep=2048 est=8 reuse=false
+[2026-10-24 13:19:18.512] [MLX] prefill 17/17
+[2026-10-24 13:19:18.642] [MLX] poolExport messages=2 refHash=2a85dacea50727
+[2026-10-24 13:19:18.642] [MLX] session=e9de98/main messages=1 exec=8e51f2 history=2 delta=1 reuse=false ttft=259ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=17 promptTime=0.3s tps=62.0 rawEv=5 rawB=15 emitB=15
+[2026-10-24 13:19:18.642] [LC] RELEASED r=842d06 s=openai reason=completed

@@ -1,0 +1,9 @@
+AGENT_TASK.md                  Main autonomous implementation instructions (Chinese)
+LOCAL_AGENT_HANDOFF.md         Short copy/paste instruction for the local Qoder agent
+README.md                      Pack orientation
+experiment_plan.json           Machine-readable phase and condition matrix
+evidence_schema.json          Minimum run-level evidence schema
+workspace_guard.py             Git working-tree snapshot/verification guard
+artifact_guard.py              Historical A-E experiment evidence integrity guard
+validate_plan_pack.py          Pack completeness/JSON validation
+validate_evidence.py           Summary and claim-critical counter validator

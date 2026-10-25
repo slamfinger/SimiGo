@@ -1,0 +1,32 @@
+== ES1 produce (target=hello) ==
+PTY_CHILD_RC=0 bytes=29873
+ES1 rc=0
+ES1 exited before ES2 - OK
+== ES2 consume (positive, shared IS, FRESH EMPTY cache root) ==
+PTY_CHILD_RC=0 bytes=29772
+ES2 rc=0
+== NC1 consume missing settlement (S-9999) ==
+PTY_CHILD_RC=6 bytes=29688
+NC1 rc=6
+== NC2 digest tamper (isolated copy) ==
+tampered state S-0001
+PTY_CHILD_RC=6 bytes=29690
+NC2 rc=6
+== NC3 invalidated settlement (isolated copy) ==
+invalidated S-0001
+PTY_CHILD_RC=6 bytes=29689
+NC3 rc=6
+== NC4 invalid role ==
+PTY_CHILD_RC=2 bytes=29582
+NC4 rc=2
+== NC6 consume rejects leaked target value (audit 1 guard) ==
+PTY_CHILD_RC=7 bytes=29688
+NC6 rc=7
+== NC7 consume rejects inherited experiment-target channel (audit 1 guard) ==
+PTY_CHILD_RC=7 bytes=29689
+NC7 rc=7
+== NC5 missing required param ==
+PTY_CHILD_RC=2 bytes=29545
+NC5 rc=2
+DRIVER DONE RID=rc1
+DRIVER EXIT=0

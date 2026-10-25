@@ -1,0 +1,21 @@
+{
+  "snapshot": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/manifests/postchange-workspace-snapshot.json",
+  "head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "file_count": 5197,
+  "dirty_lines": 143
+}
+{
+ "terminal_state": "FAILED",
+ "guards": {
+  "workspace": "PASS",
+  "historical_artifacts": "PASS",
+  "validator": "FAIL"
+ },
+ "conditions": {
+  "I0-STRUCTURED-CHAIN": "FAILED",
+  "I1-MISSING-SOURCE-B": "BLOCKED_NOT_RUN",
+  "I2-INCOMPLETE-U1-RESULT": "OBSERVED",
+  "I3-UNCHANGED-REUSE": "FAILED",
+  "I4-MISSING-TRANSITIVE-DEPENDENCY": "BLOCKED_NOT_RUN"
+ }
+}

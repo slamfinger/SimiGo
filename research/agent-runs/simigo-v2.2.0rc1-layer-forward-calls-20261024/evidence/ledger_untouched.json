@@ -1,0 +1,42 @@
+{
+ "path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/acceptance_report.json",
+ "sha256": "57de11e7f0a27e840829b5168dc189b79efcea0e2f81771ca8bbbcfe996cb07c",
+ "counts": {
+  "BLOCKED": 3,
+  "FAIL": 0,
+  "INCONCLUSIVE": 0,
+  "NOT_INSTRUMENTED": 1,
+  "PASS": 12
+ },
+ "overall": "BLOCKED",
+ "gates": {
+  "app_suite_and_isolation": "PASS",
+  "artifact_identity_recomputed": "PASS",
+  "build_and_package": "PASS",
+  "experiment_non_interference": "PASS",
+  "install_and_operate": "BLOCKED",
+  "keychain_non_interference": "PASS",
+  "negative_controls_refuse_before_generation": "PASS",
+  "package_suite": "PASS",
+  "per_layer_forward_calls": "NOT_INSTRUMENTED",
+  "physical_page_return": "BLOCKED",
+  "product_service_http": "BLOCKED",
+  "research_chain_controlled_difference": "PASS",
+  "research_chain_negative_controls": "PASS",
+  "research_chain_primary": "PASS",
+  "resource_lifecycle": "PASS",
+  "source_and_model_frozen": "PASS"
+ },
+ "modified_by_this_batch": false,
+ "expected_if_merged": {
+  "counts": {
+   "PASS": 13,
+   "BLOCKED": 3,
+   "FAIL": 0,
+   "INCONCLUSIVE": 0,
+   "NOT_INSTRUMENTED": 0
+  },
+  "arithmetic": "per_layer_forward_calls NOT_INSTRUMENTED -> PASS moves one gate from the NOT_INSTRUMENTED bucket to PASS; 12+1 = 13, 1-1 = 0. physical_page_return, product_service_http and install_and_operate stay BLOCKED.",
+  "requires": "separate explicit authorisation; this batch does not edit the ledger"
+ }
+}

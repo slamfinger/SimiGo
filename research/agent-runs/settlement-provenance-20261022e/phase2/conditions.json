@@ -1,0 +1,2887 @@
+{
+ "created_at_utc": "2026-10-22T04:54:51Z",
+ "results": {
+  "E0-A": {
+   "positive_checks": {
+    "source_signature_checks_all_true": true,
+    "u1_admission_admitted": true,
+    "u1_admission_checks_all_true": true,
+    "u1_admitted_sha_matches_evidence": true,
+    "u1_generation_exactly_once": true,
+    "u1_settled": true,
+    "u1_settled_input_matches_admitted": true,
+    "u1_settlement_signed": true,
+    "u1_signature_checks_all_true": true,
+    "u2_admission_admitted": true,
+    "u2_admission_checks_all_true": true,
+    "u2_admitted_sha_matches_evidence": true,
+    "u2_answer_matches_settled_value": true,
+    "u2_checksum_bound_to_source_settlement": true,
+    "u2_declared_dependencies": true,
+    "u2_generation_exactly_once": true,
+    "u2_input_contains_admitted_checksum": true,
+    "u2_input_contains_admitted_secret": true,
+    "u2_model_identity_bound": true,
+    "u2_output_tokens_bound": true,
+    "u2_producer_is_model_task": true,
+    "u2_secret_bound_to_u1_settlement": true,
+    "u2_settled": true,
+    "u2_settled_answer_equals_generated": true,
+    "u2_settled_input_matches_admitted": true,
+    "u2_settlement_signed": true,
+    "u2_signature_checks_all_true": true,
+    "u2_template_unchanged": true
+   },
+   "terminal_state": "TASK_SETTLED",
+   "u1": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a/carrier.sqlite",
+     "--item",
+     "TASK-U1",
+     "--demand",
+     "task-u1",
+     "--advancement",
+     "e-world-a-u1-a1",
+     "--evaluated-at",
+     "2026-10-22T04:53:00Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a/state/u1",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a/evidence/u1.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-world-a-u1-a1"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a/evidence/u1.json",
+    "evidence_sha256": "b27da4b6ace1b86453094594bd2c58688998328d41a140d603d773e88cf7251d",
+    "exit_code": 0,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a/logs/u1.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pid": 52679,
+    "started_at_utc": "2026-10-22T04:53:00Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a/state/u1",
+    "terminal_state": "TASK_SETTLED",
+    "timed_out": false,
+    "wall_seconds": 23.999
+   },
+   "u2": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a-u2/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-world-a-u2-a1",
+     "--evaluated-at",
+     "2026-10-22T04:53:47Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a-u2/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a-u2/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-world-a-u2-a1"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a-u2/evidence/u2.json",
+    "evidence_sha256": "58079df094b8e3138a1f1948379e1a4696078c1912404dcbd1a5e79c3db7280d",
+    "exit_code": 0,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a-u2/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pid": 52699,
+    "started_at_utc": "2026-10-22T04:53:47Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-a-u2/state/u2",
+    "terminal_state": "TASK_SETTLED",
+    "timed_out": false,
+    "wall_seconds": 20.934
+   }
+  },
+  "E0-B": {
+   "positive_checks": {
+    "source_signature_checks_all_true": true,
+    "u1_admission_admitted": true,
+    "u1_admission_checks_all_true": true,
+    "u1_admitted_sha_matches_evidence": true,
+    "u1_generation_exactly_once": true,
+    "u1_settled": true,
+    "u1_settled_input_matches_admitted": true,
+    "u1_settlement_signed": true,
+    "u1_signature_checks_all_true": true,
+    "u2_admission_admitted": true,
+    "u2_admission_checks_all_true": true,
+    "u2_admitted_sha_matches_evidence": true,
+    "u2_answer_matches_settled_value": true,
+    "u2_checksum_bound_to_source_settlement": true,
+    "u2_declared_dependencies": true,
+    "u2_generation_exactly_once": true,
+    "u2_input_contains_admitted_checksum": true,
+    "u2_input_contains_admitted_secret": true,
+    "u2_model_identity_bound": true,
+    "u2_output_tokens_bound": true,
+    "u2_producer_is_model_task": true,
+    "u2_secret_bound_to_u1_settlement": true,
+    "u2_settled": true,
+    "u2_settled_answer_equals_generated": true,
+    "u2_settled_input_matches_admitted": true,
+    "u2_settlement_signed": true,
+    "u2_signature_checks_all_true": true,
+    "u2_template_unchanged": true
+   },
+   "terminal_state": "TASK_SETTLED",
+   "u1": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b/carrier.sqlite",
+     "--item",
+     "TASK-U1",
+     "--demand",
+     "task-u1",
+     "--advancement",
+     "e-world-b-u1-a1",
+     "--evaluated-at",
+     "2026-10-22T04:53:24Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b/state/u1",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b/evidence/u1.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-world-b-u1-a1"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b/evidence/u1.json",
+    "evidence_sha256": "8c21a23de159e1ad03022e1a52b9f01e2f59ae4163d762d7d08cc7d16a500d11",
+    "exit_code": 0,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b/logs/u1.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pid": 52688,
+    "started_at_utc": "2026-10-22T04:53:24Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b/state/u1",
+    "terminal_state": "TASK_SETTLED",
+    "timed_out": false,
+    "wall_seconds": 22.724
+   },
+   "u2": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b-u2/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-world-b-u2-a1",
+     "--evaluated-at",
+     "2026-10-22T04:54:08Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b-u2/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b-u2/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-world-b-u2-a1"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b-u2/evidence/u2.json",
+    "evidence_sha256": "7d79955521b99490837d25c27c451f9b9ccffde8ecc20878924180f69135128b",
+    "exit_code": 0,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b-u2/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pid": 52705,
+    "started_at_utc": "2026-10-22T04:54:08Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/worlds/world-b-u2/state/u2",
+    "terminal_state": "TASK_SETTLED",
+    "timed_out": false,
+    "wall_seconds": 21.298
+   }
+  },
+  "E0-valid-signature": {
+   "admission": {
+    "bindings": [
+     {
+      "byte_length": 16,
+      "byte_offset": 35,
+      "item_id": "TASK-U1",
+      "placeholder": "secret",
+      "result_field": "secret",
+      "result_value_sha256": "55608e1aac4ad077e4672def250a62ed99ce567a5083cec94772af46b8472fc9",
+      "settlement_object_id": "c81903413cdfad1565d1639e62430e4ebdd37981289c2c7276ac1af980d7dde2",
+      "value_sha256": "b85d82480979dd8462f6d71aaed29eaf8a3e97e988f3e65ec03a25e2d8020a39"
+     },
+     {
+      "byte_length": 4,
+      "byte_offset": 90,
+      "item_id": "TASK-SOURCE",
+      "placeholder": "checksum",
+      "result_field": "checksum",
+      "result_value_sha256": "4a544bf4cc67a42758ddb213fe10067cebbd4cae8339db94c3110e44b1b430c5",
+      "settlement_object_id": "e0f63b3735065553d1fc7487fdd177c8562b5e0ffd53b1fd4ca25fd0fbfb337d",
+      "value_sha256": "ef1af211c0d49f824baec355e53b1dc9dd1627bdcc4a8eccb296ef1b2e6b293a"
+     }
+    ],
+    "checks": {
+     "all_declared_dependencies_admitted": true,
+     "all_placeholders_bound": true,
+     "dependency_object_sets_match": true,
+     "object_identity_matches_bytes": true,
+     "result_digests_match_values": true,
+     "settlement_objects_readable": true,
+     "settlement_signatures_valid": true,
+     "source_versions_match_items": true,
+     "validity_satisfied": true
+    },
+    "declared_dependencies": [
+     "TASK-SOURCE",
+     "TASK-U1"
+    ],
+    "dependency_settlement_object_ids": {
+     "TASK-SOURCE": "e0f63b3735065553d1fc7487fdd177c8562b5e0ffd53b1fd4ca25fd0fbfb337d",
+     "TASK-U1": "c81903413cdfad1565d1639e62430e4ebdd37981289c2c7276ac1af980d7dde2"
+    },
+    "input_byte_length": 176,
+    "input_sha256": "3d03c4d0fdb3b6e05fc6123771fe8ff7377cd1012d26082598b372e1b325f449",
+    "settlement_signatures": [
+     {
+      "algorithm": "Ed25519",
+      "dependency_object_ids": {},
+      "evaluated_at_utc": "2026-10-22T04:53:00Z",
+      "event_id": "b6b7bb7166d97e20bebda7f26757655679c8ce6d438c1bc6ce30450dc1283f20",
+      "event_sequence": 1,
+      "item_id": "TASK-SOURCE",
+      "key_id": "e-round-e7ba00a712248330",
+      "payload_sha256": "9513665b31aafead0ab118bc799b02312c166f188eedfbb780e233ff6dc84ee2",
+      "producer_execution_id": "e-definition-world-a",
+      "producer_kind": "carrier_calculator",
+      "producer_run_id": "e-definition-world-a",
+      "result_value_sha256": "4a544bf4cc67a42758ddb213fe10067cebbd4cae8339db94c3110e44b1b430c5",
+      "settlement_object_id": "e0f63b3735065553d1fc7487fdd177c8562b5e0ffd53b1fd4ca25fd0fbfb337d",
+      "valid_until_utc": "2030-12-31T23:59:59Z"
+     },
+     {
+      "algorithm": "Ed25519",
+      "dependency_object_ids": {
+       "TASK-SOURCE": "e0f63b3735065553d1fc7487fdd177c8562b5e0ffd53b1fd4ca25fd0fbfb337d"
+      },
+      "evaluated_at_utc": "2026-10-22T04:53:00Z",
+      "event_id": "0756283f2985c2a75be09bafe9e7014961945eeebbbe160bd81336a60b1408d1",
+      "event_sequence": 1,
+      "item_id": "TASK-U1",
+      "key_id": "e-round-e7ba00a712248330",
+      "payload_sha256": "cd64ba024e74b73b2510d414c4cf065c4e784fa909eaa49a006bfef21be59ff6",
+      "producer_execution_id": "ce2c9b20-c27e-4fed-b9c6-c32ca4d29f7a",
+      "producer_kind": "model_task",
+      "producer_run_id": "e-e-world-a-u1-a1",
+      "result_value_sha256": "55608e1aac4ad077e4672def250a62ed99ce567a5083cec94772af46b8472fc9",
+      "settlement_object_id": "c81903413cdfad1565d1639e62430e4ebdd37981289c2c7276ac1af980d7dde2",
+      "valid_until_utc": "2030-12-31T23:59:59Z"
+     }
+    ],
+    "task_item_id": "TASK-U2",
+    "template_sha256": "7610b37592df3b6f096128ee4f0b22d663ebc743ee6542381a4c1e01cf8446fc"
+   },
+   "checks": {
+    "admitted": true,
+    "checks_all_true": true,
+    "counters_zero": true,
+    "database_unchanged": true,
+    "declared_dependencies": true,
+    "no_model_loaded": true,
+    "one_signature_per_dependency": true,
+    "signatures_match_applied": true,
+    "state_unchanged": true,
+    "status_admitted": true
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E0-valid-signature/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-probe-valid",
+     "--evaluated-at",
+     "2026-10-22T04:54:29Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E0-valid-signature/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E0-valid-signature/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-probe-valid",
+     "--admission-probe"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E0-valid-signature/evidence/u2.json",
+    "evidence_sha256": "46b007624235503e250d9a2d0fad0f60decf0f3ca9a9e8efdd58c3c24800d76b",
+    "exit_code": 0,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E0-valid-signature/logs/u2.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pid": 52714,
+    "started_at_utc": "2026-10-22T04:54:29Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E0-valid-signature/state/u2",
+    "terminal_state": "INPUT_ADMITTED",
+    "timed_out": false,
+    "wall_seconds": 0.182
+   },
+   "settlement_signatures": [
+    {
+     "algorithm": "Ed25519",
+     "dependency_object_ids": {},
+     "evaluated_at_utc": "2026-10-22T04:53:00Z",
+     "event_id": "b6b7bb7166d97e20bebda7f26757655679c8ce6d438c1bc6ce30450dc1283f20",
+     "event_sequence": 1,
+     "item_id": "TASK-SOURCE",
+     "key_id": "e-round-e7ba00a712248330",
+     "payload_sha256": "9513665b31aafead0ab118bc799b02312c166f188eedfbb780e233ff6dc84ee2",
+     "producer_execution_id": "e-definition-world-a",
+     "producer_kind": "carrier_calculator",
+     "producer_run_id": "e-definition-world-a",
+     "result_value_sha256": "4a544bf4cc67a42758ddb213fe10067cebbd4cae8339db94c3110e44b1b430c5",
+     "settlement_object_id": "e0f63b3735065553d1fc7487fdd177c8562b5e0ffd53b1fd4ca25fd0fbfb337d",
+     "valid_until_utc": "2030-12-31T23:59:59Z"
+    },
+    {
+     "algorithm": "Ed25519",
+     "dependency_object_ids": {
+      "TASK-SOURCE": "e0f63b3735065553d1fc7487fdd177c8562b5e0ffd53b1fd4ca25fd0fbfb337d"
+     },
+     "evaluated_at_utc": "2026-10-22T04:53:00Z",
+     "event_id": "0756283f2985c2a75be09bafe9e7014961945eeebbbe160bd81336a60b1408d1",
+     "event_sequence": 1,
+     "item_id": "TASK-U1",
+     "key_id": "e-round-e7ba00a712248330",
+     "payload_sha256": "cd64ba024e74b73b2510d414c4cf065c4e784fa909eaa49a006bfef21be59ff6",
+     "producer_execution_id": "ce2c9b20-c27e-4fed-b9c6-c32ca4d29f7a",
+     "producer_kind": "model_task",
+     "producer_run_id": "e-e-world-a-u1-a1",
+     "result_value_sha256": "55608e1aac4ad077e4672def250a62ed99ce567a5083cec94772af46b8472fc9",
+     "settlement_object_id": "c81903413cdfad1565d1639e62430e4ebdd37981289c2c7276ac1af980d7dde2",
+     "valid_until_utc": "2030-12-31T23:59:59Z"
+    }
+   ],
+   "terminal_state": "INPUT_ADMITTED",
+   "verdict": "PASS"
+  },
+  "E1-result-value-only": {
+   "checks": {
+    "admission_status_refused": true,
+    "database_unchanged": true,
+    "generation_not_entered": true,
+    "generation_zero": true,
+    "refusal_item_matches": true,
+    "refused_before_generation": true,
+    "stage_matches": true,
+    "state_unchanged": true,
+    "tokenize_seed_zero": true,
+    "tokenize_text_zero": true
+   },
+   "counters": {
+    "model_continuation_calls": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E1-result-value-only/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-E1-result-value-only",
+     "--evaluated-at",
+     "2026-10-22T04:54:29Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E1-result-value-only/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E1-result-value-only/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-E1-result-value-only"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E1-result-value-only/evidence/u2.json",
+    "evidence_sha256": "51df032f2c836594e4f3c2a67b4babe528756f702d5319844a3a382925fefa78",
+    "exit_code": 1,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E1-result-value-only/logs/u2.log",
+    "log_sha256": "801633981c3a78c4e641e6d653f0afd35bccdba5b31ca79e570191b1e7dd3256",
+    "pid": 52716,
+    "started_at_utc": "2026-10-22T04:54:29Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E1-result-value-only/state/u2",
+    "terminal_state": "INPUT_ADMISSION_REFUSED",
+    "timed_out": false,
+    "wall_seconds": 3.12
+   },
+   "expected_item": "TASK-U1",
+   "expected_stage": "SETTLEMENT_NOT_ADMITTED",
+   "mutation": {
+    "append_order": 8,
+    "content_sha256": "e15d363988e1589fa8f9a882c7f6eaab066ed4aa883bc87b2c546bb4bf368b88",
+    "declared_result_value_sha256": "55608e1aac4ad077e4672def250a62ed99ce567a5083cec94772af46b8472fc9",
+    "object_id": "e15d363988e1589fa8f9a882c7f6eaab066ed4aa883bc87b2c546bb4bf368b88",
+    "old_value_sha256": "55608e1aac4ad077e4672def250a62ed99ce567a5083cec94772af46b8472fc9",
+    "revision": 2
+   },
+   "observations": {
+    "database_sha256_after": "f829d1d54d0e8606cf9408d3e95a78da5fa89cd3452f32cbec26eb8ee6a971f6",
+    "database_sha256_before": "f829d1d54d0e8606cf9408d3e95a78da5fa89cd3452f32cbec26eb8ee6a971f6",
+    "model_load_seconds": 2.5975199937820435,
+    "model_loaded_before_refusal": true
+   },
+   "refusal": {
+    "item_id": "TASK-U1",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "SETTLEMENT_BASIS_MISMATCH",
+    "stage": "SETTLEMENT_NOT_ADMITTED"
+   },
+   "terminal_state": "INPUT_ADMISSION_REFUSED",
+   "verdict": "PASS"
+  },
+  "E2-result-and-digests": {
+   "checks": {
+    "admission_status_refused": true,
+    "database_unchanged": true,
+    "generation_not_entered": true,
+    "generation_zero": true,
+    "refusal_item_matches": true,
+    "refused_before_generation": true,
+    "stage_matches": true,
+    "state_unchanged": true,
+    "tokenize_seed_zero": true,
+    "tokenize_text_zero": true
+   },
+   "counters": {
+    "model_continuation_calls": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E2-result-and-digests/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-E2-result-and-digests",
+     "--evaluated-at",
+     "2026-10-22T04:54:32Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E2-result-and-digests/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E2-result-and-digests/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-E2-result-and-digests"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E2-result-and-digests/evidence/u2.json",
+    "evidence_sha256": "81ed4b1cc4a1b6d0a2c9aa6642e7a44762baf6e3349cb0cf5836de06752dbdc1",
+    "exit_code": 1,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E2-result-and-digests/logs/u2.log",
+    "log_sha256": "d9d54cd1fe17a9cf2a6f0ffd800c977a7d5922af75002c1e6ba218a7a9c1fa58",
+    "pid": 52726,
+    "started_at_utc": "2026-10-22T04:54:32Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E2-result-and-digests/state/u2",
+    "terminal_state": "INPUT_ADMISSION_REFUSED",
+    "timed_out": false,
+    "wall_seconds": 2.447
+   },
+   "expected_item": "TASK-U1",
+   "expected_stage": "SETTLEMENT_SIGNATURE_INVALID",
+   "mutation": {
+    "append_order": 8,
+    "content_sha256": "03cf4b486aad7aaafb3cdf2f52ce7c049a125542465f789fd72fa6efeeb5bb61",
+    "new_value_sha256": "368f7957a636cbca01702f9401ed6271e27970f3c9182be72e38620db34ca279",
+    "object_id": "03cf4b486aad7aaafb3cdf2f52ce7c049a125542465f789fd72fa6efeeb5bb61",
+    "old_value_sha256": "55608e1aac4ad077e4672def250a62ed99ce567a5083cec94772af46b8472fc9",
+    "revision": 2
+   },
+   "observations": {
+    "database_sha256_after": "18fbb73a5976ecd044cb9e6a5b988db47c402177160d2cb18e5dd82769f1dc48",
+    "database_sha256_before": "18fbb73a5976ecd044cb9e6a5b988db47c402177160d2cb18e5dd82769f1dc48",
+    "model_load_seconds": 1.891706943511963,
+    "model_loaded_before_refusal": true
+   },
+   "refusal": {
+    "item_id": "TASK-U1",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "SETTLEMENT_SIGNATURE_INVALID",
+    "stage": "SETTLEMENT_SIGNATURE_INVALID"
+   },
+   "terminal_state": "INPUT_ADMISSION_REFUSED",
+   "verdict": "PASS"
+  },
+  "E3-producer-field": {
+   "checks": {
+    "admission_status_refused": true,
+    "database_unchanged": true,
+    "generation_not_entered": true,
+    "generation_zero": true,
+    "refusal_item_matches": true,
+    "refused_before_generation": true,
+    "stage_matches": true,
+    "state_unchanged": true,
+    "tokenize_seed_zero": true,
+    "tokenize_text_zero": true
+   },
+   "counters": {
+    "model_continuation_calls": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E3-producer-field/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-E3-producer-field",
+     "--evaluated-at",
+     "2026-10-22T04:54:35Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E3-producer-field/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E3-producer-field/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-E3-producer-field"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E3-producer-field/evidence/u2.json",
+    "evidence_sha256": "2c247804baa3bf9baf10406e7469251a8719de266edf2cc0fef963e05f61578b",
+    "exit_code": 1,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E3-producer-field/logs/u2.log",
+    "log_sha256": "f9dd2a7ef2b860e2bde210b3855272a390225ac10b5b0a91fd6dff6eb7f47914",
+    "pid": 52740,
+    "started_at_utc": "2026-10-22T04:54:35Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E3-producer-field/state/u2",
+    "terminal_state": "INPUT_ADMISSION_REFUSED",
+    "timed_out": false,
+    "wall_seconds": 2.396
+   },
+   "expected_item": "TASK-U1",
+   "expected_stage": "SETTLEMENT_SIGNATURE_INVALID",
+   "mutation": {
+    "append_order": 8,
+    "content_sha256": "05f576b8d179eaaa109b7ca218444ee00513893e93252a7e18e86a38afe27fcd",
+    "object_id": "05f576b8d179eaaa109b7ca218444ee00513893e93252a7e18e86a38afe27fcd",
+    "previous_run_id": "e-e-world-a-u1-a1",
+    "revision": 2
+   },
+   "observations": {
+    "database_sha256_after": "fb773ea47faf81089884194d092473a1bb1f702b8fb75ceb7ed21bbc540cbc47",
+    "database_sha256_before": "fb773ea47faf81089884194d092473a1bb1f702b8fb75ceb7ed21bbc540cbc47",
+    "model_load_seconds": 1.8768219947814941,
+    "model_loaded_before_refusal": true
+   },
+   "refusal": {
+    "item_id": "TASK-U1",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "SETTLEMENT_SIGNATURE_INVALID",
+    "stage": "SETTLEMENT_SIGNATURE_INVALID"
+   },
+   "terminal_state": "INPUT_ADMISSION_REFUSED",
+   "verdict": "PASS"
+  },
+  "E4-task-item-metadata": {
+   "checks": {
+    "admission_status_refused": true,
+    "database_unchanged": true,
+    "generation_not_entered": true,
+    "generation_zero": true,
+    "refusal_item_matches": true,
+    "refused_before_generation": true,
+    "stage_matches": true,
+    "state_unchanged": true,
+    "tokenize_seed_zero": true,
+    "tokenize_text_zero": true
+   },
+   "counters": {
+    "model_continuation_calls": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E4-task-item-metadata/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-E4-task-item-metadata",
+     "--evaluated-at",
+     "2026-10-22T04:54:37Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E4-task-item-metadata/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E4-task-item-metadata/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-E4-task-item-metadata"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E4-task-item-metadata/evidence/u2.json",
+    "evidence_sha256": "3da838308527d73bb61a717209c9af6b6fbe8e82022da242aaa4e114e34fe99a",
+    "exit_code": 1,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E4-task-item-metadata/logs/u2.log",
+    "log_sha256": "9b0b1a0ba82835259045d8e4ff955a46571f67557e392a2e31b70df1675f2b68",
+    "pid": 52743,
+    "started_at_utc": "2026-10-22T04:54:37Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E4-task-item-metadata/state/u2",
+    "terminal_state": "INPUT_ADMISSION_REFUSED",
+    "timed_out": false,
+    "wall_seconds": 2.729
+   },
+   "expected_item": "TASK-U1",
+   "expected_stage": "SETTLEMENT_PROVENANCE_MISMATCH",
+   "mutation": {
+    "new_item_object_id": "3c02e5cb322bda449c721bfd85a300907d5ce00975c3b46af2b0b8dc171d63b6",
+    "new_source_kind": "model-task-metadata-tampered",
+    "previous_source_kind": "model-task"
+   },
+   "observations": {
+    "database_sha256_after": "abb8fadf278a198737b065803f261f530847c10a73623c84cd1151c31ee509c7",
+    "database_sha256_before": "abb8fadf278a198737b065803f261f530847c10a73623c84cd1151c31ee509c7",
+    "model_load_seconds": 2.1329710483551025,
+    "model_loaded_before_refusal": true
+   },
+   "refusal": {
+    "item_id": "TASK-U1",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "SETTLEMENT_PROVENANCE_MISMATCH",
+    "stage": "SETTLEMENT_PROVENANCE_MISMATCH"
+   },
+   "terminal_state": "INPUT_ADMISSION_REFUSED",
+   "verdict": "PASS"
+  },
+  "E5-dependency-substitution": {
+   "checks": {
+    "admission_status_refused": true,
+    "database_unchanged": true,
+    "generation_not_entered": true,
+    "generation_zero": true,
+    "refusal_item_matches": true,
+    "refused_before_generation": true,
+    "stage_matches": true,
+    "state_unchanged": true,
+    "tokenize_seed_zero": true,
+    "tokenize_text_zero": true
+   },
+   "counters": {
+    "model_continuation_calls": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E5-dependency-substitution/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-E5-dependency-substitution",
+     "--evaluated-at",
+     "2026-10-22T04:54:40Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E5-dependency-substitution/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E5-dependency-substitution/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-E5-dependency-substitution"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E5-dependency-substitution/evidence/u2.json",
+    "evidence_sha256": "150e344d896eeffc49bb43f90a723f84bc03950ff19f0bdc6ebd933b250c883b",
+    "exit_code": 1,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E5-dependency-substitution/logs/u2.log",
+    "log_sha256": "364f237618196e63b7a21d10c4d0f818c9b606c825ec8b8324a51297ce45069c",
+    "pid": 52746,
+    "started_at_utc": "2026-10-22T04:54:40Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E5-dependency-substitution/state/u2",
+    "terminal_state": "INPUT_ADMISSION_REFUSED",
+    "timed_out": false,
+    "wall_seconds": 2.663
+   },
+   "expected_item": "TASK-U1",
+   "expected_stage": "SETTLEMENT_NOT_ADMITTED",
+   "mutation": {
+    "item_object_id": "d4b522849184e156ab6e929d0fc80f9bda662dc27530debff11db865e49218b2",
+    "revision": 1,
+    "settlement_object_id": "8fce37182a91e9a054cddc8cf062a5e6b682e1b5d5df56c5aaca95fe7c3dbb33",
+    "signature_object_id": "d1ff5ba3be7782d626be30408a90c5ed968592c743e30f0d2212d505316fc779"
+   },
+   "observations": {
+    "database_sha256_after": "687d45b50d17842e87f0c9b69bc733eca174e3289191bf4ae03ce8f4901bf887",
+    "database_sha256_before": "687d45b50d17842e87f0c9b69bc733eca174e3289191bf4ae03ce8f4901bf887",
+    "model_load_seconds": 2.05531108379364,
+    "model_loaded_before_refusal": true
+   },
+   "refusal": {
+    "item_id": "TASK-U1",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "SETTLEMENT_BASIS_MISMATCH",
+    "stage": "SETTLEMENT_NOT_ADMITTED"
+   },
+   "terminal_state": "INPUT_ADMISSION_REFUSED",
+   "verdict": "PASS"
+  },
+  "E6-signature-removed": {
+   "checks": {
+    "admission_status_refused": true,
+    "database_unchanged": true,
+    "generation_not_entered": true,
+    "generation_zero": true,
+    "refusal_item_matches": true,
+    "refused_before_generation": true,
+    "stage_matches": true,
+    "state_unchanged": true,
+    "tokenize_seed_zero": true,
+    "tokenize_text_zero": true
+   },
+   "counters": {
+    "model_continuation_calls": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E6-signature-removed/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-E6-signature-removed",
+     "--evaluated-at",
+     "2026-10-22T04:54:43Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E6-signature-removed/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E6-signature-removed/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-E6-signature-removed"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E6-signature-removed/evidence/u2.json",
+    "evidence_sha256": "37764f17ccf9113bbc7287c1f92be936df34d04a1801acf14599a8839d6ea86c",
+    "exit_code": 1,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E6-signature-removed/logs/u2.log",
+    "log_sha256": "d09a109be165d8c8a6482801e3e6dc20e4c6ac539fc73f0ae557e74626f5af7f",
+    "pid": 52749,
+    "started_at_utc": "2026-10-22T04:54:43Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E6-signature-removed/state/u2",
+    "terminal_state": "INPUT_ADMISSION_REFUSED",
+    "timed_out": false,
+    "wall_seconds": 2.607
+   },
+   "expected_item": "TASK-U1",
+   "expected_stage": "SETTLEMENT_SIGNATURE_MISSING",
+   "mutation": {
+    "append_order": 8,
+    "content_sha256": "6962d2577a06a310bffe95a6866c1b69132cbf9ade411dcd3ded4a56c519335b",
+    "deleted_signature_entries": 1,
+    "new_value_sha256": "c863dcd40c5e7d459f1969ff14c27142cea3832a78b81182fdfd85d3f1bbb03c",
+    "object_id": "6962d2577a06a310bffe95a6866c1b69132cbf9ade411dcd3ded4a56c519335b",
+    "old_value_sha256": "55608e1aac4ad077e4672def250a62ed99ce567a5083cec94772af46b8472fc9",
+    "revision": 2
+   },
+   "observations": {
+    "database_sha256_after": "dc081a981b584b397d7c018584924b4d335cfc2b4f76a714ca36715836b61139",
+    "database_sha256_before": "dc081a981b584b397d7c018584924b4d335cfc2b4f76a714ca36715836b61139",
+    "model_load_seconds": 2.0169639587402344,
+    "model_loaded_before_refusal": true
+   },
+   "refusal": {
+    "item_id": "TASK-U1",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "SETTLEMENT_SIGNATURE_MISSING",
+    "stage": "SETTLEMENT_SIGNATURE_MISSING"
+   },
+   "terminal_state": "INPUT_ADMISSION_REFUSED",
+   "verdict": "PASS"
+  },
+  "E7-anchor-public-key-swapped": {
+   "checks": {
+    "admission_status_refused": true,
+    "database_unchanged": true,
+    "generation_not_entered": true,
+    "generation_zero": true,
+    "refusal_item_matches": true,
+    "refused_before_generation": true,
+    "stage_matches": true,
+    "state_unchanged": true,
+    "tokenize_seed_zero": true,
+    "tokenize_text_zero": true
+   },
+   "counters": {
+    "model_continuation_calls": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E7-anchor-public-key-swapped/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-E7-anchor-public-key-swapped",
+     "--evaluated-at",
+     "2026-10-22T04:54:48Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E7-anchor-public-key-swapped/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E7-anchor-public-key-swapped/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-E7-anchor-public-key-swapped"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E7-anchor-public-key-swapped/evidence/u2.json",
+    "evidence_sha256": "66a8bc041424deaa8bcbb1d0cf922c05c060762e45c38e9d1ce1edaa63a77c58",
+    "exit_code": 1,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E7-anchor-public-key-swapped/logs/u2.log",
+    "log_sha256": "d2384e9304ddc96beab2ee8bf9b397f5574cf668cbe1713e44b0e235d4414e40",
+    "pid": 53120,
+    "started_at_utc": "2026-10-22T04:54:48Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E7-anchor-public-key-swapped/state/u2",
+    "terminal_state": "INPUT_ADMISSION_REFUSED",
+    "timed_out": false,
+    "wall_seconds": 2.399
+   },
+   "expected_item": "TASK-SOURCE",
+   "expected_stage": "SETTLEMENT_SIGNATURE_INVALID",
+   "mutation": {
+    "anchor": "attacker"
+   },
+   "observations": {
+    "database_sha256_after": "7b6972a12fa4c28d4e9864b554c71e07a5ac002bc2f0d88357116e8b12d0aadd",
+    "database_sha256_before": "7b6972a12fa4c28d4e9864b554c71e07a5ac002bc2f0d88357116e8b12d0aadd",
+    "model_load_seconds": 1.8471980094909668,
+    "model_loaded_before_refusal": true
+   },
+   "refusal": {
+    "item_id": "TASK-SOURCE",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "SETTLEMENT_SIGNATURE_INVALID",
+    "stage": "SETTLEMENT_SIGNATURE_INVALID"
+   },
+   "terminal_state": "INPUT_ADMISSION_REFUSED",
+   "verdict": "PASS"
+  },
+  "E8-foreign-signed-u1-replay": {
+   "checks": {
+    "admission_status_refused": true,
+    "database_unchanged": true,
+    "generation_not_entered": true,
+    "generation_zero": true,
+    "refusal_item_matches": true,
+    "refused_before_generation": true,
+    "stage_matches": true,
+    "state_unchanged": true,
+    "tokenize_seed_zero": true,
+    "tokenize_text_zero": true
+   },
+   "counters": {
+    "model_continuation_calls": 0,
+    "tokenize_seed_calls": 0,
+    "tokenize_text_calls": 0
+   },
+   "entry": {
+    "argv": [
+     "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/SimiGoTaskRun",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E8-foreign-signed-u1-replay/carrier.sqlite",
+     "--item",
+     "TASK-U2",
+     "--demand",
+     "task-u2",
+     "--advancement",
+     "e-E8-foreign-signed-u1-replay",
+     "--evaluated-at",
+     "2026-10-22T04:54:45Z",
+     "--model-dir",
+     "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+     "--lab-root",
+     "/Users/mr.simi/Documents/SimiGo-Lab",
+     "--state-dir",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E8-foreign-signed-u1-replay/state/u2",
+     "--out",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E8-foreign-signed-u1-replay/evidence/u2.json",
+     "--max-tokens",
+     "64",
+     "--run-id",
+     "e-e-E8-foreign-signed-u1-replay"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E8-foreign-signed-u1-replay/evidence/u2.json",
+    "evidence_sha256": "319a026e84f62361c6c0f2ac890c53b756807519283aa1a1e9fdd6c3edffd21c",
+    "exit_code": 1,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E8-foreign-signed-u1-replay/logs/u2.log",
+    "log_sha256": "7f55a262722db82a6aefa166d3ce93e602ca0c75316f95c0339f1ec821a08cf9",
+    "pid": 53115,
+    "started_at_utc": "2026-10-22T04:54:45Z",
+    "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase2/E8-foreign-signed-u1-replay/state/u2",
+    "terminal_state": "INPUT_ADMISSION_REFUSED",
+    "timed_out": false,
+    "wall_seconds": 2.462
+   },
+   "expected_item": "TASK-U1",
+   "expected_stage": "SETTLEMENT_NOT_ADMITTED",
+   "mutation": {
+    "item_object_id": "e733035b73049cc846959c73cef4a2693f8965b719d0a7604a10a4e5789bd634",
+    "revision": 1,
+    "settlement_object_id": "b71e8cb670ad7a97f446a354aac0a772f5f980dc0aaa40cec72f83e39bfc484c",
+    "signature_object_id": "65c1c23ef19751e0119611f580f63efffb31d35c2c0e8d90a20975ead13521a7"
+   },
+   "observations": {
+    "database_sha256_after": "ccdeadbfbbc148e8e2af015689100f296fdf88eea14e28f4e2b33461c7e2f2a7",
+    "database_sha256_before": "ccdeadbfbbc148e8e2af015689100f296fdf88eea14e28f4e2b33461c7e2f2a7",
+    "model_load_seconds": 1.9044489860534668,
+    "model_loaded_before_refusal": true
+   },
+   "refusal": {
+    "item_id": "TASK-U1",
+    "kind": "ADMISSION_REFUSED",
+    "reason": "SETTLEMENT_BASIS_MISMATCH",
+    "stage": "SETTLEMENT_NOT_ADMITTED"
+   },
+   "terminal_state": "INPUT_ADMISSION_REFUSED",
+   "verdict": "PASS"
+  },
+  "legacy": {
+   "checks": {
+    "all_first_settlements_signed": true,
+    "all_fourth_signatures_verify": true,
+    "first_execution_computed_all": true,
+    "fourth_execution_reuses_all": true,
+    "missing_reason_is_signature_missing": true,
+    "missing_signature_recomputed_not_reused": true,
+    "recomputed_settlements_resigned": true,
+    "second_execution_reuse_has_signatures": true,
+    "second_execution_reused_all": true,
+    "tampered_reason_is_signature_invalid": true,
+    "tampered_recomputed_not_reused": true,
+    "tampered_value_not_consumed": true,
+    "untouched_items_reused": true
+   },
+   "database": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/base.sqlite",
+   "execute_1": {
+    "command": "execute",
+    "confirmation": {
+     "command": "confirm-runtime-application",
+     "confirmation": {
+      "confirmation": {
+       "dependency_order": 20,
+       "object_id": "265dcbe9335c4f5ca7085850cd2161fc54e5afbd70db90a6a858e0e36eb597ae",
+       "state_id": "legacy-1:runtime-applied"
+      },
+      "confirmed_state_id": "legacy-1"
+     },
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+      "demand_id": "bounded-production-runtime-integration",
+      "next_continuation_point": "runtime-application-complete",
+      "pending_obligations": [],
+      "prior_state_id": "legacy-1",
+      "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+      "runtime_application_status": "APPLIED_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "legacy-1:runtime-applied",
+      "status": "ADVANCED"
+     },
+     "ok": true
+    },
+    "confirmation_process": {
+     "argv": [
+      "/usr/bin/python3",
+      "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+      "confirm-runtime-application",
+      "--database",
+      "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/base.sqlite",
+      "--state-id",
+      "legacy-1"
+     ],
+     "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+     "exit_code": 0,
+     "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/execute-1-confirm.log",
+     "log_sha256": "39a5399437d075f6d6ed095d1f6dacef031656618bbb54acb1cbcf153c44b427",
+     "pid": 53129,
+     "started_at_utc": "2026-10-22T04:54:50Z",
+     "timed_out": false,
+     "wall_seconds": 0.074
+    },
+    "execution_process": {
+     "argv": [
+      "/usr/bin/python3",
+      "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+      "execute",
+      "--database",
+      "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/base.sqlite",
+      "--advancement",
+      "legacy-1",
+      "--evaluated-at",
+      "2026-10-22T04:54:50Z"
+     ],
+     "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+     "exit_code": 0,
+     "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/execute-1.log",
+     "log_sha256": "514ef202b53a3abe943e00790f68696e7a6d3d54d2c4a03621c961c855a4dfff",
+     "pid": 53128,
+     "started_at_utc": "2026-10-22T04:54:50Z",
+     "timed_out": false,
+     "wall_seconds": 0.073
+    },
+    "ok": true,
+    "prior_execution_state": null,
+    "restored_required_item_ids": [
+     "REAL-COLLECTION",
+     "REAL-SEGMENT",
+     "REAL-1",
+     "REAL-2",
+     "REAL-3",
+     "REAL-4",
+     "REAL-5",
+     "REAL-6",
+     "REAL-7"
+    ],
+    "result": {
+     "actions": [
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-COLLECTION",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "921f5d127e439c3fea447fb86cc95237cc9e29cb191dd2645260307da0bb1e3e",
+       "settlement_object_id": "0f4acb9bf3d73458848cb8a461866c9aaa708f906021c72baeb58d2e537389ac",
+       "settlement_signature_object_id": "85fa069a981f59b6a7377e0fb016e5b153cb552e6a3b9845741f506fa0a80470",
+       "source_payload_sha256": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-SEGMENT",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "0b931840d59d2fd26511d41b94ae5765aa01613cd39446ae404e7af4c71209b7",
+       "settlement_object_id": "cdacc6ea65b5d42fe811c251ca631d4c6bea3621742f9adf81ff742166cd9bff",
+       "settlement_signature_object_id": "c1c18986e9c1c476418ccfbdc591cb03dedca35f90210deceb7b83aaa9af793b",
+       "source_payload_sha256": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-1",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+       "settlement_object_id": "c858507f67458e05ac2cb3ed4573364d50968f2b60a6fbde857eb61e1e56e450",
+       "settlement_signature_object_id": "66fd60dafb52ebe4f2fa2548aed350eff4ec20e824f7c4ba597c17e65c7b5414",
+       "source_payload_sha256": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-2",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "fb86d966f89e4b2497d20c9982bf756f706a75f00eb16ae5dae26f197b584aaf",
+       "settlement_object_id": "2ebce7efa4d60145c97c60085a072b4da19721caf62fa01576b424d2a0707709",
+       "settlement_signature_object_id": "d3891cc45f88b1c1f122d23a9413b2ffc4a60f04d8af586956f010a3ddac1b72",
+       "source_payload_sha256": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-3",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "6109725e18c963c79dae53be87b09850d76a75f387418e0d04027d93d447ac3f",
+       "settlement_object_id": "fa4dd9c2420b770f76d0608713a51f7ca8f77c30ae284a4f1ff8ba3d42b1885b",
+       "settlement_signature_object_id": "b70b3c8901d932d0be43e9b2d13d8e58d48e46e49b84128e65fc91b0e6bbfbd5",
+       "source_payload_sha256": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-4",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "f656c7e782819af401c6cc67e603db2d8a87df00beb405a3c6ef91d3557230a3",
+       "settlement_object_id": "352925cba0182d7af613ca757f180eccefe4d721c3ac8f4a33f6665f898f9600",
+       "settlement_signature_object_id": "51370de1c273d0113b519cfded06901a87612384338abc320bbca4534f969f9a",
+       "source_payload_sha256": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-5",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "2fb6075cf860b4fa046b5c6db4a39f565756378345a5f310e1ed7ba6eb42ded7",
+       "settlement_object_id": "0e2387b8a22f43477975b822189442aebb96b539c7fc3601744aa4d9b30fcc46",
+       "settlement_signature_object_id": "b4a79085ea4f144838b13aa283ba32f47018eac57d284a39a9696c4e9da319b8",
+       "source_payload_sha256": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-6",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "edf7af66da2871874298733809b4b7db9ed1881318f6a28465eafe21a72b4f56",
+       "settlement_object_id": "785d3903f945a096f7a8007a08586f676c81bf1d6baa30f7b777cef1b3ff3e82",
+       "settlement_signature_object_id": "143e01a5e0fa59e58f90130b4309876b3f7b8d2106a8af355303c7b944b0b86e",
+       "source_payload_sha256": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-7",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "04aa244e6922a697891ba1761a999ea993024aabca1a1aedb8bc9ae40eca43a1",
+       "settlement_object_id": "75a581b814476eccdc29e06ab7cf9c927bc04b12d6aed6eb09d7d9fc0629b673",
+       "settlement_signature_object_id": "6c0cf3208d2576bc0ff11615a813f110574829d6545dc34102a878ec96556ddb",
+       "source_payload_sha256": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada"
+      }
+     ],
+     "advanced": true,
+     "computed_item_ids": [
+      "REAL-COLLECTION",
+      "REAL-SEGMENT",
+      "REAL-1",
+      "REAL-2",
+      "REAL-3",
+      "REAL-4",
+      "REAL-5",
+      "REAL-6",
+      "REAL-7"
+     ],
+     "demand_id": "bounded-production-runtime-integration",
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+      "demand_id": "bounded-production-runtime-integration",
+      "next_continuation_point": "await-runtime-application-completion",
+      "pending_obligations": [
+       "apply runtime continuation and representation binding"
+      ],
+      "prior_state_id": null,
+      "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+      "runtime_application_status": "PENDING_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "legacy-1",
+      "status": "ADVANCED"
+     },
+     "result": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_id": "bounded-production-runtime-integration",
+      "resolved_items": {
+       "REAL-1": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_gate-c-status_a60656cf0a2fe48cfe49f9bc",
+        "item_id": "REAL-1",
+        "metadata_digest": "5ce7b724ccfdc905d59d928260fb939d3931a2f690b710782dd069023f0db2ad",
+        "payload_digest": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 1,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "gate-c-status",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-2": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_ua-acceptance-evidence_91acb6c2ddd4edf2c3b1c2f8",
+        "item_id": "REAL-2",
+        "metadata_digest": "d7c182ac9562d22a8170f6a1fb119d93c6805c24f869d2c8fa6020f89483552a",
+        "payload_digest": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 2,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "ua-acceptance-evidence",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-3": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_acceptance-conditions_b0957cac861e924a72df78e2_chunk_000000",
+        "item_id": "REAL-3",
+        "metadata_digest": "ffcaf5b83936a358500d1ff56c01137d5eba67eb3043a53e04f6fded86d4ee97",
+        "payload_digest": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 3,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "acceptance-conditions",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-4": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-3": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f",
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_acceptance-conditions_b0957cac861e924a72df78e2_chunk_000001",
+        "item_id": "REAL-4",
+        "metadata_digest": "8509a04721cd1b5296dcedb52a8652582b58feb9fdc32269ad4575d6db5f15db",
+        "payload_digest": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 4,
+        "structural_record": {
+         "chunk_index": 1,
+         "room": "acceptance-conditions",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-5": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_research-results_501ccd8b957dfec17b785699",
+        "item_id": "REAL-5",
+        "metadata_digest": "8298f42d6e986771b27245ea57c24a2549c4b8d72270b4af11e4fe401e0239a6",
+        "payload_digest": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 5,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "research-results",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-6": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_closure-package-pointer_eabcfb9aca862ec93dbbaa31",
+        "item_id": "REAL-6",
+        "metadata_digest": "9d1dbfa2187887a9a5a285bf8bf4149758cbe7f96229bdb441a98cc5be75fc58",
+        "payload_digest": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 6,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "closure-package-pointer",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-7": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "diary_SimiGo-Lab_20261006_190539826222_c0d1aaec1b4b",
+        "item_id": "REAL-7",
+        "metadata_digest": "7453b296933d97af4decf98b4c4f0e8681379254a35449a334b45223c46fcc78",
+        "payload_digest": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 7,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "diary",
+         "type": "diary_entry",
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-COLLECTION": {
+        "dependency_payload_digests": {},
+        "item_id": "REAL-COLLECTION",
+        "payload_digest": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58",
+        "record_kind": "COLLECTION_SOURCE",
+        "source_internal_id": "8cb3160e-e082-4b23-b78c-1dc8711910ec"
+       },
+       "REAL-SEGMENT": {
+        "dependency_payload_digests": {
+         "REAL-COLLECTION": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+        },
+        "item_id": "REAL-SEGMENT",
+        "payload_digest": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e",
+        "record_kind": "METADATA_SEGMENT_SOURCE",
+        "source_internal_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a"
+       }
+      }
+     },
+     "reused_item_ids": [],
+     "state": "ADVANCED"
+    }
+   },
+   "execute_2": {
+    "command": "execute",
+    "confirmation": {
+     "command": "confirm-runtime-application",
+     "confirmation": {
+      "confirmation": {
+       "dependency_order": 22,
+       "object_id": "56ba61961c7bcfe921b8cf5686c745c1f8334f2d72612ef34b7267da5f58c5c1",
+       "state_id": "legacy-2:runtime-applied"
+      },
+      "confirmed_state_id": "legacy-2"
+     },
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+      "demand_id": "bounded-production-runtime-integration",
+      "next_continuation_point": "runtime-application-complete",
+      "pending_obligations": [],
+      "prior_state_id": "legacy-2",
+      "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+      "runtime_application_status": "APPLIED_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "legacy-2:runtime-applied",
+      "status": "ADVANCED"
+     },
+     "ok": true
+    },
+    "confirmation_process": {
+     "argv": [
+      "/usr/bin/python3",
+      "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+      "confirm-runtime-application",
+      "--database",
+      "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/base.sqlite",
+      "--state-id",
+      "legacy-2"
+     ],
+     "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+     "exit_code": 0,
+     "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/execute-2-confirm.log",
+     "log_sha256": "50cb009cb07141b2b248d87252cefdf109936a7307162a1690e0595d1d92ced6",
+     "pid": 53131,
+     "started_at_utc": "2026-10-22T04:54:50Z",
+     "timed_out": false,
+     "wall_seconds": 0.071
+    },
+    "execution_process": {
+     "argv": [
+      "/usr/bin/python3",
+      "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+      "execute",
+      "--database",
+      "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/base.sqlite",
+      "--advancement",
+      "legacy-2",
+      "--evaluated-at",
+      "2026-10-22T04:54:50Z"
+     ],
+     "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+     "exit_code": 0,
+     "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/execute-2.log",
+     "log_sha256": "3a4000af19691df0a068ddd1b2dae7e843a5f68cb649d95a0e3cc761d91ec85d",
+     "pid": 53130,
+     "started_at_utc": "2026-10-22T04:54:50Z",
+     "timed_out": false,
+     "wall_seconds": 0.077
+    },
+    "ok": true,
+    "prior_execution_state": {
+     "continuation_point": "bounded-production-runtime-integration",
+     "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+     "demand_id": "bounded-production-runtime-integration",
+     "next_continuation_point": "runtime-application-complete",
+     "pending_obligations": [],
+     "prior_state_id": "legacy-1",
+     "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+     "runtime_application_status": "APPLIED_SWIFT",
+     "schema_id": "EINFO-EXECUTION-STATE-V1",
+     "state_id": "legacy-1:runtime-applied",
+     "status": "ADVANCED"
+    },
+    "restored_required_item_ids": [
+     "REAL-COLLECTION",
+     "REAL-SEGMENT",
+     "REAL-1",
+     "REAL-2",
+     "REAL-3",
+     "REAL-4",
+     "REAL-5",
+     "REAL-6",
+     "REAL-7"
+    ],
+    "result": {
+     "actions": [
+      {
+       "action": "REUSE",
+       "item_id": "REAL-COLLECTION",
+       "reason": null,
+       "result_digest": "921f5d127e439c3fea447fb86cc95237cc9e29cb191dd2645260307da0bb1e3e",
+       "settlement_object_id": "0f4acb9bf3d73458848cb8a461866c9aaa708f906021c72baeb58d2e537389ac",
+       "settlement_signature_object_id": "85fa069a981f59b6a7377e0fb016e5b153cb552e6a3b9845741f506fa0a80470",
+       "source_payload_sha256": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-SEGMENT",
+       "reason": null,
+       "result_digest": "0b931840d59d2fd26511d41b94ae5765aa01613cd39446ae404e7af4c71209b7",
+       "settlement_object_id": "cdacc6ea65b5d42fe811c251ca631d4c6bea3621742f9adf81ff742166cd9bff",
+       "settlement_signature_object_id": "c1c18986e9c1c476418ccfbdc591cb03dedca35f90210deceb7b83aaa9af793b",
+       "source_payload_sha256": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-1",
+       "reason": null,
+       "result_digest": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+       "settlement_object_id": "c858507f67458e05ac2cb3ed4573364d50968f2b60a6fbde857eb61e1e56e450",
+       "settlement_signature_object_id": "66fd60dafb52ebe4f2fa2548aed350eff4ec20e824f7c4ba597c17e65c7b5414",
+       "source_payload_sha256": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-2",
+       "reason": null,
+       "result_digest": "fb86d966f89e4b2497d20c9982bf756f706a75f00eb16ae5dae26f197b584aaf",
+       "settlement_object_id": "2ebce7efa4d60145c97c60085a072b4da19721caf62fa01576b424d2a0707709",
+       "settlement_signature_object_id": "d3891cc45f88b1c1f122d23a9413b2ffc4a60f04d8af586956f010a3ddac1b72",
+       "source_payload_sha256": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-3",
+       "reason": null,
+       "result_digest": "6109725e18c963c79dae53be87b09850d76a75f387418e0d04027d93d447ac3f",
+       "settlement_object_id": "fa4dd9c2420b770f76d0608713a51f7ca8f77c30ae284a4f1ff8ba3d42b1885b",
+       "settlement_signature_object_id": "b70b3c8901d932d0be43e9b2d13d8e58d48e46e49b84128e65fc91b0e6bbfbd5",
+       "source_payload_sha256": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-4",
+       "reason": null,
+       "result_digest": "f656c7e782819af401c6cc67e603db2d8a87df00beb405a3c6ef91d3557230a3",
+       "settlement_object_id": "352925cba0182d7af613ca757f180eccefe4d721c3ac8f4a33f6665f898f9600",
+       "settlement_signature_object_id": "51370de1c273d0113b519cfded06901a87612384338abc320bbca4534f969f9a",
+       "source_payload_sha256": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-5",
+       "reason": null,
+       "result_digest": "2fb6075cf860b4fa046b5c6db4a39f565756378345a5f310e1ed7ba6eb42ded7",
+       "settlement_object_id": "0e2387b8a22f43477975b822189442aebb96b539c7fc3601744aa4d9b30fcc46",
+       "settlement_signature_object_id": "b4a79085ea4f144838b13aa283ba32f47018eac57d284a39a9696c4e9da319b8",
+       "source_payload_sha256": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-6",
+       "reason": null,
+       "result_digest": "edf7af66da2871874298733809b4b7db9ed1881318f6a28465eafe21a72b4f56",
+       "settlement_object_id": "785d3903f945a096f7a8007a08586f676c81bf1d6baa30f7b777cef1b3ff3e82",
+       "settlement_signature_object_id": "143e01a5e0fa59e58f90130b4309876b3f7b8d2106a8af355303c7b944b0b86e",
+       "source_payload_sha256": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-7",
+       "reason": null,
+       "result_digest": "04aa244e6922a697891ba1761a999ea993024aabca1a1aedb8bc9ae40eca43a1",
+       "settlement_object_id": "75a581b814476eccdc29e06ab7cf9c927bc04b12d6aed6eb09d7d9fc0629b673",
+       "settlement_signature_object_id": "6c0cf3208d2576bc0ff11615a813f110574829d6545dc34102a878ec96556ddb",
+       "source_payload_sha256": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada"
+      }
+     ],
+     "advanced": true,
+     "computed_item_ids": [],
+     "demand_id": "bounded-production-runtime-integration",
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+      "demand_id": "bounded-production-runtime-integration",
+      "next_continuation_point": "await-runtime-application-completion",
+      "pending_obligations": [
+       "apply runtime continuation and representation binding"
+      ],
+      "prior_state_id": "legacy-1:runtime-applied",
+      "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+      "runtime_application_status": "PENDING_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "legacy-2",
+      "status": "ADVANCED"
+     },
+     "result": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_id": "bounded-production-runtime-integration",
+      "resolved_items": {
+       "REAL-1": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_gate-c-status_a60656cf0a2fe48cfe49f9bc",
+        "item_id": "REAL-1",
+        "metadata_digest": "5ce7b724ccfdc905d59d928260fb939d3931a2f690b710782dd069023f0db2ad",
+        "payload_digest": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 1,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "gate-c-status",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-2": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_ua-acceptance-evidence_91acb6c2ddd4edf2c3b1c2f8",
+        "item_id": "REAL-2",
+        "metadata_digest": "d7c182ac9562d22a8170f6a1fb119d93c6805c24f869d2c8fa6020f89483552a",
+        "payload_digest": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 2,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "ua-acceptance-evidence",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-3": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_acceptance-conditions_b0957cac861e924a72df78e2_chunk_000000",
+        "item_id": "REAL-3",
+        "metadata_digest": "ffcaf5b83936a358500d1ff56c01137d5eba67eb3043a53e04f6fded86d4ee97",
+        "payload_digest": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 3,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "acceptance-conditions",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-4": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-3": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f",
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_acceptance-conditions_b0957cac861e924a72df78e2_chunk_000001",
+        "item_id": "REAL-4",
+        "metadata_digest": "8509a04721cd1b5296dcedb52a8652582b58feb9fdc32269ad4575d6db5f15db",
+        "payload_digest": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 4,
+        "structural_record": {
+         "chunk_index": 1,
+         "room": "acceptance-conditions",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-5": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_research-results_501ccd8b957dfec17b785699",
+        "item_id": "REAL-5",
+        "metadata_digest": "8298f42d6e986771b27245ea57c24a2549c4b8d72270b4af11e4fe401e0239a6",
+        "payload_digest": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 5,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "research-results",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-6": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_closure-package-pointer_eabcfb9aca862ec93dbbaa31",
+        "item_id": "REAL-6",
+        "metadata_digest": "9d1dbfa2187887a9a5a285bf8bf4149758cbe7f96229bdb441a98cc5be75fc58",
+        "payload_digest": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 6,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "closure-package-pointer",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-7": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "diary_SimiGo-Lab_20261006_190539826222_c0d1aaec1b4b",
+        "item_id": "REAL-7",
+        "metadata_digest": "7453b296933d97af4decf98b4c4f0e8681379254a35449a334b45223c46fcc78",
+        "payload_digest": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 7,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "diary",
+         "type": "diary_entry",
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-COLLECTION": {
+        "dependency_payload_digests": {},
+        "item_id": "REAL-COLLECTION",
+        "payload_digest": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58",
+        "record_kind": "COLLECTION_SOURCE",
+        "source_internal_id": "8cb3160e-e082-4b23-b78c-1dc8711910ec"
+       },
+       "REAL-SEGMENT": {
+        "dependency_payload_digests": {
+         "REAL-COLLECTION": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+        },
+        "item_id": "REAL-SEGMENT",
+        "payload_digest": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e",
+        "record_kind": "METADATA_SEGMENT_SOURCE",
+        "source_internal_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a"
+       }
+      }
+     },
+     "reused_item_ids": [
+      "REAL-COLLECTION",
+      "REAL-SEGMENT",
+      "REAL-1",
+      "REAL-2",
+      "REAL-3",
+      "REAL-4",
+      "REAL-5",
+      "REAL-6",
+      "REAL-7"
+     ],
+     "state": "ADVANCED"
+    }
+   },
+   "execute_3": {
+    "command": "execute",
+    "confirmation": {
+     "command": "confirm-runtime-application",
+     "confirmation": {
+      "confirmation": {
+       "dependency_order": 27,
+       "object_id": "50a2b15b7c4299e4eb2395c024273519177b3041edb65239556d96034d21a3b8",
+       "state_id": "legacy-3:runtime-applied"
+      },
+      "confirmed_state_id": "legacy-3"
+     },
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+      "demand_id": "bounded-production-runtime-integration",
+      "next_continuation_point": "runtime-application-complete",
+      "pending_obligations": [],
+      "prior_state_id": "legacy-3",
+      "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+      "runtime_application_status": "APPLIED_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "legacy-3:runtime-applied",
+      "status": "ADVANCED"
+     },
+     "ok": true
+    },
+    "confirmation_process": {
+     "argv": [
+      "/usr/bin/python3",
+      "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+      "confirm-runtime-application",
+      "--database",
+      "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/tampered.sqlite",
+      "--state-id",
+      "legacy-3"
+     ],
+     "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+     "exit_code": 0,
+     "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/execute-3-confirm.log",
+     "log_sha256": "f301a0f8cb335f0ecb1b9c13674e5f5999b9b361663be1bf780871e04985ab08",
+     "pid": 53133,
+     "started_at_utc": "2026-10-22T04:54:50Z",
+     "timed_out": false,
+     "wall_seconds": 0.076
+    },
+    "execution_process": {
+     "argv": [
+      "/usr/bin/python3",
+      "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+      "execute",
+      "--database",
+      "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/tampered.sqlite",
+      "--advancement",
+      "legacy-3",
+      "--evaluated-at",
+      "2026-10-22T04:54:50Z"
+     ],
+     "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+     "exit_code": 0,
+     "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/execute-3.log",
+     "log_sha256": "7a038f6f0743ba70efe0809980a685ae6803db1923933f107a2dd89547e516dd",
+     "pid": 53132,
+     "started_at_utc": "2026-10-22T04:54:50Z",
+     "timed_out": false,
+     "wall_seconds": 0.076
+    },
+    "ok": true,
+    "prior_execution_state": {
+     "continuation_point": "bounded-production-runtime-integration",
+     "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+     "demand_id": "bounded-production-runtime-integration",
+     "next_continuation_point": "runtime-application-complete",
+     "pending_obligations": [],
+     "prior_state_id": "legacy-2",
+     "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+     "runtime_application_status": "APPLIED_SWIFT",
+     "schema_id": "EINFO-EXECUTION-STATE-V1",
+     "state_id": "legacy-2:runtime-applied",
+     "status": "ADVANCED"
+    },
+    "restored_required_item_ids": [
+     "REAL-COLLECTION",
+     "REAL-SEGMENT",
+     "REAL-1",
+     "REAL-2",
+     "REAL-3",
+     "REAL-4",
+     "REAL-5",
+     "REAL-6",
+     "REAL-7"
+    ],
+    "result": {
+     "actions": [
+      {
+       "action": "REUSE",
+       "item_id": "REAL-COLLECTION",
+       "reason": null,
+       "result_digest": "921f5d127e439c3fea447fb86cc95237cc9e29cb191dd2645260307da0bb1e3e",
+       "settlement_object_id": "0f4acb9bf3d73458848cb8a461866c9aaa708f906021c72baeb58d2e537389ac",
+       "settlement_signature_object_id": "85fa069a981f59b6a7377e0fb016e5b153cb552e6a3b9845741f506fa0a80470",
+       "source_payload_sha256": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-SEGMENT",
+       "reason": null,
+       "result_digest": "0b931840d59d2fd26511d41b94ae5765aa01613cd39446ae404e7af4c71209b7",
+       "settlement_object_id": "cdacc6ea65b5d42fe811c251ca631d4c6bea3621742f9adf81ff742166cd9bff",
+       "settlement_signature_object_id": "c1c18986e9c1c476418ccfbdc591cb03dedca35f90210deceb7b83aaa9af793b",
+       "source_payload_sha256": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-1",
+       "reason": "SETTLEMENT_SIGNATURE_INVALID",
+       "result_digest": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+       "settlement_object_id": "a5789b3b879c5c7b6ee688c2dcff55a333289f76539891186dee8b7894f33898",
+       "settlement_signature_object_id": "9efef05b6d809082ef161b825a9df391b447177200f0b4475cb6306cf205b14e",
+       "source_payload_sha256": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "REAL-2",
+       "reason": "SETTLEMENT_SIGNATURE_MISSING",
+       "result_digest": "fb86d966f89e4b2497d20c9982bf756f706a75f00eb16ae5dae26f197b584aaf",
+       "settlement_object_id": "dfd600d72e0e4eaf0cb53c4c5a8d9801cd6b2e5c0baea7f215e44532073ce5f9",
+       "settlement_signature_object_id": "8b31d803d01a475a75c96d26531d4fe5d2961d6ad030310ffdc8d9f967b7e5c9",
+       "source_payload_sha256": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-3",
+       "reason": null,
+       "result_digest": "6109725e18c963c79dae53be87b09850d76a75f387418e0d04027d93d447ac3f",
+       "settlement_object_id": "fa4dd9c2420b770f76d0608713a51f7ca8f77c30ae284a4f1ff8ba3d42b1885b",
+       "settlement_signature_object_id": "b70b3c8901d932d0be43e9b2d13d8e58d48e46e49b84128e65fc91b0e6bbfbd5",
+       "source_payload_sha256": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-4",
+       "reason": null,
+       "result_digest": "f656c7e782819af401c6cc67e603db2d8a87df00beb405a3c6ef91d3557230a3",
+       "settlement_object_id": "352925cba0182d7af613ca757f180eccefe4d721c3ac8f4a33f6665f898f9600",
+       "settlement_signature_object_id": "51370de1c273d0113b519cfded06901a87612384338abc320bbca4534f969f9a",
+       "source_payload_sha256": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-5",
+       "reason": null,
+       "result_digest": "2fb6075cf860b4fa046b5c6db4a39f565756378345a5f310e1ed7ba6eb42ded7",
+       "settlement_object_id": "0e2387b8a22f43477975b822189442aebb96b539c7fc3601744aa4d9b30fcc46",
+       "settlement_signature_object_id": "b4a79085ea4f144838b13aa283ba32f47018eac57d284a39a9696c4e9da319b8",
+       "source_payload_sha256": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-6",
+       "reason": null,
+       "result_digest": "edf7af66da2871874298733809b4b7db9ed1881318f6a28465eafe21a72b4f56",
+       "settlement_object_id": "785d3903f945a096f7a8007a08586f676c81bf1d6baa30f7b777cef1b3ff3e82",
+       "settlement_signature_object_id": "143e01a5e0fa59e58f90130b4309876b3f7b8d2106a8af355303c7b944b0b86e",
+       "source_payload_sha256": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-7",
+       "reason": null,
+       "result_digest": "04aa244e6922a697891ba1761a999ea993024aabca1a1aedb8bc9ae40eca43a1",
+       "settlement_object_id": "75a581b814476eccdc29e06ab7cf9c927bc04b12d6aed6eb09d7d9fc0629b673",
+       "settlement_signature_object_id": "6c0cf3208d2576bc0ff11615a813f110574829d6545dc34102a878ec96556ddb",
+       "source_payload_sha256": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada"
+      }
+     ],
+     "advanced": true,
+     "computed_item_ids": [
+      "REAL-1",
+      "REAL-2"
+     ],
+     "demand_id": "bounded-production-runtime-integration",
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+      "demand_id": "bounded-production-runtime-integration",
+      "next_continuation_point": "await-runtime-application-completion",
+      "pending_obligations": [
+       "apply runtime continuation and representation binding"
+      ],
+      "prior_state_id": "legacy-2:runtime-applied",
+      "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+      "runtime_application_status": "PENDING_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "legacy-3",
+      "status": "ADVANCED"
+     },
+     "result": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_id": "bounded-production-runtime-integration",
+      "resolved_items": {
+       "REAL-1": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_gate-c-status_a60656cf0a2fe48cfe49f9bc",
+        "item_id": "REAL-1",
+        "metadata_digest": "5ce7b724ccfdc905d59d928260fb939d3931a2f690b710782dd069023f0db2ad",
+        "payload_digest": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 1,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "gate-c-status",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-2": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_ua-acceptance-evidence_91acb6c2ddd4edf2c3b1c2f8",
+        "item_id": "REAL-2",
+        "metadata_digest": "d7c182ac9562d22a8170f6a1fb119d93c6805c24f869d2c8fa6020f89483552a",
+        "payload_digest": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 2,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "ua-acceptance-evidence",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-3": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_acceptance-conditions_b0957cac861e924a72df78e2_chunk_000000",
+        "item_id": "REAL-3",
+        "metadata_digest": "ffcaf5b83936a358500d1ff56c01137d5eba67eb3043a53e04f6fded86d4ee97",
+        "payload_digest": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 3,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "acceptance-conditions",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-4": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-3": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f",
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_acceptance-conditions_b0957cac861e924a72df78e2_chunk_000001",
+        "item_id": "REAL-4",
+        "metadata_digest": "8509a04721cd1b5296dcedb52a8652582b58feb9fdc32269ad4575d6db5f15db",
+        "payload_digest": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 4,
+        "structural_record": {
+         "chunk_index": 1,
+         "room": "acceptance-conditions",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-5": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_research-results_501ccd8b957dfec17b785699",
+        "item_id": "REAL-5",
+        "metadata_digest": "8298f42d6e986771b27245ea57c24a2549c4b8d72270b4af11e4fe401e0239a6",
+        "payload_digest": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 5,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "research-results",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-6": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_closure-package-pointer_eabcfb9aca862ec93dbbaa31",
+        "item_id": "REAL-6",
+        "metadata_digest": "9d1dbfa2187887a9a5a285bf8bf4149758cbe7f96229bdb441a98cc5be75fc58",
+        "payload_digest": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 6,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "closure-package-pointer",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-7": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "diary_SimiGo-Lab_20261006_190539826222_c0d1aaec1b4b",
+        "item_id": "REAL-7",
+        "metadata_digest": "7453b296933d97af4decf98b4c4f0e8681379254a35449a334b45223c46fcc78",
+        "payload_digest": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 7,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "diary",
+         "type": "diary_entry",
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-COLLECTION": {
+        "dependency_payload_digests": {},
+        "item_id": "REAL-COLLECTION",
+        "payload_digest": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58",
+        "record_kind": "COLLECTION_SOURCE",
+        "source_internal_id": "8cb3160e-e082-4b23-b78c-1dc8711910ec"
+       },
+       "REAL-SEGMENT": {
+        "dependency_payload_digests": {
+         "REAL-COLLECTION": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+        },
+        "item_id": "REAL-SEGMENT",
+        "payload_digest": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e",
+        "record_kind": "METADATA_SEGMENT_SOURCE",
+        "source_internal_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a"
+       }
+      }
+     },
+     "reused_item_ids": [
+      "REAL-COLLECTION",
+      "REAL-SEGMENT",
+      "REAL-3",
+      "REAL-4",
+      "REAL-5",
+      "REAL-6",
+      "REAL-7"
+     ],
+     "state": "ADVANCED"
+    }
+   },
+   "execute_4": {
+    "command": "execute",
+    "confirmation": {
+     "command": "confirm-runtime-application",
+     "confirmation": {
+      "confirmation": {
+       "dependency_order": 29,
+       "object_id": "f74991ea181f3007365a657acc3a9029d083ab31d78d98cde0847f9d3a5b1cc6",
+       "state_id": "legacy-4:runtime-applied"
+      },
+      "confirmed_state_id": "legacy-4"
+     },
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+      "demand_id": "bounded-production-runtime-integration",
+      "next_continuation_point": "runtime-application-complete",
+      "pending_obligations": [],
+      "prior_state_id": "legacy-4",
+      "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+      "runtime_application_status": "APPLIED_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "legacy-4:runtime-applied",
+      "status": "ADVANCED"
+     },
+     "ok": true
+    },
+    "confirmation_process": {
+     "argv": [
+      "/usr/bin/python3",
+      "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+      "confirm-runtime-application",
+      "--database",
+      "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/tampered.sqlite",
+      "--state-id",
+      "legacy-4"
+     ],
+     "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+     "exit_code": 0,
+     "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/execute-4-confirm.log",
+     "log_sha256": "251f8dc61f79dcae831dcd1e513a7a5e7f9dd990a34c0485f70180e5fdac0929",
+     "pid": 53135,
+     "started_at_utc": "2026-10-22T04:54:51Z",
+     "timed_out": false,
+     "wall_seconds": 0.074
+    },
+    "execution_process": {
+     "argv": [
+      "/usr/bin/python3",
+      "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+      "execute",
+      "--database",
+      "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/tampered.sqlite",
+      "--advancement",
+      "legacy-4",
+      "--evaluated-at",
+      "2026-10-22T04:54:51Z"
+     ],
+     "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+     "exit_code": 0,
+     "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/execute-4.log",
+     "log_sha256": "8352fe491ebb01541ccd727740560fb47d9048eaefff185bb35b5da9da656fe0",
+     "pid": 53134,
+     "started_at_utc": "2026-10-22T04:54:51Z",
+     "timed_out": false,
+     "wall_seconds": 0.076
+    },
+    "ok": true,
+    "prior_execution_state": {
+     "continuation_point": "bounded-production-runtime-integration",
+     "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+     "demand_id": "bounded-production-runtime-integration",
+     "next_continuation_point": "runtime-application-complete",
+     "pending_obligations": [],
+     "prior_state_id": "legacy-3",
+     "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+     "runtime_application_status": "APPLIED_SWIFT",
+     "schema_id": "EINFO-EXECUTION-STATE-V1",
+     "state_id": "legacy-3:runtime-applied",
+     "status": "ADVANCED"
+    },
+    "restored_required_item_ids": [
+     "REAL-COLLECTION",
+     "REAL-SEGMENT",
+     "REAL-1",
+     "REAL-2",
+     "REAL-3",
+     "REAL-4",
+     "REAL-5",
+     "REAL-6",
+     "REAL-7"
+    ],
+    "result": {
+     "actions": [
+      {
+       "action": "REUSE",
+       "item_id": "REAL-COLLECTION",
+       "reason": null,
+       "result_digest": "921f5d127e439c3fea447fb86cc95237cc9e29cb191dd2645260307da0bb1e3e",
+       "settlement_object_id": "0f4acb9bf3d73458848cb8a461866c9aaa708f906021c72baeb58d2e537389ac",
+       "settlement_signature_object_id": "85fa069a981f59b6a7377e0fb016e5b153cb552e6a3b9845741f506fa0a80470",
+       "source_payload_sha256": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-SEGMENT",
+       "reason": null,
+       "result_digest": "0b931840d59d2fd26511d41b94ae5765aa01613cd39446ae404e7af4c71209b7",
+       "settlement_object_id": "cdacc6ea65b5d42fe811c251ca631d4c6bea3621742f9adf81ff742166cd9bff",
+       "settlement_signature_object_id": "c1c18986e9c1c476418ccfbdc591cb03dedca35f90210deceb7b83aaa9af793b",
+       "source_payload_sha256": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-1",
+       "reason": null,
+       "result_digest": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+       "settlement_object_id": "a5789b3b879c5c7b6ee688c2dcff55a333289f76539891186dee8b7894f33898",
+       "settlement_signature_object_id": "9efef05b6d809082ef161b825a9df391b447177200f0b4475cb6306cf205b14e",
+       "source_payload_sha256": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-2",
+       "reason": null,
+       "result_digest": "fb86d966f89e4b2497d20c9982bf756f706a75f00eb16ae5dae26f197b584aaf",
+       "settlement_object_id": "dfd600d72e0e4eaf0cb53c4c5a8d9801cd6b2e5c0baea7f215e44532073ce5f9",
+       "settlement_signature_object_id": "8b31d803d01a475a75c96d26531d4fe5d2961d6ad030310ffdc8d9f967b7e5c9",
+       "source_payload_sha256": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-3",
+       "reason": null,
+       "result_digest": "6109725e18c963c79dae53be87b09850d76a75f387418e0d04027d93d447ac3f",
+       "settlement_object_id": "fa4dd9c2420b770f76d0608713a51f7ca8f77c30ae284a4f1ff8ba3d42b1885b",
+       "settlement_signature_object_id": "b70b3c8901d932d0be43e9b2d13d8e58d48e46e49b84128e65fc91b0e6bbfbd5",
+       "source_payload_sha256": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-4",
+       "reason": null,
+       "result_digest": "f656c7e782819af401c6cc67e603db2d8a87df00beb405a3c6ef91d3557230a3",
+       "settlement_object_id": "352925cba0182d7af613ca757f180eccefe4d721c3ac8f4a33f6665f898f9600",
+       "settlement_signature_object_id": "51370de1c273d0113b519cfded06901a87612384338abc320bbca4534f969f9a",
+       "source_payload_sha256": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-5",
+       "reason": null,
+       "result_digest": "2fb6075cf860b4fa046b5c6db4a39f565756378345a5f310e1ed7ba6eb42ded7",
+       "settlement_object_id": "0e2387b8a22f43477975b822189442aebb96b539c7fc3601744aa4d9b30fcc46",
+       "settlement_signature_object_id": "b4a79085ea4f144838b13aa283ba32f47018eac57d284a39a9696c4e9da319b8",
+       "source_payload_sha256": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-6",
+       "reason": null,
+       "result_digest": "edf7af66da2871874298733809b4b7db9ed1881318f6a28465eafe21a72b4f56",
+       "settlement_object_id": "785d3903f945a096f7a8007a08586f676c81bf1d6baa30f7b777cef1b3ff3e82",
+       "settlement_signature_object_id": "143e01a5e0fa59e58f90130b4309876b3f7b8d2106a8af355303c7b944b0b86e",
+       "source_payload_sha256": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59"
+      },
+      {
+       "action": "REUSE",
+       "item_id": "REAL-7",
+       "reason": null,
+       "result_digest": "04aa244e6922a697891ba1761a999ea993024aabca1a1aedb8bc9ae40eca43a1",
+       "settlement_object_id": "75a581b814476eccdc29e06ab7cf9c927bc04b12d6aed6eb09d7d9fc0629b673",
+       "settlement_signature_object_id": "6c0cf3208d2576bc0ff11615a813f110574829d6545dc34102a878ec96556ddb",
+       "source_payload_sha256": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada"
+      }
+     ],
+     "advanced": true,
+     "computed_item_ids": [],
+     "demand_id": "bounded-production-runtime-integration",
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "01931b510ebfeb1cf83569b397a2cad2180727d41ef3866f2e993d9ee404c3c1",
+      "demand_id": "bounded-production-runtime-integration",
+      "next_continuation_point": "await-runtime-application-completion",
+      "pending_obligations": [
+       "apply runtime continuation and representation binding"
+      ],
+      "prior_state_id": "legacy-3:runtime-applied",
+      "result_digest": "c8d491f40fd794a0cc48b54246505549a862f0414784203189d2d950d83637ce",
+      "runtime_application_status": "PENDING_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "legacy-4",
+      "status": "ADVANCED"
+     },
+     "result": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_id": "bounded-production-runtime-integration",
+      "resolved_items": {
+       "REAL-1": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_gate-c-status_a60656cf0a2fe48cfe49f9bc",
+        "item_id": "REAL-1",
+        "metadata_digest": "5ce7b724ccfdc905d59d928260fb939d3931a2f690b710782dd069023f0db2ad",
+        "payload_digest": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 1,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "gate-c-status",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-2": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_ua-acceptance-evidence_91acb6c2ddd4edf2c3b1c2f8",
+        "item_id": "REAL-2",
+        "metadata_digest": "d7c182ac9562d22a8170f6a1fb119d93c6805c24f869d2c8fa6020f89483552a",
+        "payload_digest": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 2,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "ua-acceptance-evidence",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-3": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_acceptance-conditions_b0957cac861e924a72df78e2_chunk_000000",
+        "item_id": "REAL-3",
+        "metadata_digest": "ffcaf5b83936a358500d1ff56c01137d5eba67eb3043a53e04f6fded86d4ee97",
+        "payload_digest": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 3,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "acceptance-conditions",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-4": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-3": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f",
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_acceptance-conditions_b0957cac861e924a72df78e2_chunk_000001",
+        "item_id": "REAL-4",
+        "metadata_digest": "8509a04721cd1b5296dcedb52a8652582b58feb9fdc32269ad4575d6db5f15db",
+        "payload_digest": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 4,
+        "structural_record": {
+         "chunk_index": 1,
+         "room": "acceptance-conditions",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-5": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_research-results_501ccd8b957dfec17b785699",
+        "item_id": "REAL-5",
+        "metadata_digest": "8298f42d6e986771b27245ea57c24a2549c4b8d72270b4af11e4fe401e0239a6",
+        "payload_digest": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 5,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "research-results",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-6": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "drawer_SimiGo-Lab_closure-package-pointer_eabcfb9aca862ec93dbbaa31",
+        "item_id": "REAL-6",
+        "metadata_digest": "9d1dbfa2187887a9a5a285bf8bf4149758cbe7f96229bdb441a98cc5be75fc58",
+        "payload_digest": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 6,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "closure-package-pointer",
+         "type": null,
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-7": {
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "dependency_payload_digests": {
+         "REAL-SEGMENT": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+        },
+        "embedding_id": "diary_SimiGo-Lab_20261006_190539826222_c0d1aaec1b4b",
+        "item_id": "REAL-7",
+        "metadata_digest": "7453b296933d97af4decf98b4c4f0e8681379254a35449a334b45223c46fcc78",
+        "payload_digest": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada",
+        "record_kind": "EMBEDDING_METADATA",
+        "segment_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a",
+        "source_internal_id": 7,
+        "structural_record": {
+         "chunk_index": 0,
+         "room": "diary",
+         "type": "diary_entry",
+         "wing": "SimiGo-Lab"
+        }
+       },
+       "REAL-COLLECTION": {
+        "dependency_payload_digests": {},
+        "item_id": "REAL-COLLECTION",
+        "payload_digest": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58",
+        "record_kind": "COLLECTION_SOURCE",
+        "source_internal_id": "8cb3160e-e082-4b23-b78c-1dc8711910ec"
+       },
+       "REAL-SEGMENT": {
+        "dependency_payload_digests": {
+         "REAL-COLLECTION": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+        },
+        "item_id": "REAL-SEGMENT",
+        "payload_digest": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e",
+        "record_kind": "METADATA_SEGMENT_SOURCE",
+        "source_internal_id": "2fb9bc1b-d112-4adf-9d31-0c9a5191290a"
+       }
+      }
+     },
+     "reused_item_ids": [
+      "REAL-COLLECTION",
+      "REAL-SEGMENT",
+      "REAL-1",
+      "REAL-2",
+      "REAL-3",
+      "REAL-4",
+      "REAL-5",
+      "REAL-6",
+      "REAL-7"
+     ],
+     "state": "ADVANCED"
+    }
+   },
+   "first_actions": {
+    "REAL-1": {
+     "action": "COMPUTE",
+     "item_id": "REAL-1",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+     "settlement_object_id": "c858507f67458e05ac2cb3ed4573364d50968f2b60a6fbde857eb61e1e56e450",
+     "settlement_signature_object_id": "66fd60dafb52ebe4f2fa2548aed350eff4ec20e824f7c4ba597c17e65c7b5414",
+     "source_payload_sha256": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc"
+    },
+    "REAL-2": {
+     "action": "COMPUTE",
+     "item_id": "REAL-2",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "fb86d966f89e4b2497d20c9982bf756f706a75f00eb16ae5dae26f197b584aaf",
+     "settlement_object_id": "2ebce7efa4d60145c97c60085a072b4da19721caf62fa01576b424d2a0707709",
+     "settlement_signature_object_id": "d3891cc45f88b1c1f122d23a9413b2ffc4a60f04d8af586956f010a3ddac1b72",
+     "source_payload_sha256": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb"
+    },
+    "REAL-3": {
+     "action": "COMPUTE",
+     "item_id": "REAL-3",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "6109725e18c963c79dae53be87b09850d76a75f387418e0d04027d93d447ac3f",
+     "settlement_object_id": "fa4dd9c2420b770f76d0608713a51f7ca8f77c30ae284a4f1ff8ba3d42b1885b",
+     "settlement_signature_object_id": "b70b3c8901d932d0be43e9b2d13d8e58d48e46e49b84128e65fc91b0e6bbfbd5",
+     "source_payload_sha256": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f"
+    },
+    "REAL-4": {
+     "action": "COMPUTE",
+     "item_id": "REAL-4",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "f656c7e782819af401c6cc67e603db2d8a87df00beb405a3c6ef91d3557230a3",
+     "settlement_object_id": "352925cba0182d7af613ca757f180eccefe4d721c3ac8f4a33f6665f898f9600",
+     "settlement_signature_object_id": "51370de1c273d0113b519cfded06901a87612384338abc320bbca4534f969f9a",
+     "source_payload_sha256": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e"
+    },
+    "REAL-5": {
+     "action": "COMPUTE",
+     "item_id": "REAL-5",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "2fb6075cf860b4fa046b5c6db4a39f565756378345a5f310e1ed7ba6eb42ded7",
+     "settlement_object_id": "0e2387b8a22f43477975b822189442aebb96b539c7fc3601744aa4d9b30fcc46",
+     "settlement_signature_object_id": "b4a79085ea4f144838b13aa283ba32f47018eac57d284a39a9696c4e9da319b8",
+     "source_payload_sha256": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a"
+    },
+    "REAL-6": {
+     "action": "COMPUTE",
+     "item_id": "REAL-6",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "edf7af66da2871874298733809b4b7db9ed1881318f6a28465eafe21a72b4f56",
+     "settlement_object_id": "785d3903f945a096f7a8007a08586f676c81bf1d6baa30f7b777cef1b3ff3e82",
+     "settlement_signature_object_id": "143e01a5e0fa59e58f90130b4309876b3f7b8d2106a8af355303c7b944b0b86e",
+     "source_payload_sha256": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59"
+    },
+    "REAL-7": {
+     "action": "COMPUTE",
+     "item_id": "REAL-7",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "04aa244e6922a697891ba1761a999ea993024aabca1a1aedb8bc9ae40eca43a1",
+     "settlement_object_id": "75a581b814476eccdc29e06ab7cf9c927bc04b12d6aed6eb09d7d9fc0629b673",
+     "settlement_signature_object_id": "6c0cf3208d2576bc0ff11615a813f110574829d6545dc34102a878ec96556ddb",
+     "source_payload_sha256": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada"
+    },
+    "REAL-COLLECTION": {
+     "action": "COMPUTE",
+     "item_id": "REAL-COLLECTION",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "921f5d127e439c3fea447fb86cc95237cc9e29cb191dd2645260307da0bb1e3e",
+     "settlement_object_id": "0f4acb9bf3d73458848cb8a461866c9aaa708f906021c72baeb58d2e537389ac",
+     "settlement_signature_object_id": "85fa069a981f59b6a7377e0fb016e5b153cb552e6a3b9845741f506fa0a80470",
+     "source_payload_sha256": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+    },
+    "REAL-SEGMENT": {
+     "action": "COMPUTE",
+     "item_id": "REAL-SEGMENT",
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "result_digest": "0b931840d59d2fd26511d41b94ae5765aa01613cd39446ae404e7af4c71209b7",
+     "settlement_object_id": "cdacc6ea65b5d42fe811c251ca631d4c6bea3621742f9adf81ff742166cd9bff",
+     "settlement_signature_object_id": "c1c18986e9c1c476418ccfbdc591cb03dedca35f90210deceb7b83aaa9af793b",
+     "source_payload_sha256": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+    }
+   },
+   "fourth_actions": {
+    "REAL-1": {
+     "action": "REUSE",
+     "item_id": "REAL-1",
+     "reason": null,
+     "result_digest": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+     "settlement_object_id": "a5789b3b879c5c7b6ee688c2dcff55a333289f76539891186dee8b7894f33898",
+     "settlement_signature_object_id": "9efef05b6d809082ef161b825a9df391b447177200f0b4475cb6306cf205b14e",
+     "source_payload_sha256": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc"
+    },
+    "REAL-2": {
+     "action": "REUSE",
+     "item_id": "REAL-2",
+     "reason": null,
+     "result_digest": "fb86d966f89e4b2497d20c9982bf756f706a75f00eb16ae5dae26f197b584aaf",
+     "settlement_object_id": "dfd600d72e0e4eaf0cb53c4c5a8d9801cd6b2e5c0baea7f215e44532073ce5f9",
+     "settlement_signature_object_id": "8b31d803d01a475a75c96d26531d4fe5d2961d6ad030310ffdc8d9f967b7e5c9",
+     "source_payload_sha256": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb"
+    },
+    "REAL-3": {
+     "action": "REUSE",
+     "item_id": "REAL-3",
+     "reason": null,
+     "result_digest": "6109725e18c963c79dae53be87b09850d76a75f387418e0d04027d93d447ac3f",
+     "settlement_object_id": "fa4dd9c2420b770f76d0608713a51f7ca8f77c30ae284a4f1ff8ba3d42b1885b",
+     "settlement_signature_object_id": "b70b3c8901d932d0be43e9b2d13d8e58d48e46e49b84128e65fc91b0e6bbfbd5",
+     "source_payload_sha256": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f"
+    },
+    "REAL-4": {
+     "action": "REUSE",
+     "item_id": "REAL-4",
+     "reason": null,
+     "result_digest": "f656c7e782819af401c6cc67e603db2d8a87df00beb405a3c6ef91d3557230a3",
+     "settlement_object_id": "352925cba0182d7af613ca757f180eccefe4d721c3ac8f4a33f6665f898f9600",
+     "settlement_signature_object_id": "51370de1c273d0113b519cfded06901a87612384338abc320bbca4534f969f9a",
+     "source_payload_sha256": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e"
+    },
+    "REAL-5": {
+     "action": "REUSE",
+     "item_id": "REAL-5",
+     "reason": null,
+     "result_digest": "2fb6075cf860b4fa046b5c6db4a39f565756378345a5f310e1ed7ba6eb42ded7",
+     "settlement_object_id": "0e2387b8a22f43477975b822189442aebb96b539c7fc3601744aa4d9b30fcc46",
+     "settlement_signature_object_id": "b4a79085ea4f144838b13aa283ba32f47018eac57d284a39a9696c4e9da319b8",
+     "source_payload_sha256": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a"
+    },
+    "REAL-6": {
+     "action": "REUSE",
+     "item_id": "REAL-6",
+     "reason": null,
+     "result_digest": "edf7af66da2871874298733809b4b7db9ed1881318f6a28465eafe21a72b4f56",
+     "settlement_object_id": "785d3903f945a096f7a8007a08586f676c81bf1d6baa30f7b777cef1b3ff3e82",
+     "settlement_signature_object_id": "143e01a5e0fa59e58f90130b4309876b3f7b8d2106a8af355303c7b944b0b86e",
+     "source_payload_sha256": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59"
+    },
+    "REAL-7": {
+     "action": "REUSE",
+     "item_id": "REAL-7",
+     "reason": null,
+     "result_digest": "04aa244e6922a697891ba1761a999ea993024aabca1a1aedb8bc9ae40eca43a1",
+     "settlement_object_id": "75a581b814476eccdc29e06ab7cf9c927bc04b12d6aed6eb09d7d9fc0629b673",
+     "settlement_signature_object_id": "6c0cf3208d2576bc0ff11615a813f110574829d6545dc34102a878ec96556ddb",
+     "source_payload_sha256": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada"
+    },
+    "REAL-COLLECTION": {
+     "action": "REUSE",
+     "item_id": "REAL-COLLECTION",
+     "reason": null,
+     "result_digest": "921f5d127e439c3fea447fb86cc95237cc9e29cb191dd2645260307da0bb1e3e",
+     "settlement_object_id": "0f4acb9bf3d73458848cb8a461866c9aaa708f906021c72baeb58d2e537389ac",
+     "settlement_signature_object_id": "85fa069a981f59b6a7377e0fb016e5b153cb552e6a3b9845741f506fa0a80470",
+     "source_payload_sha256": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+    },
+    "REAL-SEGMENT": {
+     "action": "REUSE",
+     "item_id": "REAL-SEGMENT",
+     "reason": null,
+     "result_digest": "0b931840d59d2fd26511d41b94ae5765aa01613cd39446ae404e7af4c71209b7",
+     "settlement_object_id": "cdacc6ea65b5d42fe811c251ca631d4c6bea3621742f9adf81ff742166cd9bff",
+     "settlement_signature_object_id": "c1c18986e9c1c476418ccfbdc591cb03dedca35f90210deceb7b83aaa9af793b",
+     "source_payload_sha256": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+    }
+   },
+   "initialize": {
+    "argv": [
+     "/usr/bin/python3",
+     "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/production_runtime_bridge.py",
+     "initialize",
+     "--database",
+     "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/base.sqlite"
+    ],
+    "cwd": "/Users/mr.simi/Documents/SimiGo-Lab",
+    "exit_code": 0,
+    "log": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/logs/initialize.log",
+    "log_sha256": "ad744a4c591f735e4331e16dd8dab79bb8273f8afa2a7ddf81dddd4b8bd97f67",
+    "pid": 53127,
+    "started_at_utc": "2026-10-22T04:54:50Z",
+    "timed_out": false,
+    "wall_seconds": 0.075
+   },
+   "mutation": {
+    "real_1": {
+     "append_order": 23,
+     "content_sha256": "a6414408a1b2aa0ce2ab329b4a2845644c5cb99a46fcea53e9edcd689ae179aa",
+     "object_id": "a6414408a1b2aa0ce2ab329b4a2845644c5cb99a46fcea53e9edcd689ae179aa",
+     "old_value_sha256": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+     "revision": 2
+    },
+    "real_2": {
+     "deleted_signature_entries": 1
+    }
+   },
+   "recomputed": [
+    "REAL-1",
+    "REAL-2"
+   ],
+   "reused_after_tamper": [
+    "REAL-COLLECTION",
+    "REAL-SEGMENT",
+    "REAL-3",
+    "REAL-4",
+    "REAL-5",
+    "REAL-6",
+    "REAL-7"
+   ],
+   "schema_id": "SIMIGO-E-ROUND-LEGACY-V1",
+   "second_actions": {
+    "REAL-1": {
+     "action": "REUSE",
+     "item_id": "REAL-1",
+     "reason": null,
+     "result_digest": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+     "settlement_object_id": "c858507f67458e05ac2cb3ed4573364d50968f2b60a6fbde857eb61e1e56e450",
+     "settlement_signature_object_id": "66fd60dafb52ebe4f2fa2548aed350eff4ec20e824f7c4ba597c17e65c7b5414",
+     "source_payload_sha256": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc"
+    },
+    "REAL-2": {
+     "action": "REUSE",
+     "item_id": "REAL-2",
+     "reason": null,
+     "result_digest": "fb86d966f89e4b2497d20c9982bf756f706a75f00eb16ae5dae26f197b584aaf",
+     "settlement_object_id": "2ebce7efa4d60145c97c60085a072b4da19721caf62fa01576b424d2a0707709",
+     "settlement_signature_object_id": "d3891cc45f88b1c1f122d23a9413b2ffc4a60f04d8af586956f010a3ddac1b72",
+     "source_payload_sha256": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb"
+    },
+    "REAL-3": {
+     "action": "REUSE",
+     "item_id": "REAL-3",
+     "reason": null,
+     "result_digest": "6109725e18c963c79dae53be87b09850d76a75f387418e0d04027d93d447ac3f",
+     "settlement_object_id": "fa4dd9c2420b770f76d0608713a51f7ca8f77c30ae284a4f1ff8ba3d42b1885b",
+     "settlement_signature_object_id": "b70b3c8901d932d0be43e9b2d13d8e58d48e46e49b84128e65fc91b0e6bbfbd5",
+     "source_payload_sha256": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f"
+    },
+    "REAL-4": {
+     "action": "REUSE",
+     "item_id": "REAL-4",
+     "reason": null,
+     "result_digest": "f656c7e782819af401c6cc67e603db2d8a87df00beb405a3c6ef91d3557230a3",
+     "settlement_object_id": "352925cba0182d7af613ca757f180eccefe4d721c3ac8f4a33f6665f898f9600",
+     "settlement_signature_object_id": "51370de1c273d0113b519cfded06901a87612384338abc320bbca4534f969f9a",
+     "source_payload_sha256": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e"
+    },
+    "REAL-5": {
+     "action": "REUSE",
+     "item_id": "REAL-5",
+     "reason": null,
+     "result_digest": "2fb6075cf860b4fa046b5c6db4a39f565756378345a5f310e1ed7ba6eb42ded7",
+     "settlement_object_id": "0e2387b8a22f43477975b822189442aebb96b539c7fc3601744aa4d9b30fcc46",
+     "settlement_signature_object_id": "b4a79085ea4f144838b13aa283ba32f47018eac57d284a39a9696c4e9da319b8",
+     "source_payload_sha256": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a"
+    },
+    "REAL-6": {
+     "action": "REUSE",
+     "item_id": "REAL-6",
+     "reason": null,
+     "result_digest": "edf7af66da2871874298733809b4b7db9ed1881318f6a28465eafe21a72b4f56",
+     "settlement_object_id": "785d3903f945a096f7a8007a08586f676c81bf1d6baa30f7b777cef1b3ff3e82",
+     "settlement_signature_object_id": "143e01a5e0fa59e58f90130b4309876b3f7b8d2106a8af355303c7b944b0b86e",
+     "source_payload_sha256": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59"
+    },
+    "REAL-7": {
+     "action": "REUSE",
+     "item_id": "REAL-7",
+     "reason": null,
+     "result_digest": "04aa244e6922a697891ba1761a999ea993024aabca1a1aedb8bc9ae40eca43a1",
+     "settlement_object_id": "75a581b814476eccdc29e06ab7cf9c927bc04b12d6aed6eb09d7d9fc0629b673",
+     "settlement_signature_object_id": "6c0cf3208d2576bc0ff11615a813f110574829d6545dc34102a878ec96556ddb",
+     "source_payload_sha256": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada"
+    },
+    "REAL-COLLECTION": {
+     "action": "REUSE",
+     "item_id": "REAL-COLLECTION",
+     "reason": null,
+     "result_digest": "921f5d127e439c3fea447fb86cc95237cc9e29cb191dd2645260307da0bb1e3e",
+     "settlement_object_id": "0f4acb9bf3d73458848cb8a461866c9aaa708f906021c72baeb58d2e537389ac",
+     "settlement_signature_object_id": "85fa069a981f59b6a7377e0fb016e5b153cb552e6a3b9845741f506fa0a80470",
+     "source_payload_sha256": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+    },
+    "REAL-SEGMENT": {
+     "action": "REUSE",
+     "item_id": "REAL-SEGMENT",
+     "reason": null,
+     "result_digest": "0b931840d59d2fd26511d41b94ae5765aa01613cd39446ae404e7af4c71209b7",
+     "settlement_object_id": "cdacc6ea65b5d42fe811c251ca631d4c6bea3621742f9adf81ff742166cd9bff",
+     "settlement_signature_object_id": "c1c18986e9c1c476418ccfbdc591cb03dedca35f90210deceb7b83aaa9af793b",
+     "source_payload_sha256": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+    }
+   },
+   "tampered_database": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/phase3-legacy/tampered.sqlite",
+   "third_actions": {
+    "REAL-1": {
+     "action": "COMPUTE",
+     "item_id": "REAL-1",
+     "reason": "SETTLEMENT_SIGNATURE_INVALID",
+     "result_digest": "b3204755877d05745092c6f8c6bb3c3f8b5224d5911697faa17e88fa7185a8c8",
+     "settlement_object_id": "a5789b3b879c5c7b6ee688c2dcff55a333289f76539891186dee8b7894f33898",
+     "settlement_signature_object_id": "9efef05b6d809082ef161b825a9df391b447177200f0b4475cb6306cf205b14e",
+     "source_payload_sha256": "c5fe3a2c648e9d92f8ca846784b0790cf3e3d791fdf8a85db74c77b79094fffc"
+    },
+    "REAL-2": {
+     "action": "COMPUTE",
+     "item_id": "REAL-2",
+     "reason": "SETTLEMENT_SIGNATURE_MISSING",
+     "result_digest": "fb86d966f89e4b2497d20c9982bf756f706a75f00eb16ae5dae26f197b584aaf",
+     "settlement_object_id": "dfd600d72e0e4eaf0cb53c4c5a8d9801cd6b2e5c0baea7f215e44532073ce5f9",
+     "settlement_signature_object_id": "8b31d803d01a475a75c96d26531d4fe5d2961d6ad030310ffdc8d9f967b7e5c9",
+     "source_payload_sha256": "3d10e15aa7020ebe03f7c20b0ed7748a6662e69b9d40db92d9dd144bcca082cb"
+    },
+    "REAL-3": {
+     "action": "REUSE",
+     "item_id": "REAL-3",
+     "reason": null,
+     "result_digest": "6109725e18c963c79dae53be87b09850d76a75f387418e0d04027d93d447ac3f",
+     "settlement_object_id": "fa4dd9c2420b770f76d0608713a51f7ca8f77c30ae284a4f1ff8ba3d42b1885b",
+     "settlement_signature_object_id": "b70b3c8901d932d0be43e9b2d13d8e58d48e46e49b84128e65fc91b0e6bbfbd5",
+     "source_payload_sha256": "784812e29d5d220190cb707c52e573bd18b9f7269818af5186059d1c5b70ed9f"
+    },
+    "REAL-4": {
+     "action": "REUSE",
+     "item_id": "REAL-4",
+     "reason": null,
+     "result_digest": "f656c7e782819af401c6cc67e603db2d8a87df00beb405a3c6ef91d3557230a3",
+     "settlement_object_id": "352925cba0182d7af613ca757f180eccefe4d721c3ac8f4a33f6665f898f9600",
+     "settlement_signature_object_id": "51370de1c273d0113b519cfded06901a87612384338abc320bbca4534f969f9a",
+     "source_payload_sha256": "f399bef070fc86d5af02f50f5b6b1d201891fc1e5d2ea31d656c6a979b2e160e"
+    },
+    "REAL-5": {
+     "action": "REUSE",
+     "item_id": "REAL-5",
+     "reason": null,
+     "result_digest": "2fb6075cf860b4fa046b5c6db4a39f565756378345a5f310e1ed7ba6eb42ded7",
+     "settlement_object_id": "0e2387b8a22f43477975b822189442aebb96b539c7fc3601744aa4d9b30fcc46",
+     "settlement_signature_object_id": "b4a79085ea4f144838b13aa283ba32f47018eac57d284a39a9696c4e9da319b8",
+     "source_payload_sha256": "91a4591e74fc751bb12ee45c32a314740d8545d1d85ae89b9b1a4d15d4c4731a"
+    },
+    "REAL-6": {
+     "action": "REUSE",
+     "item_id": "REAL-6",
+     "reason": null,
+     "result_digest": "edf7af66da2871874298733809b4b7db9ed1881318f6a28465eafe21a72b4f56",
+     "settlement_object_id": "785d3903f945a096f7a8007a08586f676c81bf1d6baa30f7b777cef1b3ff3e82",
+     "settlement_signature_object_id": "143e01a5e0fa59e58f90130b4309876b3f7b8d2106a8af355303c7b944b0b86e",
+     "source_payload_sha256": "e6fbd65c6640a6972398711d300cb450cdaec0612454b2abfb9497781fec6a59"
+    },
+    "REAL-7": {
+     "action": "REUSE",
+     "item_id": "REAL-7",
+     "reason": null,
+     "result_digest": "04aa244e6922a697891ba1761a999ea993024aabca1a1aedb8bc9ae40eca43a1",
+     "settlement_object_id": "75a581b814476eccdc29e06ab7cf9c927bc04b12d6aed6eb09d7d9fc0629b673",
+     "settlement_signature_object_id": "6c0cf3208d2576bc0ff11615a813f110574829d6545dc34102a878ec96556ddb",
+     "source_payload_sha256": "ee984107a13d373bc6e839c432e908da2a1c469cb0595eaf3cee8af1929feada"
+    },
+    "REAL-COLLECTION": {
+     "action": "REUSE",
+     "item_id": "REAL-COLLECTION",
+     "reason": null,
+     "result_digest": "921f5d127e439c3fea447fb86cc95237cc9e29cb191dd2645260307da0bb1e3e",
+     "settlement_object_id": "0f4acb9bf3d73458848cb8a461866c9aaa708f906021c72baeb58d2e537389ac",
+     "settlement_signature_object_id": "85fa069a981f59b6a7377e0fb016e5b153cb552e6a3b9845741f506fa0a80470",
+     "source_payload_sha256": "0b6bf41a444edc17971ee52c9c0fead1480fc69382b42f9919bb187d9ee2af58"
+    },
+    "REAL-SEGMENT": {
+     "action": "REUSE",
+     "item_id": "REAL-SEGMENT",
+     "reason": null,
+     "result_digest": "0b931840d59d2fd26511d41b94ae5765aa01613cd39446ae404e7af4c71209b7",
+     "settlement_object_id": "cdacc6ea65b5d42fe811c251ca631d4c6bea3621742f9adf81ff742166cd9bff",
+     "settlement_signature_object_id": "c1c18986e9c1c476418ccfbdc591cb03dedca35f90210deceb7b83aaa9af793b",
+     "source_payload_sha256": "f48cf3ee2bd6eac367d45abeb50f5dbd8afd733e762094f96997e8f696c0109e"
+    }
+   },
+   "verdict": "PASS"
+  }
+ },
+ "schema_id": "SIMIGO-E-ROUND-CONDITIONS-V1"
+}

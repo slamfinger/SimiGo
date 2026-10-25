@@ -1,0 +1,1 @@
+error: bridgeFailed(command: "read-item", exitCode: 1, message: "SIGNING_KEY_MISSING: SIMIGO_SETTLEMENT_SIGNING_KEY")

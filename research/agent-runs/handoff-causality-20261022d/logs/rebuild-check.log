@@ -1,0 +1,5 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+Build complete! (0.53秒)

@@ -1,0 +1,4402 @@
+diff --git a/execution-information-loop/production_runtime_bridge.py b/execution-information-loop/production_runtime_bridge.py
+index 7479caf6..50b5d3ee 100644
+--- a/execution-information-loop/production_runtime_bridge.py
++++ b/execution-information-loop/production_runtime_bridge.py
+@@ -11,6 +11,8 @@ import argparse
+ import hashlib
+ import json
+ import os
++import re
++import secrets
+ import sys
+ from pathlib import Path
+ from typing import Optional
+@@ -46,6 +48,15 @@ REQUIRED_ITEMS = [
+     *[f"REAL-{index}" for index in range(1, 8)],
+ ]
+ 
++# Real-model handoff task (isolated run): one registered source, two model
++# items. The continuation point is deliberately the production one so the
++# existing Swift status/recovery/checkpoint authority reads the same lineage.
++TASK_SOURCE_ID = "TASK-SOURCE"
++TASK_U1_ID = "TASK-U1"
++TASK_U2_ID = "TASK-U2"
++TASK_DEMAND_U1 = "handoff-u1"
++TASK_DEMAND_U2 = "handoff-u2"
++
+ 
+ def emit(value: dict) -> None:
+     print(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+@@ -146,6 +157,9 @@ def _open_status(loop: CarrierInformationLoop) -> dict:
+         restored = loop.restore_continuation(CONTINUATION_POINT)
+         state: Optional[dict] = restored["state"]
+         required = restored["required_item_ids"]
++        # A real-model handoff may use its own demand on the same continuation
++        # point; report that demand rather than an unrelated one.
++        demand = restored["demand"]
+     except Exception:
+         restored = None
+         state = loop.latest_execution_state(CONTINUATION_POINT)
+@@ -456,6 +470,697 @@ def diagnostics(args: argparse.Namespace) -> None:
+     emit(value)
+ 
+ 
++def _task_material(
++    run_label: str,
++    secret_override: str | None = None,
++    random_secret: bool = False,
++) -> dict:
++    """Deterministic task material, so the run is reproducible from its label.
++
++    ``secret_override`` lets a controlled experiment bind a high-entropy nonce
++    to the SAME task shape.  It changes only the material, not the task graph.
++    ``random_secret`` generates a 128-bit nonce inside this process, so the
++    nonce never appears in a command line, environment variable or temp file;
++    it exists only in process memory and the source/settlement objects.
++    """
++    if random_secret and secret_override is not None:
++        raise ValueError("use either --random-secret or a secret override, not both")
++    if random_secret:
++        secret = secrets.token_hex(16)
++    elif secret_override is not None:
++        secret = secret_override
++        if not secret or len(secret) > 64 or not secret.isalnum():
++            raise ValueError("secret override must be 1-64 alphanumeric characters")
++    else:
++        secret = "K" + hashlib.sha256(
++            ("secret:" + run_label).encode("utf-8")
++        ).hexdigest()[:5].upper()
++    checksum = hashlib.sha256(
++        ("checksum:" + run_label).encode("utf-8")
++    ).hexdigest()[:4]
++    log_text = "\n".join([
++        "SIMIGO-SESSION-LOG-V1",
++        "run=%s" % run_label,
++        "site=lab-north",
++        "secret=%s" % secret,
++        "checksum=%s" % checksum,
++    ])
++    return {"secret": secret, "checksum": checksum, "log_text": log_text}
++
++
++def _settlement_basis(
++    source_payload: dict,
++    result_value: dict,
++    source_version: str,
++    dependency_object_ids: dict,
++    evaluated_at_utc: str,
++    valid_until_utc: str,
++    validity_policy: dict,
++) -> dict:
++    return {
++        "source_payload_sha256": digest(source_payload),
++        "result_value_sha256": digest(result_value),
++        "source_version": source_version,
++        "dependency_object_ids": dependency_object_ids,
++        "evaluated_at_utc": evaluated_at_utc,
++        "valid_until_utc": valid_until_utc,
++        "validity_policy": validity_policy,
++    }
++
++
++def define_task(args: argparse.Namespace) -> None:
++    """Create the isolated handoff task: registered source + two model items.
++
++    The source is settled here with the ordinary settlement contract (its
++    "computation" is deterministic registration). No execution state is
++    recorded, so this registration never impersonates runtime work.
++    """
++    validity_policy = load_deployment_validity_policy()
++    valid_until = deployment_default_validity(validity_policy)
++    if args.valid_until and args.valid_until != valid_until:
++        raise ValueError("command validity conflicts with deployment validity policy")
++    parse_utc(args.evaluated_at)
++    secret_override = getattr(args, "secret", None)
++    secret_file = getattr(args, "secret_file", None)
++    random_secret = bool(getattr(args, "random_secret", False))
++    if random_secret and (secret_override is not None or secret_file):
++        raise ValueError(
++            "use either --random-secret, --secret or --secret-file, not a combination"
++        )
++    if secret_file:
++        if secret_override is not None:
++            raise ValueError("use either --secret or --secret-file, not both")
++        secret_override = Path(secret_file).read_text(encoding="utf-8").strip()
++    material = _task_material(args.run_label, secret_override, random_secret)
++    log_text = material["log_text"]
++    source_version = "v1:%s" % args.run_label
++
++    loop = CarrierInformationLoop.create(args.database)
++    try:
++        source_payload = {
++            "schema_id": "SIMIGO-HANDOFF-SESSION-LOG-V1",
++            "run_label": args.run_label,
++            "site": "lab-north",
++            "log_text": log_text,
++        }
++        source = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_SOURCE_ID,
++            "session-log",
++            source_version,
++            source_payload,
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++        registration_value = {
++            "log_text_sha256": digest(log_text),
++            "secret_sha256": digest(material["secret"]),
++            "checksum": material["checksum"],
++            "site": "lab-north",
++            "run_label": args.run_label,
++        }
++        registration_basis = _settlement_basis(
++            source_payload,
++            registration_value,
++            source_version,
++            {},
++            args.evaluated_at,
++            valid_until,
++            validity_policy,
++        )
++        registration = loop.settle(
++            "handoff-registration",
++            TASK_SOURCE_ID,
++            {"value": registration_value, **registration_basis},
++            registration_basis,
++        )
++
++        seed_text = "\n".join([
++            "SIMIGO-REAL-MODEL-HANDOFF-V1",
++            "You are executing step 1 of a two-step task.",
++            "SESSION LOG:",
++            log_text,
++            "",
++            "Read the session log and extract the value of secret.",
++            "Reply with exactly one line and nothing else: SECRET=<secret>",
++            "Answer:",
++        ])
++        u1_payload = {
++            "schema_id": "SIMIGO-HANDOFF-STEP-V1",
++            "step": 1,
++            "model_task": "extract_secret",
++            "answer_format": "SECRET=<secret>",
++            "prompt_seed": seed_text,
++            "next_input": " ",
++            "source_item_id": TASK_SOURCE_ID,
++        }
++        u1 = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_U1_ID,
++            "model-task",
++            "v1",
++            u1_payload,
++            dependencies=[TASK_SOURCE_ID],
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++
++        u2_payload = {
++            "schema_id": "SIMIGO-HANDOFF-STEP-V1",
++            "step": 2,
++            "model_task": "compose_answer",
++            "answer_format": "ANSWER=<secret>-<checksum>",
++            "next_input_template": (
++                "\nStep 2: the secret from step 1 is {secret}. "
++                "The checksum from the session log is {checksum}.\n"
++                "Reply with exactly one line and nothing else: "
++                "ANSWER=<secret>-<checksum>\nAnswer:"
++            ),
++            "source_item_ids": [TASK_SOURCE_ID, TASK_U1_ID],
++            # Explicit input contract: each template placeholder names the
++            # settled dependency result field it consumes. The production
++            # resolver reads THIS declaration, so input construction is part of
++            # the task definition instead of caller-side interpolation.
++            "input_bindings": [
++                {
++                    "placeholder": "secret",
++                    "item_id": TASK_U1_ID,
++                    "result_field": "secret",
++                },
++                {
++                    "placeholder": "checksum",
++                    "item_id": TASK_SOURCE_ID,
++                    "result_field": "checksum",
++                },
++            ],
++        }
++        u2 = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_U2_ID,
++            "model-task",
++            "v1",
++            u2_payload,
++            dependencies=[TASK_SOURCE_ID, TASK_U1_ID],
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++
++        demand_u1 = loop.define_demand(
++            TASK_DEMAND_U1,
++            continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 1 on the real model"],
++            continuation_conditions=[
++                "registered source is reusable and the model result is settled"
++            ],
++            required_item_ids=[TASK_U1_ID],
++        )
++        demand_u2 = loop.define_demand(
++            TASK_DEMAND_U2,
++            continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 2 on the real model"],
++            continuation_conditions=[
++                "step 1 settlement is reused and step 2 is settled"
++            ],
++            required_item_ids=[TASK_U2_ID],
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "define-task",
++            "run_label": args.run_label,
++            "continuation_point": CONTINUATION_POINT,
++            "source": source,
++            "registration_settlement_object_id": registration["object_id"],
++            "u1": u1,
++            "u2": u2,
++            "demand_u1": demand_u1,
++            "demand_u2": demand_u2,
++            "log_text_sha256": digest(log_text),
++            "secret_sha256": digest(material["secret"]),
++            "checksum": material["checksum"],
++            "random_secret": random_secret,
++            "nonce_bits": 128 if random_secret else None,
++        })
++    finally:
++        loop.close()
++
++
++def read_item(args: argparse.Namespace) -> None:
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        item = loop.current_item(args.item_id)
++        if item is None:
++            raise ValueError(f"unknown item: {args.item_id}")
++        settlement = loop.current_settlement(args.item_id)
++        emit({
++            "ok": True,
++            "command": "read-item",
++            "item": item,
++            "settlement_state": settlement.get("state") if settlement else None,
++            "settlement_object_id": (
++                settlement.get("_object_id") if settlement else None
++            ),
++        })
++    finally:
++        loop.close()
++
++
++def read_settlement(args: argparse.Namespace) -> None:
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        settlement = loop.current_settlement(args.item_id)
++        if settlement is None:
++            raise ValueError(f"item has no settlement: {args.item_id}")
++        emit({
++            "ok": True,
++            "command": "read-settlement",
++            "item_id": args.item_id,
++            "settlement": settlement,
++        })
++    finally:
++        loop.close()
++
++
++class AdmissionRefusal(RuntimeError):
++    """A settlement could not be admitted for model input construction.
++
++    Raised BEFORE any model work so the caller can record a pre-generation
++    refusal instead of discovering the defect after paying for a generation.
++    """
++
++    def __init__(self, stage: str, reason: str, detail: object = None) -> None:
++        super().__init__("%s: %s" % (stage, reason))
++        self.stage = stage
++        self.reason = reason
++        self.detail = detail
++
++
++PLACEHOLDER_PATTERN = re.compile(r"\{([a-z][a-z0-9_]*)\}")
++
++
++def _resolve_settled_dependency(
++    loop: CarrierInformationLoop,
++    item_id: str,
++    evaluated_at,
++    visiting: set,
++    resolved: dict,
++) -> Optional[dict]:
++    """Read one settled dependency from IS, using the SAME reuse decision as
++    `execute_demand` (`_settlement_reuse_decision`) instead of a second
++    validator. Any mismatch is a refusal, never a silent substitution."""
++    if item_id in resolved:
++        return resolved[item_id]
++    if item_id in visiting:
++        raise AdmissionRefusal("DEPENDENCY_CYCLE", "cycle at %s" % item_id)
++    visiting.add(item_id)
++    item = loop.current_item(item_id)
++    if item is None:
++        raise AdmissionRefusal("MISSING_ITEM", "unknown item: %s" % item_id)
++    dependency_object_ids: dict[str, str] = {}
++    for dependency_id in item["dependencies"]:
++        dependency = _resolve_settled_dependency(
++            loop, dependency_id, evaluated_at, visiting, resolved
++        )
++        if dependency is None:
++            return None
++        dependency_object_ids[dependency_id] = dependency["object_id"]
++    try:
++        settlement = loop.current_settlement(item_id)
++    except Exception as error:  # noqa: BLE001 - tampered bytes must refuse, not crash
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_UNREADABLE",
++            "%s: %s" % (type(error).__name__, error),
++            {"item_id": item_id},
++        ) from error
++    reusable, refusal_reason = loop._settlement_reuse_decision(
++        settlement, item, dependency_object_ids, evaluated_at
++    )
++    if not reusable:
++        raise AdmissionRefusal(
++            "SETTLEMENT_NOT_ADMITTED",
++            refusal_reason or "SETTLEMENT_BASIS_MISMATCH",
++            {"item_id": item_id, "settlement_state": (settlement or {}).get("state")},
++        )
++    object_id = settlement["_object_id"]
++    try:
++        content = loop.carrier.get_object(object_id)
++    except Exception as error:  # noqa: BLE001 - fail closed on any read defect
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_UNREADABLE",
++            "%s: %s" % (type(error).__name__, error),
++            {"item_id": item_id, "object_id": object_id},
++        ) from error
++    object_sha256 = hashlib.sha256(
++        content.encode("utf-8") if isinstance(content, str) else bytes(content)
++    ).hexdigest()
++    if object_sha256 != object_id:
++        raise AdmissionRefusal(
++            "SETTLEMENT_OBJECT_ID_MISMATCH",
++            "object bytes hash to %s but identity declares %s"
++            % (object_sha256, object_id),
++            {"item_id": item_id},
++        )
++    result = settlement["result"]
++    if digest(result["value"]) != result["result_value_sha256"]:
++        raise AdmissionRefusal(
++            "SETTLEMENT_RESULT_DIGEST_MISMATCH",
++            "stored value does not hash to the declared result digest",
++            {"item_id": item_id},
++        )
++    resolved[item_id] = {
++        "item_id": item_id,
++        "value": result["value"],
++        "object_id": object_id,
++        "object_sha256": object_sha256,
++        "result_value_sha256": result["result_value_sha256"],
++        "source_version": result["source_version"],
++        "dependency_object_ids": result["dependency_object_ids"],
++        "settlement_state": settlement.get("state"),
++    }
++    return resolved[item_id]
++
++
++def resolve_model_input(args: argparse.Namespace) -> None:
++    """Resolve, admit and materialize the model input for one task item.
++
++    This is the production input path: the caller names the task item, and the
++    executor reads the item's declared dependencies from IS, admits each
++    settlement through the ordinary reuse decision, and expands the item's own
++    template. The caller never supplies the values or the text.
++    """
++    evaluated_at = parse_utc(args.evaluated_at)
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        try:
++            item = loop.current_item(args.item_id)
++        except Exception as error:  # noqa: BLE001 - corrupt item refuses, not crash
++            raise AdmissionRefusal(
++                "TASK_ITEM_UNREADABLE",
++                "%s: %s" % (type(error).__name__, error),
++                {"item_id": args.item_id},
++            ) from error
++        if item is None:
++            raise AdmissionRefusal("MISSING_ITEM", "unknown item: %s" % args.item_id)
++        payload = item.get("source_payload") or {}
++        template = payload.get("next_input_template")
++        bindings_spec = payload.get("input_bindings")
++        if not isinstance(template, str) or not template:
++            raise AdmissionRefusal(
++                "TEMPLATE_MISSING", "item declares no next_input_template"
++            )
++        if not isinstance(bindings_spec, list) or not bindings_spec:
++            raise AdmissionRefusal(
++                "BINDINGS_MISSING", "item declares no input_bindings"
++            )
++
++        resolved: dict[str, dict] = {}
++        for dependency_id in item["dependencies"]:
++            _resolve_settled_dependency(
++                loop, dependency_id, evaluated_at, set(), resolved
++            )
++
++        by_placeholder: dict[str, tuple] = {}
++        for spec in bindings_spec:
++            if not isinstance(spec, dict):
++                raise AdmissionRefusal("BINDINGS_MALFORMED", "binding is not an object")
++            placeholder = spec.get("placeholder")
++            dependency_id = spec.get("item_id")
++            result_field = spec.get("result_field")
++            if not all(isinstance(value, str) and value
++                       for value in (placeholder, dependency_id, result_field)):
++                raise AdmissionRefusal(
++                    "BINDINGS_MALFORMED", "binding is missing placeholder/item_id/result_field"
++                )
++            if dependency_id not in item["dependencies"]:
++                raise AdmissionRefusal(
++                    "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
++                    "placeholder {%s} requires %s, which the current task item no "
++                    "longer declares" % (placeholder, dependency_id),
++                    {
++                        "item_id": args.item_id,
++                        "declared_dependencies": list(item["dependencies"]),
++                        "binding_dependency": dependency_id,
++                    },
++                )
++            if dependency_id not in resolved:
++                raise AdmissionRefusal(
++                    "BINDING_DEPENDENCY_UNSETTLED",
++                    "%s is not settled" % dependency_id,
++                )
++            dependency_value = resolved[dependency_id]["value"]
++            if result_field not in dependency_value:
++                raise AdmissionRefusal(
++                    "BINDING_FIELD_MISSING",
++                    "%s result has no field %s" % (dependency_id, result_field),
++                )
++            value = dependency_value[result_field]
++            if not isinstance(value, str) or not value:
++                raise AdmissionRefusal(
++                    "BINDING_VALUE_INVALID",
++                    "%s.%s is not a non-empty string" % (dependency_id, result_field),
++                )
++            by_placeholder[placeholder] = (spec, value, resolved[dependency_id])
++
++        placeholders = [match.group(1) for match in PLACEHOLDER_PATTERN.finditer(template)]
++        unbound = sorted({name for name in placeholders if name not in by_placeholder})
++        if unbound:
++            raise AdmissionRefusal(
++                "UNBOUND_TEMPLATE_PLACEHOLDER",
++                "no admitted settlement binding for %s" % ", ".join(unbound),
++                {"unbound_placeholders": unbound},
++            )
++
++        pieces: list[str] = []
++        bindings: list[dict] = []
++        cursor = 0
++        consumed = 0
++        for match in PLACEHOLDER_PATTERN.finditer(template):
++            literal = template[consumed:match.start()]
++            pieces.append(literal)
++            cursor += len(literal.encode("utf-8"))
++            spec, value, dependency = by_placeholder[match.group(1)]
++            encoded = value.encode("utf-8")
++            bindings.append({
++                "placeholder": spec["placeholder"],
++                "item_id": spec["item_id"],
++                "result_field": spec["result_field"],
++                "value": value,
++                "value_sha256": hashlib.sha256(encoded).hexdigest(),
++                "settlement_object_id": dependency["object_id"],
++                "settlement_object_sha256": dependency["object_sha256"],
++                "result_value_sha256": dependency["result_value_sha256"],
++                "byte_offset": cursor,
++                "byte_length": len(encoded),
++            })
++            pieces.append(value)
++            cursor += len(encoded)
++            consumed = match.end()
++        tail = template[consumed:]
++        pieces.append(tail)
++        cursor += len(tail.encode("utf-8"))
++        input_text = "".join(pieces)
++        input_bytes = input_text.encode("utf-8")
++        if len(input_bytes) != cursor:
++            raise AdmissionRefusal(
++                "INPUT_LENGTH_MISMATCH", "materialized input length disagrees"
++            )
++
++        dependencies = [
++            {
++                "item_id": dependency["item_id"],
++                "settlement_object_id": dependency["object_id"],
++                "settlement_object_sha256": dependency["object_sha256"],
++                "result_value_sha256": dependency["result_value_sha256"],
++                "source_version": dependency["source_version"],
++                "dependency_object_ids": dependency["dependency_object_ids"],
++                "settlement_state": dependency["settlement_state"],
++            }
++            for dependency in resolved.values()
++        ]
++        emit({
++            "ok": True,
++            "command": "resolve-model-input",
++            "item_id": args.item_id,
++            "evaluated_at_utc": args.evaluated_at,
++            "declared_dependencies": list(item["dependencies"]),
++            "template": template,
++            "template_sha256": hashlib.sha256(template.encode("utf-8")).hexdigest(),
++            "input_text": input_text,
++            "input_sha256": hashlib.sha256(input_bytes).hexdigest(),
++            "input_byte_length": len(input_bytes),
++            "bindings": bindings,
++            "dependencies": dependencies,
++            "checks": {
++                "all_declared_dependencies_admitted": True,
++                "settlement_objects_readable": True,
++                "object_identity_matches_bytes": True,
++                "result_digests_match_values": True,
++                "source_versions_match_items": True,
++                "dependency_object_sets_match": True,
++                "validity_satisfied": True,
++                "all_placeholders_bound": True,
++            },
++        })
++    finally:
++        loop.close()
++
++
++def _validate_model_value(
++    item_id: str,
++    value: dict,
++    dependency_values: dict,
++) -> None:
++    """Task result validator: the model value must agree with settled deps.
++
++    This is NOT a computation. It refuses a value that the model could not
++    have produced from the settled dependency results, so an externally
++    supplied model output can never be settled against unrelated information.
++    """
++    generated_tokens = value.get("generated_token_ids")
++    if not isinstance(generated_tokens, list) or not generated_tokens:
++        raise ValueError("model value carries no generated tokens")
++    if not isinstance(value.get("model_snapshot_revision"), str) or not value[
++        "model_snapshot_revision"
++    ]:
++        raise ValueError("model value carries no model snapshot identity")
++    if item_id == TASK_U1_ID:
++        source_value = dependency_values.get(TASK_SOURCE_ID)
++        if not isinstance(source_value, dict):
++            raise ValueError("step 1 requires the settled session-log dependency")
++        secret = value.get("secret")
++        if not isinstance(secret, str) or not secret:
++            raise ValueError("model value carries no extracted secret")
++        if digest(secret) != source_value.get("secret_sha256"):
++            raise ValueError(
++                "extracted secret does not match the settled session-log commitment"
++            )
++        return
++    if item_id == TASK_U2_ID:
++        log_value = dependency_values.get(TASK_SOURCE_ID)
++        u1_value = dependency_values.get(TASK_U1_ID)
++        if not isinstance(log_value, dict) or not isinstance(u1_value, dict):
++            raise ValueError("step 2 requires both settled dependencies")
++        expected = "%s-%s" % (u1_value.get("secret"), log_value.get("checksum"))
++        if value.get("answer") != expected:
++            raise ValueError(
++                "model answer does not match the settled secret and checksum"
++            )
++        return
++    raise ValueError(f"unrecognized model task item: {item_id}")
++
++
++def execute_with_model_result(args: argparse.Namespace) -> None:
++    """Settle a model-produced result through the ordinary demand machinery.
++
++    The model ran in the Swift runtime BEFORE this call. The calculator is
++    restricted to exactly the item the model computed: if any dependency is
++    not reusable, the demand machinery asks the calculator for it and this
++    command fails closed instead of settling work the model never performed.
++    """
++    validity_policy = load_deployment_validity_policy()
++    with open(args.value_file, "r", encoding="utf-8") as handle:
++        value = json.load(handle)
++    if not isinstance(value, dict):
++        raise ValueError("model result value must be a JSON object")
++
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        def calculator(item_id: str, source_payload: dict, dependency_values: dict) -> dict:
++            if item_id != args.item_id:
++                raise ValueError(
++                    "model result is only valid for %s; dependency %s was not reusable"
++                    % (args.item_id, item_id)
++                )
++            _validate_model_value(item_id, value, dependency_values)
++            return value
++
++        result = loop.execute_demand(
++            args.demand_id,
++            args.advancement,
++            calculator,
++            evaluated_at_utc=args.evaluated_at,
++            expected_validity_policy_sha256=validity_policy["policy_sha256"],
++            require_deployment_policy=True,
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "execute-with-model-result",
++            "item_id": args.item_id,
++            "demand_id": args.demand_id,
++            "result": result,
++        })
++    finally:
++        loop.close()
++
++
++def execute_probe(args: argparse.Namespace) -> None:
++    """Model-free dependency-closure probe: settle whatever is not reusable.
++
++    Used on an isolated COPY of a run database after invalidation, to prove
++    which items the dependency closure actually recomputes. It never loads a
++    model and never touches the authoritative run database.
++    """
++    validity_policy = (
++        load_deployment_validity_policy()
++        if os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH")
++        else None
++    )
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        def calculator(item_id: str, source_payload: dict, dependency_values: dict) -> dict:
++            return {
++                "probe_marker": digest({
++                    "item_id": item_id,
++                    "source_payload_sha256": digest(source_payload),
++                    "dependency_item_ids": sorted(dependency_values),
++                })
++            }
++
++        result = loop.execute_demand(
++            args.demand_id,
++            args.advancement,
++            calculator,
++            evaluated_at_utc=args.evaluated_at,
++            expected_validity_policy_sha256=(
++                validity_policy["policy_sha256"] if validity_policy else None
++            ),
++            require_deployment_policy=bool(validity_policy),
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "execute-probe",
++            "demand_id": args.demand_id,
++            "result": result,
++        })
++    finally:
++        loop.close()
++
++
++def snapshot_database(args: argparse.Namespace) -> None:
++    """Consistent SQLite backup, so probes never run on a live file copy."""
++    import sqlite3
++
++    destination = Path(args.destination)
++    if destination.exists() or destination.is_symlink():
++        raise FileExistsError(destination)
++    source = sqlite3.connect(str(Path(args.database).resolve()))
++    target = sqlite3.connect(str(destination))
++    try:
++        source.backup(target)
++        target.commit()
++    finally:
++        target.close()
++        source.close()
++    emit({
++        "ok": True,
++        "command": "snapshot-database",
++        "source": str(Path(args.database).resolve()),
++        "destination": str(destination.resolve()),
++    })
++
++
+ def main() -> int:
+     parser = argparse.ArgumentParser()
+     subparsers = parser.add_subparsers(dest="command", required=True)
+@@ -520,9 +1225,84 @@ def main() -> int:
+     diagnostics_parser.add_argument("--evaluated-at", required=True)
+     diagnostics_parser.set_defaults(handler=diagnostics)
+ 
++    define_task_parser = subparsers.add_parser("define-task")
++    define_task_parser.add_argument("--database", required=True)
++    define_task_parser.add_argument("--evaluated-at", required=True)
++    define_task_parser.add_argument("--run-label", required=True)
++    define_task_parser.add_argument(
++        "--secret",
++        default=None,
++        help="controlled nonce override; does not change the task graph",
++    )
++    define_task_parser.add_argument(
++        "--secret-file",
++        default=None,
++        help="read the nonce from a file so it never appears in the command line",
++    )
++    define_task_parser.add_argument(
++        "--random-secret",
++        action="store_true",
++        help=(
++            "generate a 128-bit nonce inside this process; the raw nonce is "
++            "never emitted, passed on a command line or written to a temp file"
++        ),
++    )
++    define_task_parser.add_argument("--valid-until")
++    define_task_parser.set_defaults(handler=define_task)
++
++    read_item_parser = subparsers.add_parser("read-item")
++    read_item_parser.add_argument("--database", required=True)
++    read_item_parser.add_argument("--item-id", required=True)
++    read_item_parser.set_defaults(handler=read_item)
++
++    read_settlement_parser = subparsers.add_parser("read-settlement")
++    read_settlement_parser.add_argument("--database", required=True)
++    read_settlement_parser.add_argument("--item-id", required=True)
++    read_settlement_parser.set_defaults(handler=read_settlement)
++
++    resolve_input_parser = subparsers.add_parser("resolve-model-input")
++    resolve_input_parser.add_argument("--database", required=True)
++    resolve_input_parser.add_argument("--item-id", required=True)
++    resolve_input_parser.add_argument("--evaluated-at", required=True)
++    resolve_input_parser.set_defaults(handler=resolve_model_input)
++
++    model_result_parser = subparsers.add_parser("execute-with-model-result")
++    model_result_parser.add_argument("--database", required=True)
++    model_result_parser.add_argument("--demand-id", required=True)
++    model_result_parser.add_argument("--advancement", required=True)
++    model_result_parser.add_argument("--evaluated-at", required=True)
++    model_result_parser.add_argument("--item-id", required=True)
++    model_result_parser.add_argument("--value-file", required=True)
++    model_result_parser.set_defaults(handler=execute_with_model_result)
++
++    probe_parser = subparsers.add_parser("execute-probe")
++    probe_parser.add_argument("--database", required=True)
++    probe_parser.add_argument("--demand-id", required=True)
++    probe_parser.add_argument("--advancement", required=True)
++    probe_parser.add_argument("--evaluated-at", required=True)
++    probe_parser.set_defaults(handler=execute_probe)
++
++    snapshot_parser = subparsers.add_parser("snapshot-database")
++    snapshot_parser.add_argument("--database", required=True)
++    snapshot_parser.add_argument("--destination", required=True)
++    snapshot_parser.set_defaults(handler=snapshot_database)
++
+     args = parser.parse_args()
+     try:
+         args.handler(args)
++    except AdmissionRefusal as error:
++        emit({
++            "ok": False,
++            "command": args.command,
++            "error_type": type(error).__name__,
++            "error": str(error),
++            "refusal": {
++                "stage": error.stage,
++                "reason": error.reason,
++                "detail": error.detail,
++            },
++        })
++        return 1
+     except Exception as error:
+         emit({
+             "ok": False,
+diff --git a/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift b/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+index 40a78ca1..908e1cc7 100644
+--- a/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
++++ b/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+@@ -40,6 +40,17 @@ public enum ProductionRuntimeInformationError: Error, Equatable, Sendable {
+   /// it would resume work inconsistent with IS — rejected before any new side
+   /// effect.
+   case settlementCheckpointMismatch(executionID: String, field: String)
++  /// The bridge refused a request with a structured admission verdict (stage,
++  /// reason, optional item id) instead of an opaque failure message.
++  case bridgeRefused(command: String, stage: String, reason: String, itemID: String?)
++  /// IS holds no admissible settlement for one of the task item's declared
++  /// input dependencies (missing, invalid, expired, byte-tampered, or no longer
++  /// matching the item's version/dependency set). Refused BEFORE tokenization
++  /// and model generation, so an unadmitted input never pays a generation cost.
++  case informationSpaceInputAdmissionRefused(itemID: String, stage: String, reason: String)
++  /// The admitted input could not be reproduced from the returned bindings:
++  /// input digest, byte range, value digest, or object identity disagreed.
++  case informationSpaceInputBindingMismatch(field: String)
+ }
+ 
+ public protocol ProductionRuntimeModelContinuationExecutor: Sendable {
+@@ -64,6 +75,130 @@ public struct ProductionRuntimeBridgeReport: Equatable, Sendable {
+   public let resultDigest: String
+ }
+ 
++/// One settlement action the Information Space actually took while resolving a
++/// task demand. `settlementObjectID` identifies the physical settlement record
++/// the value came from, so a later stage can prove it reused the SAME settled
++/// object instead of merely reaching an equal answer.
++public struct ProductionTaskSettlementAction: Equatable, Sendable {
++  public let itemID: String
++  public let action: String
++  public let settlementObjectID: String
++  public let resultDigest: String
++
++  public init(itemID: String, action: String, settlementObjectID: String, resultDigest: String) {
++    self.itemID = itemID
++    self.action = action
++    self.settlementObjectID = settlementObjectID
++    self.resultDigest = resultDigest
++  }
++}
++
++/// Evidence for one real-model task advancement: what the model consumed, what
++/// it produced, which items the Information Space reused vs recomputed, and the
++/// IS runtime-application confirmation the ES checkpoint is bound to.
++public struct ProductionTaskContinuationReport: Equatable, Sendable {
++  public let demandID: String
++  public let taskItemID: String
++  public let created: Bool
++  public let computedItemIDs: [String]
++  public let reusedItemIDs: [String]
++  public let settlementActions: [ProductionTaskSettlementAction]
++  public let resultDigest: String
++  public let isPendingStateID: String
++  public let isConfirmationStateID: String
++  public let advancedPosition: Int64
++  public let advancedLifecycle: String
++  public let consumedPrefixLength: Int
++  public let nextInputTokenCount: Int
++  public let nextInputTokenIDs: [Int]
++  public let generatedTokenIDs: [Int]
++  public let generatedText: String
++  public let updatedPrefixTokenCount: Int
++  public let tokenizeSeedCallCount: Int
++  public let tokenizeNextInputCallCount: Int
++  public let modelContinuationCallCount: Int
++}
++
++/// One admitted substitution in the model input. `byteOffset`/`byteLength`
++/// address the value inside the UTF-8 input bytes, so the executor can prove
++/// that the identity it admitted is exactly the bytes the model receives.
++public struct ProductionTaskInputBinding: Equatable, Sendable {
++  public let placeholder: String
++  public let itemID: String
++  public let resultField: String
++  public let value: String
++  public let valueSHA256: String
++  public let settlementObjectID: String
++  public let settlementObjectSHA256: String
++  public let resultValueSHA256: String
++  public let byteOffset: Int
++  public let byteLength: Int
++}
++
++/// The production input admission for one task item: which settled objects were
++/// admitted, what the executor verified, and the exact input materialized from
++/// the item's own template.
++public struct ProductionTaskInputAdmission: Equatable, Sendable {
++  public let taskItemID: String
++  public let declaredDependencies: [String]
++  public let templateSHA256: String
++  public let inputText: String
++  public let inputSHA256: String
++  public let inputByteLength: Int
++  public let bindings: [ProductionTaskInputBinding]
++  public let dependencySettlementObjectIDs: [String: String]
++  public let checks: [String: Bool]
++
++  public func value(forPlaceholder placeholder: String) -> String? {
++    bindings.first { $0.placeholder == placeholder }?.value
++  }
++
++  /// Machine-readable evidence: identities and digests only, never the raw
++  /// admitted values (they are already carried by the input the model saw).
++  public func evidenceDictionary() -> [String: Any] {
++    [
++      "task_item_id": taskItemID,
++      "declared_dependencies": declaredDependencies,
++      "template_sha256": templateSHA256,
++      "input_sha256": inputSHA256,
++      "input_byte_length": inputByteLength,
++      "dependency_settlement_object_ids": dependencySettlementObjectIDs,
++      "checks": checks,
++      "bindings": bindings.map { binding in
++        [
++          "placeholder": binding.placeholder,
++          "item_id": binding.itemID,
++          "result_field": binding.resultField,
++          "value_sha256": binding.valueSHA256,
++          "settlement_object_id": binding.settlementObjectID,
++          "result_value_sha256": binding.resultValueSHA256,
++          "byte_offset": binding.byteOffset,
++          "byte_length": binding.byteLength,
++        ]
++      },
++    ]
++  }
++}
++
++/// The result of one production continuation whose input was resolved and
++/// admitted from the Information Space: the ES handle, the settlement report,
++/// and the exact admission identity the model consumed.
++public struct ProductionTaskInformationContinuation: Equatable, Sendable {
++  public let handle: ExecutionStateHandle
++  public let report: ProductionTaskContinuationReport
++  public let admission: ProductionTaskInputAdmission
++
++  public init(
++    handle: ExecutionStateHandle,
++    report: ProductionTaskContinuationReport,
++    admission: ProductionTaskInputAdmission
++  ) {
++    self.handle = handle
++    self.report = report
++    self.admission = admission
++  }
++}
++
+ public struct SerializedProductionExecutionState: Codable, Equatable, Sendable {
+   public let id: String
+   public let lineageRoot: String
+@@ -306,6 +441,17 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable
+       throw ProductionRuntimeInformationError.invalidBridgeResponse(command: command)
+     }
+     guard process.terminationStatus == 0, decoded["ok"] as? Bool == true else {
++      if let refusal = decoded["refusal"] as? [String: Any],
++         let stage = refusal["stage"] as? String,
++         let reason = refusal["reason"] as? String {
++        let detail = refusal["detail"] as? [String: Any]
++        throw ProductionRuntimeInformationError.bridgeRefused(
++          command: command,
++          stage: stage,
++          reason: reason,
++          itemID: detail?["item_id"] as? String
++        )
++      }
+       let message = decoded["error"] as? String ?? String(decoding: error.fileHandleForReading.availableData, as: UTF8.self)
+       throw ProductionRuntimeInformationError.bridgeFailed(
+         command: command,
+@@ -420,6 +566,22 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable
+     runtime.recordsSnapshot.filter { $0.executionID == executionID }
+   }
+ 
++  /// Serialized lifecycle transitions for experiment evidence. This is a
++  /// read-only projection of the coordinator's authoritative records; it does
++  /// not add, alter, or replay a transition.
++  public func lifecycleRecordSummary() -> [[String: Any]] {
++    runtime.recordsSnapshot.map { record in
++      [
++        "sequence": record.sequence,
++        "operation": record.operation.rawValue,
++        "execution_id": record.executionID.rawValue,
++        "related_id": record.relatedID?.rawValue ?? NSNull(),
++        "result_lifecycle": record.resultLifecycle.rawValue,
++        "result_position": Int(record.resultPosition.value),
++      ]
++    }
++  }
++
+   func runtimeHandle(executionID: ExecutionID) -> ExecutionStateHandle? {
+     runtime.handle(executionID)
+   }
+@@ -873,4 +1035,588 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable
+       )
+     )
+   }
++
++  // MARK: - Real-model task continuation (model result settled into IS)
++
++  /// Run one task step on the real model executor and settle ITS RESULT into the
++  /// Information Space through the ordinary demand machinery.
++  ///
++  /// Ordering is deliberate and differs from ``continueWithRealInformation``:
++  /// the model produces the value FIRST (from the ES's bound representation),
++  /// then the value is settled, then the ES advances and rebinds the advanced
++  /// representation, then IS confirms runtime application. The bridge accepts a
++  /// model result only for exactly one item; if any dependency is not reusable
++  /// the settlement refuses instead of covering work the model never did.
++  ///
++  /// `handle == nil` creates a fresh ES seeded with `seedText`. Passing a
++  /// recovered handle resumes the durable representation; a missing persisted
++  /// representation fails closed rather than fabricating a seed prefix.
++  public func continueTask(
++    database: URL,
++    handle: ExecutionStateHandle?,
++    advancementID: String,
++    evaluatedAtUTC: String,
++    demandID: String,
++    taskItemID: String,
++    seedText: String?,
++    nextInputText: String,
++    maxTokens: Int = 32,
++    modelValue: (ExecutionContinuationResult) throws -> [String: Any]
++  ) async throws -> (handle: ExecutionStateHandle, report: ProductionTaskContinuationReport) {
++    // Fail closed BEFORE any new side effect when this ES already carries a
++    // settlement checkpoint that no longer matches IS's current settled state.
++    if let checkpoint = runtime.settlementCheckpoint(for: Self.executionID) {
++      let preExecutionISState = try informationSpaceLatestExecutionState(database: database)
++      try validateSettlementAgainstInformationSpace(
++        checkpoint: checkpoint,
++        isState: preExecutionISState,
++        handle: handle
++      )
++      if stateStore != nil, let handle,
++         (try? backend.boundPrefix(for: handle)) == nil,
++         !runtime.hasPersistedRepresentation(
++          executionID: handle.id, position: handle.position) {
++        throw ProductionRuntimeInformationError.persistedRepresentationUnavailable(
++          executionID: handle.id.rawValue,
++          position: handle.position.value
++        )
++      }
++    }
++    guard let modelExecutor else {
++      throw ProductionRuntimeInformationError.modelExecutorUnavailable
++    }
++
++    var tokenizeSeedCallCount = 0
++    var tokenizeNextInputCallCount = 0
++    var modelContinuationCallCount = 0
++    tokenizeNextInputCallCount += 1
++    let nextInputTokens = try await modelExecutor.tokenizeText(nextInputText)
++
++    var created = false
++    var current: ExecutionStateHandle?
++    var priorRepresentation: ExecutionRepresentation?
++    var advanced: ExecutionStateHandle?
++    var modelResult: ExecutionContinuationResult?
++    var failureStage: String?
++    var settledConfirmationState: [String: Any]?
++    var bridgeComputed: [String] = []
++    var bridgeReused: [String] = []
++    var bridgeActions: [ProductionTaskSettlementAction] = []
++    var bridgeResultDigest = ""
++    var pendingStateID = ""
++    var valueFileURL: URL?
++
++    func failPending(_ stage: String, _ reason: String) throws {
++      _ = try runBridge("record-blocked", arguments: [
++        "--database", database.path,
++        "--state-id", "\(pendingStateID.isEmpty ? advancementID : pendingStateID):\(stage)-failed",
++        "--prior-state-id", pendingStateID.isEmpty ? advancementID : pendingStateID,
++        "--reason", "\(stage): \(reason)",
++      ])
++    }
++
++    do {
++      failureStage = "runtime_create_or_attach"
++      if let handle {
++        if runtime.handle(handle.id) != nil {
++          current = try await runtime.reattach(handle)
++        } else {
++          current = try await runtime.attach(handle)
++        }
++        guard let attached = current else {
++          throw ProductionRuntimeInformationError.modelExecutionFailed(reason: "runtime handle unavailable")
++        }
++        // Recovery priority: rebind the PERSISTED representation. Re-tokenizing
++        // a seed here would fabricate a prefix and masquerade as recovered work.
++        if (try? backend.boundPrefix(for: attached)) == nil {
++          failureStage = "representation_recovery_rebind"
++          let reboundFromDurableState = try await runtime.restorePersistedBinding(
++            executionID: attached.id,
++            position: attached.position
++          )
++          guard reboundFromDurableState, stateStore != nil else {
++            throw ProductionRuntimeInformationError.persistedRepresentationUnavailable(
++              executionID: attached.id.rawValue,
++              position: attached.position.value
++            )
++          }
++        }
++      } else {
++        guard let seedText else {
++          throw ProductionRuntimeInformationError.modelExecutionFailed(
++            reason: "a fresh execution requires seed text")
++        }
++        failureStage = "tokenize_seed"
++        tokenizeSeedCallCount += 1
++        let seedTokens = try await modelExecutor.tokenizeSeedText(seedText)
++        created = true
++        failureStage = "runtime_create_or_attach"
++        let fresh = try await runtime.create(
++          id: Self.executionID,
++          position: ExecutionPosition(0),
++          continuation: ExecutionContinuation(
++            nextInput: "\(Self.continuationPoint)-initial",
++            continuationID: "\(Self.continuationPoint)-initial-cont"
++          )
++        )
++        current = fresh
++        failureStage = "representation_binding"
++        try await runtime.bindRepresentation(
++          executionID: fresh.id,
++          position: fresh.position,
++          payload: MLXPrefixPayload(tokenPrefix: seedTokens)
++        )
++      }
++      guard let current else {
++        throw ProductionRuntimeInformationError.modelExecutionFailed(reason: "runtime handle unavailable")
++      }
++      failureStage = "capture_pre_model_representation"
++      priorRepresentation = try await backend.captureRepresentation(for: current)
++
++      failureStage = "model_execution"
++      modelContinuationCallCount += 1
++      let produced = try await modelExecutor.continueExecution(
++        current,
++        nextInputTokens: nextInputTokens,
++        maxTokens: maxTokens
++      )
++      modelResult = produced
++
++      failureStage = "model_result_preparation"
++      let value = try modelValue(produced)
++      let valueData = try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
++      let valueURL = FileManager.default.temporaryDirectory
++        .appendingPathComponent("simigo-model-result-\(UUID().uuidString).json")
++      try valueData.write(to: valueURL, options: .atomic)
++      valueFileURL = valueURL
++
++      failureStage = "information_settlement"
++      let response = try runBridge("execute-with-model-result", arguments: [
++        "--database", database.path,
++        "--demand-id", demandID,
++        "--advancement", advancementID,
++        "--evaluated-at", evaluatedAtUTC,
++        "--item-id", taskItemID,
++        "--value-file", valueURL.path,
++      ])
++      guard let result = response["result"] as? [String: Any] else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute-with-model-result")
++      }
++      let state = result["state"] as? String ?? "UNKNOWN"
++      guard result["advanced"] as? Bool == true, state == "ADVANCED" else {
++        throw ProductionRuntimeInformationError.blockedInformationDemand(
++          command: advancementID,
++          state: state,
++          validityFailureItemIDs: result["validity_failure_item_ids"] as? [String] ?? []
++        )
++      }
++      guard let executionState = result["execution_state"] as? [String: Any],
++            let unwrappedPendingStateID = executionState["state_id"] as? String else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute-with-model-result")
++      }
++      pendingStateID = unwrappedPendingStateID
++      bridgeComputed = result["computed_item_ids"] as? [String] ?? []
++      bridgeReused = result["reused_item_ids"] as? [String] ?? []
++      bridgeActions = (result["actions"] as? [[String: Any]] ?? []).map { action in
++        ProductionTaskSettlementAction(
++          itemID: action["item_id"] as? String ?? "",
++          action: action["action"] as? String ?? "",
++          settlementObjectID: action["settlement_object_id"] as? String ?? "",
++          resultDigest: action["result_digest"] as? String ?? ""
++        )
++      }
++      let resultPayload = result["result"] as? [String: Any] ?? [:]
++      let resultData = try JSONSerialization.data(withJSONObject: resultPayload, options: [.sortedKeys])
++      bridgeResultDigest = SHA256.hash(data: resultData).map { String(format: "%02x", $0) }.joined()
++
++      failureStage = "logical_advance"
++      advanced = try await runtime.continueExecution(
++        current,
++        continuation: ExecutionContinuation(
++          nextInput: "\(Self.continuationPoint):\(advancementID)",
++          continuationID: "\(Self.continuationPoint):\(advancementID):cont"
++        )
++      )
++      failureStage = "representation_binding"
++      guard let unwrappedAdvanced = advanced, let unwrappedModelResult = modelResult else {
++        throw ProductionRuntimeInformationError.modelExecutionFailed(
++          reason: "runtime continuation result missing")
++      }
++      try await runtime.bindRepresentation(
++        executionID: unwrappedAdvanced.id,
++        position: unwrappedAdvanced.position,
++        payload: unwrappedModelResult.updatedPayload
++      )
++      failureStage = "post_bind_verification"
++      _ = try backend.boundPrefix(for: unwrappedAdvanced)
++      failureStage = "carrier_confirmation"
++      let confirmationResponse = try runBridge(
++        "confirm-runtime-application",
++        arguments: ["--database", database.path, "--state-id", pendingStateID]
++      )
++      settledConfirmationState = confirmationResponse["execution_state"] as? [String: Any]
++    } catch {
++      failureStage = failureStage ?? "unclassified"
++      try? failPending(failureStage!, String(describing: error))
++      if let priorRepresentation {
++        try? await backend.restoreRepresentation(priorRepresentation)
++      }
++      if let base = current {
++        try? await runtime.restore(
++          base,
++          request: ExecutionRestoreRequest(
++            targetPosition: base.position,
++            continuation: base.continuation
++          )
++        )
++      }
++      if let terminal = advanced ?? current {
++        try? await runtime.discard(terminal)
++        backend.consumeBinding(for: terminal)
++      }
++      if let valueFileURL { try? FileManager.default.removeItem(at: valueFileURL) }
++      throw ProductionRuntimeInformationError.modelExecutionFailed(
++        reason: "[\(failureStage ?? "unclassified")] \(error)"
++      )
++    }
++    if let valueFileURL { try? FileManager.default.removeItem(at: valueFileURL) }
++
++    // Bind the ES↔IS checkpoint to the authoritative confirmation record, so a
++    // later recovery can prove the recovered ES matches IS's latest settlement.
++    if stateStore != nil,
++       let confirmedState = settledConfirmationState,
++       let confirmationStateID = confirmedState["state_id"] as? String,
++       let confirmationPriorID = confirmedState["prior_state_id"] as? String,
++       let isResultDigest = confirmedState["result_digest"] as? String,
++       let isValidityBasis = confirmedState["demand_digest"] as? String,
++       let advancedHandle = advanced {
++      try await runtime.recordSettlementCheckpoint(
++        ExecutionContinuityCoordinator.SettlementCheckpoint(
++          executionID: advancedHandle.id,
++          position: advancedHandle.position,
++          lastSettledAdvancementID: advancementID,
++          isOriginalStateID: confirmationPriorID,
++          isConfirmationStateID: confirmationStateID,
++          resultDigest: isResultDigest,
++          validityBasis: isValidityBasis
++        )
++      )
++    }
++
++    guard let advancedHandle = advanced,
++          let produced = modelResult,
++          let confirmation = settledConfirmationState,
++          let confirmationStateID = confirmation["state_id"] as? String,
++          let updatedPrefix = (produced.updatedPayload as? MLXPrefixPayload)?.tokenPrefix else {
++      throw ProductionRuntimeInformationError.modelExecutionFailed(
++        reason: "task continuation evidence unavailable")
++    }
++    let report = ProductionTaskContinuationReport(
++      demandID: demandID,
++      taskItemID: taskItemID,
++      created: created,
++      computedItemIDs: bridgeComputed,
++      reusedItemIDs: bridgeReused,
++      settlementActions: bridgeActions,
++      resultDigest: bridgeResultDigest,
++      isPendingStateID: pendingStateID,
++      isConfirmationStateID: confirmationStateID,
++      advancedPosition: advancedHandle.position.value,
++      advancedLifecycle: advancedHandle.lifecycle.rawValue,
++      consumedPrefixLength: produced.consumedPrefixLength,
++      nextInputTokenCount: produced.nextInputTokenCount,
++      nextInputTokenIDs: nextInputTokens,
++      generatedTokenIDs: produced.generatedTokenIDs,
++      generatedText: produced.generatedText,
++      updatedPrefixTokenCount: updatedPrefix.count,
++      tokenizeSeedCallCount: tokenizeSeedCallCount,
++      tokenizeNextInputCallCount: tokenizeNextInputCallCount,
++      modelContinuationCallCount: modelContinuationCallCount
++    )
++    return (advancedHandle, report)
++  }
++
++  // MARK: - Information Space input admission (production task path)
++
++  private static func sha256Hex(_ data: Data) -> String {
++    SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
++  }
++
++  /// Template placeholders are the task item's OWN declaration (`{name}`); the
++  /// production resolver expands them from admitted settlements only.
++  private static let inputPlaceholderPattern: NSRegularExpression = {
++    // Compile-time constant: an invalid pattern is a programming error.
++    try! NSRegularExpression(pattern: "\\{([a-z][a-z0-9_]*)\\}")
++  }()
++
++  private static func expandInputTemplate(
++    _ template: String,
++    values: [String: String]
++  ) -> String? {
++    let text = template as NSString
++    let matches = inputPlaceholderPattern.matches(
++      in: template, range: NSRange(location: 0, length: text.length))
++    var expanded = ""
++    var cursor = 0
++    for match in matches {
++      expanded += text.substring(
++        with: NSRange(location: cursor, length: match.range.location - cursor))
++      let name = text.substring(with: match.range(at: 1))
++      guard let value = values[name] else { return nil }
++      expanded += value
++      cursor = match.range.location + match.range.length
++    }
++    expanded += text.substring(from: cursor)
++    return expanded
++  }
++
++  /// Resolve and ADMIT the model input for one task item from the Information
++  /// Space, before any tokenization or generation.
++  ///
++  /// The production resolver reads the item's declared dependency closure,
++  /// admits every settled dependency through the ordinary settlement reuse
++  /// decision, and expands the item's own template. This method then verifies
++  /// the returned material byte-for-byte: the object identity IS the content
++  /// digest, the admitted value occupies exactly the declared byte range, and
++  /// re-expanding the template reproduces the same input. The identity the
++  /// executor admitted is therefore exactly the bytes handed to the model.
++  public func resolveTaskInput(
++    database: URL,
++    taskItemID: String,
++    evaluatedAtUTC: String
++  ) throws -> ProductionTaskInputAdmission {
++    let response: [String: Any]
++    do {
++      response = try runBridge("resolve-model-input", arguments: [
++        "--database", database.path,
++        "--item-id", taskItemID,
++        "--evaluated-at", evaluatedAtUTC,
++      ])
++    } catch ProductionRuntimeInformationError.bridgeRefused(
++      _, let stage, let reason, let itemID
++    ) {
++      throw ProductionRuntimeInformationError.informationSpaceInputAdmissionRefused(
++        itemID: itemID ?? taskItemID, stage: stage, reason: reason)
++    }
++    guard let inputText = response["input_text"] as? String,
++          let inputSHA256 = response["input_sha256"] as? String,
++          let inputByteLength = response["input_byte_length"] as? Int,
++          let template = response["template"] as? String,
++          let templateSHA256 = response["template_sha256"] as? String,
++          let declaredDependencies = response["declared_dependencies"] as? [String],
++          let rawBindings = response["bindings"] as? [[String: Any]],
++          let rawDependencies = response["dependencies"] as? [[String: Any]],
++          let rawChecks = response["checks"] as? [String: Any] else {
++      throw ProductionRuntimeInformationError.invalidBridgeResponse(
++        command: "resolve-model-input")
++    }
++
++    let inputData = Data(inputText.utf8)
++    guard Self.sha256Hex(inputData) == inputSHA256 else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "input_sha256")
++    }
++    guard inputData.count == inputByteLength else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "input_byte_length")
++    }
++    guard Self.sha256Hex(Data(template.utf8)) == templateSHA256 else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "template_sha256")
++    }
++    // Every admission check the resolver reports must be present and true; an
++    // unknown-but-false check also refuses rather than being ignored.
++    let requiredChecks = [
++      "settlement_objects_readable",
++      "object_identity_matches_bytes",
++      "result_digests_match_values",
++      "source_versions_match_items",
++      "dependency_object_sets_match",
++      "validity_satisfied",
++      "all_placeholders_bound",
++    ]
++    for name in requiredChecks {
++      guard rawChecks[name] as? Bool == true else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "admission_check:\(name)")
++      }
++    }
++    for (name, value) in rawChecks where value as? Bool != true {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "admission_check:\(name)")
++    }
++
++    var bindings: [ProductionTaskInputBinding] = []
++    var boundValues: [String: String] = [:]
++    for raw in rawBindings {
++      guard let placeholder = raw["placeholder"] as? String,
++            let itemID = raw["item_id"] as? String,
++            let resultField = raw["result_field"] as? String,
++            let value = raw["value"] as? String,
++            let valueSHA256 = raw["value_sha256"] as? String,
++            let settlementObjectID = raw["settlement_object_id"] as? String,
++            let settlementObjectSHA256 = raw["settlement_object_sha256"] as? String,
++            let resultValueSHA256 = raw["result_value_sha256"] as? String,
++            let byteOffset = raw["byte_offset"] as? Int,
++            let byteLength = raw["byte_length"] as? Int else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(
++          command: "resolve-model-input")
++      }
++      let valueData = Data(value.utf8)
++      guard Self.sha256Hex(valueData) == valueSHA256 else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "value_sha256:\(placeholder)")
++      }
++      // The object id IS the content digest: an identity that no longer hashes
++      // to its own bytes cannot be the settled object it claims to be.
++      guard settlementObjectID == settlementObjectSHA256 else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "object_identity:\(placeholder)")
++      }
++      guard byteOffset >= 0, byteLength == valueData.count,
++            byteOffset + byteLength <= inputData.count else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "byte_range:\(placeholder)")
++      }
++      guard inputData.subdata(
++        in: byteOffset..<(byteOffset + byteLength)) == valueData else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "byte_slice:\(placeholder)")
++      }
++      guard declaredDependencies.contains(itemID) else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "binding_dependency:\(placeholder)")
++      }
++      guard boundValues[placeholder] == nil else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "duplicate_placeholder:\(placeholder)")
++      }
++      boundValues[placeholder] = value
++      bindings.append(ProductionTaskInputBinding(
++        placeholder: placeholder,
++        itemID: itemID,
++        resultField: resultField,
++        value: value,
++        valueSHA256: valueSHA256,
++        settlementObjectID: settlementObjectID,
++        settlementObjectSHA256: settlementObjectSHA256,
++        resultValueSHA256: resultValueSHA256,
++        byteOffset: byteOffset,
++        byteLength: byteLength))
++    }
++
++    var dependencyObjectIDs: [String: String] = [:]
++    for raw in rawDependencies {
++      guard let itemID = raw["item_id"] as? String,
++            let objectID = raw["settlement_object_id"] as? String,
++            let objectSHA256 = raw["settlement_object_sha256"] as? String else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(
++          command: "resolve-model-input")
++      }
++      guard objectID == objectSHA256 else {
++        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++          field: "dependency_object_identity:\(itemID)")
++      }
++      dependencyObjectIDs[itemID] = objectID
++    }
++    guard dependencyObjectIDs.count == declaredDependencies.count,
++          Set(dependencyObjectIDs.keys) == Set(declaredDependencies) else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "dependency_closure")
++    }
++    guard let expanded = Self.expandInputTemplate(template, values: boundValues) else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "template_placeholder_unbound")
++    }
++    guard expanded == inputText else {
++      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
++        field: "template_expansion")
++    }
++
++    var checks: [String: Bool] = [:]
++    for (name, value) in rawChecks { checks[name] = value as? Bool }
++    return ProductionTaskInputAdmission(
++      taskItemID: taskItemID,
++      declaredDependencies: declaredDependencies,
++      templateSHA256: templateSHA256,
++      inputText: inputText,
++      inputSHA256: inputSHA256,
++      inputByteLength: inputByteLength,
++      bindings: bindings,
++      dependencySettlementObjectIDs: dependencyObjectIDs,
++      checks: checks
++    )
++  }
++
++  /// Production task continuation: the executor resolves and admits the input
++  /// from IS FIRST, then runs the ordinary continuation with exactly that
++  /// admitted input. A missing, invalid, tampered or dependency-mismatched
++  /// settlement refuses here, before tokenization and before generation, so an
++  /// unadmitted input never pays a model cost or advances the ES.
++  public func continueTaskFromInformationSpace(
++    database: URL,
++    handle: ExecutionStateHandle?,
++    advancementID: String,
++    evaluatedAtUTC: String,
++    demandID: String,
++    taskItemID: String,
++    seedText: String?,
++    maxTokens: Int = 32,
++    modelValue: (ExecutionContinuationResult, ProductionTaskInputAdmission) throws -> [String: Any]
++  ) async throws -> ProductionTaskInformationContinuation {
++    let admission = try resolveTaskInput(
++      database: database, taskItemID: taskItemID, evaluatedAtUTC: evaluatedAtUTC)
++    let outcome = try await continueTask(
++      database: database,
++      handle: handle,
++      advancementID: advancementID,
++      evaluatedAtUTC: evaluatedAtUTC,
++      demandID: demandID,
++      taskItemID: taskItemID,
++      seedText: seedText,
++      nextInputText: admission.inputText,
++      maxTokens: maxTokens
++    ) { produced in
++      try modelValue(produced, admission)
++    }
++    return ProductionTaskInformationContinuation(
++      handle: outcome.handle, report: outcome.report, admission: admission)
++  }
++
++  // MARK: - Task bridge accessors
++
++  @discardableResult
++  public func defineTask(
++    database: URL,
++    evaluatedAtUTC: String,
++    runLabel: String,
++    secret: String? = nil,
++    randomSecret: Bool = false
++  ) throws -> [String: Any] {
++    var arguments = [
++      "--database", database.path,
++      "--evaluated-at", evaluatedAtUTC,
++      "--run-label", runLabel,
++    ]
++    if randomSecret {
++      arguments += ["--random-secret"]
++    } else if let secret {
++      arguments += ["--secret", secret]
++    }
++    return try runBridge("define-task", arguments: arguments)
++  }
++
++  public func readItem(database: URL, itemID: String) throws -> [String: Any] {
++    try runBridge("read-item", arguments: [
++      "--database", database.path,
++      "--item-id", itemID,
++    ])
++  }
++
++  public func readSettlement(database: URL, itemID: String) throws -> [String: Any] {
++    try runBridge("read-settlement", arguments: [
++      "--database", database.path,
++      "--item-id", itemID,
++    ])
++  }
+ }
+diff --git a/execution-information-loop/admission_selftest.py b/execution-information-loop/admission_selftest.py
+new file mode 100644
+index 00000000..cee2fb3e
+--- /dev/null
++++ b/execution-information-loop/admission_selftest.py
+@@ -0,0 +1,454 @@
++#!/usr/bin/env python3
++"""Pre-generation admission self-test for the production input resolver.
++
++Every condition runs against an isolated copy of ONE defined task database.
++The resolver must refuse BEFORE it returns any model input, and the database
++bytes must be unchanged by the refused attempt. No model is loaded here; the
++Swift ``ProductionInputAdmissionTests`` prove the executor's tokenize and
++generation counters stay at zero for the same conditions.
++
++Usage:
++  python3 admission_selftest.py --out <path/to/admission-selftest.json>
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import os
++import shutil
++import sqlite3
++import subprocess
++import sys
++import tempfile
++from datetime import datetime, timezone
++from pathlib import Path
++
++HERE = Path(__file__).resolve().parent
++LAB_ROOT = HERE.parent
++BRIDGE = HERE / "production_runtime_bridge.py"
++PYTHON = "/usr/bin/python3"
++ENV = {
++    **os.environ,
++    "SIMIGO_RUNTIME_ROOT": str(LAB_ROOT),
++    "SIMIGO_INFO_VALIDITY_POLICY_PATH": str(
++        LAB_ROOT / "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json"
++    ),
++}
++SETTLEMENT_ID = "settlement:TASK-U1"
++
++
++def utc_now() -> str:
++    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
++
++
++def sha256_file(path: Path) -> str:
++    import hashlib
++
++    digest = hashlib.sha256()
++    with path.open("rb") as handle:
++        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
++            digest.update(chunk)
++    return digest.hexdigest()
++
++
++def directory_entries(path: Path) -> list[str]:
++    return sorted(entry.name for entry in path.iterdir())
++
++
++def run_bridge(*arguments: str) -> tuple[int, dict]:
++    process = subprocess.run(
++        [PYTHON, str(BRIDGE), *arguments],
++        capture_output=True,
++        text=True,
++        env=ENV,
++        cwd=str(HERE),
++        timeout=120,
++    )
++    try:
++        payload = json.loads(process.stdout or "{}")
++    except json.JSONDecodeError:
++        payload = {
++            "ok": False,
++            "error_type": "NonJSONOutput",
++            "error": (process.stdout or "") + (process.stderr or ""),
++        }
++    return process.returncode, payload
++
++
++def prepare_database(directory: Path) -> dict:
++    """Define the two-step task and settle TASK-U1 with a synthetic model value."""
++    import secrets
++
++    database = directory / "base.sqlite"
++    secret = secrets.token_hex(16)
++    code, defined = run_bridge(
++        "define-task",
++        "--database", str(database),
++        "--evaluated-at", utc_now(),
++        "--run-label", "admission-selftest",
++        "--secret", secret,
++    )
++    if code != 0 or not defined.get("ok"):
++        raise RuntimeError("define-task failed: %s" % defined)
++    value_path = directory / "u1-value.json"
++    value_path.write_text(
++        json.dumps({
++            "secret": secret,
++            "generated_token_ids": [11, 22, 33, 44],
++            "model_snapshot_revision": "admission-selftest-revision",
++            "model_weights_manifest_sha256": "admission-selftest-weights",
++            "raw_generated_text": "SECRET=" + secret,
++            "model_call_index": 1,
++        }),
++        encoding="utf-8",
++    )
++    code, settled = run_bridge(
++        "execute-with-model-result",
++        "--database", str(database),
++        "--demand-id", "handoff-u1",
++        "--advancement", "admission-selftest-u1",
++        "--evaluated-at", utc_now(),
++        "--item-id", "TASK-U1",
++        "--value-file", str(value_path),
++    )
++    if code != 0 or not settled.get("ok"):
++        raise RuntimeError("settle TASK-U1 failed: %s" % settled)
++    return {
++        "database": database,
++        "secret": secret,
++        "secret_sha256": defined["secret_sha256"],
++        "u1_advancement_state_id": settled["result"]["execution_state"]["state_id"],
++    }
++
++
++def copy_database(source: Path, destination: Path) -> None:
++    source_connection = sqlite3.connect(str(source))
++    destination_connection = sqlite3.connect(str(destination))
++    try:
++        source_connection.backup(destination_connection)
++        destination_connection.commit()
++    finally:
++        destination_connection.close()
++        source_connection.close()
++
++
++def remove_u1_settlement(database: Path) -> dict:
++    connection = sqlite3.connect(str(database))
++    try:
++        deleted_dependency = connection.execute(
++            "DELETE FROM dependency_entries WHERE dependency_id=?", (SETTLEMENT_ID,)
++        ).rowcount
++        deleted_index = connection.execute(
++            "DELETE FROM is_index_entries WHERE srs_identity=?", (SETTLEMENT_ID,)
++        ).rowcount
++        connection.commit()
++        return {
++            "deleted_dependency_rows": deleted_dependency,
++            "deleted_index_rows": deleted_index,
++        }
++    finally:
++        connection.close()
++
++
++def tamper_u1_object(database: Path) -> dict:
++    connection = sqlite3.connect(str(database))
++    try:
++        row = connection.execute(
++            "SELECT content_address FROM dependency_entries WHERE dependency_id=? "
++            "ORDER BY append_order DESC LIMIT 1",
++            (SETTLEMENT_ID,),
++        ).fetchone()
++        if row is None:
++            raise RuntimeError("U1 settlement missing before tamper")
++        object_id = row[0]
++        original = bytes(
++            connection.execute(
++                "SELECT content FROM is_objects WHERE object_id=?", (object_id,)
++            ).fetchone()[0]
++        )
++        tampered = bytearray(original)
++        tampered[len(tampered) // 2] ^= 0x01
++        connection.execute(
++            "UPDATE is_objects SET content=? WHERE object_id=?",
++            (bytes(tampered), object_id),
++        )
++        connection.commit()
++        return {
++            "object_id": object_id,
++            "original_sha256": sha256_bytes(original),
++            "tampered_sha256": sha256_bytes(bytes(tampered)),
++        }
++    finally:
++        connection.close()
++
++
++def sha256_bytes(data: bytes) -> str:
++    import hashlib
++
++    return hashlib.sha256(data).hexdigest()
++
++
++def rewrite_u2_dependencies(database: Path) -> dict:
++    sys.path.insert(0, str(HERE))
++    from carrier_loop import CarrierInformationLoop  # noqa: PLC0415
++
++    loop = CarrierInformationLoop.open(str(database))
++    try:
++        item = loop.current_item("TASK-U2")
++        if item is None:
++            raise RuntimeError("TASK-U2 missing before dependency rewrite")
++        previous = list(item["dependencies"])
++        result = loop.put_source(
++            item["demand_id"],
++            "TASK-U2",
++            item["source_kind"],
++            item["source_version"],
++            item["source_payload"],
++            dependencies=["TASK-SOURCE"],
++            valid_until_utc=item["valid_until_utc"],
++            validity_policy=item["validity_policy"],
++        )
++        loop.commit()
++        return {
++            "previous_dependencies": previous,
++            "new_dependencies": ["TASK-SOURCE"],
++            "new_item_object_id": result["object_id"],
++            "new_revision": result["revision"],
++        }
++    finally:
++        loop.close()
++
++
++def attempt(
++    case: str,
++    prepared: dict,
++    work_directory: Path,
++    mutate,
++    expected_stage: str,
++    expected_reason: str | None,
++) -> dict:
++    case_directory = work_directory / case
++    case_directory.mkdir()
++    database = case_directory / "carrier.sqlite"
++    copy_database(prepared["database"], database)
++    mutation = mutate(database) if mutate else {}
++    before_sha = sha256_file(database)
++    entries_before = directory_entries(case_directory)
++    code, payload = run_bridge(
++        "resolve-model-input",
++        "--database", str(database),
++        "--item-id", "TASK-U2",
++        "--evaluated-at", utc_now(),
++    )
++    after_sha = sha256_file(database)
++    entries_after = directory_entries(case_directory)
++    refusal = payload.get("refusal") or {}
++    checks = {
++        "exit_code_is_1": code == 1,
++        "ok_is_false": payload.get("ok") is False,
++        "structured_refusal": isinstance(refusal, dict) and bool(refusal),
++        "stage_matches": refusal.get("stage") == expected_stage,
++        "reason_matches": (
++            expected_reason is None
++            or str(refusal.get("reason", "")).startswith(expected_reason)
++        ),
++        "database_bytes_unchanged": before_sha == after_sha,
++        "no_new_files": entries_before == entries_after,
++    }
++    return {
++        "case": case,
++        "mutation": mutation,
++        "expected_stage": expected_stage,
++        "expected_reason_prefix": expected_reason,
++        "exit_code": code,
++        "payload": payload,
++        "database_sha256_before": before_sha,
++        "database_sha256_after": after_sha,
++        "entries_before": entries_before,
++        "entries_after": entries_after,
++        "checks": checks,
++        "verdict": "PASS" if all(checks.values()) else "FAIL",
++    }
++
++
++def happy_path(prepared: dict, work_directory: Path) -> dict:
++    case_directory = work_directory / "happy"
++    case_directory.mkdir()
++    database = case_directory / "carrier.sqlite"
++    copy_database(prepared["database"], database)
++    before_sha = sha256_file(database)
++    code, payload = run_bridge(
++        "resolve-model-input",
++        "--database", str(database),
++        "--item-id", "TASK-U2",
++        "--evaluated-at", utc_now(),
++    )
++    bindings = payload.get("bindings") or []
++    input_text = payload.get("input_text") or ""
++    raw = input_text.encode("utf-8")
++    offsets_match = True
++    for binding in bindings:
++        start = binding["byte_offset"]
++        end = start + binding["byte_length"]
++        if raw[start:end].decode("utf-8", errors="replace") != binding["value"]:
++            offsets_match = False
++    by_placeholder = {binding["placeholder"]: binding for binding in bindings}
++    checks = {
++        "exit_code_is_0": code == 0,
++        "ok_is_true": payload.get("ok") is True,
++        "two_bindings": len(bindings) == 2,
++        "offsets_match_admitted_values": offsets_match,
++        "secret_bound_from_u1": (
++            by_placeholder.get("secret", {}).get("item_id") == "TASK-U1"
++            and by_placeholder.get("secret", {}).get("value") == prepared["secret"]
++        ),
++        "checksum_bound_from_source": (
++            by_placeholder.get("checksum", {}).get("item_id") == "TASK-SOURCE"
++        ),
++        "dependency_closure_complete": sorted(
++            payload.get("declared_dependencies") or []
++        ) == ["TASK-SOURCE", "TASK-U1"],
++        "object_identity_is_content_digest": all(
++            binding["settlement_object_id"] == binding["settlement_object_sha256"]
++            for binding in bindings
++        ),
++        "all_reported_checks_true": all(
++            (payload.get("checks") or {}).values()
++        ),
++        "database_bytes_unchanged": before_sha == sha256_file(database),
++    }
++    return {
++        "case": "happy",
++        "exit_code": code,
++        "input_sha256": payload.get("input_sha256"),
++        "bindings": [
++            {
++                "placeholder": binding["placeholder"],
++                "item_id": binding["item_id"],
++                "byte_offset": binding["byte_offset"],
++                "byte_length": binding["byte_length"],
++                "settlement_object_id": binding["settlement_object_id"],
++                "result_value_sha256": binding["result_value_sha256"],
++            }
++            for binding in bindings
++        ],
++        "checks": checks,
++        "verdict": "PASS" if all(checks.values()) else "FAIL",
++    }
++
++
++MUTATIONS = {
++    "happy": None,
++    "missing-settlement": None,
++    "tampered-object-bytes": None,
++    "dependency-mismatch": None,
++}
++
++
++def emit_fixture(case: str, out_database: Path) -> int:
++    """Materialize one isolated case database for another test harness.
++
++    The Swift admission test uses this so its fixtures are produced by the
++    same mutation code the Python selftest verifies, instead of a second
++    hand-written copy of the mutations.
++    """
++    mutations = {
++        "happy": None,
++        "missing-settlement": remove_u1_settlement,
++        "tampered-object-bytes": tamper_u1_object,
++        "dependency-mismatch": rewrite_u2_dependencies,
++    }
++    if case not in mutations:
++        print(json.dumps({"ok": False, "error": "unknown case: %s" % case}))
++        return 2
++    work_directory = Path(tempfile.mkdtemp(prefix="simigo-admission-fixture-"))
++    try:
++        prepared = prepare_database(work_directory)
++        out_database.parent.mkdir(parents=True, exist_ok=True)
++        copy_database(prepared["database"], out_database)
++        mutate = mutations[case]
++        mutation = mutate(out_database) if mutate else {}
++        print(json.dumps({
++            "ok": True,
++            "case": case,
++            "database": str(out_database),
++            "database_sha256": sha256_file(out_database),
++            "secret_sha256": prepared["secret_sha256"],
++            "mutation": mutation,
++        }, sort_keys=True))
++        return 0
++    finally:
++        shutil.rmtree(work_directory, ignore_errors=True)
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--out")
++    parser.add_argument("--emit-fixture", choices=sorted(MUTATIONS))
++    parser.add_argument("--out-database")
++    arguments = parser.parse_args()
++    if arguments.emit_fixture:
++        if not arguments.out_database:
++            parser.error("--emit-fixture requires --out-database")
++        return emit_fixture(arguments.emit_fixture, Path(arguments.out_database))
++    if not arguments.out:
++        parser.error("--out is required")
++
++    work_directory = Path(tempfile.mkdtemp(prefix="simigo-admission-selftest-"))
++    try:
++        prepared = prepare_database(work_directory)
++        results = {
++            "schema_id": "SIMIGO-ADMISSION-SELFTEST-V1",
++            "created_at_utc": utc_now(),
++            "work_directory": str(work_directory),
++            "conditions": [
++                happy_path(prepared, work_directory),
++                attempt(
++                    "missing-settlement",
++                    prepared,
++                    work_directory,
++                    remove_u1_settlement,
++                    "SETTLEMENT_NOT_ADMITTED",
++                    "MISSING_OR_SUPERSEDED_SETTLEMENT",
++                ),
++                attempt(
++                    "tampered-object-bytes",
++                    prepared,
++                    work_directory,
++                    tamper_u1_object,
++                    "SETTLEMENT_OBJECT_UNREADABLE",
++                    None,
++                ),
++                attempt(
++                    "dependency-mismatch",
++                    prepared,
++                    work_directory,
++                    rewrite_u2_dependencies,
++                    "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
++                    None,
++                ),
++            ],
++        }
++        results["verdict"] = (
++            "PASS"
++            if all(item["verdict"] == "PASS" for item in results["conditions"])
++            else "FAIL"
++        )
++        Path(arguments.out).parent.mkdir(parents=True, exist_ok=True)
++        Path(arguments.out).write_text(
++            json.dumps(results, indent=1, sort_keys=True) + "\n", encoding="utf-8"
++        )
++        print(json.dumps({
++            "verdict": results["verdict"],
++            "conditions": [
++                {"case": item["case"], "verdict": item["verdict"], "checks": item["checks"]}
++                for item in results["conditions"]
++            ],
++        }, indent=1, sort_keys=True))
++        return 0 if results["verdict"] == "PASS" else 1
++    finally:
++        shutil.rmtree(work_directory, ignore_errors=True)
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/simigo2-experimental/Sources/RealModelHandoff/Causality.swift b/simigo2-experimental/Sources/RealModelHandoff/Causality.swift
+new file mode 100644
+index 00000000..09ac8618
+--- /dev/null
++++ b/simigo2-experimental/Sources/RealModelHandoff/Causality.swift
+@@ -0,0 +1,655 @@
++import Darwin
++import Foundation
++import SimiGo2Experimental
++import SimiGoRuntimeContract
++
++// Controlled causal experiments around the production recovery and settlement
++// paths.  This file deliberately contains no new recovery policy: it drives the
++// existing entry points and records what they actually did.
++
++struct CausalityError: Error, CustomStringConvertible {
++  let description: String
++  init(_ description: String) { self.description = description }
++}
++
++func directoryFileIdentities(_ directory: URL) throws -> [[String: Any]] {
++  let fileManager = FileManager.default
++  guard fileManager.fileExists(atPath: directory.path) else { return [] }
++  guard let enumerator = fileManager.enumerator(
++    at: directory,
++    includingPropertiesForKeys: [.isRegularFileKey],
++    options: [.skipsHiddenFiles]
++  ) else {
++    return []
++  }
++  let base = directory.standardizedFileURL.path
++  var files: [[String: Any]] = []
++  for case let url as URL in enumerator {
++    let values = try url.resourceValues(forKeys: [.isRegularFileKey])
++    guard values.isRegularFile == true else { continue }
++    let path = url.standardizedFileURL.path
++    let relative = path.hasPrefix(base + "/")
++      ? String(path.dropFirst(base.count + 1))
++      : path
++    let attributes = try fileManager.attributesOfItem(atPath: path)
++    let size = (attributes[.size] as? NSNumber)?.int64Value ?? -1
++    files.append([
++      "path": relative,
++      "size_bytes": size,
++      "sha256": try fileSHA256(url),
++    ])
++  }
++  return files.sorted {
++    ($0["path"] as? String ?? "") < ($1["path"] as? String ?? "")
++  }
++}
++
++func readJSONObject(_ url: URL) throws -> [String: Any] {
++  let data = try Data(contentsOf: url)
++  guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
++    throw CausalityError("not a JSON object: \(url.path)")
++  }
++  return object
++}
++
++func phaseErrorLabel(_ error: Error) -> String {
++  guard let production = error as? ProductionRuntimeInformationError else {
++    return "unexpected: \(String(describing: error))"
++  }
++  switch production {
++  case .durableRecoveryNotConfigured:
++    return "durableRecoveryNotConfigured"
++  case .informationSpaceHasNoSettledExecution(let state):
++    return "informationSpaceHasNoSettledExecution:\(state)"
++  case .durableExecutionStateMissing(let executionID):
++    return "durableExecutionStateMissing:\(executionID)"
++  case .persistedRepresentationUnavailable(let executionID, let position):
++    return "persistedRepresentationUnavailable:\(executionID):\(position)"
++  case .settlementCheckpointMissing(let executionID):
++    return "settlementCheckpointMissing:\(executionID)"
++  case .settlementCheckpointMismatch(let executionID, let field):
++    return "settlementCheckpointMismatch:\(executionID):\(field)"
++  case .modelExecutorUnavailable:
++    return "modelExecutorUnavailable"
++  case .modelExecutionFailed(let reason):
++    return "modelExecutionFailed:\(reason)"
++  case .blockedInformationDemand(let command, let state, let items):
++    return "blockedInformationDemand:\(command):\(state):\(items.joined(separator: ","))"
++  case .bridgeFailed(let command, let exitCode, let message):
++    return "bridgeFailed:\(command):\(exitCode):\(message)"
++  case .invalidBridgeResponse(let command):
++    return "invalidBridgeResponse:\(command)"
++  case .launchConfigurationInvalid(let path, let message):
++    return "launchConfigurationInvalid:\(path):\(message)"
++  case .invalidPersistedExecutionState(let lifecycle):
++    return "invalidPersistedExecutionState:\(lifecycle)"
++  case .bridgeRefused(let command, let stage, let reason, let itemID):
++    return "bridgeRefused:\(command):\(stage):\(reason):\(itemID ?? "")"
++  case .informationSpaceInputAdmissionRefused(let itemID, let stage, let reason):
++    return "informationSpaceInputAdmissionRefused:\(itemID):\(stage):\(reason)"
++  case .informationSpaceInputBindingMismatch(let field):
++    return "informationSpaceInputBindingMismatch:\(field)"
++  }
++}
++
++func processIsAlive(_ pid: Int32) -> Bool {
++  guard pid > 0 else { return false }
++  if kill(pid, 0) == 0 { return true }
++  return errno == EPERM
++}
++
++// MARK: - Phase 1: recovery admission
++
++func runPhase1Case(_ options: Options) async throws {
++  guard let caseName = options.caseName else {
++    throw CausalityError("--case is required")
++  }
++  let startedAt = utcNow()
++  let start = Date()
++  let database = options.runDir.appendingPathComponent("carrier.sqlite")
++  let stateDirectory = options.stateDirectory
++    ?? options.runDir.appendingPathComponent("state", isDirectory: true)
++  let evidenceDirectory = options.runDir.appendingPathComponent("evidence", isDirectory: true)
++  try FileManager.default.createDirectory(
++    at: evidenceDirectory, withIntermediateDirectories: true)
++
++  do {
++    let identity = try modelIdentity(snapshot: options.modelDir)
++    let (container, loadSeconds) = try await loadModel(options)
++    let backend = MLXExecutionStateBackend()
++    let executor = CountingModelExecutor(
++      base: MLXPrefixRecomputeExecutor(container: container, backend: backend))
++    let integration = try makeIntegration(
++      options: options,
++      executor: executor,
++      backend: backend,
++      stateDirectory: stateDirectory,
++      resetToFreshBaseline: false)
++
++    let databaseBefore = try fileIdentity(database)
++    let stateBefore = try directoryFileIdentities(stateDirectory)
++    let statusBefore: [String: Any]
++    do {
++      statusBefore = try integration.status(database: database)
++    } catch {
++      statusBefore = ["status_error": phaseErrorLabel(error)]
++    }
++
++    var recoverySucceeded = false
++    var recoveredPosition = -1
++    var recoveredLifecycle = ""
++    var boundPrefixTokenCount = -1
++    var stageAPrefixTailMatches: Any = NSNull()
++    var failureLabel: Any = NSNull()
++    var failureDescription: Any = NSNull()
++    var continueTaskEntered = false
++    var productionContinuationInvoked = false
++    var admissionStatus = "NOT_ATTEMPTED"
++    var admissionEvidence: Any = NSNull()
++    var admissionRefusal: Any = NSNull()
++    var continuation: [String: Any] = [:]
++    var isReads: [String: Any] = [:]
++    var prompt: [String: Any] = [:]
++    var output: [String: Any] = [:]
++
++    do {
++      let recovered = try await integration.recoverExecutionState(database: database)
++      recoverySucceeded = true
++      recoveredPosition = Int(recovered.position.value)
++      recoveredLifecycle = recovered.lifecycle.rawValue
++      let bound = try backend.boundPrefix(for: recovered)
++      boundPrefixTokenCount = bound.prefix.count
++
++      if let baselineDir = options.baselineDir {
++        let stageAURL = baselineDir.appendingPathComponent("evidence/stage-a.json")
++        let stageA = try readJSONObject(stageAURL)
++        if let stageAContinuation = stageA["continuation"] as? [String: Any],
++           let expectedCount = stageAContinuation["updated_prefix_token_count"] as? Int,
++           let generated = stageAContinuation["generated_token_ids"] as? [Int] {
++          let tail = Array(bound.prefix.suffix(generated.count))
++          stageAPrefixTailMatches =
++            bound.prefix.count == expectedCount && tail == generated
++        }
++      }
++
++      if caseName == "A0" {
++        // The production task path resolves, admits and materializes the input
++        // from IS. The harness neither reads settlements nor interpolates a
++        // template; it only names the task item.
++        productionContinuationInvoked = true
++        let outcome = try await integration.continueTaskFromInformationSpace(
++          database: database,
++          handle: recovered,
++          advancementID: "phase1-a0-u2-\(options.runLabel)",
++          evaluatedAtUTC: utcNowPlus(1),
++          demandID: "handoff-u2",
++          taskItemID: "TASK-U2",
++          seedText: nil,
++          maxTokens: options.maxTokens
++        ) { produced, admitted in
++          guard let answer = firstCapture(
++            produced.generatedText, pattern: "ANSWER=([A-Za-z0-9]+-[A-Za-z0-9]+)"),
++            let secret = admitted.value(forPlaceholder: "secret"),
++            let checksum = admitted.value(forPlaceholder: "checksum") else {
++            throw CausalityError(
++              "real model produced no ANSWER=<secret>-<checksum> line: \(produced.generatedText)")
++          }
++          let revision = identity["snapshot_revision"] as? String ?? ""
++          let weightsDigest = identity["weights_manifest_sha256"] as? String ?? ""
++          return [
++            "answer": answer,
++            "secret": secret,
++            "checksum": checksum,
++            "secret_source_settlement_object_id":
++              admitted.dependencySettlementObjectIDs["TASK-U1"] ?? "",
++            "checksum_source_settlement_object_id":
++              admitted.dependencySettlementObjectIDs["TASK-SOURCE"] ?? "",
++            "raw_generated_text": produced.generatedText,
++            "generated_token_ids": produced.generatedTokenIDs,
++            "model_snapshot_revision": revision,
++            "model_weights_manifest_sha256": weightsDigest,
++            "model_call_index": 1,
++          ]
++        }
++        continueTaskEntered = true
++        admissionStatus = "ADMITTED"
++        admissionEvidence = outcome.admission.evidenceDictionary()
++        isReads = [
++          "executor_resolved_dependencies": outcome.admission.declaredDependencies,
++          "dependency_settlement_object_ids":
++            outcome.admission.dependencySettlementObjectIDs,
++          "harness_read_settlement_calls": 0,
++          "harness_read_item_calls": 0,
++        ]
++        prompt = [
++          "next_input": outcome.admission.inputText,
++          "next_input_sha256": outcome.admission.inputSHA256,
++          "next_input_byte_length": outcome.admission.inputByteLength,
++          "uses_settled_u1_secret": outcome.admission
++            .value(forPlaceholder: "secret").map { outcome.admission.inputText.contains($0) } ?? false,
++          "uses_settled_checksum": outcome.admission
++            .value(forPlaceholder: "checksum").map { outcome.admission.inputText.contains($0) } ?? false,
++        ]
++        continuation = reportDictionary(outcome.report)
++        output = [
++          "answer": firstCapture(
++            outcome.report.generatedText,
++            pattern: "ANSWER=([A-Za-z0-9]+-[A-Za-z0-9]+)") ?? "",
++          "generated_text": outcome.report.generatedText,
++          "generated_token_ids": outcome.report.generatedTokenIDs,
++        ]
++      }
++    } catch {
++      failureLabel = phaseErrorLabel(error)
++      failureDescription = String(describing: error)
++      if let production = error as? ProductionRuntimeInformationError {
++        switch production {
++        case .informationSpaceInputAdmissionRefused(let itemID, let stage, let reason):
++          admissionStatus = "REFUSED"
++          admissionRefusal = ["item_id": itemID, "stage": stage, "reason": reason]
++        case .informationSpaceInputBindingMismatch(let field):
++          admissionStatus = "BINDING_MISMATCH"
++          admissionRefusal = ["field": field]
++        default:
++          if productionContinuationInvoked { admissionStatus = "ERROR" }
++        }
++      } else if productionContinuationInvoked {
++        admissionStatus = "ERROR"
++      }
++    }
++
++    let generationCalls = executor.counterSnapshot["model_continuation_calls"] ?? 0
++    continueTaskEntered = generationCalls > 0
++
++    let databaseAfter = try fileIdentity(database)
++    let stateAfter = try directoryFileIdentities(stateDirectory)
++    let record: [String: Any] = [
++      "schema_id": "SIMIGO-CAUSALITY-PHASE1-V1",
++      "phase": "PHASE1_RECOVERY_ADMISSION",
++      "case": caseName,
++      "run_label": options.runLabel,
++      "pid": Int(ProcessInfo.processInfo.processIdentifier),
++      "started_at_utc": startedAt,
++      "completed_at_utc": utcNow(),
++      "duration_seconds": Date().timeIntervalSince(start),
++      "model": identity,
++      "model_load_seconds": loadSeconds,
++      "database_before": databaseBefore,
++      "database_after": databaseAfter,
++      "state_directory": stateDirectory.path,
++      "state_before": stateBefore,
++      "state_after": stateAfter,
++      "is_status_before": statusBefore,
++      "recovery_succeeded": recoverySucceeded,
++      "recovered_position": recoveredPosition,
++      "recovered_lifecycle": recoveredLifecycle,
++      "bound_prefix_token_count": boundPrefixTokenCount,
++      "stage_a_prefix_tail_matches": stageAPrefixTailMatches,
++      "failure_label": failureLabel,
++      "failure_description": failureDescription,
++      "continue_task_entered": continueTaskEntered,
++      "production_continuation_invoked": productionContinuationInvoked,
++      "generation_entered": generationCalls > 0,
++      "input_admission_status": admissionStatus,
++      "input_admission": admissionEvidence,
++      "input_admission_refusal": admissionRefusal,
++      "counters": executor.counterSnapshot,
++      "continuation": continuation,
++      "is_reads": isReads,
++      "prompt": prompt,
++      "output": output,
++      "terminal_state": "PHASE1_OBSERVED",
++    ]
++    try writeExclusiveJSON(
++      record, to: evidenceDirectory.appendingPathComponent("phase1.json"))
++  } catch {
++    let record: [String: Any] = [
++      "schema_id": "SIMIGO-CAUSALITY-PHASE1-V1",
++      "phase": "PHASE1_RECOVERY_ADMISSION",
++      "case": caseName,
++      "run_label": options.runLabel,
++      "pid": Int(ProcessInfo.processInfo.processIdentifier),
++      "started_at_utc": startedAt,
++      "completed_at_utc": utcNow(),
++      "failure": String(describing: error),
++      "terminal_state": "PHASE1_HARNESS_FAIL",
++    ]
++    if FileManager.default.fileExists(atPath: evidenceDirectory.path) {
++      try? writeExclusiveJSON(
++        record, to: evidenceDirectory.appendingPathComponent("phase1-fail.json"))
++    }
++    throw error
++  }
++}
++
++// MARK: - Phase 2: actual handoff data path
++
++private let coldU2Seed = """
++SIMIGO-HANDOFF-COLD-U2-V1
++You are executing step 2 in a fresh execution instance.
++"""
++
++func runPhase2U2(_ options: Options) async throws {
++  guard let caseName = options.caseName else {
++    throw CausalityError("--case is required")
++  }
++  let startedAt = utcNow()
++  let start = Date()
++  let database = options.runDir.appendingPathComponent("carrier.sqlite")
++  guard let stateDirectory = options.stateDirectory else {
++    throw CausalityError("--state-dir is required for phase2-u2")
++  }
++  let evidenceDirectory = options.runDir.appendingPathComponent("evidence", isDirectory: true)
++  try FileManager.default.createDirectory(
++    at: evidenceDirectory, withIntermediateDirectories: true)
++  if !FileManager.default.fileExists(atPath: stateDirectory.path) {
++    try FileManager.default.createDirectory(
++      at: stateDirectory, withIntermediateDirectories: true)
++  }
++  let stateEntriesBefore = try FileManager.default.contentsOfDirectory(
++    atPath: stateDirectory.path)
++  let stateDirectoryWasEmpty = stateEntriesBefore.isEmpty
++
++  do {
++    let u1PID = options.u1PID
++    let u1AliveAtStart = u1PID.map(processIsAlive) ?? false
++    if u1AliveAtStart {
++      throw CausalityError("U1 process \(u1PID ?? -1) is still alive; U2 is not independent")
++    }
++
++    let identity = try modelIdentity(snapshot: options.modelDir)
++    let (container, loadSeconds) = try await loadModel(options)
++    let backend = MLXExecutionStateBackend()
++    let executor = CountingModelExecutor(
++      base: MLXPrefixRecomputeExecutor(container: container, backend: backend))
++    let integration = try makeIntegration(
++      options: options,
++      executor: executor,
++      backend: backend,
++      stateDirectory: stateDirectory,
++      resetToFreshBaseline: false)
++
++    let databaseBefore = try fileIdentity(database)
++    let stateBefore = try directoryFileIdentities(stateDirectory)
++    let statusBefore: [String: Any]
++    do {
++      statusBefore = try integration.status(database: database)
++    } catch {
++      statusBefore = ["status_error": phaseErrorLabel(error)]
++    }
++
++    // The executor resolves, admits and materializes the U2 input from IS.
++    // Nothing here reads a settlement or interpolates a template.
++    var secret = ""
++    var checksum = ""
++    var u1ObjectID = ""
++    var sourceObjectID = ""
++    var admission: ProductionTaskInputAdmission?
++    var admissionStatus = "NOT_ATTEMPTED"
++    var admissionRefusal: Any = NSNull()
++    var productionContinuationInvoked = false
++    var continueTaskEntered = false
++    var continuation: [String: Any] = [:]
++    var output: [String: Any] = [:]
++    var settledReport: ProductionTaskContinuationReport?
++    var settlementFailureLabel: Any = NSNull()
++    var settlementFailureDescription: Any = NSNull()
++    // The production continuation throws after generation when the model value
++    // is rejected; keep the produced text here so a failure is diagnosable
++    // (truncation vs. wrong characters) instead of only a bridge message.
++    var lastGeneratedText = ""
++    var lastGeneratedTokenIDs: [Int] = []
++    var lastParsedAnswer = ""
++    var modelValueFailure = ""
++
++    let revision = identity["snapshot_revision"] as? String ?? ""
++    let weightsDigest = identity["weights_manifest_sha256"] as? String ?? ""
++    productionContinuationInvoked = true
++    do {
++      let outcome = try await integration.continueTaskFromInformationSpace(
++        database: database,
++        handle: nil,
++        advancementID: "phase2-\(caseName)-u2-\(options.runLabel)",
++        evaluatedAtUTC: utcNowPlus(1),
++        demandID: "handoff-u2",
++        taskItemID: "TASK-U2",
++        seedText: coldU2Seed,
++        maxTokens: options.maxTokens
++      ) { produced, admitted in
++        lastGeneratedText = produced.generatedText
++        lastGeneratedTokenIDs = produced.generatedTokenIDs
++        guard let answer = firstCapture(
++          produced.generatedText, pattern: "ANSWER=([A-Za-z0-9]+-[A-Za-z0-9]+)"),
++          let admittedSecret = admitted.value(forPlaceholder: "secret"),
++          let admittedChecksum = admitted.value(forPlaceholder: "checksum") else {
++          modelValueFailure = "no ANSWER line or admitted placeholder value"
++          throw CausalityError(
++            "real model produced no ANSWER=<secret>-<checksum> line: \(produced.generatedText)")
++        }
++        lastParsedAnswer = answer
++        return [
++          "answer": answer,
++          "secret": admittedSecret,
++          "checksum": admittedChecksum,
++          "secret_source_settlement_object_id":
++            admitted.dependencySettlementObjectIDs["TASK-U1"] ?? "",
++          "checksum_source_settlement_object_id":
++            admitted.dependencySettlementObjectIDs["TASK-SOURCE"] ?? "",
++          "raw_generated_text": produced.generatedText,
++          "generated_token_ids": produced.generatedTokenIDs,
++          "model_snapshot_revision": revision,
++          "model_weights_manifest_sha256": weightsDigest,
++          "model_call_index": 1,
++        ]
++      }
++      admission = outcome.admission
++      admissionStatus = "ADMITTED"
++      secret = outcome.admission.value(forPlaceholder: "secret") ?? ""
++      checksum = outcome.admission.value(forPlaceholder: "checksum") ?? ""
++      u1ObjectID = outcome.admission.dependencySettlementObjectIDs["TASK-U1"] ?? ""
++      sourceObjectID = outcome.admission.dependencySettlementObjectIDs["TASK-SOURCE"] ?? ""
++      settledReport = outcome.report
++      continuation = reportDictionary(outcome.report)
++    } catch {
++      settlementFailureLabel = phaseErrorLabel(error)
++      settlementFailureDescription = String(describing: error)
++      if let production = error as? ProductionRuntimeInformationError {
++        switch production {
++        case .informationSpaceInputAdmissionRefused(let itemID, let stage, let reason):
++          admissionStatus = "REFUSED"
++          admissionRefusal = ["item_id": itemID, "stage": stage, "reason": reason]
++        case .informationSpaceInputBindingMismatch(let field):
++          admissionStatus = "BINDING_MISMATCH"
++          admissionRefusal = ["field": field]
++        default:
++          admissionStatus = "ERROR"
++        }
++      } else {
++        admissionStatus = "ERROR"
++      }
++    }
++
++    let generationCalls = executor.counterSnapshot["model_continuation_calls"] ?? 0
++    continueTaskEntered = generationCalls > 0
++    let expectedAnswer = "\(secret)-\(checksum)"
++    if let report = settledReport {
++      let answer = firstCapture(
++        report.generatedText,
++        pattern: "ANSWER=([A-Za-z0-9]+-[A-Za-z0-9]+)") ?? ""
++      output = [
++        "answer": answer,
++        "answer_sha256": sha256Hex(Data(answer.utf8)),
++        "expected_answer_sha256": sha256Hex(Data(expectedAnswer.utf8)),
++        "matches_settled_expected": !answer.isEmpty && answer == expectedAnswer,
++        "generated_text": report.generatedText,
++        "generated_token_ids": report.generatedTokenIDs,
++        "model_continuation_calls_this_call": report.modelContinuationCallCount,
++      ]
++    }
++
++    var statusAfter: [String: Any] = [:]
++    do {
++      statusAfter = try integration.status(database: database)
++    } catch {
++      statusAfter = ["status_error": phaseErrorLabel(error)]
++    }
++    let lifecycleRecords = integration.lifecycleRecordSummary()
++    func lifecycleObserved(_ operation: String, at position: Int) -> Bool {
++      lifecycleRecords.contains { record in
++        (record["operation"] as? String) == operation
++          && (record["result_position"] as? Int) == position
++      }
++    }
++    let createdAt0 = lifecycleObserved("created", at: 0)
++    let continuedAt1 = lifecycleObserved("continued", at: 1)
++    let reattachedAt1 = lifecycleObserved("reattached", at: 1)
++    let databaseAfter = try fileIdentity(database)
++    let stateAfter = try directoryFileIdentities(stateDirectory)
++    let actions = continuation["settlement_actions"] as? [[String: Any]] ?? []
++    let u1Action = actions.first { ($0["item_id"] as? String) == "TASK-U1" } ?? [:]
++    let u2Action = actions.first { ($0["item_id"] as? String) == "TASK-U2" } ?? [:]
++    let answerText = output["answer"] as? String ?? ""
++    let outputFollowsSettlement = !answerText.isEmpty && answerText == expectedAnswer
++    let terminal: String
++    if admissionStatus == "REFUSED" || admissionStatus == "BINDING_MISMATCH" {
++      terminal = "PHASE2_INPUT_ADMISSION_REFUSAL"
++    } else if settlementFailureLabel is String {
++      terminal = generationCalls == 0
++        ? "PHASE2_PRE_GENERATION_FAILURE"
++        : "PHASE2_SETTLEMENT_REFUSAL"
++    } else if caseName == "B3b" {
++      terminal = "PHASE2_OBSERVED_SUBSTITUTION"
++    } else {
++      terminal = "PHASE2_OBSERVED_SUCCESS"
++    }
++    let record: [String: Any] = [
++      "schema_id": "SIMIGO-CAUSALITY-PHASE2-V2",
++      "phase": "PHASE2_HANDOFF_DATA_PATH",
++      "case": caseName,
++      "run_label": options.runLabel,
++      "pid": Int(ProcessInfo.processInfo.processIdentifier),
++      "started_at_utc": startedAt,
++      "completed_at_utc": utcNow(),
++      "duration_seconds": Date().timeIntervalSince(start),
++      "model": identity,
++      "model_load_seconds": loadSeconds,
++      "decode_parameters": [
++        "max_tokens": options.maxTokens,
++        "strategy": "greedy_argmax_no_sampling",
++        "stop_on_eos": true,
++      ],
++      "u1_process": [
++        "pid": u1PID ?? -1,
++        "alive_at_start": u1AliveAtStart,
++        "alive_at_end": u1PID.map(processIsAlive) ?? false,
++      ],
++      "fresh_execution": [
++        "state_directory": stateDirectory.path,
++        "state_directory_was_empty": stateDirectoryWasEmpty,
++        "state_entries_before": stateEntriesBefore,
++        "new_os_process": true,
++        "process_pid": Int(ProcessInfo.processInfo.processIdentifier),
++        "logical_execution_id": "PRODUCTION-REAL-PALACE",
++        "es_identity_note": "new execution instance; executionID string is reused, so this is not a claim of new logical ES lineage",
++        "no_durable_handle_passed": true,
++        "cold_seed": coldU2Seed,
++        "cold_seed_sha256": sha256Hex(Data(coldU2Seed.utf8)),
++        "cold_seed_contains_expected_secret": !secret.isEmpty
++          && coldU2Seed.contains(secret),
++        "created_fresh_execution": continuation["created_fresh_execution"] ?? NSNull(),
++        "advanced_position": continuation["advanced_position"] ?? NSNull(),
++        "advanced_lifecycle": continuation["advanced_lifecycle"] ?? NSNull(),
++      ],
++      "database_before": databaseBefore,
++      "database_after": databaseAfter,
++      "state_before": stateBefore,
++      "state_after": stateAfter,
++      "is_status_before": statusBefore,
++      "is_status_after": statusAfter,
++      "harness_is_reads": [],
++      "harness_read_settlement_calls": 0,
++      "harness_read_item_calls": 0,
++      "is_reads": [
++        "resolved_by": "production-runtime-bridge:resolve-model-input",
++        "declared_dependencies": admission?.declaredDependencies ?? [],
++        "dependency_settlement_object_ids":
++          admission?.dependencySettlementObjectIDs ?? [:],
++        "u2_item_source_payload_template_sha256": admission?.templateSHA256 ?? "",
++        "read_u1_item_via_item_api": false,
++      ],
++      "input_admission_status": admissionStatus,
++      "input_admission": admission?.evidenceDictionary() ?? NSNull(),
++      "input_admission_refusal": admissionRefusal,
++      "production_continuation_invoked": productionContinuationInvoked,
++      "generation_entered": generationCalls > 0,
++      "prompt": [
++        "seed_text": coldU2Seed,
++        "seed_sha256": sha256Hex(Data(coldU2Seed.utf8)),
++        "next_input": admission?.inputText ?? "",
++        "next_input_sha256": admission?.inputSHA256 ?? "",
++        "next_input_byte_length": admission?.inputByteLength ?? 0,
++        "next_input_uses_settled_secret": !secret.isEmpty
++          && (admission?.inputText.contains(secret) ?? false),
++        "next_input_uses_settled_checksum": !checksum.isEmpty
++          && (admission?.inputText.contains(checksum) ?? false),
++        "next_input_contains_expected_secret": !secret.isEmpty
++          && (admission?.inputText.contains(secret) ?? false),
++      ],
++      "continue_task_entered": continueTaskEntered,
++      "settlement_failure_label": settlementFailureLabel,
++      "settlement_failure_description": settlementFailureDescription,
++      "generated_on_failure": [
++        "text": lastGeneratedText,
++        "token_ids": lastGeneratedTokenIDs,
++        "parsed_answer": lastParsedAnswer,
++        "model_value_failure": modelValueFailure,
++        "text_sha256": sha256Hex(Data(lastGeneratedText.utf8)),
++      ],
++      "counters": executor.counterSnapshot,
++      "es_lifecycle_records": lifecycleRecords,
++      "es_lifecycle": [
++        "created_at_position_0": createdAt0,
++        "continued_at_position_1": continuedAt1,
++        "reattached_at_position_1": reattachedAt1,
++        "entry": createdAt0 ? "created@0" : "NOT_OBSERVED",
++        "exit": continuedAt1 ? "continued@1" : "NOT_OBSERVED",
++        "no_reattached_at_1": !reattachedAt1,
++      ],
++      "u1_generation_calls_during_u2_phase": 0,
++      "u2_generation_calls_during_u2_phase": executor.counterSnapshot["model_continuation_calls"] ?? 0,
++      "continuation": continuation,
++      "u1_action": u1Action,
++      "u2_action": u2Action,
++      "u1_reused": (continuation["reused_item_ids"] as? [String] ?? []).contains("TASK-U1"),
++      "u1_recomputed": (continuation["computed_item_ids"] as? [String] ?? []).contains("TASK-U1"),
++      "u1_settlement_object_id": u1ObjectID,
++      "source_settlement_object_id": sourceObjectID,
++      "settled_expected_answer_sha256": sha256Hex(Data(expectedAnswer.utf8)),
++      "output_follows_is_settlement": outputFollowsSettlement,
++      "c4_authenticity": caseName == "B3b"
++        ? "SUBSTITUTED_VALUE_IS_DIGEST_VALID_BUT_NOT_LINEAGE_AUTHENTIC"
++        : "NOT_ASSESSED_IN_THIS_CONDITION",
++      "output": output,
++      "terminal_state": terminal,
++    ]
++    try writeExclusiveJSON(
++      record, to: evidenceDirectory.appendingPathComponent("phase2.json"))
++  } catch {
++    let record: [String: Any] = [
++      "schema_id": "SIMIGO-CAUSALITY-PHASE2-V1",
++      "phase": "PHASE2_HANDOFF_DATA_PATH",
++      "case": caseName,
++      "run_label": options.runLabel,
++      "pid": Int(ProcessInfo.processInfo.processIdentifier),
++      "started_at_utc": startedAt,
++      "completed_at_utc": utcNow(),
++      "failure": String(describing: error),
++      "terminal_state": "PHASE2_HARNESS_FAIL",
++    ]
++    if FileManager.default.fileExists(atPath: evidenceDirectory.path) {
++      try? writeExclusiveJSON(
++        record, to: evidenceDirectory.appendingPathComponent("phase2-fail.json"))
++    }
++    throw error
++  }
++}
+diff --git a/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift
+new file mode 100644
+index 00000000..0384ec52
+--- /dev/null
++++ b/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift
+@@ -0,0 +1,212 @@
++import Crypto
++import Foundation
++import XCTest
++import SimiGo2Experimental
++import SimiGoRuntimeContract
++
++/// Proves the production task path refuses an inadmissible settlement BEFORE
++/// tokenization, seed tokenization or model generation, and leaves the
++/// Information Space database and the execution-state directory untouched.
++///
++/// The fixtures are produced by `execution-information-loop/admission_selftest.py`
++/// so the mutations here are the same code the Python admission selftest
++/// verifies, not a second hand-written copy.
++final class ProductionInputAdmissionTests: XCTestCase {
++  private let labRoot = URL(fileURLWithPath: #filePath)
++    .deletingLastPathComponent()
++    .deletingLastPathComponent()
++    .deletingLastPathComponent()
++    .deletingLastPathComponent()
++
++  private final class CountingExecutor:
++    ProductionRuntimeModelContinuationExecutor, @unchecked Sendable
++  {
++    private let lock = NSLock()
++    private var tokenizeTextCalls = 0
++    private var tokenizeSeedCalls = 0
++    private var continuationCalls = 0
++
++    var snapshot: [String: Int] {
++      lock.lock()
++      defer { lock.unlock() }
++      return [
++        "tokenize_text_calls": tokenizeTextCalls,
++        "tokenize_seed_calls": tokenizeSeedCalls,
++        "model_continuation_calls": continuationCalls,
++      ]
++    }
++
++    func tokenizeText(_ text: String) async throws -> [Int] {
++      lock.lock()
++      tokenizeTextCalls += 1
++      lock.unlock()
++      return [1, 2, 3]
++    }
++
++    func tokenizeSeedText(_ text: String) async throws -> [Int] {
++      lock.lock()
++      tokenizeSeedCalls += 1
++      lock.unlock()
++      return [4, 5, 6]
++    }
++
++    func continueExecution(
++      _ state: ExecutionStateHandle,
++      nextInputTokens: [Int],
++      maxTokens: Int
++    ) async throws -> ExecutionContinuationResult {
++      lock.lock()
++      continuationCalls += 1
++      lock.unlock()
++      return ExecutionContinuationResult(
++        executionID: state.id,
++        consumedPrefixLength: 0,
++        nextInputTokenCount: nextInputTokens.count,
++        generatedTokenIDs: [9],
++        generatedText: "STUB",
++        updatedPayload: MLXPrefixPayload(tokenPrefix: [9])
++      )
++    }
++  }
++
++  private struct FixtureFailure: Error, CustomStringConvertible {
++    let description: String
++  }
++
++  private func emitFixture(_ condition: String, to directory: URL) throws -> URL {
++    let database = directory.appendingPathComponent("\(condition).sqlite")
++    let script = labRoot.appendingPathComponent(
++      "execution-information-loop/admission_selftest.py")
++    let process = Process()
++    process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
++    process.arguments = [
++      script.path, "--emit-fixture", condition, "--out-database", database.path,
++    ]
++    let output = Pipe()
++    let error = Pipe()
++    process.standardOutput = output
++    process.standardError = error
++    try process.run()
++    let outputData = output.fileHandleForReading.readDataToEndOfFile()
++    let errorData = error.fileHandleForReading.readDataToEndOfFile()
++    process.waitUntilExit()
++    guard process.terminationStatus == 0,
++          let payload = try JSONSerialization.jsonObject(with: outputData) as? [String: Any],
++          payload["ok"] as? Bool == true else {
++      throw FixtureFailure(description: "fixture \(condition) failed: "
++        + String(decoding: errorData, as: UTF8.self)
++        + String(decoding: outputData, as: UTF8.self))
++    }
++    return database
++  }
++
++  private func directoryIdentity(_ directory: URL) throws -> [String: String] {
++    let fileManager = FileManager.default
++    guard let enumerator = fileManager.enumerator(
++      at: directory,
++      includingPropertiesForKeys: [.isRegularFileKey],
++      options: []
++    ) else {
++      return [:]
++    }
++    let base = directory.standardizedFileURL.path
++    var identity: [String: String] = [:]
++    for case let url as URL in enumerator {
++      let values = try url.resourceValues(forKeys: [.isRegularFileKey])
++      guard values.isRegularFile == true else { continue }
++      let path = url.standardizedFileURL.path
++      let relative = path.hasPrefix(base + "/")
++        ? String(path.dropFirst(base.count + 1))
++        : path
++      let data = try Data(contentsOf: url)
++      identity[relative] = SHA256.hash(data: data)
++        .map { String(format: "%02x", $0) }.joined()
++    }
++    return identity
++  }
++
++  private func makeIntegration(
++    executor: CountingExecutor,
++    stateDirectory: URL
++  ) throws -> ProductionRuntimeInformationIntegration {
++    let configuration = ProductionRuntimeLaunchConfiguration(
++      runtimeRoot: labRoot.appendingPathComponent("execution-information-loop"),
++      pythonExecutable: URL(fileURLWithPath: "/usr/bin/python3"),
++      snapshotPath: labRoot.appendingPathComponent(
++        "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"),
++      validityPolicyPath: labRoot.appendingPathComponent(
++        "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json")
++    )
++    return try ProductionRuntimeInformationIntegration(
++      configuration: configuration,
++      modelExecutor: executor,
++      backend: MLXExecutionStateBackend(),
++      semanticStateDirectory: stateDirectory,
++      resetToFreshBaseline: false
++    )
++  }
++
++  func testInadmissibleSettlementRefusesBeforeAnyGeneration() async throws {
++    let expectations: [(condition: String, stage: String, itemID: String)] = [
++      ("missing-settlement", "SETTLEMENT_NOT_ADMITTED", "TASK-U1"),
++      ("tampered-object-bytes", "SETTLEMENT_OBJECT_UNREADABLE", "TASK-U1"),
++      ("dependency-mismatch", "INPUT_BINDING_DEPENDENCY_NOT_DECLARED", "TASK-U2"),
++    ]
++    let root = FileManager.default.temporaryDirectory
++      .appendingPathComponent("simigo-admission-\(UUID().uuidString)", isDirectory: true)
++    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
++    defer { try? FileManager.default.removeItem(at: root) }
++
++    for expectation in expectations {
++      let database = try emitFixture(expectation.condition, to: root)
++      let stateDirectory = root.appendingPathComponent(
++        "state-\(expectation.condition)", isDirectory: true)
++      try FileManager.default.createDirectory(
++        at: stateDirectory, withIntermediateDirectories: true)
++      let executor = CountingExecutor()
++      let integration = try makeIntegration(
++        executor: executor, stateDirectory: stateDirectory)
++
++      let databaseBefore = try Data(contentsOf: database)
++      let stateBefore = try directoryIdentity(stateDirectory)
++      var modelValueBuilderCalls = 0
++      var observed: ProductionRuntimeInformationError?
++
++      do {
++        _ = try await integration.continueTaskFromInformationSpace(
++          database: database,
++          handle: nil,
++          advancementID: "admission-test-\(expectation.condition)",
++          evaluatedAtUTC: "2026-10-23T00:00:00Z",
++          demandID: "handoff-u2",
++          taskItemID: "TASK-U2",
++          seedText: "admission test seed",
++          maxTokens: 8
++        ) { _, _ in
++          modelValueBuilderCalls += 1
++          return [:]
++        }
++        XCTFail("\(expectation.condition): expected a pre-generation refusal")
++      } catch let error as ProductionRuntimeInformationError {
++        observed = error
++      } catch {
++        XCTFail("\(expectation.condition): unexpected error \(error)")
++      }
++
++      if case let .informationSpaceInputAdmissionRefused(itemID, stage, _)? = observed {
++        XCTAssertEqual(stage, expectation.stage, expectation.condition)
++        XCTAssertEqual(itemID, expectation.itemID, expectation.condition)
++      } else {
++        XCTFail("\(expectation.condition): expected informationSpaceInputAdmissionRefused, got \(String(describing: observed))")
++      }
++      XCTAssertEqual(executor.snapshot["tokenize_text_calls"], 0, expectation.condition)
++      XCTAssertEqual(executor.snapshot["tokenize_seed_calls"], 0, expectation.condition)
++      XCTAssertEqual(executor.snapshot["model_continuation_calls"], 0, expectation.condition)
++      XCTAssertEqual(modelValueBuilderCalls, 0, expectation.condition)
++      let databaseAfter = try Data(contentsOf: database)
++      let stateAfter = try directoryIdentity(stateDirectory)
++      XCTAssertEqual(databaseAfter, databaseBefore, expectation.condition)
++      XCTAssertEqual(stateAfter, stateBefore, expectation.condition)
++    }
++  }
++}
+diff --git a/simigo2-experimental/scripts/handoff_causality/derive_admission_conditions.py b/simigo2-experimental/scripts/handoff_causality/derive_admission_conditions.py
+new file mode 100644
+index 00000000..b42d9647
+--- /dev/null
++++ b/simigo2-experimental/scripts/handoff_causality/derive_admission_conditions.py
+@@ -0,0 +1,109 @@
++#!/usr/bin/env python3
++"""Re-derive the admission-condition block from immutable per-case evidence.
++
++The first version of ``admission_conditions`` in the phase-2 runner required
++``tokenize_text_calls == 0`` for EVERY condition, which is wrong for admitted
++conditions: an admitted fresh-ES continuation must tokenize its seed and its
++admitted next input exactly once. The check is fixed in the runner; this tool
++re-derives the block from the untouched ``evidence/phase2.json`` files (their
++sha256 is recorded) and revises ONLY the derived summary field. Per-case
++evidence is never modified.
++
++Usage:
++  python3 derive_admission_conditions.py --run-root <run root>
++"""
++from __future__ import annotations
++
++import argparse
++import hashlib
++import json
++from datetime import datetime, timezone
++from pathlib import Path
++
++import run_phase2_causality as runner
++
++EVIDENCE_PATHS = {
++    "B0-A": "phase2a/world-a/B0-A/evidence/phase2.json",
++    "B0-B": "phase2b/world-b/B0-B/evidence/phase2.json",
++    "B1-harness": "phase2a/world-a/B1-harness/evidence/phase2.json",
++    "B3a": "phase2a/world-a/B3a/evidence/phase2.json",
++    "B3b": "phase2a/world-a/B3b/evidence/phase2.json",
++    "B3c": "phase2a/world-a/B3c/evidence/phase2.json",
++}
++
++
++def utc_now() -> str:
++    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
++
++
++def sha256_file(path: Path) -> str:
++    return hashlib.sha256(path.read_bytes()).hexdigest()
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--run-root", required=True)
++    arguments = parser.parse_args()
++    run_root = Path(arguments.run_root).expanduser().resolve()
++    summary_path = run_root / "summary.json"
++    summary = json.loads(summary_path.read_text(encoding="utf-8"))
++
++    results: dict[str, dict] = {}
++    provenance: dict[str, dict] = {}
++    for name, relative in EVIDENCE_PATHS.items():
++        path = run_root / relative
++        evidence = json.loads(path.read_text(encoding="utf-8"))
++        results[name] = {
++            "terminal_state": evidence.get("terminal_state"),
++            "evidence": evidence,
++        }
++        provenance[name] = {
++            "path": relative,
++            "sha256": sha256_file(path),
++        }
++
++    derived = runner.admission_conditions(results)
++    payload = {
++        "schema_id": "SIMIGO-CAUSALITY-PHASE2-ADMISSION-V2",
++        "created_at_utc": utc_now(),
++        "run_id": summary.get("run_id"),
++        "reason": (
++            "The initial summarizer required tokenize_text_calls==0 for every "
++            "condition; admitted conditions legitimately tokenize seed+input once. "
++            "Re-derived from immutable per-case evidence; no condition was rerun "
++            "and no evidence file was modified."
++        ),
++        "evidence_provenance": provenance,
++        "admission_conditions": derived,
++        "all_pass": all(item["pass"] for item in derived.values()),
++    }
++    (run_root / "admission_conditions_v2.json").write_text(
++        json.dumps(payload, indent=1, sort_keys=True) + "\n", encoding="utf-8")
++
++    summary.setdefault("summary_revisions", []).append({
++        "at_utc": utc_now(),
++        "field": "admission_conditions",
++        "record": "admission_conditions_v2.json",
++        "evidence_provenance": provenance,
++    })
++    summary["admission_conditions"] = derived
++    summary_path.write_text(
++        json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
++    print(json.dumps({
++        "all_pass": payload["all_pass"],
++        "conditions": {
++            name: {
++                "pass": item["pass"],
++                "stage": item["refusal_stage"],
++                "generation_calls": item["model_continuation_calls"],
++                "tokenize_text_calls": item["tokenize_text_calls"],
++                "tokenize_seed_calls": item["tokenize_seed_calls"],
++            }
++            for name, item in derived.items()
++        },
++    }, indent=1, sort_keys=True))
++    return 0 if payload["all_pass"] else 1
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py b/simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py
+new file mode 100644
+index 00000000..248df30b
+--- /dev/null
++++ b/simigo2-experimental/scripts/handoff_causality/run_phase1_causality.py
+@@ -0,0 +1,395 @@
++#!/usr/bin/env python3
++"""Phase 1: recovery admission on a stage-A-only baseline.
++
++Each case runs in its own process and its own copy of the baseline database and
++durable state directory.  The only changed conditions are A1-A4; A0 is the
++unmodified control.  No recovery policy is added.
++"""
++from __future__ import annotations
++
++import hashlib
++import json
++import os
++import shutil
++import sqlite3
++import subprocess
++import sys
++from datetime import datetime, timezone
++from pathlib import Path
++
++HERE = Path(__file__).resolve().parent
++LAB = HERE.parents[2]
++RUNROOT = Path(
++    os.environ.get(
++        "SIMIGO_RUN_ROOT",
++        str(Path.home() / "SimiGo-Agent-Runs/handoff-causality-20261022b"),
++    )
++)
++PHASE1 = RUNROOT / "phase1"
++# The run tag follows the run root so a new label (e.g. 20261022c) never
++# overwrites the earlier round's evidence.
++RUN_TAG = RUNROOT.name.rsplit("-", 1)[-1]
++BIN = LAB / "simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff"
++MODEL = Path(
++    os.environ.get(
++        "SIMIGO_MODEL_DIR",
++        str(
++            Path.home()
++            / ".cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit"
++            / "snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d"
++        ),
++    )
++)
++VALIDITY = LAB / "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json"
++BASELINE = PHASE1 / "baseline"
++BASELINE_LABEL = f"phase1-baseline-{RUN_TAG}"
++CASES = ["A0", "A1", "A2a", "A2b", "A3", "A4"]
++
++
++def utc_now() -> str:
++    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
++
++
++def git_text(*args: str) -> str:
++    return subprocess.run(
++        ["git", *args], cwd=LAB, capture_output=True, text=True, check=True
++    ).stdout
++
++
++def implementation_identity() -> dict:
++    head = git_text("rev-parse", "HEAD").strip()
++    dirty = git_text("diff", "--binary") + git_text("status", "--porcelain=v1")
++    return {
++        "head": head,
++        "dirty_tree_fingerprint": hashlib.sha256(dirty.encode()).hexdigest(),
++        "dirty_tree_status": git_text("status", "--porcelain=v1").splitlines(),
++    }
++
++
++def sha256_file(path: Path) -> str:
++    digest = hashlib.sha256()
++    with path.open("rb") as handle:
++        for block in iter(lambda: handle.read(1 << 20), b""):
++            digest.update(block)
++    return digest.hexdigest()
++
++
++def file_identity(path: Path) -> dict:
++    stat = path.stat()
++    return {
++        "path": str(path),
++        "device": str(stat.st_dev),
++        "inode": str(stat.st_ino),
++        "size_bytes": stat.st_size,
++        "sha256": sha256_file(path),
++    }
++
++
++def directory_identity(directory: Path) -> list[dict]:
++    if not directory.exists():
++        return []
++    entries = []
++    for path in sorted(directory.rglob("*")):
++        if path.is_file():
++            entries.append(
++                {
++                    "path": str(path.relative_to(directory)),
++                    "size_bytes": path.stat().st_size,
++                    "sha256": sha256_file(path),
++                }
++            )
++    return entries
++
++
++def write_json(path: Path, value: dict) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    payload = json.dumps(value, indent=2, sort_keys=True).encode("utf-8")
++    descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
++    try:
++        os.write(descriptor, payload)
++        os.fsync(descriptor)
++    finally:
++        os.close(descriptor)
++
++
++def read_json(path: Path) -> dict:
++    return json.loads(path.read_text(encoding="utf-8"))
++
++
++def copy_database(source: Path, destination: Path) -> None:
++    source_connection = sqlite3.connect(f"file:{source}?mode=ro", uri=True)
++    destination_connection = sqlite3.connect(destination)
++    try:
++        source_connection.backup(destination_connection)
++        destination_connection.commit()
++    finally:
++        destination_connection.close()
++        source_connection.close()
++
++
++def run_stage_a() -> None:
++    if BASELINE.exists():
++        stage_a = BASELINE / "evidence/stage-a.json"
++        if stage_a.is_file() and read_json(stage_a).get("terminal_state") == "STAGE_A_PASS":
++            print(f"baseline exists and is complete: {BASELINE}", file=sys.stderr)
++            return
++        raise SystemExit(f"baseline exists but is incomplete; refusing to overwrite: {BASELINE}")
++    BASELINE.parent.mkdir(parents=True, exist_ok=True)
++    command = [
++        str(BIN),
++        "stage-a",
++        "--run-dir",
++        str(BASELINE),
++        "--model-dir",
++        str(MODEL),
++        "--lab-root",
++        str(LAB),
++        "--run-label",
++        BASELINE_LABEL,
++    ]
++    print("RUN", " ".join(command), file=sys.stderr)
++    subprocess.run(command, check=True)
++    stage_a = read_json(BASELINE / "evidence/stage-a.json")
++    if stage_a.get("terminal_state") != "STAGE_A_PASS":
++        raise SystemExit("stage-A baseline did not pass")
++    checkpoint = stage_a["continuation"]
++    if checkpoint.get("advanced_position") != 1:
++        raise SystemExit("baseline is not at position 1; Phase 1 would reuse a U2 world")
++
++
++def apply_intervention(case: str, case_dir: Path, baseline: Path) -> dict:
++    """Copy the baseline and apply exactly one independent change."""
++    case_dir.mkdir(parents=True, exist_ok=False)
++    database = case_dir / "carrier.sqlite"
++    state_dir = case_dir / "state"
++    copy_database(baseline / "carrier.sqlite", database)
++    if case == "A4":
++        state_dir.mkdir()
++    else:
++        shutil.copytree(baseline / "state", state_dir)
++
++    action: dict = {"case": case, "changes": []}
++    if case in {"A1", "A2a", "A2b"}:
++        state_path = state_dir / "execution-state.json"
++        state = read_json(state_path)
++        checkpoints = state.get("settlementCheckpoints", [])
++        if len(checkpoints) != 1:
++            raise SystemExit(f"{case}: expected exactly one baseline checkpoint")
++        checkpoint = checkpoints[0]
++        if case == "A1":
++            state["settlementCheckpoints"] = []
++            action["changes"].append(
++                {"field": "settlementCheckpoints", "before": checkpoint, "after": []}
++            )
++        elif case == "A2a":
++            before = checkpoint["resultDigest"]
++            after = hashlib.sha256(b"phase1-a2a-result-digest").hexdigest()
++            checkpoint["resultDigest"] = after
++            action["changes"].append(
++                {"field": "resultDigest", "before": before, "after": after}
++            )
++        else:
++            before = checkpoint["validityBasis"]
++            after = hashlib.sha256(b"phase1-a2b-validity-basis").hexdigest()
++            checkpoint["validityBasis"] = after
++            action["changes"].append(
++                {"field": "validityBasis", "before": before, "after": after}
++            )
++        state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
++    elif case == "A3":
++        connection = sqlite3.connect(database)
++        connection.row_factory = sqlite3.Row
++        try:
++            rows = connection.execute(
++                "SELECT append_order,srs_identity,record_object FROM is_index_entries "
++                "WHERE srs_identity LIKE 'execution_state:%' ORDER BY append_order ASC"
++            ).fetchall()
++            latest = rows[-1] if rows else None
++            if latest is None or not latest["srs_identity"].endswith(":runtime-applied"):
++                raise SystemExit("A3: baseline latest execution state is not runtime-applied")
++            connection.execute(
++                "DELETE FROM is_index_entries WHERE append_order = ?",
++                (latest["append_order"],),
++            )
++            connection.commit()
++            remaining = connection.execute(
++                "SELECT append_order,srs_identity FROM is_index_entries "
++                "WHERE srs_identity LIKE 'execution_state:%' ORDER BY append_order ASC"
++            ).fetchall()
++        finally:
++            connection.close()
++        action["changes"].append(
++            {
++                "table": "is_index_entries",
++                "deleted": dict(latest),
++                "remaining_execution_state_rows": [dict(row) for row in remaining],
++            }
++        )
++    elif case == "A0":
++        action["changes"].append({"copy": "baseline unchanged"})
++    elif case == "A4":
++        action["changes"].append({"state_directory": "empty"})
++    else:
++        raise SystemExit(f"unknown case: {case}")
++
++    action["database_after"] = file_identity(database)
++    action["state_after"] = directory_identity(state_dir)
++    return action
++
++
++def expected_result(case: str, execution: dict) -> dict:
++    counters = execution.get("counters", {})
++    failure = execution.get("failure_label")
++    common = {
++        "continue_task_entered": execution.get("continue_task_entered"),
++        "model_continuation_calls": counters.get("model_continuation_calls", 0),
++    }
++    if case == "A0":
++        actions = (execution.get("continuation", {}).get("settlement_actions") or [])
++        u2_actions = [a for a in actions if a.get("item_id") == "TASK-U2"]
++        answer = (execution.get("output", {}) or {}).get("answer", "")
++        return {
++            **common,
++            "recovery_succeeded": execution.get("recovery_succeeded") is True,
++            "recovered_position": execution.get("recovered_position") == 1,
++            "prefix_tail_matches": execution.get("stage_a_prefix_tail_matches") is True,
++            "failure_absent": execution.get("failure_label") is None,
++            "resumed_not_created": (
++                execution.get("continuation", {}).get("created_fresh_execution") is False
++            ),
++            "u2_settlement_actions": len(u2_actions),
++            "answer_nonempty": bool(answer),
++            "matches_expected": (
++                execution.get("recovery_succeeded") is True
++                and execution.get("continue_task_entered") is True
++                and counters.get("model_continuation_calls", 0) == 1
++                and execution.get("stage_a_prefix_tail_matches") is True
++                and execution.get("failure_label") is None
++                and len(u2_actions) == 1
++                and bool(answer)
++            ),
++        }
++    expected_prefix = {
++        "A1": "settlementCheckpointMissing:",
++        "A2a": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:result_digest",
++        "A2b": "settlementCheckpointMismatch:PRODUCTION-REAL-PALACE:validity_basis",
++        "A3": "informationSpaceHasNoSettledExecution:",
++        "A4": "durableExecutionStateMissing:PRODUCTION-REAL-PALACE",
++    }[case]
++    label = failure if isinstance(failure, str) else ""
++    return {
++        **common,
++        "failure_label": label,
++        "expected_failure_prefix": expected_prefix,
++        "matches_expected": (
++            execution.get("recovery_succeeded") is False
++            and label.startswith(expected_prefix)
++            and execution.get("continue_task_entered") is False
++            and counters.get("model_continuation_calls", 0) == 0
++        ),
++    }
++
++
++def run_case(case: str, baseline: Path) -> dict:
++    case_dir = PHASE1 / "cases" / case
++    if case_dir.exists():
++        raise SystemExit(f"case already exists; refusing to overwrite: {case_dir}")
++    intervention = apply_intervention(case, case_dir, baseline)
++    write_json(case_dir / "intervention.json", intervention)
++
++    label = f"phase1-{case.lower()}-{RUN_TAG}"
++    command = [
++        str(BIN),
++        "phase1-case",
++        "--run-dir",
++        str(case_dir),
++        "--model-dir",
++        str(MODEL),
++        "--lab-root",
++        str(LAB),
++        "--run-label",
++        label,
++        "--case",
++        case,
++        "--baseline-dir",
++        str(baseline),
++        "--max-tokens",
++        "32",
++    ]
++    environment = os.environ.copy()
++    environment["SIMIGO_INFO_VALIDITY_POLICY_PATH"] = str(VALIDITY)
++    print("RUN", " ".join(command), file=sys.stderr)
++    process = subprocess.run(
++        command, capture_output=True, text=True, env=environment
++    )
++    log_path = RUNROOT / "logs" / f"phase1-{case}.log"
++    log_path.write_text(
++        "COMMAND " + " ".join(command) + "\n"
++        + "RETURNCODE " + str(process.returncode) + "\n"
++        + "STDOUT\n" + process.stdout + "\nSTDERR\n" + process.stderr,
++        encoding="utf-8",
++    )
++    evidence_path = case_dir / "evidence/phase1.json"
++    execution = read_json(evidence_path) if evidence_path.is_file() else {}
++    verification = expected_result(case, execution)
++    record = {
++        "schema_id": "SIMIGO-CAUSALITY-PHASE1-CASE-V1",
++        "case": case,
++        "run_label": label,
++        "baseline_dir": str(baseline),
++        "case_dir": str(case_dir),
++        "intervention": intervention,
++        "process": {
++            "returncode": process.returncode,
++            "stdout": process.stdout,
++            "stderr": process.stderr,
++        },
++        "execution": execution,
++        "verification": verification,
++        "run_id": RUNROOT.name,
++        "implementation": implementation_identity(),
++        "log_path": str(log_path),
++        "completed_at_utc": utc_now(),
++        "terminal_state": "PHASE1_OBSERVED" if execution else "PHASE1_HARNESS_FAIL",
++    }
++    write_json(PHASE1 / "evidence" / f"{case}.json", record)
++    return record
++
++
++def main() -> int:
++    if not BIN.is_file():
++        raise SystemExit(f"missing binary: {BIN}")
++    if not MODEL.is_dir():
++        raise SystemExit(f"missing model snapshot: {MODEL}")
++    (PHASE1 / "cases").mkdir(parents=True, exist_ok=True)
++    (PHASE1 / "evidence").mkdir(parents=True, exist_ok=True)
++    (RUNROOT / "logs").mkdir(parents=True, exist_ok=True)
++    run_stage_a()
++    results = {}
++    for case in CASES:
++        results[case] = run_case(case, BASELINE)
++    summary = {
++        "schema_id": "SIMIGO-CAUSALITY-PHASE1-SUMMARY-V1",
++        "baseline_dir": str(BASELINE),
++        "baseline_label": BASELINE_LABEL,
++        "cases": {
++            case: {
++                "terminal_state": record["terminal_state"],
++                "verification": record["verification"],
++                "process_returncode": record["process"]["returncode"],
++            }
++            for case, record in results.items()
++        },
++        "all_observed_as_expected": all(
++            record["verification"].get("matches_expected") is True
++            for record in results.values()
++        ),
++        "completed_at_utc": utc_now(),
++    }
++    write_json(PHASE1 / "summary.json", summary)
++    print(json.dumps(summary, indent=2, sort_keys=True))
++    return 0 if summary["all_observed_as_expected"] else 2
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py b/simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py
+new file mode 100644
+index 00000000..8aa07f60
+--- /dev/null
++++ b/simigo2-experimental/scripts/handoff_causality/run_phase2_causality.py
+@@ -0,0 +1,936 @@
++#!/usr/bin/env python3
++"""Phase 2 handoff-causality runner (isolated, no silent retries).
++
++Runs two lineage-complete worlds through the real-model handoff path, then
++derives B0/B1/B3/B4 observations from isolated database copies.  The runner
++never edits the repository; it writes only below --run-root.
++"""
++from __future__ import annotations
++
++import argparse
++import hashlib
++import json
++import os
++import sqlite3
++import subprocess
++import sys
++import tempfile
++import time
++from datetime import datetime, timezone
++from pathlib import Path
++
++LABEL = "handoff-causality-20261022b"
++COLD_U2_SEED = (
++    "SIMIGO-HANDOFF-COLD-U2-V1\n"
++    "You are executing step 2 in a fresh execution instance.\n"
++)
++U1_SETTLEMENT_ID = "settlement:TASK-U1"
++
++
++def utc_now() -> str:
++    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
++
++
++def sha256_bytes(data: bytes) -> str:
++    return hashlib.sha256(data).hexdigest()
++
++
++def sha256_file(path: Path) -> str:
++    h = hashlib.sha256()
++    with path.open("rb") as handle:
++        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
++            h.update(chunk)
++    return h.hexdigest()
++
++
++def write_json(path: Path, value: dict) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(json.dumps(value, indent=1, sort_keys=True) + "\n", encoding="utf-8")
++
++
++def read_json(path: Path) -> dict:
++    return json.loads(path.read_text(encoding="utf-8"))
++
++
++def sqlite_backup(source: Path, destination: Path) -> None:
++    destination.parent.mkdir(parents=True, exist_ok=True)
++    if destination.exists():
++        raise FileExistsError(destination)
++    src = sqlite3.connect(str(source))
++    dst = sqlite3.connect(str(destination))
++    try:
++        src.backup(dst)
++        dst.commit()
++    finally:
++        dst.close()
++        src.close()
++
++
++def process_alive(pid: int) -> bool:
++    if pid <= 0:
++        return False
++    try:
++        os.kill(pid, 0)
++    except ProcessLookupError:
++        return False
++    except PermissionError:
++        return True
++    return True
++
++
++def run_process(command: list[str], log_path: Path, timeout: int) -> dict:
++    log_path.parent.mkdir(parents=True, exist_ok=True)
++    started = time.time()
++    with log_path.open("wb") as log:
++        process = subprocess.Popen(
++            command,
++            cwd=str(Path(command[0]).parent),
++            stdout=log,
++            stderr=subprocess.STDOUT,
++            env=os.environ.copy(),
++        )
++        timed_out = False
++        try:
++            exit_code = process.wait(timeout=timeout)
++        except subprocess.TimeoutExpired:
++            timed_out = True
++            process.kill()
++            exit_code = process.wait()
++    return {
++        "argv": command,
++        "pid": process.pid,
++        "exit_code": exit_code,
++        "timed_out": timed_out,
++        "wall_seconds": round(time.time() - started, 3),
++        "log": str(log_path),
++        "log_sha256": sha256_file(log_path),
++        "started_at_utc": utc_now(),
++    }
++
++
++# --------------------------------------------------------------------------
++# database readers / isolated mutations
++# --------------------------------------------------------------------------
++
++
++def connect_readonly(path: Path) -> sqlite3.Connection:
++    connection = sqlite3.connect("file:%s?mode=ro" % path, uri=True)
++    connection.row_factory = sqlite3.Row
++    return connection
++
++
++def current_object(connection: sqlite3.Connection, dependency_id: str) -> dict | None:
++    row = connection.execute(
++        "SELECT content_address FROM dependency_entries WHERE dependency_id=? "
++        "ORDER BY append_order DESC LIMIT 1",
++        (dependency_id,),
++    ).fetchone()
++    if row is None:
++        return None
++    content = connection.execute(
++        "SELECT content FROM is_objects WHERE object_id=?", (row["content_address"],)
++    ).fetchone()
++    if content is None:
++        return None
++    value = json.loads(bytes(content["content"]))
++    value["_object_id"] = row["content_address"]
++    return value
++
++
++def current_index_object(connection: sqlite3.Connection, identity: str) -> dict | None:
++    row = connection.execute(
++        "SELECT record_object FROM is_index_entries WHERE srs_identity=? "
++        "ORDER BY append_order DESC LIMIT 1",
++        (identity,),
++    ).fetchone()
++    if row is None:
++        return None
++    content = connection.execute(
++        "SELECT content FROM is_objects WHERE object_id=?", (row["record_object"],)
++    ).fetchone()
++    if content is None:
++        return None
++    value = json.loads(bytes(content["content"]))
++    value["_object_id"] = row["record_object"]
++    return value
++
++
++def read_task_definitions(database: Path) -> dict:
++    connection = connect_readonly(database)
++    try:
++        return {
++            "source": current_index_object(connection, "item:TASK-SOURCE"),
++            "u1": current_index_object(connection, "item:TASK-U1"),
++            "u2": current_index_object(connection, "item:TASK-U2"),
++            "u1_settlement": current_object(connection, U1_SETTLEMENT_ID),
++            "source_settlement": current_object(connection, "settlement:TASK-SOURCE"),
++        }
++    finally:
++        connection.close()
++
++
++def read_u1_secret(database: Path) -> str:
++    definitions = read_task_definitions(database)
++    settlement = definitions["u1_settlement"]
++    if not settlement:
++        raise RuntimeError("U1 settlement missing in %s" % database)
++    return settlement["result"]["value"]["secret"]
++
++
++def write_append_object(
++    connection: sqlite3.Connection,
++    content: bytes,
++    dependency_id: str,
++    reason: str,
++    index_identity: str | None,
++) -> dict:
++    object_id = sha256_bytes(content)
++    created_order = connection.execute(
++        "SELECT COALESCE(MAX(created_order),0)+1 FROM is_objects"
++    ).fetchone()[0]
++    connection.execute(
++        "INSERT INTO is_objects (object_id, byte_size, content, created_order) "
++        "VALUES (?,?,?,?)",
++        (object_id, len(content), content, created_order),
++    )
++    revision = connection.execute(
++        "SELECT COALESCE(MAX(revision),0)+1 FROM dependency_entries "
++        "WHERE dependency_id=?",
++        (dependency_id,),
++    ).fetchone()[0]
++    append_order = connection.execute(
++        "SELECT COALESCE(MAX(append_order),0)+1 FROM dependency_entries"
++    ).fetchone()[0]
++    connection.execute(
++        "INSERT INTO dependency_entries "
++        "(append_order, dependency_id, content_address, revision, reason) "
++        "VALUES (?,?,?,?,?)",
++        (append_order, dependency_id, object_id, revision, reason),
++    )
++    if index_identity:
++        index_order = connection.execute(
++            "SELECT COALESCE(MAX(append_order),0)+1 FROM is_index_entries"
++        ).fetchone()[0]
++        connection.execute(
++            "INSERT INTO is_index_entries "
++            "(append_order, srs_identity, record_object) VALUES (?,?,?)",
++            (index_order, index_identity, object_id),
++        )
++    return {"object_id": object_id, "revision": revision, "append_order": append_order}
++
++
++def mutate_remove_u1_settlement(database: Path) -> dict:
++    connection = sqlite3.connect(str(database))
++    connection.row_factory = sqlite3.Row
++    try:
++        dependency_rows = connection.execute(
++            "SELECT append_order FROM dependency_entries WHERE dependency_id=?",
++            (U1_SETTLEMENT_ID,),
++        ).fetchall()
++        index_rows = connection.execute(
++            "SELECT append_order FROM is_index_entries WHERE srs_identity=?",
++            (U1_SETTLEMENT_ID,),
++        ).fetchall()
++        connection.execute(
++            "DELETE FROM dependency_entries WHERE dependency_id=?", (U1_SETTLEMENT_ID,)
++        )
++        connection.execute(
++            "DELETE FROM is_index_entries WHERE srs_identity=?", (U1_SETTLEMENT_ID,)
++        )
++        connection.commit()
++        retained = current_index_object(connection, "item:TASK-U1") is not None
++        return {
++            "deleted_dependency_rows": len(dependency_rows),
++            "deleted_index_rows": len(index_rows),
++            "u1_item_retained": retained,
++            "u1_source_retained": current_index_object(connection, "item:TASK-SOURCE")
++            is not None,
++        }
++    finally:
++        connection.close()
++
++
++def mutate_tamper_u1_object(database: Path) -> dict:
++    connection = sqlite3.connect(str(database))
++    try:
++        row = connection.execute(
++            "SELECT content_address FROM dependency_entries WHERE dependency_id=? "
++            "ORDER BY append_order DESC LIMIT 1",
++            (U1_SETTLEMENT_ID,),
++        ).fetchone()
++        if row is None:
++            raise RuntimeError("U1 settlement missing for B3a")
++        object_id = row[0]
++        original = bytes(
++            connection.execute(
++                "SELECT content FROM is_objects WHERE object_id=?", (object_id,)
++            ).fetchone()[0]
++        )
++        tampered = bytearray(original)
++        tampered[len(tampered) // 2] ^= 0x01
++        connection.execute(
++            "UPDATE is_objects SET content=? WHERE object_id=?",
++            (bytes(tampered), object_id),
++        )
++        connection.commit()
++        return {
++            "object_id": object_id,
++            "original_sha256": sha256_bytes(original),
++            "tampered_sha256": sha256_bytes(bytes(tampered)),
++            "object_id_still_declared": object_id,
++        }
++    finally:
++        connection.close()
++
++
++def mutate_substitute_u1_value(database: Path, lab_root: Path) -> dict:
++    sys.path.insert(0, str(lab_root / "execution-information-loop"))
++    from carrier_loop import canonical, digest  # noqa: PLC0415
++
++    connection = sqlite3.connect(str(database))
++    try:
++        row = connection.execute(
++            "SELECT content_address FROM dependency_entries WHERE dependency_id=? "
++            "ORDER BY append_order DESC LIMIT 1",
++            (U1_SETTLEMENT_ID,),
++        ).fetchone()
++        if row is None:
++            raise RuntimeError("U1 settlement missing for B3b")
++        original_id = row[0]
++        original = json.loads(
++            bytes(
++                connection.execute(
++                    "SELECT content FROM is_objects WHERE object_id=?", (original_id,)
++                ).fetchone()[0]
++            )
++        )
++        substitute = os.urandom(16).hex()
++        original_value = dict(original["result"]["value"])
++        original_digest = original["result"]["result_value_sha256"]
++        original_value["secret"] = substitute
++        new_digest = digest(original_value)
++        original["result"]["value"] = original_value
++        original["result"]["result_value_sha256"] = new_digest
++        original["basis"]["result_value_sha256"] = new_digest
++        content = canonical(original)
++        appended = write_append_object(
++            connection,
++            content,
++            U1_SETTLEMENT_ID,
++            "B3b digest-valid semantic substitution",
++            U1_SETTLEMENT_ID,
++        )
++        connection.commit()
++        return {
++            "original_object_id": original_id,
++            "original_result_value_sha256": original_digest,
++            "substituted_secret_sha256": digest(substitute),
++            "substituted_result_value_sha256": new_digest,
++            "new_object_id": appended["object_id"],
++            "retained_source_metadata": {
++                "source_payload_sha256": original["result"]["source_payload_sha256"],
++                "source_version": original["result"]["source_version"],
++                "dependency_object_ids": original["result"]["dependency_object_ids"],
++                "valid_until_utc": original["result"]["valid_until_utc"],
++                "validity_policy": original["result"]["validity_policy"],
++            },
++        }
++    finally:
++        connection.close()
++
++
++def mutate_dependency_pointer(database: Path, lab_root: Path) -> dict:
++    sys.path.insert(0, str(lab_root / "execution-information-loop"))
++    from carrier_loop import CarrierInformationLoop  # noqa: PLC0415
++
++    loop = CarrierInformationLoop.open(str(database))
++    try:
++        item = loop.current_item("TASK-U2")
++        if item is None:
++            raise RuntimeError("TASK-U2 missing for B3c")
++        previous = list(item["dependencies"])
++        result = loop.put_source(
++            item["demand_id"],
++            "TASK-U2",
++            item["source_kind"],
++            item["source_version"],
++            item["source_payload"],
++            dependencies=["TASK-SOURCE"],
++            valid_until_utc=item["valid_until_utc"],
++            validity_policy=item["validity_policy"],
++        )
++        loop.commit()
++        return {
++            "previous_dependencies": previous,
++            "new_dependencies": ["TASK-SOURCE"],
++            "new_item_object_id": result["object_id"],
++            "new_revision": result["revision"],
++        }
++    finally:
++        loop.close()
++
++
++# --------------------------------------------------------------------------
++# B4 nonce-leak audit (before U2 starts)
++# --------------------------------------------------------------------------
++
++
++def files_contain(directory: Path, needle: str, pattern: str = "*") -> list[str]:
++    hits: list[str] = []
++    if not directory.exists():
++        return hits
++    for path in sorted(directory.rglob(pattern)):
++        if not path.is_file():
++            continue
++        try:
++            if needle in path.read_bytes().decode("utf-8", errors="ignore"):
++                hits.append(str(path))
++        except OSError:
++            continue
++    return hits
++
++
++def audit_world(world: Path, other_world: Path, planned_argv: list[str]) -> dict:
++    definitions = read_task_definitions(world / "pristine.sqlite")
++    secret = definitions["u1_settlement"]["result"]["value"]["secret"]
++    template = definitions["u2"]["source_payload"]["next_input_template"]
++    argv_text = "\0".join(planned_argv)
++    env_text = "\0".join("%s=%s" % (key, value) for key, value in os.environ.items())
++    temp_hits = files_contain(Path(tempfile.gettempdir()), secret, "simigo-*")
++    state_hits = files_contain(world / "run" / "state", secret)
++    log_hits = files_contain(world / "logs", secret)
++    evidence_hits = files_contain(world / "run" / "evidence", secret)
++    other_db_hits = []
++    for candidate in sorted(other_world.rglob("*.sqlite")):
++        try:
++            if secret in candidate.read_bytes().decode("utf-8", errors="ignore"):
++                other_db_hits.append(str(candidate))
++        except OSError:
++            continue
++    other_state_hits = files_contain(other_world / "run" / "state", secret)
++    other_log_hits = files_contain(other_world / "logs", secret)
++    violations = {
++        "argv": secret in argv_text,
++        "environment": secret in env_text,
++        "cold_seed": secret in COLD_U2_SEED,
++        "u2_base_template": secret in template,
++        "u2_state_directory": bool(state_hits),
++        "pre_u2_logs": bool(log_hits),
++        "pre_u2_evidence": bool(evidence_hits),
++        "temporary_files": bool(temp_hits),
++        "other_world_database": bool(other_db_hits),
++        "other_world_state": bool(other_state_hits),
++        "other_world_logs": bool(other_log_hits),
++    }
++    return {
++        "schema_id": "SIMIGO-CAUSALITY-PHASE2-B4-V1",
++        "world": world.name,
++        "audited_at_utc": utc_now(),
++        "nonce_sha256": sha256_bytes(secret.encode("utf-8")),
++        "nonce_length": len(secret),
++        "allowlisted_occurrences": {
++            "primary_database": str(world / "pristine.sqlite"),
++            "u1_source_payload": True,
++            "u1_item_prompt_seed": True,
++            "u1_settlement_result": True,
++        },
++        "surface_contains_nonce": violations,
++        "unexpected_hit_paths": {
++            "u2_state_directory": state_hits,
++            "pre_u2_logs": log_hits,
++            "pre_u2_evidence": evidence_hits,
++            "temporary_files": temp_hits,
++            "other_world_database": other_db_hits,
++            "other_world_state": other_state_hits,
++            "other_world_logs": other_log_hits,
++        },
++        "cross_contaminated": any(violations.values()),
++        "verdict": "CLEAN" if not any(violations.values()) else "CONTAMINATED",
++    }
++
++
++# --------------------------------------------------------------------------
++# orchestration
++# --------------------------------------------------------------------------
++
++
++def stage_a(binary: Path, world: Path, model_dir: Path, lab_root: Path,
++            max_tokens: int) -> dict:
++    command = [
++        str(binary), "stage-a",
++        "--run-dir", str(world / "run"),
++        "--model-dir", str(model_dir),
++        "--lab-root", str(lab_root),
++        "--run-label", LABEL,
++        "--nonce-source", "random",
++        "--max-tokens", str(max_tokens),
++    ]
++    metadata = run_process(command, world / "logs" / "stage-a.log", 1800)
++    evidence_path = world / "run" / "evidence" / "stage-a.json"
++    evidence = read_json(evidence_path) if evidence_path.exists() else None
++    metadata["terminal_state"] = (
++        evidence.get("terminal_state") if isinstance(evidence, dict) else "NO_EVIDENCE"
++    )
++    metadata["evidence_path"] = str(evidence_path)
++    metadata["evidence_sha256"] = sha256_file(evidence_path) if evidence_path.exists() else None
++    metadata["alive_after_exit"] = process_alive(metadata["pid"])
++    metadata["model"] = evidence.get("model") if isinstance(evidence, dict) else None
++    metadata["stage_a_pid"] = evidence.get("pid") if isinstance(evidence, dict) else None
++    metadata["stage_a_continuation"] = (
++        evidence.get("continuation") if isinstance(evidence, dict) else None
++    )
++    return metadata
++
++
++def prepare_case(world: Path, case_name: str, mutation=None) -> Path:
++    case_dir = world / case_name
++    if case_dir.exists():
++        raise FileExistsError(case_dir)
++    case_dir.mkdir(parents=True)
++    sqlite_backup(world / "pristine.sqlite", case_dir / "carrier.sqlite")
++    if mutation is not None:
++        mutation(case_dir / "carrier.sqlite")
++    (case_dir / "state").mkdir()
++    return case_dir
++
++
++def u2_case(binary: Path, case_dir: Path, case_name: str, model_dir: Path,
++            lab_root: Path, max_tokens: int, stage_a_pid: int) -> dict:
++    state_dir = case_dir / "state"
++    state_dir.mkdir(exist_ok=True)
++    command = [
++        str(binary), "phase2-u2",
++        "--run-dir", str(case_dir),
++        "--model-dir", str(model_dir),
++        "--lab-root", str(lab_root),
++        "--run-label", LABEL,
++        "--case", case_name,
++        "--state-dir", str(state_dir),
++        "--u1-pid", str(stage_a_pid),
++        "--max-tokens", str(max_tokens),
++    ]
++    metadata = run_process(command, case_dir / "logs" / "u2.log", 1800)
++    evidence_path = case_dir / "evidence" / "phase2.json"
++    evidence = read_json(evidence_path) if evidence_path.exists() else None
++    metadata["terminal_state"] = (
++        evidence.get("terminal_state") if isinstance(evidence, dict) else "NO_EVIDENCE"
++    )
++    metadata["evidence_path"] = str(evidence_path)
++    metadata["evidence_sha256"] = sha256_file(evidence_path) if evidence_path.exists() else None
++    metadata["command_contains_nonce"] = False
++    metadata["evidence"] = evidence
++    return metadata
++
++
++def safe_condition(name: str, function) -> dict:
++    try:
++        return function()
++    except Exception as error:  # noqa: BLE001 - preserve, never retry
++        import traceback
++        return {
++            "terminal_state": "HARNESS_FAIL",
++            "failure": "%s: %s" % (type(error).__name__, error),
++            "failure_traceback": traceback.format_exc(),
++        }
++
++
++def compare_worlds(a: dict, b: dict) -> dict:
++    ea = a.get("evidence") or {}
++    eb = b.get("evidence") or {}
++    out_a = ea.get("output") or {}
++    out_b = eb.get("output") or {}
++    template_a = (ea.get("is_reads") or {}).get("u2_item_source_payload_template_sha256")
++    template_b = (eb.get("is_reads") or {}).get("u2_item_source_payload_template_sha256")
++    seed_a = (ea.get("prompt") or {}).get("seed_sha256")
++    seed_b = (eb.get("prompt") or {}).get("seed_sha256")
++    next_a = (ea.get("prompt") or {}).get("next_input_sha256")
++    next_b = (eb.get("prompt") or {}).get("next_input_sha256")
++    answer_a = out_a.get("answer", "")
++    answer_b = out_b.get("answer", "")
++    match_a = bool(out_a.get("matches_settled_expected"))
++    match_b = bool(out_b.get("matches_settled_expected"))
++    follows_a = bool(ea.get("output_follows_is_settlement"))
++    follows_b = bool(eb.get("output_follows_is_settlement"))
++    checks = {
++        "u2_template_identical": template_a is not None and template_a == template_b,
++        "cold_seed_identical": seed_a is not None and seed_a == seed_b,
++        "settlements_differ": ea.get("u1_settlement_object_id") != eb.get("u1_settlement_object_id")
++        and bool(ea.get("u1_settlement_object_id")) and bool(eb.get("u1_settlement_object_id")),
++        "u2_inputs_differ": next_a is not None and next_b is not None and next_a != next_b,
++        "outputs_differ": bool(answer_a) and bool(answer_b) and answer_a != answer_b,
++        "world_a_output_follows_its_settlement": follows_a and match_a,
++        "world_b_output_follows_its_settlement": follows_b and match_b,
++        "world_a_reused_u1_and_generated_u2": bool(ea.get("u1_reused"))
++        and not bool(ea.get("u1_recomputed"))
++        and (ea.get("u2_action") or {}).get("action") == "COMPUTE"
++        and (ea.get("counters") or {}).get("model_continuation_calls") == 1,
++        "world_b_reused_u1_and_generated_u2": bool(eb.get("u1_reused"))
++        and not bool(eb.get("u1_recomputed"))
++        and (eb.get("u2_action") or {}).get("action") == "COMPUTE"
++        and (eb.get("counters") or {}).get("model_continuation_calls") == 1,
++    }
++    established = all(checks.values())
++    return {
++        "schema_id": "SIMIGO-CAUSALITY-PHASE2-B2-V1",
++        "compared_at_utc": utc_now(),
++        "checks": checks,
++        "world_a": {
++            "settlement_object_id": ea.get("u1_settlement_object_id"),
++            "next_input_sha256": next_a,
++            "answer_sha256": (out_a or {}).get("answer_sha256"),
++            "matches_settled_expected": match_a,
++            "u1_reused": ea.get("u1_reused"),
++            "u1_recomputed": ea.get("u1_recomputed"),
++            "u2_action": (ea.get("u2_action") or {}).get("action"),
++            "generation_calls": (ea.get("counters") or {}).get("model_continuation_calls"),
++        },
++        "world_b": {
++            "settlement_object_id": eb.get("u1_settlement_object_id"),
++            "next_input_sha256": next_b,
++            "answer_sha256": (out_b or {}).get("answer_sha256"),
++            "matches_settled_expected": match_b,
++            "u1_reused": eb.get("u1_reused"),
++            "u1_recomputed": eb.get("u1_recomputed"),
++            "u2_action": (eb.get("u2_action") or {}).get("action"),
++            "generation_calls": (eb.get("counters") or {}).get("model_continuation_calls"),
++        },
++        "terminal_state": "C2_DIFFERENTIAL_ESTABLISHED" if established else "C2_DIFFERENTIAL_NOT_ESTABLISHED",
++    }
++
++
++def summarize_claims(results: dict, b2: dict, b4: dict) -> dict:
++    b0a = results.get("B0-A", {})
++    b0b = results.get("B0-B", {})
++    b1 = results.get("B1-harness", {})
++    b1_loop = results.get("B1-loop", {})
++    b3b = results.get("B3b", {})
++    c2 = "NOT_ESTABLISHED"
++    if b2.get("terminal_state") == "C2_DIFFERENTIAL_ESTABLISHED" and not b4["W_A"]["cross_contaminated"] and not b4["W_B"]["cross_contaminated"]:
++        c2 = "SUPPORTED_IN_THE_TESTED_HANDOFF_PATH_ONLY"
++    b1_evidence = b1.get("evidence") or {}
++    b1_refused = (
++        b1.get("terminal_state") in {
++            "PHASE2_READ_REFUSAL",
++            "PHASE2_INPUT_ADMISSION_REFUSAL",
++        }
++        and (b1_evidence.get("counters") or {}).get("model_continuation_calls") == 0
++        and not b1_evidence.get("continue_task_entered")
++        and not b1_evidence.get("u1_recomputed")
++    )
++    loop_actions = ((b1_loop.get("probe") or {}).get("result") or {}).get("actions") or []
++    loop_computed = [action.get("item_id") for action in loop_actions if action.get("action") == "COMPUTE"]
++    loop_recomputed_u1 = "TASK-U1" in loop_computed
++    if b1_refused and loop_recomputed_u1:
++        c3 = "OBSERVED_DIFFERENT_BEHAVIOR_BY_PATH"
++    elif b1_refused or loop_recomputed_u1:
++        c3 = "PARTIAL"
++    else:
++        c3 = "NOT_ESTABLISHED"
++    b3b_evidence = b3b.get("evidence") or {}
++    b3b_accepted = (
++        b3b.get("terminal_state") == "PHASE2_OBSERVED_SUBSTITUTION"
++        and bool((b3b_evidence.get("output") or {}).get("matches_settled_expected"))
++        and bool(b3b_evidence.get("output_follows_is_settlement"))
++    )
++    c4 = (
++        "DIGEST_VALIDITY_DOES_NOT_ESTABLISH_U1_PROVENANCE"
++        if b3b_accepted
++        else "NOT_DEMONSTRATED"
++    )
++    return {
++        "C1": "OBSERVED_IN_PHASE1 (see phase1 evidence)",
++        "C2": c2,
++        "C3": c3,
++        "C3_evidence": {
++            "handoff_refused": b1_refused,
++            "handoff_generation_calls": (b1_evidence.get("counters") or {}).get("model_continuation_calls"),
++            "generic_loop_computed_items": loop_computed,
++            "generic_loop_recomputed_u1": loop_recomputed_u1,
++        },
++        "C4": c4,
++        "C4_evidence": {
++            "b3b_accepted_substitution": b3b_accepted,
++            "b3b_output_matches_substituted_value": bool(
++                (b3b_evidence.get("output") or {}).get("matches_settled_expected")),
++            "b3b_authenticity_label": b3b_evidence.get("c4_authenticity"),
++        },
++        "B0-A": b0a.get("terminal_state"),
++        "B0-B": b0b.get("terminal_state"),
++    }
++
++
++def admission_conditions(results: dict) -> dict:
++    """Per-condition proof that admission happened before any generation.
++
++    A refused condition must show a structured refusal stage, zero
++    tokenize/generation calls, and no continuation entry. An admitted
++    condition must show the admission identity that the model consumed.
++    """
++
++    def condition(
++        name: str, stage: str | None, terminal: str, generation: int
++    ) -> dict:
++        result = results.get(name) or {}
++        evidence = result.get("evidence") or {}
++        refusal = evidence.get("input_admission_refusal") or {}
++        counters = evidence.get("counters") or {}
++        admission = evidence.get("input_admission") or {}
++        refused = stage is not None
++        # A refused condition never tokenizes; an admitted fresh-ES continuation
++        # tokenizes its seed and its admitted next input exactly once.
++        expected_tokenize_text = 0 if refused else 1
++        expected_tokenize_seed = 0 if refused else 1
++        passed = (
++            result.get("terminal_state") == terminal
++            and evidence.get("input_admission_status") == (
++                "REFUSED" if refused else "ADMITTED")
++            and (refusal.get("stage") == stage if refused else True)
++            and counters.get("model_continuation_calls") == generation
++            and (
++                not evidence.get("continue_task_entered")
++                if refused else evidence.get("continue_task_entered") is True
++            )
++            and counters.get("tokenize_text_calls") == expected_tokenize_text
++            and counters.get("tokenize_seed_calls") == expected_tokenize_seed
++        )
++        return {
++            "terminal_state": result.get("terminal_state"),
++            "expected_terminal_state": terminal,
++            "input_admission_status": evidence.get("input_admission_status"),
++            "expected_refusal_stage": stage,
++            "refusal_stage": refusal.get("stage"),
++            "refusal_reason": refusal.get("reason"),
++            "production_continuation_invoked": evidence.get(
++                "production_continuation_invoked"),
++            "continue_task_entered": evidence.get("continue_task_entered"),
++            "generation_entered": evidence.get("generation_entered"),
++            "tokenize_text_calls": counters.get("tokenize_text_calls"),
++            "tokenize_seed_calls": counters.get("tokenize_seed_calls"),
++            "expected_tokenize_text_calls": expected_tokenize_text,
++            "expected_tokenize_seed_calls": expected_tokenize_seed,
++            "model_continuation_calls": counters.get("model_continuation_calls"),
++            "expected_generation_calls": generation,
++            "input_sha256": admission.get("input_sha256"),
++            "dependency_settlement_object_ids": admission.get(
++                "dependency_settlement_object_ids"),
++            "pass": passed,
++        }
++
++    return {
++        "B0-A": condition("B0-A", None, "PHASE2_OBSERVED_SUCCESS", 1),
++        "B0-B": condition("B0-B", None, "PHASE2_OBSERVED_SUCCESS", 1),
++        "B1": condition(
++            "B1-harness", "SETTLEMENT_NOT_ADMITTED",
++            "PHASE2_INPUT_ADMISSION_REFUSAL", 0),
++        "B3a": condition(
++            "B3a", "SETTLEMENT_OBJECT_UNREADABLE",
++            "PHASE2_INPUT_ADMISSION_REFUSAL", 0),
++        "B3b": condition(
++            "B3b", None, "PHASE2_OBSERVED_SUBSTITUTION", 1),
++        "B3c": condition(
++            "B3c", "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
++            "PHASE2_INPUT_ADMISSION_REFUSAL", 0),
++    }
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--run-root", required=True)
++    parser.add_argument("--lab-root", required=True)
++    parser.add_argument("--model-dir", required=True)
++    parser.add_argument("--max-tokens", type=int, default=64)
++    parser.add_argument("--world-suffix", default="")
++    args = parser.parse_args()
++
++    run_root = Path(args.run_root).expanduser().resolve()
++    global LABEL
++    # The run tag follows the run root so a new label (e.g. 20261022c) never
++    # overwrites the earlier round's evidence.
++    LABEL = run_root.name
++    lab_root = Path(args.lab_root).expanduser().resolve()
++    model_dir = Path(args.model_dir).expanduser().resolve()
++    binary = lab_root / "simigo2-experimental" / ".build" / "debug" / "RealModelHandoff"
++    phase2a = run_root / "phase2a" / ("world-a" + args.world_suffix)
++    phase2b = run_root / "phase2b" / ("world-b" + args.world_suffix)
++
++    for world in (phase2a, phase2b):
++        if (world / "run").exists():
++            raise SystemExit("refusing to overwrite existing world: %s" % world)
++        world.mkdir(parents=True)
++
++    world_a_stage = stage_a(binary, phase2a, model_dir, lab_root, args.max_tokens)
++    world_b_stage = stage_a(binary, phase2b, model_dir, lab_root, args.max_tokens)
++    write_json(run_root / "logs" / "stage-a-launch.json", {
++        "schema_id": "SIMIGO-CAUSALITY-PHASE2-STAGE-A-V1",
++        "created_at_utc": utc_now(),
++        "W_A": world_a_stage,
++        "W_B": world_b_stage,
++    })
++    if world_a_stage["terminal_state"] != "STAGE_A_PASS" or world_b_stage["terminal_state"] != "STAGE_A_PASS":
++        write_json(run_root / "summary.json", {
++            "schema_id": "SIMIGO-CAUSALITY-PHASE2-SUMMARY-V1",
++            "run_id": LABEL,
++            "created_at_utc": utc_now(),
++            "terminal_state": "BLOCKED_NOT_RUN",
++            "W_A": world_a_stage,
++            "W_B": world_b_stage,
++        })
++        return 1
++
++    sqlite_backup(phase2a / "run" / "carrier.sqlite", phase2a / "pristine.sqlite")
++    sqlite_backup(phase2b / "run" / "carrier.sqlite", phase2b / "pristine.sqlite")
++
++    planned_u2 = [
++        str(binary), "phase2-u2", "--run-dir", "<case>", "--model-dir", str(model_dir),
++        "--lab-root", str(lab_root), "--run-label", LABEL, "--case", "<condition>",
++        "--state-dir", "<case>/state", "--u1-pid", str(world_a_stage["pid"]),
++        "--max-tokens", str(args.max_tokens),
++    ]
++    b4_a = audit_world(phase2a, phase2b, planned_u2)
++    b4_b = audit_world(phase2b, phase2a, planned_u2)
++    write_json(phase2a / "B4.json", b4_a)
++    write_json(phase2b / "B4.json", b4_b)
++    if b4_a["cross_contaminated"] or b4_b["cross_contaminated"]:
++        write_json(run_root / "summary.json", {
++            "schema_id": "SIMIGO-CAUSALITY-PHASE2-SUMMARY-V1",
++            "run_id": LABEL,
++            "created_at_utc": utc_now(),
++            "terminal_state": "INVALID_CONDITION",
++            "B4": {"W_A": b4_a, "W_B": b4_b},
++        })
++        return 1
++
++    results: dict[str, dict] = {}
++
++    def run_b0(name: str, world: Path, stage: dict) -> dict:
++        case_dir = prepare_case(world, name)
++        return u2_case(binary, case_dir, name, model_dir, lab_root,
++                       args.max_tokens, stage["pid"])
++
++    results["B0-A"] = safe_condition("B0-A", lambda: run_b0("B0-A", phase2a, world_a_stage))
++    results["B0-B"] = safe_condition("B0-B", lambda: run_b0("B0-B", phase2b, world_b_stage))
++
++    # B1-harness must record the removal itself, so it is built explicitly.
++    try:
++        b1_dir = phase2a / "B1-harness"
++        if b1_dir.exists():
++            raise FileExistsError(b1_dir)
++        b1_dir.mkdir(parents=True)
++        sqlite_backup(phase2a / "pristine.sqlite", b1_dir / "carrier.sqlite")
++        b1_mutation = mutate_remove_u1_settlement(b1_dir / "carrier.sqlite")
++        (b1_dir / "state").mkdir()
++        results["B1-harness"] = u2_case(
++            binary, b1_dir, "B1-harness", model_dir, lab_root,
++            args.max_tokens, world_a_stage["pid"])
++        results["B1-harness"]["mutation"] = b1_mutation
++    except Exception as error:  # noqa: BLE001
++        results["B1-harness"] = {
++            "terminal_state": "HARNESS_FAIL",
++            "failure": "%s: %s" % (type(error).__name__, error),
++        }
++
++    def run_b1_loop() -> dict:
++        loop_dir = phase2a / "B1-loop"
++        if loop_dir.exists():
++            raise FileExistsError(loop_dir)
++        loop_dir.mkdir(parents=True)
++        sqlite_backup(phase2a / "pristine.sqlite", loop_dir / "carrier.sqlite")
++        loop_mutation = mutate_remove_u1_settlement(loop_dir / "carrier.sqlite")
++        probe_command = [
++            "/usr/bin/python3",
++            str(lab_root / "execution-information-loop" / "production_runtime_bridge.py"),
++            "execute-probe",
++            "--database", str(loop_dir / "carrier.sqlite"),
++            "--demand-id", "handoff-u2",
++            "--advancement", f"b1-loop-probe-{LABEL}",
++            "--evaluated-at", utc_now(),
++        ]
++        probe_env = os.environ.copy()
++        probe_env["SIMIGO_RUNTIME_ROOT"] = str(lab_root)
++        probe_env["SIMIGO_INFO_SNAPSHOT_PATH"] = str(
++            lab_root / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite")
++        probe_env["SIMIGO_INFO_VALIDITY_POLICY_PATH"] = str(
++            lab_root / "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json")
++        probe_log = loop_dir / "logs" / "execute-probe.log"
++        probe_log.parent.mkdir(parents=True)
++        started = time.time()
++        with probe_log.open("wb") as log:
++            probe = subprocess.run(probe_command, cwd=str(lab_root), stdout=log,
++                                   stderr=subprocess.STDOUT, env=probe_env, timeout=300)
++        lines = probe_log.read_text(errors="replace").strip().splitlines()
++        probe_result = json.loads(lines[-1]) if lines else {}
++        return {
++            "terminal_state": "OBSERVED" if probe.returncode == 0 else "HARNESS_FAIL",
++            "exit_code": probe.returncode,
++            "wall_seconds": round(time.time() - started, 3),
++            "mutation": loop_mutation,
++            "probe": probe_result,
++            "log": str(probe_log),
++            "log_sha256": sha256_file(probe_log),
++        }
++
++    results["B1-loop"] = safe_condition("B1-loop", run_b1_loop)
++
++    b2 = compare_worlds(results.get("B0-A", {}), results.get("B0-B", {}))
++    write_json(run_root / "phase2a" / "B2.json", b2)
++
++    def run_b3a() -> dict:
++        case_dir = prepare_case(phase2a, "B3a", lambda path: None)
++        # prepare_case already copied; mutate now, before U2.
++        mutation = mutate_tamper_u1_object(case_dir / "carrier.sqlite")
++        result = u2_case(binary, case_dir, "B3a", model_dir, lab_root,
++                         args.max_tokens, world_a_stage["pid"])
++        result["mutation"] = mutation
++        return result
++
++    def run_b3b() -> dict:
++        case_dir = prepare_case(phase2a, "B3b", lambda path: None)
++        mutation = mutate_substitute_u1_value(case_dir / "carrier.sqlite", lab_root)
++        result = u2_case(binary, case_dir, "B3b", model_dir, lab_root,
++                         args.max_tokens, world_a_stage["pid"])
++        result["mutation"] = mutation
++        return result
++
++    def run_b3c() -> dict:
++        case_dir = prepare_case(phase2a, "B3c", lambda path: None)
++        mutation = mutate_dependency_pointer(case_dir / "carrier.sqlite", lab_root)
++        result = u2_case(binary, case_dir, "B3c", model_dir, lab_root,
++                         args.max_tokens, world_a_stage["pid"])
++        result["mutation"] = mutation
++        return result
++
++    results["B3a"] = safe_condition("B3a", run_b3a)
++    results["B3b"] = safe_condition("B3b", run_b3b)
++    results["B3c"] = safe_condition("B3c", run_b3c)
++
++    claims = summarize_claims(results, b2, {"W_A": b4_a, "W_B": b4_b})
++    sanitized = {
++        name: {key: value for key, value in result.items() if key != "evidence"}
++        for name, result in results.items()
++    }
++    summary = {
++        "schema_id": "SIMIGO-CAUSALITY-PHASE2-SUMMARY-V1",
++        "run_id": LABEL,
++        "created_at_utc": utc_now(),
++        "terminal_state": "OBSERVED",
++        "run_root": str(run_root),
++        "worlds": {
++            "W_A": {"stage_a": world_a_stage, "b4": b4_a},
++            "W_B": {"stage_a": world_b_stage, "b4": b4_b},
++        },
++        "conditions": sanitized,
++        "b2": b2,
++        "admission_conditions": admission_conditions(results),
++        "claims": claims,
++    }
++    write_json(run_root / "summary.json", summary)
++    write_json(run_root / "phase2a" / "conditions.json", {
++        "schema_id": "SIMIGO-CAUSALITY-PHASE2-CONDITIONS-V1",
++        "created_at_utc": utc_now(),
++        "results": sanitized,
++    })
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())

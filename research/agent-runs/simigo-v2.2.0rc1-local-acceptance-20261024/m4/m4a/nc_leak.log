@@ -1,0 +1,4 @@
+headless-entered role=consume pid=49146
+headless-task-started
+wrote evidence /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/m4/m4a/consume_m4a_ncleak.json
+headless-task-done rc=7

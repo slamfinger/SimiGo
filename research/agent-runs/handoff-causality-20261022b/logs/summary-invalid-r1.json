@@ -1,0 +1,86 @@
+{
+ "B4": {
+  "W_A": {
+   "allowlisted_occurrences": {
+    "primary_database": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a/pristine.sqlite",
+    "u1_item_prompt_seed": true,
+    "u1_settlement_result": true,
+    "u1_source_payload": true
+   },
+   "audited_at_utc": "2026-10-21T17:50:43Z",
+   "cross_contaminated": true,
+   "nonce_length": 32,
+   "nonce_sha256": "2b665571e5bed569dac4420bb8cdc17bb154c286dd6978229d87ffcf95e3ab35",
+   "schema_id": "SIMIGO-CAUSALITY-PHASE2-B4-V1",
+   "surface_contains_nonce": {
+    "argv": false,
+    "cold_seed": false,
+    "environment": false,
+    "other_world_database": false,
+    "other_world_logs": false,
+    "other_world_state": false,
+    "pre_u2_evidence": true,
+    "pre_u2_logs": false,
+    "temporary_files": false,
+    "u2_base_template": false,
+    "u2_state_directory": false
+   },
+   "unexpected_hit_paths": {
+    "other_world_database": [],
+    "other_world_logs": [],
+    "other_world_state": [],
+    "pre_u2_evidence": [
+     "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a/run/evidence/stage-a.json"
+    ],
+    "pre_u2_logs": [],
+    "temporary_files": [],
+    "u2_state_directory": []
+   },
+   "verdict": "CONTAMINATED",
+   "world": "world-a"
+  },
+  "W_B": {
+   "allowlisted_occurrences": {
+    "primary_database": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b/pristine.sqlite",
+    "u1_item_prompt_seed": true,
+    "u1_settlement_result": true,
+    "u1_source_payload": true
+   },
+   "audited_at_utc": "2026-10-21T17:50:43Z",
+   "cross_contaminated": true,
+   "nonce_length": 32,
+   "nonce_sha256": "734a22dab897c99d78b04aba66eacbf94aaf5ef3b1c8169750b54274977f3bcf",
+   "schema_id": "SIMIGO-CAUSALITY-PHASE2-B4-V1",
+   "surface_contains_nonce": {
+    "argv": false,
+    "cold_seed": false,
+    "environment": false,
+    "other_world_database": false,
+    "other_world_logs": false,
+    "other_world_state": false,
+    "pre_u2_evidence": true,
+    "pre_u2_logs": false,
+    "temporary_files": false,
+    "u2_base_template": false,
+    "u2_state_directory": false
+   },
+   "unexpected_hit_paths": {
+    "other_world_database": [],
+    "other_world_logs": [],
+    "other_world_state": [],
+    "pre_u2_evidence": [
+     "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b/run/evidence/stage-a.json"
+    ],
+    "pre_u2_logs": [],
+    "temporary_files": [],
+    "u2_state_directory": []
+   },
+   "verdict": "CONTAMINATED",
+   "world": "world-b"
+  }
+ },
+ "created_at_utc": "2026-10-21T17:50:43Z",
+ "run_id": "handoff-causality-20261022b",
+ "schema_id": "SIMIGO-CAUSALITY-PHASE2-SUMMARY-V1",
+ "terminal_state": "INVALID_CONDITION"
+}

@@ -1,0 +1,1032 @@
+diff --git a/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift b/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift
+index fde95d0..ca80c79 100644
+--- a/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift
++++ b/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift
+@@ -840,11 +840,34 @@ public final class LOCALBPairingCredentialMaterial {
+ public struct LOCALBKeychainSignerStore {
+     public let service: String
+     public let account: String
++    /// Optional dedicated keychain FILE. `nil` (the production default outside
++    /// an isolated root) uses the login Keychain, so existing signing
++    /// credentials survive; a redirected `SIMIGO_HOME` keeps this store inside
++    /// the isolated root instead.
++    public let keychainPath: String?
+ 
+     public init(service: String = "com.simigo.localb-production-signer",
+-                account: String = "signing-key-v1") {
++                account: String = "signing-key-v1",
++                keychainPath: String? = LOCALBKeychainScope.isolatedDefault(
++                    fileName: "production-signer.keychain-db")) {
+         self.service = service
+         self.account = account
++        self.keychainPath = keychainPath
++    }
++
++    private var scope: LOCALBKeychainScope {
++        LOCALBKeychainScope(path: keychainPath, fileName: "production-signer.keychain-db")
++    }
++
++    /// The scoped form of a raw Keychain write (tests / diagnostics must hit
++    /// the same store the product uses).
++    public func scopedAdd(_ attributes: [String: Any]) throws -> [String: Any] {
++        try scope.addScope(attributes)
++    }
++
++    /// The scoped form of a raw Keychain query.
++    public func scopedQuery(_ query: [String: Any]) throws -> [String: Any] {
++        try scope.queryScope(query)
+     }
+ 
+     /// Loads the existing identity or creates it once. Concurrent first-use
+@@ -865,7 +888,7 @@ public struct LOCALBKeychainSignerStore {
+             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+             kSecValueData as String: generated.rawRepresentation
+         ]
+-        let status = SecItemAdd(attributes as CFDictionary, nil)
++        let status = SecItemAdd(try scope.addScope(attributes) as CFDictionary, nil)
+         if status == errSecSuccess { return generated }
+         if status == errSecDuplicateItem, let winner = try readExisting() { return winner }
+         throw LOCALBStatus.keychainUnavailable
+@@ -880,7 +903,7 @@ public struct LOCALBKeychainSignerStore {
+             kSecMatchLimit as String: kSecMatchLimitOne
+         ]
+         var result: CFTypeRef?
+-        let status = SecItemCopyMatching(query as CFDictionary, &result)
++        let status = SecItemCopyMatching(try scope.queryScope(query) as CFDictionary, &result)
+         if status == errSecItemNotFound { return nil }
+         guard status == errSecSuccess, let data = result as? Data else {
+             throw LOCALBStatus.keychainUnavailable
+diff --git a/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift b/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift
+index 321e978..63c8841 100644
+--- a/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift
++++ b/Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift
+@@ -80,11 +80,38 @@ public struct LOCALBTransportIdentityHandle {
+ public struct LOCALBTransportIdentityStore {
+     public let service: String
+     public let account: String
++    /// Optional dedicated keychain FILE that scopes every item operation of
++    /// this store (index, key, certificate, identity synthesis).
++    ///
++    /// `nil` is the production default outside an isolated root: items live in
++    /// the process default Keychain search list, i.e. the login Keychain, so
++    /// existing identities and pairing credentials survive.
++    ///
++    /// When `SIMIGO_HOME` redirects the managed root (isolated test / candidate
++    /// runs), the default resolves to a keychain file INSIDE that root, so a
++    /// run can never leave transport identities in the real login Keychain.
++    /// This is the only identity material the isolation roots used to miss.
++    public let keychainPath: String?
+ 
+     public init(service: String = "com.simigo.localb-transport-identity",
+-                account: String = "tls-identity-v1") {
++                account: String = "tls-identity-v1",
++                keychainPath: String? = LOCALBTransportIdentityStore.defaultIsolatedKeychainPath()) {
+         self.service = service
+         self.account = account
++        self.keychainPath = keychainPath
++    }
++
++    /// Default scoping rule: only an explicitly isolated managed root scopes
++    /// the identity into its own keychain file.
++    public static func defaultIsolatedKeychainPath(
++        env: [String: String] = ProcessInfo.processInfo.environment
++    ) -> String? {
++        guard let home = env["SIMIGO_HOME"], !home.isEmpty else { return nil }
++        let root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
++        return root
++            .appendingPathComponent("localb", isDirectory: true)
++            .appendingPathComponent("transport-identity.keychain-db", isDirectory: false)
++            .path
+     }
+ 
+     /// Physical tags are unique PER ATTEMPT, not per logical generation: a
+@@ -112,6 +139,67 @@ public struct LOCALBTransportIdentityStore {
+     /// take this lock.
+     private static let mutationLock = NSLock()
+ 
++    // MARK: - Keychain scoping
++
++    /// Opens (or creates) the scoped keychain file. A keychain created here is
++    /// unlocked with an empty password: it is a throwaway store inside an
++    /// isolated root, kept at 0600, never a user credential container.
++    private func resolveKeychain() throws -> SecKeychain? {
++        guard let path = keychainPath else { return nil }
++        let fm = FileManager.default
++        do {
++            try fm.createDirectory(
++                atPath: (path as NSString).deletingLastPathComponent,
++                withIntermediateDirectories: true)
++        } catch {
++            throw LOCALBStatus.keychainUnavailable
++        }
++        if !fm.fileExists(atPath: path) {
++            var created: SecKeychain?
++            let createStatus = SecKeychainCreate(path, 0, "", false, nil, &created)
++            if createStatus == errSecSuccess, let created {
++                chmod(path, 0o600)
++                return created
++            }
++            guard createStatus == errSecDuplicateItem else {
++                throw LOCALBStatus.keychainUnavailable
++            }
++        }
++        var opened: SecKeychain?
++        let openStatus = SecKeychainOpen(path, &opened)
++        guard openStatus == errSecSuccess, let keychain = opened else {
++            throw LOCALBStatus.keychainUnavailable
++        }
++        SecKeychainUnlock(keychain, 0, "", true)
++        return keychain
++    }
++
++    /// Add-side scoping (`kSecUseKeychain`). Public so callers that must issue
++    /// their own Keychain writes (tests, diagnostics) hit the same store.
++    public func scopedAdd(_ attributes: [String: Any]) throws -> [String: Any] {
++        guard let keychain = try resolveKeychain() else { return attributes }
++        var out = attributes
++        out[kSecUseKeychain as String] = keychain
++        return out
++    }
++
++    /// Query-side scoping (`kSecMatchSearchList`) for copy/update/delete.
++    /// Public for the same reason as `scopedAdd`; it throws instead of silently
++    /// falling back to the login Keychain when a scoped file cannot be opened.
++    public func scopedQuery(_ query: [String: Any]) throws -> [String: Any] {
++        guard let keychain = try resolveKeychain() else { return query }
++        var out = query
++        out[kSecMatchSearchList as String] = [keychain]
++        return out
++    }
++
++    /// Best-effort scoped delete; a store without a scoped keychain keeps the
++    /// previous (search-list) behaviour.
++    private func deleteScoped(_ query: [String: Any]) {
++        guard let resolved = try? scopedQuery(query) else { return }
++        SecItemDelete(resolved as CFDictionary)
++    }
++
+     // MARK: - SPKI computation
+ 
+     /// SHA-256 over the certificate's DER `SubjectPublicKeyInfo` sequence.
+@@ -265,7 +353,7 @@ public struct LOCALBTransportIdentityStore {
+                 certLabel: certLabel(generation: generation, attemptID: attemptID)
+             ))
+         ]
+-        let indexStatus = SecItemAdd(indexAttributes as CFDictionary, nil)
++        let indexStatus = SecItemAdd(try scopedAdd(indexAttributes) as CFDictionary, nil)
+         if indexStatus == errSecDuplicateItem {
+             guard let winner = try readExisting() else {
+                 // The other caller's items are incomplete: explicit failure,
+@@ -323,7 +411,8 @@ public struct LOCALBTransportIdentityStore {
+                 certLabel: certLabel(generation: generation, attemptID: attemptID)
+             ))
+         ]
+-        let commitStatus = SecItemUpdate(updateQuery as CFDictionary, updateAttrs as CFDictionary)
++        let commitStatus = SecItemUpdate(
++            try scopedQuery(updateQuery) as CFDictionary, updateAttrs as CFDictionary)
+         guard commitStatus == errSecSuccess else {
+             // Commit failed: the NEW generation items exist but are
+             // unreachable; the CURRENT identity is untouched. Explicit
+@@ -338,14 +427,14 @@ public struct LOCALBTransportIdentityStore {
+         // Best-effort sweep of the superseded generation's items. Failure is
+         // harmless: unique tags keep them unreachable.
+         if let old = previousEnvelope {
+-            SecItemDelete([
++            deleteScoped([
+                 kSecClass as String: kSecClassKey,
+                 kSecAttrApplicationTag as String: old.keyTag
+-            ] as CFDictionary)
+-            SecItemDelete([
++            ])
++            deleteScoped([
+                 kSecClass as String: kSecClassCertificate,
+                 kSecAttrLabel as String: old.certLabel
+-            ] as CFDictionary)
++            ])
+         }
+ 
+         return (handle, previous.spkiSHA256Hex)
+@@ -357,20 +446,20 @@ public struct LOCALBTransportIdentityStore {
+     /// unique tags) rather than guessed at.
+     public func deleteAll() {
+         if let envelope = try? readIndexEnvelope() {
+-            SecItemDelete([
++            deleteScoped([
+                 kSecClass as String: kSecClassKey,
+                 kSecAttrApplicationTag as String: envelope.keyTag
+-            ] as CFDictionary)
+-            SecItemDelete([
++            ])
++            deleteScoped([
+                 kSecClass as String: kSecClassCertificate,
+                 kSecAttrLabel as String: envelope.certLabel
+-            ] as CFDictionary)
++            ])
+         }
+-        SecItemDelete([
++        deleteScoped([
+             kSecClass as String: kSecClassGenericPassword,
+             kSecAttrService as String: service,
+             kSecAttrAccount as String: account
+-        ] as CFDictionary)
++        ])
+     }
+ 
+     // MARK: - Internals
+@@ -384,7 +473,7 @@ public struct LOCALBTransportIdentityStore {
+             kSecMatchLimit as String: kSecMatchLimitOne
+         ]
+         var result: CFTypeRef?
+-        let status = SecItemCopyMatching(query as CFDictionary, &result)
++        let status = SecItemCopyMatching(try scopedQuery(query) as CFDictionary, &result)
+         guard status == errSecSuccess, let data = result as? Data else {
+             if status == errSecItemNotFound { return nil }
+             throw LOCALBStatus.keychainUnavailable
+@@ -422,7 +511,9 @@ public struct LOCALBTransportIdentityStore {
+             kSecAttrIsPermanent as String: true,
+             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+         ]
+-        guard let storedKey = SecKeyCreateRandomKey(keyAttributes as CFDictionary, nil) else {
++        var keyRequest = keyAttributes
++        keyRequest[kSecUseKeychain as String] = try resolveKeychain()
++        guard let storedKey = SecKeyCreateRandomKey(keyRequest as CFDictionary, nil) else {
+             // Never destructive on failure: if the tag is taken, a concurrent
+             // caller or a previous orphan owns it; if the Keychain is simply
+             // unavailable, nothing is deleted either way. The caller decides.
+@@ -483,7 +574,7 @@ public struct LOCALBTransportIdentityStore {
+             kSecAttrLabel as String: certLabel,
+             kSecValueRef as String: secCertificate
+         ]
+-        let certStatus = SecItemAdd(certAttributes as CFDictionary, nil)
++        let certStatus = SecItemAdd(try scopedAdd(certAttributes) as CFDictionary, nil)
+         guard certStatus == errSecSuccess || certStatus == errSecDuplicateItem else {
+             throw LOCALBStatus.keychainUnavailable
+         }
+@@ -514,7 +605,8 @@ public struct LOCALBTransportIdentityStore {
+             kSecMatchLimit as String: kSecMatchLimitOne
+         ]
+         var keyResult: CFTypeRef?
+-        let keyStatus = SecItemCopyMatching(keyQuery as CFDictionary, &keyResult)
++        let keyStatus = SecItemCopyMatching(
++            try scopedQuery(keyQuery) as CFDictionary, &keyResult)
+         guard keyStatus == errSecSuccess, let keyRef = keyResult else {
+             // Index points at a key that is absent: partial state — explicit
+             // failure, evidence preserved.
+@@ -535,7 +627,8 @@ public struct LOCALBTransportIdentityStore {
+             throw LOCALBStatus.transportIdentityCorrupt
+         }
+         var identityRef: SecIdentity?
+-        let identityStatus = SecIdentityCreateWithCertificate(nil, secCertificate, &identityRef)
++        let identityStatus = SecIdentityCreateWithCertificate(
++            try resolveKeychain(), secCertificate, &identityRef)
+         guard identityStatus == errSecSuccess, let identity = identityRef else {
+             throw LOCALBStatus.transportIdentityMismatch
+         }
+@@ -554,4 +647,83 @@ extension Sequence where Element == UInt8 {
+     }
+ }
+ 
++/// Keychain-file scoping shared by every LOCALB Keychain store.
++///
++/// The isolation roots used to redirect the filesystem only; Keychain items
++/// always landed in the login Keychain. A store built under a redirected
++/// `SIMIGO_HOME` now keeps its items in
++/// `<SIMIGO_HOME>/localb/<file>.keychain-db`, scoped per call, so an isolated
++/// run cannot add items to real user state. Outside an isolated root `path` is
++/// nil and the default search list (the login Keychain) is used unchanged.
++public struct LOCALBKeychainScope {
++    let path: String?
++    let fileName: String
++
++    public init(path: String?, fileName: String) {
++        self.path = path
++        self.fileName = fileName
++    }
++
++    public static func isolatedDefault(
++        fileName: String,
++        env: [String: String] = ProcessInfo.processInfo.environment
++    ) -> String? {
++        guard let home = env["SIMIGO_HOME"], !home.isEmpty else { return nil }
++        let root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
++        return root
++            .appendingPathComponent("localb", isDirectory: true)
++            .appendingPathComponent(fileName, isDirectory: false)
++            .path
++    }
++
++    func resolve() throws -> SecKeychain? {
++        guard let path else { return nil }
++        let fm = FileManager.default
++        do {
++            try fm.createDirectory(
++                atPath: (path as NSString).deletingLastPathComponent,
++                withIntermediateDirectories: true)
++        } catch {
++            throw LOCALBStatus.keychainUnavailable
++        }
++        if !fm.fileExists(atPath: path) {
++            var created: SecKeychain?
++            let createStatus = SecKeychainCreate(path, 0, "", false, nil, &created)
++            if createStatus == errSecSuccess, let created {
++                chmod(path, 0o600)
++                return created
++            }
++            guard createStatus == errSecDuplicateItem else {
++                throw LOCALBStatus.keychainUnavailable
++            }
++        }
++        var opened: SecKeychain?
++        let openStatus = SecKeychainOpen(path, &opened)
++        guard openStatus == errSecSuccess, let keychain = opened else {
++            throw LOCALBStatus.keychainUnavailable
++        }
++        SecKeychainUnlock(keychain, 0, "", true)
++        return keychain
++    }
++
++    func addScope(_ attributes: [String: Any]) throws -> [String: Any] {
++        guard let keychain = try resolve() else { return attributes }
++        var out = attributes
++        out[kSecUseKeychain as String] = keychain
++        return out
++    }
++
++    func queryScope(_ query: [String: Any]) throws -> [String: Any] {
++        guard let keychain = try resolve() else { return query }
++        var out = query
++        out[kSecMatchSearchList as String] = [keychain]
++        return out
++    }
++
++    func deleteScoped(_ query: [String: Any]) {
++        guard let resolved = try? queryScope(query) else { return }
++        SecItemDelete(resolved as CFDictionary)
++    }
++}
++
+ #endif
+diff --git a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift
+index af0449f..fbf433a 100644
+--- a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift
++++ b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift
+@@ -173,7 +173,8 @@ final class LOCALBHostBootstrapTests: XCTestCase {
+             kSecAttrAccount as String: corruptStore.account,
+             kSecValueData as String: Data("not-a-valid-envelope".utf8)
+         ]
+-        XCTAssertEqual(SecItemAdd(corruptIndex as CFDictionary, nil), errSecSuccess)
++        XCTAssertEqual(SecItemAdd(try corruptStore.scopedAdd(corruptIndex) as CFDictionary, nil),
++                       errSecSuccess)
+ 
+         XCTAssertThrowsError(try LOCALBHostBootstrap.prepareFirstRun(
+             rootURL: root,
+diff --git a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBProductionSignerTests.swift b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBProductionSignerTests.swift
+index 49e2ba5..0e9b648 100644
+--- a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBProductionSignerTests.swift
++++ b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBProductionSignerTests.swift
+@@ -1,4 +1,6 @@
+ import Crypto
++import Foundation
++import Security
+ import XCTest
+ 
+ @testable import LOCALBCore
+@@ -252,4 +254,29 @@ final class LOCALBProductionSignerTests: XCTestCase {
+         XCTAssertEqual(LOCALBRecordReader.read(data: frame, registry: lineageSnapshot),
+                        .failure(.unknownEnvelopeSchema))
+     }
++
++    /// The signer store is scoped by the same rule as the transport identity
++    /// store: under an isolated managed root its item lives in a keychain file
++    /// inside that root, never in the real login Keychain.
++    func testKeychainSignerStoreScopeKeepsItemOutOfDefaultSearchList() throws {
++        let dir = FileManager.default.temporaryDirectory
++            .appendingPathComponent("signer-scope-\(UUID().uuidString)", isDirectory: true)
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let path = dir.appendingPathComponent("signer.keychain-db").path
++        let service = "com.simigo.tests.signer-scope.\(UUID().uuidString)"
++        let store = LOCALBKeychainSignerStore(service: service, account: "signing-key-v1",
++                                             keychainPath: path)
++        let created = try store.loadOrCreate()
++        XCTAssertEqual(created.rawRepresentation.count, 32)
++        XCTAssertEqual(try store.loadExisting().rawRepresentation, created.rawRepresentation)
++        XCTAssertTrue(FileManager.default.fileExists(atPath: path))
++
++        var defaultRef: CFTypeRef?
++        XCTAssertEqual(SecItemCopyMatching([
++            kSecClass as String: kSecClassGenericPassword,
++            kSecAttrService as String: service,
++            kSecAttrAccount as String: "signing-key-v1",
++            kSecReturnData as String: true
++        ] as CFDictionary, &defaultRef), errSecItemNotFound)
++    }
+ }
+diff --git a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
+index 52f02d1..ff543f2 100644
+--- a/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
++++ b/Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift
+@@ -1,5 +1,6 @@
+ import Crypto
+ import Foundation
++import Security
+ import X509
+ import XCTest
+ 
+@@ -151,7 +152,8 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+             kSecValueData as String: Data("not-a-valid-envelope".utf8)
+         ]
+         XCTAssertEqual(
+-            SecItemUpdate(corruptQuery as CFDictionary, corruptUpdate as CFDictionary),
++            SecItemUpdate(try store.scopedQuery(corruptQuery) as CFDictionary,
++                          corruptUpdate as CFDictionary),
+             errSecSuccess
+         )
+ 
+@@ -195,10 +197,10 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+             "\(store.service)#\(store.account)#key#g2#a00000000-0000-0000-0000-000000000001".utf8
+         )
+         defer {
+-            SecItemDelete([
++            if let scoped = try? store.scopedQuery([
+                 kSecClass as String: kSecClassKey,
+                 kSecAttrApplicationTag as String: orphanTag
+-            ] as CFDictionary)
++            ]) { SecItemDelete(scoped as CFDictionary) }
+         }
+         let orphanQuery: [String: Any] = [
+             kSecClass as String: kSecClassKey,
+@@ -206,7 +208,8 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+             kSecReturnRef as String: true
+         ]
+         var orphanRef: CFTypeRef?
+-        XCTAssertEqual(SecItemCopyMatching(orphanQuery as CFDictionary, &orphanRef),
++        XCTAssertEqual(SecItemCopyMatching(try store.scopedQuery(orphanQuery) as CFDictionary,
++                                           &orphanRef),
+                        errSecSuccess,
+                        "the orphan key must exist after the injected failure")
+ 
+@@ -245,7 +248,7 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+         "certificate_der":"AAAA","key_tag":"AAAA","cert_label":"x"}
+         """
+         XCTAssertEqual(
+-            SecItemUpdate(indexQueryDict(for: store) as CFDictionary,
++            SecItemUpdate(try store.scopedQuery(indexQueryDict(for: store)) as CFDictionary,
+                           [kSecValueData as String: Data(outOfRange.utf8)] as CFDictionary),
+             errSecSuccess
+         )
+@@ -269,7 +272,8 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+             kSecReturnData as String: true
+         ]
+         var readResult: CFTypeRef?
+-        XCTAssertEqual(SecItemCopyMatching(readQuery as CFDictionary, &readResult),
++        XCTAssertEqual(SecItemCopyMatching(try store.scopedQuery(readQuery) as CFDictionary,
++                                           &readResult),
+                        errSecSuccess)
+         let data = try XCTUnwrap(readResult as? Data)
+         var envelope = try XCTUnwrap(
+@@ -278,7 +282,7 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+         envelope["generation"] = Int(UInt32.max)
+         let rewritten = try JSONSerialization.data(withJSONObject: envelope)
+         XCTAssertEqual(
+-            SecItemUpdate(indexQueryDict(for: store) as CFDictionary,
++            SecItemUpdate(try store.scopedQuery(indexQueryDict(for: store)) as CFDictionary,
+                           [kSecValueData as String: rewritten] as CFDictionary),
+             errSecSuccess
+         )
+@@ -292,6 +296,65 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
+         }
+     }
+ 
++    // MARK: - Scoped (isolated) keychain
++
++    /// The isolation roots used to cover every persisted path EXCEPT the
++    /// Keychain: a run created transport identities in the real login
++    /// Keychain. A scoped store must keep the index, key, certificate and the
++    /// synthesized SecIdentity in its own keychain file.
++    func testScopedKeychainKeepsIdentityOutOfTheDefaultSearchList() throws {
++        let dir = FileManager.default.temporaryDirectory
++            .appendingPathComponent("localb-scope-\(UUID().uuidString)", isDirectory: true)
++        defer { try? FileManager.default.removeItem(at: dir) }
++        let keychainPath = dir.appendingPathComponent("transport.keychain-db").path
++        let store = LOCALBTransportIdentityStore(
++            service: "com.simigo.tests.localb-scope.\(UUID().uuidString)",
++            account: "tls",
++            keychainPath: keychainPath)
++        let identity = try store.loadOrCreate()
++        XCTAssertEqual(identity.spkiSHA256Hex.count, 64)
++        XCTAssertTrue(FileManager.default.fileExists(atPath: keychainPath),
++                      "the scoped store must live in its own keychain file")
++
++        // A fresh instance over the SAME scoped file reloads the same identity
++        // (process-restart semantics), including a usable SecIdentity.
++        let reloaded = try LOCALBTransportIdentityStore(
++            service: store.service, account: store.account, keychainPath: keychainPath
++        ).loadExisting()
++        XCTAssertEqual(reloaded.certificateDER, identity.certificateDER)
++        var privateKey: SecKey?
++        XCTAssertEqual(SecIdentityCopyPrivateKey(reloaded.secIdentity, &privateKey), errSecSuccess)
++        XCTAssertNotNil(privateKey)
++
++        // Nothing became visible to the process default search list (the login
++        // Keychain in an unisolated run).
++        var defaultRef: CFTypeRef?
++        XCTAssertEqual(SecItemCopyMatching([
++            kSecClass as String: kSecClassGenericPassword,
++            kSecAttrService as String: store.service,
++            kSecAttrAccount as String: store.account,
++            kSecReturnData as String: true
++        ] as CFDictionary, &defaultRef), errSecItemNotFound)
++
++        store.deleteAll()
++        XCTAssertThrowsError(try store.loadExisting()) { error in
++            XCTAssertEqual(error as? LOCALBStatus, .transportIdentityMissing)
++        }
++    }
++
++    /// Scoping is derived from the isolation roots, never from a separate
++    /// switch: a run that redirects `SIMIGO_HOME` cannot keep writing
++    /// identities into the real login Keychain.
++    func testDefaultKeychainPathOnlyFollowsAnIsolatedManagedRoot() {
++        XCTAssertNil(LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(env: [:]))
++        XCTAssertNil(LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(
++            env: ["SIMIGO_HOME": ""]))
++        XCTAssertEqual(
++            LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(
++                env: ["SIMIGO_HOME": "/Users/example/iso-root"]),
++            "/Users/example/iso-root/localb/transport-identity.keychain-db")
++    }
++
+     private func indexQueryDict(for store: LOCALBTransportIdentityStore) -> [String: Any] {
+         [
+             kSecClass as String: kSecClassGenericPassword,
+diff --git a/Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift b/Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift
+index f979997..17baf57 100644
+--- a/Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift
++++ b/Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift
+@@ -316,6 +316,70 @@ public final class SimiGoESISDatabase {
+         return settlementID
+     }
+ 
++    // MARK: - Producer identity binding (settlement <-> engine identity)
++
++    /// Persist the producer's identity digests alongside an existing settlement.
++    /// Re-running replaces the same two rows instead of appending duplicates, and
++    /// only digests are stored (never the model path or any weight bytes). This is
++    /// a binding written by the producer itself; it is not an attestation.
++    public func recordIdentityBindings(
++        settlementID: String,
++        identity: SimiGoSettlementIdentityBinding.Identity
++    ) throws {
++        let rows = SimiGoSettlementIdentityBinding.bindings(for: identity)
++        try transaction {
++            for name in rows.keys.sorted() {
++                guard let digest = rows[name] else { continue }
++                try execBinding("DELETE FROM settlement_bindings WHERE settlement_id=? AND name=?;") { stmt in
++                    bind(stmt, 1, settlementID)
++                    bind(stmt, 2, name)
++                }
++                try execBinding("""
++                INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
++                VALUES(?,?,?,?,?);
++                """) { stmt in
++                    bind(stmt, 1, settlementID)
++                    bind(stmt, 2, name)
++                    bind(stmt, 3, digest)
++                    bind(stmt, 4, String?.none)
++                    bind(stmt, 5, nil as Int64?)
++                }
++            }
++        }
++    }
++
++    /// Binding rows recorded for one settlement, as name -> digest. Constraint
++    /// bindings from the native gate live in the same table, so callers must look
++    /// up the `producer.` keys rather than assume the dictionary is exhaustive.
++    public func settlementBindings(settlementID: String) throws -> [String: String] {
++        let stmt = try prepare("""
++        SELECT name, value_digest FROM settlement_bindings WHERE settlement_id=?;
++        """)
++        defer { sqlite3_finalize(stmt) }
++        bind(stmt, 1, settlementID)
++        var out: [String: String] = [:]
++        while sqlite3_step(stmt) == SQLITE_ROW {
++            let name = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
++            let value = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
++            if !name.isEmpty { out[name] = value }
++        }
++        return out
++    }
++
++    /// Newest settlement recorded for a state, or nil when the state never settled.
++    public func latestSettlementID(forStateID stateID: String) throws -> String? {
++        let stmt = try prepare("""
++        SELECT settlement_id FROM settlements WHERE state_id=?
++        ORDER BY settled_at DESC, settlement_id DESC LIMIT 1;
++        """)
++        defer { sqlite3_finalize(stmt) }
++        bind(stmt, 1, stateID)
++        if sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
++            return String(cString: c)
++        }
++        return nil
++    }
++
+     // MARK: - External roots / work-file / agent-session indexing
+     //
+     // The database stores INDEXES and metadata only — NEVER the external file
+diff --git a/SimiGo.xcodeproj/project.pbxproj b/SimiGo.xcodeproj/project.pbxproj
+index 3d3a8be..b428bd0 100644
+--- a/SimiGo.xcodeproj/project.pbxproj
++++ b/SimiGo.xcodeproj/project.pbxproj
+@@ -388,7 +388,7 @@
+ 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+ 				CODE_SIGN_STYLE = Automatic;
+ 				COMBINE_HIDPI_IMAGES = YES;
+-				CURRENT_PROJECT_VERSION = 25;
++				CURRENT_PROJECT_VERSION = 26;
+ 				DEAD_CODE_STRIPPING = YES;
+ 				ENABLE_APP_SANDBOX = NO;
+ 				ENABLE_HARDENED_RUNTIME = YES;
+@@ -400,7 +400,7 @@
+ 					"$(inherited)",
+ 					"@executable_path/../Frameworks",
+ 				);
+-				MARKETING_VERSION = 2.1.15;
++				MARKETING_VERSION = 2.2.0;
+ 				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGo;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				REGISTER_APP_GROUPS = YES;
+@@ -420,7 +420,7 @@
+ 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+ 				CODE_SIGN_STYLE = Automatic;
+ 				COMBINE_HIDPI_IMAGES = YES;
+-				CURRENT_PROJECT_VERSION = 25;
++				CURRENT_PROJECT_VERSION = 26;
+ 				DEAD_CODE_STRIPPING = YES;
+ 				ENABLE_APP_SANDBOX = NO;
+ 				ENABLE_HARDENED_RUNTIME = YES;
+@@ -432,7 +432,7 @@
+ 					"$(inherited)",
+ 					"@executable_path/../Frameworks",
+ 				);
+-				MARKETING_VERSION = 2.1.15;
++				MARKETING_VERSION = 2.2.0;
+ 				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGo;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				REGISTER_APP_GROUPS = YES;
+diff --git a/SimiGo/App/CloudBackend.swift b/SimiGo/App/CloudBackend.swift
+index ebc70e9..6e90a5e 100644
+--- a/SimiGo/App/CloudBackend.swift
++++ b/SimiGo/App/CloudBackend.swift
+@@ -102,7 +102,21 @@ enum CloudKeychain: Sendable {
+     private static let service = "SimiGo"
+     private static let account = "cloud.api-key"
+ 
++    /// An isolated managed root (`SIMIGO_HOME`) redirects every other persistent
++    /// path, so it must redirect this store too. Reading the login Keychain from
++    /// an isolated run is not free: the item's ACL answers a binary it has not
++    /// seen before with an interactive SecurityAgent prompt, and `Service.init()`
++    /// blocks inside `SecItemCopyMatching` until a human answers (observed on an
++    /// unattended host as an unbounded mach_msg wait). In isolated mode the cloud
++    /// credential is therefore absent instead of being read or written: no real
++    /// secret is read, and no new secret is stored outside the login Keychain.
++    private static var isIsolated: Bool {
++        guard let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"] else { return false }
++        return !home.isEmpty
++    }
++
+     static func readAPIKey() -> String {
++        guard !isIsolated else { return "" }
+         var query: [String: Any] = baseQuery
+         query[kSecReturnData as String] = true
+         query[kSecMatchLimit as String] = kSecMatchLimitOne
+@@ -114,6 +128,7 @@ enum CloudKeychain: Sendable {
+     }
+ 
+     static func writeAPIKey(_ value: String) {
++        guard !isIsolated else { return }
+         let query = baseQuery
+         SecItemDelete(query as CFDictionary)
+ 
+diff --git a/SimiGo/Headless/SimiGoG1G3Entry.swift b/SimiGo/Headless/SimiGoG1G3Entry.swift
+index ca22c8e..a0324d9 100644
+--- a/SimiGo/Headless/SimiGoG1G3Entry.swift
++++ b/SimiGo/Headless/SimiGoG1G3Entry.swift
+@@ -29,9 +29,10 @@ import LOCALBCore
+ enum SimiGoHeadlessRole: String {
+     case produce
+     case consume
+-    /// G3 memory-tier probe: runs the production generate, then the production
+-    /// idle-suspend lifecycle (via the DEBUG suspendIdleTimeoutOverride test seam),
+-    /// observing reference-release / resource-reclaim / resume events + footprint.
++    /// G3 memory-tier probe: runs the production generate, then waits out the
++    /// production adaptive idle window and runs the unmodified idle-suspend
++    /// lifecycle, observing reference-release / resource-reclaim / resume events
++    /// plus footprint. No timing seam is used on a Release build.
+     case memprobe
+ }
+ 
+@@ -212,6 +213,32 @@ enum SimiGoG1G3Entry {
+             evidence["prompt_tokens"] = gen.usage?.promptTokens ?? NSNull()
+             evidence["generation_tokens"] = gen.usage?.generationTokens ?? NSNull()
+             evidence["settlement_payload_digest"] = settled.payloadDigest
++            // Identity binding: a consumer in a fresh process may only inherit this
++            // settlement if it runs the SAME model and tokenizer. The digests are
++            // written next to the settlement (digests only, never the model path),
++            // and a write failure is fail-closed: an unbound settlement must not be
++            // handed off as if it were recoverable.
++            let producerIdentity = SimiGoSettlementIdentityBinding.Identity(
++                model: modelBindingFingerprint(modelIdentity(fromPath: modelPath)),
++                tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: modelPath)))
++            evidence["producer_model_identity"] = producerIdentity.model
++            evidence["producer_tokenizer_identity"] = producerIdentity.tokenizer
++            let bindingRecorded: Bool = await MainActor.run {
++                guard let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL),
++                      let settlementID = try? db.latestSettlementID(forStateID: state.id) else { return false }
++                do {
++                    try db.recordIdentityBindings(settlementID: settlementID, identity: producerIdentity)
++                    return true
++                } catch { return false }
++            }
++            evidence["producer_identity_bindings_recorded"] = bindingRecorded
++            guard bindingRecorded else {
++                evidence["status"] = "BLOCKED"
++                evidence["stage"] = "identity_binding_write"
++                evidence["reason"] = "settlement recorded but producer identity bindings could not be persisted"
++                writeEvidence(evidence, role: .produce)
++                return 4
++            }
+             // Read back from the authoritative SQLite IS to prove the write landed.
+             let receipts = await MainActor.run { () -> [String] in
+                 guard let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL) else { return [] }
+@@ -288,7 +315,7 @@ enum SimiGoG1G3Entry {
+         // fail-closed BEFORE a NativeMLX instance is created or generate is called,
+         // so the model-generation call count for these controls is provably zero.
+         enum Recovery {
+-            case ok(digest: String, value: String)
++            case ok(settlementID: String, digest: String, value: String)
+             case missing
+             case digestMismatch
+             case invalidated
+@@ -307,7 +334,7 @@ enum SimiGoG1G3Entry {
+             }
+             let value = extractContent(from: row.payload) ?? ""
+             if value.isEmpty { return .emptyValue }
+-            return .ok(digest: row.payloadDigest, value: value)
++            return .ok(settlementID: row.id.uuidString, digest: row.payloadDigest, value: value)
+         }
+         // generation_call_count is zero on every fail-closed branch below (no
+         // NativeMLX.generate has run at this point).
+@@ -325,7 +352,7 @@ enum SimiGoG1G3Entry {
+             evidence["generation_call_count"] = 0
+             writeEvidence(evidence, role: .consume)
+             return 6
+-        case .ok(let digest, let value):
++        case .ok(_, let digest, let value):
+             evidence["u1_payload_digest_from_is"] = digest
+             evidence["u1_recovered_value"] = value
+             evidence["settlement_digest_verified"] = true
+@@ -333,7 +360,43 @@ enum SimiGoG1G3Entry {
+             evidence["result_reuse_via_IS"] = true
+         }
+         let u1value: String
+-        if case .ok(_, let v) = recovery { u1value = v } else { u1value = "" }
++        let recoveredSettlementID: String
++        if case .ok(let sid, _, let v) = recovery {
++            u1value = v
++            recoveredSettlementID = sid
++        } else {
++            u1value = ""
++            recoveredSettlementID = ""
++        }
++
++        // Identity binding (fail-closed, still BEFORE any model work): the settled
++        // value was produced by a specific model + tokenizer. A different engine in
++        // this process must not inherit it, and a settlement that carries no
++        // producer binding at all is refused rather than trusted.
++        let consumerIdentity = SimiGoSettlementIdentityBinding.Identity(
++            model: modelBindingFingerprint(modelIdentity(fromPath: modelPath)),
++            tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: modelPath)))
++        let bindingVerdict: SimiGoSettlementIdentityBinding.Verdict = await MainActor.run {
++            let recorded: [String: String]
++            if let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL) {
++                recorded = (try? db.settlementBindings(settlementID: recoveredSettlementID)) ?? [:]
++            } else {
++                recorded = [:]
++            }
++            return SimiGoSettlementIdentityBinding.evaluate(recorded: recorded, consumer: consumerIdentity)
++        }
++        evidence["consumer_model_identity"] = consumerIdentity.model
++        evidence["consumer_tokenizer_identity"] = consumerIdentity.tokenizer
++        evidence["recovered_settlement_id"] = recoveredSettlementID
++        for (key, value) in bindingVerdict.evidence { evidence[key] = value }
++        if bindingVerdict.status != .ok {
++            evidence["status"] = "BLOCKED"
++            evidence["stage"] = "is_binding_verify"
++            evidence["reason"] = bindingVerdict.detail
++            evidence["generation_call_count"] = 0
++            writeEvidence(evidence, role: .consume)
++            return 6
++        }
+ 
+         // Continue: U2 commits to a value DERIVED from the recovered U1 result.
+         let u2Value = u1value + "-U2"
+@@ -400,6 +463,22 @@ enum SimiGoG1G3Entry {
+             let settled = try await MainActor.run {
+                 try store.settleProducerResult(generatedText: gen.text, boundToState: state2)
+             }
++            let u2BindingRecorded: Bool = await MainActor.run {
++                guard let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL),
++                      let settlementID = try? db.latestSettlementID(forStateID: state2.id) else { return false }
++                do {
++                    try db.recordIdentityBindings(settlementID: settlementID, identity: consumerIdentity)
++                    return true
++                } catch { return false }
++            }
++            evidence["u2_identity_bindings_recorded"] = u2BindingRecorded
++            guard u2BindingRecorded else {
++                evidence["status"] = "BLOCKED"
++                evidence["stage"] = "identity_binding_write"
++                evidence["reason"] = "U2 settlement recorded but identity bindings could not be persisted"
++                writeEvidence(evidence, role: .consume)
++                return 4
++            }
+             evidence["generated_text_u2"] = gen.text
+             evidence["u2_prompt_tokens"] = gen.usage?.promptTokens ?? NSNull()
+             evidence["u2_generation_tokens"] = gen.usage?.generationTokens ?? NSNull()
+@@ -477,10 +556,22 @@ enum SimiGoG1G3Entry {
+             await RuntimeLifecycleCoordinator.shared.finish(requestID: reqID, success: true, reason: "g1g3-memprobe-warm")
+             let pre = footprintBytes()
+             let snapPre = await MainActor.run { runtime.observation.snapshot() }
+-            #if DEBUG
+-            RuntimeTuning.suspendIdleTimeoutOverrideSeconds = 0
+-            #endif
+-            let suspended = await runtime.suspendIfIdle()
++            // Suspend eligibility is gated on the *production* adaptive idle
++            // window (idleResidencyFloor/CapSeconds = 240-360 s). A Release build
++            // has no seam for it (#if DEBUG only), so instead of overriding the
++            // window the probe waits for it to elapse and then calls the
++            // unmodified suspendIfIdle(). Ineligible calls are side-effect free,
++            // so polling cannot manufacture a suspend that the shipped timing
++            // would not allow.
++            var suspendAttempts = 0
++            var suspended = false
++            while suspendAttempts < 32 {
++                suspendAttempts += 1
++                suspended = await runtime.suspendIfIdle()
++                if suspended { break }
++                try? await Task.sleep(nanoseconds: 15_000_000_000)
++            }
++            let observedIdleWaitSeconds = (suspendAttempts - 1) * 15
+             let post = footprintBytes()
+             let snapSuspend = await MainActor.run { runtime.observation.snapshot() }
+             // Resume: the next generate must reload the model container (lifecycle resume event).
+@@ -504,6 +595,9 @@ enum SimiGoG1G3Entry {
+             evidence["warm_generated"] = warm.text
+             evidence["post_resume_generated"] = warm2.text
+             evidence["suspend_returned_true"] = suspended
++            evidence["suspend_attempts"] = suspendAttempts
++            evidence["observed_idle_wait_seconds"] = observedIdleWaitSeconds
++            evidence["suspend_window_source"] = "production adaptive idle floor/cap; no release-build override"
+             evidence["reference_release_observed"] = ((evSuspend["reference_release"] as? Int ?? 0) > preTotal)
+             evidence["sessions_released"] = evSuspend["sessions_released_at_release"] ?? NSNull()
+             evidence["model_container_ref_dropped"] = evSuspend["model_container_ref_dropped"] ?? NSNull()
+@@ -531,6 +625,26 @@ enum SimiGoG1G3Entry {
+         }
+     }
+ 
++    // MARK: - identity fingerprints (settlement binding)
++
++    /// Canonical JSON (sorted keys) fed through the production settlement digest.
++    /// Deterministic for a given structured value; no consumer re-implements hashing.
++    private static func canonicalFingerprint(_ value: Any) -> String {
++        let canonical = (try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])) ?? Data()
++        return SimiGoSettlementAuthority.payloadDigest(canonical)
++    }
++
++    /// Stable model binding fingerprint: only identity-bearing fields (repo id,
++    /// revision, root id), never the filesystem path, so relocating a snapshot does
++    /// not change identity while a different model or revision does.
++    private static func modelBindingFingerprint(_ identity: [String: Any]) -> String {
++        canonicalFingerprint([
++            "model_repo_id": identity["model_repo_id"] ?? NSNull(),
++            "model_revision": identity["model_revision"] ?? NSNull(),
++            "model_root_id": identity["model_root_id"] ?? NSNull(),
++        ])
++    }
++
+     // MARK: - model / tokenizer identity (task §5)
+ 
+     /// Resolve durable model identity (repoID + revision=snapshot hash) via the
+diff --git a/SimiGoTests/CloudBackendTests.swift b/SimiGoTests/CloudBackendTests.swift
+index 4478e03..f8f1ef3 100644
+--- a/SimiGoTests/CloudBackendTests.swift
++++ b/SimiGoTests/CloudBackendTests.swift
+@@ -113,4 +113,21 @@ final class CloudBackendTests: XCTestCase {
+         XCTAssertNil((try json(#"{"model":"Localmodel","messages":[],"enable_thinking":true,"reasoning_effort":"high","reasoning":{"effort":"high"}}"#))["reasoning_effort"])
+         XCTAssertNil((try json(#"{"model":"Localmodel","messages":[],"enable_thinking":true,"reasoning_effort":"high","reasoning":{"effort":"high"}}"#))["reasoning"])
+     }
++
++    /// The isolation rule this build relies on: an isolated managed root must not
++    /// reach the login Keychain at all. Reading a real credential from an
++    /// unattended run blocks `Service.init()` behind a SecurityAgent ACL prompt
++    /// (observed 2026-10-24: SecItemCopyMatching -> mach_msg, securityd
++    /// "QueryKeychainUse::queryUser"), and writing would put a real secret into a
++    /// throwaway root. The isolated runner sets SIMIGO_HOME, so this executes
++    /// there and skips only on a developer's non-isolated run.
++    func testIsolatedManagedRootNeverReadsOrWritesTheLoginKeychain() throws {
++        let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"] ?? ""
++        try XCTSkipIf(home.isEmpty, "requires the isolated runner's SIMIGO_HOME")
++        XCTAssertEqual(CloudKeychain.readAPIKey(), "",
++                       "an isolated root must not read the login Keychain")
++        CloudKeychain.writeAPIKey("isolated-probe-\(UUID().uuidString)")
++        XCTAssertEqual(CloudKeychain.readAPIKey(), "",
++                       "an isolated root must not persist a cloud credential")
++    }
+ }
+diff --git a/SimiGoTests/LOCALBTransportWiringTests.swift b/SimiGoTests/LOCALBTransportWiringTests.swift
+index 8613900..d826e1c 100644
+--- a/SimiGoTests/LOCALBTransportWiringTests.swift
++++ b/SimiGoTests/LOCALBTransportWiringTests.swift
+@@ -235,15 +235,16 @@ final class LOCALBTransportWiringTests: XCTestCase {
+             kSecAttrAccount as String: corruptStore.account,
+             kSecValueData as String: Data("not-a-valid-envelope".utf8)
+         ]
+-        XCTAssertEqual(SecItemAdd(corruptIndex as CFDictionary, nil), errSecDuplicateItem)
++        XCTAssertEqual(SecItemAdd(try corruptStore.scopedAdd(corruptIndex) as CFDictionary, nil),
++                       errSecDuplicateItem)
+         // Overwrite the existing index data with garbage.
+         XCTAssertEqual(
+             SecItemUpdate(
+-                [
++                try corruptStore.scopedQuery([
+                     kSecClass as String: kSecClassGenericPassword,
+                     kSecAttrService as String: corruptStore.service,
+                     kSecAttrAccount as String: corruptStore.account
+-                ] as CFDictionary,
++                ]) as CFDictionary,
+                 [kSecValueData as String: Data("garbage".utf8)] as CFDictionary
+             ),
+             errSecSuccess
+@@ -277,7 +278,8 @@ final class LOCALBTransportWiringTests: XCTestCase {
+             kSecAttrApplicationTag as String: squatterTag,
+             kSecAttrIsPermanent as String: true
+         ]
+-        XCTAssertNotNil(SecKeyCreateRandomKey(squatterAttrs as CFDictionary, nil))
++        XCTAssertNotNil(SecKeyCreateRandomKey(
++            try mismatchStore.scopedAdd(squatterAttrs) as CFDictionary, nil))
+         let readQuery: [String: Any] = [
+             kSecClass as String: kSecClassGenericPassword,
+             kSecAttrService as String: mismatchStore.service,
+@@ -286,7 +288,9 @@ final class LOCALBTransportWiringTests: XCTestCase {
+         ]
+         var readResult: CFTypeRef?
+         XCTAssertEqual(
+-            SecItemCopyMatching(readQuery as CFDictionary, &readResult), errSecSuccess
++            SecItemCopyMatching(try mismatchStore.scopedQuery(readQuery) as CFDictionary,
++                                &readResult),
++            errSecSuccess
+         )
+         let envelopeData = try XCTUnwrap(readResult as? Data)
+         var envelope = try XCTUnwrap(
+@@ -296,11 +300,11 @@ final class LOCALBTransportWiringTests: XCTestCase {
+         let rewritten = try JSONSerialization.data(withJSONObject: envelope)
+         XCTAssertEqual(
+             SecItemUpdate(
+-                [
++                try mismatchStore.scopedQuery([
+                     kSecClass as String: kSecClassGenericPassword,
+                     kSecAttrService as String: mismatchStore.service,
+                     kSecAttrAccount as String: mismatchStore.account
+-                ] as CFDictionary,
++                ]) as CFDictionary,
+                 [kSecValueData as String: rewritten] as CFDictionary
+             ),
+             errSecSuccess
+@@ -315,10 +319,10 @@ final class LOCALBTransportWiringTests: XCTestCase {
+         XCTAssertThrowsError(try mismatchServer.start()) { error in
+             XCTAssertEqual(error as? LOCALBStatus, .transportIdentityMismatch)
+         }
+-        SecItemDelete([
++        if let scopedSquatter = try? mismatchStore.scopedQuery([
+             kSecClass as String: kSecClassKey,
+             kSecAttrApplicationTag as String: squatterTag
+-        ] as CFDictionary)
++        ]) { SecItemDelete(scopedSquatter as CFDictionary) }
+         mismatchStore.deleteAll()
+     }
+ 
+@@ -367,11 +371,11 @@ final class LOCALBTransportWiringTests: XCTestCase {
+         // Corrupt the store AFTER the identity was verified.
+         XCTAssertEqual(
+             SecItemUpdate(
+-                [
++                try store.scopedQuery([
+                     kSecClass as String: kSecClassGenericPassword,
+                     kSecAttrService as String: store.service,
+                     kSecAttrAccount as String: store.account
+-                ] as CFDictionary,
++                ]) as CFDictionary,
+                 [kSecValueData as String: Data("corrupted".utf8)] as CFDictionary
+             ),
+             errSecSuccess

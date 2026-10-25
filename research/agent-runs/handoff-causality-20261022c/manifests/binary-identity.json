@@ -1,0 +1,34 @@
+{
+ "binaries": [
+  {
+   "mtime_utc": "2026-10-22T02:43:25Z",
+   "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/RealModelHandoff",
+   "realpath": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff",
+   "sha256": "111d7b4ed738c973b035e6505f0a3cb2d6bcade7db612aff53478eb00b249d0c",
+   "size": 104139408
+  },
+  {
+   "mtime_utc": "2026-10-22T02:43:25Z",
+   "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/RealModelHandoff",
+   "realpath": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff",
+   "sha256": "111d7b4ed738c973b035e6505f0a3cb2d6bcade7db612aff53478eb00b249d0c",
+   "size": 104139408
+  },
+  {
+   "mtime_utc": "2026-10-22T02:43:25Z",
+   "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff",
+   "realpath": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff",
+   "sha256": "111d7b4ed738c973b035e6505f0a3cb2d6bcade7db612aff53478eb00b249d0c",
+   "size": 104139408
+  }
+ ],
+ "build_log": "logs/swift-build.log (BUILD_EXIT=0, no recompilation at 2026-10-22T02:53Z)",
+ "head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+ "identical": true,
+ "recorded_at_utc": "2026-10-22T02:56:17Z",
+ "schema_id": "SIMIGO-CAUSALITY-BINARY-IDENTITY-V1",
+ "used_by": {
+  "phase1_argv": "<lab>/simigo2-experimental/.build/out/out/Products/Debug/RealModelHandoff",
+  "phase2_argv": "<lab>/simigo2-experimental/.build/debug/RealModelHandoff"
+ }
+}

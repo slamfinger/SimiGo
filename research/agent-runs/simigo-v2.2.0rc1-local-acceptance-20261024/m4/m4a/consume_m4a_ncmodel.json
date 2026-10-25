@@ -1,0 +1,76 @@
+{
+  "branch_checkpoints_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4a\/cache_ncmodel\/branch-checkpoints",
+  "consumer_model_identity" : "2658f04bc9b3c0acefe4fb512672d2f18263b197032114688c9bb09311e6a8cd",
+  "consumer_tokenizer_identity" : "0edd4a304268ffd703470fe7ab6a4c4979d40bca241b32630d7ff5b50e0c6212",
+  "generation_call_count" : 0,
+  "input_env_keys" : [
+    "SIMIGO_CACHE_ROOT",
+    "SIMIGO_EXPERIMENT_ROOT",
+    "SIMIGO_HEADLESS_MODEL_PATH",
+    "SIMIGO_HEADLESS_ROLE",
+    "SIMIGO_HEADLESS_STATE_ID",
+    "SIMIGO_HOME",
+    "SIMIGO_RUN_ID"
+  ],
+  "is_database_url" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4a\/home\/simigo.sqlite3",
+  "model_identity" : {
+    "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e\/snapshots\/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+    "model_repo_id" : "peculiar-ragdoll\/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+    "model_revision" : "b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+    "model_root_id" : "huggingface-cache"
+  },
+  "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e\/snapshots\/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+  "path_class" : "restricted_production_path",
+  "pid" : 49132,
+  "prefix_pool_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4a\/cache_ncmodel\/prefix-pool",
+  "reading_state_id" : "S-0001",
+  "reason" : "settlement was produced by a different model identity",
+  "recovered_settlement_id" : "CAC6CED6-E4FB-4FF8-BE7D-ED7644EFDA71",
+  "result_reuse_via_IS" : true,
+  "role" : "consume",
+  "run_id" : "m4a_ncmodel",
+  "runtime_identity" : {
+    "build_configuration" : "RELEASE",
+    "build_id_sha256" : "180d7ecd4c1e939c27137f513c3da97745dc347474d3d3acb4c4fe5e5ced9707",
+    "bundle_macho_images" : [
+      {
+        "bytes" : 104991440,
+        "file" : "SimiGo",
+        "sha256" : "cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f"
+      }
+    ],
+    "executable_bytes" : 104991440,
+    "executable_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/install\/SimiGo.app\/Contents\/MacOS\/SimiGo",
+    "executable_sha256" : "cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f",
+    "os_version" : "Version 27.0.1 (Build 26A434)"
+  },
+  "settlement_binding_code" : "SETTLEMENT_BINDING_MODEL_MISMATCH",
+  "settlement_binding_detail" : "settlement was produced by a different model identity",
+  "settlement_binding_model_matched" : false,
+  "settlement_binding_status" : "blocked",
+  "settlement_binding_tokenizer_matched" : false,
+  "settlement_digest_verified" : true,
+  "settlement_validity_valid" : true,
+  "simigo_home" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4a\/home",
+  "stage" : "is_binding_verify",
+  "status" : "BLOCKED",
+  "tokenizer_identity" : [
+    {
+      "file" : "tokenizer.json",
+      "sha256" : "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    },
+    {
+      "file" : "tokenizer_config.json",
+      "sha256" : "0d3ab89dbad9454de6881edbc97b9365eb82c8b46dc8067bcbb7af828f05a75c"
+    },
+    {
+      "file" : "vocab.json",
+      "sha256" : "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
+    }
+  ],
+  "u1_payload_digest_from_is" : "20b2dda940d741d9780897200aaef2ef356ab32b38c7de0d94306fb5a66b4a8e",
+  "u1_recovered_value" : "hello",
+  "value_carrying_env_channels" : [
+
+  ]
+}

@@ -1,0 +1,17 @@
+{
+ "challenge": {
+  "body": "{\"error\":{\"type\":\"server_error\",\"param\":null,\"message\":\"LOCALB request authorization is not configured\",\"code\":null}}",
+  "status": 503
+ },
+ "health": {
+  "body": "{\"model\":\"mlx-community\\/Qwen3-Coder-30B-A3B-Instruct-4bit\",\"status\":\"ok\"}",
+  "status": 200
+ },
+ "protected_request": {
+  "body": "{\"error\":{\"type\":\"server_error\",\"param\":null,\"message\":\"LOCALB request authorization is not configured\",\"code\":null}}",
+  "status": 503
+ },
+ "tls_spki_sha256": "4ca0a7af36a7914725595cda528e0d3997a5d99f40df637870ce27ab5d042700",
+ "trace_delta": 0,
+ "trusted_checkpoint_present": false
+}

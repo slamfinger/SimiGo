@@ -1,0 +1,2 @@
+2026-10-24 15:06:57.384 SimiGo[59972:4894144] SimiGo bootstrap: issueCount=0 models=20 work=0 legacyMigrated=false
+LLVM Profile Error: Failed to write file "default.profraw": Read-only file system

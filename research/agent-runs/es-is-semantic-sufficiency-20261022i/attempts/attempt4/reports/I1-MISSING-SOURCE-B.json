@@ -1,0 +1,15 @@
+{
+  "id": "I1-MISSING-SOURCE-B",
+  "kind": "negative_control",
+  "notes": [
+    "blocked: I0 did not reach OBSERVED"
+  ],
+  "observations": {
+    "database_unchanged": false,
+    "generation_calls": 0,
+    "refusal_before_tokenize": false,
+    "state_unchanged": false
+  },
+  "raw_log_paths": [],
+  "terminal_state": "BLOCKED_NOT_RUN"
+}

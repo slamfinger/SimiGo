@@ -1,0 +1,74 @@
+$ /usr/bin/python3 /Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/j_contract_selftest.py --out /Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/tests/regression-attempt7/j_contract_selftest.json
+exit=0
+---stdout---
+{
+  "checks": {
+    "A_dispatch_basis_recorded": true,
+    "A_runtime_ids_are_unseen": true,
+    "A_unseen_id_chain_all_reusable": true,
+    "B_id_independent_validation": true,
+    "C_missing_field_rejected": true,
+    "C_missing_field_result_not_reusable": true,
+    "D_binding_mismatch_rejected": true,
+    "E_derivation_mismatch_rejected": true,
+    "F_unknown_version_fail_closed": true,
+    "G_full_signed_closure": true,
+    "H_transitive_source_removal_refuses": true,
+    "I_no_key_consumer_verifies": true,
+    "J_extraction_view_is_derived": true,
+    "K_gate_takes_no_task_item_id": true,
+    "K_no_hardcoded_j_item_ids": true,
+    "K_no_task_id_semantic_branch": true
+  },
+  "contract_dispatch_basis": "declared_contract",
+  "contract_schema_version": "simigo.result-contract/v1",
+  "created_at_utc": "2026-10-22T16:45:28Z",
+  "expected_route_key": "NORTH>EAST",
+  "model_generate_calls": 0,
+  "model_loads": 0,
+  "notes": [
+    "K_args=['source_payload', 'value', 'dependency_values']",
+    "A_ids=['J-392db2de-U1', 'J-392db2de-U2', 'J-392db2de-U3'] A_reused=['J-392db2de-DEST', 'J-392db2de-ORIGIN', 'J-392db2de-U1', 'J-392db2de-U2', 'J-392db2de-U3']",
+    "B_ids_differ=True reports_equal=True",
+    "C_error=PRODUCER_RESULT_FIELD_MISSING: field=priority required field was not present in generated text",
+    "D_error=PRODUCER_RESULT_BINDING_MISMATCH: field=priority actual '3' != bound value '5'",
+    "E_error=PRODUCER_RESULT_DERIVATION_MISMATCH: field=route_key actual 'EAST>NORTH' != derived value 'NORTH>EAST'",
+    "F_error=CONTRACT_UNKNOWN_SCHEMA_VERSION: expected 'simigo.result-contract/v1', found 'simigo.result-contract/v9'",
+    "G_closure=['J-392db2de-DEST', 'J-392db2de-ORIGIN', 'J-392db2de-U1', 'J-392db2de-U2']",
+    "H_stage=SETTLEMENT_NOT_ADMITTED db_unchanged=True",
+    "I_no_key_ok=True",
+    "J_view_fields=['destination_code', 'origin_code', 'priority', 'route_key']"
+  ],
+  "runtime_generated_ids": {
+    "baseline": [
+      "J-392db2de-U1",
+      "J-392db2de-U2",
+      "J-392db2de-U3"
+    ],
+    "id_independence_control": [
+      "J-12624c51-U1",
+      "J-12624c51-U2",
+      "J-12624c51-U3"
+    ]
+  },
+  "schema_id": "SIMIGO-J-PREFLIGHT-DECLARATIVE-CONTRACT-V1",
+  "static_proof": {
+    "gate_arguments": [
+      "source_payload",
+      "value",
+      "dependency_values"
+    ],
+    "gate_body_single_delegation": true,
+    "gate_found": true,
+    "gate_takes_no_item_id": true,
+    "no_hardcoded_j_ids": true,
+    "no_task_id_semantic_branch": true
+  },
+  "terminal_state": "OBSERVED",
+  "tokenize_seed_calls": 0,
+  "tokenize_text_calls": 0,
+  "verdict": "PASS"
+}
+
+---stderr---
+

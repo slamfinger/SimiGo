@@ -1,0 +1,27 @@
+{
+  "id": "N2-NATIVE-REFUSES-WHERE-PYTHON-ACCEPTS",
+  "kind": "native_authority_counterfactual",
+  "observations": {
+    "declared_constraint_kind": "equals_binding_segment",
+    "generation_before_refusal": true,
+    "generation_calls": 1,
+    "item_id_under_test": "J-a8d9d2d8-U1",
+    "model_continuation_calls": 1,
+    "model_loads": 1,
+    "native_refused": true,
+    "native_rejection": {
+      "code": "CONTRACT_UNKNOWN_CONSTRAINT",
+      "detail": "[model_result_preparation] PRODUCER_RESULT_CONTRACT.CONTRACT_UNKNOWN_CONSTRAINT: field=route_key unsupported constraint kind equals_binding_segment",
+      "field": "route_key",
+      "kind": "PRODUCER_RESULT_CONTRACT_REFUSAL",
+      "stage": "PRODUCER_RESULT_CONTRACT"
+    },
+    "python_gate_outcome_for_same_kind": "VALID",
+    "python_implements_kind": true,
+    "run_token": "a8d9d2d8",
+    "signature_created": false,
+    "valid_settlement_created": false
+  },
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-native-result-contract-20261023k2/runs/N2"
+}

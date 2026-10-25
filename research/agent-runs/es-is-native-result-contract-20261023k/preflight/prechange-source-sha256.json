@@ -1,0 +1,19 @@
+{
+  "files": {
+    "execution-information-loop/admission_selftest.py": "5ac6b46a22b780c6b247dac01d0632e3cd7c036235e18c14f82ef2f1d894b25b",
+    "execution-information-loop/carrier_loop.py": "cf724a996a871ec9ce5e3bfa89e5348c67bd57acd27ea7d45b021898ee8d8750",
+    "execution-information-loop/declarative_result_contract.py": "03a9ee371e50abc0b85886055e695a51f441951ee137d5a0906f35145f67d33e",
+    "execution-information-loop/h_selective_invalidation_selftest.py": "f76b67d6bbeb24271352d5c12fc0e734a4966408fcdb59149e528b9b6e800e9f",
+    "execution-information-loop/i_semantic_sufficiency_selftest.py": "3aea0f9dbe6f3ec2c716164326ee4dd14985c160892899c1edcdd25ad712ee61",
+    "execution-information-loop/j_contract_selftest.py": "1c2dd0abd1a1926f6407036208a25ab720fc902dfe9c86ae24766415e41fb018",
+    "execution-information-loop/production_runtime_bridge.py": "c028d4080b86ea24402d0e042653de34175c90c55841689d0890f7409d323c5c",
+    "execution-information-loop/settlement_provenance.py": "1d385e77da2123df9361734ce55934a466c8ef019f3cc4d30d36265d044b6e16",
+    "execution-information-loop/validate_j_evidence.py": "88c5659e88b2d3a7851ee96d9b46f2f21cf695624f02c2b4eb51123ae8161e26",
+    "simigo2-experimental/Package.swift": "f7a32aabb20bde8912c1085577181532332b0fe49946ab6e0ec054d198d6024c",
+    "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift": "af0f68c7531b8766350b1f568643d37171b08be06d021ec3c37e9fa72b786dc5",
+    "simigo2-experimental/Sources/SimiGoTaskRun/TaskResultContract.swift": "1bf89ac51d24921b90587b188a39eb17011eb52d906dbc5ac80c36e8b3f7a2e8",
+    "simigo2-experimental/Sources/SimiGoTaskRun/main.swift": "ac946ee2fc7e36da80a50da9cdee57c02fab4bd6ff5f3d67fc6d1b8e1b4ff97e",
+    "simigo2-experimental/scripts/ordinary_task/run_phase_i.py": "0fab763dfa5aba0030022b98f86a6da2c39f9f40763eb570e3ce3ed50370c08b",
+    "simigo2-experimental/scripts/ordinary_task/run_phase_j.py": "00f404bba973d1fb163b73634538aa7c233287b9f2644c1d18d7e1488dccb41d"
+  }
+}

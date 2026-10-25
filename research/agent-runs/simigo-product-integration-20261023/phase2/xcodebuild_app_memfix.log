@@ -1,0 +1,716 @@
+Command line invocation:
+    2026-10-23 03:34:06.754 xcodebuild[98647:628201]  DVTErrorPresenter: Unable to load simulator devices.
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+Failure Reason: The version of the CoreSimulator framework installed on this Mac is out-of-date and not supported by this version of Xcode.
+Recovery Suggestion: Please ensure that you have installed all available updates to your Mac's software, and that you are running the most recent version of Xcode supported by macOS.
+--
+CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+--
+
+2026-10-23 03:34:06.754 xcodebuild[98647:628201]  iOSSimulator: [SimServiceContext sharedServiceContextForDeveloperDir:error:] returned nil (Error Domain=DVTCoreSimulatorAdditionsErrorDomain Code=3 "CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2)." UserInfo={NSLocalizedDescription=CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).}). Simulator device support disabled.
+/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project SimiGo.xcodeproj -scheme SimiGo -configuration Debug -destination generic/platform=macOS build CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=
+
+Build settings from command line:
+    CODE_SIGN_IDENTITY = 
+    CODE_SIGNING_ALLOWED = NO
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  swift-certificates: https://github.com/apple/swift-certificates.git @ 1.21.0
+  mlx-swift: https://github.com/slamfinger/mlx-swift @ ef5f1b6
+  swift-numerics: https://github.com/apple/swift-numerics @ 1.1.1
+  mlx-swift-lm: https://github.com/slamfinger/mlx-swift-lm.git @ bc64ee6
+  swift-crypto: https://github.com/apple/swift-crypto.git @ 4.5.2
+  SimiGoRuntime: /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime @ local
+  swift-asn1: https://github.com/apple/swift-asn1.git @ 1.7.3
+  swift-collections: https://github.com/apple/swift-collections.git @ 1.7.1
+  swift-transformers: https://github.com/huggingface/swift-transformers.git @ 1.3.4
+  EventSource: https://github.com/mattt/EventSource.git @ 1.5.1
+  swift-huggingface: https://github.com/huggingface/swift-huggingface.git @ 0.11.0
+  swift-syntax: https://github.com/swiftlang/swift-syntax.git @ 603.0.2
+  LOCALBCore: /Users/mr.simi/Documents/SimiGo/Packages/LOCALBCore @ local
+  Jinja: https://github.com/huggingface/swift-jinja.git @ 2.5.1
+  yyjson: https://github.com/ibireme/yyjson.git @ 0.12.0
+
+note: Using codesigning identity override: 
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (69 targets)
+    Target 'SimiGo' in project 'SimiGo'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXVLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Transformers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'LOCALBCore-product' in project 'LOCALBCore'
+    Target 'LOCALBCore-product' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'LOCALBCore' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'LOCALBCore' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'X509' in project 'swift-certificates'
+        ➜ Explicit dependency on target '_CertificateInternals' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras-product' in project 'swift-crypto'
+    Target 'X509' in project 'swift-certificates'
+        ➜ Explicit dependency on target '_CertificateInternals' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras-product' in project 'swift-crypto'
+    Target '_CryptoExtras-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target '_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'swift-crypto_CryptoExtras' in project 'swift-crypto' (no dependencies)
+    Target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+    Target 'swift-crypto_CryptoBoringWrapper' in project 'swift-crypto' (no dependencies)
+    Target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+    Target 'swift-crypto_CCryptoBoringSSLShims' in project 'swift-crypto' (no dependencies)
+    Target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CCryptoBoringSSL' in project 'swift-crypto'
+    Target 'swift-crypto_CCryptoBoringSSL' in project 'swift-crypto' (no dependencies)
+    Target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'SwiftASN1' in project 'swift-asn1'
+    Target 'SwiftASN1' in project 'swift-asn1' (no dependencies)
+    Target '_CertificateInternals' in project 'swift-certificates' (no dependencies)
+    Target 'SimiGoRuntimeContract-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+    Target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGo2Experimental' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+    Target 'SimiGo2Experimental' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+    Target 'SimiGoRuntimeContract' in project 'SimiGoRuntime' (no dependencies)
+    Target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXCXGrammar' in project 'mlx-swift-lm' (no dependencies)
+    Target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm' (no dependencies)
+    Target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'Hub-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Transformers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Models' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Models' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'yyjson-product' in project 'yyjson'
+        ➜ Explicit dependency on target 'yyjson' in project 'yyjson'
+    Target 'yyjson' in project 'yyjson' (no dependencies)
+    Target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'swift-crypto_Crypto' in project 'swift-crypto' (no dependencies)
+    Target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'EventSource' in project 'EventSource'
+    Target 'EventSource' in project 'EventSource' (no dependencies)
+    Target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'InternalCollectionsUtilities' in project 'swift-collections' (no dependencies)
+    Target 'swift-transformers_Hub' in project 'swift-transformers' (no dependencies)
+    Target 'MLXVLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXVLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXVLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXOptimizers-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'Numerics-product' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+    Target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+    Target '_NumericsShims' in project 'swift-numerics' (no dependencies)
+    Target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'mlx-swift_Cmlx' in project 'mlx-swift'
+    Target 'mlx-swift_Cmlx' in project 'mlx-swift' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x objective-c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x c++ -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x c++ -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x assembler-with-cpp -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x objective-c -c /dev/null
+
+ReadFileContents /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/docc/features.json
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -x assembler-with-cpp -c /dev/null
+
+Build description signature: 10145251c48b50eddaa911b698b3ee11
+Build description path: /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/XCBuildData/10145251c48b50eddaa911b698b3ee11.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+    cd /Users/mr.simi/Documents/SimiGo/SimiGo.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -o /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_Crypto.bundle/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_Crypto-b.build/empty-swift-crypto_Crypto.plist (in target 'swift-crypto_Crypto' from project 'swift-crypto')
+    cd /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_Crypto-b.build/empty-swift-crypto_Crypto.plist -producttype com.apple.product-type.bundle -expandbuildsettings -platform macosx -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_Crypto.bundle/Contents/Info.plist
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_CCryptoBoringSSL.bundle/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_CCryptoBoringSSL-b.build/empty-swift-crypto_CCryptoBoringSSL.plist (in target 'swift-crypto_CCryptoBoringSSL' from project 'swift-crypto')
+    cd /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_CCryptoBoringSSL-b.build/empty-swift-crypto_CCryptoBoringSSL.plist -producttype com.apple.product-type.bundle -expandbuildsettings -platform macosx -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_CCryptoBoringSSL.bundle/Contents/Info.plist
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_CCryptoBoringSSLShims.bundle/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_CCryptoBoringSSLShims-b.build/empty-swift-crypto_CCryptoBoringSSLShims.plist (in target 'swift-crypto_CCryptoBoringSSLShims' from project 'swift-crypto')
+    cd /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_CCryptoBoringSSLShims-b.build/empty-swift-crypto_CCryptoBoringSSLShims.plist -producttype com.apple.product-type.bundle -expandbuildsettings -platform macosx -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_CCryptoBoringSSLShims.bundle/Contents/Info.plist
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_CryptoBoringWrapper.bundle/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_CryptoBoringWrapper-b.build/empty-swift-crypto_CryptoBoringWrapper.plist (in target 'swift-crypto_CryptoBoringWrapper' from project 'swift-crypto')
+    cd /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_CryptoBoringWrapper-b.build/empty-swift-crypto_CryptoBoringWrapper.plist -producttype com.apple.product-type.bundle -expandbuildsettings -platform macosx -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_CryptoBoringWrapper.bundle/Contents/Info.plist
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_CryptoExtras.bundle/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_CryptoExtras-b.build/empty-swift-crypto_CryptoExtras.plist (in target 'swift-crypto_CryptoExtras' from project 'swift-crypto')
+    cd /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-crypto.build/Debug/swift-crypto_CryptoExtras-b.build/empty-swift-crypto_CryptoExtras.plist -producttype com.apple.product-type.bundle -expandbuildsettings -platform macosx -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-crypto_CryptoExtras.bundle/Contents/Info.plist
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/mlx-swift_Cmlx.bundle/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/mlx-swift.build/Debug/mlx-swift_Cmlx-b.build/empty-mlx-swift_Cmlx.plist (in target 'mlx-swift_Cmlx' from project 'mlx-swift')
+    cd /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/mlx-swift.build/Debug/mlx-swift_Cmlx-b.build/empty-mlx-swift_Cmlx.plist -producttype com.apple.product-type.bundle -expandbuildsettings -platform macosx -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/mlx-swift_Cmlx.bundle/Contents/Info.plist
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-transformers_Hub.bundle/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-transformers.build/Debug/swift-transformers_Hub-b.build/empty-swift-transformers_Hub.plist (in target 'swift-transformers_Hub' from project 'swift-transformers')
+    cd /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-transformers
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/swift-transformers.build/Debug/swift-transformers_Hub-b.build/empty-swift-transformers_Hub.plist -producttype com.apple.product-type.bundle -expandbuildsettings -platform macosx -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/swift-transformers_Hub.bundle/Contents/Info.plist
+
+SwiftDriver SimiGo normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources-normal/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver SimiGo normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target x86_64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources-normal/x86_64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources/x86_64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ NativeMLX.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift (in target 'SimiGo' from project 'SimiGo')
+
+SwiftCompile normal arm64 /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-SwiftPerFileCompile NativeMLX.swift
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:386:46: warning: capture of 'localbTransportIdentity' with non-Sendable type 'LOCALBTransportIdentityHandle?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 384 |                     info,
+ 385 |                     port: port,
+ 386 |                     localbTransportIdentity: localbTransportIdentity,
+     |                                              `- warning: capture of 'localbTransportIdentity' with non-Sendable type 'LOCALBTransportIdentityHandle?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 387 |                     localbRequestAuthorization: localbRequestAuthorization,
+ 388 |                     localbHostDirectory: localbHostDirectory,
+
+LOCALBCore.LOCALBTransportIdentityHandle:1:15: note: struct 'LOCALBTransportIdentityHandle' does not conform to the 'Sendable' protocol
+1 | public struct LOCALBTransportIdentityHandle {
+  |               `- note: struct 'LOCALBTransportIdentityHandle' does not conform to the 'Sendable' protocol
+2 |     public let certificateDER: [UInt8]
+3 |     public let spkiSHA256Hex: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'LOCALBCore' [#AddPreconcurrencyImport]
+   1 | import Foundation
+   2 | import CryptoKit
+   3 | import LOCALBCore
+     | `- warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'LOCALBCore' [#AddPreconcurrencyImport]
+   4 | import Synchronization
+   5 | import MLX
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:387:49: warning: capture of 'localbRequestAuthorization' with non-Sendable type '(coordinator: LOCALBPairingCoordinator, trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 385 |                     port: port,
+ 386 |                     localbTransportIdentity: localbTransportIdentity,
+ 387 |                     localbRequestAuthorization: localbRequestAuthorization,
+     |                                                 `- warning: capture of 'localbRequestAuthorization' with non-Sendable type '(coordinator: LOCALBPairingCoordinator, trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 388 |                     localbHostDirectory: localbHostDirectory,
+ 389 |                     keychainStore: keychainStore,
+
+LOCALBCore.LOCALBPairingCoordinator:1:15: note: struct 'LOCALBPairingCoordinator' does not conform to the 'Sendable' protocol
+ 1 | public struct LOCALBPairingCoordinator {
+   |               `- note: struct 'LOCALBPairingCoordinator' does not conform to the 'Sendable' protocol
+ 2 |     public init(registryStore: LOCALBCore.LOCALBRegistryStore)
+ 3 |     public func issueCredential(scopeLabel: String, tlsSPKIHash: String, srsKeyID: String, mode: LOCALBCore.LOCALBPairingConfirmationMode = .interactive, expectedClientPublicKeyRaw: [UInt8]? = nil, checkpoint: LOCALBCore.LOCALBRegistryCheckpoint) throws -> LOCALBCore.LOCALBPairingCredentialPresentation
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:389:36: warning: capture of 'keychainStore' with non-Sendable type 'LOCALBKeychainSignerStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 387 |                     localbRequestAuthorization: localbRequestAuthorization,
+ 388 |                     localbHostDirectory: localbHostDirectory,
+ 389 |                     keychainStore: keychainStore,
+     |                                    `- warning: capture of 'keychainStore' with non-Sendable type 'LOCALBKeychainSignerStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 390 |                     transportIdentityStore: transportIdentityStore
+ 391 |                 )
+
+LOCALBCore.LOCALBKeychainSignerStore:1:15: note: struct 'LOCALBKeychainSignerStore' does not conform to the 'Sendable' protocol
+1 | public struct LOCALBKeychainSignerStore {
+  |               `- note: struct 'LOCALBKeychainSignerStore' does not conform to the 'Sendable' protocol
+2 |     public let service: String
+3 |     public let account: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:390:45: warning: capture of 'transportIdentityStore' with non-Sendable type 'LOCALBTransportIdentityStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 388 |                     localbHostDirectory: localbHostDirectory,
+ 389 |                     keychainStore: keychainStore,
+ 390 |                     transportIdentityStore: transportIdentityStore
+     |                                             `- warning: capture of 'transportIdentityStore' with non-Sendable type 'LOCALBTransportIdentityStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 391 |                 )
+ 392 |                 self.state.withLock { $0.oversized = oversized }
+
+LOCALBCore.LOCALBTransportIdentityStore:1:15: note: struct 'LOCALBTransportIdentityStore' does not conform to the 'Sendable' protocol
+ 1 | public struct LOCALBTransportIdentityStore {
+   |               `- note: struct 'LOCALBTransportIdentityStore' does not conform to the 'Sendable' protocol
+ 2 |     public let service: String
+ 3 |     public let account: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:485:24: warning: main actor-isolated instance method 'configureLOCALBTransport(identity:plaintextCompatibilityPort:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 483 |                 // Explicit configuration — never a fallback and never a
+ 484 |                 // default open rule; the policy path stays the default.
+ 485 |                 server.configureLOCALBTransport(
+     |                        `- warning: main actor-isolated instance method 'configureLOCALBTransport(identity:plaintextCompatibilityPort:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 486 |                     identity: localbTransportIdentity
+ 487 |                 )
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:489:28: warning: main actor-isolated instance method 'configureLOCALBRequestAuthorization(coordinator:trustedCheckpoint:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 487 |                 )
+ 488 |                 if let localbRequestAuthorization {
+ 489 |                     server.configureLOCALBRequestAuthorization(
+     |                            `- warning: main actor-isolated instance method 'configureLOCALBRequestAuthorization(coordinator:trustedCheckpoint:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 490 |                         coordinator: localbRequestAuthorization.coordinator,
+ 491 |                         trustedCheckpoint: localbRequestAuthorization
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:501:39: warning: main actor-isolated static method 'applyDefault(to:bindHost:hostDirectory:keychainStore:transportIdentityStore:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 499 |                 // transport-only and protected routes remain fail-closed.
+ 500 |                 // Verification failures propagate as typed start() errors.
+ 501 |                 try LOCALBHostRuntime.applyDefault(
+     |                                       `- warning: main actor-isolated static method 'applyDefault(to:bindHost:hostDirectory:keychainStore:transportIdentityStore:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 502 |                     to: server,
+ 503 |                     bindHost: nodeConfiguration.bindHost,
+
+[#AddPreconcurrencyImport]: <https://docs.swift.org/compiler/documentation/diagnostics/add-preconcurrency-import>
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ SimiGo (in target 'SimiGo' from project 'SimiGo')
+
+SwiftCompile normal x86_64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ SimiGo (in target 'SimiGo' from project 'SimiGo')
+
+SwiftCompile normal arm64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for SimiGo (in target 'SimiGo' from project 'SimiGo')
+
+SwiftDriver\ Compilation\ Requirements SimiGo normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target x86_64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources-normal/x86_64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources/x86_64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for SimiGo (in target 'SimiGo' from project 'SimiGo')
+
+SwiftDriver\ Compilation\ Requirements SimiGo normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources-normal/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal x86_64 Compiling\ NativeMLX.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift (in target 'SimiGo' from project 'SimiGo')
+
+SwiftCompile normal x86_64 /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-SwiftPerFileCompile NativeMLX.swift
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:386:46: warning: capture of 'localbTransportIdentity' with non-Sendable type 'LOCALBTransportIdentityHandle?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 384 |                     info,
+ 385 |                     port: port,
+ 386 |                     localbTransportIdentity: localbTransportIdentity,
+     |                                              `- warning: capture of 'localbTransportIdentity' with non-Sendable type 'LOCALBTransportIdentityHandle?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 387 |                     localbRequestAuthorization: localbRequestAuthorization,
+ 388 |                     localbHostDirectory: localbHostDirectory,
+
+LOCALBCore.LOCALBTransportIdentityHandle:1:15: note: struct 'LOCALBTransportIdentityHandle' does not conform to the 'Sendable' protocol
+1 | public struct LOCALBTransportIdentityHandle {
+  |               `- note: struct 'LOCALBTransportIdentityHandle' does not conform to the 'Sendable' protocol
+2 |     public let certificateDER: [UInt8]
+3 |     public let spkiSHA256Hex: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'LOCALBCore' [#AddPreconcurrencyImport]
+   1 | import Foundation
+   2 | import CryptoKit
+   3 | import LOCALBCore
+     | `- warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'LOCALBCore' [#AddPreconcurrencyImport]
+   4 | import Synchronization
+   5 | import MLX
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:387:49: warning: capture of 'localbRequestAuthorization' with non-Sendable type '(coordinator: LOCALBPairingCoordinator, trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 385 |                     port: port,
+ 386 |                     localbTransportIdentity: localbTransportIdentity,
+ 387 |                     localbRequestAuthorization: localbRequestAuthorization,
+     |                                                 `- warning: capture of 'localbRequestAuthorization' with non-Sendable type '(coordinator: LOCALBPairingCoordinator, trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 388 |                     localbHostDirectory: localbHostDirectory,
+ 389 |                     keychainStore: keychainStore,
+
+LOCALBCore.LOCALBPairingCoordinator:1:15: note: struct 'LOCALBPairingCoordinator' does not conform to the 'Sendable' protocol
+ 1 | public struct LOCALBPairingCoordinator {
+   |               `- note: struct 'LOCALBPairingCoordinator' does not conform to the 'Sendable' protocol
+ 2 |     public init(registryStore: LOCALBCore.LOCALBRegistryStore)
+ 3 |     public func issueCredential(scopeLabel: String, tlsSPKIHash: String, srsKeyID: String, mode: LOCALBCore.LOCALBPairingConfirmationMode = .interactive, expectedClientPublicKeyRaw: [UInt8]? = nil, checkpoint: LOCALBCore.LOCALBRegistryCheckpoint) throws -> LOCALBCore.LOCALBPairingCredentialPresentation
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:389:36: warning: capture of 'keychainStore' with non-Sendable type 'LOCALBKeychainSignerStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 387 |                     localbRequestAuthorization: localbRequestAuthorization,
+ 388 |                     localbHostDirectory: localbHostDirectory,
+ 389 |                     keychainStore: keychainStore,
+     |                                    `- warning: capture of 'keychainStore' with non-Sendable type 'LOCALBKeychainSignerStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 390 |                     transportIdentityStore: transportIdentityStore
+ 391 |                 )
+
+LOCALBCore.LOCALBKeychainSignerStore:1:15: note: struct 'LOCALBKeychainSignerStore' does not conform to the 'Sendable' protocol
+1 | public struct LOCALBKeychainSignerStore {
+  |               `- note: struct 'LOCALBKeychainSignerStore' does not conform to the 'Sendable' protocol
+2 |     public let service: String
+3 |     public let account: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:390:45: warning: capture of 'transportIdentityStore' with non-Sendable type 'LOCALBTransportIdentityStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 388 |                     localbHostDirectory: localbHostDirectory,
+ 389 |                     keychainStore: keychainStore,
+ 390 |                     transportIdentityStore: transportIdentityStore
+     |                                             `- warning: capture of 'transportIdentityStore' with non-Sendable type 'LOCALBTransportIdentityStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 391 |                 )
+ 392 |                 self.state.withLock { $0.oversized = oversized }
+
+LOCALBCore.LOCALBTransportIdentityStore:1:15: note: struct 'LOCALBTransportIdentityStore' does not conform to the 'Sendable' protocol
+ 1 | public struct LOCALBTransportIdentityStore {
+   |               `- note: struct 'LOCALBTransportIdentityStore' does not conform to the 'Sendable' protocol
+ 2 |     public let service: String
+ 3 |     public let account: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:485:24: warning: main actor-isolated instance method 'configureLOCALBTransport(identity:plaintextCompatibilityPort:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 483 |                 // Explicit configuration — never a fallback and never a
+ 484 |                 // default open rule; the policy path stays the default.
+ 485 |                 server.configureLOCALBTransport(
+     |                        `- warning: main actor-isolated instance method 'configureLOCALBTransport(identity:plaintextCompatibilityPort:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 486 |                     identity: localbTransportIdentity
+ 487 |                 )
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:489:28: warning: main actor-isolated instance method 'configureLOCALBRequestAuthorization(coordinator:trustedCheckpoint:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 487 |                 )
+ 488 |                 if let localbRequestAuthorization {
+ 489 |                     server.configureLOCALBRequestAuthorization(
+     |                            `- warning: main actor-isolated instance method 'configureLOCALBRequestAuthorization(coordinator:trustedCheckpoint:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 490 |                         coordinator: localbRequestAuthorization.coordinator,
+ 491 |                         trustedCheckpoint: localbRequestAuthorization
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:501:39: warning: main actor-isolated static method 'applyDefault(to:bindHost:hostDirectory:keychainStore:transportIdentityStore:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 499 |                 // transport-only and protected routes remain fail-closed.
+ 500 |                 // Verification failures propagate as typed start() errors.
+ 501 |                 try LOCALBHostRuntime.applyDefault(
+     |                                       `- warning: main actor-isolated static method 'applyDefault(to:bindHost:hostDirectory:keychainStore:transportIdentityStore:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 502 |                     to: server,
+ 503 |                     bindHost: nodeConfiguration.bindHost,
+
+[#AddPreconcurrencyImport]: <https://docs.swift.org/compiler/documentation/diagnostics/add-preconcurrency-import>
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+SwiftDriverJobDiscovery normal arm64 Compiling NativeMLX.swift (in target 'SimiGo' from project 'SimiGo')
+
+SwiftDriver\ Compilation SimiGo normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources-normal/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources/arm64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/Binary/SimiGo.debug.dylib normal arm64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos26.4 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -filelist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.LinkFileList -install_name @rpath/SimiGo.debug.dylib -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.swiftmodule -lc++ -lc++ -lc++ -lsqlite3 -framework Foundation -framework Metal -framework Accelerate -lc++ -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/Binary/SimiGo.debug.dylib
+
+Copy /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.swiftmodule/x86_64-apple-macos.abi.json /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.abi.json (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.abi.json /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.swiftmodule/x86_64-apple-macos.abi.json
+
+Copy /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.swiftmodule/arm64-apple-macos.abi.json /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.abi.json (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.abi.json /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.swiftmodule/arm64-apple-macos.abi.json
+
+Copy /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.swiftsourceinfo (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.swiftsourceinfo /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo
+
+Copy /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.swiftmodule/Project/x86_64-apple-macos.swiftsourceinfo /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.swiftsourceinfo (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.swiftsourceinfo /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.swiftmodule/Project/x86_64-apple-macos.swiftsourceinfo
+
+ConstructStubExecutorLinkFileList /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-ExecutorLinkFileList-normal-arm64.txt (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    construct-stub-executor-link-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/Binary/SimiGo.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'SimiGo' from project 'SimiGo')
+
+SwiftDriverJobDiscovery normal x86_64 Compiling NativeMLX.swift (in target 'SimiGo' from project 'SimiGo')
+
+SwiftDriver\ Compilation SimiGo normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -Onone @/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target x86_64-apple-macos26.4 -g -module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Xfrontend -load-plugin-executable -Xfrontend /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mr.simi/Documents/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mr.simi/Documents/ModuleCache.noindex -sdk-module-cache-path /Users/mr.simi/Documents/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/mr.simi/Documents/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/yyjson/src -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/include -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources-normal/x86_64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources/x86_64 -Xcc -I/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/Binary/SimiGo.debug.dylib normal x86_64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-macos26.4 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -filelist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.LinkFileList -install_name @rpath/SimiGo.debug.dylib -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.swiftmodule -lc++ -lc++ -lc++ -lsqlite3 -framework Foundation -framework Metal -framework Accelerate -lc++ -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/Binary/SimiGo.debug.dylib
+
+CreateUniversalBinary /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib normal arm64\ x86_64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/Binary/SimiGo.debug.dylib /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/Binary/SimiGo.debug.dylib -output /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-ExecutorLinkFileList-normal-x86_64.txt (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    construct-stub-executor-link-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/Binary/SimiGo.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-ExecutorLinkFileList-normal-x86_64.txt
+note: Using stub executor library with Swift entry point. (in target 'SimiGo' from project 'SimiGo')
+
+Ld /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/Binary/SimiGo normal x86_64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-macos26.4 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-DebugDylibPath-normal-x86_64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-DebugDylibInstallName-normal-x86_64.txt -Xlinker -filelist -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-ExecutorLinkFileList-normal-x86_64.txt /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/Binary/SimiGo.debug.dylib -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/Binary/SimiGo
+
+Ld /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/Binary/SimiGo normal arm64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos26.4 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -F/Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo-ExecutorLinkFileList-normal-arm64.txt /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/Binary/SimiGo.debug.dylib -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/Binary/SimiGo
+
+CreateUniversalBinary /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo normal arm64\ x86_64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/Binary/SimiGo /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/Binary/SimiGo -output /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo
+
+ExtractAppIntentsMetadata (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain --module-name SimiGo --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk --xcode-version 27A9275 --platform-family macOS --deployment-target 26.4 --bundle-identifier SwiftUI.SimiGo --output /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Resources --target-triple arm64-apple-macos26.4 --target-triple x86_64-apple-macos26.4 --binary-file /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo --dependency-file /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo_dependency_info.dat --dependency-file /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo_dependency_info.dat --stringsdata-file /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --stringsdata-file /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftFileList --source-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.SwiftFileList --metadata-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo.DependencyMetadataFileList --static-metadata-file-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SimiGo.DependencyStaticMetadataFileList --swift-const-vals-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftConstValuesFileList --swift-const-vals-list /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/Objects-normal/x86_64/SimiGo.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-10-23 03:34:15.875 appintentsmetadataprocessor[98707:628578] Starting appintentsmetadataprocessor export
+2026-10-23 03:34:15.876 appintentsmetadataprocessor[98707:628578] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+
+ProcessInfoPlistFile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Info.plist /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/empty-SimiGo.plist (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-infoPlistUtility /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/empty-SimiGo.plist -producttype com.apple.product-type.application -genpkginfo /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PkgInfo -expandbuildsettings -platform macosx -additionalcontentfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/assetcatalog_generated_info.plist -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Resources/mlx-swift_Cmlx.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Resources/swift-crypto_CCryptoBoringSSL.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Resources/swift-crypto_CCryptoBoringSSLShims.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Resources/swift-crypto_Crypto.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Resources/swift-crypto_CryptoBoringWrapper.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Resources/swift-crypto_CryptoExtras.bundle -scanforprivacyfile /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Resources/swift-transformers_Hub.bundle -o /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Info.plist
+
+CopySwiftLibs /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Frameworks --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/PlugIns --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Library/SystemExtensions --scan-folder /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Extensions --platform macosx --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Products/Debug/SimiGo.app/Contents/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SimiGo.build/Debug/SimiGo.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SDKExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/mr.simi/Documents/SimiGo-evofcdvfrduenndpdvzkbznpxpba/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+** BUILD SUCCEEDED **
+

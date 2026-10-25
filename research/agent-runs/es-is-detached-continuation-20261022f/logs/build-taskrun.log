@@ -1,0 +1,40 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 895]
+[Planning deferred tasks]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[3 / 57]
+[5 / 11] SimiGo2Experimental
+[8 / 17]
+[9 / 17]
+[11 / 17] SimiGo2Experimental
+[17 / 22] SimiGo2Experimental
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:1027:27: [1;33mwarning: [1;39mresult of call to 'restore(_:request:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1025 |[0;0m       }
+[0;36m1026 |[0;0m       if let base = current {
+[0;36m1027 |[0;0m         try await runtime.restore(
+     [0;36m|[0;0m                           `- [1;33mwarning: [1;39mresult of call to 'restore(_:request:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1028 |[0;0m           base,
+[0;36m1029 |[0;0m           request: ExecutionRestoreRequest(
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:893:9: [1;33mwarning: [1;39mvariable 'created' was written to, but never read[0;0m
+ [0;36m891 |[0;0m     }
+ [0;36m892 |[0;0m 
+ [0;36m893 |[0;0m     var created = false
+     [0;36m|[0;0m         `- [1;33mwarning: [1;39mvariable 'created' was written to, but never read[0;0m
+ [0;36m894 |[0;0m     var current: ExecutionStateHandle?
+ [0;36m895 |[0;0m     var priorRepresentation: ExecutionRepresentation?
+
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:1364:9: [1;33mwarning: [1;39mresult of 'try?' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1362 |[0;0m       }
+[0;36m1363 |[0;0m       if let base = current {
+[0;36m1364 |[0;0m         [4;39mtry? await runtime.restore([0;0m
+     [0;36m|[0;0m         `- [1;33mwarning: [1;39mresult of 'try?' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m1365 |[0;0m           base,
+[0;36m1366 |[0;0m           request: ExecutionRestoreRequest(
+
+[#NoUsage]: <https://docs.swift.org/compiler/documentation/diagnostics/no-usage>
+[21 / 25] SimiGoTaskRun-product
+[22 / 25] SimiGoTaskRun-product
+[24 / 25] SimiGoTaskRun-product
+Build complete! (4.20秒)

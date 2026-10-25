@@ -1,0 +1,39 @@
+{
+ "purpose": "record which macOS privacy grants the GUI gate depends on are actually in place on this machine, so the gate's status is measured, not assumed",
+ "captured_at": "2026-10-24T15:03:50+0800",
+ "accessibility": {
+  "probe": "osascript: tell application \"System Events\" to count processes",
+  "granted": true,
+  "result": {
+   "argv": [
+    "osascript",
+    "-e",
+    "tell application \"System Events\" to count processes"
+   ],
+   "exit_code": 0,
+   "stdout": "81\n",
+   "stderr": "",
+   "wall_seconds": 0.12
+  }
+ },
+ "screen_recording": {
+  "probe": "screencapture -x /tmp/simigo_gui_probe_shot.png",
+  "granted": false,
+  "screenshot_exists": false,
+  "screenshot_bytes": 0,
+  "result": {
+   "argv": [
+    "screencapture",
+    "-x",
+    "/tmp/simigo_gui_probe_shot.png"
+   ],
+   "exit_code": 1,
+   "stdout": "",
+   "stderr": "could not create image from display\n",
+   "wall_seconds": 0.04
+  }
+ },
+ "what_this_probe_cannot_do": "it cannot grant either permission, and it does not launch the candidate app: a capture that fails here proves nothing about the product's GUI",
+ "consequence": "the GUI gate stays BLOCKED_PREREQUISITE",
+ "required_user_action": "System Settings > Privacy & Security > Screen & System Audio Recording: enable the app that hosts this agent (Terminal / the IDE), then re-run this probe"
+}

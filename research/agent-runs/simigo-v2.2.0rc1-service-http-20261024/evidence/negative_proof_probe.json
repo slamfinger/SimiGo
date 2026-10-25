@@ -1,0 +1,18 @@
+{
+ "challenge_replay": {
+  "first": 200,
+  "replay": 401,
+  "replay_body": "{\"error\":{\"param\":null,\"type\":\"server_error\",\"code\":null,\"message\":\"LOCALB_CLIENT_CHALLENGE_INVALID\"}}",
+  "trace_delta": 7
+ },
+ "fabricated_proof": {
+  "body": "{\"error\":{\"param\":null,\"type\":\"server_error\",\"code\":null,\"message\":\"LOCALB_CLIENT_REQUEST_SIGNATURE_INVALID\"}}",
+  "status": 401,
+  "trace_delta": 0
+ },
+ "no_proof_headers": {
+  "body": "{\"error\":{\"param\":null,\"type\":\"server_error\",\"code\":null,\"message\":\"LOCALB_CLIENT_PROOF_MISSING\"}}",
+  "status": 401,
+  "trace_delta": 0
+ }
+}

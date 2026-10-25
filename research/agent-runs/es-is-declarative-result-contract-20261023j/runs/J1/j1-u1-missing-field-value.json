@@ -1,0 +1,1 @@
+{"generated_token_ids": [7, 8, 9], "model_snapshot_revision": "j-candidate-revision", "model_weights_manifest_sha256": "j-candidate-weights", "model_call_index": 1, "origin_code": "NORTH", "destination_code": "EAST", "route_key": "NORTH>EAST", "raw_generated_text": "ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST"}

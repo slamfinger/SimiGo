@@ -1,0 +1,16 @@
+# pre-existing INSTALLED app (must not be overwritten)
+path=/Applications/SimiGo.app
+mtime=2026-10-16T17:09:55
+2.1.14
+24
+SwiftUI.SimiGo
+b518ddfe5869d8755183cb636e1df6c11e0e5bac77dc08517c0413335d813856  /Applications/SimiGo.app/Contents/MacOS/SimiGo
+SimiGo
+Executable=/Applications/SimiGo.app/Contents/MacOS/SimiGo
+Identifier=SwiftUI.SimiGo
+Format=app bundle with Mach-O thin (arm64)
+CodeDirectory v=20500 size=172858 flags=0x10000(runtime) hashes=5391+7 location=embedded
+Signature size=4789
+Signed Time=Oct 16, 2026 at 17:09:56
+Info.plist entries=20
+TeamIdentifier=YPXU8M53F9

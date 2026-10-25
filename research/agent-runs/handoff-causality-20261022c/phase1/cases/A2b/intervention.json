@@ -1,0 +1,24 @@
+{
+  "case": "A2b",
+  "changes": [
+    {
+      "after": "029fb7461baaaaf43546dd89078f733f106bd2f0dce8f720bd3ec35987488d59",
+      "before": "c81e7b5682add59eef8bf551a03edf6b18dd12ab50f0bf527bb23e3bc57656d8",
+      "field": "validityBasis"
+    }
+  ],
+  "database_after": {
+    "device": "16777233",
+    "inode": "110251803",
+    "path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022c/phase1/cases/A2b/carrier.sqlite",
+    "sha256": "d213871a8d01fd8038f702fec0bbb2d5ae75d178e28340617f10c6f7e59d84f0",
+    "size_bytes": 36864
+  },
+  "state_after": [
+    {
+      "path": "execution-state.json",
+      "sha256": "20a2bee4c8d112ad649d17e6905a6c6b0c2595bca855cc99b19aa378c1e59a15",
+      "size_bytes": 3686
+    }
+  ]
+}

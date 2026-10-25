@@ -1,0 +1,32 @@
+{
+  "case": "A1",
+  "changes": [
+    {
+      "after": [],
+      "before": {
+        "executionID": "PRODUCTION-REAL-PALACE",
+        "isConfirmationStateID": "handoff-a-u1-phase1-baseline-20261022b:runtime-applied",
+        "isOriginalStateID": "handoff-a-u1-phase1-baseline-20261022b",
+        "lastSettledAdvancementID": "handoff-a-u1-phase1-baseline-20261022b",
+        "position": 1,
+        "resultDigest": "77163e98472871fe74b15fee16ff4f2843b55aef26ec57b972a3d2b2c515cf33",
+        "validityBasis": "c81e7b5682add59eef8bf551a03edf6b18dd12ab50f0bf527bb23e3bc57656d8"
+      },
+      "field": "settlementCheckpoints"
+    }
+  ],
+  "database_after": {
+    "device": "16777233",
+    "inode": "110211295",
+    "path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/real-model-handoff/run-20261022b-phase1/cases/A1/carrier.sqlite",
+    "sha256": "32829c4a4d6ace442af4c466dbaa90f89064075d4fab757a0f8fe21ce690a12e",
+    "size_bytes": 36864
+  },
+  "state_after": [
+    {
+      "path": "execution-state.json",
+      "sha256": "da3e97a99e37372594b30be204d6a05e06ed0d13d0ccf3ea3914955efb4b4730",
+      "size_bytes": 2993
+    }
+  ]
+}

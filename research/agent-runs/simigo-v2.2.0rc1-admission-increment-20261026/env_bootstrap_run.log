@@ -1,0 +1,21 @@
+env-bootstrap-entered
+{
+  "database" : {
+    "detail" : "The operation couldn’t be completed. (SimiGoRuntimeContract.SimiGoESISDatabase.DatabaseError error 2.)",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root\/simigo.sqlite3",
+    "status" : "failed"
+  },
+  "finished_at" : "2026-10-25T18:01:39Z",
+  "hf" : {
+    "path" : "\/opt\/homebrew\/bin\/hf",
+    "status" : "already_present"
+  },
+  "llama_cpp" : {
+    "llama_server" : "\/Users\/mr.simi\/.local\/bin\/llama-server",
+    "status" : "构建失败"
+  },
+  "managed_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-admission-increment-20261026\/envtest-root",
+  "started_at" : "2026-10-25T18:01:39Z"
+}
+🚀 开始准备 SimiGo 外部依赖：llama.cpp
+❌ 构建中断：llama.cpp 未锁定版本：请在引擎清单 'engine-recipes.json' 指定 pinnedRef 后再构建（禁止随上游漂移）。

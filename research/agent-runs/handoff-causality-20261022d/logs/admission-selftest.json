@@ -1,0 +1,180 @@
+{
+ "conditions": [
+  {
+   "bindings": [
+    {
+     "byte_length": 32,
+     "byte_offset": 35,
+     "item_id": "TASK-U1",
+     "placeholder": "secret",
+     "result_value_sha256": "c2b94407d28819406e8fdbacd5b7d163d77dd4314939d0b5f671dd0487480b11",
+     "settlement_object_id": "fe43851910586f2545575a67d7a70e6805df32590408ea864e187ffcaefaf3dd"
+    },
+    {
+     "byte_length": 4,
+     "byte_offset": 106,
+     "item_id": "TASK-SOURCE",
+     "placeholder": "checksum",
+     "result_value_sha256": "ef6f1f35f6ced4c6c331ec8eb17e2671f00e7b0958e29f119d72591b036d59b2",
+     "settlement_object_id": "69210c8d6227b09eb3315bb8b446a92b76da39a3e9812ee6df44736643b0b8b7"
+    }
+   ],
+   "case": "happy",
+   "checks": {
+    "all_reported_checks_true": true,
+    "checksum_bound_from_source": true,
+    "database_bytes_unchanged": true,
+    "dependency_closure_complete": true,
+    "exit_code_is_0": true,
+    "object_identity_is_content_digest": true,
+    "offsets_match_admitted_values": true,
+    "ok_is_true": true,
+    "secret_bound_from_u1": true,
+    "two_bindings": true
+   },
+   "exit_code": 0,
+   "input_sha256": "0759ac65e07ff9faf99cc6c8741dae5a68c83b4188844660a56ab54e9a27bd16",
+   "verdict": "PASS"
+  },
+  {
+   "case": "missing-settlement",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "database_sha256_after": "fd5e5674f6173307bcf33879be98de6aa904dc3683c0448489b991b928629ae1",
+   "database_sha256_before": "fd5e5674f6173307bcf33879be98de6aa904dc3683c0448489b991b928629ae1",
+   "entries_after": [
+    "carrier.sqlite"
+   ],
+   "entries_before": [
+    "carrier.sqlite"
+   ],
+   "exit_code": 1,
+   "expected_reason_prefix": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+   "expected_stage": "SETTLEMENT_NOT_ADMITTED",
+   "mutation": {
+    "deleted_dependency_rows": 1,
+    "deleted_index_rows": 1
+   },
+   "payload": {
+    "command": "resolve-model-input",
+    "error": "SETTLEMENT_NOT_ADMITTED: MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "error_type": "AdmissionRefusal",
+    "ok": false,
+    "refusal": {
+     "detail": {
+      "item_id": "TASK-U1",
+      "settlement_state": null
+     },
+     "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+     "stage": "SETTLEMENT_NOT_ADMITTED"
+    }
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "tampered-object-bytes",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "database_sha256_after": "f19ea8c6304c8f77b3756b32cbe4728242f78be971d7c1231c21f926681455e2",
+   "database_sha256_before": "f19ea8c6304c8f77b3756b32cbe4728242f78be971d7c1231c21f926681455e2",
+   "entries_after": [
+    "carrier.sqlite"
+   ],
+   "entries_before": [
+    "carrier.sqlite"
+   ],
+   "exit_code": 1,
+   "expected_reason_prefix": null,
+   "expected_stage": "SETTLEMENT_OBJECT_UNREADABLE",
+   "mutation": {
+    "object_id": "fe43851910586f2545575a67d7a70e6805df32590408ea864e187ffcaefaf3dd",
+    "original_sha256": "fe43851910586f2545575a67d7a70e6805df32590408ea864e187ffcaefaf3dd",
+    "tampered_sha256": "54f42a973d99d5e1d99ac2f69120fa9e3bd97acd0291a07b44323d5c1c8ca944"
+   },
+   "payload": {
+    "command": "resolve-model-input",
+    "error": "SETTLEMENT_OBJECT_UNREADABLE: ObjectByteMismatch: fe43851910586f2545575a67d7a70e6805df32590408ea864e187ffcaefaf3dd",
+    "error_type": "AdmissionRefusal",
+    "ok": false,
+    "refusal": {
+     "detail": {
+      "item_id": "TASK-U1"
+     },
+     "reason": "ObjectByteMismatch: fe43851910586f2545575a67d7a70e6805df32590408ea864e187ffcaefaf3dd",
+     "stage": "SETTLEMENT_OBJECT_UNREADABLE"
+    }
+   },
+   "verdict": "PASS"
+  },
+  {
+   "case": "dependency-mismatch",
+   "checks": {
+    "database_bytes_unchanged": true,
+    "exit_code_is_1": true,
+    "no_new_files": true,
+    "ok_is_false": true,
+    "reason_matches": true,
+    "stage_matches": true,
+    "structured_refusal": true
+   },
+   "database_sha256_after": "336998e445e22dccede77cd413fc40e5dfa53264ba6f164b80f5ec5ddcc46a38",
+   "database_sha256_before": "336998e445e22dccede77cd413fc40e5dfa53264ba6f164b80f5ec5ddcc46a38",
+   "entries_after": [
+    "carrier.sqlite"
+   ],
+   "entries_before": [
+    "carrier.sqlite"
+   ],
+   "exit_code": 1,
+   "expected_reason_prefix": null,
+   "expected_stage": "INPUT_BINDING_DEPENDENCY_NOT_DECLARED",
+   "mutation": {
+    "new_dependencies": [
+     "TASK-SOURCE"
+    ],
+    "new_item_object_id": "e92d6b391dc81843eef820db7c29c1a7375153191d3cdbda1aca1ca7a6c6863f",
+    "new_revision": 2,
+    "previous_dependencies": [
+     "TASK-SOURCE",
+     "TASK-U1"
+    ]
+   },
+   "payload": {
+    "command": "resolve-model-input",
+    "error": "INPUT_BINDING_DEPENDENCY_NOT_DECLARED: placeholder {secret} requires TASK-U1, which the current task item no longer declares",
+    "error_type": "AdmissionRefusal",
+    "ok": false,
+    "refusal": {
+     "detail": {
+      "binding_dependency": "TASK-U1",
+      "declared_dependencies": [
+       "TASK-SOURCE"
+      ],
+      "item_id": "TASK-U2"
+     },
+     "reason": "placeholder {secret} requires TASK-U1, which the current task item no longer declares",
+     "stage": "INPUT_BINDING_DEPENDENCY_NOT_DECLARED"
+    }
+   },
+   "verdict": "PASS"
+  }
+ ],
+ "created_at_utc": "2026-10-22T03:42:34Z",
+ "schema_id": "SIMIGO-ADMISSION-SELFTEST-V1",
+ "verdict": "PASS",
+ "work_directory": "/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-selftest-16i444le"
+}

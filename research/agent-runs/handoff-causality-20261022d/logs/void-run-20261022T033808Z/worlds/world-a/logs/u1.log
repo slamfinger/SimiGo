@@ -1,0 +1,1 @@
+error: modelExecutionFailed(reason: "[information_settlement] bridgeFailed(command: \"execute-with-model-result\", exitCode: 1, message: \"extracted secret does not match the settled session-log commitment\")")

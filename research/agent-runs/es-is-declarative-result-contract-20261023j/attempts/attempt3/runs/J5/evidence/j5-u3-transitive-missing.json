@@ -1,0 +1,57 @@
+{
+  "advancement_id" : "j5-probe",
+  "completed_at_utc" : "2026-10-22T16:27:02Z",
+  "counters" : {
+    "model_continuation_calls" : 0,
+    "tokenize_seed_calls" : 0,
+    "tokenize_text_calls" : 0
+  },
+  "database" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/runs\/J5\/carrier.sqlite",
+  "database_after" : {
+    "inode" : "110420627",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/runs\/J5\/carrier.sqlite",
+    "sha256" : "fff797928a03a4c0a5fa5f9c1da5533350247c2b8c5e51c9e19f26c1c0f7ab6e",
+    "size_bytes" : 94208
+  },
+  "database_before" : {
+    "inode" : "110420627",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/runs\/J5\/carrier.sqlite",
+    "sha256" : "fff797928a03a4c0a5fa5f9c1da5533350247c2b8c5e51c9e19f26c1c0f7ab6e",
+    "size_bytes" : 94208
+  },
+  "database_unchanged" : true,
+  "demand_id" : "J-63fbe989-u3",
+  "duration_seconds" : 0.05315399169921875,
+  "entry" : "SimiGoTaskRun",
+  "evaluated_at_utc" : "2026-10-22T16:27:02Z",
+  "execution_id" : "PRODUCTION-REAL-PALACE",
+  "failure" : "",
+  "generation_entered" : false,
+  "input_admission" : {
+
+  },
+  "input_admission_refusal" : {
+    "item_id" : "J-63fbe989-ORIGIN",
+    "kind" : "ADMISSION_REFUSED",
+    "reason" : "MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "stage" : "SETTLEMENT_NOT_ADMITTED"
+  },
+  "input_admission_status" : "ADMISSION_REFUSED",
+  "mode" : "admission_probe",
+  "model_loaded" : false,
+  "pid" : 2221,
+  "run_id" : "j-j5-probe",
+  "schema_id" : "SIMIGO-ORDINARY-TASK-ENTRY-V1",
+  "started_at_utc" : "2026-10-22T16:27:02Z",
+  "state_after" : {
+
+  },
+  "state_before" : {
+
+  },
+  "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/runs\/J5\/state\/j5-u3-transitive-missing",
+  "state_unchanged" : true,
+  "task_item_id" : "J-63fbe989-U3",
+  "terminal_state" : "INPUT_ADMISSION_REFUSED",
+  "trust_anchor_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-declarative-result-contract-20261023j\/trust\/settlement-trust-anchor.json"
+}

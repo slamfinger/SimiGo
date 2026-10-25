@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-10-22T09:29:37Z",
+  "purpose": "F-round-only code diffs, each reconstruction hash-checked against the pre-F workspace snapshot recorded in manifests/workspace-verify.json",
+  "inputs": {
+    "workspace_verify": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-detached-continuation-20261022f/manifests/workspace-verify.json",
+    "e_round_tracked_changes_diff": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/diffs/tracked-changes.diff",
+    "e_round_new_files_diff": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/diffs/new-files.diff",
+    "e_round_untracked_current": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/diffs/untracked-current",
+    "repo_head": "e7f63856298390deb8596a4a30e173d3fb466eaa"
+  },
+  "files": [
+    {
+      "path": "simigo2-experimental/Package.swift",
+      "before_sha256_expected": "3ad5fe3d5b87432e31ed993558ad12f732f9ac6c705a6eb1d4fa0db15cf85362",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "HEAD + D-round diffs/worktree-vs-head.diff",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Package.swift.f-round.diff",
+      "before_sha256_reconstructed": "3ad5fe3d5b87432e31ed993558ad12f732f9ac6c705a6eb1d4fa0db15cf85362"
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+      "before_sha256_expected": "0f164728838119595650102661b8a1f790de874dbd5e4bfb6e42e50bb3941af9",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "HEAD + E-round diffs/tracked-changes.diff",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Sources__SimiGo2Experimental__ProductionRuntimeInformationIntegration.swift.f-round.diff",
+      "before_sha256_reconstructed": "0f164728838119595650102661b8a1f790de874dbd5e4bfb6e42e50bb3941af9"
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGo2Experimental/SettlementProvenanceVerification.swift",
+      "before_sha256_expected": "3c07ababd7ee37658390bd4d030b1dbc7c55dadf2cb66be163556ec158332662",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "E-round diffs/new-files.diff creation hunk",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Sources__SimiGo2Experimental__SettlementProvenanceVerification.swift.f-round.diff",
+      "before_sha256_reconstructed": "3c07ababd7ee37658390bd4d030b1dbc7c55dadf2cb66be163556ec158332662"
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGoDetachedDriver/main.swift",
+      "before_sha256_expected": null,
+      "exists_before": false,
+      "current_matches_guard_after": true,
+      "reconstruction": "created-in-F",
+      "status": "CREATED_IN_F_FULL_CONTENT_DIFF",
+      "diff_file": "simigo2-experimental__Sources__SimiGoDetachedDriver__main.swift.created.diff"
+    },
+    {
+      "path": "simigo2-experimental/Sources/SimiGoTaskRun/main.swift",
+      "before_sha256_expected": "79c872a81a4973206897a4b77ebfc329974ec0b812205a7fbe8657f890f7d23c",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "E-round diffs/untracked-current copy",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Sources__SimiGoTaskRun__main.swift.f-round.diff",
+      "before_sha256_reconstructed": "79c872a81a4973206897a4b77ebfc329974ec0b812205a7fbe8657f890f7d23c"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ControlledProductionPilotV1E2ETests.swift",
+      "before_sha256_expected": "b2227457961fcf65931cf0f0487b43d7aeba24b0fb7b2ee75b300435c9aa8ff1",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "HEAD + E-round diffs/tracked-changes.diff",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__ControlledProductionPilotV1E2ETests.swift.f-round.diff",
+      "before_sha256_reconstructed": "b2227457961fcf65931cf0f0487b43d7aeba24b0fb7b2ee75b300435c9aa8ff1"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/DetachedContinuationEntryTests.swift",
+      "before_sha256_expected": null,
+      "exists_before": false,
+      "current_matches_guard_after": true,
+      "reconstruction": "created-in-F",
+      "status": "CREATED_IN_F_FULL_CONTENT_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__DetachedContinuationEntryTests.swift.created.diff"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift",
+      "before_sha256_expected": "5bac6d5fdfd0ae7386e046d38d64953a62694f7466154b0167ed0008e2d004c4",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "HEAD + E-round diffs/tracked-changes.diff",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__IntegratedSimigoProofE2ETests.swift.f-round.diff",
+      "before_sha256_reconstructed": "5bac6d5fdfd0ae7386e046d38d64953a62694f7466154b0167ed0008e2d004c4"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/NativeCarrierLifecycleTests.swift",
+      "before_sha256_expected": "fdc2122c7e81d3227c1958b039c6b263ed0ef130a084cfcb6a245fa6ace4ab3a",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "HEAD + E-round diffs/tracked-changes.diff",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__NativeCarrierLifecycleTests.swift.f-round.diff",
+      "before_sha256_reconstructed": "fdc2122c7e81d3227c1958b039c6b263ed0ef130a084cfcb6a245fa6ace4ab3a"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionInputAdmissionTests.swift",
+      "before_sha256_expected": "84fda986744dd4be52e60024d4fa280cc013939ebb34ff4cd03647b856594db5",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "E-round diffs/untracked-current copy",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__ProductionInputAdmissionTests.swift.f-round.diff",
+      "before_sha256_reconstructed": "84fda986744dd4be52e60024d4fa280cc013939ebb34ff4cd03647b856594db5"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift",
+      "before_sha256_expected": "875faf929aa6470be86ee9e9a2aa9b17b90aa07d16297678b6a30a6e70bfafc8",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "HEAD + E-round diffs/tracked-changes.diff",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__ProductionReadinessDeploymentPreparationTests.swift.f-round.diff",
+      "before_sha256_reconstructed": "875faf929aa6470be86ee9e9a2aa9b17b90aa07d16297678b6a30a6e70bfafc8"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift",
+      "before_sha256_expected": "b4963fb08df7af483166244e6a063f5b9f4f6b19e4de023de8b3a088f5e2d395",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "HEAD + E-round diffs/tracked-changes.diff",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__ProductionRuntimeFailureBoundaryTests.swift.f-round.diff",
+      "before_sha256_reconstructed": "b4963fb08df7af483166244e6a063f5b9f4f6b19e4de023de8b3a088f5e2d395"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift",
+      "before_sha256_expected": "8d09d5828273d212905d6f5aa2f88dd83afb161eefbc053bf71638f3882a0eac",
+      "exists_before": true,
+      "current_matches_guard_after": true,
+      "reconstruction": "HEAD + E-round diffs/tracked-changes.diff",
+      "status": "VERIFIED_F_ROUND_ONLY_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__ProductionRuntimeInformationIntegrationTests.swift.f-round.diff",
+      "before_sha256_reconstructed": "8d09d5828273d212905d6f5aa2f88dd83afb161eefbc053bf71638f3882a0eac"
+    },
+    {
+      "path": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/SettlementTrustFixture.swift",
+      "before_sha256_expected": null,
+      "exists_before": false,
+      "current_matches_guard_after": true,
+      "reconstruction": "created-in-F",
+      "status": "CREATED_IN_F_FULL_CONTENT_DIFF",
+      "diff_file": "simigo2-experimental__Tests__SimiGo2ExperimentalTests__SettlementTrustFixture.swift.created.diff"
+    },
+    {
+      "path": "simigo2-experimental/scripts/ordinary_task/run_phase_f.py",
+      "before_sha256_expected": null,
+      "exists_before": false,
+      "current_matches_guard_after": true,
+      "reconstruction": "created-in-F",
+      "status": "CREATED_IN_F_FULL_CONTENT_DIFF",
+      "diff_file": "simigo2-experimental__scripts__ordinary_task__run_phase_f.py.created.diff"
+    }
+  ]
+}

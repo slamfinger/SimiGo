@@ -1,0 +1,23 @@
+{
+  "result": "PASS",
+  "changed_file_count": 6,
+  "issues": [],
+  "report": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g/manifests/workspace-verify.json"
+}
+{
+  "result": "PASS",
+  "issues": 0,
+  "report": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-multihop-continuation-20261022g/manifests/artifacts-verify.json"
+}
+Traceback (most recent call last):
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_g.py", line 1015, in <module>
+    raise SystemExit(main())
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_g.py", line 1002, in main
+    summary = build_summary(run_root, model_dir, trust, definition, g0, g1, n4,
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_g.py", line 698, in build_summary
+    "artifact_manifest_sha256": artifact_manifest_sha256(run_root),
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_g.py", line 617, in artifact_manifest_sha256
+    for rel in sorted(str(p.relative_to(run_root)) for p in run_root.rglob("*")
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_g.py", line 618, in <genexpr>
+    if p.is_file() and "/attempts/" not in ("/%s/" % rel)):
+NameError: free variable 'rel' referenced before assignment in enclosing scope

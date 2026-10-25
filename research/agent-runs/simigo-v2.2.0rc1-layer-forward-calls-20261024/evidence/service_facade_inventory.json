@@ -1,0 +1,309 @@
+{
+ "captured_at": "2026-10-24T15:35:44+0800",
+ "repo": "/Users/mr.simi/Documents/SimiGo",
+ "head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+ "branch": "localb-b3-closure-20261016",
+ "dirty_entries": 16,
+ "read_only": true,
+ "method": "git grep at HEAD; no worktree file is read or written",
+ "patterns": {
+  "Service.shared": {
+   "purpose": "who holds the facade",
+   "hits": [
+    {
+     "file": "SimiGo/App/StatusBarCoordinator.swift",
+     "line": 68,
+     "text": "private let svc = Service.shared",
+     "tier": "production"
+    }
+   ],
+   "production": [
+    {
+     "file": "SimiGo/App/StatusBarCoordinator.swift",
+     "line": 68,
+     "text": "private let svc = Service.shared",
+     "tier": "production"
+    }
+   ],
+   "test": []
+  },
+  "startSelected()": {
+   "purpose": "what starts it",
+   "hits": [
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 233,
+     "text": "await svc.startSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 265,
+     "text": "await svc.restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/App/Settings.swift",
+     "line": 243,
+     "text": "await svc.restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 687,
+     "text": "await startSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 823,
+     "text": "public func startSelected() async {",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 864,
+     "text": "public func restartSelected() async {",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 871,
+     "text": "await startSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 1105,
+     "text": "await restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 1107,
+     "text": "await startSelected()",
+     "tier": "production"
+    }
+   ],
+   "production": [
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 233,
+     "text": "await svc.startSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 265,
+     "text": "await svc.restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/App/Settings.swift",
+     "line": 243,
+     "text": "await svc.restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 687,
+     "text": "await startSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 823,
+     "text": "public func startSelected() async {",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 864,
+     "text": "public func restartSelected() async {",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 871,
+     "text": "await startSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 1105,
+     "text": "await restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 1107,
+     "text": "await startSelected()",
+     "tier": "production"
+    }
+   ],
+   "test": []
+  },
+  "restartSelected()": {
+   "purpose": "what restarts it",
+   "hits": [
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 265,
+     "text": "await svc.restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/App/Settings.swift",
+     "line": 243,
+     "text": "await svc.restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 864,
+     "text": "public func restartSelected() async {",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 1105,
+     "text": "await restartSelected()",
+     "tier": "production"
+    }
+   ],
+   "production": [
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 265,
+     "text": "await svc.restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/App/Settings.swift",
+     "line": 243,
+     "text": "await svc.restartSelected()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 864,
+     "text": "public func restartSelected() async {",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 1105,
+     "text": "await restartSelected()",
+     "tier": "production"
+    }
+   ],
+   "test": []
+  },
+  "Service(": {
+   "purpose": "direct instantiation",
+   "hits": [
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 79,
+     "text": "restartService()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 260,
+     "text": "private func restartService() {",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/Protocol/HTTPServer.swift",
+     "line": 769,
+     "text": "newListener.service = NWListener.Service(",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 520,
+     "text": "public static let shared = Service()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGoTests/ExternalServerAdoptionTests.swift",
+     "line": 36,
+     "text": "let service = Service()",
+     "tier": "test"
+    },
+    {
+     "file": "SimiGoTests/ExternalServerAdoptionTests.swift",
+     "line": 53,
+     "text": "let service = Service()",
+     "tier": "test"
+    },
+    {
+     "file": "SimiGoTests/ExternalServerAdoptionTests.swift",
+     "line": 69,
+     "text": "let service = Service()",
+     "tier": "test"
+    }
+   ],
+   "production": [
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 79,
+     "text": "restartService()",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/App/MenuApp.swift",
+     "line": 260,
+     "text": "private func restartService() {",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/Protocol/HTTPServer.swift",
+     "line": 769,
+     "text": "newListener.service = NWListener.Service(",
+     "tier": "production"
+    },
+    {
+     "file": "SimiGo/System/Service.swift",
+     "line": 520,
+     "text": "public static let shared = Service()",
+     "tier": "production"
+    }
+   ],
+   "test": [
+    {
+     "file": "SimiGoTests/ExternalServerAdoptionTests.swift",
+     "line": 36,
+     "text": "let service = Service()",
+     "tier": "test"
+    },
+    {
+     "file": "SimiGoTests/ExternalServerAdoptionTests.swift",
+     "line": 53,
+     "text": "let service = Service()",
+     "tier": "test"
+    },
+    {
+     "file": "SimiGoTests/ExternalServerAdoptionTests.swift",
+     "line": 69,
+     "text": "let service = Service()",
+     "tier": "test"
+    }
+   ]
+  }
+ },
+ "findings": {
+  "facade_holders_in_production": [
+   "SimiGo/App/StatusBarCoordinator.swift"
+  ],
+  "start_selectors_in_production_outside_Service": [
+   "SimiGo/App/MenuApp.swift:233",
+   "SimiGo/App/MenuApp.swift:265",
+   "SimiGo/App/Settings.swift:243"
+  ],
+  "start_selectors_in_tests": [],
+  "only_appkit_callers": true,
+  "statement": "No test target and no headless entry calls Service.startSelected(); the only production triggers live in the AppKit layer (menu panel, settings, and Service's own auto-restart). The Service/HTTP gate therefore cannot execute the facade without either a GUI operation or a new product entry."
+ }
+}

@@ -1,0 +1,1 @@
+headless fail-closed: unsupported SIMIGO_HEADLESS_ROLE 'bogus' (allowed: produce|consume)

@@ -1,0 +1,86 @@
+{
+ "checks": {
+  "branch_matches_freeze": true,
+  "bundle_file_count_reproduces": true,
+  "bundle_manifest_matches_record": true,
+  "changed_file_digests_reproduce": true,
+  "codesign_verifies_now": true,
+  "dirty_set_matches_freeze": true,
+  "dmg_digest_reproduces": true,
+  "executable_digest_reproduces": true,
+  "executable_size_reproduces": true,
+  "executable_uuid_recorded": true,
+  "head_matches_freeze": true,
+  "info_plist_digest_reproduces": true,
+  "model_file_digests_reproduce": true,
+  "model_files_present": true,
+  "model_single_revision": true,
+  "model_symlinks_unchanged": true
+ },
+ "detail": {
+  "artifact": {
+   "bundle_file_count": 19,
+   "bundle_manifest": {
+    "changed": [],
+    "extra": [],
+    "missing": [],
+    "recomputed_tree_digest": "25b6a2f41946e14b52ea325fc7e1912a73ad2953d27879fe289ef02e18e3b608",
+    "recorded_tree_digest": "25b6a2f41946e14b52ea325fc7e1912a73ad2953d27879fe289ef02e18e3b608",
+    "recorded_tree_digest_reproducible": true
+   },
+   "codesign_stderr": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: valid on disk\n/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-local-acceptance-20261024/install/SimiGo.app: satisfies its Designated Requirement",
+   "codesign_verify_rc": 0,
+   "dmg_sha256": "e3c9f077d8423a9235e4be4b335f3fa01def12b0ce20f21db037221d26712319",
+   "exe_sha256": "cc6fe63c20d52637d6a220a0230b0a9ac7ecc33457437b48eba254f0c2a6659f",
+   "executable_uuid": "5AAD0DF1-3860-3B16-B25F-A6C4AD4AF9E4"
+  },
+  "model": {
+   "digest_mismatch": [],
+   "files": 17,
+   "missing": [],
+   "relinked": [],
+   "revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d"
+  },
+  "source": {
+   "branch": "localb-b3-closure-20261016",
+   "changed_file_digest_drift": [],
+   "dirty_count": 13,
+   "dirty_paths": [
+    "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift",
+    "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift",
+    "Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift",
+    "Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBProductionSignerTests.swift",
+    "Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift",
+    "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
+    "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift",
+    "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift",
+    "SimiGo.xcodeproj/project.pbxproj",
+    "SimiGo/App/CloudBackend.swift",
+    "SimiGo/Headless/SimiGoG1G3Entry.swift",
+    "SimiGoTests/CloudBackendTests.swift",
+    "SimiGoTests/LOCALBTransportWiringTests.swift"
+   ],
+   "frozen_dirty_count": 13,
+   "frozen_dirty_paths": [
+    "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBProductionSigner.swift",
+    "Packages/LOCALBCore/Sources/LOCALBCore/LOCALBTransportIdentityStore.swift",
+    "Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBHostBootstrapTests.swift",
+    "Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBProductionSignerTests.swift",
+    "Packages/LOCALBCore/Tests/LOCALBCoreTests/LOCALBTransportIdentityStoreTests.swift",
+    "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
+    "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift",
+    "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift",
+    "SimiGo.xcodeproj/project.pbxproj",
+    "SimiGo/App/CloudBackend.swift",
+    "SimiGo/Headless/SimiGoG1G3Entry.swift",
+    "SimiGoTests/CloudBackendTests.swift",
+    "SimiGoTests/LOCALBTransportWiringTests.swift"
+   ],
+   "frozen_head": "f18d65f8f312ffbb837fdf5e07125af044833854",
+   "head": "f18d65f8f312ffbb837fdf5e07125af044833854"
+  }
+ },
+ "generated_at": "2026-10-24T03:20:04+0800",
+ "note": "Every identity is recomputed from disk in this run; no value is copied from a verdict file.",
+ "verdict": "PASS"
+}

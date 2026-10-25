@@ -1,0 +1,962 @@
+diff --git a/execution-information-loop/production_runtime_bridge.py b/execution-information-loop/production_runtime_bridge.py
+index 7479caf6..d1e00c06 100644
+--- a/execution-information-loop/production_runtime_bridge.py
++++ b/execution-information-loop/production_runtime_bridge.py
+@@ -46,6 +46,15 @@ REQUIRED_ITEMS = [
+     *[f"REAL-{index}" for index in range(1, 8)],
+ ]
+ 
++# Real-model handoff task (isolated run): one registered source, two model
++# items. The continuation point is deliberately the production one so the
++# existing Swift status/recovery/checkpoint authority reads the same lineage.
++TASK_SOURCE_ID = "TASK-SOURCE"
++TASK_U1_ID = "TASK-U1"
++TASK_U2_ID = "TASK-U2"
++TASK_DEMAND_U1 = "handoff-u1"
++TASK_DEMAND_U2 = "handoff-u2"
++
+ 
+ def emit(value: dict) -> None:
+     print(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+@@ -146,6 +155,9 @@ def _open_status(loop: CarrierInformationLoop) -> dict:
+         restored = loop.restore_continuation(CONTINUATION_POINT)
+         state: Optional[dict] = restored["state"]
+         required = restored["required_item_ids"]
++        # A real-model handoff may use its own demand on the same continuation
++        # point; report that demand rather than an unrelated one.
++        demand = restored["demand"]
+     except Exception:
+         restored = None
+         state = loop.latest_execution_state(CONTINUATION_POINT)
+@@ -456,6 +468,393 @@ def diagnostics(args: argparse.Namespace) -> None:
+     emit(value)
+ 
+ 
++def _task_material(run_label: str, secret_override: str | None = None) -> dict:
++    """Deterministic task material, so the run is reproducible from its label.
++
++    ``secret_override`` lets a controlled experiment bind a high-entropy nonce
++    to the SAME task shape.  It changes only the material, not the task graph.
++    """
++    if secret_override is not None:
++        secret = secret_override
++        if not secret or len(secret) > 64 or not secret.isalnum():
++            raise ValueError("secret override must be 1-64 alphanumeric characters")
++    else:
++        secret = "K" + hashlib.sha256(
++            ("secret:" + run_label).encode("utf-8")
++        ).hexdigest()[:5].upper()
++    checksum = hashlib.sha256(
++        ("checksum:" + run_label).encode("utf-8")
++    ).hexdigest()[:4]
++    log_text = "\n".join([
++        "SIMIGO-SESSION-LOG-V1",
++        "run=%s" % run_label,
++        "site=lab-north",
++        "secret=%s" % secret,
++        "checksum=%s" % checksum,
++    ])
++    return {"secret": secret, "checksum": checksum, "log_text": log_text}
++
++
++def _settlement_basis(
++    source_payload: dict,
++    result_value: dict,
++    source_version: str,
++    dependency_object_ids: dict,
++    evaluated_at_utc: str,
++    valid_until_utc: str,
++    validity_policy: dict,
++) -> dict:
++    return {
++        "source_payload_sha256": digest(source_payload),
++        "result_value_sha256": digest(result_value),
++        "source_version": source_version,
++        "dependency_object_ids": dependency_object_ids,
++        "evaluated_at_utc": evaluated_at_utc,
++        "valid_until_utc": valid_until_utc,
++        "validity_policy": validity_policy,
++    }
++
++
++def define_task(args: argparse.Namespace) -> None:
++    """Create the isolated handoff task: registered source + two model items.
++
++    The source is settled here with the ordinary settlement contract (its
++    "computation" is deterministic registration). No execution state is
++    recorded, so this registration never impersonates runtime work.
++    """
++    validity_policy = load_deployment_validity_policy()
++    valid_until = deployment_default_validity(validity_policy)
++    if args.valid_until and args.valid_until != valid_until:
++        raise ValueError("command validity conflicts with deployment validity policy")
++    parse_utc(args.evaluated_at)
++    material = _task_material(args.run_label, getattr(args, "secret", None))
++    log_text = material["log_text"]
++    source_version = "v1:%s" % args.run_label
++
++    loop = CarrierInformationLoop.create(args.database)
++    try:
++        source_payload = {
++            "schema_id": "SIMIGO-HANDOFF-SESSION-LOG-V1",
++            "run_label": args.run_label,
++            "site": "lab-north",
++            "log_text": log_text,
++        }
++        source = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_SOURCE_ID,
++            "session-log",
++            source_version,
++            source_payload,
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++        registration_value = {
++            "log_text_sha256": digest(log_text),
++            "secret_sha256": digest(material["secret"]),
++            "checksum": material["checksum"],
++            "site": "lab-north",
++            "run_label": args.run_label,
++        }
++        registration_basis = _settlement_basis(
++            source_payload,
++            registration_value,
++            source_version,
++            {},
++            args.evaluated_at,
++            valid_until,
++            validity_policy,
++        )
++        registration = loop.settle(
++            "handoff-registration",
++            TASK_SOURCE_ID,
++            {"value": registration_value, **registration_basis},
++            registration_basis,
++        )
++
++        seed_text = "\n".join([
++            "SIMIGO-REAL-MODEL-HANDOFF-V1",
++            "You are executing step 1 of a two-step task.",
++            "SESSION LOG:",
++            log_text,
++            "",
++            "Read the session log and extract the value of secret.",
++            "Reply with exactly one line and nothing else: SECRET=<secret>",
++            "Answer:",
++        ])
++        u1_payload = {
++            "schema_id": "SIMIGO-HANDOFF-STEP-V1",
++            "step": 1,
++            "model_task": "extract_secret",
++            "answer_format": "SECRET=<secret>",
++            "prompt_seed": seed_text,
++            "next_input": " ",
++            "source_item_id": TASK_SOURCE_ID,
++        }
++        u1 = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_U1_ID,
++            "model-task",
++            "v1",
++            u1_payload,
++            dependencies=[TASK_SOURCE_ID],
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++
++        u2_payload = {
++            "schema_id": "SIMIGO-HANDOFF-STEP-V1",
++            "step": 2,
++            "model_task": "compose_answer",
++            "answer_format": "ANSWER=<secret>-<checksum>",
++            "next_input_template": (
++                "\nStep 2: the secret from step 1 is {secret}. "
++                "The checksum from the session log is {checksum}.\n"
++                "Reply with exactly one line and nothing else: "
++                "ANSWER=<secret>-<checksum>\nAnswer:"
++            ),
++            "source_item_ids": [TASK_SOURCE_ID, TASK_U1_ID],
++        }
++        u2 = loop.put_source(
++            CONTINUATION_POINT,
++            TASK_U2_ID,
++            "model-task",
++            "v1",
++            u2_payload,
++            dependencies=[TASK_SOURCE_ID, TASK_U1_ID],
++            valid_until_utc=valid_until,
++            validity_policy=validity_policy,
++        )
++
++        demand_u1 = loop.define_demand(
++            TASK_DEMAND_U1,
++            continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 1 on the real model"],
++            continuation_conditions=[
++                "registered source is reusable and the model result is settled"
++            ],
++            required_item_ids=[TASK_U1_ID],
++        )
++        demand_u2 = loop.define_demand(
++            TASK_DEMAND_U2,
++            continuation_point=CONTINUATION_POINT,
++            pending_obligations=["execute step 2 on the real model"],
++            continuation_conditions=[
++                "step 1 settlement is reused and step 2 is settled"
++            ],
++            required_item_ids=[TASK_U2_ID],
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "define-task",
++            "run_label": args.run_label,
++            "continuation_point": CONTINUATION_POINT,
++            "source": source,
++            "registration_settlement_object_id": registration["object_id"],
++            "u1": u1,
++            "u2": u2,
++            "demand_u1": demand_u1,
++            "demand_u2": demand_u2,
++            "log_text_sha256": digest(log_text),
++            "secret_sha256": digest(material["secret"]),
++            "checksum": material["checksum"],
++        })
++    finally:
++        loop.close()
++
++
++def read_item(args: argparse.Namespace) -> None:
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        item = loop.current_item(args.item_id)
++        if item is None:
++            raise ValueError(f"unknown item: {args.item_id}")
++        settlement = loop.current_settlement(args.item_id)
++        emit({
++            "ok": True,
++            "command": "read-item",
++            "item": item,
++            "settlement_state": settlement.get("state") if settlement else None,
++            "settlement_object_id": (
++                settlement.get("_object_id") if settlement else None
++            ),
++        })
++    finally:
++        loop.close()
++
++
++def read_settlement(args: argparse.Namespace) -> None:
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        settlement = loop.current_settlement(args.item_id)
++        if settlement is None:
++            raise ValueError(f"item has no settlement: {args.item_id}")
++        emit({
++            "ok": True,
++            "command": "read-settlement",
++            "item_id": args.item_id,
++            "settlement": settlement,
++        })
++    finally:
++        loop.close()
++
++
++def _validate_model_value(
++    item_id: str,
++    value: dict,
++    dependency_values: dict,
++) -> None:
++    """Task result validator: the model value must agree with settled deps.
++
++    This is NOT a computation. It refuses a value that the model could not
++    have produced from the settled dependency results, so an externally
++    supplied model output can never be settled against unrelated information.
++    """
++    generated_tokens = value.get("generated_token_ids")
++    if not isinstance(generated_tokens, list) or not generated_tokens:
++        raise ValueError("model value carries no generated tokens")
++    if not isinstance(value.get("model_snapshot_revision"), str) or not value[
++        "model_snapshot_revision"
++    ]:
++        raise ValueError("model value carries no model snapshot identity")
++    if item_id == TASK_U1_ID:
++        source_value = dependency_values.get(TASK_SOURCE_ID)
++        if not isinstance(source_value, dict):
++            raise ValueError("step 1 requires the settled session-log dependency")
++        secret = value.get("secret")
++        if not isinstance(secret, str) or not secret:
++            raise ValueError("model value carries no extracted secret")
++        if digest(secret) != source_value.get("secret_sha256"):
++            raise ValueError(
++                "extracted secret does not match the settled session-log commitment"
++            )
++        return
++    if item_id == TASK_U2_ID:
++        log_value = dependency_values.get(TASK_SOURCE_ID)
++        u1_value = dependency_values.get(TASK_U1_ID)
++        if not isinstance(log_value, dict) or not isinstance(u1_value, dict):
++            raise ValueError("step 2 requires both settled dependencies")
++        expected = "%s-%s" % (u1_value.get("secret"), log_value.get("checksum"))
++        if value.get("answer") != expected:
++            raise ValueError(
++                "model answer does not match the settled secret and checksum"
++            )
++        return
++    raise ValueError(f"unrecognized model task item: {item_id}")
++
++
++def execute_with_model_result(args: argparse.Namespace) -> None:
++    """Settle a model-produced result through the ordinary demand machinery.
++
++    The model ran in the Swift runtime BEFORE this call. The calculator is
++    restricted to exactly the item the model computed: if any dependency is
++    not reusable, the demand machinery asks the calculator for it and this
++    command fails closed instead of settling work the model never performed.
++    """
++    validity_policy = load_deployment_validity_policy()
++    with open(args.value_file, "r", encoding="utf-8") as handle:
++        value = json.load(handle)
++    if not isinstance(value, dict):
++        raise ValueError("model result value must be a JSON object")
++
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        def calculator(item_id: str, source_payload: dict, dependency_values: dict) -> dict:
++            if item_id != args.item_id:
++                raise ValueError(
++                    "model result is only valid for %s; dependency %s was not reusable"
++                    % (args.item_id, item_id)
++                )
++            _validate_model_value(item_id, value, dependency_values)
++            return value
++
++        result = loop.execute_demand(
++            args.demand_id,
++            args.advancement,
++            calculator,
++            evaluated_at_utc=args.evaluated_at,
++            expected_validity_policy_sha256=validity_policy["policy_sha256"],
++            require_deployment_policy=True,
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "execute-with-model-result",
++            "item_id": args.item_id,
++            "demand_id": args.demand_id,
++            "result": result,
++        })
++    finally:
++        loop.close()
++
++
++def execute_probe(args: argparse.Namespace) -> None:
++    """Model-free dependency-closure probe: settle whatever is not reusable.
++
++    Used on an isolated COPY of a run database after invalidation, to prove
++    which items the dependency closure actually recomputes. It never loads a
++    model and never touches the authoritative run database.
++    """
++    validity_policy = (
++        load_deployment_validity_policy()
++        if os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH")
++        else None
++    )
++    loop = CarrierInformationLoop.open(args.database)
++    try:
++        def calculator(item_id: str, source_payload: dict, dependency_values: dict) -> dict:
++            return {
++                "probe_marker": digest({
++                    "item_id": item_id,
++                    "source_payload_sha256": digest(source_payload),
++                    "dependency_item_ids": sorted(dependency_values),
++                })
++            }
++
++        result = loop.execute_demand(
++            args.demand_id,
++            args.advancement,
++            calculator,
++            evaluated_at_utc=args.evaluated_at,
++            expected_validity_policy_sha256=(
++                validity_policy["policy_sha256"] if validity_policy else None
++            ),
++            require_deployment_policy=bool(validity_policy),
++        )
++        loop.commit()
++        emit({
++            "ok": True,
++            "command": "execute-probe",
++            "demand_id": args.demand_id,
++            "result": result,
++        })
++    finally:
++        loop.close()
++
++
++def snapshot_database(args: argparse.Namespace) -> None:
++    """Consistent SQLite backup, so probes never run on a live file copy."""
++    import sqlite3
++
++    destination = Path(args.destination)
++    if destination.exists() or destination.is_symlink():
++        raise FileExistsError(destination)
++    source = sqlite3.connect(str(Path(args.database).resolve()))
++    target = sqlite3.connect(str(destination))
++    try:
++        source.backup(target)
++        target.commit()
++    finally:
++        target.close()
++        source.close()
++    emit({
++        "ok": True,
++        "command": "snapshot-database",
++        "source": str(Path(args.database).resolve()),
++        "destination": str(destination.resolve()),
++    })
++
++
+ def main() -> int:
+     parser = argparse.ArgumentParser()
+     subparsers = parser.add_subparsers(dest="command", required=True)
+@@ -520,6 +919,49 @@ def main() -> int:
+     diagnostics_parser.add_argument("--evaluated-at", required=True)
+     diagnostics_parser.set_defaults(handler=diagnostics)
+ 
++    define_task_parser = subparsers.add_parser("define-task")
++    define_task_parser.add_argument("--database", required=True)
++    define_task_parser.add_argument("--evaluated-at", required=True)
++    define_task_parser.add_argument("--run-label", required=True)
++    define_task_parser.add_argument(
++        "--secret",
++        default=None,
++        help="controlled nonce override; does not change the task graph",
++    )
++    define_task_parser.add_argument("--valid-until")
++    define_task_parser.set_defaults(handler=define_task)
++
++    read_item_parser = subparsers.add_parser("read-item")
++    read_item_parser.add_argument("--database", required=True)
++    read_item_parser.add_argument("--item-id", required=True)
++    read_item_parser.set_defaults(handler=read_item)
++
++    read_settlement_parser = subparsers.add_parser("read-settlement")
++    read_settlement_parser.add_argument("--database", required=True)
++    read_settlement_parser.add_argument("--item-id", required=True)
++    read_settlement_parser.set_defaults(handler=read_settlement)
++
++    model_result_parser = subparsers.add_parser("execute-with-model-result")
++    model_result_parser.add_argument("--database", required=True)
++    model_result_parser.add_argument("--demand-id", required=True)
++    model_result_parser.add_argument("--advancement", required=True)
++    model_result_parser.add_argument("--evaluated-at", required=True)
++    model_result_parser.add_argument("--item-id", required=True)
++    model_result_parser.add_argument("--value-file", required=True)
++    model_result_parser.set_defaults(handler=execute_with_model_result)
++
++    probe_parser = subparsers.add_parser("execute-probe")
++    probe_parser.add_argument("--database", required=True)
++    probe_parser.add_argument("--demand-id", required=True)
++    probe_parser.add_argument("--advancement", required=True)
++    probe_parser.add_argument("--evaluated-at", required=True)
++    probe_parser.set_defaults(handler=execute_probe)
++
++    snapshot_parser = subparsers.add_parser("snapshot-database")
++    snapshot_parser.add_argument("--database", required=True)
++    snapshot_parser.add_argument("--destination", required=True)
++    snapshot_parser.set_defaults(handler=snapshot_database)
++
+     args = parser.parse_args()
+     try:
+         args.handler(args)
+diff --git a/simigo2-experimental/Package.swift b/simigo2-experimental/Package.swift
+index 8f3ca384..0f93616b 100644
+--- a/simigo2-experimental/Package.swift
++++ b/simigo2-experimental/Package.swift
+@@ -12,9 +12,21 @@ let package = Package(
+         .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
+         .executable(name: "simigo2ctl", targets: ["simigo2ctl"]),
+         .executable(name: "ActualMLXSmokeChild", targets: ["ActualMLXSmokeChild"]),
++        // Real-model ES -> IS -> fresh-ES handoff: stage A settles a model result
++        // into IS and releases the carrier, stage C recovers a fresh ES in a new
++        // process and continues with only the remaining model work.
++        .executable(name: "RealModelHandoff", targets: ["RealModelHandoff"]),
+         .executable(name: "EngineBaselineCrashChild", targets: ["EngineBaselineCrashChild"]),
+         .executable(name: "MaterializationQuarantineCrashChild", targets: ["MaterializationQuarantineCrashChild"]),
+         .executable(name: "ExecutionStateChaosChild", targets: ["ExecutionStateChaosChild"]),
++        .executable(name: "g3-swift-isolation-entry", targets: ["G3SwiftIsolationEntry"]),
++        // G6/G7b: the real D1 worker and supervisor. Both are contract-only
++        // (SimiGoRuntimeContract), so they cannot reach the ungated executor
++        // surface (SimiGo2Experimental) and are model-free: the isolation gate
++        // refuses under the empty trust registry before any model call or
++        // binding consumption (G8a). Their identity is bound by G3_EXPECT_EXEC_SHA256.
++        .executable(name: "G3D1Worker", targets: ["G3D1Worker"]),
++        .executable(name: "G3D1Supervisor", targets: ["G3D1Supervisor"]),
+         .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
+     ],
+     dependencies: [
+@@ -74,6 +86,18 @@ let package = Package(
+                 .product(name: "Tokenizers", package: "swift-transformers")
+             ]
+         ),
++        .executableTarget(
++            name: "RealModelHandoff",
++            dependencies: [
++                "SimiGo2Experimental",
++                "SimiGoRuntimeContract",
++                .product(name: "MLX", package: "mlx-swift"),
++                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
++                .product(name: "MLXLLM", package: "mlx-swift-lm"),
++                .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
++                .product(name: "Tokenizers", package: "swift-transformers")
++            ]
++        ),
+         .executableTarget(
+             name: "SimiGo2App",
+             dependencies: ["SimiGo2Experimental"]
+@@ -90,6 +114,34 @@ let package = Package(
+             name: "ExecutionStateChaosChild",
+             dependencies: ["SimiGo2Experimental"]
+         ),
++        // Native G3 isolation-gate control point, invoked by the Python research
++        // harness. MLX-free and model-free: it only exercises the gate's control
++        // flow (attestation -> requireIsolation -> generation), so the boundary
++        // is callable and testable without loading a model or the MLX runtime.
++        .executableTarget(
++            name: "G3SwiftIsolationEntry",
++            dependencies: ["SimiGoRuntimeContract"]
++        ),
++        // G3D1WorkerCore: the shared, contract-only logic for the D1 worker and
++        // supervisor (identity self-check, one-shot authorization, model-free
++        // gated dual-arm control flow, auditable records). It MUST NOT depend on
++        // SimiGo2Experimental — that is the G8b-A boundary the manifest checks.
++        .target(
++            name: "G3D1WorkerCore",
++            dependencies: ["SimiGoRuntimeContract"]
++        ),
++        .executableTarget(
++            name: "G3D1Worker",
++            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
++        ),
++        .executableTarget(
++            name: "G3D1Supervisor",
++            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
++        ),
++        .testTarget(
++            name: "G3D1SupervisorTests",
++            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
++        ),
+         .testTarget(
+             name: "SimiGoRuntimeContractTests",
+             dependencies: ["SimiGoRuntimeContract"]
+@@ -98,11 +150,11 @@ let package = Package(
+             name: "SimiGo2ExperimentalTests",
+             dependencies: [
+                 "SimiGo2Experimental", "SimiGoRuntimeContract",
+-                // NativeMLXCarrierReleaseTests drives the real MLX runtime (genuine
+-                // KVCacheSimple + write observer + storage identity) with synthetic
+-                // CPU tensors and no model weights, so the test target links the MLX
+-                // products directly. No executable target or G3/D1 config changes.
+                 .product(name: "MLX", package: "mlx-swift"),
++                // The real KV cache under test (KVCacheSimple.update) lives in
++                // MLXLMCommon; linking it lets the during-generation allocation
++                // gateway be exercised against the genuine cache lifecycle without
++                // loading a model.
+                 .product(name: "MLXLMCommon", package: "mlx-swift-lm")
+             ]
+         )
+diff --git a/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift b/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+index 40a78ca1..30169464 100644
+--- a/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
++++ b/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+@@ -64,6 +64,49 @@ public struct ProductionRuntimeBridgeReport: Equatable, Sendable {
+   public let resultDigest: String
+ }
+ 
++/// One settlement action the Information Space actually took while resolving a
++/// task demand. `settlementObjectID` identifies the physical settlement record
++/// the value came from, so a later stage can prove it reused the SAME settled
++/// object instead of merely reaching an equal answer.
++public struct ProductionTaskSettlementAction: Equatable, Sendable {
++  public let itemID: String
++  public let action: String
++  public let settlementObjectID: String
++  public let resultDigest: String
++
++  public init(itemID: String, action: String, settlementObjectID: String, resultDigest: String) {
++    self.itemID = itemID
++    self.action = action
++    self.settlementObjectID = settlementObjectID
++    self.resultDigest = resultDigest
++  }
++}
++
++/// Evidence for one real-model task advancement: what the model consumed, what
++/// it produced, which items the Information Space reused vs recomputed, and the
++/// IS runtime-application confirmation the ES checkpoint is bound to.
++public struct ProductionTaskContinuationReport: Equatable, Sendable {
++  public let demandID: String
++  public let taskItemID: String
++  public let created: Bool
++  public let computedItemIDs: [String]
++  public let reusedItemIDs: [String]
++  public let settlementActions: [ProductionTaskSettlementAction]
++  public let resultDigest: String
++  public let isPendingStateID: String
++  public let isConfirmationStateID: String
++  public let advancedPosition: Int64
++  public let advancedLifecycle: String
++  public let consumedPrefixLength: Int
++  public let nextInputTokenCount: Int
++  public let generatedTokenIDs: [Int]
++  public let generatedText: String
++  public let updatedPrefixTokenCount: Int
++  public let tokenizeSeedCallCount: Int
++  public let tokenizeNextInputCallCount: Int
++  public let modelContinuationCallCount: Int
++}
++
+ public struct SerializedProductionExecutionState: Codable, Equatable, Sendable {
+   public let id: String
+   public let lineageRoot: String
+@@ -873,4 +916,337 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable
+       )
+     )
+   }
++
++  // MARK: - Real-model task continuation (model result settled into IS)
++
++  /// Run one task step on the real model executor and settle ITS RESULT into the
++  /// Information Space through the ordinary demand machinery.
++  ///
++  /// Ordering is deliberate and differs from ``continueWithRealInformation``:
++  /// the model produces the value FIRST (from the ES's bound representation),
++  /// then the value is settled, then the ES advances and rebinds the advanced
++  /// representation, then IS confirms runtime application. The bridge accepts a
++  /// model result only for exactly one item; if any dependency is not reusable
++  /// the settlement refuses instead of covering work the model never did.
++  ///
++  /// `handle == nil` creates a fresh ES seeded with `seedText`. Passing a
++  /// recovered handle resumes the durable representation; a missing persisted
++  /// representation fails closed rather than fabricating a seed prefix.
++  public func continueTask(
++    database: URL,
++    handle: ExecutionStateHandle?,
++    advancementID: String,
++    evaluatedAtUTC: String,
++    demandID: String,
++    taskItemID: String,
++    seedText: String?,
++    nextInputText: String,
++    maxTokens: Int = 32,
++    modelValue: (ExecutionContinuationResult) throws -> [String: Any]
++  ) async throws -> (handle: ExecutionStateHandle, report: ProductionTaskContinuationReport) {
++    // Fail closed BEFORE any new side effect when this ES already carries a
++    // settlement checkpoint that no longer matches IS's current settled state.
++    if let checkpoint = runtime.settlementCheckpoint(for: Self.executionID) {
++      let preExecutionISState = try informationSpaceLatestExecutionState(database: database)
++      try validateSettlementAgainstInformationSpace(
++        checkpoint: checkpoint,
++        isState: preExecutionISState,
++        handle: handle
++      )
++      if stateStore != nil, let handle,
++         (try? backend.boundPrefix(for: handle)) == nil,
++         !runtime.hasPersistedRepresentation(
++          executionID: handle.id, position: handle.position) {
++        throw ProductionRuntimeInformationError.persistedRepresentationUnavailable(
++          executionID: handle.id.rawValue,
++          position: handle.position.value
++        )
++      }
++    }
++    guard let modelExecutor else {
++      throw ProductionRuntimeInformationError.modelExecutorUnavailable
++    }
++
++    var tokenizeSeedCallCount = 0
++    var tokenizeNextInputCallCount = 0
++    var modelContinuationCallCount = 0
++    tokenizeNextInputCallCount += 1
++    let nextInputTokens = try await modelExecutor.tokenizeText(nextInputText)
++
++    var created = false
++    var current: ExecutionStateHandle?
++    var priorRepresentation: ExecutionRepresentation?
++    var advanced: ExecutionStateHandle?
++    var modelResult: ExecutionContinuationResult?
++    var failureStage: String?
++    var settledConfirmationState: [String: Any]?
++    var bridgeComputed: [String] = []
++    var bridgeReused: [String] = []
++    var bridgeActions: [ProductionTaskSettlementAction] = []
++    var bridgeResultDigest = ""
++    var pendingStateID = ""
++    var valueFileURL: URL?
++
++    func failPending(_ stage: String, _ reason: String) throws {
++      _ = try runBridge("record-blocked", arguments: [
++        "--database", database.path,
++        "--state-id", "\(pendingStateID.isEmpty ? advancementID : pendingStateID):\(stage)-failed",
++        "--prior-state-id", pendingStateID.isEmpty ? advancementID : pendingStateID,
++        "--reason", "\(stage): \(reason)",
++      ])
++    }
++
++    do {
++      failureStage = "runtime_create_or_attach"
++      if let handle {
++        if runtime.handle(handle.id) != nil {
++          current = try await runtime.reattach(handle)
++        } else {
++          current = try await runtime.attach(handle)
++        }
++        guard let attached = current else {
++          throw ProductionRuntimeInformationError.modelExecutionFailed(reason: "runtime handle unavailable")
++        }
++        // Recovery priority: rebind the PERSISTED representation. Re-tokenizing
++        // a seed here would fabricate a prefix and masquerade as recovered work.
++        if (try? backend.boundPrefix(for: attached)) == nil {
++          failureStage = "representation_recovery_rebind"
++          let reboundFromDurableState = try await runtime.restorePersistedBinding(
++            executionID: attached.id,
++            position: attached.position
++          )
++          guard reboundFromDurableState, stateStore != nil else {
++            throw ProductionRuntimeInformationError.persistedRepresentationUnavailable(
++              executionID: attached.id.rawValue,
++              position: attached.position.value
++            )
++          }
++        }
++      } else {
++        guard let seedText else {
++          throw ProductionRuntimeInformationError.modelExecutionFailed(
++            reason: "a fresh execution requires seed text")
++        }
++        failureStage = "tokenize_seed"
++        tokenizeSeedCallCount += 1
++        let seedTokens = try await modelExecutor.tokenizeSeedText(seedText)
++        created = true
++        failureStage = "runtime_create_or_attach"
++        let fresh = try await runtime.create(
++          id: Self.executionID,
++          position: ExecutionPosition(0),
++          continuation: ExecutionContinuation(
++            nextInput: "\(Self.continuationPoint)-initial",
++            continuationID: "\(Self.continuationPoint)-initial-cont"
++          )
++        )
++        current = fresh
++        failureStage = "representation_binding"
++        try await runtime.bindRepresentation(
++          executionID: fresh.id,
++          position: fresh.position,
++          payload: MLXPrefixPayload(tokenPrefix: seedTokens)
++        )
++      }
++      guard let current else {
++        throw ProductionRuntimeInformationError.modelExecutionFailed(reason: "runtime handle unavailable")
++      }
++      failureStage = "capture_pre_model_representation"
++      priorRepresentation = try await backend.captureRepresentation(for: current)
++
++      failureStage = "model_execution"
++      modelContinuationCallCount += 1
++      let produced = try await modelExecutor.continueExecution(
++        current,
++        nextInputTokens: nextInputTokens,
++        maxTokens: maxTokens
++      )
++      modelResult = produced
++
++      failureStage = "model_result_preparation"
++      let value = try modelValue(produced)
++      let valueData = try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
++      let valueURL = FileManager.default.temporaryDirectory
++        .appendingPathComponent("simigo-model-result-\(UUID().uuidString).json")
++      try valueData.write(to: valueURL, options: .atomic)
++      valueFileURL = valueURL
++
++      failureStage = "information_settlement"
++      let response = try runBridge("execute-with-model-result", arguments: [
++        "--database", database.path,
++        "--demand-id", demandID,
++        "--advancement", advancementID,
++        "--evaluated-at", evaluatedAtUTC,
++        "--item-id", taskItemID,
++        "--value-file", valueURL.path,
++      ])
++      guard let result = response["result"] as? [String: Any] else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute-with-model-result")
++      }
++      let state = result["state"] as? String ?? "UNKNOWN"
++      guard result["advanced"] as? Bool == true, state == "ADVANCED" else {
++        throw ProductionRuntimeInformationError.blockedInformationDemand(
++          command: advancementID,
++          state: state,
++          validityFailureItemIDs: result["validity_failure_item_ids"] as? [String] ?? []
++        )
++      }
++      guard let executionState = result["execution_state"] as? [String: Any],
++            let unwrappedPendingStateID = executionState["state_id"] as? String else {
++        throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute-with-model-result")
++      }
++      pendingStateID = unwrappedPendingStateID
++      bridgeComputed = result["computed_item_ids"] as? [String] ?? []
++      bridgeReused = result["reused_item_ids"] as? [String] ?? []
++      bridgeActions = (result["actions"] as? [[String: Any]] ?? []).map { action in
++        ProductionTaskSettlementAction(
++          itemID: action["item_id"] as? String ?? "",
++          action: action["action"] as? String ?? "",
++          settlementObjectID: action["settlement_object_id"] as? String ?? "",
++          resultDigest: action["result_digest"] as? String ?? ""
++        )
++      }
++      let resultPayload = result["result"] as? [String: Any] ?? [:]
++      let resultData = try JSONSerialization.data(withJSONObject: resultPayload, options: [.sortedKeys])
++      bridgeResultDigest = SHA256.hash(data: resultData).map { String(format: "%02x", $0) }.joined()
++
++      failureStage = "logical_advance"
++      advanced = try await runtime.continueExecution(
++        current,
++        continuation: ExecutionContinuation(
++          nextInput: "\(Self.continuationPoint):\(advancementID)",
++          continuationID: "\(Self.continuationPoint):\(advancementID):cont"
++        )
++      )
++      failureStage = "representation_binding"
++      guard let unwrappedAdvanced = advanced, let unwrappedModelResult = modelResult else {
++        throw ProductionRuntimeInformationError.modelExecutionFailed(
++          reason: "runtime continuation result missing")
++      }
++      try await runtime.bindRepresentation(
++        executionID: unwrappedAdvanced.id,
++        position: unwrappedAdvanced.position,
++        payload: unwrappedModelResult.updatedPayload
++      )
++      failureStage = "post_bind_verification"
++      _ = try backend.boundPrefix(for: unwrappedAdvanced)
++      failureStage = "carrier_confirmation"
++      let confirmationResponse = try runBridge(
++        "confirm-runtime-application",
++        arguments: ["--database", database.path, "--state-id", pendingStateID]
++      )
++      settledConfirmationState = confirmationResponse["execution_state"] as? [String: Any]
++    } catch {
++      failureStage = failureStage ?? "unclassified"
++      try? failPending(failureStage!, String(describing: error))
++      if let priorRepresentation {
++        try? await backend.restoreRepresentation(priorRepresentation)
++      }
++      if let base = current {
++        try? await runtime.restore(
++          base,
++          request: ExecutionRestoreRequest(
++            targetPosition: base.position,
++            continuation: base.continuation
++          )
++        )
++      }
++      if let terminal = advanced ?? current {
++        try? await runtime.discard(terminal)
++        backend.consumeBinding(for: terminal)
++      }
++      if let valueFileURL { try? FileManager.default.removeItem(at: valueFileURL) }
++      throw ProductionRuntimeInformationError.modelExecutionFailed(
++        reason: "[\(failureStage ?? "unclassified")] \(error)"
++      )
++    }
++    if let valueFileURL { try? FileManager.default.removeItem(at: valueFileURL) }
++
++    // Bind the ES↔IS checkpoint to the authoritative confirmation record, so a
++    // later recovery can prove the recovered ES matches IS's latest settlement.
++    if stateStore != nil,
++       let confirmedState = settledConfirmationState,
++       let confirmationStateID = confirmedState["state_id"] as? String,
++       let confirmationPriorID = confirmedState["prior_state_id"] as? String,
++       let isResultDigest = confirmedState["result_digest"] as? String,
++       let isValidityBasis = confirmedState["demand_digest"] as? String,
++       let advancedHandle = advanced {
++      try await runtime.recordSettlementCheckpoint(
++        ExecutionContinuityCoordinator.SettlementCheckpoint(
++          executionID: advancedHandle.id,
++          position: advancedHandle.position,
++          lastSettledAdvancementID: advancementID,
++          isOriginalStateID: confirmationPriorID,
++          isConfirmationStateID: confirmationStateID,
++          resultDigest: isResultDigest,
++          validityBasis: isValidityBasis
++        )
++      )
++    }
++
++    guard let advancedHandle = advanced,
++          let produced = modelResult,
++          let confirmation = settledConfirmationState,
++          let confirmationStateID = confirmation["state_id"] as? String,
++          let updatedPrefix = (produced.updatedPayload as? MLXPrefixPayload)?.tokenPrefix else {
++      throw ProductionRuntimeInformationError.modelExecutionFailed(
++        reason: "task continuation evidence unavailable")
++    }
++    let report = ProductionTaskContinuationReport(
++      demandID: demandID,
++      taskItemID: taskItemID,
++      created: created,
++      computedItemIDs: bridgeComputed,
++      reusedItemIDs: bridgeReused,
++      settlementActions: bridgeActions,
++      resultDigest: bridgeResultDigest,
++      isPendingStateID: pendingStateID,
++      isConfirmationStateID: confirmationStateID,
++      advancedPosition: advancedHandle.position.value,
++      advancedLifecycle: advancedHandle.lifecycle.rawValue,
++      consumedPrefixLength: produced.consumedPrefixLength,
++      nextInputTokenCount: produced.nextInputTokenCount,
++      generatedTokenIDs: produced.generatedTokenIDs,
++      generatedText: produced.generatedText,
++      updatedPrefixTokenCount: updatedPrefix.count,
++      tokenizeSeedCallCount: tokenizeSeedCallCount,
++      tokenizeNextInputCallCount: tokenizeNextInputCallCount,
++      modelContinuationCallCount: modelContinuationCallCount
++    )
++    return (advancedHandle, report)
++  }
++
++  // MARK: - Task bridge accessors
++
++  @discardableResult
++  public func defineTask(
++    database: URL,
++    evaluatedAtUTC: String,
++    runLabel: String,
++    secret: String? = nil
++  ) throws -> [String: Any] {
++    var arguments = [
++      "--database", database.path,
++      "--evaluated-at", evaluatedAtUTC,
++      "--run-label", runLabel,
++    ]
++    if let secret {
++      arguments += ["--secret", secret]
++    }
++    return try runBridge("define-task", arguments: arguments)
++  }
++
++  public func readItem(database: URL, itemID: String) throws -> [String: Any] {
++    try runBridge("read-item", arguments: [
++      "--database", database.path,
++      "--item-id", itemID,
++    ])
++  }
++
++  public func readSettlement(database: URL, itemID: String) throws -> [String: Any] {
++    try runBridge("read-settlement", arguments: [
++      "--database", database.path,
++      "--item-id", itemID,
++    ])
++  }
+ }

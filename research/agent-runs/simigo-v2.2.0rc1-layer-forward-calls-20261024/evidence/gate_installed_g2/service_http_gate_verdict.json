@@ -1,0 +1,89 @@
+{
+ "candidate": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app",
+ "candidate_equals_release_product": true,
+ "deviations": [
+  {
+   "explanation": "503 is HTTPServerError.localbAuthorizationUnavailable, i.e. 'no LOCALB authorization configured at all' - that is scenario S5, measured there at 503. A request that reaches a configured authorization and fails its proof is rejected by the proof gate with 401 before dispatch. The product was NOT changed to return 503 for an unverifiable proof: doing so would blur 'not activated' with 'bad proof'.",
+   "observed": "HTTP 401 at the proof gate (LOCALB_CLIENT_REQUEST_SIGNATURE_INVALID)",
+   "operator_table_expected": "HTTP 503",
+   "scenario": "S2_invalid_proof"
+  },
+  {
+   "note": "the serving leg calls NativeMLX.startWithLOCALB(nil, nil) - the same call Service.start makes - because Service.start also persists SwiftUI preference references into the real user defaults domain, which this batch is forbidden to touch. The Service facade itself is therefore not exercised; the HTTP/LOCALB path it drives is.",
+   "observed": "an env-gated in-product management role (SIMIGO_LOCALB_MGMT) that forwards to LOCALBHostBootstrap.prepareFirstRun/activateInitialSetup and LOCALBPairingCoordinator.issueCredential/preparePairing/approveAndRegister, requires an isolated SIMIGO_HOME, and never runs on an ordinary launch",
+   "operator_authorized": "path 1: prepare/activate + pair prepare/approve calling existing package APIs only",
+   "scenario": "activation_and_pairing_surface"
+  }
+ ],
+ "evidence": {
+  "S1_s2_s3_s4_positive_leg": {
+   "authorized_generation_delta": 8,
+   "authorized_generation_observed": true,
+   "authorized_status_200": true,
+   "client_pinned_host_spki": true,
+   "fabricated_proof_error": "LOCALB_CLIENT_REQUEST_SIGNATURE_INVALID",
+   "fabricated_proof_names_proof_gate": true,
+   "fabricated_proof_refused": true,
+   "fabricated_proof_status": 401,
+   "fabricated_proof_trace_delta": 0,
+   "listener_served_it": true,
+   "missing_headers_error": "LOCALB_CLIENT_PROOF_MISSING",
+   "missing_headers_refused": true,
+   "missing_headers_status": 401,
+   "missing_headers_trace_delta": 0,
+   "model_reported": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+   "no_generation_on_fabricated_proof": true,
+   "no_generation_on_missing_headers": true,
+   "no_generation_on_replay": true,
+   "observed_spki_sha256": "09321823f051c2ae91f7b85044796f065e59a1df963dd23a6f19449c2bff7941",
+   "operational_after_activate": true,
+   "operator_expectation_met": false,
+   "operator_expected_status": 503,
+   "prepare_certificate_spki_sha256": "09321823f051c2ae91f7b85044796f065e59a1df963dd23a6f19449c2bff7941",
+   "replay_error": "{\"error\":{\"message\":\"LOCALB_CLIENT_CHALLENGE_INVALID\",\"type\":\"server_error\",\"param\":null,\"code\":null}}",
+   "replay_first_request_was_served": true,
+   "replay_refused": true,
+   "replay_trace_delta": 0,
+   "response_content": "SERVICE-HTTP-OK",
+   "response_content_non_empty": true,
+   "response_has_choices": true,
+   "response_id_is_chatcmpl": true,
+   "spki_is_hosts_own": true,
+   "trace_file": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/g2A/home/logs/native_mlx_trace.log",
+   "trusted_checkpoint_written_by_activate": true
+  },
+  "S5_no_authorization_leg": {
+   "no_trusted_checkpoint_when_unactivated": true,
+   "unactivated_challenge_route_503": true,
+   "unactivated_challenge_route_status": 503,
+   "unactivated_health_200": true,
+   "unactivated_listener_came_up": true,
+   "unactivated_no_generation": true,
+   "unactivated_protected_503": true,
+   "unactivated_protected_status": 503,
+   "unactivated_refusal_message": "{\"error\":{\"param\":null,\"type\":\"server_error\",\"code\":null,\"message\":\"LOCALB request authorization is not configured\"}}",
+   "unactivated_trace_delta": 0,
+   "unprepared_serve_no_listener": true,
+   "unprepared_serve_rc": 3,
+   "unprepared_serve_refused_to_listen": true,
+   "unprepared_serve_status": "LOCALB_TRANSPORT_IDENTITY_MISSING"
+  },
+  "security_model": {
+   "activation_only_after_operator_checkpoint": true,
+   "host_did_not_auto_activate": true,
+   "no_plaintext_transport": true,
+   "proof_gate_not_relaxed": true,
+   "tls_pinned_spki_observed": true
+  }
+ },
+ "gate": "product_service_http_installed_candidate",
+ "judgement_rule": "PASS only if all five operator scenarios are satisfied on the installed candidate; FAIL if an authorized request returns 200 without generation; anything else BLOCKED.",
+ "overall": "PASS",
+ "scenarios": {
+  "S1_authorized_valid_proof_200": true,
+  "S2_invalid_proof_refused": true,
+  "S3_authorized_request_generated": true,
+  "S4_invalid_proof_no_generation": true,
+  "S5_missing_activation_refused_before_generation": true
+ }
+}

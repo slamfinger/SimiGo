@@ -1,0 +1,31 @@
+{
+ "checks": {
+  "continueTask_body_found": true,
+  "continueTask_calls_resolveTaskInput": true,
+  "resolveTaskInput_before_tokenizeSeedText": true,
+  "resolveTaskInput_before_tokenizeText": true,
+  "resolveTaskInput_body_found": true,
+  "resolveTaskInput_has_no_generation": true,
+  "resolveTaskInput_has_no_tokenize": true,
+  "verification_after_bridge_resolve": true,
+  "verification_inside_resolveTaskInput": true
+ },
+ "not_claimed": [
+  "that every inference call in the repository goes through this entry",
+  "semantic correctness of a signed answer"
+ ],
+ "schema_id": "SIMIGO-E-ROUND-VERIFICATION-PATH-AUDIT-V1",
+ "source": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
+ "source_evidence": {
+  "continueTask_definition_line": 1094,
+  "continueTask_first_generate_line": null,
+  "continueTask_first_seed_tokenize_line": 1197,
+  "continueTask_first_tokenize_line": 1135,
+  "continueTask_resolve_call_line": 1106,
+  "resolveTaskInput_bridge_resolve_line": 1482,
+  "resolveTaskInput_definition_line": 1475,
+  "resolveTaskInput_verify_line": 1643
+ },
+ "source_sha256": "0f164728838119595650102661b8a1f790de874dbd5e4bfb6e42e50bb3941af9",
+ "verdict": "PASS"
+}

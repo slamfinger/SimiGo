@@ -1,0 +1,341 @@
+{
+ "created_at_utc": "2026-10-21T18:03:15Z",
+ "results": {
+  "B0-A": {
+   "argv": [
+    "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/RealModelHandoff",
+    "phase2-u2",
+    "--run-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A",
+    "--model-dir",
+    "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "--lab-root",
+    "/Users/mr.simi/Documents/SimiGo-Lab",
+    "--run-label",
+    "handoff-causality-20261022b",
+    "--case",
+    "B0-A",
+    "--state-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/state",
+    "--u1-pid",
+    "81208",
+    "--max-tokens",
+    "64"
+   ],
+   "command_contains_nonce": false,
+   "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/evidence/phase2.json",
+   "evidence_sha256": "56d8b1e6ccdc67ccc32aeca050853ae1a4243efeda22823bf5ebd54cee33a24b",
+   "exit_code": 0,
+   "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B0-A/logs/u2.log",
+   "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "pid": 81488,
+   "started_at_utc": "2026-10-21T18:02:02Z",
+   "terminal_state": "PHASE2_OBSERVED_SUCCESS",
+   "timed_out": false,
+   "wall_seconds": 22.533
+  },
+  "B0-B": {
+   "argv": [
+    "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/RealModelHandoff",
+    "phase2-u2",
+    "--run-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B",
+    "--model-dir",
+    "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "--lab-root",
+    "/Users/mr.simi/Documents/SimiGo-Lab",
+    "--run-label",
+    "handoff-causality-20261022b",
+    "--case",
+    "B0-B",
+    "--state-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/state",
+    "--u1-pid",
+    "81474",
+    "--max-tokens",
+    "64"
+   ],
+   "command_contains_nonce": false,
+   "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/evidence/phase2.json",
+   "evidence_sha256": "27269f1e5069024c3654ddeac677b7debbff5f59975f048468d1f08f1414270c",
+   "exit_code": 0,
+   "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2b/world-b-r4/B0-B/logs/u2.log",
+   "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "pid": 82985,
+   "started_at_utc": "2026-10-21T18:02:24Z",
+   "terminal_state": "PHASE2_OBSERVED_SUCCESS",
+   "timed_out": false,
+   "wall_seconds": 22.631
+  },
+  "B1-harness": {
+   "argv": [
+    "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/RealModelHandoff",
+    "phase2-u2",
+    "--run-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness",
+    "--model-dir",
+    "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "--lab-root",
+    "/Users/mr.simi/Documents/SimiGo-Lab",
+    "--run-label",
+    "handoff-causality-20261022b",
+    "--case",
+    "B1-harness",
+    "--state-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/state",
+    "--u1-pid",
+    "81208",
+    "--max-tokens",
+    "64"
+   ],
+   "command_contains_nonce": false,
+   "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/evidence/phase2.json",
+   "evidence_sha256": "f3746e0e963dc76479f3198ed5ae1c8e0af15cf8182196c2f169832109bbee71",
+   "exit_code": 0,
+   "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-harness/logs/u2.log",
+   "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "mutation": {
+    "deleted_dependency_rows": 1,
+    "deleted_index_rows": 1,
+    "u1_item_retained": true,
+    "u1_source_retained": true
+   },
+   "pid": 82996,
+   "started_at_utc": "2026-10-21T18:02:27Z",
+   "terminal_state": "PHASE2_READ_REFUSAL",
+   "timed_out": false,
+   "wall_seconds": 3.054
+  },
+  "B1-loop": {
+   "exit_code": 0,
+   "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B1-loop/logs/execute-probe.log",
+   "log_sha256": "d262f7255e081bfedf9cd96f3bd5d76efca984ed1f5a8dc9f3506b24335376da",
+   "mutation": {
+    "deleted_dependency_rows": 1,
+    "deleted_index_rows": 1,
+    "u1_item_retained": true,
+    "u1_source_retained": true
+   },
+   "probe": {
+    "command": "execute-probe",
+    "demand_id": "handoff-u2",
+    "ok": true,
+    "result": {
+     "actions": [
+      {
+       "action": "REUSE",
+       "item_id": "TASK-SOURCE",
+       "reason": null,
+       "result_digest": "7fff9d5c808f1775925fbfa86528e0651a1d52d67171f44060cc84527aab31e2",
+       "settlement_object_id": "051c922e39f4a088ffa678378cbc4639b437297e69d3b2f324ee62486992af14",
+       "source_payload_sha256": "6e67cc640521d711e56adf3dc1782b27973d909de24abff7f495a4186119b43b"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "TASK-U1",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "c2b8a25335b847fa20f0b336a701edd07ccab861bc18905d1543cbfaa58bfe66",
+       "settlement_object_id": "e9293be875ac40cd5c3996a248494b8a6fb8a245577c8bcc69f93cfe8e2b93d9",
+       "source_payload_sha256": "e1360255f260d844c051d54e055e1d1a2018882aeb54dd89345b5f8764a2e299"
+      },
+      {
+       "action": "COMPUTE",
+       "item_id": "TASK-U2",
+       "reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+       "result_digest": "727d3b1d879f501022a1ceccd39bc4e87dd29d61fd0dab4ae9a5cef7d38dacc7",
+       "settlement_object_id": "90800424d6f1397868785e777265dbda5c07d87232ef99c4f0bff9727d58f7d5",
+       "source_payload_sha256": "aa2b829b55cbd7a77e3b24a81981aa8ce54750479888e26b57114c329971d5b4"
+      }
+     ],
+     "advanced": true,
+     "computed_item_ids": [
+      "TASK-U1",
+      "TASK-U2"
+     ],
+     "demand_id": "handoff-u2",
+     "execution_state": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_digest": "124989279277096d8e338a98521b2603e1a7274610f89ae4e28a71d68dff5b79",
+      "demand_id": "handoff-u2",
+      "next_continuation_point": "await-runtime-application-completion",
+      "pending_obligations": [
+       "apply runtime continuation and representation binding"
+      ],
+      "prior_state_id": "handoff-a-u1-handoff-causality-20261022b:runtime-applied",
+      "result_digest": "f7b23f7d10cfebe551092a3c0d8aad8cb4f1fbc6417bc084f44371aa20d39162",
+      "runtime_application_status": "PENDING_SWIFT",
+      "schema_id": "EINFO-EXECUTION-STATE-V1",
+      "state_id": "b1-loop-probe-20261022b",
+      "status": "ADVANCED"
+     },
+     "result": {
+      "continuation_point": "bounded-production-runtime-integration",
+      "demand_id": "handoff-u2",
+      "resolved_items": {
+       "TASK-SOURCE": {
+        "checksum": "9dcf",
+        "log_text_sha256": "90cbe3b9f9a7389faec9917d962ca0792ed0c3ec6b26a556891d7437a65f7fcf",
+        "run_label": "handoff-causality-20261022b",
+        "secret_sha256": "ce3c6aa240338f38862f60d7454a66aab3dc053496617ccedc447c68d90e8e32",
+        "site": "lab-north"
+       },
+       "TASK-U1": {
+        "probe_marker": "e1ac1faa0cf4c9a27d075ece7343305be88590017e3b4e38286b3c3b48dc8180"
+       },
+       "TASK-U2": {
+        "probe_marker": "bfc0400dc0a006f86248e6995a6395f3249dd132014cfc563fbe40ac1b12d0b7"
+       }
+      }
+     },
+     "reused_item_ids": [
+      "TASK-SOURCE"
+     ],
+     "state": "ADVANCED"
+    }
+   },
+   "terminal_state": "OBSERVED",
+   "wall_seconds": 0.088
+  },
+  "B3a": {
+   "argv": [
+    "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/RealModelHandoff",
+    "phase2-u2",
+    "--run-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a",
+    "--model-dir",
+    "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "--lab-root",
+    "/Users/mr.simi/Documents/SimiGo-Lab",
+    "--run-label",
+    "handoff-causality-20261022b",
+    "--case",
+    "B3a",
+    "--state-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/state",
+    "--u1-pid",
+    "81208",
+    "--max-tokens",
+    "64"
+   ],
+   "command_contains_nonce": false,
+   "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/evidence/phase2.json",
+   "evidence_sha256": "30825c00bb97725cd5831860d769a8e470a9a1041c7e093909ca7e51a78aae90",
+   "exit_code": 0,
+   "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3a/logs/u2.log",
+   "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "mutation": {
+    "object_id": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+    "object_id_still_declared": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+    "original_sha256": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+    "tampered_sha256": "484124a3c285e21a78cdbfbf24e388db43441042467aae8ec993b2a93fcdb560"
+   },
+   "pid": 83000,
+   "started_at_utc": "2026-10-21T18:02:30Z",
+   "terminal_state": "PHASE2_READ_REFUSAL",
+   "timed_out": false,
+   "wall_seconds": 2.15
+  },
+  "B3b": {
+   "argv": [
+    "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/RealModelHandoff",
+    "phase2-u2",
+    "--run-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b",
+    "--model-dir",
+    "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "--lab-root",
+    "/Users/mr.simi/Documents/SimiGo-Lab",
+    "--run-label",
+    "handoff-causality-20261022b",
+    "--case",
+    "B3b",
+    "--state-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/state",
+    "--u1-pid",
+    "81208",
+    "--max-tokens",
+    "64"
+   ],
+   "command_contains_nonce": false,
+   "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/evidence/phase2.json",
+   "evidence_sha256": "e87b26602722347130bcd0de8cbbc8bddb6d06fac868b540fb34979b0d00a700",
+   "exit_code": 0,
+   "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3b/logs/u2.log",
+   "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "mutation": {
+    "new_object_id": "27e75111ac28a01e28f704b81d4906dc7737cb917662325906893d4877790ebd",
+    "original_object_id": "e966c5eea2618b3717ada6c62cbc2dcc10bad0b45e1d6a606d3aab0f28eeecc4",
+    "original_result_value_sha256": "2448898fac9d62a97403f575ac6ba747959cc765102e6b7de514e045b2e35130",
+    "retained_source_metadata": {
+     "dependency_object_ids": {
+      "TASK-SOURCE": "051c922e39f4a088ffa678378cbc4639b437297e69d3b2f324ee62486992af14"
+     },
+     "source_payload_sha256": "e1360255f260d844c051d54e055e1d1a2018882aeb54dd89345b5f8764a2e299",
+     "source_version": "v1",
+     "valid_until_utc": "2030-12-31T23:59:59Z",
+     "validity_policy": {
+      "default_valid_until_utc": "2030-12-31T23:59:59Z",
+      "dependency_propagation": "ALL_TRANSITIVE",
+      "missing_policy": "REJECT",
+      "policy_sha256": "1b3a89871bcbe4ca5dcaf80eddab34baa84fce0431883ff19b08e226dbd60bd9",
+      "policy_source": "ISOLATED_MLX_SMOKE_ONLY",
+      "policy_version": "actual-mlx-smoke-v1",
+      "schema_id": "SIMIGO-INFO-VALIDITY-POLICY-V1"
+     }
+    },
+    "substituted_result_value_sha256": "93a5069e0fe4c1218675ae023ad9eb757a270be969403190d0bc35d5f5d2bc1c",
+    "substituted_secret_sha256": "cb4320173d57e9ee962c4cdfe3a7d37f22d6448173a7a962012c9f1db83ba57c"
+   },
+   "pid": 83010,
+   "started_at_utc": "2026-10-21T18:02:52Z",
+   "terminal_state": "PHASE2_OBSERVED_SUBSTITUTION",
+   "timed_out": false,
+   "wall_seconds": 22.104
+  },
+  "B3c": {
+   "argv": [
+    "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/debug/RealModelHandoff",
+    "phase2-u2",
+    "--run-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c",
+    "--model-dir",
+    "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "--lab-root",
+    "/Users/mr.simi/Documents/SimiGo-Lab",
+    "--run-label",
+    "handoff-causality-20261022b",
+    "--case",
+    "B3c",
+    "--state-dir",
+    "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/state",
+    "--u1-pid",
+    "81208",
+    "--max-tokens",
+    "64"
+   ],
+   "command_contains_nonce": false,
+   "evidence_path": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/evidence/phase2.json",
+   "evidence_sha256": "c9682c80f7b2b876f489e075db776c58da39da058d521a75654e653016fb2450",
+   "exit_code": 0,
+   "log": "/Users/mr.simi/SimiGo-Agent-Runs/handoff-causality-20261022b/phase2a/world-a-r4/B3c/logs/u2.log",
+   "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "mutation": {
+    "new_dependencies": [
+     "TASK-SOURCE"
+    ],
+    "new_item_object_id": "c64a2df35b5419afb667fdd27f9105e906776f4726f39431149ac647c5eff1d4",
+    "new_revision": 2,
+    "previous_dependencies": [
+     "TASK-SOURCE",
+     "TASK-U1"
+    ]
+   },
+   "pid": 84027,
+   "started_at_utc": "2026-10-21T18:03:15Z",
+   "terminal_state": "PHASE2_SETTLEMENT_REFUSAL",
+   "timed_out": false,
+   "wall_seconds": 23.312
+  }
+ },
+ "schema_id": "SIMIGO-CAUSALITY-PHASE2-CONDITIONS-V1"
+}

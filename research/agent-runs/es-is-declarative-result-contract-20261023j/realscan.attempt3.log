@@ -1,0 +1,22 @@
+{
+  "snapshot": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/manifests/postchange-workspace-snapshot.json",
+  "head": "e7f63856298390deb8596a4a30e173d3fb466eaa",
+  "file_count": 5208,
+  "dirty_lines": 154
+}
+{
+ "terminal_state": "OBSERVED",
+ "guards": {
+  "workspace": "PASS",
+  "historical": "PASS",
+  "evidence_validator": "PASS"
+ },
+ "conditions": {
+  "J0-UNSEEN-ID-CHAIN": "OBSERVED",
+  "J1-INCOMPLETE-FIELD": "OBSERVED",
+  "J2-BINDING-MISMATCH": "OBSERVED",
+  "J3-UNKNOWN-CONTRACT": "OBSERVED",
+  "J4-UNCHANGED-REUSE": "OBSERVED",
+  "J5-MISSING-TRANSITIVE-DEPENDENCY": "OBSERVED"
+ }
+}

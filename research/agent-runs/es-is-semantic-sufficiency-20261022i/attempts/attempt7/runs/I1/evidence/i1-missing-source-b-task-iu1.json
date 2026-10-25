@@ -1,0 +1,57 @@
+{
+  "advancement_id" : "i1-missing-source-b-probe",
+  "completed_at_utc" : "2026-10-22T13:23:08Z",
+  "counters" : {
+    "model_continuation_calls" : 0,
+    "tokenize_seed_calls" : 0,
+    "tokenize_text_calls" : 0
+  },
+  "database" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/runs\/I1\/carrier.sqlite",
+  "database_after" : {
+    "inode" : "110388577",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/runs\/I1\/carrier.sqlite",
+    "sha256" : "f51f1ef4b1ee1c4231a918e0f41ff50f3abda3bc64086d264d8a13f0132f88da",
+    "size_bytes" : 90112
+  },
+  "database_before" : {
+    "inode" : "110388577",
+    "path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/runs\/I1\/carrier.sqlite",
+    "sha256" : "f51f1ef4b1ee1c4231a918e0f41ff50f3abda3bc64086d264d8a13f0132f88da",
+    "size_bytes" : 90112
+  },
+  "database_unchanged" : true,
+  "demand_id" : "handoff-i-u1",
+  "duration_seconds" : 0.055128097534179688,
+  "entry" : "SimiGoTaskRun",
+  "evaluated_at_utc" : "2026-10-22T13:23:08Z",
+  "execution_id" : "PRODUCTION-REAL-PALACE",
+  "failure" : "",
+  "generation_entered" : false,
+  "input_admission" : {
+
+  },
+  "input_admission_refusal" : {
+    "item_id" : "TASK-DEST",
+    "kind" : "ADMISSION_REFUSED",
+    "reason" : "MISSING_OR_SUPERSEDED_SETTLEMENT",
+    "stage" : "SETTLEMENT_NOT_ADMITTED"
+  },
+  "input_admission_status" : "ADMISSION_REFUSED",
+  "mode" : "admission_probe",
+  "model_loaded" : false,
+  "pid" : 36006,
+  "run_id" : "e-i1-missing-source-b-probe",
+  "schema_id" : "SIMIGO-ORDINARY-TASK-ENTRY-V1",
+  "started_at_utc" : "2026-10-22T13:23:08Z",
+  "state_after" : {
+
+  },
+  "state_before" : {
+
+  },
+  "state_directory" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/runs\/I1\/state\/i1-missing-source-b-task-iu1",
+  "state_unchanged" : true,
+  "task_item_id" : "TASK-IU1",
+  "terminal_state" : "INPUT_ADMISSION_REFUSED",
+  "trust_anchor_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/es-is-semantic-sufficiency-20261022i\/trust\/settlement-trust-anchor.json"
+}

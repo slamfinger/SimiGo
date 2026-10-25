@@ -1,0 +1,2 @@
+condition I1-MISSING-SOURCE-B attempt 4
+observations={"refusal_before_tokenize": false, "generation_calls": 0, "database_unchanged": false, "state_unchanged": false}

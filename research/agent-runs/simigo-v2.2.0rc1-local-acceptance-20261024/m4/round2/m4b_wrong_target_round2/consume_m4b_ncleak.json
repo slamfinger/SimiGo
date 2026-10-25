@@ -1,0 +1,63 @@
+{
+  "branch_checkpoints_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4b\/home\/branch-checkpoints",
+  "generation_call_count" : 0,
+  "input_env_keys" : [
+    "SIMIGO_EXPERIMENT_ROOT",
+    "SIMIGO_HEADLESS_MODEL_PATH",
+    "SIMIGO_HEADLESS_ROLE",
+    "SIMIGO_HEADLESS_STATE_ID",
+    "SIMIGO_HEADLESS_TARGET_VALUE",
+    "SIMIGO_HOME",
+    "SIMIGO_RUN_ID"
+  ],
+  "is_database_url" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4b\/home\/simigo.sqlite3",
+  "model_identity" : {
+    "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_repo_id" : "mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "model_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_root_id" : "huggingface-cache"
+  },
+  "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "path_class" : "restricted_production_path",
+  "pid" : 77868,
+  "prefix_pool_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4b\/home\/prefix-pool",
+  "reading_state_id" : "S-0001",
+  "reason" : "value-carrying env channel(s) present in consume env: SIMIGO_HEADLESS_TARGET_VALUE",
+  "role" : "consume",
+  "run_id" : "m4b_ncleak",
+  "runtime_identity" : {
+    "build_configuration" : "RELEASE",
+    "build_id_sha256" : "254f01d62791eed40406253b319bd32efb1dd103ac10d75e86526c36e15655c7",
+    "bundle_macho_images" : [
+      {
+        "bytes" : 104981040,
+        "file" : "SimiGo",
+        "sha256" : "dacf2fc353114088f7fd4079d8e75e8094c4af394c74d0809ccb2d65294dff1c"
+      }
+    ],
+    "executable_bytes" : 104981040,
+    "executable_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/install\/SimiGo.app\/Contents\/MacOS\/SimiGo",
+    "executable_sha256" : "dacf2fc353114088f7fd4079d8e75e8094c4af394c74d0809ccb2d65294dff1c",
+    "os_version" : "Version 27.0.1 (Build 26A434)"
+  },
+  "simigo_home" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-local-acceptance-20261024\/m4\/m4b\/home",
+  "stage" : "input_channel_guard",
+  "status" : "BLOCKED",
+  "tokenizer_identity" : [
+    {
+      "file" : "tokenizer.json",
+      "sha256" : "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    {
+      "file" : "tokenizer_config.json",
+      "sha256" : "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+    },
+    {
+      "file" : "vocab.json",
+      "sha256" : "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ],
+  "value_carrying_env_channels" : [
+    "SIMIGO_HEADLESS_TARGET_VALUE"
+  ]
+}

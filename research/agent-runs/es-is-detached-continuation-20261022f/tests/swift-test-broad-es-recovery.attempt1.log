@@ -1,0 +1,186 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[1 / 27] Cmlx
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+Build complete! (0.75秒)
+Test Suite 'Selected tests' started at 2026-10-22 16:04:42.359.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-22 16:04:42.360.
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-22 16:04:42.360.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 16:04:42.360.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-22 16:04:42.481.
+Test Suite 'SimiGo2ExperimentalTests.xctest' started at 2026-10-22 16:04:42.481.
+Test Suite 'DurableExecutionStateStoreTests' started at 2026-10-22 16:04:42.481.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testAtomicSnapshotRoundTripsSemanticStateAndAudit]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testAtomicSnapshotRoundTripsSemanticStateAndAudit]' passed (0.014 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCancelledCreateAfterPhysicalAdvanceMarksUncertain]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCancelledCreateAfterPhysicalAdvanceMarksUncertain]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testContinueDurableFailureAfterPhysicalAdvanceMarksUncertain]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testContinueDurableFailureAfterPhysicalAdvanceMarksUncertain]' passed (0.017 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCoordinatorRestoresHandlesAndContinuesAuditSequence]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCoordinatorRestoresHandlesAndContinuesAuditSequence]' passed (0.025 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCorruptSnapshotFailsClosed]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testCorruptSnapshotFailsClosed]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testDurableCommitFailureDoesNotAdvanceAuditOrReportSuccess]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testDurableCommitFailureDoesNotAdvanceAuditOrReportSuccess]' passed (0.016 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testEmptyStoreLoadsEmptyState]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testEmptyStoreLoadsEmptyState]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testRestoreDurableCommitFailureMarksBindingUncertain]' started.
+Test Case '-[SimiGo2ExperimentalTests.DurableExecutionStateStoreTests testRestoreDurableCommitFailureMarksBindingUncertain]' passed (0.026 seconds).
+Test Suite 'DurableExecutionStateStoreTests' passed at 2026-10-22 16:04:42.582.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.100 (0.101) seconds
+Test Suite 'ExecutionContinuityCoordinatorTests' started at 2026-10-22 16:04:42.582.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testBindAndCaptureRoundTrip]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testBindAndCaptureRoundTrip]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testBindAtCurrentPositionLiftsIsolationWithoutRestore]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testBindAtCurrentPositionLiftsIsolationWithoutRestore]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCaptureRejectsPositionMismatch]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCaptureRejectsPositionMismatch]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCompensationFailureGatesBackendDependentOperationsUntilReestablished]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCompensationFailureGatesBackendDependentOperationsUntilReestablished]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCompensationFailureKeepsCoordinatorLogicalStateUncommitted]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testCompensationFailureKeepsCoordinatorLogicalStateUncommitted]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testConcurrentForkRequestsForSameChildCommitExactlyOnce]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testConcurrentForkRequestsForSameChildCommitExactlyOnce]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testDiscardReleasesRepresentation]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testDiscardReleasesRepresentation]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkAfterRestoreUsesRepresentationMatchingForkedPosition]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkAfterRestoreUsesRepresentationMatchingForkedPosition]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkAtPositionWithoutRepresentationFailsClosed]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkAtPositionWithoutRepresentationFailsClosed]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkDerivesChildRepresentationFromParent]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkDerivesChildRepresentationFromParent]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkWithoutParentBindingIsLazy]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testForkWithoutParentBindingIsLazy]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testHookFailureWithSuccessfulCompensationPreservesRetryBehavior]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testHookFailureWithSuccessfulCompensationPreservesRetryBehavior]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testOneAuthoritativeLifecycleRecordPerTransition]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testOneAuthoritativeLifecycleRecordPerTransition]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testRestoreBindsTheCapturedRepresentationAtTheTargetPosition]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testRestoreBindsTheCapturedRepresentationAtTheTargetPosition]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testRestoreWithoutCapturedRepresentationFails]' started.
+Test Case '-[SimiGo2ExperimentalTests.ExecutionContinuityCoordinatorTests testRestoreWithoutCapturedRepresentationFails]' passed (0.000 seconds).
+Test Suite 'ExecutionContinuityCoordinatorTests' passed at 2026-10-22 16:04:42.587.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'NativeCarrierLifecycleTests' started at 2026-10-22 16:04:42.587.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testCarriersAreIndependentPerExecution]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testCarriersAreIndependentPerExecution]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testFreshBackendStillServesRecovery]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testFreshBackendStillServesRecovery]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testHandoffIsolationRefusesSharedAndUnobservable]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testHandoffIsolationRefusesSharedAndUnobservable]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testNativeCarrierLifecycleSettlesReleasesThenRecoversOnFreshCarrier]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testNativeCarrierLifecycleSettlesReleasesThenRecoversOnFreshCarrier] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "TRUST_ANCHOR_MISSING: SIMIGO_SETTLEMENT_TRUST_ANCHOR")"
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testNativeCarrierLifecycleSettlesReleasesThenRecoversOnFreshCarrier]' failed (1.811 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseCarrierMakesBoundReadFailClosed]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseCarrierMakesBoundReadFailClosed]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleasedCarrierCannotBeReArmed]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleasedCarrierCannotBeReArmed]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseFailureRefusesBeforeAnyFreshCarrierRecovery]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseFailureRefusesBeforeAnyFreshCarrierRecovery] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "TRUST_ANCHOR_MISSING: SIMIGO_SETTLEMENT_TRUST_ANCHOR")"
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testReleaseFailureRefusesBeforeAnyFreshCarrierRecovery]' failed (0.087 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStorageIsolationEvaluatorCases]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStorageIsolationEvaluatorCases]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStubReleaseAndVerifyAgainstRealBackend]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStubReleaseAndVerifyAgainstRealBackend]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStubReleaseErrorPropagatesFailClosed]' started.
+Test Case '-[SimiGo2ExperimentalTests.NativeCarrierLifecycleTests testStubReleaseErrorPropagatesFailClosed]' passed (0.000 seconds).
+Test Suite 'NativeCarrierLifecycleTests' failed at 2026-10-22 16:04:44.487.
+	 Executed 10 tests, with 2 failures (2 unexpected) in 1.899 (1.899) seconds
+Test Suite 'ProductionInputAdmissionTests' started at 2026-10-22 16:04:44.487.
+Test Case '-[SimiGo2ExperimentalTests.ProductionInputAdmissionTests testOrdinaryTaskEntryRefusesInadmissibleSettlementBeforeGeneration]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionInputAdmissionTests testOrdinaryTaskEntryRefusesInadmissibleSettlementBeforeGeneration]' passed (0.751 seconds).
+Test Suite 'ProductionInputAdmissionTests' passed at 2026-10-22 16:04:45.237.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.751 (0.751) seconds
+Test Suite 'ProductionRuntimeFailureBoundaryTests' started at 2026-10-22 16:04:45.237.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testBlockedInformationDoesNotCreateSwiftLifecycle]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:73: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testBlockedInformationDoesNotCreateSwiftLifecycle] : failed: caught error: "Error Domain=IntegratedESPalaceAuthorizedRuntimeValidation Code=1 "unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")" UserInfo={NSLocalizedDescription=unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")}"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testBlockedInformationDoesNotCreateSwiftLifecycle]' failed (0.131 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testConfirmationFailurePersistsBlockedAndRollsRuntimeBack]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:327: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testConfirmationFailurePersistsBlockedAndRollsRuntimeBack] : failed: caught error: "Error Domain=IntegratedESPalaceAuthorizedRuntimeValidation Code=1 "unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")" UserInfo={NSLocalizedDescription=unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")}"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testConfirmationFailurePersistsBlockedAndRollsRuntimeBack]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testInjectedBackendReceivesSeedAndAdvancedRepresentation]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testInjectedBackendReceivesSeedAndAdvancedRepresentation] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testInjectedBackendReceivesSeedAndAdvancedRepresentation]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testLogicalAdvanceFailurePersistsBlockedAndDiscardsRuntime]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:202: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testLogicalAdvanceFailurePersistsBlockedAndDiscardsRuntime] : failed: caught error: "Error Domain=IntegratedESPalaceAuthorizedRuntimeValidation Code=1 "unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")" UserInfo={NSLocalizedDescription=unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")}"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testLogicalAdvanceFailurePersistsBlockedAndDiscardsRuntime]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testMissingExecutorPersistsBlockedWithoutSwiftLifecycle]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:103: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testMissingExecutorPersistsBlockedWithoutSwiftLifecycle] : XCTAssertEqual failed: ("modelExecutorUnavailable") is not equal to ("bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")")
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:109: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testMissingExecutorPersistsBlockedWithoutSwiftLifecycle] : XCTAssertEqual failed: ("Optional("BLOCKED")") is not equal to ("nil")
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:110: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testMissingExecutorPersistsBlockedWithoutSwiftLifecycle] : XCTAssertEqual failed: ("Optional("executor-missing-boundary:executor-missing")") is not equal to ("nil")
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testMissingExecutorPersistsBlockedWithoutSwiftLifecycle]' failed (0.130 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testNextInputTokenizationFailurePersistsBlockedWithoutSwiftLifecycle]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:137: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testNextInputTokenizationFailurePersistsBlockedWithoutSwiftLifecycle] : failed: caught error: "Error Domain=IntegratedESPalaceAuthorizedRuntimeValidation Code=1 "unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")" UserInfo={NSLocalizedDescription=unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")}"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testNextInputTokenizationFailurePersistsBlockedWithoutSwiftLifecycle]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testRepresentationBindingFailurePersistsBlockedAndDiscardsRuntime]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:277: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testRepresentationBindingFailurePersistsBlockedAndDiscardsRuntime] : failed: caught error: "Error Domain=IntegratedESPalaceAuthorizedRuntimeValidation Code=1 "unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")" UserInfo={NSLocalizedDescription=unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")}"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testRepresentationBindingFailurePersistsBlockedAndDiscardsRuntime]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testSeedTokenizationFailurePersistsBlockedAndDiscardsRuntime]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift:239: error: -[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testSeedTokenizationFailurePersistsBlockedAndDiscardsRuntime] : failed: caught error: "Error Domain=IntegratedESPalaceAuthorizedRuntimeValidation Code=1 "unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")" UserInfo={NSLocalizedDescription=unexpected error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")}"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeFailureBoundaryTests testSeedTokenizationFailurePersistsBlockedAndDiscardsRuntime]' failed (0.086 seconds).
+Test Suite 'ProductionRuntimeFailureBoundaryTests' failed at 2026-10-22 16:04:46.015.
+	 Executed 8 tests, with 10 failures (7 unexpected) in 0.777 (0.778) seconds
+Test Suite 'ProductionRuntimeInformationIntegrationTests' started at 2026-10-22 16:04:46.015.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testContinueFailsClosedWhenESCheckpointStaleBeforeAnyAdvance]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testContinueFailsClosedWhenESCheckpointStaleBeforeAnyAdvance] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testContinueFailsClosedWhenESCheckpointStaleBeforeAnyAdvance]' failed (0.087 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testDurableResumeFailsClosedWhenSettledCarrierUnavailableBeforeAnyAdvance]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testDurableResumeFailsClosedWhenSettledCarrierUnavailableBeforeAnyAdvance] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testDurableResumeFailsClosedWhenSettledCarrierUnavailableBeforeAnyAdvance]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testInvalidValidityBlocksRealRuntimeWithoutAdvancingState]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift:304: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testInvalidValidityBlocksRealRuntimeWithoutAdvancingState] : failed - unexpected production error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testInvalidValidityBlocksRealRuntimeWithoutAdvancingState]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testMissingValidityPolicyBlocksRealRuntimeWithoutExecution]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift:336: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testMissingValidityPolicyBlocksRealRuntimeWithoutExecution] : failed - unexpected production error: bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testMissingValidityPolicyBlocksRealRuntimeWithoutExecution]' failed (0.085 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testNewExecutionStateRecoversSettledWorkFromInformationSpaceWithoutBypassFile]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testNewExecutionStateRecoversSettledWorkFromInformationSpaceWithoutBypassFile] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testNewExecutionStateRecoversSettledWorkFromInformationSpaceWithoutBypassFile]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryAcceptsConfirmationRecordNotRawAdvancementID]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryAcceptsConfirmationRecordNotRawAdvancementID] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryAcceptsConfirmationRecordNotRawAdvancementID]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryDependsOnlyOnDurableStateAndISNotBypassHandleFile]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryDependsOnlyOnDurableStateAndISNotBypassHandleFile] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryDependsOnlyOnDurableStateAndISNotBypassHandleFile]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCarriesNoSettlementCheckpoint]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCarriesNoSettlementCheckpoint] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCarriesNoSettlementCheckpoint]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCheckpointResultDigestTampered]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCheckpointResultDigestTampered] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESCheckpointResultDigestTampered]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESDurableHandleMissingDespiteSettledIS]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESDurableHandleMissingDespiteSettledIS] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESDurableHandleMissingDespiteSettledIS]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESHasCheckpointButISHasNoSettledExecution]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESHasCheckpointButISHasNoSettledExecution] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenESHasCheckpointButISHasNoSettledExecution]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceAdvancedBeyondESCheckpoint]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceAdvancedBeyondESCheckpoint] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceAdvancedBeyondESCheckpoint]' failed (0.086 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceHasNoSettledWork]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryFailsClosedWhenInformationSpaceHasNoSettledWork]' passed (0.090 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryRequiresDurableStoreConfiguration]' started.
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testRecoveryRequiresDurableStoreConfiguration]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement]' started.
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift:505: error: -[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement] : failed: caught error: "bridgeFailed(command: "execute", exitCode: 1, message: "[Errno 2] No such file or directory: \'/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/simigo-admission-324BDC36-AEAB-44B4-B56B-DE4C33301882/trust-forged-u1-settlement/trust-anchor.json\'")"
+Test Case '-[SimiGo2ExperimentalTests.ProductionRuntimeInformationIntegrationTests testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement]' failed (0.086 seconds).
+Test Suite 'ProductionRuntimeInformationIntegrationTests' failed at 2026-10-22 16:04:47.310.
+	 Executed 16 tests, with 14 failures (12 unexpected) in 1.294 (1.295) seconds
+Test Suite 'SimiGo2ExperimentalTests.xctest' failed at 2026-10-22 16:04:47.310.
+	 Executed 58 tests, with 26 failures (21 unexpected) in 4.826 (4.829) seconds
+Test Suite 'Selected tests' failed at 2026-10-22 16:04:47.310.
+	 Executed 58 tests, with 26 failures (21 unexpected) in 4.826 (4.830) seconds
+Test Suite 'Selected tests' started at 2026-10-22 16:04:47.369.
+Test Suite 'G3D1SupervisorTests.xctest' started at 2026-10-22 16:04:47.369.
+Test Suite 'G3D1SupervisorTests.xctest' passed at 2026-10-22 16:04:47.370.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-22 16:04:47.370.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Note: Some test targets reported failures:
+  - SimiGo2ExperimentalTests (XCTest)

@@ -1,0 +1,36 @@
+{
+  "finishedAt" : "2026-10-23T19:01:57Z",
+  "issueCount" : 0,
+  "legacyMigrated" : false,
+  "modelsDiscovered" : 20,
+  "schemaVersion" : 3,
+  "startedAt" : "2026-10-23T19:01:57Z",
+  "steps" : [
+    {
+      "detail" : "created managed runtime directories under home",
+      "id" : "ensure-dirs",
+      "status" : "ok"
+    },
+    {
+      "detail" : "schemaVersion=3",
+      "id" : "migrate-schema",
+      "status" : "ok"
+    },
+    {
+      "detail" : "no legacy graph supplied",
+      "id" : "import-legacy",
+      "status" : "skipped"
+    },
+    {
+      "detail" : "discovered 20 model file(s)",
+      "id" : "discover-models",
+      "status" : "ok"
+    },
+    {
+      "detail" : "indexed 0 work file(s)",
+      "id" : "index-work",
+      "status" : "skipped"
+    }
+  ],
+  "workFilesIndexed" : 0
+}

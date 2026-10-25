@@ -1,0 +1,210 @@
+{
+  "evidence_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/evidence/i0-p1-task-iu1.json",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/evidence/i0-p2-task-iu2.json",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/evidence/i0-p3-task-iu3.json"
+  ],
+  "id": "I0-STRUCTURED-CHAIN",
+  "kind": "real_model",
+  "model_identity": {
+    "snapshot_id": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "weights_manifest_sha256": "974700a83cd6db0df721e84e8217eb151d519c9bad5d706aca024672d521e9e5"
+  },
+  "observations": {
+    "harness_direct_result_reads": 0,
+    "old_state_or_prefix_copied": false,
+    "p2_u1_regeneration_count": 0,
+    "p3_u1_regeneration_count": 0,
+    "p3_u2_regeneration_count": 0,
+    "process_count": 3,
+    "u1_generation_count": 1,
+    "u2_generation_count": 1,
+    "u3_generation_count": 1
+  },
+  "raw_log_paths": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/logs/i0-p1-task-iu1.log",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/logs/i0-p2-task-iu2.log",
+    "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/logs/i0-p3-task-iu3.log"
+  ],
+  "semantic_consumption_checks": {
+    "expected_route_key": "NORTH>EAST",
+    "iw1_dependency_settlement_object_ids": {
+      "TASK-DEST": "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+      "TASK-ORIGIN": "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e"
+    },
+    "iw2_binds_iw1_settlement": true,
+    "iw2_dependency_settlement_object_ids": {
+      "TASK-DEST": "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+      "TASK-IU1": "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+      "TASK-ORIGIN": "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e"
+    },
+    "iw3_binds_iw2_settlement": true,
+    "iw3_dependency_settlement_object_ids": {
+      "TASK-DEST": "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+      "TASK-IU1": "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+      "TASK-IU2": "d273b793c413883b967986261a162a53fe4f29a3b321eb48455ef4f963dbfc8d",
+      "TASK-ORIGIN": "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e"
+    }
+  },
+  "stage_records": [
+    {
+      "computed_item_ids": [
+        "TASK-IU1"
+      ],
+      "counters": {
+        "model_generate_calls": 1,
+        "model_loads": 1,
+        "tokenize_seed_calls": 1,
+        "tokenize_text_calls": 1
+      },
+      "demand": "handoff-i-u1",
+      "execution_instance_id": "PRODUCTION-REAL-PALACE",
+      "exit_code": 0,
+      "final_position": 1,
+      "generated_text": " ORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nORIGIN=NORTH\nDEST=EAST\nROUTE=NORTH>EAST\nORIGIN=N",
+      "initial_position": 0,
+      "input_admission_bindings": [
+        {
+          "byte_length": 5,
+          "byte_offset": 22,
+          "item_id": "TASK-ORIGIN",
+          "placeholder": "origin",
+          "settlement_object_id": "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e",
+          "value": "NORTH",
+          "value_sha256": "34a489fb589a0a73111285e0760d14d79669e3aa152c925d77ad193c2782580a"
+        },
+        {
+          "byte_length": 1,
+          "byte_offset": 44,
+          "item_id": "TASK-ORIGIN",
+          "placeholder": "origin_priority",
+          "settlement_object_id": "0b2468e3b9e879dd073772aaac12e4d8fb2b8d1b6f01831b59aabfda7112633e",
+          "value": "3",
+          "value_sha256": "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce"
+        },
+        {
+          "byte_length": 4,
+          "byte_offset": 74,
+          "item_id": "TASK-DEST",
+          "placeholder": "destination",
+          "settlement_object_id": "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+          "value": "EAST",
+          "value_sha256": "03825024559394f1da8bcc3743ca996165add12b3f6fa9665e44104ae4e3e110"
+        },
+        {
+          "byte_length": 1,
+          "byte_offset": 95,
+          "item_id": "TASK-DEST",
+          "placeholder": "destination_priority",
+          "settlement_object_id": "4ef109f0c23bed3e9bdde8d4f862cdcae32f0287a85cadfd294846bf9090c834",
+          "value": "5",
+          "value_sha256": "ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d"
+        }
+      ],
+      "item": "TASK-IU1",
+      "logical_es_id": "bounded-production-runtime-integration",
+      "pid": 35972,
+      "process_exited": true,
+      "process_label": "p1",
+      "reused_item_ids": [
+        "TASK-ORIGIN",
+        "TASK-DEST"
+      ],
+      "seed_source": "builtin_cold_seed",
+      "settlement_signature_object_id": "39efbfb5dac30eff7226b658861bbfcedc086d2b0b57729c3a10066240c77803",
+      "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/state/i0-p1-task-iu1",
+      "terminal_state": "TASK_SETTLED",
+      "wall_seconds": 17.438
+    },
+    {
+      "computed_item_ids": [
+        "TASK-IU2"
+      ],
+      "counters": {
+        "model_generate_calls": 1,
+        "model_loads": 1,
+        "tokenize_seed_calls": 1,
+        "tokenize_text_calls": 1
+      },
+      "demand": "handoff-i-u2",
+      "execution_instance_id": "PRODUCTION-REAL-PALACE",
+      "exit_code": 0,
+      "final_position": 1,
+      "generated_text": " FLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST\nFLOW=NORTH>EAST",
+      "initial_position": 0,
+      "input_admission_bindings": [
+        {
+          "byte_length": 10,
+          "byte_offset": 31,
+          "item_id": "TASK-IU1",
+          "placeholder": "route_key",
+          "settlement_object_id": "d09490e106348c65cc77b43644632f47c1d5ae7b7cd7f24b7ef4a03fab78d3e3",
+          "value": "NORTH>EAST",
+          "value_sha256": "724c97744735c424675f6bf7cb61c0a3239463525302aebe1f56b12f972e42db"
+        }
+      ],
+      "item": "TASK-IU2",
+      "logical_es_id": "bounded-production-runtime-integration",
+      "pid": 35994,
+      "process_exited": true,
+      "process_label": "p2",
+      "reused_item_ids": [
+        "TASK-ORIGIN",
+        "TASK-DEST",
+        "TASK-IU1"
+      ],
+      "seed_source": "builtin_cold_seed",
+      "settlement_signature_object_id": "862aed4d3aae3391d6527ff7c80508b00b3590683db08837f598718f0628d4f4",
+      "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/state/i0-p2-task-iu2",
+      "terminal_state": "TASK_SETTLED",
+      "wall_seconds": 14.66
+    },
+    {
+      "computed_item_ids": [
+        "TASK-IU3"
+      ],
+      "counters": {
+        "model_generate_calls": 1,
+        "model_loads": 1,
+        "tokenize_seed_calls": 1,
+        "tokenize_text_calls": 1
+      },
+      "demand": "handoff-i-u3",
+      "execution_instance_id": "PRODUCTION-REAL-PALACE",
+      "exit_code": 0,
+      "final_position": 1,
+      "generated_text": " CONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\nCONFIRMED=NORTH>EAST\n",
+      "initial_position": 0,
+      "input_admission_bindings": [
+        {
+          "byte_length": 10,
+          "byte_offset": 38,
+          "item_id": "TASK-IU2",
+          "placeholder": "carried_route",
+          "settlement_object_id": "d273b793c413883b967986261a162a53fe4f29a3b321eb48455ef4f963dbfc8d",
+          "value": "NORTH>EAST",
+          "value_sha256": "724c97744735c424675f6bf7cb61c0a3239463525302aebe1f56b12f972e42db"
+        }
+      ],
+      "item": "TASK-IU3",
+      "logical_es_id": "bounded-production-runtime-integration",
+      "pid": 36001,
+      "process_exited": true,
+      "process_label": "p3",
+      "reused_item_ids": [
+        "TASK-ORIGIN",
+        "TASK-DEST",
+        "TASK-IU1",
+        "TASK-IU2"
+      ],
+      "seed_source": "builtin_cold_seed",
+      "settlement_signature_object_id": "3ea325b8e8fafb5af8387b6475e0d05d41384f76ccd396b113a30b489b8e4415",
+      "state_directory": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0/state/i0-p3-task-iu3",
+      "terminal_state": "TASK_SETTLED",
+      "wall_seconds": 15.125
+    }
+  ],
+  "stages": 3,
+  "terminal_state": "OBSERVED",
+  "world": "/Users/mr.simi/SimiGo-Agent-Runs/es-is-semantic-sufficiency-20261022i/runs/I0"
+}

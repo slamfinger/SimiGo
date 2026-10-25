@@ -1,0 +1,21 @@
+### Protection protocol — captured 2026-10-22T19:05:23Z
+=== git status --short ===
+=== branch ===
+localb-b3-closure-20261016
+=== HEAD ===
+de362ef46118402b40356c8c9e3633395a151717
+=== git diff --stat ===
+=== git diff --name-only ===
+=== recent local commits (top 12) ===
+de362ef security(localb): default host-resolution wiring, strict parser, challenge hardening, signed-query forwarding
+fa96f9a security(localb): close B3 review blockers on header boundary and route policy
+257d060 fix(lifecycle): reject-burst head/tail logging; v2.1.15 (25)
+6c52bec docs(decisions): transcript normalization proposal (DRAFT)
+605e2ea fix(protocol): keepalive for remaining non-streaming endpoints; v2.1.14 (24)
+523aafa fix(protocol): non-streaming keepalive vs undici 300s teardown; v2.1.13 (23)
+388caa2 release: SimiGo v2.1.12 (build 22)
+f762314 security: derive codesign identity from keychain; drop sentinel exemptions
+fe8f759 release: SimiGo v2.1.11 (build 21)
+0a75e07 feat: vendor LOCALBCore — Local Trust Domain B signing/verification core
+b001a38 ci: exempt the package_dmg signing-identity sentinel from privacy scans
+efead42 fix: review F2 residual — fork provenance labels gain a stable digest suffix

@@ -1,0 +1,135 @@
+--- a/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
++++ b/simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift
+@@ -326,7 +326,14 @@
+ 
+ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable {
+   public static let continuationPoint = "bounded-production-runtime-integration"
++  /// Default logical execution identity. A detached continuation must pass a
++  /// DIFFERENT id to the consumer integration so a new execution state is a new
++  /// state, not the same logical state reattached under a new PID.
+   public static let executionID = ExecutionID("PRODUCTION-REAL-PALACE")
++  /// The identity this integration actually advances. It defaults to the static
++  /// identity above and is per-instance so two processes in one experiment can
++  /// own different execution states.
++  public let taskExecutionID: ExecutionID
+   /// Stable identity the durable codec stamps on persisted prefix payloads, so a
+   /// recovered store is readable only by the matching production backend.
+   public static let prefixBackendIdentity = "mlx-production-prefix-v1"
+@@ -341,14 +348,18 @@
+   private var modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?
+   private let runtime: ExecutionContinuityCoordinator
+ 
+-  public convenience init(labRoot: URL? = nil) {
+-    self.init(labRoot: labRoot, modelExecutor: nil)
++  public convenience init(
++    labRoot: URL? = nil,
++    executionID: ExecutionID = ProductionRuntimeInformationIntegration.executionID
++  ) {
++    self.init(labRoot: labRoot, modelExecutor: nil, executionID: executionID)
+   }
+ 
+   public init(
+     labRoot: URL?,
+     modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?,
+-    backend: MLXExecutionStateBackend = MLXExecutionStateBackend()
++    backend: MLXExecutionStateBackend = MLXExecutionStateBackend(),
++    executionID: ExecutionID = ProductionRuntimeInformationIntegration.executionID
+   ) {
+     if let labRoot {
+       self.labRoot = labRoot.standardizedFileURL
+@@ -363,6 +374,7 @@
+     launchConfiguration = nil
+     self.backend = backend
+     self.modelExecutor = modelExecutor
++    self.taskExecutionID = executionID
+     stateStore = nil
+     runtime = ExecutionContinuityCoordinator(backend: backend)
+   }
+@@ -370,11 +382,13 @@
+   public init(
+     configuration: ProductionRuntimeLaunchConfiguration,
+     modelExecutor: (any ProductionRuntimeModelContinuationExecutor)? = nil,
+-    backend: MLXExecutionStateBackend = MLXExecutionStateBackend()
++    backend: MLXExecutionStateBackend = MLXExecutionStateBackend(),
++    executionID: ExecutionID = ProductionRuntimeInformationIntegration.executionID
+   ) {
+     launchConfiguration = configuration
+     self.backend = backend
+     self.modelExecutor = modelExecutor
++    self.taskExecutionID = executionID
+     labRoot = configuration.runtimeRoot
+     stateStore = nil
+     runtime = ExecutionContinuityCoordinator(backend: backend)
+@@ -392,11 +406,13 @@
+     modelExecutor: (any ProductionRuntimeModelContinuationExecutor)? = nil,
+     backend: MLXExecutionStateBackend = MLXExecutionStateBackend(),
+     semanticStateDirectory: URL,
+-    resetToFreshBaseline: Bool = false
++    resetToFreshBaseline: Bool = false,
++    executionID: ExecutionID = ProductionRuntimeInformationIntegration.executionID
+   ) throws {
+     launchConfiguration = configuration
+     self.backend = backend
+     self.modelExecutor = modelExecutor
++    self.taskExecutionID = executionID
+     labRoot = configuration.runtimeRoot
+     let store = DurableExecutionStateStore(
+       directory: semanticStateDirectory.standardizedFileURL,
+@@ -741,17 +757,17 @@
+       )
+     }
+     // The ES to recover comes from durable state, not a caller-supplied handle.
+-    guard let recovered = runtime.handle(Self.executionID) else {
++    guard let recovered = runtime.handle(self.taskExecutionID) else {
+       throw ProductionRuntimeInformationError.durableExecutionStateMissing(
+-        executionID: Self.executionID.rawValue
++        executionID: self.taskExecutionID.rawValue
+       )
+     }
+     // Cross-layer checkpoint: prove the persisted ES corresponds to IS's current
+     // settled state BEFORE rebinding or returning a resumable handle. A missing
+     // checkpoint means the ES never recorded its IS settlement link.
+-    guard let checkpoint = runtime.settlementCheckpoint(for: Self.executionID) else {
++    guard let checkpoint = runtime.settlementCheckpoint(for: self.taskExecutionID) else {
+       throw ProductionRuntimeInformationError.settlementCheckpointMissing(
+-        executionID: Self.executionID.rawValue
++        executionID: self.taskExecutionID.rawValue
+       )
+     }
+     try validateSettlementAgainstInformationSpace(
+@@ -803,7 +819,7 @@
+     // agrees) is rejected here — we never advance IS first and discover the ES
+     // mismatch afterwards. A fresh ES with no checkpoint has nothing to
+     // cross-check yet, so its first settlement proceeds normally.
+-    if let checkpoint = runtime.settlementCheckpoint(for: Self.executionID) {
++    if let checkpoint = runtime.settlementCheckpoint(for: self.taskExecutionID) {
+       let preExecutionISState = try informationSpaceLatestExecutionState(database: database)
+       try validateSettlementAgainstInformationSpace(
+         checkpoint: checkpoint,
+@@ -940,7 +956,7 @@
+         created = true
+         failureStage = "runtime_create_or_attach"
+         let fresh = try await runtime.create(
+-          id: Self.executionID,
++          id: self.taskExecutionID,
+           position: ExecutionPosition(0),
+           continuation: ExecutionContinuation(
+             nextInput: "\(Self.continuationPoint)-initial",
+@@ -1107,7 +1123,7 @@
+       database: database, taskItemID: taskItemID, evaluatedAtUTC: evaluatedAtUTC)
+     // Fail closed BEFORE any new side effect when this ES already carries a
+     // settlement checkpoint that no longer matches IS's current settled state.
+-    if let checkpoint = runtime.settlementCheckpoint(for: Self.executionID) {
++    if let checkpoint = runtime.settlementCheckpoint(for: self.taskExecutionID) {
+       let preExecutionISState = try informationSpaceLatestExecutionState(database: database)
+       try validateSettlementAgainstInformationSpace(
+         checkpoint: checkpoint,
+@@ -1198,7 +1214,7 @@
+         created = true
+         failureStage = "runtime_create_or_attach"
+         let fresh = try await runtime.create(
+-          id: Self.executionID,
++          id: self.taskExecutionID,
+           position: ExecutionPosition(0),
+           continuation: ExecutionContinuation(
+             nextInput: "\(Self.continuationPoint)-initial",

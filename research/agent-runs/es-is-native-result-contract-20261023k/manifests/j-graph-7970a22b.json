@@ -1,0 +1,178 @@
+{
+  "command": "define-j-graph",
+  "continuation_point": "bounded-production-runtime-integration",
+  "contract_dispatch_basis": "declared_contract",
+  "contract_schema_version": "simigo.result-contract/v1",
+  "declared_contracts": {
+    "J-7970a22b-U1": {
+      "bindings": [
+        {
+          "name": "origin",
+          "placeholder": "origin",
+          "source": "input_binding"
+        },
+        {
+          "name": "destination",
+          "placeholder": "destination",
+          "source": "input_binding"
+        },
+        {
+          "name": "destination_priority",
+          "placeholder": "destination_priority",
+          "source": "input_binding"
+        }
+      ],
+      "constraints": [
+        {
+          "binding": "origin",
+          "field": "origin_code",
+          "kind": "equals_binding"
+        },
+        {
+          "binding": "destination",
+          "field": "destination_code",
+          "kind": "equals_binding"
+        },
+        {
+          "binding": "destination_priority",
+          "field": "priority",
+          "kind": "equals_binding"
+        },
+        {
+          "binding": "destination_priority",
+          "field": "route_key",
+          "kind": "digest_equals_binding"
+        }
+      ],
+      "fields": {
+        "destination_code": {
+          "capture_group": 1,
+          "match_policy": "first",
+          "pattern": "DEST=([A-Z]+)",
+          "type": "string"
+        },
+        "origin_code": {
+          "capture_group": 1,
+          "match_policy": "first",
+          "pattern": "ORIGIN=([A-Z]+)",
+          "type": "string"
+        },
+        "priority": {
+          "capture_group": 1,
+          "match_policy": "first",
+          "pattern": "PRIORITY=([0-9]+)",
+          "type": "string"
+        },
+        "route_key": {
+          "capture_group": 1,
+          "match_policy": "first",
+          "pattern": "ROUTE=([A-Z]+>[A-Z]+)",
+          "type": "string"
+        }
+      },
+      "schema_version": "simigo.result-contract/v1"
+    },
+    "J-7970a22b-U2": {
+      "bindings": [
+        {
+          "name": "route_key",
+          "placeholder": "route_key",
+          "source": "input_binding"
+        }
+      ],
+      "constraints": [
+        {
+          "binding": "route_key",
+          "field": "route_key",
+          "kind": "equals_binding"
+        }
+      ],
+      "fields": {
+        "route_key": {
+          "capture_group": 1,
+          "match_policy": "first",
+          "pattern": "(?:FLOW=)?([A-Z]+>[A-Z]+)",
+          "type": "string"
+        }
+      },
+      "schema_version": "simigo.result-contract/v1"
+    },
+    "J-7970a22b-U3": {
+      "bindings": [
+        {
+          "name": "route_key",
+          "placeholder": "route_key",
+          "source": "input_binding"
+        }
+      ],
+      "constraints": [
+        {
+          "binding": "route_key",
+          "field": "route_key",
+          "kind": "equals_binding"
+        }
+      ],
+      "fields": {
+        "route_key": {
+          "capture_group": 1,
+          "match_policy": "first",
+          "pattern": "(?:CONFIRMED=)?([A-Z]+>[A-Z]+)",
+          "type": "string"
+        }
+      },
+      "schema_version": "simigo.result-contract/v1"
+    }
+  },
+  "demand_chain": "J-7970a22b-chain",
+  "demand_contract": "J-7970a22b-u1-contract",
+  "demand_u1": "J-7970a22b-u1",
+  "demand_u2": "J-7970a22b-u2",
+  "demand_u3": "J-7970a22b-u3",
+  "dest": "J-7970a22b-DEST",
+  "dest_priority": "5",
+  "dest_registration_object_id": "5942a903de73447bc056241f4f210fdd53107450ea2619c991a87aa69d9126f1",
+  "dest_sector": "EAST",
+  "expected_route_key": "NORTH>EAST",
+  "graph": {
+    "sources": [
+      "J-7970a22b-ORIGIN",
+      "J-7970a22b-DEST"
+    ],
+    "structured_chain": [
+      "J-7970a22b-U1",
+      "J-7970a22b-U2",
+      "J-7970a22b-U3"
+    ],
+    "transitive_closure_of_u3": [
+      "J-7970a22b-ORIGIN",
+      "J-7970a22b-DEST",
+      "J-7970a22b-U1",
+      "J-7970a22b-U2",
+      "J-7970a22b-U3"
+    ]
+  },
+  "item_ids": [
+    "J-7970a22b-ORIGIN",
+    "J-7970a22b-DEST",
+    "J-7970a22b-U1",
+    "J-7970a22b-U2",
+    "J-7970a22b-U3"
+  ],
+  "model_item_ids": [
+    "J-7970a22b-U1",
+    "J-7970a22b-U2",
+    "J-7970a22b-U3"
+  ],
+  "ok": true,
+  "origin": "J-7970a22b-ORIGIN",
+  "origin_priority": "3",
+  "origin_registration_object_id": "6256719f0d6bb821e9aeb69b966d0aeb4e2540a6156df3d1748516fb710497ec",
+  "origin_sector": "NORTH",
+  "run_label": "es-is-declarative-result-contract-20261023j-7970a22b",
+  "run_token": "7970a22b",
+  "u1": "J-7970a22b-U1",
+  "u1_constraint_kind": "digest_equals_binding",
+  "u1_declared_schema_version": "simigo.result-contract/v1",
+  "u2": "J-7970a22b-U2",
+  "u3": "J-7970a22b-U3"
+}

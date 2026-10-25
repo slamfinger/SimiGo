@@ -1,0 +1,69 @@
+{
+ "gate": "physical_page_return",
+ "batch": "simigo-v2.2.0rc1-os-page-return-20261024",
+ "generated_at": "2026-10-24T14:17:07+0800",
+ "applies_to_candidate": {
+  "exe_sha256": "60973e086f12583a20a6b578de33e678bd4a7e1846a7b6cd0084cd845eae90cd",
+  "app_path": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-service-http-20261024/install/SimiGo.app",
+  "note": "the installed candidate built for the Service/HTTP batch; this batch changed no source"
+ },
+ "verdict": "PASS",
+ "derived_from": {
+  "verdict_file": "evidence/os_page_return_verdict_os3.json",
+  "verdict_sha256": "a5375c4d5f2a386d38a23ff598285ab0c5e452bd903bff3e689db67709d9a830",
+  "raw_file": "evidence/os_page_return_raw_os3.json",
+  "raw_sha256": "98d6ddbeed289e4c81d28dbd428e34220030bc9c202320bb9796306e4c400a91",
+  "raw_captured_at": "2026-10-24T14:14:45+0800",
+  "raw_samples": 22479,
+  "sample_interval_ms": 10
+ },
+ "checks": {
+  "A1_shipped_suspend_observed": true,
+  "A2_loaded_state_before_anchor": true,
+  "A3_resident_set_fell": true,
+  "A4_low_state_sustained": true,
+  "A5_kernel_returned_the_pages": true,
+  "A6_compressor_not_the_sink": true,
+  "A7_process_alive_and_not_exiting": true,
+  "A8_noise_floor_small": true,
+  "A9_app_and_kernel_agree": true
+ },
+ "numbers": {
+  "kernel_resident_drop_gib": 16.11,
+  "kernel_returned_gib": 8.19,
+  "kernel_returned_over_drop": 0.508,
+  "compressor_delta_gib": -0.02,
+  "low_streak_seconds": 0.89,
+  "baseline_swing_bytes": 159989760,
+  "app_reported_drop_bytes": 17345900232,
+  "kernel_resident_drop_bytes": 17299238624,
+  "evidence_write_epoch_ms": 1792822485807,
+  "post_window_end_epoch_ms": 1792822483124,
+  "exit_teardown_free_gain_bytes": 16810835968,
+  "exit_teardown_used_for_verdict": false
+ },
+ "why_this_is_os_level": "host_statistics64(HOST_VM_INFO64) is the kernel's own global page accounting (the numbers vm_stat prints); the process is proven alive at every sample and its evidence file is written after the measurement window, so neither a process exit nor a call into a release API can explain the free-pool gain. The exit-teardown bracket is measured separately and excluded.",
+ "ledger_state": {
+  "ledger_file": "simigo-v2.2.0rc1-local-acceptance-20261024/acceptance_report.json",
+  "modified_by_this_batch": false,
+  "current_counts": {
+   "PASS": 12,
+   "BLOCKED": 3,
+   "FAIL": 0,
+   "NOT_INSTRUMENTED": 1
+  },
+  "current_physical_page_return_verdict": "BLOCKED",
+  "counts_if_applied_by_an_authorised_regeneration": {
+   "PASS": 13,
+   "BLOCKED": 2,
+   "FAIL": 0,
+   "NOT_INSTRUMENTED": 1
+  },
+  "how_to_apply": "feed this addendum into the local-acceptance batch's report generator as an input, regenerate acceptance_report.json, re-run that batch's verifier and verify_manifest.sh; do not hand-edit the JSON."
+ },
+ "does_not_close": [
+  "product_gui_ordinary_prompt: still BLOCKED_PREREQUISITE (screen recording not granted)",
+  "per_layer_forward_calls: still NOT_INSTRUMENTED (no instrumentation exists)",
+  "v2.2.0rc1 overall: still BLOCKED"
+ ]
+}

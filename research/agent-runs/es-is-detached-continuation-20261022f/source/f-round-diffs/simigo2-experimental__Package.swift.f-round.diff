@@ -1,0 +1,24 @@
+--- a/simigo2-experimental/Package.swift
++++ b/simigo2-experimental/Package.swift
+@@ -21,6 +21,10 @@
+         // declared dependency settlements from IS before any generation. It
+         // contains no handoff orchestration and receives no input text.
+         .executable(name: "SimiGoTaskRun", targets: ["SimiGoTaskRun"]),
++        // F round: native orchestration of the detached U1->U2 process and
++        // execution-state boundary. Model-free and settlement-free: it only
++        // owns subprocess lifecycle and evidence assembly.
++        .executable(name: "SimiGoDetachedDriver", targets: ["SimiGoDetachedDriver"]),
+         .executable(name: "EngineBaselineCrashChild", targets: ["EngineBaselineCrashChild"]),
+         .executable(name: "MaterializationQuarantineCrashChild", targets: ["MaterializationQuarantineCrashChild"]),
+         .executable(name: "ExecutionStateChaosChild", targets: ["ExecutionStateChaosChild"]),
+@@ -116,6 +120,10 @@
+             ]
+         ),
+         .executableTarget(
++            name: "SimiGoDetachedDriver",
++            dependencies: []
++        ),
++        .executableTarget(
+             name: "SimiGo2App",
+             dependencies: ["SimiGo2Experimental"]
+         ),

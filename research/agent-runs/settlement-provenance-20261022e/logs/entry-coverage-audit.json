@@ -1,0 +1,167 @@
+{
+ "checks": {
+  "bridge_execute_opens_required_provenance": true,
+  "bridge_open_loop_selects_required_not_env_default": true,
+  "continueWithRealInformation_executes_bridge_before_tokenize": true,
+  "every_continueTask_call_site_passes_provenance": true,
+  "execute_demand_uses_reuse_decision": true,
+  "integration_defines_continueTask": true,
+  "integration_defines_continueWithRealInformation": true,
+  "legacy_entry_calls_continueWithRealInformation": true,
+  "missing_or_invalid_signature_is_a_refusal": true,
+  "non_task_entries_have_direct_generation_evidence": true,
+  "non_task_entries_have_no_task_capability": true,
+  "producer_policy_cannot_silently_fall_back_to_off": true,
+  "production_integration_entries_are_the_three_known_ones": true,
+  "reuse_decision_verifies_signature": true,
+  "sole_swift_execute_site_is_inside_continueWithRealInformation": true
+ },
+ "non_task_entries": [
+  {
+   "direct_generation_evidence": "generate(",
+   "entry": "SimiGo2App.send / sendSmallScale / self-test",
+   "excluded": true,
+   "exists": true,
+   "generate_call_lines": [
+    347,
+    643,
+    648
+   ],
+   "path": "simigo2-experimental/Sources/SimiGo2App/SimiGo2App.swift",
+   "reason": "interactive chat/benchmark surface: direct engine.generate with user text, no task item and no IS settlement",
+   "task_capability_found": []
+  },
+  {
+   "direct_generation_evidence": "generate(",
+   "entry": "MLXGroupResidencyBenchmark / MLXGroupInferenceGate",
+   "excluded": true,
+   "exists": true,
+   "generate_call_lines": [
+    88,
+    102,
+    150,
+    209
+   ],
+   "path": "simigo2-experimental/Sources/SimiGo2Experimental/MLXGroupResidencyBenchmark.swift",
+   "reason": "measurement/residency probe: direct generation, no task identity and no settlement consumption",
+   "task_capability_found": []
+  },
+  {
+   "direct_generation_evidence": "generate(",
+   "entry": "GroupExecutionTraceProbe",
+   "excluded": true,
+   "exists": true,
+   "generate_call_lines": [
+    349
+   ],
+   "path": "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/GroupExecutionTraceProbe.swift",
+   "reason": "instrumentation-only trace generation, no IS admission",
+   "task_capability_found": []
+  },
+  {
+   "direct_generation_evidence": "generate(",
+   "entry": "MeasuredExecutionTracePilot",
+   "excluded": true,
+   "exists": true,
+   "generate_call_lines": [
+    245
+   ],
+   "path": "simigo2-experimental/Sources/SimiGo2Experimental/Instrumentation/MeasuredExecutionTracePilot.swift",
+   "reason": "instrumentation-only measured trace, no IS admission",
+   "task_capability_found": []
+  },
+  {
+   "direct_generation_evidence": "generate:",
+   "entry": "G3SwiftIsolationEntry",
+   "excluded": true,
+   "exists": true,
+   "generate_call_lines": [
+    70
+   ],
+   "path": "simigo2-experimental/Sources/G3SwiftIsolationEntry/main.swift",
+   "reason": "isolation/cancellation harness with an injected generate closure; it does not advance a task",
+   "task_capability_found": []
+  }
+ ],
+ "not_claimed": [
+  "that every inference call in the repository is admission-covered",
+  "that the RealModelHandoff entry was dynamically exercised in E",
+  "that the Swift ActualMLXSmokeChild wrapper was executed in E; the bridge execute path it invokes was",
+  "semantic correctness of a signed answer"
+ ],
+ "production_task_entries": [
+  {
+   "admission": "continueTask -> resolveTaskInput -> bridge resolve-model-input (verify) -> Swift Ed25519 verify",
+   "dynamic_in_e_round": "MODEL_RUNS_AND_TAMPER_MATRIX",
+   "entry": "SimiGoTaskRun",
+   "path": "simigo2-experimental/Sources/SimiGoTaskRun/main.swift"
+  },
+  {
+   "admission": "same continueTask admission; handoff only chooses the item",
+   "dynamic_in_e_round": "NOT_RUN_STATIC_ONLY",
+   "entry": "RealModelHandoff",
+   "path": "simigo2-experimental/Sources/RealModelHandoff/main.swift"
+  },
+  {
+   "admission": "continueWithRealInformation -> runBridge(execute) -> open_loop(require_provenance=True) -> execute_demand -> _settlement_reuse_decision -> _verify_signed_settlement",
+   "dynamic_in_e_round": "BRIDGE_EXECUTE_DYNAMIC; SWIFT_WRAPPER_STATIC_ONLY",
+   "entry": "ActualMLXSmokeChild (legacy advancement)",
+   "path": "simigo2-experimental/Sources/ActualMLXSmokeChild/main.swift"
+  }
+ ],
+ "schema_id": "SIMIGO-E-ROUND-ENTRY-COVERAGE-AUDIT-V1",
+ "source_evidence": {
+  "bridge_execute_open_loop_line": 225,
+  "continueTask_call_sites": [
+   {
+    "line": 180,
+    "path": "simigo2-experimental/Sources/RealModelHandoff/Causality.swift",
+    "text": "continueTask( database: database, handle: recovered, advancementID: \"phase1-a0-u2-\\(options.runLabel)\", evaluatedAtUTC: utcNowPlus(1), demandID: \"handoff-u2\", taskItemID: \"TASK-U2\", seedText: nil, provenance: ProductionTaskProvenance( runID: \"causality-phase1-\\(options.runLabel)\", buildSHA256: ProductionTaskProvenance.buildIdentity( runtimeRoot: options.labRoot.appendingPathComponent(\"execution-information-loop\")), modelSnapshotRevision: identity[\"snapshot_revision\"] as? String ?? \"\", weightsManifestSHA256: identity[\"weights_manifest_sha256\"] as? String ?? \"\"), maxTokens: options.maxTokens )"
+   },
+   {
+    "line": 415,
+    "path": "simigo2-experimental/Sources/RealModelHandoff/Causality.swift",
+    "text": "continueTask( database: database, handle: nil, advancementID: \"phase2-\\(caseName)-u2-\\(options.runLabel)\", evaluatedAtUTC: utcNowPlus(1), demandID: \"handoff-u2\", taskItemID: \"TASK-U2\", seedText: coldU2Seed, provenance: ProductionTaskProvenance( runID: \"causality-phase2-\\(caseName)-\\(options.runLabel)\", buildSHA256: ProductionTaskProvenance.buildIdentity( runtimeRoot: options.labRoot.appendingPathComponent(\"execution-information-loop\")), modelSnapshotRevision: revision, weightsManifestSHA256: weightsDigest), maxTokens: options.maxTokens )"
+   },
+   {
+    "line": 450,
+    "path": "simigo2-experimental/Sources/RealModelHandoff/main.swift",
+    "text": "continueTask( database: database, handle: nil, advancementID: \"handoff-a-u1-\\(options.runLabel)\", evaluatedAtUTC: advancementAt, demandID: \"handoff-u1\", taskItemID: \"TASK-U1\", seedText: seedText, provenance: ProductionTaskProvenance( runID: \"handoff-a-u1-\\(options.runLabel)\", buildSHA256: ProductionTaskProvenance.buildIdentity( runtimeRoot: options.labRoot.appendingPathComponent(\"execution-information-loop\")), modelSnapshotRevision: revision, weightsManifestSHA256: weightsDigest), maxTokens: options.maxTokens )"
+   },
+   {
+    "line": 625,
+    "path": "simigo2-experimental/Sources/RealModelHandoff/main.swift",
+    "text": "continueTask( database: database, handle: recovered, advancementID: \"handoff-c-u2-\\(options.runLabel)\", evaluatedAtUTC: advancementAt, demandID: \"handoff-u2\", taskItemID: \"TASK-U2\", seedText: nil, provenance: ProductionTaskProvenance( runID: \"handoff-c-u2-\\(options.runLabel)\", buildSHA256: ProductionTaskProvenance.buildIdentity( runtimeRoot: options.labRoot.appendingPathComponent(\"execution-information-loop\")), modelSnapshotRevision: revision, weightsManifestSHA256: weightsDigest), maxTokens: 32 )"
+   },
+   {
+    "line": 373,
+    "path": "simigo2-experimental/Sources/SimiGoTaskRun/main.swift",
+    "text": "continueTask( database: options.database, handle: nil, advancementID: options.advancementID, evaluatedAtUTC: options.evaluatedAtUTC, demandID: options.demandID, taskItemID: options.itemID, seedText: seedText, provenance: provenance, maxTokens: options.maxTokens )"
+   }
+  ],
+  "continueTask_definition_line": 1094,
+  "continueWithRealInformation_bridge_execute_line": 829,
+  "continueWithRealInformation_call_sites": [
+   {
+    "line": 120,
+    "path": "simigo2-experimental/Sources/ActualMLXSmokeChild/main.swift",
+    "text": "continueWithRealInformation( database: database, handle: nil, advancementID: \"actual-mlx-smoke-v6\", evaluatedAtUTC: \"2026-10-10T00:00:00Z\" )"
+   }
+  ],
+  "continueWithRealInformation_definition_line": 794,
+  "continueWithRealInformation_first_tokenize_line": 892,
+  "execute_demand_reuse_decision_line": 1414,
+  "production_integration_entries": [
+   "simigo2-experimental/Sources/ActualMLXSmokeChild/main.swift",
+   "simigo2-experimental/Sources/RealModelHandoff/main.swift",
+   "simigo2-experimental/Sources/SimiGoTaskRun/main.swift"
+  ]
+ },
+ "sources": {
+  "execution-information-loop/carrier_loop.py": "cf724a996a871ec9ce5e3bfa89e5348c67bd57acd27ea7d45b021898ee8d8750",
+  "execution-information-loop/production_runtime_bridge.py": "d87e045bfa7c2a05792d98338ae67bad9cd34d6ec0ca63efafe365f259711dbb",
+  "execution-information-loop/settlement_provenance.py": "1d385e77da2123df9361734ce55934a466c8ef019f3cc4d30d36265d044b6e16",
+  "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift": "0f164728838119595650102661b8a1f790de874dbd5e4bfb6e42e50bb3941af9"
+ },
+ "verdict": "PASS"
+}

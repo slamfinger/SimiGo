@@ -1,0 +1,89 @@
+Fetching https://github.com/slamfinger/mlx-swift from cache
+Fetched https://github.com/slamfinger/mlx-swift from cache (1.78s)
+Fetching https://github.com/slamfinger/mlx-swift-lm.git from cache
+Fetched https://github.com/slamfinger/mlx-swift-lm.git from cache (1.45s)
+Fetching https://github.com/apple/swift-numerics from cache
+Fetching https://github.com/huggingface/swift-transformers.git from cache
+Fetching https://github.com/swiftlang/swift-syntax.git from cache
+Fetched https://github.com/huggingface/swift-transformers.git from cache (3.26s)
+Fetched https://github.com/swiftlang/swift-syntax.git from cache (3.28s)
+Fetched https://github.com/apple/swift-numerics from cache (3.31s)
+Computing version for https://github.com/huggingface/swift-transformers.git
+Computed https://github.com/huggingface/swift-transformers.git at 1.3.5 (4.00s)
+Fetching https://github.com/apple/swift-crypto.git from cache
+Fetching https://github.com/ibireme/yyjson.git from cache
+Fetching https://github.com/huggingface/swift-jinja.git from cache
+Fetching https://github.com/huggingface/swift-huggingface.git from cache
+Fetching https://github.com/apple/swift-collections.git from cache
+Fetched https://github.com/huggingface/swift-huggingface.git from cache (2.02s)
+Fetched https://github.com/apple/swift-collections.git from cache (2.03s)
+Fetched https://github.com/huggingface/swift-jinja.git from cache (2.05s)
+Fetched https://github.com/apple/swift-crypto.git from cache (2.08s)
+Fetched https://github.com/ibireme/yyjson.git from cache (2.10s)
+Computing version for https://github.com/ibireme/yyjson.git
+Computed https://github.com/ibireme/yyjson.git at 0.12.0 (2.75s)
+Computing version for https://github.com/swiftlang/swift-syntax.git
+Computed https://github.com/swiftlang/swift-syntax.git at 603.0.2 (0.71s)
+Computing version for https://github.com/huggingface/swift-jinja.git
+Computed https://github.com/huggingface/swift-jinja.git at 2.5.2 (0.61s)
+Computing version for https://github.com/apple/swift-numerics
+Computed https://github.com/apple/swift-numerics at 1.1.1 (0.82s)
+Computing version for https://github.com/huggingface/swift-huggingface.git
+Computed https://github.com/huggingface/swift-huggingface.git at 1.0.0 (0.67s)
+Fetching https://github.com/mattt/EventSource.git from cache
+Fetched https://github.com/mattt/EventSource.git from cache (1.49s)
+Computing version for https://github.com/mattt/EventSource.git
+Computed https://github.com/mattt/EventSource.git at 1.5.1 (2.09s)
+Computing version for https://github.com/apple/swift-collections.git
+Computed https://github.com/apple/swift-collections.git at 1.7.3 (0.66s)
+Computing version for https://github.com/apple/swift-crypto.git
+Computed https://github.com/apple/swift-crypto.git at 4.5.2 (0.68s)
+Fetching https://github.com/apple/swift-asn1.git from cache
+Fetched https://github.com/apple/swift-asn1.git from cache (1.43s)
+Computing version for https://github.com/apple/swift-asn1.git
+Computed https://github.com/apple/swift-asn1.git at 1.7.3 (2.06s)
+Creating working copy for https://github.com/apple/swift-crypto.git
+Working copy of https://github.com/apple/swift-crypto.git resolved at 4.5.2
+Creating working copy for https://github.com/apple/swift-numerics
+Working copy of https://github.com/apple/swift-numerics resolved at 1.1.1
+Creating working copy for https://github.com/huggingface/swift-jinja.git
+Working copy of https://github.com/huggingface/swift-jinja.git resolved at 2.5.2
+Creating working copy for https://github.com/huggingface/swift-huggingface.git
+Working copy of https://github.com/huggingface/swift-huggingface.git resolved at 1.0.0
+Creating working copy for https://github.com/huggingface/swift-transformers.git
+Working copy of https://github.com/huggingface/swift-transformers.git resolved at 1.3.5
+Creating working copy for https://github.com/mattt/EventSource.git
+Working copy of https://github.com/mattt/EventSource.git resolved at 1.5.1
+Creating working copy for https://github.com/slamfinger/mlx-swift-lm.git
+Working copy of https://github.com/slamfinger/mlx-swift-lm.git resolved at bc64ee696de102ad43fd76dd6ac01dc37f6427d3
+Creating working copy for https://github.com/swiftlang/swift-syntax.git
+Working copy of https://github.com/swiftlang/swift-syntax.git resolved at 603.0.2
+Creating working copy for https://github.com/apple/swift-asn1.git
+Working copy of https://github.com/apple/swift-asn1.git resolved at 1.7.3
+Creating working copy for https://github.com/ibireme/yyjson.git
+Working copy of https://github.com/ibireme/yyjson.git resolved at 0.12.0
+Creating working copy for https://github.com/apple/swift-collections.git
+Working copy of https://github.com/apple/swift-collections.git resolved at 1.7.3
+Creating working copy for https://github.com/slamfinger/mlx-swift
+Working copy of https://github.com/slamfinger/mlx-swift resolved at ef5f1b6bb24e27922189316362f3057c64261704
+Building for debugging...
+[Planning deferred tasks]
+[23 / 38]
+[24 / 39] SimiGoRuntimeContract
+[37 / 88]
+[44 / 88]
+[45 / 88]
+[50 / 88]
+[54 / 88]
+[58 / 88]
+[60 / 88]
+[61 / 88]
+[73 / 88] SimiGoRuntimeContract
+[74 / 88] SimiGoRuntimeContract
+[82 / 89] SimiGoRuntimeContract
+[86 / 91] simigo-l3-product
+[89 / 91] simigo-l3-product
+Build complete! (4.11秒)
+{"issueCount":0,"startedAt":"2026-10-22T20:25:44Z","workFilesIndexed":0,"steps":[{"status":"ok","detail":"created managed runtime directories under .simigo","id":"ensure-dirs"},{"status":"ok","detail":"schemaVersion=2","id":"migrate-schema"},{"status":"skipped","detail":"no legacy graph supplied","id":"import-legacy"},{"status":"ok","detail":"discovered 20 model file(s)","id":"discover-models"},{"status":"skipped","detail":"indexed 0 work file(s)","id":"index-work"},{"status":"ok","detail":"bootstrap-report.json","id":"write-report"}],"schemaVersion":2,"legacyMigrated":false,"finishedAt":"2026-10-22T20:25:44Z","modelsDiscovered":20}
+--- VERIFY --- schema=2 integrity=true execution_states=0 settlements=0 roots=1 external_files=20
+report_path=/Users/mr.simi/SimiGo-Agent-Runs/simigo-product-integration-20261023/first-install-v2/.simigo/manifests/bootstrap-report.json

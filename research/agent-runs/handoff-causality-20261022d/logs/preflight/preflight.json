@@ -1,0 +1,50 @@
+{
+ "checks": {
+  "u1_admitted": true,
+  "u1_bound_to_source": true,
+  "u2_refused_before_u1_settlement": true
+ },
+ "definition": {
+  "checksum": "ea01",
+  "log_text_sha256": "b4a6fb724f4d2384b194b90e3a68028ac88daf93744dcd81a72e784ab302bce8",
+  "run_label": "d-preflight",
+  "secret_sha256": "152dfe787ce5cc51b9b289a23181bf07158459478b810fbb7291c1307fefeb1e",
+  "source_settlement_object_id": "64b74a6472d39c15b1ad0cfc5d02c37bd0ee69e3e5e92361bb2dd29c6fc4bd98",
+  "u1_item_object_id": "f0303e0e16e79feed3d0da27c1ba7ba031de8dafcbde33abf8bc40aabd539882",
+  "u1_template_sha256": "c2df7535b7e0603f958aee2a7de80ba97a5bf3dc8431d7b39eb12872fb085fb9",
+  "u2_item_object_id": "3dc65930e6f5e4500dd2d7245cc4c64de65e468cd5ffe6fdcbdae354cf47124a",
+  "u2_template_sha256": "7610b37592df3b6f096128ee4f0b22d663ebc743ee6542381a4c1e01cf8446fc"
+ },
+ "schema_id": "SIMIGO-ORDINARY-TASK-PREFLIGHT-V1",
+ "u1": {
+  "binding_item_ids": [
+   "TASK-SOURCE"
+  ],
+  "checks": {
+   "all_declared_dependencies_admitted": true,
+   "all_placeholders_bound": true,
+   "dependency_object_sets_match": true,
+   "object_identity_matches_bytes": true,
+   "result_digests_match_values": true,
+   "settlement_objects_readable": true,
+   "source_versions_match_items": true,
+   "validity_satisfied": true
+  },
+  "declared_dependencies": [
+   "TASK-SOURCE"
+  ],
+  "dependency_object_ids": {
+   "TASK-SOURCE": "64b74a6472d39c15b1ad0cfc5d02c37bd0ee69e3e5e92361bb2dd29c6fc4bd98"
+  },
+  "exit_code": 0,
+  "input_byte_length": 241,
+  "input_sha256": "7dbb62c586d3954199e2ced96606848d7e48b32902fa44adbeebc5f07c950348",
+  "stderr": ""
+ },
+ "u2_before_u1": {
+  "exit_code": 1,
+  "refusal_reason": "MISSING_OR_SUPERSEDED_SETTLEMENT",
+  "refusal_stage": "SETTLEMENT_NOT_ADMITTED"
+ },
+ "verdict": "PASS"
+}

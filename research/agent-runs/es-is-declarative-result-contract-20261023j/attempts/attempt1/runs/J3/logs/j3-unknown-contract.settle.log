@@ -1,0 +1,6 @@
+$ bridge execute-with-model-result --database /Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J3/carrier.sqlite --demand-id J-d7a2a7aa-u1-contract --advancement j3-u1-unknown-version --evaluated-at 2026-10-22T16:23:00Z --item-id J-d7a2a7aa-U1 --value-file /Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J3/j3-u1-unknown-version-value.json --provenance-file /Users/mr.simi/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/runs/J3/j3-u1-unknown-version-provenance.json --run-id j-candidate-j3-u1-unknown-version --execution-id j-candidate-j3-u1-unknown-version --build-sha256 34a1ff2e18ef97e57c9494cd346f4a3fd97c7679413b874bb3f4b1d3c88b5391 --producer-process-id 97287
+---stdout---
+{"command":"execute-with-model-result","error":"CONTRACT_UNKNOWN_SCHEMA_VERSION: expected 'simigo.result-contract/v1', found 'simigo.result-contract/v9'","error_type":"ContractError","ok":false}
+
+---stderr---
+

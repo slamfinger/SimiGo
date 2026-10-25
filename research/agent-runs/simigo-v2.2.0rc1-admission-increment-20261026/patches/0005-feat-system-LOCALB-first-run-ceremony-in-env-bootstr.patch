@@ -1,0 +1,204 @@
+From 2df9e2db2df6ed6d67ac47d7b4fe5ae9ccf772cd Mon Sep 17 00:00:00 2001
+From: "Mr.Simi" <mr.simi@MrSimideAir-5.local>
+Date: Mon, 26 Oct 2026 02:21:07 +0800
+Subject: [PATCH 5/7] feat(system): LOCALB first-run ceremony in env-bootstrap
+ + build short-circuits
+
+- env-bootstrap gains SIMIGO_ENV_BOOTSTRAP_LOCALB=1: in-process prepare ->
+  activate ceremony against the managed root, re-resolving afterwards (the
+  ceremony status supersedes the pre-ceremony localb snapshot).
+- The management entry accepts SIMIGO_LOCALB_ALLOW_REAL_ROOT=1 for explicit
+  real-root operation: the file keychain makes re-running the first-run
+  ceremony the recovery path for signature-locked login-Keychain identities.
+- setupEnvironment short-circuits on an installed, executable
+  bin/llama-server: cache pruning removes sources/build after a successful
+  build, and without the short circuit every re-run (including any offline
+  re-run, github currently unreachable here) forced a fresh clone.
+- env-bootstrap reports LOCALB resolution status with recovery guidance.
+
+End-to-end on an isolated root: manifest created (pinned 0878f7c3), llama
+short-circuited, hf adopted, blank database created with the work root
+registered, ceremony completed, localb operational. Real domain recovered
+the same way; the existing user database was left untouched.
+---
+ SimiGo/Headless/SimiGoEnvBootstrapEntry.swift | 62 ++++++++++++++++++-
+ .../SimiGoLocalBManagementEntry.swift         | 20 ++++--
+ SimiGo/System/EnvManager.swift                | 31 ++++++++++
+ 3 files changed, 106 insertions(+), 7 deletions(-)
+
+diff --git a/SimiGo/Headless/SimiGoEnvBootstrapEntry.swift b/SimiGo/Headless/SimiGoEnvBootstrapEntry.swift
+index 81217ec..beeab9d 100644
+--- a/SimiGo/Headless/SimiGoEnvBootstrapEntry.swift
++++ b/SimiGo/Headless/SimiGoEnvBootstrapEntry.swift
+@@ -1,4 +1,5 @@
+ import Foundation
++import LOCALBCore
+ import SimiGoRuntimeContract
+ 
+ // SIMIGO_ENV_BOOTSTRAP=1 — one-shot provisioning of the full generation
+@@ -44,11 +45,65 @@ enum SimiGoEnvBootstrapEntry {
+         return Decision(requested: true, valid: true, error: nil)
+     }
+ 
++    /// Opt-in first-run LOCALB ceremony (SIMIGO_ENV_BOOTSTRAP_LOCALB=1): runs
++    /// prepare → activate in-process (the checkpoint the ceremony demands is
++    /// produced and consumed by the same explicit operator command) and then
++    /// re-resolves. Idempotent in the sense that an already-operational host is
++    /// left untouched; a half-initialized registry is reported, never cleared.
++    @MainActor
++    static func bootstrapLOCALBCeremonyIfNeeded(optIn: Bool) -> [String: Any] {
++        let hostDirectory = LOCALBHostRuntime.defaultHostDirectory()
++        func resolve() -> (String, String?) {
++            switch try? LOCALBHostRuntime.resolveOperational(hostDirectory: hostDirectory) {
++            case .operational: return ("operational", nil)
++            case .notInitialized: return ("not_initialized", nil)
++            default: return ("unresolvable", nil)
++            }
++        }
++        let before = resolve().0
++        guard optIn, before != "operational" else {
++            var out: [String: Any] = ["status": before]
++            if before != "operational" {
++                out["recovery"] = "set SIMIGO_ENV_BOOTSTRAP_LOCALB=1 to run the "
++                    + "first-run ceremony against the managed root (or run "
++                    + "SIMIGO_LOCALB_MGMT=prepare/activate manually)"
++            }
++            return out
++        }
++        do {
++            let registryRoot = LOCALBHostRuntime.registryRoot(in: hostDirectory)
++            let pending = try LOCALBHostBootstrap.prepareFirstRun(rootURL: registryRoot)
++            let checkpoint = pending.checkpoint
++            _ = try LOCALBHostBootstrap.activateInitialSetup(
++                rootURL: registryRoot, operatorRecordedCheckpoint: checkpoint)
++            try LOCALBHostRuntime.persistTrustedCheckpoint(checkpoint, in: hostDirectory)
++            let after = resolve().0
++            return [
++                "status": after,
++                "ceremony": "completed",
++                "lineage_id": pending.lineageID,
++                "transport_spki_sha256": pending.transportSPKIHashHex,
++            ]
++        } catch {
++            return ["status": resolve().0, "ceremony": "failed",
++                    "detail": "\(error)"]
++        }
++    }
++
+     @MainActor
+     static func run() async -> Int32 {
+         let env = ProcessInfo.processInfo.environment
+         let workRoot = env["SIMIGO_WORKROOT"].flatMap { $0.isEmpty ? nil : $0 }
+-        let report = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: workRoot)
++        var report = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: workRoot)
++        // LOCALB first-run ceremony (explicit opt-in only). The ceremony
++        // re-resolves, so its status supersedes the pre-ceremony `localb`
++        // snapshot in the report.
++        let ceremony = bootstrapLOCALBCeremonyIfNeeded(
++            optIn: env["SIMIGO_ENV_BOOTSTRAP_LOCALB"] == "1")
++        report["localb_ceremony"] = ceremony
++        if (ceremony["status"] as? String) == "operational" {
++            report["localb"] = ["status": "operational"]
++        }
+ 
+         let encoder = JSONSerialization.jsonSerializerCompatibleDictionary(report)
+         let data = (try? JSONSerialization.data(
+@@ -68,6 +123,11 @@ enum SimiGoEnvBootstrapEntry {
+         if let llama = report["llama_cpp"] as? [String: Any] { failed = failed || stepFailed(llama) }
+         if let hf = report["hf"] as? [String: Any] { failed = failed || (hf["status"] as? String) == "install_failed" }
+         if let db = report["database"] as? [String: Any] { failed = failed || stepFailed(db) }
++        if let ceremony = report["localb_ceremony"] as? [String: Any],
++            (ceremony["ceremony"] as? String) == "failed"
++        {
++            failed = true
++        }
+         return failed ? 1 : 0
+     }
+ }
+diff --git a/SimiGo/Headless/SimiGoLocalBManagementEntry.swift b/SimiGo/Headless/SimiGoLocalBManagementEntry.swift
+index fb3b876..f7f649c 100644
+--- a/SimiGo/Headless/SimiGoLocalBManagementEntry.swift
++++ b/SimiGo/Headless/SimiGoLocalBManagementEntry.swift
+@@ -67,16 +67,24 @@ enum SimiGoLocalBManagementEntry {
+                     + "(allowed: prepare|activate|pair-issue|pair-approve|serve|serve-service)"
+             )
+         }
+-        // These roles create keys and registry state. They are only allowed
+-        // against an isolated managed root; the real home is never a target.
+-        guard let home = env["SIMIGO_HOME"], !home.isEmpty else {
++        // These roles create keys and registry state. They run against an
++        // isolated managed root by default; the real home is a target only
++        // under an explicit operator acknowledgement
++        // (SIMIGO_LOCALB_ALLOW_REAL_ROOT=1). Real-root use exists because the
++        // production identity now lives in the managed FILE keychain
++        // (<root>/localb/…): re-running the first-run ceremony there is the
++        // recovery path for a host whose login-Keychain identities are locked
++        // to a previous build's code signature (transportIdentityMismatch /
++        // AUTH_DENIED, 2026-10-26).
++        let realRootAcknowledged = env["SIMIGO_LOCALB_ALLOW_REAL_ROOT"] == "1"
++        guard realRootAcknowledged || ((env["SIMIGO_HOME"] ?? "").isEmpty == false) else {
+             return Decision(
+                 requested: true, role: nil,
+-                error: "SIMIGO_HOME is required: management roles only run "
+-                    + "against an isolated root"
++                error: "SIMIGO_HOME is required (or set "
++                    + "SIMIGO_LOCALB_ALLOW_REAL_ROOT=1 to operate on the real "
++                    + "managed root)"
+             )
+         }
+-        _ = home
+ 
+         func missing(_ key: String) -> Decision {
+             Decision(requested: true, role: nil, error: "\(key) missing")
+diff --git a/SimiGo/System/EnvManager.swift b/SimiGo/System/EnvManager.swift
+index cc2bff5..42e6198 100644
+--- a/SimiGo/System/EnvManager.swift
++++ b/SimiGo/System/EnvManager.swift
+@@ -281,6 +281,19 @@ public final class EnvManager: ObservableObject {
+ 
+         let fm = FileManager.default
+ 
++        // Installed-binary short circuit: a usable `bin/llama-server` satisfies
++        // the dependency WITHOUT rebuilding. Cache pruning removes sources/build
++        // after a successful build, so without this check every re-run (or any
++        // offline re-run) would force a fresh clone of upstream.
++        let installedLlama = "\(Self.binDir)/llama-server"
++        if fm.fileExists(atPath: installedLlama), fm.isExecutableFile(atPath: installedLlama) {
++            appendCommandLog("✅ 检测到已安装的 llama-server（\(installedLlama)），跳过构建。")
++            commandStatus = "构建完成"
++            commandInput = Self.defaultCommandInput
++            checkStatus()
++            return
++        }
++
+         do {
+             try fm.createDirectory(atPath: Self.simigoDir, withIntermediateDirectories: true)
+             try fm.createDirectory(atPath: Self.binDir, withIntermediateDirectories: true)
+@@ -556,6 +569,24 @@ public final class EnvManager: ObservableObject {
+         report["hf"] = await bootstrapHFTool()
+         // 3) Fresh ES/IS database + work root.
+         report["database"] = bootstrapFreshDatabase(workRoot: workRoot)
++        // 4) LOCALB operational status against the SAME managed root the
++        //    identities now live in (file keychain). `operational` = the ES/IS
++        //    serving path can bind TLS + auth; anything else names the recovery
++        //    step (first-run ceremony via the management entry).
++        switch try? LOCALBHostRuntime.resolveOperational(hostDirectory: LOCALBHostRuntime.defaultHostDirectory()) {
++        case .operational:
++            report["localb"] = ["status": "operational"]
++        case .notInitialized:
++            report["localb"] = [
++                "status": "not_initialized",
++                "recovery": "run first-run ceremony: SIMIGO_LOCALB_MGMT=prepare, then activate (real root: SIMIGO_LOCALB_ALLOW_REAL_ROOT=1)",
++            ]
++        default:
++            report["localb"] = [
++                "status": "unresolvable",
++                "recovery": "identities may be locked to a previous build's signature in the login keychain; re-run the first-run ceremony against the managed root",
++            ]
++        }
+         report["finished_at"] = ISO8601DateFormatter().string(from: Date())
+         return report
+     }
+-- 
+2.54.0 (Apple Git-157)
+

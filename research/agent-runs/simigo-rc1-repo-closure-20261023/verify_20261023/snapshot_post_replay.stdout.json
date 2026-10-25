@@ -1,0 +1,39 @@
+{
+ "phase": "post-replay",
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-repo-closure-20261023/verify_20261023/snapshot_post_replay.json",
+ "real_roots": [
+  "/Users/mr.simi/.simigo",
+  "/Users/mr.simi/Library/Application Support/SimiGo",
+  "/Users/mr.simi/.cache/huggingface"
+ ],
+ "entries": [
+  {
+   "path": "/Users/mr.simi/.simigo",
+   "role": "real_state",
+   "exists": true,
+   "files": 8971,
+   "bytes": 32398426016
+  },
+  {
+   "path": "/Users/mr.simi/Library/Application Support/SimiGo",
+   "role": "real_state",
+   "exists": true,
+   "files": 1,
+   "bytes": 1068
+  },
+  {
+   "path": "/Users/mr.simi/.cache/huggingface",
+   "role": "real_state",
+   "exists": true,
+   "files": 951,
+   "bytes": 242509940763
+  },
+  {
+   "path": "/Users/mr.simi/.cache/huggingface",
+   "role": "reference",
+   "exists": true,
+   "files": 951,
+   "bytes": 242509940763
+  }
+ ]
+}

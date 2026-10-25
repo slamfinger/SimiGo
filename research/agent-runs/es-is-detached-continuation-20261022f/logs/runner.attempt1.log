@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_f.py", line 868, in <module>
+    raise SystemExit(main())
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_f.py", line 590, in main
+    trust = e.provision_trust(run_root)
+  File "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/scripts/ordinary_task/run_phase_e.py", line 209, in provision_trust
+    anchor_path.write_text(
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1275, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors) as f:
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1242, in open
+    return io.open(self, mode, buffering, encoding, errors, newline,
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1110, in _opener
+    return self._accessor.open(self, flags, mode)
+PermissionError: [Errno 13] Permission denied: '/Users/mr.simi/SimiGo-Agent-Runs/es-is-detached-continuation-20261022f/trust/settlement-trust-anchor.json'

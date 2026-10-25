@@ -1,0 +1,83 @@
+{
+ "anchor_mode": "0o444",
+ "anchor_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/trust/settlement-trust-anchor.json",
+ "anchor_sha256": "8aeaedde2a358165170c5e8f8147794a0ee37f994a6d77f7b9d6798133757402",
+ "attacker_anchor_sha256": "f3da34c739fcc59d38e5f0b14ac5aa9964e08e22ec38ea9ed3db7e53dd6e8a28",
+ "bridge_commands": [
+  "audit",
+  "confirm-runtime-application",
+  "define-task",
+  "diagnostics",
+  "execute",
+  "execute-probe",
+  "execute-with-model-result",
+  "initialize",
+  "invalidate",
+  "probe-missing",
+  "read-item",
+  "read-settlement",
+  "record-blocked",
+  "resolve-model-input",
+  "rollback-to-state",
+  "snapshot-database",
+  "source-change",
+  "status"
+ ],
+ "checks": {
+  "attacker_anchor_reuses_key_id": true,
+  "attacker_public_key_differs": true,
+  "bridge_exposes_no_signing_command": true,
+  "consumer_runs_are_built_without_key": true,
+  "databases_scanned": true,
+  "key_and_anchor_share_key_id": true,
+  "key_and_anchor_share_public_key": true,
+  "private_key_material_absent_from_databases": true,
+  "settle_signs_only_after_declaration_built": true,
+  "sign_declaration_has_one_caller": true,
+  "signing_key_is_ed25519": true,
+  "signing_key_loaded_only_via_load_policy": true,
+  "signing_key_mode_is_0600": true,
+  "trust_anchor_is_ed25519": true,
+  "trust_anchor_mode_is_0444": true
+ },
+ "database_bytes_scanned": 1142784,
+ "databases_scanned": [
+  "phase2/base-world-b.sqlite",
+  "phase2/base-world-a.sqlite",
+  "phase2/E2-result-and-digests/carrier.sqlite",
+  "phase2/E8-foreign-signed-u1-replay/carrier.sqlite",
+  "phase2/E0-valid-signature/carrier.sqlite",
+  "phase2/E6-signature-removed/carrier.sqlite",
+  "phase2/E3-producer-field/carrier.sqlite",
+  "phase2/E5-dependency-substitution/carrier.sqlite",
+  "phase2/E1-result-value-only/carrier.sqlite",
+  "phase2/E7-anchor-public-key-swapped/carrier.sqlite",
+  "phase2/E4-task-item-metadata/carrier.sqlite",
+  "worlds/world-b-u2/carrier.sqlite",
+  "worlds/world-b/carrier.sqlite",
+  "worlds/world-a-u2/carrier.sqlite",
+  "worlds/world-a/carrier.sqlite",
+  "phase3-legacy/tampered.sqlite",
+  "phase3-legacy/base.sqlite"
+ ],
+ "key_id": "e-round-e7ba00a712248330",
+ "key_mode": "0o600",
+ "key_path": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/trust/settlement-signing-key.json",
+ "leaks": [],
+ "not_claimed": [
+  "protection when an attacker can read the key file",
+  "protection when an attacker can rewrite the trust anchor",
+  "database-instance lineage of a complete signed history"
+ ],
+ "private_key_forms_checked": [
+  "base64",
+  "hex",
+  "raw"
+ ],
+ "schema_id": "SIMIGO-E-ROUND-TRUST-SEPARATION-AUDIT-V1",
+ "sign_declaration_callers": {
+  "carrier_loop.py": 1
+ },
+ "trust_root": "/Users/mr.simi/SimiGo-Agent-Runs/settlement-provenance-20261022e/trust",
+ "verdict": "PASS"
+}

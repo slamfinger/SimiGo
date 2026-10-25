@@ -1,0 +1,1 @@
+{"model":"mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit","messages":[{"role":"user","content":"Reply with exactly: SERVICE-HTTP-OK"}],"max_tokens":16,"temperature":0}

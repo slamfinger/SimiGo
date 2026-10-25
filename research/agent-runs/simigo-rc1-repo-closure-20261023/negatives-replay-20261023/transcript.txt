@@ -1,0 +1,23 @@
+# negatives replay against the committed bytes at f18d65f
+# repo=/Users/mr.simi/Documents/SimiGo clean2=/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-repo-closure-20261023/clean2
+[N1 app missing] rc=3 OK :: RUN_ISOLATED: app bundle missing: /Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-repo-closure-20261023/negatives-replay-20261023/no-app/SimiGo.app
+    evidence dir created? NO
+[N2 base xctestrun missing] rc=3 OK :: RUN_ISOLATED: base xctestrun missing: /Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-repo-closure-20261023/negatives-replay-20261023/nope.xctestrun
+    evidence dir created? NO
+[N3 evidence inside real root] rc=3 OK :: RUN_ISOLATED: evidence dir and protected root overlap: /Users/mr.simi/.simigo
+    created? NO
+[N4 evidence = HOME] rc=3 OK :: RUN_ISOLATED: refusing to use /Users/mr.simi as evidence dir
+[N5 evidence = repo root] rc=3 OK :: RUN_ISOLATED: refusing to use /Users/mr.simi/Documents/SimiGo as evidence dir
+[N6 evidence = /] rc=3 OK :: RUN_ISOLATED: refusing to use / as evidence dir
+[N7 unknown flag] rc=2 OK :: RUN_ISOLATED: unknown argument --bogus
+[N8 generator out escapes base dir] rc=3 OK :: make_isolated_xctestrun: --out must sit beside the base xctestrun (__TESTROOT__ resolves there)
+    output written? NO
+[N9 generator unparsable baseline] rc=3 OK :: make_isolated_xctestrun: base xctestrun is not a readable plist (/Users/mr.simi/SimiGo-Agent-Runs/simigo-rc1-repo-closure-20261023/negatives-replay-20261023/n9/bad.xctestrun): Invalid file
+    output written? NO
+    clean2 isolated xctestrun untouched? YES (0e76bc3e4b199fd6a351e54e3946332ddb2558caa42819e1b03858d50f78cf77)
+[N10 runner: base outside products] rc=4 OK :: make_isolated_xctestrun: --out must sit beside the base xctestrun (__TESTROOT__ resolves there)
+[N11 diff allow-prefix covers real root] rc=3 OK :: rc_noninterference_diff: allow-prefix /Users/mr.simi overlaps real root /Users/mr.simi/.simigo
+    output written? NO
+[N12 diff control] rc=0 OK :: real_user_state_write_count=0 distinct_violation_count=0
+
+# deviations: 0

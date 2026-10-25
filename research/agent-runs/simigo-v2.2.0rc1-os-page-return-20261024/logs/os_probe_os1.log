@@ -1,0 +1,10 @@
+{
+ "rid": "os1",
+ "child": {
+  "pid": 35317,
+  "exit_code": 0,
+  "wall_seconds": 258.9
+ },
+ "samples": 2711,
+ "out": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-os-page-return-20261024/evidence/os_page_return_raw.json"
+}

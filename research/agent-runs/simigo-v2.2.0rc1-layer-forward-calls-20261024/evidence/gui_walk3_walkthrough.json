@@ -1,0 +1,297 @@
+{
+ "tag": "walk3",
+ "captured_at": "2026-10-24T15:36:45+0800",
+ "candidate": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app",
+ "candidate_exe_sha256": "95224f06cf9c1387cd77c2582cec7d009584a28ce66ff4de76b405a764737fe6",
+ "launch": {
+  "argv": [
+   "open",
+   "-n",
+   "-F",
+   "--env",
+   "SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/home",
+   "--env",
+   "SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/cache",
+   "--env",
+   "SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/state-graph/reference-graph-v1.json",
+   "--stdout",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/logs/gui_stdout.log",
+   "--stderr",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/logs/gui_stderr.log",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app"
+  ],
+  "result": {
+   "argv": [
+    "open",
+    "-n",
+    "-F",
+    "--env",
+    "SIMIGO_HOME=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/home",
+    "--env",
+    "SIMIGO_CACHE_ROOT=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/cache",
+    "--env",
+    "SIMIGO_STATE_GRAPH_STORE=/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/state-graph/reference-graph-v1.json",
+    "--stdout",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/logs/gui_stdout.log",
+    "--stderr",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/logs/gui_stderr.log",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app"
+   ],
+   "exit_code": 0,
+   "stdout": "",
+   "stderr": "",
+   "wall_seconds": 0.07
+  },
+  "isolated_roots": {
+   "SIMIGO_HOME": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/home",
+   "SIMIGO_CACHE_ROOT": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/cache",
+   "SIMIGO_STATE_GRAPH_STORE": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/state-graph/reference-graph-v1.json"
+  },
+  "pids": [
+   96268
+  ],
+  "launch_style": "LaunchServices `open -n -F --env`, the path a user's double-click takes",
+  "pid": 96268,
+  "ps": {
+   "argv": [
+    "ps",
+    "-o",
+    "pid,etime,stat,command",
+    "-p",
+    "96268"
+   ],
+   "exit_code": 0,
+   "stdout": "  PID ELAPSED STAT COMMAND\n96268   00:00 S    /Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/install/SimiGo.app/Contents/MacOS/SimiGo\n",
+   "stderr": "",
+   "wall_seconds": 0.0
+  },
+  "isolated_home_seen_by_app": true,
+  "env_seen": {
+   "exit_code": 0,
+   "matched": true
+  }
+ },
+ "operator": {
+  "label": null,
+  "attestation": null,
+  "waited_seconds": 5.0,
+  "mode": "non-interactive (--wait-seconds)"
+ },
+ "screenshot": {
+  "argv": [
+   "screencapture",
+   "-x",
+   "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_walk3_shot.png"
+  ],
+  "exit_code": 1,
+  "stderr": "could not create image from display\n",
+  "file_exists": false,
+  "bytes": 0,
+  "sha256": null
+ },
+ "app_logs": {
+  "stdout": {
+   "exists": true,
+   "bytes": 0,
+   "tail": ""
+  },
+  "stderr": {
+   "exists": true,
+   "bytes": 115,
+   "tail": "2026-10-24 15:36:46.076 SimiGo[96268:4953563] SimiGo bootstrap: issueCount=0 models=20 work=0 legacyMigrated=false\n"
+  }
+ },
+ "native_mlx_trace": {
+  "trace_file": "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/runs/walk3/home/logs/native_mlx_trace.log",
+  "exists": true,
+  "bytes": 109,
+  "request_events": 0,
+  "generation_events": 0,
+  "service_markers": [],
+  "service_facade_observed": false,
+  "models": [],
+  "sessions": []
+ },
+ "service_facade": {
+  "observed": false,
+  "evidence": "[NODE] backend= / [READY] lines in the same isolated trace. Both are emitted from inside Service.start's own path (Service.swift:949, :989), so they mean the facade started, not just NativeMLX. [CFG] is excluded on purpose: it also fires at launch with nobody clicking start",
+  "markers": []
+ },
+ "bootstrap_report": {
+  "finishedAt": "2026-10-24T07:36:46Z",
+  "issueCount": 0,
+  "legacyMigrated": false,
+  "modelsDiscovered": 20,
+  "schemaVersion": 3,
+  "startedAt": "2026-10-24T07:36:46Z",
+  "steps": [
+   {
+    "detail": "created managed runtime directories under home",
+    "id": "ensure-dirs",
+    "status": "ok"
+   },
+   {
+    "detail": "schemaVersion=3",
+    "id": "migrate-schema",
+    "status": "ok"
+   },
+   {
+    "detail": "no legacy graph supplied",
+    "id": "import-legacy",
+    "status": "skipped"
+   },
+   {
+    "detail": "discovered 20 model file(s)",
+    "id": "discover-models",
+    "status": "ok"
+   },
+   {
+    "detail": "indexed 0 work file(s)",
+    "id": "index-work",
+    "status": "skipped"
+   }
+  ],
+  "workFilesIndexed": 0
+ },
+ "quit": {
+  "still_running_before_quit": true,
+  "result": {
+   "argv": [
+    "osascript",
+    "-e",
+    "tell application \"SimiGo\" to quit"
+   ],
+   "exit_code": 0,
+   "stdout": "",
+   "stderr": "",
+   "wall_seconds": 0.09
+  },
+  "still_running_after_quit": false
+ },
+ "noninterference": {
+  "pre": "gui_walk3_snapshot_pre.json",
+  "post": "gui_walk3_snapshot_post.json",
+  "diff": "gui_walk3_snapshot_diff.json",
+  "diff_result": {
+   "argv": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/mr.simi/Documents/SimiGo/tools/rc_noninterference_diff.py",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_walk3_snapshot_pre.json",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_walk3_snapshot_post.json",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence/gui_walk3_snapshot_diff.json",
+    "--allow-prefix",
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence"
+   ],
+   "exit_code": 0,
+   "stdout": "{\n \"a\": \"gui_walk3_pre\",\n \"b\": \"gui_walk3_post\",\n \"violation_events\": 0,\n \"distinct_violation_count\": 0,\n \"real_user_state_write_count\": 0,\n \"real_user_state_write_paths\": [],\n \"expected_self_writes\": 0,\n \"reference_changes\": 0\n}\n",
+   "stderr": "",
+   "wall_seconds": 0.05
+  },
+  "diff_payload": {
+   "a_phase": "gui_walk3_pre",
+   "b_phase": "gui_walk3_post",
+   "a_taken_at": "2026-10-24T15:36:45+0800",
+   "b_taken_at": "2026-10-24T15:36:54+0800",
+   "real_roots": [
+    "/Users/mr.simi/.simigo",
+    "/Users/mr.simi/Library/Application Support/SimiGo"
+   ],
+   "allowlisted_abs_prefixes": [
+    "/Users/mr.simi/SimiGo-Agent-Runs/simigo-v2.2.0rc1-layer-forward-calls-20261024/evidence"
+   ],
+   "entries": {
+    "/Users/mr.simi/.cache/huggingface": {
+     "status": "DIR",
+     "role": "reference",
+     "a_files": 951,
+     "b_files": 951,
+     "a_bytes": 242509940763,
+     "b_bytes": 242509940763,
+     "unexpected_new": 0,
+     "unexpected_deleted": 0,
+     "unexpected_modified": 0,
+     "expected_change_count": 0,
+     "reference_change_count": 0,
+     "unexpected_details": {
+      "new": [],
+      "deleted": [],
+      "modified": [],
+      "expected": [],
+      "reference": []
+     },
+     "clean": true
+    },
+    "/Users/mr.simi/.simigo": {
+     "status": "DIR",
+     "role": "real_state",
+     "a_files": 8971,
+     "b_files": 8971,
+     "a_bytes": 32398436256,
+     "b_bytes": 32398436256,
+     "unexpected_new": 0,
+     "unexpected_deleted": 0,
+     "unexpected_modified": 0,
+     "expected_change_count": 0,
+     "reference_change_count": 0,
+     "unexpected_details": {
+      "new": [],
+      "deleted": [],
+      "modified": [],
+      "expected": [],
+      "reference": []
+     },
+     "clean": true
+    },
+    "/Users/mr.simi/Library/Application Support/SimiGo": {
+     "status": "DIR",
+     "role": "real_state",
+     "a_files": 1,
+     "b_files": 1,
+     "a_bytes": 1068,
+     "b_bytes": 1068,
+     "unexpected_new": 0,
+     "unexpected_deleted": 0,
+     "unexpected_modified": 0,
+     "expected_change_count": 0,
+     "reference_change_count": 0,
+     "unexpected_details": {
+      "new": [],
+      "deleted": [],
+      "modified": [],
+      "expected": [],
+      "reference": []
+     },
+     "clean": true
+    }
+   },
+   "violation_events": 0,
+   "distinct_changed_abs_paths": [],
+   "distinct_violating_abs_paths": [],
+   "distinct_expected_abs_paths": [],
+   "distinct_violation_count": 0,
+   "reference_change_paths": [],
+   "real_user_state_write_paths": [],
+   "real_user_state_write_count": 0
+  }
+ },
+ "checks": {
+  "process_stayed_up": true,
+  "isolated_home_seen_by_app": true,
+  "operator_attested": false,
+  "screenshot_present": false,
+  "generation_observed": false,
+  "real_user_state_write_count_zero": true,
+  "violation_events_zero": true
+ },
+ "real_model_output": false,
+ "also_closes": {
+  "service_facade_executed": false,
+  "note": "a GUI start runs Service.startSelected() -> Service.internalStart(), which is the facade the Service/HTTP gate deliberately did not execute; no test target and no headless entry calls it (evidence/service_facade_inventory.json)"
+ },
+ "finding": "GUI gate stays BLOCKED: operator_attested, screenshot_present, generation_observed. An absent gate input file is read as BLOCKED by verify_batch.py, which is the intended behaviour.",
+ "how_to_close": [
+  "grant Screen Recording to the app that runs this script (System Settings > Privacy & Security > Screen & System Audio Recording)",
+  "re-run: driver/gui_walkthrough.py walked --operator <your name>",
+  "click the SimiGo menu bar item, send one ordinary prompt, come back and press Return"
+ ]
+}

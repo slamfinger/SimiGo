@@ -1,0 +1,177 @@
+{
+  "branch_checkpoints_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-os-page-return-20261024\/runs\/os3\/cache\/branch-checkpoints",
+  "footprint_delta_bytes" : 17345900232,
+  "footprint_post_suspend_bytes" : 71746952,
+  "footprint_pre_bytes" : 17417647184,
+  "is_database_url" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-os-page-return-20261024\/runs\/os3\/home\/simigo.sqlite3",
+  "lifecycle_resume_delta" : 1,
+  "lifecycle_suspend_delta" : 1,
+  "model_container_absent_after" : true,
+  "model_container_present_before" : true,
+  "model_container_ref_dropped" : true,
+  "model_identity" : {
+    "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_repo_id" : "mlx-community\/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "model_revision" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "model_root_id" : "huggingface-cache"
+  },
+  "model_path" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "observation_end" : {
+    "cache_hit_tokens_engine_reported" : 0,
+    "cache_reuse_mode_engine_reported" : "cold",
+    "definitions" : {
+      "cache_hit_tokens_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.cachedPromptTokenCount\/reportedCacheHit; tokens reused from KV, engine measured.",
+      "cache_reuse_mode_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.cacheReuseMode; cold => prior compute re-prefilled.",
+      "forward_calls" : "NOT_INSTRUMENTED (no per-forward hook in this layer; use generation_tokens as an ENGINE_RUNTIME token-granularity proxy, explicitly labelled).",
+      "generation_tokens_engine_reported" : "LEVEL=ENGINE_RUNTIME; SOURCE=info.generationTokenCount; decode tokens ≈ forward passes at token granularity (approximate; per-layer forward NOT_INSTRUMENTED).",
+      "physical_page_return" : "NOT_INSTRUMENTED\/BLOCKED — malloc_zone_pressure_relief is only an allocator HINT; no independent evidence the OS reclaimed physical pages (footprint\/RSS diffs are explicitly excluded by the gate definition).",
+      "prefill_tokens_observed" : "LEVEL=ENGINE_RUNTIME; SOURCE=NativeMLX prefill.progress(total); actual tokens the engine prefilled for the executed request (not requested tokens).",
+      "reference_release" : "LEVEL=LIFECYCLE_EVENT; SOURCE=suspend path state mutation; sessions_before\/after and container_present_before\/absent_after are READ FROM RUNTIME STATE by the caller (not asserted by the recorder). model_container_ref_dropped is derived as present_before && absent_after. Proves in-process logical REFERENCE release only — NOT that ARC\/MLX freed memory back to the OS.",
+      "resource_reclaim" : "LEVEL=LIFECYCLE_EVENT; SOURCE=Memory.clearCache() returned; count of explicit MLX cache-reclaim OPERATIONS INVOKED on the production suspend path. Records invocation only — reclaimed bytes are not observable here, and this is NOT physical page return."
+    },
+    "events" : {
+      "cache_save_checkpoint" : 2,
+      "checkpoint_failed" : 0,
+      "cold_rebuild" : 2,
+      "lifecycle_resume" : 1,
+      "lifecycle_suspend" : 1,
+      "model_container_absent_after" : true,
+      "model_container_present_before" : true,
+      "model_container_ref_dropped" : true,
+      "pool_bind_failed" : 0,
+      "pool_bind_hit_cacheLoad" : 0,
+      "prefix_mismatch" : 0,
+      "reference_release" : 1,
+      "resource_reclaim" : 1,
+      "reuse_miss" : 0,
+      "sessions_after_release" : 0,
+      "sessions_released_at_release" : 1
+    },
+    "events_ordered" : [
+      {
+        "at_ms" : 3051,
+        "event" : "cold_rebuild",
+        "seq" : 1
+      },
+      {
+        "at_ms" : 4392,
+        "event" : "cache_save",
+        "seq" : 2
+      },
+      {
+        "at_ms" : 250950,
+        "event" : "reference_release",
+        "seq" : 3
+      },
+      {
+        "at_ms" : 250982,
+        "event" : "resource_reclaim",
+        "seq" : 4
+      },
+      {
+        "at_ms" : 250982,
+        "event" : "lifecycle_suspend",
+        "seq" : 5
+      },
+      {
+        "at_ms" : 253584,
+        "event" : "lifecycle_resume",
+        "seq" : 6
+      },
+      {
+        "at_ms" : 253584,
+        "event" : "cold_rebuild",
+        "seq" : 7
+      },
+      {
+        "at_ms" : 254680,
+        "event" : "cache_save",
+        "seq" : 8
+      }
+    ],
+    "generate_passes" : 2,
+    "generation_tokens_engine_reported" : 3,
+    "observed_at_epoch_ms" : 1792822485806,
+    "pid" : 57020,
+    "prefill_tokens_observed" : 19,
+    "prompt_tokens_engine_reported" : 19,
+    "reused_session" : false
+  },
+  "observed_idle_wait_seconds" : 240,
+  "path_class" : "restricted_production_path",
+  "physical_page_return_note" : "footprint delta recorded as SUPPORTING only; per gate def RSS\/footprint\/exit alone cannot PASS physical_page_return (malloc relief is a hint, no independent OS page-reclaim proof).",
+  "pid" : 57020,
+  "post_resume_generated" : "RESULT=hello",
+  "prefix_pool_root" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-os-page-return-20261024\/runs\/os3\/cache\/prefix-pool",
+  "probe" : "g3_memory_tiers",
+  "reference_release_observed" : true,
+  "resource_reclaim_level" : "OPERATION_INVOKED (not bytes; not physical pages)",
+  "resource_reclaim_observed" : true,
+  "role" : "memprobe",
+  "run_id" : "os3",
+  "runtime_identity" : {
+    "build_configuration" : "RELEASE",
+    "build_id_sha256" : "a679b0710f18ec35865434b38a33d80bdfe860e8f3da0a3a76df19627c856dd0",
+    "bundle_macho_images" : [
+      {
+        "bytes" : 105731152,
+        "file" : "SimiGo",
+        "sha256" : "60973e086f12583a20a6b578de33e678bd4a7e1846a7b6cd0084cd845eae90cd"
+      }
+    ],
+    "executable_bytes" : 105731152,
+    "executable_path" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-service-http-20261024\/install\/SimiGo.app\/Contents\/MacOS\/SimiGo",
+    "executable_sha256" : "60973e086f12583a20a6b578de33e678bd4a7e1846a7b6cd0084cd845eae90cd",
+    "os_version" : "Version 27.0.1 (Build 26A434)"
+  },
+  "sessions_after_release" : 0,
+  "sessions_released" : 1,
+  "simigo_home" : "\/Users\/mr.simi\/SimiGo-Agent-Runs\/simigo-v2.2.0rc1-os-page-return-20261024\/runs\/os3\/home",
+  "status" : "OK",
+  "suspend_attempts" : 17,
+  "suspend_events_ordered" : [
+    {
+      "at_ms" : 3051,
+      "event" : "cold_rebuild",
+      "seq" : 1
+    },
+    {
+      "at_ms" : 4392,
+      "event" : "cache_save",
+      "seq" : 2
+    },
+    {
+      "at_ms" : 250950,
+      "event" : "reference_release",
+      "seq" : 3
+    },
+    {
+      "at_ms" : 250982,
+      "event" : "resource_reclaim",
+      "seq" : 4
+    },
+    {
+      "at_ms" : 250982,
+      "event" : "lifecycle_suspend",
+      "seq" : 5
+    }
+  ],
+  "suspend_returned_true" : true,
+  "suspend_window_source" : "production adaptive idle floor\/cap; no release-build override",
+  "target_value" : "hello",
+  "tokenizer_identity" : [
+    {
+      "file" : "tokenizer.json",
+      "sha256" : "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    {
+      "file" : "tokenizer_config.json",
+      "sha256" : "05a2d456eb807c8368fe6b60101b1d1160d6889071a751ed08576b96e77e01cd"
+    },
+    {
+      "file" : "vocab.json",
+      "sha256" : "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ],
+  "warm_generated" : "RESULT=hello"
+}
