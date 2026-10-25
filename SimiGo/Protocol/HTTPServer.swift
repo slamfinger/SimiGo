@@ -1489,9 +1489,6 @@ public final class HTTPServer: @unchecked Sendable {
         case .notInitialized: localb = "not_initialized"
         default: localb = "unresolvable"
         }
-        let dmgFiles = (try? fm.contentsOfDirectory(atPath: root.path))?.filter {
-            $0.hasSuffix(".dmg")
-        } ?? []
         sendJSON(
             [
                 "managed_root": root.path,
@@ -1499,7 +1496,6 @@ public final class HTTPServer: @unchecked Sendable {
                 "hf": hf ?? NSNull(),
                 "database": db,
                 "localb": localb,
-                "dmg": dmgFiles,
             ],
             status: 200,
             on: context.connection,
