@@ -32,3 +32,4 @@ default.profraw
 *.weights
 models/
 SimiGo-v*-*.dmg
+SimiGo-v*-Installer.pkg
