@@ -79,3 +79,17 @@ Architecture 2.0 历史采用三层保存：
 `Execution State / Track B` 与 `Track D / Information Space` 两线各有 1 份，闭包复核发现被留存文档按名引用，已移回原位，归档区对应目录已清空。
 
 `Persistent SRS / Signer` 线的 **152 份冻结批次**（`PERSISTENT_SRS` 65、`SRS_VAL_01` 34、`SRS_REAL_CLOSURE_01` 51、`PALACE_INFORMATION_SPACE` 2）暂不归档：Signer v0.7 待人类裁定，且该批次内部互引 38 处，必须整批原子迁移，不能逐份移动。仍留在 `00-governance/`。归档区不改变任何研究门位。
+
+## 2026-10-26 文档治理归档映射
+
+按 owner 指令治理（移动归档，内容零删改）：
+
+| 归档位置 | 原位置 | 内容 |
+| --- | --- | --- |
+| `09-archive/state-layer/RESEARCH_STATE_ARCHIVED_LAYERS_20261026.md` | `RESEARCH_STATE.md`（原 242 行起） | 2026-10-15 及更早全部 continuity 层（27539 行原样）；主文件仅留头部导航 + 10-25/10-20 两层 |
+| `09-archive/docs-root-legacy/` | `docs/LOSS*` `PDEP2*` `SOURCE_RUNTIME*` `STEP4A*` `STEP5*` `RESEARCH_RECOVERY_*`（14 个文件） | LOSS 成本线 / PDEP2 路线 / Source-Runtime 估计量研究线的历史文档 |
+| `09-archive/closed-lines/<name>/`（12 个） | 顶层 `boundary-study` `database-carrier-replication` `exp06-roofline` `integrated-es-palace` `palace-v0` `pre-research` `runtime2-skeleton` `trackA-kernel` `trackB-execution-state` `trackD-memory` `trackE-residency` `warm-memory-proto` | 已收口/暂停研究线的全部代码与证据 |
+| `05-architecture/ARCHITECTURE_2.0_PRERESEARCH_20260920.md` | `docs/architecture/` | 并入统一架构目录（原目录撤销） |
+
+顶层活跃保留：`docs/`、`execution-information-loop/`、`g3/`、`simigo2-experimental/`、`tools/`、`vendor/`。
+重复空壳目录 `simigo2Experimental/`（未跟踪、无文件）已移除；根级 `default.profraw` 垃圾已删。
