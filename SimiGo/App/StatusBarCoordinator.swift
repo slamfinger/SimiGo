@@ -266,7 +266,7 @@ final class StatusBarCoordinator: NSObject {
         ))
         window.title = "设置"
         window.styleMask.remove(.resizable) // 对齐原场景 .windowResizability(.contentSize)
-        window.setContentSize(NSSize(width: 420, height: 480))
+        window.setContentSize(NSSize(width: 420, height: 700))
         window.center()
         window.delegate = self
         window.isReleasedWhenClosed = false

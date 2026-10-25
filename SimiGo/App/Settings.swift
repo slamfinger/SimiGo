@@ -3,6 +3,7 @@ import AppKit
 import SimiGoRuntimeContract
 
 struct Settings: View {
+    @State private var envMessage = ""
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
     @State private var cloudAPIKeyInput = ""
@@ -30,6 +31,53 @@ struct Settings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // MARK: - All Backends
+                sectionBox("生成环境") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button("添加外部工作目录…") {
+                            let panel = NSOpenPanel()
+                            panel.canChooseFiles = false
+                            panel.canChooseDirectories = true
+                            if panel.runModal() == .OK, let url = panel.url {
+                                let r = EnvManager.shared.registerWorkRoot(url.path)
+                                envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))"
+                            }
+                        }
+                        Button("安装外部二进制（URL）…") {
+                            let alert = NSAlert()
+                            alert.messageText = "安装外部二进制（自动：下载 → bin → 清缓存）"
+                            alert.informativeText = "二进制直链 URL（macOS arm64 Mach-O）："
+                            let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
+                            alert.accessoryView = input
+                            alert.addButton(withTitle: "安装")
+                            alert.addButton(withTitle: "取消")
+                            if alert.runModal() == .alertFirstButtonReturn,
+                                let raw = input.stringValue.trimmingCharacters(in: .whitespaces) as String?,
+                                let url = URL(string: raw), url.scheme?.hasPrefix("http") == true
+                            {
+                                Task { @MainActor in
+                                    let r = await EnvManager.shared.installExternalBinary(from: url)
+                                    envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?")"
+                                }
+                            }
+                        }
+                        Button("更新已装二进制（llama.cpp / hf）") {
+                            Task { @MainActor in
+                                let r = await EnvManager.shared.updateInstalledBinaries()
+                                envMessage = r.map { key, value -> String in
+                                    let st = (value as? [String: Any])?["status"] ?? "?"
+                                    return "\(key): \(st)"
+                                }.sorted().joined(separator: "；")
+                            }
+                        }
+                        Button("重新运行安装向导") {
+                            StatusBarCoordinator.shared.openWizardWindow()
+                        }
+                        if !envMessage.isEmpty {
+                            Text(envMessage).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
                 sectionBox("Backend 设置") {
                     localBackendRow(
                         title: "MLX",
