@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import LOCALBCore
 import Synchronization
 import MLX
 import MLXLMCommon
@@ -7,11 +8,17 @@ import MLXLLM
 import MLXHuggingFace
 import MLXVLM
 import Tokenizers
+import LOCALBCore
 import SimiGo2Experimental
+import SimiGoRuntimeContract
 
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
 /// SimiGo retains only service state around that API.
 public final class NativeMLX: Runtime, @unchecked Sendable {
+    /// Semantic KV-cache identity for THIS in-process runtime instance (owns one
+    /// ModelContainer / KV set). Instance-scoped and meaningful, NOT a raw memory
+    /// address, so cross-process cache non-sharing can be audited by comparing it.
+    public let cacheIdentity: String = "cache-" + UUID().uuidString.lowercased()
     private nonisolated final class ManagedSession: @unchecked Sendable {
         let session: ChatSession
         var history: [Chat.Message]
@@ -99,6 +106,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private let gateHolder = Mutex(SessionGenerationGate())
     /// V1.6 S5：执行血统日志（有界 128 条；只记录查询，不参与决策）。
     let lineage = ExecutionLineage()
+    /// G1/G3 §5 read-only observability recorder. It NEVER participates in
+    /// cache-hit decisions or the inference lifecycle — each hook is a single
+    /// increment beside an existing trace/engine value. See NativeMLXObservation.
+    public let observation = NativeMLXObservation()
     private let traceLogger = RuntimeTraceLogger.shared
     private let toolGovernance = ToolGovernance { line in
         RuntimeTraceLogger.shared.trace(line)
@@ -338,7 +349,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    /// Protocol witness (Runtime). Defaults to the shared transport-policy
+    /// decision with no caller-supplied LOCALB configuration.
     public func start(_ info: ModelInfo, port: Int) async throws {
+        try await startWithLOCALB(
+            info, port: port,
+            localbTransportIdentity: nil,
+            localbRequestAuthorization: nil
+        )
+    }
+
+    /// Start with an EXPLICIT caller-supplied LOCALB configuration
+    /// (test/management-plane injection). Never a fallback and never a
+    /// default open rule: when both arguments are nil this is exactly the
+    /// default-resolution path, which opens the operational LOCALB host
+    /// (transport identity + request authorization from one verified
+    /// context) or stays transport-only fail-closed before activation.
+    public func startWithLOCALB(
+        _ info: ModelInfo,
+        port: Int,
+        localbTransportIdentity: LOCALBTransportIdentityHandle?,
+        localbRequestAuthorization: (coordinator: LOCALBPairingCoordinator,
+                                     trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?,
+        localbHostDirectory: URL? = nil,
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore =
+            LOCALBTransportIdentityStore()
+    ) async throws {
         try await lifecycleGate.withLock { [weak self] in
             guard let self else { throw RuntError.notLoaded }
             guard !self.state.withLock({ $0.isRunning }) else { return }
@@ -352,7 +389,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             var container: ModelContainer?
             if OversizedRuntime.supports(path: info.path) {
                 let oversized = OversizedRuntime(info: info)
-                try await oversized.start(info, port: port)
+                try await oversized.startWithLOCALB(
+                    info,
+                    port: port,
+                    localbTransportIdentity: localbTransportIdentity,
+                    localbRequestAuthorization: localbRequestAuthorization,
+                    localbHostDirectory: localbHostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore
+                )
                 self.state.withLock { $0.oversized = oversized }
             } else {
                 container = try await Self.loadModelContainer(path: info.path)
@@ -431,10 +476,63 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     },
                     baseConfigProvider: { [weak self] in
                         self?.baseConfig ?? ModelConfig()
-                    }
+                    },
+                    continuationAdmission: { [weak self] esStateID in
+                        guard let self else { throw ContinuationAdmissionFailure.unavailable }
+                        let modelPath = self.modelPath
+                        // The admission's verified bindings are carried forward:
+                        // the settlement gate binds THIS request's result against
+                        // exactly what this admission verified.
+                        let admitted = try await MainActor.run {
+                            try SimiGoProducerIdentity.recoverForContinuation(
+                                stateID: esStateID, modelPath: modelPath)
+                        }
+                        return ContinuationAdmissionOutcome(
+                            esStateID: esStateID,
+                            recoveredValue: admitted.recoveredValue,
+                            verifiedBindings: admitted.verifiedBindings)
+                    },
+                    continuationSettlement: makeNativeMLXContinuationSettlementHandler(
+                        modelPath: self.modelPath
+                    )
                 )
             }
 
+            // LOCALB B1: one shared transport-policy decision for every
+            // listener site. Secure by default; LAN binds can never fall
+            // back to plaintext; legacy plaintext only via explicit loopback
+            // opt-in (SIMIGO_TRANSPORT=legacy-http). Fail-closed decisions
+            // surface as typed start() errors.
+            if let localbTransportIdentity {
+                // Explicit caller-supplied configuration (test/management-
+                // plane injection): a fully verified transport identity
+                // plus, optionally, the LOCALB request-authorization host.
+                // Explicit configuration — never a fallback and never a
+                // default open rule; the policy path stays the default.
+                server.configureLOCALBTransport(
+                    identity: localbTransportIdentity
+                )
+                if let localbRequestAuthorization {
+                    server.configureLOCALBRequestAuthorization(
+                        coordinator: localbRequestAuthorization.coordinator,
+                        trustedCheckpoint: localbRequestAuthorization
+                            .trustedCheckpoint
+                    )
+                }
+            } else {
+                // Default resolution: an activated LOCALB host supplies
+                // BOTH the transport identity and request authorization
+                // from one verified context; before activation this stays
+                // transport-only and protected routes remain fail-closed.
+                // Verification failures propagate as typed start() errors.
+                try LOCALBHostRuntime.applyDefault(
+                    to: server,
+                    bindHost: nodeConfiguration.bindHost,
+                    hostDirectory: localbHostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore
+                )
+            }
             try await MainActor.run { try server.start() }
 
             self.state.withLock {
@@ -488,16 +586,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             await gate.awaitDrain()
 
             Memory.clearCache()
-
-            // P1 memory settle：等待 footprint/MLX 计数回稳（观测，不强制）。
+            // P1 memory settle（强制版 2026-10-23）：clearCache 只回收 MLX 缓存，
+            // 进程 malloc 已释放页仍滞留 → macOS 内存压力长时间黄色。主动请求分配器
+            // 归还空闲页（malloc_zone_pressure_relief）后再观测 footprint 回稳，缩短窗口。
+            malloc_zone_pressure_relief(nil, 0)
             let settleDeadline = Date().addingTimeInterval(RuntimeTuning.memorySettleTimeoutSeconds)
             var lastFootprint = RuntimeTuning.footprintBytes()
             var stableRounds = 0
             while Date() < settleDeadline, stableRounds < 4 {
-                try? await Task.sleep(nanoseconds: 500_000_000)
+                try? await Task.sleep(nanoseconds: 250_000_000)
                 let fp = RuntimeTuning.footprintBytes()
-                stableRounds = fp == lastFootprint ? stableRounds + 1 : 0
-                lastFootprint = fp
+                if fp != lastFootprint {
+                    stableRounds = 0
+                    lastFootprint = fp
+                } else {
+                    stableRounds += 1
+                    // 每轮再请求一次，推动 allocator 持续归还，加快压力回落。
+                    malloc_zone_pressure_relief(nil, 0)
+                }
             }
             logMemory("settled")
 
@@ -532,6 +638,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
                 let elapsedMs = Int(Date().timeIntervalSince(resumeBegan) * 1000)
                 traceLogger.trace("[LIFECYCLE] resume_done ms=\(elapsedMs)")
+                observation.noteResume()
             } catch {
                 self.state.withLock {
                     $0.lifecycle = .suspended
@@ -543,10 +650,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    /// 自适应闲置超时（2026-09-13，替代固定 600s）：max(600s 基线, 最贵会话
-    /// 重建时长估算 + 60s 容错)。重建时长按 512 档实测吞吐取保守 150 tok/s
-    /// 估算（121k 会话闲置 ~14.5 分钟才允许卸载）；小会话维持 600s 基线。
-    /// 避免大会话刚闲置满固定阈值即被卸载、下轮再缴全额冷启动税。
+    /// 自适应闲置超时：min(cap=360s, max(floor=240s, 最贵会话重建时长估算 + 60s 容错))。
+    /// 重建时长按 512 档保守吞吐估算。上限封顶（idleResidencyCapSeconds=360）是为缓解
+    /// "推理结束后内存压力长时间黄色"——大会话不再滞留 ~14.5 分钟才卸载，最长 6 分钟；
+    /// 下限兜底（idleResidencyFloorSeconds=240）保证小会话工具/思考间隙不反复缴冷启动税。
+    /// （2026-10-23 由 max(600s…) 收紧为带 cap 的收敛窗口。）
     private func adaptiveIdleTimeout() async -> TimeInterval {
         #if DEBUG
         if let override = RuntimeTuning.suspendIdleTimeoutOverrideSeconds {
@@ -559,7 +667,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             let tokens = (try? await managed.session.cacheStatus())?.processedTokenCount ?? 0
             maxTokens = max(maxTokens, tokens)
         }
-        return max(600, Double(maxTokens) / RuntimeTuning.prefillThroughputFloor + 60)
+        let estimate = Double(maxTokens) / RuntimeTuning.prefillThroughputFloor + 60
+        // 收敛驻留窗口：floor 兜底小会话、cap 封顶大会话（内存黄色缓解，见 RuntimeTuning）。
+        return min(RuntimeTuning.idleResidencyCapSeconds,
+                   max(RuntimeTuning.idleResidencyFloorSeconds, estimate))
     }
 
     public func suspendIfIdle() async -> Bool {
@@ -631,14 +742,36 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     }
                 }
 
-                self.state.withLock {
-                    $0.lifecycle = .suspended
-                    $0.modelContainer = nil
-                    $0.sessions.removeAll()
-                    $0.lastActivity = Date()
+                // §8 G3 tier 1: observe the runtime state BEFORE and AFTER the
+                // suspend mutation, so the release below is measured, not asserted.
+                var sessionsBefore = 0
+                var containerPresentBefore = false
+                var sessionsAfter = -1
+                var containerAbsentAfter = false
+                let releasedCount = self.state.withLock { state -> Int in
+                    sessionsBefore = state.sessions.count
+                    containerPresentBefore = state.modelContainer != nil
+                    state.lifecycle = .suspended
+                    state.modelContainer = nil
+                    state.sessions.removeAll()
+                    state.lastActivity = Date()
+                    sessionsAfter = state.sessions.count
+                    containerAbsentAfter = state.modelContainer == nil
+                    return sessionsBefore
                 }
+                // Logical REFERENCE release (NOT proof of physical memory return).
+                self.observation.noteReferenceRelease(
+                    sessionsReleased: releasedCount,
+                    sessionsAfter: sessionsAfter,
+                    containerPresentBefore: containerPresentBefore,
+                    containerAbsentAfter: containerAbsentAfter)
                 Memory.clearCache()
+                // §8 G3 tier 2: explicit resource-reclaim OPERATION invoked (MLX cache).
+                self.observation.noteResourceReclaim()
+                // 强制分配器归还空闲页，避免挂起后内存压力长时间黄色（2026-10-23）。
+                malloc_zone_pressure_relief(nil, 0)
                 self.traceLogger.trace("[LIFECYCLE] suspend_done")
+                self.observation.noteSuspend()
                 return true
             }
         } catch {
@@ -847,6 +980,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 if processed == total || processed - prefillLogged.value >= 4096 {
                 prefillLogged.set(processed)
                 RuntimeTraceLogger.shared.trace("[MLX] prefill \(processed)/\(total)")
+                if processed == total { self.observation.notePrefillTotal(total) }
             }
         }
         let toolSpecs = Self.makeToolSpecs(tools)
@@ -941,6 +1075,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         " history=\(existing.history.count) incoming=\(incoming.count)" +
                         " fpHistory=\(existing.kvFingerprint ?? "-") fpIncoming=\(kvFingerprint ?? "-")"
                     )
+                    observation.noteReuseMiss()
                 }
             }
             if let existing,
@@ -960,6 +1095,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         incoming: incomingMessage
                     )
                 )
+                observation.notePrefixMismatch()
             }
             // Route B 前缀池（SIMIGO17）：冷重建前先查跨会话共享池。
             // 命中即 cacheLoad 恢复同款形态（快照 KV + delta 契约），
@@ -1009,11 +1145,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             + " bindingGen=\(childBinding.generation)"
                             + " refHash=\(String(poolAdmission.entry.boundaryHash, radix: 16))"
                     )
+                    observation.notePoolBindHit()
                 } catch {
                     // P-I1 响亮失败已在适配器内自愈（条目已删）；
                     // 本轮回退冷路径，绝不静默续算在未对账表示上。
                     traceLogger.trace(
                         "[MLX] poolBindFailed err=\(error.localizedDescription)")
+                    observation.notePoolBindFailed()
                 }
             }
             if let restored = poolRestored {
@@ -1036,6 +1174,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     kvFingerprint: kvFingerprint
                 )
                 reusedSession = false
+                observation.noteColdRebuild()
                 state.withLock { $0.sessions[mapKey] = managed }
                 if mapKey != executionKey.storageKey {
                     // 展示走 traceKey 紧凑形态（6 位），全量 UUID 不进 trace。
@@ -1473,6 +1612,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     container: container, managed: managed,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
                 managed.checkpointDirty = false
+                observation.noteCacheSave()
                 Self.enforceDefaultBranchCheckpointRetention(
                     retaining: state.withLock { Set($0.sessions.keys) })
                 lineage.attachCheckpoint(
@@ -1485,6 +1625,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 traceLogger.trace(
                     "[MLX] action=checkpointFailed key=\(executionKey.traceKey)"
                     + " err=\(error.localizedDescription)")
+                observation.noteCheckpointFailed()
             }
         }
 
@@ -1500,6 +1641,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var reportedCacheHit = cachedPromptTokens
         var reportedCacheEff = cacheEfficiency
         var reportedMode = cacheReuseMode
+        observation.noteEngineTokens(prompt: promptTokens, cacheHit: reportedCacheHit,
+                                     generation: generationTokens, mode: reportedMode,
+                                     reused: reusedSession)
         if cacheReuseMode == nil, managed.isRestoredSnapshot,
            let n = cacheTokensBefore, n > 0, let d = promptTokens {
             reportedCacheHit = n
@@ -1649,6 +1793,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let freedTokens = removed.reduce(0) { $0 + $1.tokens }
         for (_, session, _) in removed { await session.clear() }
         Memory.clearCache()
+        // 强制分配器归还空闲页，缩短 LRU 换出后的内存压力黄色窗口（2026-10-23）。
+        malloc_zone_pressure_relief(nil, 0)
         report.evicted = removed.count
         report.evictedTokens = freedTokens
         report.warmSessions = state.withLock { $0.sessions.count }
@@ -1993,8 +2139,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/（跨 suspend 持久；
     /// suspend 会清空内存会话，落盘 checkpoint 是分支唯一的 durable 存活物）。
     nonisolated public static func defaultBranchCheckpointStore() -> URL {
-        let directory = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".simigo/branch-checkpoints", isDirectory: true)
+        let directory = SimiGoRuntimeCachePaths.branchCheckpointsRoot
         try? FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
         return directory

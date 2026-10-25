@@ -22,18 +22,25 @@ let package = Package(
         .library(name: "LOCALBCore", targets: ["LOCALBCore"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-crypto.git", from: "4.0.0")
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "4.0.0"),
+        .package(url: "https://github.com/apple/swift-certificates.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-asn1.git", from: "1.0.0")
     ],
     targets: [
         .target(
             name: "LOCALBCore",
             dependencies: [
-                .product(name: "Crypto", package: "swift-crypto")
+                .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "X509", package: "swift-certificates"),
+                .product(name: "SwiftASN1", package: "swift-asn1")
             ]
         ),
         .testTarget(
             name: "LOCALBCoreTests",
-            dependencies: ["LOCALBCore"]
+            dependencies: [
+                "LOCALBCore",
+                .product(name: "X509", package: "swift-certificates")
+            ]
         )
     ]
 )

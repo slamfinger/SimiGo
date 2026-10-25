@@ -432,10 +432,207 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     let currentHistoryMessages: [JSONValue]
 
     let parent: StoredResponse?
+
+    /// Opt-in ES/IS continuation anchor (`previous_es_state_id`). When the
+    /// field is absent this is (false, nil) and the dispatch path is the
+    /// unchanged ordinary Responses continuation. Present-but-blank stays
+    /// `esStateIDPresent == true` with a nil/empty value so the gate can
+    /// fail closed instead of silently falling back.
+    let esStateIDPresent: Bool
+    let esStateID: String?
+
+    /// Explicit post-generation settlement opt-in (`continuation_settle`).
+    /// Absent/false leaves the dispatch path unchanged.
+    let continuationSettle: Bool
 }
 
 
 extension HTTPServer {
+    /// ES/IS continuation admission gate for the Responses path. Returns
+    /// the messages to generate with, or `nil` when an HTTP refusal has
+    /// already been sent (the caller must return without generating).
+    ///
+    /// Continuation response contract v0.1 (structured `error_kind` /
+    /// `reason_code` in the JSON body; see ContinuationSettlement.swift):
+    ///
+    /// * anchor absent, no settle flag  -> `parsed.canonicalMessages` unchanged.
+    /// * anchor absent + settle flag    -> 400 SETTLEMENT_WITHOUT_ANCHOR, no
+    ///   generation, no authority invoked.
+    /// * present but empty / malformed  -> 422 INPUT_ADMISSION_REFUSED,
+    ///   reason_code `invalid_anchor`, no generation.
+    /// * settle asked, no settlement
+    ///   authority wired               -> 503 SETTLEMENT_AUTHORITY_UNAVAILABLE,
+    ///   fail closed BEFORE generation and before the admission call.
+    /// * no admission authority wired   -> 503 ADMISSION_AUTHORITY_UNAVAILABLE,
+    ///   no generation.
+    /// * native IS admission refuses    -> 422 INPUT_ADMISSION_REFUSED,
+    ///   reason_code `is_refusal`.
+    /// * unknown admission-stage error  -> 500 ADMISSION_ENGINE_ERROR (never 422).
+    /// * admission verifies             -> recovered IS value feeds the
+    ///   continuation (appended as the generation input).
+    func continuationGate(
+        parsed: ResponsesParsedRequest,
+        context: ConnectionContext
+    ) async -> [JSONValue]? {
+        guard parsed.esStateIDPresent else {
+            if parsed.continuationSettle {
+                sendTerminal(.settleWithoutAnchor, context: context)
+                return nil
+            }
+            return parsed.canonicalMessages
+        }
+        guard let anchor = parsed.esStateID, !anchor.isEmpty else {
+            sendTerminal(
+                ContinuationAdmissionFailure.invalidAnchor.terminal,
+                context: context
+            )
+            return nil
+        }
+        // Fail closed before ANY authority work: a settle request whose
+        // settlement authority is missing must not produce a generation that
+        // can never be settled.
+        if parsed.continuationSettle, continuationSettlement == nil {
+            sendTerminal(.settlementAuthorityUnavailable, context: context)
+            return nil
+        }
+        guard let admission = continuationAdmission else {
+            sendTerminal(.admissionAuthorityUnavailable, context: context)
+            return nil
+        }
+        do {
+            let outcome = try await admission(anchor)
+            // Part 2 wiring: THIS request executes under a fresh child ES, and
+            // the admission's verified bindings travel with it. Both are pinned
+            // on the per-request context BEFORE generation, so generation, the
+            // settlement attribution and the returned child id are the same
+            // identity — not a decoration added after the fact.
+            let childESStateID = "es-" + UUID().uuidString.lowercased()
+            context.setContinuationBinding(
+                ContinuationRequestBinding(
+                    parentESStateID: anchor,
+                    childESStateID: childESStateID,
+                    verifiedBindings: outcome.verifiedBindings))
+            RuntimeTraceLogger.shared.trace(
+                "[PROTOCOL] continuation_admitted r=\(context.requestId)"
+                + " parent=\(anchor) child=\(childESStateID)"
+                + " bindings=\(outcome.verifiedBindings.count)")
+            return parsed.canonicalMessages + [
+                JSONValue.object([
+                    "role": .string("user"),
+                    "content": .string(outcome.recoveredValue)
+                ])
+            ]
+        } catch {
+            sendTerminal(continuationAdmissionTerminal(for: error), context: context)
+            return nil
+        }
+    }
+
+    /// Write one structured continuation terminal (contract v0.1).
+    func sendTerminal(_ terminal: ContinuationTerminal, context: ConnectionContext) {
+        sendError(
+            terminal.message,
+            status: terminal.status,
+            on: context.connection,
+            context: context,
+            errorKind: terminal.errorKind,
+            reasonCode: terminal.reasonCode
+        )
+    }
+
+    /// Post-generation settlement step (non-streaming Responses path).
+    /// Runs the injected authority over the ACTUAL generated text; the native
+    /// gate and the authoritative store stay the single settlement path.
+    /// `.refused` means an error terminal was already written and the caller
+    /// must return without emitting a completed response.
+    func settlementStep(
+        parsed: ResponsesParsedRequest,
+        generatedText: String,
+        context: ConnectionContext
+    ) async -> ContinuationSettlementStep {
+        guard parsed.continuationSettle else { return .notRequested }
+        guard let handler = continuationSettlement else {
+            sendTerminal(.settlementAuthorityUnavailable, context: context)
+            return .refused
+        }
+        // Fail closed: settlement is only ever authorized by THIS request's own
+        // successful admission. A missing binding (or one anchored elsewhere)
+        // never falls back to `state.nextInput`.
+        guard
+            let binding = context.continuationBinding,
+            let anchor = parsed.esStateID,
+            !anchor.isEmpty,
+            binding.parentESStateID == anchor
+        else {
+            sendTerminal(.settlementEngineError, context: context)
+            return .refused
+        }
+        do {
+            return .settled(
+                try await handler(
+                    ContinuationSettlementRequest(
+                        generatedText: generatedText,
+                        parentESStateID: binding.parentESStateID,
+                        childESStateID: binding.childESStateID,
+                        verifiedBindings: binding.verifiedBindings)))
+        } catch {
+            sendTerminal(continuationSettlementTerminal(for: error), context: context)
+            return .refused
+        }
+    }
+
+    /// Slice 8 Part 2: make the admitted child ES the EXECUTION/CACHE identity of
+    /// THIS generation. The runtime keys its session (and therefore its KV cache
+    /// and checkpoints) by (agent, session, branch), so the child ES becomes that
+    /// branch, forked from the request's branch to carry the parent's KV lineage.
+    ///
+    /// A fork that cannot run in this process (e.g. no live parent session after
+    /// a restart) degrades to a COLD child branch: the request messages are
+    /// replayed, so correctness is preserved, and the degradation is traced
+    /// instead of being claimed as a warm reuse. Non-continuation requests keep
+    /// the client's branch unchanged.
+    func continuationExecutionBranch(
+        parsed: ResponsesParsedRequest,
+        context: ConnectionContext
+    ) async -> String {
+        // Only a continuation that will SETTLE gets a child ES identity: that
+        // identity is created by the settlement commit. An admission-only
+        // continuation settles nothing, so inventing a branch for it would
+        // strand KV/checkpoints under an id no ES row will ever name.
+        guard parsed.continuationSettle, let binding = context.continuationBinding else {
+            return parsed.logicalBranchId
+        }
+        let source = parsed.logicalBranchId
+        guard source != binding.childESStateID else { return source }
+        do {
+            _ = try await forkBranchHandler(
+                parsed.agentId,
+                parsed.sessionId,
+                source,
+                binding.childESStateID
+            )
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[PROTOCOL] continuation_branch_cold child=\(binding.childESStateID)"
+                + " from=\(source) err=\(error.localizedDescription)")
+        }
+        RuntimeTraceLogger.shared.trace(
+            "[PROTOCOL] continuation_branch child=\(binding.childESStateID) from=\(source)")
+        return binding.childESStateID
+    }
+
+    /// Success payload merged into the completed response body.
+    func settlementPayload(_ outcome: ContinuationSettlementOutcome) -> [String: Any] {
+        [
+            "settlement_id": outcome.settlementID,
+            "identity_binding_published": outcome.identityBindingPublished,
+            // Child ES identity: the settlement belongs to this state, and it is
+            // the anchor a subsequent continuation must pass as
+            // `previous_es_state_id`.
+            "child_es_state_id": outcome.childESStateID
+        ]
+    }
+
     // MARK: - Responses / Non-Streaming
 
     func handleResponsesNonStreaming(
@@ -517,12 +714,25 @@ extension HTTPServer {
                 return
             }
 
+            guard let continuationMessages = await continuationGate(
+                parsed: parsed,
+                context: context
+            ) else {
+                return
+            }
+
+            // A verified continuation executes under its child ES identity.
+            let executionBranchID = await continuationExecutionBranch(
+                parsed: parsed,
+                context: context
+            )
+
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
                 parsed.sessionId,
-                parsed.logicalBranchId,
-                parsed.canonicalMessages,
+                executionBranchID,
+                continuationMessages,
                 parsed.tools,
                 parsed.config,
 
@@ -551,6 +761,23 @@ extension HTTPServer {
             let content =
                 fullContent.value
 
+            // Settlement runs over the actual generated text BEFORE the
+            // completed response is assembled. A refusal here produces an
+            // error terminal and no completed response, no partial settle.
+            let settlementOutcome: ContinuationSettlementOutcome?
+            switch await settlementStep(
+                parsed: parsed,
+                generatedText: content,
+                context: context
+            ) {
+            case .notRequested:
+                settlementOutcome = nil
+            case .refused:
+                return
+            case .settled(let settled):
+                settlementOutcome = settled
+            }
+
             let calls =
                 toolCalls.value
 
@@ -560,7 +787,7 @@ extension HTTPServer {
                     calls: calls
                 )
 
-            let response =
+            var response =
                 makeCompletedResponse(
                     responseId: parsed.responseId,
                     created: created,
@@ -568,6 +795,10 @@ extension HTTPServer {
                     output: output,
                     usage: result.usage
                 )
+
+            if let settlementOutcome {
+                response["continuation_settlement"] = settlementPayload(settlementOutcome)
+            }
 
             let currentHistory =
                 appendResponsesAssistantOutput(
@@ -718,6 +949,16 @@ extension HTTPServer {
 
         await context.registerLifecycle()
 
+        // Contract fix A: `continuation_settle` is an unsupported combination on
+        // the streaming Responses path. Reject it at the TRANSPORT level BEFORE
+        // committing the SSE `200 text/event-stream` header, so a real client
+        // observes HTTP 501 (never a 200 that carries a mid-stream 501). This
+        // refuses before any generation and before any settlement authority runs.
+        if parsed.continuationSettle {
+            sendTerminal(.settlementUnsupportedOnStream, context: context)
+            return
+        }
+
         let created =
             Int(Date().timeIntervalSince1970)
 
@@ -826,12 +1067,33 @@ extension HTTPServer {
                 return
             }
 
+            guard let continuationMessages = await continuationGate(
+                parsed: parsed,
+                context: context
+            ) else {
+                return
+            }
+
+            // Streaming cannot hold a completed response back until settlement
+            // is known: an explicit settle request on the stream path fails
+            // closed BEFORE generation instead of producing unsettled output.
+            if parsed.continuationSettle {
+                sendTerminal(.settlementUnsupportedOnStream, context: context)
+                return
+            }
+
+            // A verified continuation executes under its child ES identity.
+            let executionBranchID = await continuationExecutionBranch(
+                parsed: parsed,
+                context: context
+            )
+
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
                 parsed.sessionId,
-                parsed.logicalBranchId,
-                parsed.canonicalMessages,
+                executionBranchID,
+                continuationMessages,
                 parsed.tools,
                 parsed.config,
 
@@ -1286,6 +1548,11 @@ extension HTTPServer {
             "canonical=\(canonicalMessages.count)"
         )
 
+        let esAnchorPresent = json.keys.contains("previous_es_state_id")
+        let esAnchorValue = (json["previous_es_state_id"] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let esSettleRequested = (json["continuation_settle"] as? Bool) ?? false
+
         return ResponsesParsedRequest(
             agentId: identity.agentId,
             sessionId: identity.sessionId,
@@ -1297,7 +1564,10 @@ extension HTTPServer {
             responseId: responseId,
             preambleMessages: effectivePreamble,
             currentHistoryMessages: split.historyMessages,
-            parent: parent
+            parent: parent,
+            esStateIDPresent: esAnchorPresent,
+            esStateID: esAnchorValue,
+            continuationSettle: esSettleRequested
         )
     }
 

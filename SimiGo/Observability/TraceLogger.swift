@@ -1,4 +1,5 @@
 import Foundation
+import SimiGoRuntimeContract
 
 // MARK: - Dedicated File Trace Logger (~/.simigo/logs)
 
@@ -22,8 +23,11 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
     }()
 
     private init() {
-        let logsDirectory = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".simigo/logs", isDirectory: true)
+        // Resolved through the shared runtime path resolver so that an isolated
+        // test/experiment root (SIMIGO_HOME) also relocates the trace log. With no
+        // override this is still <home>/.simigo/logs: default behaviour is unchanged,
+        // only the previously hardcoded home is now injectable.
+        let logsDirectory = SimiGoPaths.logs
 
         try? FileManager.default.createDirectory(
             at: logsDirectory,

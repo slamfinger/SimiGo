@@ -573,6 +573,23 @@ public final class Service: ObservableObject {
             self.config = resolveConfig(for: savedPath)
         }
 
+        // Unified path resolution: when the persisted portable reference resolves to
+        // a live model under the external cache, prefer it over any stale absolute
+        // path (this survives a cache relocation) and refresh the runtime locators.
+        if let url = AppConfig.resolvedSelectedModelURL {
+            let resolved = url.path
+            if resolved != modelPath, FileManager.default.fileExists(atPath: resolved) {
+                modelPath = resolved
+                AppConfig.set(resolved, for: .modelPath)
+                switch ModelDetector.detect(path: resolved).kind {
+                case .mlx: mlxModelPath = resolved; AppConfig.set(resolved, for: .mlxModelPath)
+                case .gguf: llamaModelPath = resolved; AppConfig.set(resolved, for: .llamaModelPath)
+                case .cloudOpenAI: break
+                }
+                self.config = resolveConfig(for: resolved)
+            }
+        }
+
         let node = InferenceNodeConfiguration.fromEnvironment(defaultPort: AppConfig.apiPort)
 
         InferenceNodeConfiguration.configure(
@@ -660,6 +677,9 @@ public final class Service: ObservableObject {
 
         modelPath = path
         AppConfig.set(path, for: .modelPath)
+        // Portable identity: persist (root_id + relative) when the model lives in an
+        // external cache root; the absolute path remains only as a runtime locator.
+        AppConfig.persistReference(forAbsolutePath: path)
     }
 
     public func start(_ selection: BackendSelection) async {
@@ -1166,7 +1186,8 @@ public final class Service: ObservableObject {
 
                     // NativeMLX: 空闲超时挂起模型（Phase 1 实验）。
                     // 仅释放模型驻留内存，HTTPServer 保持运行——不触发 restart。
-                    // 超时为自适应：max(600s, 最贵会话重建时长估算+60s 容错)。
+                    // 超时为自适应：min(cap=360s, max(floor=240s, 最贵会话重建时长估算+60s 容错))
+                    // —— 2026-10-23 由原 max(600s…) 收紧为带上限的收敛窗口，缓解推理结束后内存压力长时间黄色。
                     if self.backendKind == .mlx,
                        let nativeMLX = runtime as? NativeMLX {
                         // 健康循环只需“尝试挂起”，返回值用于静默处理。
@@ -1211,11 +1232,11 @@ public final class Service: ObservableObject {
 
     // MARK: - Health Check Tuning
 
-    // 空闲挂起超时已改为自适应（NativeMLX.adaptiveIdleTimeout）：
-    // max(600s 基线, 最贵会话重建时长估算 + 60s 容错)。保留 600s 下限的
-    // 依据不变：agent 会话工具执行/思考间隙不应反复缴纳冷启动税；
-    // 大上下文会话（如 121k，重建 ≈11 分钟）按估算自动延长闲置容忍。
-    // 健康检查循环周期 30s，挂起延迟收敛到 idleTimeout～idleTimeout+30s。
+    // 空闲挂起超时自适应（NativeMLX.adaptiveIdleTimeout）：
+    // min(cap=360s, max(floor=240s, 最贵会话重建时长估算 + 60s))。带 cap 的收敛窗口
+    // 是为缓解"推理结束后内存压力长时间黄色"：大会话最长 6 分钟即卸载（原 ≈14.5 分钟）；
+    // floor 兜底保证小会话工具/思考间隙不反复缴冷启动税。
+    // 健康检查循环周期 30s，实际挂起延迟收敛到 idleTimeout～idleTimeout+30s（≤ 6.5 分钟）。
 
     private func stopHealthCheck() {
         healthTask?.cancel()

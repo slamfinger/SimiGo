@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SimiGoRuntimeContract
 
 /// Manages external process dependencies and the shared command console.
 /// Native MLX itself does not require an external Python environment.
@@ -23,11 +24,69 @@ public final class EnvManager: ObservableObject {
     @Published public var commandStatus = "就绪"
 
     // MARK: - Paths
-    public static var simigoDir: String { "\(NSHomeDirectory())/.simigo" }
-    public static var binDir: String { "\(simigoDir)/bin" }
-    public static var modelsDir: String { "\(simigoDir)/models" }
-    public static var logsDir: String { "\(simigoDir)/logs" }
-    public static var nativeMLXTraceLog: String { "\(logsDir)/native_mlx_trace.log" }
+    // Single source of truth: SimiGoPaths (MLX-free runtime resolver). No `models`
+    // directory is ever created under the managed root — model weights stay external
+    // and are referenced from the Hugging Face cache / user-selected roots only.
+    public static var simigoDir: String { SimiGoPaths.managedRoot().path }
+    public static var binDir: String { SimiGoPaths.bin.path }
+    public static var logsDir: String { SimiGoPaths.logs.path }
+    public static var nativeMLXTraceLog: String { SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log").path }
+
+    // MARK: - Engine selection (install page)
+    /// Engines selectable at install time: bundled defaults plus any operator
+    /// manifest entries. NOT hardcoded to llama.cpp — add an engine via manifest.
+    public var availableEngines: [EngineRecipe] {
+        SimiGoEngineRegistry.load(manifestURL: SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName))
+    }
+
+    /// Currently chosen engine id (persisted to config).
+    @Published public var selectedEngineID: String = AppConfig.get(.selectedEngine) ?? "mlx-native" {
+        didSet { AppConfig.set(selectedEngineID, for: .selectedEngine) }
+    }
+
+    /// Resolve an engine's lifecycle stage. Downloaded / built / adapted stay three
+    /// DISTINCT states — a fetched source is not a built binary and neither is an
+    /// adapted SimiGo runtime.
+    public func engineStage(for id: String) -> EngineStage {
+        guard let recipe = availableEngines.first(where: { $0.id == id }) else { return .absent }
+        let binaryPresent = Self.findSystemLlamaServer() != nil
+        let sourcePinned = FileManager.default.fileExists(atPath: SimiGoPaths.sources.path)
+        let driverAdapted = id == "mlx-native" ? true : binaryPresent
+        return SimiGoEngineRegistry.resolveStage(recipe: recipe,
+                                                 sourcePresentAtPinnedRef: sourcePinned,
+                                                 binaryPresent: binaryPresent,
+                                                 driverAdapted: driverAdapted,
+                                                 healthChecked: binaryPresent)
+    }
+
+    /// requirement②: the concrete OpenAI-compatible endpoint SimiGo will adopt
+    /// for a SELECTED external server (ollama / LM Studio / …). `nil` means the
+    /// selected engine is not an endpoint-adoptable external server (native MLX,
+    /// source-build llama.cpp) or is fail-closed for lack of a manifest endpoint
+    /// (SGLang). The install UI uses this to wire the existing remote runtime,
+    /// so selecting a server actually routes inference instead of only logging.
+    public func adoptedEndpoint(for id: String) -> SimiGoEngineRegistry.AdoptedEndpoint? {
+        guard let recipe = availableEngines.first(where: { $0.id == id }) else { return nil }
+        return SimiGoEngineRegistry.adoptedEndpoint(for: recipe)
+    }
+
+    /// requirement②: apply the selected external server's resolved OpenAI-compatible
+    /// endpoint to the live runtime by configuring the existing, already-tested
+    /// `.cloud` remote backend. Business logic lives here (not in the SwiftUI view)
+    /// so it is the single source of truth and is directly testable. Returns `nil`
+    /// (fail-closed) when the engine is not an endpoint-adoptable external server,
+    /// leaving the Service untouched.
+    @MainActor
+    public func applyExternalAdoption(of id: String, to service: Service) -> SimiGoEngineRegistry.AdoptedEndpoint? {
+        guard let ep = adoptedEndpoint(for: id) else { return nil }
+        service.cloudBaseURL = ep.baseURL
+        if let m = ep.defaultModel { service.cloudModel = m }
+        service.backendSelection = .cloud
+        commandStatus = "已采用外部服务端"
+        statusMessage = "已采用外部服务端：\(ep.baseURL)"
+        appendCommandLog("🔌 采用 \(id) → 云端运行时指向 \(ep.baseURL)")
+        return ep
+    }
 
     public static var llamaServerExecutable: String {
         Self.findSystemLlamaServer() ?? "\(binDir)/llama-server"
@@ -196,6 +255,25 @@ public final class EnvManager: ObservableObject {
 
     // MARK: - llama.cpp Environment Setup
     public func setupEnvironment() async {
+        // Dispatch by the selected engine's KIND. Native MLX needs no external
+        // binary; external servers (ollama / LM Studio / slang) are ADOPTED, not
+        // built here. Only source-build recipes fall through to the compile path.
+        let engine = selectedEngineID
+        if let recipe = availableEngines.first(where: { $0.id == engine }), recipe.kind != .sourceBuild {
+            switch recipe.kind {
+            case .nativeRuntime:
+                commandStatus = "就绪"
+                statusMessage = "Native MLX 内置，无需外部依赖"
+                appendCommandLog("✅ Native MLX 内置运行时，无需构建外部引擎。")
+            default:
+                let stage = engineStage(for: engine)
+                commandStatus = stage == .absent ? "未检测到外部服务端" : "已采用外部服务端"
+                statusMessage = commandStatus
+                appendCommandLog("ℹ️ \(recipe.displayName) 为外部服务端（stage=\(stage)）：请确认已安装，SimiGo 只采用不构建。")
+            }
+            checkStatus()
+            return
+        }
 
         commandInput = "llama.cpp build"
         commandStatus = "构建中"
@@ -203,10 +281,23 @@ public final class EnvManager: ObservableObject {
 
         let fm = FileManager.default
 
+        // Installed-binary short circuit: a usable `bin/llama-server` satisfies
+        // the dependency WITHOUT rebuilding. Cache pruning removes sources/build
+        // after a successful build, so without this check every re-run (or any
+        // offline re-run) would force a fresh clone of upstream.
+        let installedLlama = "\(Self.binDir)/llama-server"
+        if fm.fileExists(atPath: installedLlama), fm.isExecutableFile(atPath: installedLlama) {
+            appendCommandLog("✅ 检测到已安装的 llama-server（\(installedLlama)），跳过构建。")
+            commandStatus = "构建完成"
+            commandInput = Self.defaultCommandInput
+            checkStatus()
+            return
+        }
+
         do {
             try fm.createDirectory(atPath: Self.simigoDir, withIntermediateDirectories: true)
             try fm.createDirectory(atPath: Self.binDir, withIntermediateDirectories: true)
-            try fm.createDirectory(atPath: Self.modelsDir, withIntermediateDirectories: true)
+            // No `.simigo/models`: models are never copied into the managed root.
             try fm.createDirectory(atPath: Self.logsDir, withIntermediateDirectories: true)
 
             guard let git = Self.findTool("git") else {
@@ -217,23 +308,32 @@ public final class EnvManager: ObservableObject {
                 throw NSError(domain: "EnvManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "未找到 cmake，请安装 cmake。"])
             }
 
-            let source = "\(Self.simigoDir)/llama.cpp"
+            // Locked version only: NO floating `git pull`. The pinned ref must come
+            // from the engine manifest / operator setting; an unlocked recipe is
+            // refused fail-closed instead of silently tracking upstream HEAD.
+            guard let llamaRecipe = SimiGoEngineRegistry.recipe(
+                    id: "llama.cpp",
+                    manifestURL: SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName)),
+                  llamaRecipe.isVersionLocked, let pinned = llamaRecipe.pinnedRef else {
+                throw NSError(domain: "EnvManager", code: 409, userInfo: [NSLocalizedDescriptionKey:
+                    "llama.cpp 未锁定版本：请在引擎清单 '\(SimiGoEngineRegistry.manifestName)' 指定 pinnedRef 后再构建（禁止随上游漂移）。"])
+            }
+            let source = SimiGoPaths.sources.appendingPathComponent("llama.cpp").path
+            let build = SimiGoPaths.build.appendingPathComponent("llama.cpp").path
 
-            if !fm.fileExists(atPath: source) {
-                appendCommandLog("📥 克隆 llama.cpp...")
-                try await runCommand(git, args: ["clone", "https://github.com/ggml-org/llama.cpp.git", source])
+            if !fm.fileExists(atPath: "\(source)/.git") {
+                appendCommandLog("📥 锁定检出 llama.cpp @ \(pinned) …")
+                for args in llamaRecipe.lockedCheckoutCommands(git: git, targetDir: source) {
+                    try await runCommand(args[0], args: Array(args.dropFirst()))
+                }
             } else {
-                appendCommandLog("🔄 更新 llama.cpp...")
-                try? await runCommand(git, args: ["-C", source, "pull", "--ff-only"])
+                appendCommandLog("🔒 校验 llama.cpp 检出到锁定版本 \(pinned) …")
+                try await runCommand(git, args: ["-C", source, "fetch", "--depth", "1", "origin", pinned])
+                try await runCommand(git, args: ["-C", source, "checkout", "--detach", pinned])
             }
 
-            let build = "\(source)/build"
-
             if fm.fileExists(atPath: "\(build)/CMakeCache.txt") {
-                appendCommandLog("⚡ 检测到已有缓存，执行高效增量构建...")
-            } else {
-                appendCommandLog("🧹 清理旧构建缓存以解决符号冲突...")
-                try? fm.removeItem(atPath: build)
+                appendCommandLog("⚡ 检测到已有构建缓存，执行增量构建…")
             }
 
             appendCommandLog("🛠️ 配置 Metal 构建...")
@@ -290,15 +390,27 @@ public final class EnvManager: ObservableObject {
                 throw NSError(domain: "EnvManager", code: 501, userInfo: [NSLocalizedDescriptionKey: "llama-server 构建完成，但未找到构建产物。"])
             }
 
+            // "构建完成后删除缓存只保留二进制": the installed binary already lives in
+            // binDir, so drop exactly the cache set the recipe declares (single
+            // source of truth — a recipe that names other cache dirs is honored) and
+            // never a path the recipe did not list. bin/ is not in that set, so the
+            // retained binary can never be pruned.
+            appendCommandLog("🧹 构建完成，清理缓存仅保留二进制…")
+            for rel in llamaRecipe.cachePathsToRemoveAfterBuild {
+                precondition(!rel.hasPrefix("/") && !rel.contains(".."),
+                             "recipe cache path must be relative and contained")
+                let url = SimiGoPaths.managedRoot().appendingPathComponent(rel, isDirectory: true)
+                if fm.fileExists(atPath: url.path) { try? fm.removeItem(at: url) }
+            }
+            appendCommandLog("✅ 已清理引擎缓存：\(llamaRecipe.cachePathsToRemoveAfterBuild.joined(separator: ", "))（仅保留二进制）")
 
-            let targetHf = "\(Self.binDir)/hf"
-
-            if fm.fileExists(atPath: targetHf) {
-                appendCommandLog("⚡ 检测到已安装官方 hf 工具，跳过重复安装。")
+            // Hugging Face CLI: NEVER pipe a remote script to a shell (curl | bash).
+            // SimiGo only adopts an already-installed `hf`; if absent, HF model
+            // downloads stay unavailable until the user installs the official CLI.
+            if Self.findTool("hf") != nil {
+                appendCommandLog("⚡ 已检测到官方 hf 工具，模型下载可用。")
             } else {
-                appendCommandLog("📥 正在安装官方 Hugging Face CLI 到 \(Self.simigoDir)...")
-                try await runCommand("/bin/zsh", args: ["-c", "curl -LsSf https://hf.co/cli/install.sh | INSTALL_PREFIX=\(Self.simigoDir) bash"])
-                appendCommandLog("✅ 官方 hf 工具已就绪。")
+                appendCommandLog("ℹ️ 未检测到 hf CLI：出于安全（禁止 curl | bash）不自动安装。如需从 Hugging Face 下载模型，请自行安装官方 CLI。")
             }
 
 
@@ -317,6 +429,206 @@ public final class EnvManager: ObservableObject {
         }
     }
 
+
+    // MARK: - Generation environment bootstrap (env-bootstrap entry)
+
+    /// Provision the `hf` CLI into the managed bin.
+    ///
+    /// Discovery order: an already usable `hf` (PATH or managed bin) is adopted
+    /// as-is; otherwise Homebrew (a package manager, never `curl | bash`) is
+    /// used to install the official `huggingface-cli`, and the binary is
+    /// linked into `~/.simigo/bin`. Without Homebrew the step reports
+    /// `manual_required` with instructions instead of failing the bootstrap.
+    public func bootstrapHFTool() async -> [String: Any] {
+        let fm = FileManager.default
+        let binTarget = Self.binDir + "/hf"
+        if let existing = Self.findTool("hf") {
+            return ["status": "already_present", "path": existing]
+        }
+        if fm.fileExists(atPath: binTarget) && fm.isExecutableFile(atPath: binTarget) {
+            return ["status": "already_present", "path": binTarget]
+        }
+        guard let brew = Self.findTool("brew") else {
+            return [
+                "status": "manual_required",
+                "detail": "未找到 hf 且未安装 Homebrew：请安装官方 huggingface-cli 后重跑（禁止 curl | bash）",
+            ]
+        }
+        do {
+            appendCommandLog("📦 通过 Homebrew 安装官方 huggingface-cli …")
+            try await runCommand(brew, args: ["install", "huggingface-cli"])
+            // Locate the installed binary via brew's own prefix resolution.
+            let prefix = try await Self.captureCommand(brew, args: ["--prefix", "huggingface-cli"])
+            let candidate = (prefix as NSString).appendingPathComponent("/bin/hf")
+            guard fm.fileExists(atPath: candidate) else {
+                return ["status": "install_bin_missing", "detail": "brew 安装完成但未找到 \(candidate)"]
+            }
+            try? fm.removeItem(atPath: binTarget)
+            try fm.createSymbolicLink(atPath: binTarget, withDestinationPath: candidate)
+            try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: binTarget)
+            return ["status": "installed", "path": binTarget, "target": candidate]
+        } catch {
+            return ["status": "install_failed", "detail": error.localizedDescription]
+        }
+    }
+
+    /// Ensure a fresh authoritative ES/IS database exists and optionally
+    /// register the operator's work root.
+    ///
+    /// An EXISTING database is never reset — the blank-database semantics apply
+    /// to a new environment only. `workRoot`, when given, is registered in the
+    /// `roots` table (category `work`, locator `path`) so Execution State and
+    /// Information Space can index files under it without ever copying them in.
+    public func bootstrapFreshDatabase(workRoot: String?) -> [String: Any] {
+        let url = SimiGoPaths.databaseURL
+        let existedBefore = FileManager.default.fileExists(atPath: url.path)
+        do {
+            let db = try SimiGoESISDatabase(url: url, createIfNeeded: true)
+            try db.runMigrations()
+            var report: [String: Any] = [
+                "status": existedBefore ? "existing" : "created",
+                "path": url.path,
+                "schema_version": (try? db.schemaVersion()) ?? -1,
+            ]
+            if let workRoot, !workRoot.isEmpty {
+                let standardized = (workRoot as NSString).standardizingPath
+                let rootID = "work-" + Self.stableRootID(forPath: standardized)
+                try db.upsertRoot(
+                    rootID: rootID, category: "work",
+                    displayName: standardized, locatorType: "path", status: "registered")
+                report["work_root"] = [
+                    "root_id": rootID,
+                    "path": standardized,
+                    "registered": true,
+                ]
+            }
+            return report
+        } catch {
+            return ["status": "failed", "path": url.path, "detail": error.localizedDescription]
+        }
+    }
+
+    /// Ensure a version-locked engine manifest exists before building.
+    ///
+    /// The build path is fail-closed without a pinned `llama.cpp` ref; an
+    /// operator-supplied manifest is never overwritten. When none exists, this
+    /// writes the default lock file pinning llama.cpp to the commit already
+    /// validated in the user's real environment (2026-10-18, build 11720,
+    /// `0878f7c3…`) — self-bootstrap without upstream drift.
+    public func ensureDefaultEngineManifest() -> [String: Any] {
+        let url = SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName)
+        if FileManager.default.fileExists(atPath: url.path) {
+            return ["status": "present", "path": url.path]
+        }
+        let pinned = "0878f7c304cc13915c831ae17694534c94940176"
+        var recipes = SimiGoEngineRegistry.bundledDefaults
+        if let idx = recipes.firstIndex(where: { $0.id == "llama.cpp" }) {
+            recipes[idx] = EngineRecipe(
+                id: "llama.cpp", displayName: "llama.cpp", kind: .sourceBuild,
+                upstreamURL: "https://github.com/ggml-org/llama.cpp.git",
+                pinnedRef: pinned,
+                producedBinaryRelPath: "build/bin/llama-server")
+        }
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            try FileManager.default.createDirectory(
+                at: SimiGoPaths.manifests, withIntermediateDirectories: true)
+            try encoder.encode(recipes).write(to: url)
+            return ["status": "created", "pinned_ref": pinned, "path": url.path]
+        } catch {
+            return ["status": "failed", "detail": error.localizedDescription]
+        }
+    }
+
+    /// One-shot provisioning of the full generation environment: managed
+    /// directory tree, llama.cpp toolchain (version-locked build, caches
+    /// pruned to binaries), the `hf` CLI, and the authoritative ES/IS
+    /// database with an optional work-root registration. Returns a JSON-ready
+    /// report; a step that cannot run reports its own status instead of
+    /// aborting the rest.
+    public func bootstrapGenerationEnvironment(workRoot: String?) async -> [String: Any] {
+        var report: [String: Any] = [
+            "managed_root": SimiGoPaths.managedRoot().path,
+            "started_at": ISO8601DateFormatter().string(from: Date()),
+        ]
+        // 0) Version-locked engine manifest (operator manifest wins; the
+        //    default pins llama.cpp to the validated commit).
+        report["engine_manifest"] = ensureDefaultEngineManifest()
+        // 1) Directory tree + llama.cpp (reuses the shipped, version-locked
+        //    recipe path incl. cache pruning).
+        let previousEngine = selectedEngineID
+        selectedEngineID = "llama.cpp"
+        await setupEnvironment()
+        selectedEngineID = previousEngine
+        report["llama_cpp"] = [
+            "status": commandStatus,
+            "llama_server": Self.llamaServerExecutable,
+        ]
+        // 2) hf CLI.
+        report["hf"] = await bootstrapHFTool()
+        // 3) Fresh ES/IS database + work root.
+        report["database"] = bootstrapFreshDatabase(workRoot: workRoot)
+        // 4) LOCALB operational status against the SAME managed root the
+        //    identities now live in (file keychain). `operational` = the ES/IS
+        //    serving path can bind TLS + auth; anything else names the recovery
+        //    step (first-run ceremony via the management entry).
+        switch try? LOCALBHostRuntime.resolveOperational(hostDirectory: LOCALBHostRuntime.defaultHostDirectory()) {
+        case .operational:
+            report["localb"] = ["status": "operational"]
+        case .notInitialized:
+            report["localb"] = [
+                "status": "not_initialized",
+                "recovery": "run first-run ceremony: SIMIGO_LOCALB_MGMT=prepare, then activate (real root: SIMIGO_LOCALB_ALLOW_REAL_ROOT=1)",
+            ]
+        default:
+            report["localb"] = [
+                "status": "unresolvable",
+                "recovery": "identities may be locked to a previous build's signature in the login keychain; re-run the first-run ceremony against the managed root",
+            ]
+        }
+        report["finished_at"] = ISO8601DateFormatter().string(from: Date())
+        return report
+    }
+
+    /// Stable root id for a registered work root: FNV-1a over the
+    /// standardized path — reproducible across runs, no crypto requirement.
+    nonisolated static func stableRootID(forPath path: String) -> String {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in path.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return String(format: "%016x", hash)
+    }
+
+    /// Run a command and return its trimmed stdout (used by hf provisioning).
+    static func captureCommand(_ cmd: String, args: [String]) async throws -> String {
+        try await withCheckedThrowingContinuation { continuation in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: cmd)
+            process.arguments = args
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = Pipe()
+            process.terminationHandler = { process in
+                if process.terminationStatus == 0 {
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    continuation.resume(returning: String(data: data, encoding: .utf8)?
+                        .trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
+                } else {
+                    continuation.resume(throwing: NSError(
+                        domain: "EnvManager", code: Int(process.terminationStatus),
+                        userInfo: [NSLocalizedDescriptionKey: "\(cmd) exited \(process.terminationStatus)"]))
+                }
+            }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+    }
 
     // MARK: - Process Runner
     private func runCommand(_ cmd: String, args: [String]) async throws {

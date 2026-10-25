@@ -1,12 +1,15 @@
 import Foundation
+import SimiGoRuntimeContract
 
 public enum AppKey: String, CaseIterable, Sendable {
     case modelPath = "SelectedModelPath"
+    case modelReference = "SelectedModelReference"
     case mlxModelPath = "MLXModelPath"
     case llamaModelPath = "LLaMAModelPath"
     case backendSelection = "BackendSelection"
     case cloudBaseURL = "CloudBaseURL"
     case cloudModel = "CloudModel"
+    case selectedEngine = "SelectedEngine"
     case llamaCppRoot = "LlamaCppRoot"
     case llamaServerBin = "LlamaServerBin"
     case apiListenMode = "APIListenMode"
@@ -15,11 +18,15 @@ public enum AppKey: String, CaseIterable, Sendable {
 
     nonisolated public var defaultValue: String? {
         switch self {
+        case .selectedEngine:
+            return "mlx-native"
         case .llamaCppRoot:
             return "\(NSHomeDirectory())/llama.cpp"
         case .llamaServerBin:
             return "\(NSHomeDirectory())/llama.cpp/build/bin/llama-server"
         case .modelPath:
+            return nil
+        case .modelReference:
             return nil
         case .mlxModelPath:
             return nil
@@ -175,6 +182,44 @@ public struct AppConfig: Sendable {
         set {
             let value = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
             set(value.isEmpty ? "SimiGo" : value, for: .bonjourName)
+        }
+    }
+
+    // MARK: - Portable model reference (root_id + relative identity)
+
+    /// The durable, portable identity of the selected model. SimiGo persists
+    /// (root_id + relative_path), never an absolute local path as the authority;
+    /// the machine locator is resolved from the external Hugging Face cache at
+    /// runtime, and a model is never copied into `.simigo`.
+    nonisolated public static var selectedModelReference: ModelReference? {
+        get {
+            guard let raw = get(.modelReference), let data = raw.data(using: .utf8) else { return nil }
+            return try? JSONDecoder().decode(ModelReference.self, from: data)
+        }
+        set {
+            if let newValue, let data = try? JSONEncoder().encode(newValue),
+               let str = String(data: data, encoding: .utf8) {
+                set(str, for: .modelReference)
+            } else {
+                set(nil, for: .modelReference)
+            }
+        }
+    }
+
+    /// Resolve the persisted reference to a current-machine file URL, or nil when
+    /// it is absent under every external cache root (fail-closed, never invents).
+    nonisolated public static var resolvedSelectedModelURL: URL? {
+        guard let ref = selectedModelReference else { return nil }
+        return SimiGoModelDiscovery.resolve(ref)
+    }
+
+    /// Persist a portable reference derived from a selected absolute path when the
+    /// path lives under an external cache root; clears it otherwise.
+    nonisolated public static func persistReference(forAbsolutePath path: String) {
+        if let ref = SimiGoModelDiscovery.reference(forAbsolutePath: path) {
+            selectedModelReference = ref
+        } else {
+            selectedModelReference = nil
         }
     }
 

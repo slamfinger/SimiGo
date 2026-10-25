@@ -97,6 +97,24 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
         )
     }
 
+    private func makeHTTPRequest(
+        method: String = "POST",
+        authority: String = "127.0.0.1:8080",
+        requestTarget: String = "/v1/inference",
+        contentType: String? = "application/json",
+        contentEncoding: String = "identity",
+        body: String = "{\"prompt\":\"hello\"}"
+    ) throws -> LOCALBHTTPRequestV1 {
+        try LOCALBHTTPRequestV1(
+            method: method,
+            authority: authority,
+            requestTarget: requestTarget,
+            contentType: contentType,
+            contentEncoding: contentEncoding,
+            bodyRaw: Array(body.utf8)
+        )
+    }
+
     func testInteractivePairingIsOneCommitAndRevocationIsImmediate() throws {
         let host = try makeHost()
         let (presentation, secret) = try issue(host)
@@ -134,54 +152,281 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
         XCTAssertNil(journal.range(of: Data(secret)), "The raw bearer secret must never be persisted.")
 
         let challenge = try host.coordinator.issueRequestChallenge(
-            clientKeyID: clientKeyID, permission: .inference
-        )
-        let requestProof = try LOCALBClientRequestProofV1.sign(
             clientKeyID: clientKeyID, permission: .inference,
+            checkpoint: committedCheckpoint
+        )
+        let request = try makeHTTPRequest()
+        let requestProof = try LOCALBClientRequestProofV2.sign(
+            clientKeyID: clientKeyID, permission: .inference,
+            request: request,
             challenge: challenge, with: clientKey
         )
         let authorized = try host.coordinator.authorizeProtectedRequest(
             clientKeyID: clientKeyID, permission: .inference,
+            request: request,
             challenge: challenge, proofSignatureRaw: requestProof,
             checkpoint: committedCheckpoint
         )
-        XCTAssertEqual(authorized.clientKeyID, clientKeyID)
+        XCTAssertEqual(authorized.client.clientKeyID, clientKeyID)
+        XCTAssertEqual(authorized.request, request)
+
+        // A fresh challenge plus a proof over the original request must not
+        // authorize any altered method, authority, target, media type, or body.
+        let alteredMethod = try makeHTTPRequest(method: "GET")
+        let alteredAuthority = try makeHTTPRequest(authority: "other.local:8080")
+        let alteredTarget = try makeHTTPRequest(requestTarget: "/v1/other")
+        let alteredQuery = try makeHTTPRequest(
+            requestTarget: "/v1/inference?model=altered"
+        )
+        let alteredContentType = try makeHTTPRequest(contentType: "application/cbor")
+        let alteredBody = try makeHTTPRequest(body: "{\"prompt\":\"tampered\"}")
+        for alteredRequest in [
+            alteredMethod, alteredAuthority, alteredTarget, alteredQuery,
+            alteredContentType, alteredBody
+        ] {
+            let freshChallenge = try host.coordinator.issueRequestChallenge(
+                clientKeyID: clientKeyID, permission: .inference,
+                checkpoint: committedCheckpoint
+            )
+            let originalProof = try LOCALBClientRequestProofV2.sign(
+                clientKeyID: clientKeyID, permission: .inference,
+                request: request, challenge: freshChallenge, with: clientKey
+            )
+            XCTAssertThrowsError(try host.coordinator.authorizeProtectedRequest(
+                clientKeyID: clientKeyID, permission: .inference,
+                request: alteredRequest, challenge: freshChallenge,
+                proofSignatureRaw: originalProof, checkpoint: committedCheckpoint
+            )) { error in
+                XCTAssertEqual(error as? LOCALBStatus, .clientRequestSignatureInvalid)
+            }
+        }
 
         XCTAssertThrowsError(try host.coordinator.authorizeProtectedRequest(
             clientKeyID: clientKeyID, permission: .inference,
+            request: request,
             challenge: challenge, proofSignatureRaw: requestProof,
             checkpoint: committedCheckpoint
         )) { error in
             XCTAssertEqual(error as? LOCALBStatus, .clientChallengeInvalid)
         }
-        let adminChallenge = try host.coordinator.issueRequestChallenge(
-            clientKeyID: clientKeyID, permission: .adminTrust
-        )
-        XCTAssertThrowsError(try host.coordinator.authorizeProtectedRequest(
+        // A permission the client lacks is refused at CHALLENGE ISSUANCE —
+        // under-privileged clients never consume ledger capacity at all.
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
             clientKeyID: clientKeyID, permission: .adminTrust,
-            challenge: adminChallenge, proofSignatureRaw: [],
             checkpoint: committedCheckpoint
         )) { error in
             XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)
         }
 
+        // Challenge issued BEFORE revocation: the authorize path still
+        // re-validates client status and rejects the proof after revocation.
+        let preRevocationChallenge = try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientKeyID, permission: .inference,
+            checkpoint: committedCheckpoint
+        )
         let revokedCheckpoint = try host.coordinator.revokeClient(
             clientKeyID: clientKeyID, reason: "operator revoked pairing",
             checkpoint: committedCheckpoint
         )
-        let replayChallenge = try host.coordinator.issueRequestChallenge(
-            clientKeyID: clientKeyID, permission: .inference
-        )
-        let replayProof = try LOCALBClientRequestProofV1.sign(
+        let replayProof = try LOCALBClientRequestProofV2.sign(
             clientKeyID: clientKeyID, permission: .inference,
-            challenge: replayChallenge, with: clientKey
+            request: request,
+            challenge: preRevocationChallenge, with: clientKey
         )
         XCTAssertThrowsError(try host.coordinator.authorizeProtectedRequest(
             clientKeyID: clientKeyID, permission: .inference,
-            challenge: replayChallenge, proofSignatureRaw: replayProof,
+            request: request,
+            challenge: preRevocationChallenge, proofSignatureRaw: replayProof,
             checkpoint: revokedCheckpoint
         )) { error in
             XCTAssertEqual(error as? LOCALBStatus, .clientRevoked)
+        }
+
+        // After revocation, issuance itself fails closed — a revoked client
+        // can no longer obtain challenges at all.
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientKeyID, permission: .inference,
+            checkpoint: revokedCheckpoint
+        )) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .clientRevoked)
+        }
+    }
+
+    /// Challenge-issuance resource hardening: registry validation happens
+    /// before any ledger capacity is consumed, and per-client pending and
+    /// rate limits prevent an unauthenticated TLS peer from starving
+    /// legitimate clients of challenges.
+    func testChallengeIssuanceValidatesClientAndAppliesResourceLimits()
+        throws {
+        let host = try makeHost()
+        let (presentation, secret) = try issue(host)
+        let clientKey = Curve25519.Signing.PrivateKey()
+        let submission = try makeSubmission(
+            presentation, secret: secret, clientKey: clientKey
+        )
+        let pendingPairing = try host.coordinator.preparePairing(
+            submission, checkpoint: presentation.registryCheckpoint
+        )
+        let committed = try host.coordinator.approveAndRegister(
+            pendingPairing,
+            operatorApproved: true,
+            operatorAuthorizationReference: "CHALLENGE-LIMIT-TEST",
+            checkpoint: presentation.registryCheckpoint
+        )
+        let clientKeyID = try LOCALBSigningInputV1.keyID(
+            publicKeyRaw: Array(clientKey.publicKey.rawRepresentation)
+        )
+
+        func issueChallenge() throws -> [UInt8] {
+            try host.coordinator.issueRequestChallenge(
+                clientKeyID: clientKeyID, permission: .inference,
+                checkpoint: committed
+            )
+        }
+
+        // Unknown client: refused before any ledger capacity is used.
+        let unknownKeyID = try LOCALBSigningInputV1.keyID(
+            publicKeyRaw: Array(
+                Curve25519.Signing.PrivateKey().publicKey.rawRepresentation
+            )
+        )
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
+            clientKeyID: unknownKeyID, permission: .inference,
+            checkpoint: committed
+        )) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .clientUnknown)
+        }
+
+        // Permission the client lacks: refused at issuance.
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientKeyID, permission: .srsWrite,
+            checkpoint: committed
+        )) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)
+        }
+
+        // Per-client pending cap: 64 outstanding challenges, the 65th is
+        // refused even though the global budget (8192) is untouched.
+        var outstanding: [[UInt8]] = []
+        for _ in 0..<64 {
+            outstanding.append(try issueChallenge())
+        }
+        XCTAssertThrowsError(try issueChallenge()) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .resourceLimit)
+        }
+
+        // Per-client rate limit: consume each outstanding challenge through
+        // a valid authorization (freeing pending capacity), then keep
+        // issue+consume cycles inside the rate window. 128 issuances per
+        // window are allowed; the 129th is rate-limited even though nothing
+        // is pending.
+        let request = try makeHTTPRequest()
+        func consume(_ challenge: [UInt8]) throws {
+            let proof = try LOCALBClientRequestProofV2.sign(
+                clientKeyID: clientKeyID, permission: .inference,
+                request: request, challenge: challenge, with: clientKey
+            )
+            _ = try host.coordinator.authorizeProtectedRequest(
+                clientKeyID: clientKeyID, permission: .inference,
+                request: request,
+                challenge: challenge, proofSignatureRaw: proof,
+                checkpoint: committed
+            )
+        }
+        for challenge in outstanding {
+            try consume(challenge)
+        }
+        for _ in 0..<(128 - 64) {
+            try consume(try issueChallenge())
+        }
+        XCTAssertThrowsError(try issueChallenge()) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .challengeRateLimited)
+        }
+    }
+
+    func testRoutePathAndQueryAreDerivedFromSignedRequestTarget() throws {
+        let noQuery = try makeHTTPRequest(requestTarget: "/v1/inference")
+        XCTAssertEqual(noQuery.routePath, "/v1/inference")
+        XCTAssertNil(noQuery.query)
+
+        let withQuery = try makeHTTPRequest(
+            requestTarget: "/v1/inference?model=alpha&trace=1"
+        )
+        XCTAssertEqual(withQuery.routePath, "/v1/inference")
+        XCTAssertEqual(withQuery.query, "model=alpha&trace=1")
+        XCTAssertEqual(withQuery.requestTarget, "/v1/inference?model=alpha&trace=1")
+
+        let emptyQuery = try makeHTTPRequest(requestTarget: "/v1/inference?")
+        XCTAssertEqual(emptyQuery.routePath, "/v1/inference")
+        XCTAssertEqual(emptyQuery.query, "")
+
+        // The route key is the same, but the complete signed target must differ.
+        // A query that changes endpoint behavior therefore cannot be altered under
+        // a proof over the no-query request.
+        let clientKeyID = String(repeating: "a", count: 64)
+        let challenge = [UInt8](repeating: 0x7B, count: 32)
+        let noQueryInput = try LOCALBClientRequestProofV2.signatureInput(
+            clientKeyID: clientKeyID,
+            permission: .inference,
+            request: noQuery,
+            challenge: challenge
+        )
+        let queryInput = try LOCALBClientRequestProofV2.signatureInput(
+            clientKeyID: clientKeyID,
+            permission: .inference,
+            request: withQuery,
+            challenge: challenge
+        )
+        XCTAssertNotEqual(noQueryInput, queryInput)
+    }
+
+    func testHTTPRequestV1RejectsAmbiguousCanonicalization() throws {
+        XCTAssertThrowsError(try makeHTTPRequest(method: "post")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(authority: "SIMIGO.LOCAL:8080")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(authority: "simigo.local:08080")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(authority: "simigo.local:65536")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(authority: "simigo.local:abc")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(authority: "999.1.1.1:8080")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(authority: "[::::]:8080")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertNoThrow(try makeHTTPRequest(authority: "[::1]:8080"))
+        XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "//other.local/admin")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "/safe/../admin")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "/safe/%2E%2E/admin")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "/v1/item?x=%2f")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "/v1/%FF")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertNoThrow(try makeHTTPRequest(requestTarget: "/v1/%C3%A9"))
+        XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "/safe#fragment")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(contentType: "application/json\r\nx-evil: yes")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(contentEncoding: "gzip")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
         }
     }
 
@@ -324,20 +569,35 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
             XCTAssertEqual(error as? LOCALBStatus, .registryInvalidTransition)
         }
 
+        let challenge = try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientID, permission: .informationRead,
+            checkpoint: registered
+        )
         let changed = try host.coordinator.setClientPermissions(
             clientKeyID: clientID, permissions: [.inference],
             reason: "least-privilege adjustment", checkpoint: registered
         )
-        let challenge = try host.coordinator.issueRequestChallenge(
-            clientKeyID: clientID, permission: .informationRead
-        )
-        let proof = try LOCALBClientRequestProofV1.sign(
+        // Issued while the client still held P-INFO-READ: authorization
+        // against the post-change checkpoint must still deny.
+        let request = try makeHTTPRequest()
+        let proof = try LOCALBClientRequestProofV2.sign(
             clientKeyID: clientID, permission: .informationRead,
+            request: request,
             challenge: challenge, with: clientKey
         )
         XCTAssertThrowsError(try host.coordinator.authorizeProtectedRequest(
             clientKeyID: clientID, permission: .informationRead,
+            request: request,
             challenge: challenge, proofSignatureRaw: proof,
+            checkpoint: changed
+        )) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)
+        }
+
+        // After the permission change, issuance for the dropped permission
+        // is refused outright — no ledger capacity is consumed.
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientID, permission: .informationRead,
             checkpoint: changed
         )) { error in
             XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)

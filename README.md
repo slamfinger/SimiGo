@@ -78,6 +78,30 @@ xcodebuild build \
   -derivedDataPath build/release
 ```
 
+> **测试必须在隔离根下运行。**
+> 测试宿主是真实 App 进程（`TEST_HOST`）；`SimiGoTests`
+> 全量套件已实测会按默认路径写真实 `~/.simigo`
+> （IS 的 WAL/SHM、prefix pool、branch checkpoints、
+> `logs/native_mlx_trace.log`）。
+> 定向用例是否零写入未逐项测量，因此不按“安全”处理。
+> 规定的入口是仓库内的 `tools/run_isolated_tests.sh`：
+> 每次新建隔离根、把 `SIMIGO_HOME`、`SIMIGO_CACHE_ROOT`、
+> `SIMIGO_STATE_GRAPH_STORE` 三个根写进重新生成的 xctestrun，
+> 运行前后各取一次快照并差分。
+> 默认读取上面构建出的 `build/test/.../SimiGo.app`，
+> 证据写到 `build/test-isolation/<UTC 时间>/`。
+
+```bash
+tools/run_isolated_tests.sh --tag local-run1
+```
+
+> 该脚本失败关闭：隔离根不安全、xctestrun 除三个根外还有差异、
+> 套件失败或拿不到用例计数、以及隔离根之外出现任何用户状态写入，
+> 都会以非零码退出；它只删除自己创建的隔离根，
+> 不清理真实用户目录。
+> 普通 `xcodebuild test`（不设上述三个变量）与它**不等价**，
+> 不能作为“测试不碰用户数据”的依据。
+
 State Graph 不需要模型。若要启用 MLX inference，请另行获取外部模型权重并遵守
 模型自身授权。
 

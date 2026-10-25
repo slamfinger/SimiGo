@@ -8,6 +8,10 @@ public struct LOCALBHostPendingActivation {
     public let signerKeyID: String
     public let signerGeneration: UInt32
     public let checkpoint: LOCALBRegistryCheckpoint
+    /// SPKI fingerprint of the transport (TLS) identity created during the
+    /// first-run ceremony. Pairing credentials bind to this value; it must be
+    /// displayed to the operator through the trusted local channel.
+    public let transportSPKIHashHex: String
 
     public var offlineCheckpointRecord: String { checkpoint.offlineRecord }
 }
@@ -19,17 +23,22 @@ public struct LOCALBHostRuntimeContext {
     public let lineageID: String
     public let signerKeyID: String
     public let signerGeneration: UInt32
+    /// Loaded (never created) at ordinary startup; required for the TLS
+    /// listener. Separate lifecycle from the signing key.
+    public let transportIdentity: LOCALBTransportIdentityHandle
     private let store: LOCALBRegistryStore
     private let signingKey: Curve25519.Signing.PrivateKey
     private let trustedCheckpoint: LOCALBRegistryCheckpoint
     private let pairingService: LOCALBPairingCoordinator
 
     init(lineageID: String, signerKeyID: String, signerGeneration: UInt32,
+         transportIdentity: LOCALBTransportIdentityHandle,
          store: LOCALBRegistryStore, signingKey: Curve25519.Signing.PrivateKey,
          trustedCheckpoint: LOCALBRegistryCheckpoint) {
         self.lineageID = lineageID
         self.signerKeyID = signerKeyID
         self.signerGeneration = signerGeneration
+        self.transportIdentity = transportIdentity
         self.store = store
         self.signingKey = signingKey
         self.trustedCheckpoint = trustedCheckpoint
@@ -67,6 +76,15 @@ public struct LOCALBHostRuntimeContext {
     public func pairingCoordinator() -> LOCALBPairingCoordinator {
         pairingService
     }
+
+    /// Current registry head checkpoint, re-verified against the trusted
+    /// anchor on every call. Production request-authorization wiring uses
+    /// this as the per-call trusted checkpoint so clients paired after this
+    /// process started are still authorized, without ever trusting an
+    /// unverified head.
+    public func currentTrustedCheckpoint() throws -> LOCALBRegistryCheckpoint {
+        try store.currentCheckpoint(extending: trustedCheckpoint)
+    }
 }
 
 public enum LOCALBHostBootstrap {
@@ -75,7 +93,8 @@ public enum LOCALBHostBootstrap {
     /// returns SETUP/PENDING, never an operational context.
     public static func prepareFirstRun(
         rootURL: URL,
-        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore()
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore = LOCALBTransportIdentityStore()
     ) throws -> LOCALBHostPendingActivation {
         let root = rootURL.standardizedFileURL
         var isDirectory: ObjCBool = false
@@ -90,6 +109,12 @@ public enum LOCALBHostBootstrap {
                 throw LOCALBStatus.registryAlreadyInitialized
             }
         }
+        // Transport (TLS) identity first: if its creation fails, the registry
+        // root is still EMPTY and first-run can be retried cleanly — the
+        // registry is never advanced into a state that blocks its own
+        // restart. Existing Keychain items follow read-only recovery rules;
+        // a failure here never silently deletes or rebuilds an identity.
+        let transport = try transportIdentityStore.loadOrCreate()
         let store = LOCALBRegistryStore(rootURL: root)
         let signingKey = try keychainStore.loadOrCreate()
         let genesisCheckpoint = try store.initializeNewLineage()
@@ -112,7 +137,8 @@ public enum LOCALBHostBootstrap {
             lineageID: snapshot.currentLineageID,
             signerKeyID: keyID,
             signerGeneration: 1,
-            checkpoint: registeredCheckpoint
+            checkpoint: registeredCheckpoint,
+            transportSPKIHashHex: transport.spkiSHA256Hex
         )
     }
 
@@ -121,7 +147,8 @@ public enum LOCALBHostBootstrap {
     public static func activateInitialSetup(
         rootURL: URL,
         operatorRecordedCheckpoint: LOCALBRegistryCheckpoint,
-        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore()
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore = LOCALBTransportIdentityStore()
     ) throws -> LOCALBHostRuntimeContext {
         let store = LOCALBRegistryStore(rootURL: rootURL.standardizedFileURL)
         let current = try store.currentCheckpoint(extending: operatorRecordedCheckpoint)
@@ -133,7 +160,8 @@ public enum LOCALBHostBootstrap {
         return try openOperational(
             rootURL: rootURL,
             trustedCheckpoint: operatorRecordedCheckpoint,
-            keychainStore: keychainStore
+            keychainStore: keychainStore,
+            transportIdentityStore: transportIdentityStore
         )
     }
 
@@ -143,7 +171,8 @@ public enum LOCALBHostBootstrap {
     public static func openOperational(
         rootURL: URL,
         trustedCheckpoint: LOCALBRegistryCheckpoint,
-        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore()
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore = LOCALBTransportIdentityStore()
     ) throws -> LOCALBHostRuntimeContext {
         let store = LOCALBRegistryStore(rootURL: rootURL.standardizedFileURL)
         let state = try store.loadPairingState(checkpoint: trustedCheckpoint)
@@ -162,10 +191,15 @@ public enum LOCALBHostBootstrap {
             throw LOCALBStatus.hostNotOperational
         }
 
+        // Ordinary startup never creates or replaces the transport identity;
+        // a missing identity fails closed with no regeneration.
+        let transportIdentity = try transportIdentityStore.loadExisting()
+
         return LOCALBHostRuntimeContext(
             lineageID: state.lineageID,
             signerKeyID: activeEntry.keyID,
             signerGeneration: activeEntry.generation,
+            transportIdentity: transportIdentity,
             store: store,
             signingKey: signingKey,
             trustedCheckpoint: trustedCheckpoint

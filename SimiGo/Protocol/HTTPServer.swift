@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import LOCALBCore
 import Network
 
 /// SimiGo 本机 / 局域网共享 OpenAI-compatible HTTP Server
@@ -101,12 +102,16 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - HTTP Errors
 
-    private enum HTTPServerError: Error {
+    enum HTTPServerError: Error {
         case badRequest(String)
         case payloadTooLarge
         case unsupportedTransferEncoding(String)
         case expectationFailed
         case clientDisconnected
+        case localbTransportNotTrusted
+        case localbAuthorizationUnavailable
+        case localbRequestRejected(reason: String)
+        case localbRouteDenied(reason: String)
 
         var statusCode: Int {
             switch self {
@@ -118,6 +123,14 @@ public final class HTTPServer: @unchecked Sendable {
                 return 501
             case .expectationFailed:
                 return 417
+            case .localbTransportNotTrusted:
+                return 403
+            case .localbAuthorizationUnavailable:
+                return 503
+            case .localbRequestRejected:
+                return 401
+            case .localbRouteDenied:
+                return 403
             }
         }
 
@@ -133,6 +146,14 @@ public final class HTTPServer: @unchecked Sendable {
                 return "Unsupported Expect header"
             case .clientDisconnected:
                 return "Client disconnected before the request was complete"
+            case .localbTransportNotTrusted:
+                return "Protected requests require a LOCALB TLS connection"
+            case .localbAuthorizationUnavailable:
+                return "LOCALB request authorization is not configured"
+            case .localbRequestRejected(let reason):
+                return reason
+            case .localbRouteDenied(let reason):
+                return reason
             }
         }
     }
@@ -144,6 +165,55 @@ public final class HTTPServer: @unchecked Sendable {
         let key: ObjectIdentifier
         let requestId: String
         let sendQueue: DispatchQueue
+
+        /// Server-side transport security attributes (LOCALB B1).
+        /// Populated EXCLUSIVIVELY by accept() from the accepting listener's
+        /// own trusted configuration state — never from request headers,
+        /// JSON, or any client-supplied value. Plaintext connections can
+        /// never masquerade as TLS and never qualify for LOCALB pairing
+        /// binding.
+        struct TransportSecurity: Sendable {
+            let isTLS: Bool
+            /// SPKI fingerprint of the TLS listener identity (nil on plaintext).
+            let listenerSPKIHashHex: String?
+            /// True only on the explicitly-enabled plaintext-compatibility
+            /// listener (B1 condition 4); such connections are marked
+            /// "unprotected-by-LOCALB" and never gain pairing eligibility.
+            let isExplicitPlaintextCompatibility: Bool
+
+            static let plainHTTP = TransportSecurity(
+                isTLS: false,
+                listenerSPKIHashHex: nil,
+                isExplicitPlaintextCompatibility: false
+            )
+
+            static func tls(spkiSHA256Hex: String) -> TransportSecurity {
+                TransportSecurity(
+                    isTLS: true,
+                    listenerSPKIHashHex: spkiSHA256Hex,
+                    isExplicitPlaintextCompatibility: false
+                )
+            }
+
+            static func plaintextCompatibility() -> TransportSecurity {
+                TransportSecurity(
+                    isTLS: false,
+                    listenerSPKIHashHex: nil,
+                    isExplicitPlaintextCompatibility: true
+                )
+            }
+
+            /// Value of the X-SimiGo-Protection response header.
+            var protectionHeader: String {
+                isTLS ? "localb-tls" : "unprotected-by-LOCALB"
+            }
+
+            /// Whether this connection may participate in LOCALB TLS pairing
+            /// binding. Plaintext NEVER qualifies, under any configuration.
+            var eligibleForLOCALBPairingBinding: Bool { isTLS }
+        }
+
+        let transportSecurity: TransportSecurity
 
         private let stateLock = NSLock()
 
@@ -158,6 +228,11 @@ public final class HTTPServer: @unchecked Sendable {
         private var _closed = false
         private var _cancelledByRuntime = false
 
+        /// Slice 8: this request's continuation admission result. Set by the
+        /// pre-generation gate, read by the post-generation settlement of the
+        /// SAME request — never looked up again from mutable ES state.
+        private var _continuationBinding: ContinuationRequestBinding?
+
         /// 生成期对端关闭监听（2026-10-15 孤儿推理收口）。
         /// NWConnection 对客户端优雅关闭（FIN）不产生 state 变化，只在
         /// receive 侧以 EOF 浮出；此前检测全靠出站 send 错误（流式）或
@@ -171,9 +246,13 @@ public final class HTTPServer: @unchecked Sendable {
         /// SSE 心跳据此判断当前是否处于静默窗口。
         private let outboundActivity = Locked(Date())
 
-        init(connection: NWConnection) {
+        init(
+            connection: NWConnection,
+            transportSecurity: TransportSecurity = .plainHTTP
+        ) {
             self.connection = connection
             self.key = ObjectIdentifier(connection)
+            self.transportSecurity = transportSecurity
             // 短字节串 ID（8 hex）：仅作取消映射字典键 / X-Request-Id / trace
             // 展示，本机单用户量级下碰撞可忽略，紧凑 trace 不再拖全量 UUID。
             self.requestId =
@@ -225,6 +304,18 @@ public final class HTTPServer: @unchecked Sendable {
                 _sessionId = sessionId
                 _logicalBranchId = logicalBranchId
                 _clientRequestId = clientRequestId
+            }
+        }
+
+        var continuationBinding: ContinuationRequestBinding? {
+            stateLock.withLock {
+                _continuationBinding
+            }
+        }
+
+        func setContinuationBinding(_ binding: ContinuationRequestBinding?) {
+            stateLock.withLock {
+                _continuationBinding = binding
             }
         }
 
@@ -424,7 +515,21 @@ public final class HTTPServer: @unchecked Sendable {
 
     private struct HTTPRequest {
         let method: String
+
+        /// Route path derived exactly once at parse time from the validated
+        /// request target (query removed). Routing and dispatch consume this
+        /// single derivation; nothing re-splits the target later.
         let path: String
+
+        /// Exact origin-form request target as received, including the query
+        /// string. This verbatim view is what a LOCALB request proof signs;
+        /// `path` is only a derived route view of it.
+        let requestTarget: String
+
+        /// Authority from the single accepted Host header (empty only for
+        /// HTTP/1.0 requests without Host).
+        let authority: String
+
         let headers: [String: String]
         let body: Data
     }
@@ -438,6 +543,11 @@ public final class HTTPServer: @unchecked Sendable {
 
     let generateHandler: GenerateHandler
     let forkBranchHandler: ForkBranchHandler
+    let continuationAdmission: ContinuationAdmissionHandler?
+    /// Post-generation settlement authority for the opt-in continuation
+    /// contract. Absent (nil) means any request that explicitly asks to
+    /// settle is refused fail-closed BEFORE generation.
+    let continuationSettlement: ContinuationSettlementHandler?
     private let deleteBranchHandler: DeleteBranchHandler
     private let listBranchesHandler: ListBranchesHandler
     private let checkHealthHandler: CheckHealthHandler
@@ -460,6 +570,95 @@ public final class HTTPServer: @unchecked Sendable {
 
     let responsesStore = ResponsesStateStore()
 
+    // MARK: - LOCALB transport security mode
+
+    /// B1 security-mode matrix (authoritative behavior of start()):
+    ///
+    /// | mode                        | identity | behavior                          |
+    /// |-----------------------------|----------|-----------------------------------|
+    /// | secure (default)            | valid    | TLS listener on the main port     |
+    /// | secure (default)            | missing  | start() THROWS — never plaintext  |
+    /// | legacyPlaintextCompat       | any      | plaintext main port, every        |
+    /// | (explicit operator opt-in)  |          | response marked                   |
+    /// |                             |          | "unprotected-by-LOCALB"           |
+    /// | secure + compat port config | valid    | TLS main port + separate explicit |
+    /// |                             |          | plaintext compatibility port      |
+    public enum LOCALBSecurityMode: Sendable {
+        case secure
+        case legacyPlaintextCompat
+    }
+
+    private var localbSecurityMode: LOCALBSecurityMode = .secure
+    private var localbTransportIdentity: LOCALBTransportIdentityHandle?
+    private var localbPlaintextCompatibilityPort: NWEndpoint.Port?
+    private var plaintextCompatListener: NWListener?
+    /// Original typed LOCALBStatus behind a fail-closed transport decision
+    /// (identity corrupt / index corrupt / mismatch / …), recorded by the
+    /// transport policy so start() propagates the ORIGINAL failure instead
+    /// of flattening every cause into transportIdentityMissing. A recorded
+    /// failure takes PRIORITY over any previously-configured identity: a
+    /// re-applied policy decision on a reused server instance must never be
+    /// bypassed by a stale cached identity. Operators must be able to
+    /// distinguish "missing" from "corrupt" at startup.
+    private var localbTransportDecisionFailure: LOCALBStatus?
+
+    /// Called by LOCALBTransportPolicy.apply for .failClosed decisions.
+    /// Recording a failure ALSO clears any previously-configured identity —
+    /// the latest decision owns the server state.
+    public func recordLOCALBTransportFailure(_ status: LOCALBStatus) {
+        localbTransportDecisionFailure = status
+        localbTransportIdentity = nil
+        localbPlaintextCompatibilityPort = nil
+    }
+
+    /// Explicit operator opt-in for the legacy plaintext listener. Without
+    /// this call the server is in .secure mode: a missing or unusable LOCALB
+    /// transport identity makes start() fail closed — plaintext is NEVER a
+    /// silent fallback.
+    public func configureLOCALBSecurityMode(_ mode: LOCALBSecurityMode) {
+        localbSecurityMode = mode
+    }
+
+    /// Explicit operator action: enable the LOCALB TLS listener with a fully
+    /// verified transport identity (see LOCALBTransportIdentityStore —
+    /// certificate/private-key/SecIdentity chain already validated). Call
+    /// before start(). Optionally keep a legacy plaintext listener on a
+    /// SEPARATE port (explicit compatibility).
+    public func configureLOCALBTransport(
+        identity: LOCALBTransportIdentityHandle,
+        plaintextCompatibilityPort: Int? = nil
+    ) {
+        // Configuring a NEW verified identity clears any stale fail-closed
+        // decision from a previous policy round on this instance — success
+        // and failure states never coexist.
+        localbTransportDecisionFailure = nil
+        localbTransportIdentity = identity
+        localbPlaintextCompatibilityPort =
+            plaintextCompatibilityPort.flatMap {
+                NWEndpoint.Port(rawValue: UInt16($0))
+            }
+    }
+
+    /// LOCALB B3 request-content authorization state. The coordinator is
+    /// backed by the LOCALB registry; the trusted-checkpoint provider is
+    /// supplied by the host (management plane). When nil, every protected
+    /// route fails closed with 503.
+    private var localbRequestAuthorization:
+        (coordinator: LOCALBPairingCoordinator,
+         trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?
+
+    /// Explicit operator action: enable LOCALB V2 request-content
+    /// authorization for protected routes. Permissions are ALWAYS derived
+    /// server-side from the canonical method and route path through
+    /// localbRoutePolicy(forMethod:routePath:) — the same table is used
+    /// for challenge issuance and for request authorization.
+    public func configureLOCALBRequestAuthorization(
+        coordinator: LOCALBPairingCoordinator,
+        trustedCheckpoint: @escaping () throws -> LOCALBRegistryCheckpoint
+    ) {
+        localbRequestAuthorization = (coordinator, trustedCheckpoint)
+    }
+
     // MARK: - Init
 
     public init(
@@ -475,7 +674,9 @@ public final class HTTPServer: @unchecked Sendable {
         cancelGenerationHandler: CancelGenerationHandler? = nil,
         capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil,
         remoteBackend: RemoteOpenAIBackend? = nil,
-        baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() }
+        baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() },
+        continuationAdmission: ContinuationAdmissionHandler? = nil,
+        continuationSettlement: ContinuationSettlementHandler? = nil
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -506,6 +707,8 @@ public final class HTTPServer: @unchecked Sendable {
         self.capabilitiesProvider = capabilitiesProvider
         self.remoteBackend = remoteBackend
         self.baseConfigProvider = baseConfigProvider
+        self.continuationAdmission = continuationAdmission
+        self.continuationSettlement = continuationSettlement
     }
 
     // MARK: - Lifecycle
@@ -518,13 +721,15 @@ public final class HTTPServer: @unchecked Sendable {
         let tcpOptions = NWProtocolTCP.Options()
         tcpOptions.noDelay = true
 
-        let parameters = NWParameters(
-            tls: nil,
-            tcp: tcpOptions
-        )
-
-        parameters.allowLocalEndpointReuse = true
-
+        // B1 security-mode matrix (see LOCALBSecurityMode). In .secure mode
+        // (the default) a missing or unusable transport identity makes
+        // start() fail closed — plaintext is NEVER a silent fallback — and
+        // the ORIGINAL typed failure (corrupt index, key mismatch, …)
+        // recorded by the transport policy is propagated, not flattened.
+        // Plaintext on the main port exists only under the explicit
+        // .legacyPlaintextCompat opt-in, is REFUSED on non-loopback binds
+        // at this listener boundary (not only in the policy helper), and
+        // marks every response "unprotected-by-LOCALB".
         let normalizedHost =
             bindHost
                 .trimmingCharacters(
@@ -536,6 +741,46 @@ public final class HTTPServer: @unchecked Sendable {
             normalizedHost == "127.0.0.1" ||
             normalizedHost == "localhost" ||
             normalizedHost == "::1"
+
+        var bonjourServiceType = "_http._tcp"
+        let parameters: NWParameters
+        let acceptSecurity: ConnectionContext.TransportSecurity
+        switch localbSecurityMode {
+        case .secure:
+            // A recorded fail-closed decision takes PRIORITY over any
+            // configured identity — even if an identity was configured on
+            // this instance earlier, the latest policy decision owns the
+            // state and start() must fail with the ORIGINAL typed status.
+            if let failure = localbTransportDecisionFailure {
+                throw failure
+            }
+            guard let identity = localbTransportIdentity else {
+                throw LOCALBStatus.transportIdentityMissing
+            }
+            let tlsOptions = NWProtocolTLS.Options()
+            guard let secIdentity = sec_identity_create(identity.secIdentity) else {
+                throw LOCALBStatus.transportIdentityMismatch
+            }
+            sec_protocol_options_set_local_identity(
+                tlsOptions.securityProtocolOptions,
+                secIdentity
+            )
+            parameters = NWParameters(tls: tlsOptions, tcp: tcpOptions)
+            bonjourServiceType = "_simigo._tcp"
+            acceptSecurity = .tls(spkiSHA256Hex: identity.spkiSHA256Hex)
+        case .legacyPlaintextCompat:
+            // Listener-boundary invariant: the legacy plaintext mode is
+            // loopback-only. A direct caller that bypasses
+            // LOCALBTransportPolicy and sets legacy mode on a LAN bind is
+            // refused HERE, at the actual listener startup point.
+            guard isLoopback else {
+                throw LOCALBStatus.plaintextNotAllowedOnLAN
+            }
+            parameters = NWParameters(tls: nil, tcp: tcpOptions)
+            acceptSecurity = .plainHTTP
+        }
+
+        parameters.allowLocalEndpointReuse = true
 
         if isLoopback {
             parameters.requiredInterfaceType = .loopback
@@ -549,7 +794,7 @@ public final class HTTPServer: @unchecked Sendable {
         if !isLoopback && bonjourEnabled {
             newListener.service = NWListener.Service(
                 name: "SimiGo",
-                type: "_http._tcp",
+                type: bonjourServiceType,
                 domain: nil,
                 txtRecord: nil
             )
@@ -557,7 +802,7 @@ public final class HTTPServer: @unchecked Sendable {
 
         newListener.newConnectionHandler = {
             [weak self] connection in
-            self?.accept(connection)
+            self?.accept(connection, transportSecurity: acceptSecurity)
         }
 
         newListener.stateUpdateHandler = {
@@ -591,11 +836,45 @@ public final class HTTPServer: @unchecked Sendable {
 
         newListener.start(queue: queue)
         listener = newListener
+
+        // Explicitly-enabled legacy plaintext compatibility listener (B1
+        // condition 4). It exists ONLY when the operator explicitly named a
+        // separate port while in secure mode with a valid identity; every
+        // response it serves carries the "unprotected-by-LOCALB" marking,
+        // and its connections never gain LOCALB pairing eligibility. It can
+        // never substitute for the TLS listener. Invariant: the compat
+        // listener is loopback-ONLY regardless of the main bind — a LAN
+        // main bind can never expose plaintext through this side port.
+        if let compatPort = localbPlaintextCompatibilityPort,
+           localbSecurityMode == .secure,
+           localbTransportIdentity != nil {
+            let compatTCP = NWProtocolTCP.Options()
+            compatTCP.noDelay = true
+            let compatParameters = NWParameters(tls: nil, tcp: compatTCP)
+            compatParameters.allowLocalEndpointReuse = true
+            compatParameters.requiredInterfaceType = .loopback
+            if let compatListener = try? NWListener(
+                using: compatParameters,
+                on: compatPort
+            ) {
+                compatListener.newConnectionHandler = {
+                    [weak self] connection in
+                    self?.accept(
+                        connection,
+                        transportSecurity: .plaintextCompatibility()
+                    )
+                }
+                compatListener.start(queue: queue)
+                plaintextCompatListener = compatListener
+            }
+        }
     }
 
     public func stop() {
         listener?.cancel()
         listener = nil
+        plaintextCompatListener?.cancel()
+        plaintextCompatListener = nil
 
         let contexts: [ConnectionContext] = connectionLock.withLock {
             let values = Array(connections.values)
@@ -616,9 +895,13 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Connection Lifecycle
 
-    private func accept(_ connection: NWConnection) {
+    private func accept(
+        _ connection: NWConnection,
+        transportSecurity: ConnectionContext.TransportSecurity = .plainHTTP
+    ) {
         let context = ConnectionContext(
-            connection: connection
+            connection: connection,
+            transportSecurity: transportSecurity
         )
 
         connectionLock.withLock {
@@ -892,10 +1175,384 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Routing
 
+    // MARK: - LOCALB Route Permissions & Request Authorization (B3)
+
+    /// The single trusted route decision. The three states are strictly
+    /// distinct — there is no nil case, so an explicitly denied route can
+    /// never be mistaken for an open one, and an unknown route can never
+    /// degrade to "no authorization required".
+    enum LOCALBRoutePolicy: Equatable, Sendable {
+        /// No proof required: OPTIONS preflight, health probes, and the
+        /// challenge endpoint itself.
+        case open
+        /// Requires a verified V2 proof carrying exactly this permission.
+        case protected(permission: LOCALBPermission)
+        /// Explicitly refused under the LOCALB regime, with a machine-
+        /// readable reason. Distinct from `open` at every enforcement
+        /// point: challenge issuance, request authorization, and dispatch.
+        case denied(reason: String)
+    }
+
+    /// The single trusted route→policy table. Challenge issuance and
+    /// request authorization MUST both derive their decision through this
+    /// function; a permission is never taken from a client header, query
+    /// parameter, or JSON field.
+    nonisolated static func localbRoutePolicy(
+        forMethod method: String,
+        routePath: String
+    ) -> LOCALBRoutePolicy {
+        switch (method, routePath) {
+        case ("OPTIONS", _),
+             ("GET", "/health"),
+             ("HEAD", "/health"),
+             ("POST", "/localb/auth/challenge"):
+            return .open
+        case ("GET", "/v1/models"), ("GET", "/models"):
+            return .protected(permission: .informationRead)
+        case ("POST", "/v1/chat/completions"),
+             ("POST", "/chat/completions"),
+             ("POST", "/v1/completions"),
+             ("POST", "/completions"),
+             ("POST", "/v1/responses"):
+            return .protected(permission: .inference)
+        case ("POST", "/v1/branches/fork"),
+             ("POST", "/v1/branches/delete"),
+             ("POST", "/v1/branches/list"):
+            // Least-privilege fail-closed (B3 security review 2026-10-16):
+            // branch mutations are NOT part of P-INFERENCE, and no dedicated
+            // branch permission exists yet, so protected access is refused
+            // outright. This is an explicit denial, never a removal from the
+            // table — a missing entry would fall back to the fail-closed
+            // default below, and a nil-style "not listed" could be read as
+            // "no authorization required".
+            return .denied(
+                reason: "LOCALB_BRANCH_OPERATIONS_NOT_AUTHORIZED"
+            )
+        default:
+            if method == "GET", routePath.hasPrefix("/v1/models/") {
+                return .protected(permission: .informationRead)
+            }
+            // Fail-closed default: anything not explicitly open or
+            // protected is denied. The route switch can still answer 404,
+            // but only after this explicit denial has been considered.
+            return .denied(reason: "LOCALB_ROUTE_UNKNOWN")
+        }
+    }
+
+    /// Identity-selection headers that the signed request contract does
+    /// NOT cover (LOCALBHTTPRequestV1 signs method, authority, target,
+    /// content type, content encoding, and body — never arbitrary
+    /// headers). On protected routes a client may select execution
+    /// identity ONLY through signed JSON fields such as `agent_id`,
+    /// `session_id`, `branch_id`, or `thread_id`.
+    nonisolated static func localbIdentitySelectionHeaders()
+        -> Set<String> {
+        [
+            "x-simigo-agent",
+            "x-agent-id",
+            "x-simigo-session",
+            "x-session-id",
+            "thread-id",
+            "x-thread-id",
+            "x-codex-thread-id",
+            "x-logical-branch-id",
+            "x-branch-id",
+            // Carries a thread_id JSON payload used for thread selection.
+            "x-codex-turn-metadata",
+        ]
+    }
+
+    /// Returns the first identity-selection header whose value would
+    /// actually select an identity (non-empty after trimming), if any.
+    /// Whitespace-only values select nothing and are not violations.
+    /// Callers must REJECT the request — never strip the header and let
+    /// it fall through to a default identity, which would change the
+    /// execution semantics while appearing to succeed.
+    nonisolated static func localbIdentitySelectionViolation(
+        in headers: [String: String]
+    ) -> String? {
+        for name in localbIdentitySelectionHeaders().sorted() {
+            if let value = headers[name],
+               !value.trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty {
+                return name
+            }
+        }
+        return nil
+    }
+
+    /// Reviewed dispatch-header allowlist for LOCALB-authorized requests
+    /// (local inference handlers): the downstream request is rebuilt ONLY
+    /// from the verified signed object, so the header map contains at most
+    /// the signed content semantics. Nothing from the pre-authorization
+    /// header map survives.
+    nonisolated static func localbDispatchHeaders(
+        contentType: String,
+        contentEncoding: String
+    ) -> [String: String] {
+        var headers: [String: String] = [:]
+        if !contentType.isEmpty {
+            headers["content-type"] = contentType
+        }
+        headers["content-encoding"] = contentEncoding
+        return headers
+    }
+
+    /// Reviewed upstream-forward allowlist for LOCALB-authorized remote
+    /// dispatch, applied independently of the local dispatch allowlist:
+    /// only signed content semantics may cross this boundary. Upstream
+    /// Authorization is injected server-side from the configured backend
+    /// and can never be selected by client headers; path and method come
+    /// from the signed request. `accept` is deliberately not forwarded —
+    /// streaming is decided by the signed body's `stream` flag.
+    nonisolated static func localbRemoteForwardAllowlist() -> Set<String> {
+        ["content-type", "content-encoding"]
+    }
+
+    nonisolated static func decodeLowerHex(_ value: String) -> [UInt8]? {
+        let chars = Array(value.utf8)
+        guard !chars.isEmpty, chars.count.isMultiple(of: 2) else { return nil }
+        func nibble(_ c: UInt8) -> UInt8? {
+            switch c {
+            case UInt8(ascii: "0")...UInt8(ascii: "9"):
+                return c - UInt8(ascii: "0")
+            case UInt8(ascii: "a")...UInt8(ascii: "f"):
+                return c - UInt8(ascii: "a") + 10
+            default:
+                return nil
+            }
+        }
+        var bytes: [UInt8] = []
+        bytes.reserveCapacity(chars.count / 2)
+        for index in stride(from: 0, to: chars.count, by: 2) {
+            guard let high = nibble(chars[index]),
+                  let low = nibble(chars[index + 1])
+            else {
+                return nil
+            }
+            bytes.append((high << 4) | low)
+        }
+        return bytes
+    }
+
+    nonisolated static func encodeLowerHex(_ bytes: [UInt8]) -> String {
+        bytes.map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Verifies a protected request and returns the dispatch request built
+    /// ONLY from the verified `authorized.request`: routePath for routing,
+    /// bodyRaw for the body, signed content-type for content semantics.
+    /// After this returns, the pre-authorization HTTPRequest is never routed.
+    private func verifyLOCALBProtectedRequest(
+        _ request: HTTPRequest,
+        tablePermission: LOCALBPermission,
+        context: ConnectionContext
+    ) throws -> HTTPRequest {
+        // B1 transport trust boundary: only the accepting listener's own TLS
+        // configuration state qualifies. Client-supplied SPKI values are
+        // never read.
+        guard context.transportSecurity.eligibleForLOCALBPairingBinding else {
+            throw HTTPServerError.localbTransportNotTrusted
+        }
+
+        guard let authorization = localbRequestAuthorization else {
+            throw HTTPServerError.localbAuthorizationUnavailable
+        }
+
+        guard let clientKeyID = request.headers["x-simigo-localb-client-key-id"],
+              let challengeHex = request.headers["x-simigo-localb-challenge"],
+              let proofBase64 = request.headers["x-simigo-localb-proof-v2"],
+              let challenge = Self.decodeLowerHex(challengeHex),
+              challenge.count == 32,
+              let proof = Data(base64Encoded: proofBase64),
+              proof.count == 64
+        else {
+            throw HTTPServerError.localbRequestRejected(
+                reason: "LOCALB_CLIENT_PROOF_MISSING"
+            )
+        }
+
+        // Unsigned identity-selection header boundary: identity on a
+        // protected route may only come from the signed JSON body. A
+        // request carrying one of these headers is rejected outright —
+        // never silently stripped, because stripping would let it run
+        // under a different (default) identity while appearing to
+        // succeed.
+        if let offendingHeader = Self.localbIdentitySelectionViolation(
+            in: request.headers
+        ) {
+            throw HTTPServerError.localbRequestRejected(
+                reason: "LOCALB_UNSIGNED_IDENTITY_HEADER_\(offendingHeader.uppercased())"
+            )
+        }
+
+        // Build the signed representation from the SAME finalized parser
+        // result that produced this request: exact method token, exact
+        // origin-form target, authority from the single Host, raw body bytes.
+        let signedRequest = try LOCALBHTTPRequestV1(
+            method: request.method,
+            authority: request.authority.lowercased(),
+            requestTarget: request.requestTarget,
+            contentType: request.headers["content-type"],
+            contentEncoding: request.headers["content-encoding"] ?? "identity",
+            bodyRaw: Array(request.body)
+        )
+
+        // Re-derive the route policy from the CANONICAL signed target and
+        // require the same protected-table entry that governs this route —
+        // the challenge was issued under exactly this mapping. Denied and
+        // open policies both fail here: a denied route cannot be served
+        // through the authorization path even with an otherwise valid
+        // proof.
+        guard case .protected(let canonicalPermission) = Self.localbRoutePolicy(
+            forMethod: signedRequest.method,
+            routePath: signedRequest.routePath
+        ), canonicalPermission == tablePermission else {
+            throw HTTPServerError.localbRequestRejected(
+                reason: "LOCALB_INVALID_PROTECTED_REQUEST"
+            )
+        }
+
+        let authorized: LOCALBAuthorizedRequest
+        do {
+            authorized = try authorization.coordinator.authorizeProtectedRequest(
+                clientKeyID: clientKeyID,
+                permission: canonicalPermission,
+                request: signedRequest,
+                challenge: challenge,
+                proofSignatureRaw: Array(proof),
+                checkpoint: try authorization.trustedCheckpoint()
+            )
+        } catch let status as LOCALBStatus {
+            throw HTTPServerError.localbRequestRejected(reason: status.rawValue)
+        }
+
+        // Dispatch consumes ONLY the verified request object: method,
+        // route path, query, authority and body come from
+        // `authorized.request`, and headers are rebuilt through the
+        // reviewed allowlist — the pre-authorization header map never
+        // reaches the switch below.
+        return HTTPRequest(
+            method: authorized.request.method,
+            path: authorized.request.routePath,
+            requestTarget: authorized.request.requestTarget,
+            authority: authorized.request.authority,
+            headers: Self.localbDispatchHeaders(
+                contentType: authorized.request.contentType,
+                contentEncoding: authorized.request.contentEncoding
+            ),
+            body: Data(authorized.request.bodyRaw)
+        )
+    }
+
+    /// LOCALB B3 challenge issuance. Requires a trusted LOCALB TLS
+    /// connection — the same transport boundary as protected requests. The
+    /// permission is derived server-side from the intended canonical method
+    /// and route path; the issued challenge is single-use and bound to
+    /// (clientKeyID, permission).
+    private func handleLOCALBChallengeRequest(
+        _ request: HTTPRequest,
+        context: ConnectionContext
+    ) async throws {
+        guard context.transportSecurity.eligibleForLOCALBPairingBinding else {
+            throw HTTPServerError.localbTransportNotTrusted
+        }
+        guard let authorization = localbRequestAuthorization else {
+            throw HTTPServerError.localbAuthorizationUnavailable
+        }
+        guard let clientKeyID = request.headers["x-simigo-localb-client-key-id"]
+        else {
+            throw HTTPServerError.badRequest("Missing LOCALB client key id")
+        }
+        guard let body = try? JSONSerialization.jsonObject(with: request.body)
+            as? [String: Any],
+            let method = body["method"] as? String,
+            let target = body["requestTarget"] as? String
+        else {
+            throw HTTPServerError.badRequest("Malformed challenge request body")
+        }
+        guard HTTPRequestHeadParser.isCanonicalMethodToken(method),
+              target.hasPrefix("/"),
+              !target.contains("#"),
+              target.utf8.count <= HTTPRequestHeadParser.maxTargetBytes
+        else {
+            throw HTTPServerError.badRequest("Non-canonical challenge request")
+        }
+        let routePath = String(
+            target.split(
+                separator: "?",
+                maxSplits: 1,
+                omittingEmptySubsequences: false
+            ).first ?? ""
+        )
+        let routePolicy = Self.localbRoutePolicy(
+            forMethod: method,
+            routePath: routePath
+        )
+        guard case .protected(let permission) = routePolicy else {
+            // Open routes are not protected (no challenge to issue);
+            // denied routes — including branch operations — are refused
+            // with an explicit denial, never a fallback to open access.
+            if case .denied(let reason) = routePolicy {
+                throw HTTPServerError.localbRouteDenied(reason: reason)
+            }
+            throw HTTPServerError.badRequest(
+                "No protected route for the given method and target"
+            )
+        }
+        let challenge: [UInt8]
+        do {
+            // Issuance performs the same registry validation as
+            // authorization (unknown/revoked/under-privileged clients are
+            // refused before consuming ledger capacity) plus per-client
+            // pending and rate limits.
+            challenge = try authorization.coordinator.issueRequestChallenge(
+                clientKeyID: clientKeyID,
+                permission: permission,
+                checkpoint: try authorization.trustedCheckpoint()
+            )
+        } catch let status as LOCALBStatus {
+            throw HTTPServerError.badRequest(status.rawValue)
+        }
+        sendJSON(
+            [
+                "challenge": Self.encodeLowerHex(challenge),
+                "permission": permission.rawValue
+            ],
+            status: 200,
+            on: context.connection,
+            context: context
+        )
+    }
+
     private func route(
         _ request: HTTPRequest,
         context: ConnectionContext
     ) async throws {
+        // LOCALB B3 gate: protected routes are dispatched ONLY after proof
+        // verification, and only the verified request object (routePath for
+        // routing, bodyRaw for the body, allowlisted headers) reaches the
+        // switch below. Denied routes are refused here — before any handler
+        // and regardless of proof material — and open routes are exactly
+        // the enumerated set in localbRoutePolicy, so no route can bypass
+        // this gate by being absent from the table.
+        var request = request
+        switch Self.localbRoutePolicy(
+            forMethod: request.method,
+            routePath: request.path
+        ) {
+        case .open:
+            break
+        case .protected(let permission):
+            request = try verifyLOCALBProtectedRequest(
+                request,
+                tablePermission: permission,
+                context: context
+            )
+        case .denied(let reason):
+            throw HTTPServerError.localbRouteDenied(reason: reason)
+        }
+
         switch (request.method, request.path) {
 
         case ("OPTIONS", _):
@@ -910,6 +1567,12 @@ public final class HTTPServer: @unchecked Sendable {
                 on: context.connection,
                 context: context,
                 close: true
+            )
+
+        case ("POST", "/localb/auth/challenge"):
+            try await handleLOCALBChallengeRequest(
+                request,
+                context: context
             )
 
         case ("GET", "/health"):
@@ -1701,6 +2364,14 @@ public final class HTTPServer: @unchecked Sendable {
             return false
         }
 
+        // LOCALB B1: every response declares its transport protection level.
+        // The value comes exclusively from the server-side listener state
+        // captured at accept(); plaintext responses are explicitly marked
+        // "unprotected-by-LOCALB".
+        var headers = headers
+        headers["X-SimiGo-Protection"] =
+            context.transportSecurity.protectionHeader
+
         var head =
             "HTTP/1.1 " +
             "\(status) " +
@@ -1835,7 +2506,9 @@ public final class HTTPServer: @unchecked Sendable {
     /// 非流式 keepalive 模式头已恒 200，错误需以同构体承载。
     func errorBody(
         message: String,
-        status: Int
+        status: Int,
+        errorKind: String? = nil,
+        reasonCode: String? = nil
     ) -> [String: Any] {
 
         let errorType: String
@@ -1862,27 +2535,36 @@ public final class HTTPServer: @unchecked Sendable {
                 "server_error"
         }
 
-        return [
-            "error": [
-                "message": message,
-                "type": errorType,
-                "param": NSNull(),
-                "code": NSNull()
-            ]
+        var error: [String: Any] = [
+            "message": message,
+            "type": errorType,
+            "param": NSNull(),
+            "code": NSNull()
         ]
+        // Structured continuation contract v0.1: present ONLY when a kind is
+        // supplied, so every legacy error body stays byte-for-byte unchanged.
+        if let errorKind {
+            error["error_kind"] = errorKind
+            error["reason_code"] = reasonCode as Any ?? NSNull()
+        }
+        return ["error": error]
     }
 
     func sendError(
         _ message: String,
         status: Int,
         on connection: NWConnection,
-        context: ConnectionContext
+        context: ConnectionContext,
+        errorKind: String? = nil,
+        reasonCode: String? = nil
     ) {
 
         sendJSON(
             errorBody(
                 message: message,
-                status: status
+                status: status,
+                errorKind: errorKind,
+                reasonCode: reasonCode
             ),
             status: status,
             on: connection,
@@ -1962,10 +2644,18 @@ public final class HTTPServer: @unchecked Sendable {
 
         let upstreamRequest: URLRequest
         do {
+            // Reviewed remote-forward allowlist: only signed content
+            // semantics cross this boundary. Client headers can never
+            // select upstream credentials (Authorization is injected from
+            // the configured backend below) or the upstream target (the
+            // path AND query come from the verified request target).
+            let upstreamHeaders = request.headers.filter {
+                Self.localbRemoteForwardAllowlist().contains($0.key)
+            }
             upstreamRequest = try backend.makeRequest(
-                path: request.path,
+                path: request.requestTarget,
                 method: request.method,
-                headers: request.headers,
+                headers: upstreamHeaders,
                 body: request.body
             )
         } catch {
@@ -2097,6 +2787,253 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - HTTP Parsing
 
+    /// Pure request-head parser — the single interpretation point between the
+    /// raw request bytes and everything downstream (verification, routing,
+    /// dispatch). LOCALB B3 parser-gate guarantees:
+    ///
+    /// - The request-line method token is preserved exactly: it must already
+    ///   be canonical uppercase ASCII (letters/digits/hyphen, 1–16 bytes). A
+    ///   lowercase method is rejected, never silently uppercased.
+    /// - The exact origin-form request target (query included) is preserved
+    ///   verbatim; the route path is derived exactly once from that validated
+    ///   target and must never be re-derived after authorization.
+    /// - Duplicate header names (case-insensitive) are rejected outright —
+    ///   never resolved by dictionary overwrite.
+    /// - Body framing is Content-Length only (plain decimal digits); any
+    ///   Transfer-Encoding header is rejected.
+    /// - HTTP/1.1 requires exactly one non-empty Host; the authority comes
+    ///   from that single accepted value.
+    enum HTTPRequestHeadParser {
+
+        struct Head {
+            let method: String
+            let requestTarget: String
+            let path: String
+            let authority: String
+            let headers: [String: String]
+            let contentLength: Int
+        }
+
+        static let maxTargetBytes = 8_192
+        static let maxMethodBytes = 16
+
+        // RFC 9112 §5.1 token characters. Field names are case-
+        // insensitive, so BOTH cases are valid raw tokens; the parser
+        // normalizes to lower-case after validation.
+        private static let tokenNameCharacters = Set(
+            "abcdefghijklmnopqrstuvwxyz"
+                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                + "0123456789!#$%&'*+-.^_`|~"
+        )
+
+        static func parse(_ headerText: String) throws -> Head {
+            let lines = headerText.components(separatedBy: "\r\n")
+
+            guard let requestLine = lines.first else {
+                throw HTTPServerError.badRequest("Missing request line")
+            }
+
+            guard requestLine.utf8.count <= HTTPServer.maxHeaderLineBytes else {
+                throw HTTPServerError.payloadTooLarge
+            }
+
+            // Strict request-line parsing (RFC 9112 §3): exactly three
+            // SP-separated components. Empty subsequences are NOT omitted,
+            // so leading, trailing, or doubled spaces yield a wrong part
+            // count (or an empty method/version token) and are rejected —
+            // never silently normalized.
+            let requestParts = requestLine.split(
+                separator: " ",
+                omittingEmptySubsequences: false
+            )
+
+            guard requestParts.count == 3 else {
+                throw HTTPServerError.badRequest("Malformed request line")
+            }
+
+            let method = String(requestParts[0])
+            guard isCanonicalMethodToken(method) else {
+                throw HTTPServerError.badRequest(
+                    "Non-canonical HTTP method: \(method)"
+                )
+            }
+
+            let target = String(requestParts[1])
+
+            guard let version = validateVersion(String(requestParts[2])) else {
+                throw HTTPServerError.badRequest("Unsupported HTTP version")
+            }
+
+            try validateTarget(target)
+
+            // The route path is derived exactly once, here, from the same
+            // validated target bytes that a request proof must sign.
+            let path = String(
+                target.split(
+                    separator: "?",
+                    maxSplits: 1,
+                    omittingEmptySubsequences: false
+                ).first ?? ""
+            )
+
+            guard !path.isEmpty else {
+                throw HTTPServerError.badRequest("Empty request target")
+            }
+
+            var headers: [String: String] = [:]
+            var seenNames = Set<String>()
+            var headerCount = 0
+
+            for line in lines.dropFirst() {
+                if line.isEmpty { continue }
+                headerCount += 1
+
+                guard headerCount <= HTTPServer.maxHeaderCount else {
+                    throw HTTPServerError.payloadTooLarge
+                }
+
+                guard line.utf8.count <= HTTPServer.maxHeaderLineBytes else {
+                    throw HTTPServerError.payloadTooLarge
+                }
+
+                guard let colon = line.firstIndex(of: ":") else {
+                    throw HTTPServerError.badRequest("Malformed header")
+                }
+
+                // RFC 9112 §5.1: whitespace between a header field name
+                // and the colon MUST be rejected. The RAW name is validated
+                // as a token first (SP/HTAB are not token characters);
+                // only then is the case normalized. Illegal whitespace is
+                // never trimmed into acceptance.
+                let rawName = String(line[..<colon])
+                guard !rawName.isEmpty,
+                      tokenNameCharacters.isSuperset(of: rawName)
+                else {
+                    throw HTTPServerError.badRequest("Malformed header name")
+                }
+                let name = rawName.lowercased()
+
+                let value = String(line[line.index(after: colon)...])
+                    .trimmingCharacters(in: .whitespaces)
+
+                guard !value.utf8.contains(where: { $0 < 0x20 || $0 == 0x7F })
+                else {
+                    throw HTTPServerError.badRequest(
+                        "Header value contains control characters"
+                    )
+                }
+
+                // Duplicate names (including case variants) are rejected
+                // instead of letting dictionary assignment pick a winner.
+                guard seenNames.insert(name).inserted else {
+                    throw HTTPServerError.badRequest(
+                        "Duplicate header: \(name)"
+                    )
+                }
+
+                headers[name] = value
+            }
+
+            // Framing: Content-Length only. Any Transfer-Encoding header —
+            // even an empty one — is ambiguous with chunked framing and is
+            // rejected.
+            if let transferEncoding = headers["transfer-encoding"] {
+                throw HTTPServerError.unsupportedTransferEncoding(
+                    transferEncoding.isEmpty ? "(empty)" : transferEncoding
+                )
+            }
+
+            let contentLength: Int
+            if let rawLength = headers["content-length"] {
+                guard let parsed = parseStrictContentLength(rawLength) else {
+                    throw HTTPServerError.badRequest("Invalid Content-Length")
+                }
+                contentLength = parsed
+            } else {
+                contentLength = 0
+            }
+
+            guard contentLength <= HTTPServer.maxBodyBytes else {
+                throw HTTPServerError.payloadTooLarge
+            }
+
+            // Authority comes from the single accepted Host value.
+            let host = headers["host"]
+            if version == "HTTP/1.1" {
+                guard let host, !host.isEmpty else {
+                    throw HTTPServerError.badRequest(
+                        "HTTP/1.1 requires a non-empty Host header"
+                    )
+                }
+            }
+
+            return Head(
+                method: method,
+                requestTarget: target,
+                path: path,
+                authority: host ?? "",
+                headers: headers,
+                contentLength: contentLength
+            )
+        }
+
+        static func isCanonicalMethodToken(_ token: String) -> Bool {
+            let bytes = token.utf8
+            guard (1...maxMethodBytes).contains(bytes.count) else {
+                return false
+            }
+            return bytes.allSatisfy { byte in
+                (UInt8(ascii: "A") ... UInt8(ascii: "Z")).contains(byte)
+                    || (UInt8(ascii: "0") ... UInt8(ascii: "9")).contains(byte)
+                    || byte == UInt8(ascii: "-")
+            }
+        }
+
+        private static func validateVersion(_ raw: String) -> String? {
+            let upper = raw.uppercased()
+            return (upper == "HTTP/1.1" || upper == "HTTP/1.0") ? upper : nil
+        }
+
+        private static func validateTarget(_ target: String) throws {
+            guard target.hasPrefix("/") else {
+                throw HTTPServerError.badRequest(
+                    "Request target must be origin-form"
+                )
+            }
+
+            guard !target.contains("#") else {
+                throw HTTPServerError.badRequest(
+                    "Request target must not contain a fragment"
+                )
+            }
+
+            guard target.utf8.allSatisfy({ $0 > 0x20 && $0 != 0x7F }) else {
+                throw HTTPServerError.badRequest(
+                    "Request target contains whitespace or control characters"
+                )
+            }
+
+            guard target.utf8.count <= maxTargetBytes else {
+                throw HTTPServerError.payloadTooLarge
+            }
+        }
+
+        private static func parseStrictContentLength(_ raw: String) -> Int? {
+            guard !raw.isEmpty else { return nil }
+            var value = 0
+            for byte in raw.utf8 {
+                guard (UInt8(ascii: "0") ... UInt8(ascii: "9")).contains(byte)
+                else {
+                    return nil
+                }
+                let digit = Int(byte - UInt8(ascii: "0"))
+                if value > (Int.max - digit) / 10 { return nil }
+                value = value * 10 + digit
+            }
+            return value
+        }
+    }
+
     private func readRequest(
         from connection: NWConnection
     ) async throws -> HTTPRequest {
@@ -2170,168 +3107,12 @@ public final class HTTPServer: @unchecked Sendable {
             )
         }
 
-        let lines =
-            headerText.components(
-                separatedBy: "\r\n"
-            )
-
-        guard
-            let requestLine =
-                lines.first
-        else {
-            throw HTTPServerError.badRequest(
-                "Missing request line"
-            )
-        }
-
-        guard
-            requestLine.utf8.count <=
-                Self.maxHeaderLineBytes
-        else {
-            throw HTTPServerError.payloadTooLarge
-        }
-
-        let requestParts =
-            requestLine.split(
-                separator: " ",
-                omittingEmptySubsequences: true
-            )
-
-        guard
-            requestParts.count == 3
-        else {
-            throw HTTPServerError.badRequest(
-                "Malformed request line"
-            )
-        }
-
-        let method =
-            String(
-                requestParts[0]
-            )
-            .uppercased()
-
-        let target =
-            String(
-                requestParts[1]
-            )
-
-        let version =
-            String(
-                requestParts[2]
-            )
-            .uppercased()
-
-        guard
-            version == "HTTP/1.1" ||
-            version == "HTTP/1.0"
-        else {
-            throw HTTPServerError.badRequest(
-                "Unsupported HTTP version"
-            )
-        }
-
-        let path =
-            String(
-                target.split(
-                    separator: "?",
-                    maxSplits: 1,
-                    omittingEmptySubsequences:
-                        false
-                ).first ?? ""
-            )
-
-        guard !path.isEmpty else {
-            throw HTTPServerError.badRequest(
-                "Empty request target"
-            )
-        }
-
-        var headers:
-            [String: String] = [:]
-
-        var headerCount =
-            0
-
-        for line in lines.dropFirst() {
-
-            if line.isEmpty {
-                continue
-            }
-
-            headerCount += 1
-
-            guard
-                headerCount <=
-                    Self.maxHeaderCount
-            else {
-                throw HTTPServerError.payloadTooLarge
-            }
-
-            guard
-                line.utf8.count <=
-                    Self.maxHeaderLineBytes
-            else {
-                throw HTTPServerError.payloadTooLarge
-            }
-
-            guard
-                let colon =
-                    line.firstIndex(
-                        of: ":"
-                    )
-            else {
-                throw HTTPServerError.badRequest(
-                    "Malformed header"
-                )
-            }
-
-            let key =
-                String(
-                    line[..<colon]
-                )
-                .trimmingCharacters(
-                    in: .whitespaces
-                )
-                .lowercased()
-
-            guard !key.isEmpty else {
-                throw HTTPServerError.badRequest(
-                    "Empty header name"
-                )
-            }
-
-            let value =
-                String(
-                    line[
-                        line.index(after: colon)...
-                    ]
-                )
-                .trimmingCharacters(
-                    in: .whitespaces
-                )
-
-            headers[key] =
-                value
-        }
-
-        if let transferEncoding =
-            headers["transfer-encoding"],
-           !transferEncoding
-                .trimmingCharacters(
-                    in:
-                        .whitespacesAndNewlines
-                )
-                .isEmpty {
-
-            throw HTTPServerError
-                .unsupportedTransferEncoding(
-                    transferEncoding
-                )
-        }
+        let head = try Self.HTTPRequestHeadParser.parse(
+            headerText
+        )
 
         if let expect =
-            headers["expect"] {
+            head.headers["expect"] {
 
             let normalizedExpect =
                 expect
@@ -2369,41 +3150,7 @@ public final class HTTPServer: @unchecked Sendable {
                     bodyStart..<buffer.count
             )
 
-        let contentLength: Int
-
-        if let rawLength =
-            headers["content-length"] {
-
-            guard
-                let parsed =
-                    Int(
-                        rawLength
-                            .trimmingCharacters(
-                                in: .whitespaces
-                            )
-                    ),
-
-                parsed >= 0
-            else {
-                throw HTTPServerError.badRequest(
-                    "Invalid Content-Length"
-                )
-            }
-
-            contentLength =
-                parsed
-
-        } else {
-            contentLength =
-                0
-        }
-
-        guard
-            contentLength <=
-                Self.maxBodyBytes
-        else {
-            throw HTTPServerError.payloadTooLarge
-        }
+        let contentLength = head.contentLength
 
         if contentLength == 0,
            !body.isEmpty {
@@ -2470,9 +3217,11 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         return HTTPRequest(
-            method: method,
-            path: path,
-            headers: headers,
+            method: head.method,
+            path: head.path,
+            requestTarget: head.requestTarget,
+            authority: head.authority,
+            headers: head.headers,
             body: body
         )
     }

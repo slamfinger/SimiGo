@@ -5,7 +5,77 @@ import Combine
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // G1/G3 controlled headless gate (env-gated). Default GUI path unchanged:
+        // only engages when SIMIGO_HEADLESS_ROLE is present, and fail-closes on an
+        // unsupported role / missing parameters BEFORE any model work.
+        let headless = SimiGoG1G3Entry.evaluate()
+        if headless.requested {
+            guard let role = headless.role else {
+                FileHandle.standardError.write(
+                    ("headless fail-closed: " + (headless.error ?? "unknown") + "\n").data(using: .utf8)!)
+                exit(2)
+            }
+            // Keep AppKit's main loop alive (do not pump a nested runloop here: that
+            // ends the accessory app). Returning from applicationDidFinishLaunching lets
+            // NSApp.run continue servicing the main queue, which drives the @MainActor
+            // task below; exit(code) terminates once the model work finishes. Requires a
+            // bundle id distinct from any running SimiGo instance to avoid the
+            // LaunchServices single-instance handoff.
+            FileHandle.standardError.write(("headless-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
+            Task { @MainActor in
+                FileHandle.standardError.write("headless-task-started\n".data(using: .utf8)!)
+                let code = await SimiGoG1G3Entry.run(role: role)
+                FileHandle.standardError.write(("headless-task-done rc=\(code)\n").data(using: .utf8)!)
+                exit(code)
+            }
+            return
+        }
+        // Generation-environment bootstrap gate (SIMIGO_ENV_BOOTSTRAP=1):
+        // provisions the managed tree, llama.cpp, hf, and the blank ES/IS
+        // database (+ optional SIMIGO_WORKROOT registration), then exits. It
+        // is the one-command path from a bare install to a root where
+        // Execution State / Information Space can run; it never starts a model
+        // or a listener.
+        let envBootstrap = SimiGoEnvBootstrapEntry.evaluate()
+        if envBootstrap.requested {
+            guard envBootstrap.valid else {
+                FileHandle.standardError.write(
+                    ("env-bootstrap fail-closed: " + (envBootstrap.error ?? "unknown") + "\n")
+                        .data(using: .utf8)!)
+                exit(2)
+            }
+            FileHandle.standardError.write("env-bootstrap-entered\n".data(using: .utf8)!)
+            Task { @MainActor in
+                let code = await SimiGoEnvBootstrapEntry.run()
+                exit(code)
+            }
+            return
+        }
+        // LOCALB local-management gate (env-gated, isolated roots only). The
+        // product ships the first-run ceremony / pairing primitives but no
+        // surface called them, so a never-activated host could not bind its
+        // listener at all. This gate only routes an explicit operator command
+        // to those existing APIs; it never activates on an ordinary launch.
+        let management = SimiGoLocalBManagementEntry.evaluate()
+        if management.requested {
+            guard let role = management.role else {
+                FileHandle.standardError.write(
+                    ("localb-mgmt fail-closed: " + (management.error ?? "unknown") + "\n").data(using: .utf8)!)
+                exit(2)
+            }
+            FileHandle.standardError.write(
+                ("localb-mgmt-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
+            Task { @MainActor in
+                let code = await SimiGoLocalBManagementEntry.run(role: role)
+                exit(code)
+            }
+            return
+        }
         StatusBarCoordinator.shared.start()
+        // Autonomous, idempotent first-run bootstrap off the main thread.
+        Task.detached(priority: .utility) {
+            _ = SimiGoBootstrapRunner.launchIfNeeded()
+        }
     }
 }
 

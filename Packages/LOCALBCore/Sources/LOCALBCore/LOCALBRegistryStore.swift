@@ -308,7 +308,7 @@ public struct LOCALBRegistryStore {
     func appendPairingCredentialIssued(_ credential: LOCALBPairingCredentialEntry,
                                       checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
         try withLock(exclusive: true, createRootIfMissing: false) {
-            let state = try replayJournal()
+            var state = try replayJournal()
             try Self.verifyCheckpoint(checkpoint, against: state)
 
             guard credential.status == .issued,

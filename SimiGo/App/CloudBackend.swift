@@ -1,5 +1,5 @@
 import Foundation
-import Security
+import SimiGoRuntimeContract
 
 public enum BackendSelection: String, CaseIterable, Sendable {
     case mlx
@@ -55,9 +55,21 @@ public struct CloudBackendConfiguration: Sendable {
 
     /// Accept either a host root (`https://api.example.com`) or a versioned
     /// base (`https://api.example.com/v1`) without producing `/v1/v1/...`.
+    /// The path may carry a query string (origin-form request target):
+    /// `append(path:)` percent-encodes `?`, so the query is split off first
+    /// and re-attached verbatim after path construction.
     public func upstreamURL(path: String) -> URL? {
         guard var baseURL else { return nil }
         var suffix = path.hasPrefix("/") ? path : "/" + path
+
+        // Split the query before any path handling; the LOCALB request
+        // target has already been parser-validated (canonical escapes, no
+        // control bytes), so the query re-attaches verbatim.
+        var query: Substring?
+        if let queryStart = suffix.firstIndex(of: "?") {
+            query = suffix[suffix.index(after: queryStart)...]
+            suffix = String(suffix[..<queryStart])
+        }
 
         var basePath = baseURL.path
         while basePath != "/" && basePath.hasSuffix("/") {
@@ -71,6 +83,12 @@ public struct CloudBackendConfiguration: Sendable {
         }
 
         baseURL.append(path: suffix)
+        if let query, !query.isEmpty,
+           let withQuery = URL(
+               string: baseURL.absoluteString + "?" + query
+           ) {
+            return withQuery
+        }
         return baseURL
     }
 
@@ -81,38 +99,42 @@ public struct CloudBackendConfiguration: Sendable {
 }
 
 enum CloudKeychain: Sendable {
-    private static let service = "SimiGo"
-    private static let account = "cloud.api-key"
+    /// The cloud API key lives in a 0600 file under the managed root
+    /// (`<root>/cloud/api-key`), redirected by `SIMIGO_HOME` like every other
+    /// managed path. It is NEVER read from or written to the login Keychain:
+    /// a login-Keychain item is bound to the code signature of whichever
+    /// ad-hoc build created it, so every re-signed build was met with a
+    /// SecurityAgent prompt that no password satisfies (observed 2026-10-26;
+    /// the same signature-ACL failure that locked the LOCALB identities).
+    /// Existing login-Keychain items are left untouched and simply unused.
+    private static var fileURL: URL {
+        SimiGoPaths.managedRoot()
+            .appendingPathComponent("cloud", isDirectory: true)
+            .appendingPathComponent("api-key", isDirectory: false)
+    }
 
     static func readAPIKey() -> String {
-        var query: [String: Any] = baseQuery
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return "" }
+        guard let data = FileManager.default.contents(atPath: fileURL.path) else { return "" }
         return String(data: data, encoding: .utf8) ?? ""
     }
 
     static func writeAPIKey(_ value: String) {
-        let query = baseQuery
-        SecItemDelete(query as CFDictionary)
-
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-
-        var attributes = query
-        attributes[kSecValueData as String] = Data(trimmed.utf8)
-        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(attributes as CFDictionary, nil)
-    }
-
-    private static var baseQuery: [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
+        let url = fileURL
+        let fm = FileManager.default
+        do {
+            try fm.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if trimmed.isEmpty {
+                try? fm.removeItem(at: url)
+                return
+            }
+            try Data(trimmed.utf8).write(to: url, options: [.atomic])
+            try? fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        } catch {
+            // A failed credential write must never crash startup; the key is
+            // simply absent until the next successful write.
+            return
+        }
     }
 }

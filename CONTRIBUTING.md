@@ -34,6 +34,29 @@ xcodebuild test -project SimiGo.xcodeproj -scheme SimiGo \
   -only-testing:SimiGoTests/ExecutionStateGraphTests
 ```
 
+Tests are **not** side-effect free by default: the test bundle is loaded into the
+real app process (`TEST_HOST`), and the full `SimiGoTests` suite has been measured to
+write the real `~/.simigo` (IS WAL/SHM, prefix pool, branch checkpoints,
+`logs/native_mlx_trace.log`) unless the roots are overridden. Targeted runs have not
+been measured individually and are therefore not assumed safe.
+
+Run the suite through the in-repo runner:
+
+```bash
+tools/run_isolated_tests.sh --tag local-run1
+```
+
+It creates a fresh isolation root, rewrites the build's xctestrun so that
+`SIMIGO_HOME`, `SIMIGO_CACHE_ROOT` and `SIMIGO_STATE_GRAPH_STORE` all point inside
+that root, snapshots the protected roots before and after, and diffs them. Evidence
+lands in `build/test-isolation/<utc>/` and the app defaults to
+`build/test/Build/Products/Debug/SimiGo.app`. It fails closed on an unsafe isolation
+root, a plist diff beyond the three roots, a failing or unparsable suite, or any
+user-state write outside the isolation root, and it only deletes the isolation root
+it created itself. A plain `xcodebuild test` without those three roots is not
+equivalent and must not be cited as evidence that the suite leaves user state
+untouched.
+
 Do not commit local model paths, Hugging Face caches, device serials, signing
 team IDs, DMG files, build products, or model weights.
 

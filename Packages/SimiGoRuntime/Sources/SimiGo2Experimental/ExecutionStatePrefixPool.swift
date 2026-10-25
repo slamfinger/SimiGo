@@ -135,7 +135,17 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     private let lock = NSLock()
     private var entries: [PrefixPoolEntry] = []
     /// Monotonic recency counter (deterministic; no wall clock).
-    private var lastUse: [UInt64: UInt] = [:]
+    /// Recency is scoped per (namespace, boundaryHash): the same token prefix
+    /// can be live under two different model/KV namespaces, whose LRU recency
+    /// must not collide on a shared slot (a hit in one namespace would keep
+    /// the other namespace's identically-hashed entry from ever being evicted,
+    /// or evict the wrong one).
+    private struct RecencyKey: Hashable {
+        let namespace: PrefixPoolNamespace
+        let boundaryHash: UInt64
+    }
+
+    private var lastUse: [RecencyKey: UInt] = [:]
     private var tick: UInt = 0
     private let tokenBudget: Int
     private let physicalByteBudget: Int?
@@ -186,7 +196,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             return nil
         }
         tick += 1
-        lastUse[hit.boundaryHash] = tick
+        lastUse[RecencyKey(namespace: hit.namespace, boundaryHash: hit.boundaryHash)] = tick
         stats.hits += 1
         return PrefixAdmission(entry: hit, coveredTokens: hit.tokenCount)
     }
@@ -219,7 +229,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             stats.exports += 1
         }
         tick += 1
-        lastUse[hash] = tick
+        lastUse[RecencyKey(namespace: namespace, boundaryHash: hash)] = tick
         evictLocked()
         return entry
     }
@@ -234,7 +244,29 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             return false
         }
         entries.remove(at: index)
-        lastUse[entry.boundaryHash] = nil
+        lastUse[RecencyKey(namespace: entry.namespace, boundaryHash: entry.boundaryHash)] = nil
+        return true
+    }
+
+    /// Remove only the entry whose artifact handle equals ``artifact``, in
+    /// addition to matching its semantic content. Content equality alone is
+    /// unsafe once a same-content re-export can replace the artifact: a loader
+    /// still holding the OLD artifact must not evict the NEW entry that
+    /// replaced it. Returns true only when a content- AND artifact-matched
+    /// entry was found and dropped.
+    @discardableResult
+    public func remove<Artifact: Equatable & Sendable>(
+        _ entry: PrefixPoolEntry, artifact: Artifact
+    ) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let index = entries.firstIndex(where: { candidate in
+            candidate == entry && (candidate.artifact as? Artifact) == artifact
+        }) else {
+            return false
+        }
+        entries.remove(at: index)
+        lastUse[RecencyKey(namespace: entry.namespace, boundaryHash: entry.boundaryHash)] = nil
         return true
     }
 
@@ -264,7 +296,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             stats.exports += 1
         }
         tick += 1
-        lastUse[entry.boundaryHash] = tick
+        lastUse[RecencyKey(namespace: entry.namespace, boundaryHash: entry.boundaryHash)] = tick
         evictLocked()
         return entry
     }
@@ -302,10 +334,11 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         var evicted: [PrefixPoolEntry] = []
         var overByteBudget = physicalByteBudget.map { totalBytes > $0 } ?? false
         while (total > tokenBudget || overByteBudget), let victim = entries.min(
-            by: { (lastUse[$0.boundaryHash] ?? 0) < (lastUse[$1.boundaryHash] ?? 0) }
+            by: { (lastUse[RecencyKey(namespace: $0.namespace, boundaryHash: $0.boundaryHash)] ?? 0)
+                < (lastUse[RecencyKey(namespace: $1.namespace, boundaryHash: $1.boundaryHash)] ?? 0) }
         ) {
             entries.removeAll { $0 == victim }
-            lastUse[victim.boundaryHash] = nil
+            lastUse[RecencyKey(namespace: victim.namespace, boundaryHash: victim.boundaryHash)] = nil
             total -= victim.tokenCount
             totalBytes -= victim.artifact.physicalByteCount ?? 0
             overByteBudget = physicalByteBudget.map { totalBytes > $0 } ?? false

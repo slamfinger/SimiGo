@@ -1,4 +1,5 @@
 import XCTest
+import SimiGoRuntimeContract
 @testable import SimiGo
 
 final class CloudBackendTests: XCTestCase {
@@ -112,5 +113,26 @@ final class CloudBackendTests: XCTestCase {
         XCTAssertNil((try json(#"{"model":"Localmodel","messages":[],"enable_thinking":true,"reasoning_effort":"high","reasoning":{"effort":"high"}}"#))["enable_thinking"])
         XCTAssertNil((try json(#"{"model":"Localmodel","messages":[],"enable_thinking":true,"reasoning_effort":"high","reasoning":{"effort":"high"}}"#))["reasoning_effort"])
         XCTAssertNil((try json(#"{"model":"Localmodel","messages":[],"enable_thinking":true,"reasoning_effort":"high","reasoning":{"effort":"high"}}"#))["reasoning"])
+    }
+
+    /// The cloud credential is a 0600 file under the managed root — never the
+    /// login Keychain, whose items are signature-locked to the creating build
+    /// (every re-signed build hit an unsatisfiable SecurityAgent prompt,
+    /// 2026-10-26). Round-trip, permissions, and clearing all happen inside the
+    /// managed root the runner redirects via SIMIGO_HOME.
+    func testCloudCredentialManagedFileRoundTrip() throws {
+        let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"] ?? ""
+        try XCTSkipIf(home.isEmpty, "requires the isolated runner's SIMIGO_HOME")
+        let probe = "probe-\(UUID().uuidString)"
+        CloudKeychain.writeAPIKey(probe)
+        XCTAssertEqual(CloudKeychain.readAPIKey(), probe,
+                       "write then read must round-trip through the managed file")
+        let url = SimiGoPaths.managedRoot()
+            .appendingPathComponent("cloud/api-key")
+        let perms = try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int
+        XCTAssertEqual(perms, 0o600, "the credential file must be owner-only")
+        CloudKeychain.writeAPIKey("")
+        XCTAssertEqual(CloudKeychain.readAPIKey(), "",
+                       "an empty write clears the credential")
     }
 }

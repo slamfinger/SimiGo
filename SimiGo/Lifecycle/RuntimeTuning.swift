@@ -194,6 +194,11 @@ nonisolated enum RuntimeTuning {
 
     /// 预填吞吐保守下限（tok/s）——512 档实测 188，取 150 估算闲置会话重建时长。
     static let prefillThroughputFloor = 150.0
+    /// 内存黄色缓解（2026-10-23 用户反馈：推理结束后内存压力长时间为黄色 → 缩短）。
+    /// 大会话自适应阈值此前可高达 ~14.5 分钟（121k tok ÷ 150 + 60）。给驻留窗口
+    /// 加**上限**收敛最长黄色时长；并把基线下调（仍高于常见追问间隔，避免即时冷启动税抖动）。
+    static var idleResidencyFloorSeconds: TimeInterval = 240
+    static var idleResidencyCapSeconds: TimeInterval = 360
 
     /// P1 卸载后 memory settle 等待上限。
     static var memorySettleTimeoutSeconds: TimeInterval = 10
