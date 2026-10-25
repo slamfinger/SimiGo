@@ -138,42 +138,47 @@ struct FirstRunWizardView: View {
         }
     }
 
-    // MARK: Step 1 工作目录
+    // MARK: Step 1 工作目录（进入即弹出选择器）
 
     private var workRootStep: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("外部工作目录").font(.headline)
-            Text("选择一个或多个目录注册进权威数据库（可跳过；之后也可从菜单栏追加）")
+            Text("选择外部工作目录").font(.headline)
+            Text("Execution State / Information Space 的数据入库范围（可多次添加；之后菜单栏也可追加）")
                 .font(.caption).foregroundStyle(.secondary)
             VStack(alignment: .leading) {
                 if workRoots.isEmpty {
-                    Text("尚未添加").foregroundStyle(.secondary)
-                } else {
-                    ForEach(workRoots, id: \.self) { path in
-                        HStack {
-                            Image(systemName: "folder")
-                            Text(path).lineLimit(1).truncationMode(.middle)
-                            Spacer()
-                            Button {
-                                workRoots.removeAll { $0 == path }
-                            } label: { Image(systemName: "minus.circle") }
-                                .buttonStyle(.borderless)
-                        }
-                        .padding(.vertical, 2)
-                    }
+                    HStack {
+                        Image(systemName: "folder.badge.plus").foregroundStyle(.blue)
+                        Text("尚未选择").foregroundStyle(.secondary)
+                    }.padding(.vertical, 4)
+                }
+                ForEach(workRoots, id: \.self) { path in
+                    HStack {
+                        Image(systemName: "folder")
+                        Text(path).lineLimit(1).truncationMode(.middle)
+                        Spacer()
+                        Button {
+                            workRoots.removeAll { $0 == path }
+                        } label: { Image(systemName: "minus.circle") }
+                            .buttonStyle(.borderless)
+                    }.padding(.vertical, 2)
                 }
             }
-            .padding(8).frame(maxWidth: .infinity, minHeight: 140, alignment: .topLeading)
+            .padding(8).frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
             .background(Color(nsColor: .controlBackgroundColor)).cornerRadius(6)
             HStack {
-                Button("添加目录…") {
-                    if let url = Self.pickDirectory(), !workRoots.contains(url.path) {
-                        workRoots.append(url.path)
-                    }
-                }
+                Button("再选一个…") { pickAnother() }
                 Spacer()
+                Button("跳过") { step = 2 }
                 Button("下一步") { step = 2 }.keyboardShortcut(.defaultAction)
             }
+        }
+        .onAppear { if workRoots.isEmpty { pickAnother() } }
+    }
+
+    private func pickAnother() {
+        if let url = FirstRunWizard.pickDirectory(), !workRoots.contains(url.path) {
+            workRoots.append(url.path)
         }
     }
 
