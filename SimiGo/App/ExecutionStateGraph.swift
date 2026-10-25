@@ -546,31 +546,24 @@ final class ExecutionStateGraphStore: ObservableObject {
             throw ExecutionGraphError.storeUnavailable(
                 persistError ?? "ES/IS authoritative database unavailable")
         }
-        let createdAt = Date()
-        // The child's value is exactly what THIS request settled, and its lineage
-        // is the parent's prefix plus that value — the same shape `continueState`
-        // produces, so continuing the child later appends instead of resetting.
+        // The child's value is exactly what THIS request settled. Its `position`
+        // and `prefix` are NOT taken from this process's projection: the store
+        // derives them from the authoritative parent row inside the write
+        // transaction, so a stale — or deleted — row can neither define lineage nor
+        // be papered over by in-memory state. One transaction: child ES + settlement
+        // + constraint rows + producer identity bindings.
         let childNextInput = Self.settledContent(settled)
-        let childPrefix = parent.prefix + [childNextInput]
-        let child = SimiGoESISDatabase.ChildExecutionState(
-            id: childStateID,
-            parentID: parent.id,
-            modelIdentity: parent.modelIdentity,
-            position: parent.position + 1,
-            continuationID: UUID().uuidString,
-            anchor: settled.payloadDigest,
-            createdAt: createdAt,
-            nextInput: childNextInput,
-            prefix: childPrefix
-        )
-        // One transaction: child ES + settlement + constraint rows + producer
-        // identity bindings. The method returns only after all of it committed.
-        let settlementUUID = try db.recordNativeSettlementWithIdentity(
+        let outcome = try db.commitContinuationSettlement(
             settled,
-            stateID: childStateID,
-            identity: producerIdentity,
-            childState: child
+            child: SimiGoESISDatabase.ContinuationChild(
+                id: childStateID,
+                parentID: parent.id,
+                modelIdentity: parent.modelIdentity,
+                nextInput: childNextInput),
+            identity: producerIdentity
         )
+        let child = outcome.child
+        let settlementUUID = outcome.settlementID
 
         // Update ONLY the in-memory projection, and only after the whole
         // authoritative commit. SQLite is the source of truth.
@@ -579,12 +572,12 @@ final class ExecutionStateGraphStore: ObservableObject {
             id: childStateID,
             parentID: parent.id,
             modelIdentity: parent.modelIdentity,
-            createdAt: createdAt,
+            createdAt: child.createdAt,
             position: child.position,
             continuationID: child.continuationID,
-            nextInput: childNextInput,
+            nextInput: child.nextInput,
             anchor: child.anchor,
-            prefix: childPrefix,
+            prefix: child.prefix,
             lifecycle: .active,
             checkpointIDs: []))
         updated.settlements = (updated.settlements ?? []) + [SettlementReceipt(

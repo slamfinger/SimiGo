@@ -184,35 +184,29 @@ public enum SimiGoISAdmission {
         let settled = try SimiGoSettlementAuthority.authorize(
             generatedText: generatedText, contractJSON: contractJSON,
             verifiedBindings: admitted.verifiedBindings)
-        // (3) the parent's authoritative ES row must exist. The settlement's FK
-        // normally guarantees it, but a store written by a connection with
-        // foreign keys off can hold a settlement whose state row is gone. Refuse
-        // instead of defaulting to a root child: borrowing position 1 and an
-        // empty prefix would silently invent a lineage nobody settled.
-        guard let parent = try db.readGraph().states.first(where: { $0.id == parentStateID }) else {
-            throw Refusal.missingParentState(stateID: parentStateID)
-        }
-        // (4) persist the child ES, the settlement, its constraint rows and both
-        // producer identity bindings in ONE transaction. Three separate writes
-        // could leave a child state behind a failed identity binding, so this
-        // path uses the same atomic commit the product continuation uses. The
-        // contract gate ran above: a rejection writes nothing at all.
+        // (3) commit the child, its settlement, its constraint rows and both
+        // producer identity bindings in ONE transaction. The store reads the
+        // parent row inside that transaction and derives the child's lineage from
+        // it, so this entry and the product entry share ONE authority rule: no
+        // parent row, no child. The contract gate ran above — a rejection writes
+        // nothing at all.
         let childValue = Self.recoveredValue(from: settled.validatedPayload, field: valueField)
             ?? admitted.recoveredValue
-        let child = SimiGoESISDatabase.ChildExecutionState(
-            id: childStateID,
-            parentID: parentStateID,
-            modelIdentity: consumer.model,
-            position: parent.position + 1,
-            continuationID: UUID().uuidString,
-            anchor: admitted.payloadDigest,
-            createdAt: Date(),
-            nextInput: childValue,
-            prefix: parent.prefix + [childValue])
-        let sid = try db.recordNativeSettlementWithIdentity(
-            settled, stateID: childStateID, identity: consumer, childState: child
-        ).uuidString
-        return SettledContinuation(admission: admitted, settled: settled, settlementID: sid)
+        do {
+            let committed = try db.commitContinuationSettlement(
+                settled,
+                child: SimiGoESISDatabase.ContinuationChild(
+                    id: childStateID,
+                    parentID: parentStateID,
+                    modelIdentity: consumer.model,
+                    nextInput: childValue),
+                identity: consumer)
+            return SettledContinuation(
+                admission: admitted, settled: settled,
+                settlementID: committed.settlementID.uuidString)
+        } catch let SimiGoESISDatabase.DatabaseError.missingParentState(missing) {
+            throw Refusal.missingParentState(stateID: missing)
+        }
     }
 
     /// Extract the semantic value from a settled canonical payload. Mirrors the

@@ -20,6 +20,8 @@ public final class SimiGoESISDatabase {
         case sql(String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
+        /// A child write named a parent execution state that the store does not hold.
+        case missingParentState(String)
     }
 
     private let handle: OpaquePointer
@@ -255,9 +257,29 @@ public final class SimiGoESISDatabase {
 
     // MARK: - Execution state write
 
-    /// A child Execution State recorded in the SAME authoritative transaction as
-    /// its settlement (continuation path). Fields mirror `recordExecutionState`.
-    public struct ChildExecutionState: Sendable {
+    /// What a continuation caller may state about its child ES: an id, the parent
+    /// it continues, the model, and the value it settled. Lineage (`position`,
+    /// `prefix`) is deliberately NOT caller-supplied — the store derives it from
+    /// the authoritative parent row inside the write transaction.
+    public struct ContinuationChild: Sendable {
+        public let id: String
+        public let parentID: String
+        public let modelIdentity: String
+        /// The value the child's own IS carries (what a later admission recovers).
+        public let nextInput: String
+
+        public init(id: String, parentID: String, modelIdentity: String, nextInput: String) {
+            self.id = id
+            self.parentID = parentID
+            self.modelIdentity = modelIdentity
+            self.nextInput = nextInput
+        }
+    }
+
+    /// The child the store ACTUALLY committed, with the lineage it derived from the
+    /// parent row inside the transaction. Callers mirror these values into their
+    /// in-memory graph; they must never re-derive lineage from the projection.
+    public struct CommittedContinuationChild: Sendable, Equatable {
         public let id: String
         public let parentID: String
         public let modelIdentity: String
@@ -265,25 +287,9 @@ public final class SimiGoESISDatabase {
         public let continuationID: String
         public let anchor: String
         public let createdAt: Date
-        /// The value the child's own IS carries (what a later admission recovers).
         public let nextInput: String
-        /// Full lineage: the parent's prefix plus this child's own value. Written
-        /// with the row so a reload cannot downgrade the lineage to an empty one.
+        /// Full lineage: the parent's prefix plus this child's own value.
         public let prefix: [String]
-
-        public init(id: String, parentID: String, modelIdentity: String,
-                    position: Int, continuationID: String, anchor: String,
-                    createdAt: Date, nextInput: String, prefix: [String]) {
-            self.id = id
-            self.parentID = parentID
-            self.modelIdentity = modelIdentity
-            self.position = position
-            self.continuationID = continuationID
-            self.anchor = anchor
-            self.createdAt = createdAt
-            self.nextInput = nextInput
-            self.prefix = prefix
-        }
     }
 
     /// Upsert an execution state into the authoritative store. Used by the app to
@@ -325,9 +331,11 @@ public final class SimiGoESISDatabase {
     /// Insert a continuation's child ES with its FULL representation. Separate
     /// from `insertExecutionStateRow` on purpose: `recordExecutionState` mirrors a
     /// state the caller already owns and must not overwrite lineage columns it was
-    /// never given, while a continuation child is authored here and must be
-    /// durable exactly as the graph projects it.
-    private func insertContinuationChildRow(_ child: ChildExecutionState) throws {
+    /// never given, while a continuation child is authored here from the parent row
+    /// and must be durable exactly as committed.
+    ///
+    /// Caller MUST hold the write transaction (it reads the parent first).
+    private func insertContinuationChildRow(_ child: CommittedContinuationChild) throws {
         let enc = JSONEncoder()
         let prefixJSON = String(
             data: (try? enc.encode(child.prefix)) ?? Data("[]".utf8),
@@ -378,28 +386,86 @@ public final class SimiGoESISDatabase {
     /// all contract-binding rows back with it. Success therefore means the complete
     /// settlement + producer identity record committed as one authoritative unit.
     ///
-    /// `childState`, when present, is inserted INSIDE the same transaction: a
-    /// continuation therefore cannot commit a settlement without its child ES,
-    /// and cannot leave a child ES behind when the settlement fails.
     @discardableResult
     public func recordNativeSettlementWithIdentity(
         _ settled: SimiGoSettlementAuthority.SettledResult,
         stateID: String,
-        identity: SimiGoSettlementIdentityBinding.Identity,
-        childState: ChildExecutionState? = nil
+        identity: SimiGoSettlementIdentityBinding.Identity
     ) throws -> UUID {
         let settlementUUID = UUID()
         let settlementID = settlementUUID.uuidString
         try transaction {
-            if let childState {
-                try insertContinuationChildRow(childState)
-            }
             try insertNativeSettlementRows(
                 settled, settlementID: settlementID, stateID: stateID)
             try insertIdentityBindingRows(
                 settlementID: settlementID, identity: identity)
         }
         return settlementUUID
+    }
+
+    /// Commit a continuation as ONE authoritative transaction: child ES, its
+    /// settlement, the contract-constraint rows and both producer identity
+    /// bindings. This is the single write rule for continuation children — the
+    /// product store and the contract-layer admission both come through here.
+    ///
+    /// The parent row is read AFTER `BEGIN IMMEDIATE` has taken the write lock, and
+    /// the child's `position`/`prefix` are derived from that row. Therefore:
+    ///   * a parent row removed by another connection cannot be papered over by an
+    ///     in-memory projection — the read sees the removal and this throws
+    ///     `DatabaseError.missingParentState` before any row is written;
+    ///   * the check and the child insert cannot be separated by a concurrent
+    ///     delete, because both happen inside the same write transaction;
+    ///   * a stale projection cannot define lineage that the store never held.
+    ///
+    /// Any failure rolls the whole unit back: no orphan child, no settlement.
+    public func commitContinuationSettlement(
+        _ settled: SimiGoSettlementAuthority.SettledResult,
+        child: ContinuationChild,
+        identity: SimiGoSettlementIdentityBinding.Identity
+    ) throws -> (settlementID: UUID, child: CommittedContinuationChild) {
+        let settlementUUID = UUID()
+        var committed: CommittedContinuationChild?
+        try transaction {
+            guard let parent = try parentLineageRow(id: child.parentID) else {
+                throw DatabaseError.missingParentState(child.parentID)
+            }
+            let row = CommittedContinuationChild(
+                id: child.id,
+                parentID: child.parentID,
+                modelIdentity: child.modelIdentity,
+                position: parent.position + 1,
+                continuationID: UUID().uuidString,
+                anchor: settled.payloadDigest,
+                createdAt: Date(),
+                nextInput: child.nextInput,
+                prefix: parent.prefix + [child.nextInput])
+            try insertContinuationChildRow(row)
+            try insertNativeSettlementRows(
+                settled, settlementID: settlementUUID.uuidString, stateID: child.id)
+            try insertIdentityBindingRows(
+                settlementID: settlementUUID.uuidString, identity: identity)
+            committed = row
+        }
+        guard let committed else {
+            throw DatabaseError.sql("continuation commit produced no child state")
+        }
+        return (settlementUUID, committed)
+    }
+
+    /// Read a parent's lineage columns. Caller MUST hold the write transaction,
+    /// otherwise the row can change between this read and the child insert.
+    private func parentLineageRow(id: String) throws -> (position: Int, prefix: [String])? {
+        let stmt = try prepare("SELECT position, prefix_json FROM execution_states WHERE state_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, id)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        let position = Int(sqlite3_column_int64(stmt, 0))
+        var prefix: [String] = []
+        if let text = sqlite3_column_text(stmt, 1) {
+            let json = String(cString: text)
+            prefix = (try? JSONDecoder().decode([String].self, from: Data(json.utf8))) ?? []
+        }
+        return (position, prefix)
     }
 
     /// Insert the settlement row and the native gate's constraint-binding rows.

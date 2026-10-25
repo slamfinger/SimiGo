@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 import SimiGoRuntimeContract
 @testable import SimiGo
@@ -51,6 +52,32 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
     override func tearDown() {
         if let modelPath { try? FileManager.default.removeItem(atPath: modelPath) }
         super.tearDown()
+    }
+
+    /// Narrow raw SQL against the isolated database, used ONLY to inject a real
+    /// lower-layer fault (a second connection can bypass this process's FKs).
+    private func executeSQLite(_ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open(SimiGoPaths.databaseURL.path, &handle)
+        guard openRC == SQLITE_OK, let handle else {
+            if let handle { sqlite3_close(handle) }
+            throw NSError(
+                domain: "ContinuationAdmissionSettlementBindingTests.SQLite",
+                code: Int(openRC),
+                userInfo: [NSLocalizedDescriptionKey: "could not open isolated test database"])
+        }
+        defer { sqlite3_close(handle) }
+        var message: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &message)
+        if rc != SQLITE_OK {
+            let detail = message.map { String(cString: $0) } ?? "SQLite error \(rc)"
+            if let message { sqlite3_free(message) }
+            throw NSError(
+                domain: "ContinuationAdmissionSettlementBindingTests.SQLite",
+                code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: detail])
+        }
+        if let message { sqlite3_free(message) }
     }
 
     /// Stage a parent whose settled IS value is `value`.
@@ -230,5 +257,53 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
             producerIdentity: consumer))
         XCTAssertNil(store.state(afterDiscard))
         XCTAssertNil(try store.esis?.latestSettlementID(forStateID: afterDiscard))
+    }
+
+    // MARK: - 4. The authoritative row, not the projection, defines the lineage
+
+    /// The in-memory graph can outlive its parent ROW: a second connection with
+    /// `foreign_keys = OFF` can drop the row while this process still projects the
+    /// state. The product write must refuse, because the projection is not a second
+    /// source of truth. Before this was fixed the call wrote a child whose
+    /// `parent_id` pointed at nothing and reported success.
+    @MainActor
+    func testContinuationRefusesParentRowMissingFromAuthoritativeStore() throws {
+        let store = ExecutionStateGraphStore()
+        let parent = try stagedParent(store: store, value: "GHOST-A")
+        let admitted = try store.admitContinuation(stateID: parent.id, consumer: consumer)
+        let child = "es-child-ghost-\(UUID().uuidString.lowercased())"
+
+        try executeSQLite(
+            "PRAGMA foreign_keys=OFF; DELETE FROM execution_states WHERE state_id='\(parent.id)';")
+        let db = try XCTUnwrap(store.esis)
+        XCTAssertNil(try db.readGraph().states.first { $0.id == parent.id },
+                     "precondition: the authoritative parent row is gone")
+        XCTAssertNotNil(store.state(parent.id),
+                        "precondition: the in-memory projection still holds the parent")
+
+        let statesBefore = try db.count("execution_states")
+        let settlementsBefore = try db.count("settlements")
+        let bindingsBefore = try db.count("settlement_bindings")
+
+        XCTAssertThrowsError(try store.settleContinuationResult(
+            generatedText: "RESULT=GHOST-A",
+            parentStateID: parent.id,
+            childStateID: child,
+            verifiedBindings: admitted.verifiedBindings,
+            producerIdentity: consumer)
+        ) { error in
+            guard case SimiGoESISDatabase.DatabaseError.missingParentState(let missing) = error else {
+                return XCTFail("expected .missingParentState from the authoritative write, got \(error)")
+            }
+            XCTAssertEqual(missing, parent.id)
+        }
+
+        XCTAssertEqual(try db.count("execution_states"), statesBefore,
+                       "a refused continuation writes no child row")
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore,
+                       "no settlement may survive the refused commit")
+        XCTAssertEqual(try db.count("settlement_bindings"), bindingsBefore)
+        XCTAssertNil(try db.latestSettlementID(forStateID: child))
+        XCTAssertNil(store.state(child), "the projection must not gain a child either")
     }
 }
