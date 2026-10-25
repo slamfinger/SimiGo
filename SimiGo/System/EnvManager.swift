@@ -595,6 +595,130 @@ public final class EnvManager: ObservableObject {
         return report
     }
 
+    /// Install an external binary from a URL: download to a temp cache,
+    /// verify it is a Mach-O executable, move it into the managed bin
+    /// (0755), then DELETE the download cache (owner 2026-10-26: 选择后
+    /// 自动安装、转移并清理缓存). Named by the URL's last path component.
+    @MainActor
+    public func installExternalBinary(from url: URL) async -> [String: Any] {
+        let name = url.lastPathComponent.isEmpty ? "tool" : url.lastPathComponent
+        let cacheDir = SimiGoPaths.staging
+        let tmp = cacheDir.appendingPathComponent("dl-\(UUID().uuidString)-\(name)")
+        let fm = FileManager.default
+        do {
+            try fm.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+            let (data, response) = try await URLSession.shared.data(from: url)
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                return ["status": "download_failed", "detail": "HTTP \(http.statusCode)"]
+            }
+            try data.write(to: tmp)
+            // executable check: Mach-O magic (MH_MAGIC_64 / FAT)
+            let magic = data.prefix(4)
+            let isMachO = magic == Data([0xCF, 0xFA, 0xED, 0xFE])
+                || magic == Data([0xCA, 0xFE, 0xBA, 0xBE])
+                || magic == Data([0xFE, 0xED, 0xFA, 0xCF])
+            guard isMachO else {
+                try? fm.removeItem(at: tmp)
+                return ["status": "not_executable", "detail": "\(name) is not a Mach-O binary"]
+            }
+            let target = SimiGoPaths.bin.appendingPathComponent(name)
+            try fm.createDirectory(at: SimiGoPaths.bin, withIntermediateDirectories: true)
+            if fm.fileExists(atPath: target.path) { try fm.removeItem(at: target) }
+            try fm.moveItem(at: tmp, to: target)
+            try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
+            return ["status": "installed", "path": target.path, "bytes": data.count]
+        } catch {
+            try? fm.removeItem(at: tmp)  // cache cleanup even on failure
+            return ["status": "failed", "detail": error.localizedDescription]
+        }
+    }
+
+    /// Update every installable binary in the managed bin (menu entry):
+    /// llama.cpp rebuilds from the locked recipe (caches pruned to the
+    /// binary), hf upgrades through brew when brew manages it. Returns a
+    /// per-tool report.
+    public func updateInstalledBinaries() async -> [String: Any] {
+        var report: [String: Any] = [:]
+        // llama.cpp: drop the installed binary so setupEnvironment rebuilds
+        // from the (locked) recipe, then prune caches as usual.
+        let llama = SimiGoPaths.bin.appendingPathComponent("llama-server")
+        if FileManager.default.fileExists(atPath: llama.path) {
+            try? FileManager.default.removeItem(at: llama)
+            let previous = selectedEngineID
+            selectedEngineID = "llama.cpp"
+            await setupEnvironment()
+            selectedEngineID = previous
+            report["llama.cpp"] = ["status": commandStatus]
+        }
+        // hf: brew upgrade when present.
+        if let brew = Self.findTool("brew"), Self.findTool("hf") != nil {
+            do {
+                try await runCommand(brew, args: ["upgrade", "huggingface-cli"])
+                report["hf"] = ["status": "upgraded"]
+            } catch {
+                report["hf"] = ["status": "upgrade_failed", "detail": error.localizedDescription]
+            }
+        }
+        return report
+    }
+
+    /// Import an operator-supplied external binary into the managed bin
+    /// (owner 2026-10-26 install flow): copied verbatim, mode 0755. A name
+    /// collision with a DIFFERENT source file is refused; re-importing the
+    /// same bytes is a no-op.
+    @discardableResult
+    public func addExternalBinary(at sourceURL: URL) -> [String: Any] {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: sourceURL.path),
+            !sourceURL.hasDirectoryPath
+        else {
+            return ["status": "invalid", "detail": "not a file: \(sourceURL.path)"]
+        }
+        let target = SimiGoPaths.bin.appendingPathComponent(sourceURL.lastPathComponent)
+        do {
+            try fm.createDirectory(at: SimiGoPaths.bin, withIntermediateDirectories: true)
+            if fm.fileExists(atPath: target.path) {
+                let existing = fm.contents(atPath: target.path)?.count ?? -1
+                let incoming = fm.contents(atPath: sourceURL.path)?.count ?? -2
+                guard existing != incoming else {
+                    try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
+                    return ["status": "already_present", "path": target.path]
+                }
+                return ["status": "name_conflict", "detail":
+                            "bin/\(sourceURL.lastPathComponent) already exists with different content"]
+            }
+            try fm.copyItem(at: sourceURL, to: target)
+            try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
+            return ["status": "imported", "path": target.path]
+        } catch {
+            return ["status": "failed", "detail": error.localizedDescription]
+        }
+    }
+
+    /// Register an external work root in the authoritative database
+    /// (shared by the first-run wizard and the menu entry).
+    @discardableResult
+    public func registerWorkRoot(_ path: String) -> [String: Any] {
+        let standardized = (path as NSString).standardizingPath
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: standardized, isDirectory: &isDir),
+            isDir.boolValue
+        else {
+            return ["status": "invalid", "detail": "not a directory: \(standardized)"]
+        }
+        do {
+            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let rootID = "work-" + Self.stableRootID(forPath: standardized)
+            try db.upsertRoot(
+                rootID: rootID, category: "work", displayName: standardized,
+                locatorType: "path", status: "registered")
+            return ["status": "registered", "root_id": rootID, "path": standardized]
+        } catch {
+            return ["status": "failed", "detail": error.localizedDescription]
+        }
+    }
+
     /// Retain a DMG of the RUNNING app bundle under `<root>/` named by
     /// marketing version + build. ad-hoc (unsigned) packaging for local
     /// retention and side-loading; a matching existing file short-circuits.

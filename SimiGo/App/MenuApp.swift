@@ -31,6 +31,38 @@ struct MenuPanelView: View {
             Divider().padding(.vertical, 2)
 
             MenuRowButton(
+                title: "添加外部工作目录…",
+                icon: "folder.badge.plus"
+            ) {
+                StatusBarCoordinator.shared.addWorkRootFromMenu()
+            }
+
+            MenuRowButton(
+                title: "安装外部二进制（URL）…",
+                icon: "arrow.down.circle"
+            ) {
+                StatusBarCoordinator.shared.installBinaryFromMenu()
+            }
+
+            MenuRowButton(
+                title: "更新已装二进制",
+                icon: "arrow.triangle.2.circlepath.circle"
+            ) {
+                Task { @MainActor in
+                    _ = await StatusBarCoordinator.shared.updateBinariesFromMenu()
+                }
+            }
+
+            MenuRowButton(
+                title: FirstRunWizard.isNeeded() ? "运行安装向导" : "重新运行安装向导",
+                icon: "shippingbox.and.arrow.down"
+            ) {
+                StatusBarCoordinator.shared.openWizardWindow()
+            }
+
+            Divider().padding(.vertical, 2)
+
+            MenuRowButton(
                 title: svc.isRunning ? "启动 / 切换（停止）" : "启动 / 切换",
                 icon: svc.isRunning ? "stop.circle" : "arrow.2.squarepath"
             ) {
@@ -100,7 +132,7 @@ struct MenuPanelView: View {
                 StatusBarCoordinator.shared.openSettingsWindow()
             }
 
-            MenuRowButton(title: "Execution State Graph...", icon: "circle.hexagongrid") {
+            MenuRowButton(title: "Information Space（数据库）...", icon: "cylinder.split.1x2") {
                 StatusBarCoordinator.shared.openStateGraphWindow()
             }
 

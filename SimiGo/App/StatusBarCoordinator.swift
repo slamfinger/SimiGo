@@ -72,6 +72,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         StatusBarCoordinator.shared.start()
+        if FirstRunWizard.isNeeded() {
+            // First-run install wizard (owner acceptance 2026-10-26): work
+            // roots, external binaries into bin/, full bootstrap, then the
+            // /Applications relocation. The wizard drives the bootstrap
+            // itself; the background path below runs on every later start.
+            StatusBarCoordinator.shared.openWizardWindow()
+        }
         // Autonomous, idempotent bootstrap off the main thread: the graph/
         // schema layer first, then the FULL generation environment (managed
         // tree, llama.cpp, hf, blank-database guarantee, LOCALB state) —
@@ -96,6 +103,7 @@ final class StatusBarCoordinator: NSObject {
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
     private var settingsWindowController: NSWindowController?
+    private var wizardWindowController: NSWindowController?
     private var stateGraphWindowController: NSWindowController?
     private var cancellables: Set<AnyCancellable> = []
     private var popoverClosedAt = Date.distantPast
@@ -169,6 +177,80 @@ final class StatusBarCoordinator: NSObject {
     }
 
     // MARK: - Windows
+
+    // MARK: - First-run wizard & environment entries
+
+    func openWizardWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        if let controller = wizardWindowController {
+            controller.showWindow(nil)
+            controller.window?.makeKeyAndOrderFront(nil)
+            return
+        }
+        let window = NSWindow(contentViewController: NSHostingController(
+            rootView: FirstRunWizardView()
+        ))
+        window.title = "SimiGo 安装向导"
+        window.styleMask.remove(.resizable)
+        window.setContentSize(NSSize(width: 520, height: 430))
+        window.center()
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        let controller = NSWindowController(window: window)
+        wizardWindowController = controller
+        controller.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// 菜单入口：追加外部工作目录（立即注册进权威数据库）。
+    func addWorkRootFromMenu() {
+        guard let url = FirstRunWizard.pickDirectory() else { return }
+        let r = EnvManager.shared.registerWorkRoot(url.path)
+        let ok = (r["status"] as? String) == "registered"
+        notifyUser(
+            ok ? "已注册工作目录" : "注册失败",
+            ok ? "\(url.path) → \(r["root_id"] ?? "")" : (r["detail"] as? String ?? "未知错误"))
+    }
+
+    /// 菜单入口：按 URL 自动安装外部二进制（下载 → bin → 清缓存）。
+    func installBinaryFromMenu() {
+        let alert = NSAlert()
+        alert.messageText = "安装外部二进制"
+        alert.informativeText = "输入二进制直链 URL（macOS arm64 Mach-O）："
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 380, height: 24))
+        alert.accessoryView = input
+        alert.addButton(withTitle: "安装")
+        alert.addButton(withTitle: "取消")
+        guard alert.runModal() == .alertFirstButtonReturn,
+            let url = URL(string: input.stringValue.trimmingCharacters(in: .whitespaces)),
+            url.scheme?.hasPrefix("http") == true
+        else { return }
+        Task { @MainActor in
+            let r = await EnvManager.shared.installExternalBinary(from: url)
+            notifyUser(
+                (r["status"] as? String) == "installed" ? "安装完成" : "安装结果",
+                "\(url.lastPathComponent): \(r["status"] ?? "?") \(r["detail"] ?? "")")
+        }
+    }
+
+    /// 菜单入口：更新已装二进制（llama.cpp 锁定重建 + hf brew 升级）。
+    func updateBinariesFromMenu() async {
+        let report = await EnvManager.shared.updateInstalledBinaries()
+        let lines = report.map { key, value -> String in
+            if let v = value as? [String: Any] {
+                return "\(key): \(v["status"] ?? "?")"
+            }
+            return "\(key): \(value)"
+        }.sorted()
+        notifyUser("更新已装二进制", lines.isEmpty ? "无可更新项" : lines.joined(separator: "\n"))
+    }
+
+    private func notifyUser(_ title: String, _ text: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = text
+        alert.runModal()
+    }
 
     func openSettingsWindow() {
         NSApp.activate(ignoringOtherApps: true)

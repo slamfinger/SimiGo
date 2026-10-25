@@ -31,3 +31,4 @@ default.profraw
 *.pth
 *.weights
 models/
+SimiGo-v*-*.dmg
