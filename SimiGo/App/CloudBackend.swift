@@ -1,5 +1,5 @@
 import Foundation
-import Security
+import SimiGoRuntimeContract
 
 public enum BackendSelection: String, CaseIterable, Sendable {
     case mlx
@@ -99,53 +99,42 @@ public struct CloudBackendConfiguration: Sendable {
 }
 
 enum CloudKeychain: Sendable {
-    private static let service = "SimiGo"
-    private static let account = "cloud.api-key"
-
-    /// An isolated managed root (`SIMIGO_HOME`) redirects every other persistent
-    /// path, so it must redirect this store too. Reading the login Keychain from
-    /// an isolated run is not free: the item's ACL answers a binary it has not
-    /// seen before with an interactive SecurityAgent prompt, and `Service.init()`
-    /// blocks inside `SecItemCopyMatching` until a human answers (observed on an
-    /// unattended host as an unbounded mach_msg wait). In isolated mode the cloud
-    /// credential is therefore absent instead of being read or written: no real
-    /// secret is read, and no new secret is stored outside the login Keychain.
-    private static var isIsolated: Bool {
-        guard let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"] else { return false }
-        return !home.isEmpty
+    /// The cloud API key lives in a 0600 file under the managed root
+    /// (`<root>/cloud/api-key`), redirected by `SIMIGO_HOME` like every other
+    /// managed path. It is NEVER read from or written to the login Keychain:
+    /// a login-Keychain item is bound to the code signature of whichever
+    /// ad-hoc build created it, so every re-signed build was met with a
+    /// SecurityAgent prompt that no password satisfies (observed 2026-10-26;
+    /// the same signature-ACL failure that locked the LOCALB identities).
+    /// Existing login-Keychain items are left untouched and simply unused.
+    private static var fileURL: URL {
+        SimiGoPaths.managedRoot()
+            .appendingPathComponent("cloud", isDirectory: true)
+            .appendingPathComponent("api-key", isDirectory: false)
     }
 
     static func readAPIKey() -> String {
-        guard !isIsolated else { return "" }
-        var query: [String: Any] = baseQuery
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return "" }
+        guard let data = FileManager.default.contents(atPath: fileURL.path) else { return "" }
         return String(data: data, encoding: .utf8) ?? ""
     }
 
     static func writeAPIKey(_ value: String) {
-        guard !isIsolated else { return }
-        let query = baseQuery
-        SecItemDelete(query as CFDictionary)
-
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-
-        var attributes = query
-        attributes[kSecValueData as String] = Data(trimmed.utf8)
-        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(attributes as CFDictionary, nil)
-    }
-
-    private static var baseQuery: [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
+        let url = fileURL
+        let fm = FileManager.default
+        do {
+            try fm.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if trimmed.isEmpty {
+                try? fm.removeItem(at: url)
+                return
+            }
+            try Data(trimmed.utf8).write(to: url, options: [.atomic])
+            try? fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        } catch {
+            // A failed credential write must never crash startup; the key is
+            // simply absent until the next successful write.
+            return
+        }
     }
 }
