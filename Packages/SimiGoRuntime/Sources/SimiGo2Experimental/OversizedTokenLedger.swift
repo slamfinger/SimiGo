@@ -121,6 +121,30 @@ public final class OversizedTokenLedger: @unchecked Sendable {
         entries.append(entry)
     }
 
+    /// Read-only recovery-target check for restore. Locks only to read the
+    /// execution-scoped committed history; never touches entries or growth
+    /// state. Append remains the authoritative I-L2/I-L3 gate.
+    public func validateRestoreTarget(
+        _ position: Int,
+        executionID: ExecutionID
+    ) throws {
+        lock.lock()
+        defer { lock.unlock() }
+
+        guard let furthest = entries
+            .filter({ $0.executionID == executionID })
+            .max(by: { $0.position < $1.position })?.position
+        else {
+            throw OversizedEngineError.residencyDivergence(
+                "token ledger: no committed history to restore for \(executionID)")
+        }
+        guard position <= furthest else {
+            throw OversizedEngineError.residencyDivergence(
+                "token ledger: restore target beyond committed history for "
+                    + "\(executionID) (\(position) > \(furthest))")
+        }
+    }
+
     /// Flag entries beyond `position` for `executionID` as superseded
     /// (retained for audit; excluded from the active chain).
     public func markSuperseded(beyond position: Int, executionID: ExecutionID) {
