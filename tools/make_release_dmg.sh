@@ -21,7 +21,9 @@ cat > "$TMPAPPLES" <<'OSA'
 set myDir to POSIX file ((do shell script "dirname " & quoted form of (POSIX path of (path to me))) & "/")
 set src to POSIX path of myDir & "SimiGo.app"
 display dialog "安装 SimiGo 2.2.0" & return & return & "将把 SimiGo 安装到 /Applications（覆盖旧版本）。" & return & "安装完成后自动启动，进入安装向导。" buttons {"取消", "安装"} default button "安装" with icon note
-do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app" with administrator privileges
+-- 覆盖安装 = 重新进入安装向导：重置首启标记（不动数据库与已装二进制）
+set userName to short user name of (system info)
+do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app && rm -f /Users/" & userName & "/.simigo/manifests/first-run-done.json" with administrator privileges
 display dialog "✅ 安装完成" & return & "正在启动 SimiGo（首次启动将进入安装向导）" buttons {"好"} default button "好" giving up after 4
 do shell script "open /Applications/SimiGo.app"
 OSA
