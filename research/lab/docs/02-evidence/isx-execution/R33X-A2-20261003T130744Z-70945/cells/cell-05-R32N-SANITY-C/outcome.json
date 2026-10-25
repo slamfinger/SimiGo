@@ -1,0 +1,73 @@
+{
+  "cell_id": "cell-05-R32N-SANITY-C",
+  "cell_op": "R32N-SANITY-C",
+  "composition": "OK",
+  "composition_error": null,
+  "construction_integrity": {
+    "failures": {},
+    "pass": null
+  },
+  "doubt_signatures": [],
+  "instrument_doubt": "NO",
+  "integrity": {
+    "es_hash_after": "3f9d921d72f91865788f258fadc2ec8fa63db2abe5228fef3d6e3ec28722a537",
+    "es_unchanged": true,
+    "is0_canonical_hash_after": "d599145cc55460274bbce09ab32b95fbdca4e5bf6a6e8cdcfff4249d2e8e2397",
+    "is0_unchanged": true
+  },
+  "op_class": "SANITY",
+  "p_comp": null,
+  "predicted": {
+    "A": [
+      "SATISFIED",
+      null
+    ],
+    "C": [
+      "BROKEN",
+      "C-INV"
+    ],
+    "I": [
+      "SATISFIED",
+      null
+    ]
+  },
+  "resolution_actual": null,
+  "resolution_expectation": null,
+  "t0_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "SATISFIED"
+  },
+  "t0_matches_setup": true,
+  "t1_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "invalidation record targets anchor:state-diff",
+      "signature": "C-INV",
+      "state": "BROKEN"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "BROKEN"
+  }
+}

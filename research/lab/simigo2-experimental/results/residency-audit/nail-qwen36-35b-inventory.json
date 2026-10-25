@@ -1,0 +1,38 @@
+{
+  "groups" : [
+    {
+      "alwaysResident" : true,
+      "byteCount" : 3515345632,
+      "id" : "CORE_NON_SWITCH",
+      "layerRangeDescription" : "all",
+      "tensorCount" : 1570,
+      "title" : "Non-switch tensors"
+    },
+    {
+      "alwaysResident" : false,
+      "byteCount" : 7247757312,
+      "id" : "SWITCH_MLP_L00_15",
+      "layerRangeDescription" : "0-15",
+      "tensorCount" : 144,
+      "title" : "Fused MoE layers 0-15"
+    },
+    {
+      "alwaysResident" : false,
+      "byteCount" : 7247757312,
+      "id" : "SWITCH_MLP_L16_31",
+      "layerRangeDescription" : "16-31",
+      "tensorCount" : 144,
+      "title" : "Fused MoE layers 16-31"
+    },
+    {
+      "alwaysResident" : false,
+      "byteCount" : 3623878656,
+      "id" : "SWITCH_MLP_L32_47",
+      "layerRangeDescription" : "32-47",
+      "tensorCount" : 72,
+      "title" : "Fused MoE layers 32-47"
+    }
+  ],
+  "tensorCount" : 1930,
+  "totalBytes" : 21634738912
+}

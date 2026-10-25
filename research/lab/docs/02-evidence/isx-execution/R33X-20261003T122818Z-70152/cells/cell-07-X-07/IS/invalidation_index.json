@@ -1,0 +1,17 @@
+{
+  "records": [
+    {
+      "reason": "result retired (R32-C-Δ2)",
+      "record_id": "INV-R32-C-Δ2",
+      "target": "anchor:state-diff",
+      "type": "invalidation"
+    },
+    {
+      "reason": "result superseded (R32-C-Δ3)",
+      "record_id": "SUP-R32-C-Δ3",
+      "superseded_by": "R-2 (declared, not present)",
+      "target": "anchor:state-diff",
+      "type": "supersession"
+    }
+  ]
+}

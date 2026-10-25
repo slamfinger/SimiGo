@@ -1,0 +1,11 @@
+{
+  "campaign_id": "exec-dbcarrier-006-66f3c1e",
+  "campaign_returncode": 1,
+  "campaign_stderr": "CampaignFailure: evidence object is not canonically serializable: Object of type PosixPath is not JSON serializable while writing PREFLIGHT_VERIFICATION",
+  "campaign_stdout": "campaign fail-closed at preflight verification serialization after complete O0-O5; not a complete evidence package",
+  "exact_execution_commit": "66f3c1e3998a7bd42eb74aeee6ace5cc4ef8f291",
+  "governing_request_commit": "f7429fea79ebbcfa82f7d52088271d822730ba80",
+  "part_r5_commit": "e98734a15d4deb04c6fc9758c3683dd33493fd5d",
+  "post_stop_capture": true,
+  "stop_code": "CAMPAIGN_PREFLIGHT_VERIFICATION_POSIXPATH_SERIALIZATION_DEFECT"
+}

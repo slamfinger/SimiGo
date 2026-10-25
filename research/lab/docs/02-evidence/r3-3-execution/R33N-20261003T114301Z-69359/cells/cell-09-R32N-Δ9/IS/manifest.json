@@ -1,0 +1,14 @@
+{
+  "access_denied": [],
+  "in_scope": [
+    "archive/",
+    "extra/",
+    "lineage/",
+    "objects/",
+    "runtime/"
+  ],
+  "out_of_scope": [],
+  "scope_tags": [
+    "r3-2-campaign"
+  ]
+}

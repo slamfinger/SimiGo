@@ -1,0 +1,22 @@
+{
+  "accepted_design_package_blob": "582c9b85c9ea1ec215a152d18d2ac0b6e0be1b25",
+  "accepted_design_package_commit": "21acba4e07f312fcb818968f33fd9e0c185fccf0",
+  "accepted_design_package_sha256": "73f80c26cd3bb6636b82edf29c71b57b9fc5fb028294d13edf519abb768c2cc4",
+  "artifacts": {
+    "README.md": {
+      "sha256": "edc1f9ff667d282008fc85e741d5b3469e279471ec4f1c8f60f66a2e27bee364"
+    },
+    "db_is.py": {
+      "sha256": "6be1a48c874e504886b48c7d960e410ee97a51c2018e69c29168ddf3fa2ccf43"
+    },
+    "schema.sql": {
+      "sha256": "06ff8f976f436860d004b02ae032246e97021bed7280834c9a8bd904cf3d649a"
+    },
+    "selfcheck.py": {
+      "sha256": "96d6e26e776e1dbae439d05d0f669bc90134be023e41b6e56991c5a0df9f131a"
+    }
+  },
+  "manifest_identity": "DATABASE_CARRIER_IMPLEMENTATION_MANIFEST_005",
+  "network_access": false,
+  "third_party_dependencies": []
+}

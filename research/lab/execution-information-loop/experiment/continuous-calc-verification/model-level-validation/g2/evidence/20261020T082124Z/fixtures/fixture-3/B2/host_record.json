@@ -1,0 +1,97 @@
+{
+  "checks" : {
+    "hook_consulted" : true,
+    "hook_installed" : true,
+    "hook_missed_on_empty_store" : true,
+    "hook_released" : true,
+    "store_still_empty_after" : true,
+    "u2_generated" : true
+  },
+  "engine_content_identity" : {
+    "combined_digest" : "bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+    "tokenizer_digest" : "9bada7c8fddefc7e91cf3bbe9b56305d5234c73e16732518dc4f3825b2d84ac3",
+    "weights_digest" : "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf"
+  },
+  "exit_code" : 0,
+  "finished_at_utc" : "2026-10-20T08:23:31Z",
+  "hook_observations" : {
+    "calls" : 1,
+    "hits" : 0,
+    "interface" : "MLXPrefixCrossSessionCache.observations",
+    "matched_token_counts" : [
+
+    ]
+  },
+  "host" : {
+    "active_processor_count" : 10,
+    "operating_system" : "Version 27.0.1 (Build 26A434)",
+    "physical_memory_bytes" : 34359738368
+  },
+  "load" : {
+    "duration_seconds" : 3.3497669696807861,
+    "ok" : true
+  },
+  "mode" : "phase2",
+  "model_directory" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+  "parent_pid" : 51216,
+  "pid" : 52104,
+  "process_group" : 52104,
+  "schema_id" : "SIMIGO-G2-HOST-RECORD-V1",
+  "started_at_utc" : "2026-10-20T08:23:19Z",
+  "store" : {
+    "artifact_root_path" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/evidence\/20261020T082124Z\/fixtures\/fixture-3\/B2\/store\/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6-chat-cross-session-v1-bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+    "inventory_after" : [
+
+    ],
+    "inventory_before" : [
+
+    ],
+    "namespace_kv_fingerprint" : "chat-cross-session-v1-bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+    "namespace_model_id" : "artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+    "rescan_registered_artifacts" : 0,
+    "root" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/evidence\/20261020T082124Z\/fixtures\/fixture-3\/B2\/store\/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6-chat-cross-session-v1-bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58"
+  },
+  "store_base" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/evidence\/20261020T082124Z\/fixtures\/fixture-3\/B2\/store",
+  "u2" : {
+    "chunk_count" : 22,
+    "chunk_sequence" : [
+      "ANS",
+      "WER",
+      "=e",
+      "7",
+      "7",
+      "2",
+      "7",
+      "0",
+      "6",
+      "2",
+      "f",
+      "3",
+      "1",
+      "8",
+      "-",
+      "0",
+      "ae",
+      "9",
+      "0",
+      "c",
+      "da",
+      "\n"
+    ],
+    "completion_token_count" : 22,
+    "duration_seconds" : 2.387457013130188,
+    "prompt_token_count" : 70,
+    "prompt_token_ids_sha256" : "117000e5490e117dae35447454155008104fa3cedabb2627207c870d9b05d847",
+    "rendered_message_count" : 1,
+    "request_messages" : [
+      {
+        "content" : "Settled record from the Information Space:\n{\"checksum\":\"0ae90cda\",\"secret\":\"e7727062f318\",\"site\":\"Quarry\"}\nUsing only that settled record, reply with exactly one line and nothing else: ANSWER=<secret>-<checksum>",
+        "role" : "user"
+      }
+    ],
+    "request_sha256" : "9bd600ce3274aaa537568669434064c7eaa18269990b4dc12afb88a4174ff5b0",
+    "request_text" : "Settled record from the Information Space:\n{\"checksum\":\"0ae90cda\",\"secret\":\"e7727062f318\",\"site\":\"Quarry\"}\nUsing only that settled record, reply with exactly one line and nothing else: ANSWER=<secret>-<checksum>",
+    "text" : "ANSWER=e7727062f318-0ae90cda\n",
+    "text_sha256" : "e6fa94401510700ec659776cbe9f2ade30f0b27242e6cdf2a299f6045645e511"
+  }
+}

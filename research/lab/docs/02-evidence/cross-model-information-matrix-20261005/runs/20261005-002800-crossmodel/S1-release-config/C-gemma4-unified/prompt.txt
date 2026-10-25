@@ -1,0 +1,62 @@
+You must use only the supplied material. Do not use outside knowledge, tools, or prior reports.
+
+Apply only the platform baseline and deployment rules to alpha, beta, and gamma. Decide release order and blocked services. Do not use outside knowledge.
+
+Return exactly one strict JSON object with these keys: task_id, decision, findings, missing_or_uncertain, confidence. No markdown fence and no prose.
+
+The findings array must contain no more than 8 items; each item has id, statement, evidence, function.
+
+Allowed function values: constraint, decision, evidence, relation, uncertainty, task_rule.
+
+=== INPUT docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/platform-baseline.json ===
+{
+  "platform_id": "edge-release-testbed",
+  "max_schema_version": 3,
+  "required_flags": {
+    "metrics_v2": true
+  },
+  "deployment_rules": {
+    "mode": "sequential",
+    "allow_incompatible_pair": false
+  }
+}
+
+
+=== INPUT docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-alpha.json ===
+{
+  "service_id": "alpha",
+  "api_version": 2,
+  "schema_version": 3,
+  "port": 8081,
+  "flags": {
+    "metrics_v2": true
+  },
+  "queue_protocol": "mqtt"
+}
+
+
+=== INPUT docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-beta.json ===
+{
+  "service_id": "beta",
+  "api_version": 2,
+  "schema_version": 3,
+  "port": 8082,
+  "flags": {
+    "metrics_v2": true
+  },
+  "queue_protocol": "mqtt"
+}
+
+
+=== INPUT docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-gamma.json ===
+{
+  "service_id": "gamma",
+  "api_version": 3,
+  "schema_version": 2,
+  "port": 8081,
+  "flags": {
+    "metrics_v2": false
+  },
+  "queue_protocol": "mqtt"
+}
+

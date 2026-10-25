@@ -1,0 +1,170 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/fixture/runner/es_runner.py",
+        "driver",
+        "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f",
+        "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/fixture/tau",
+        "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/is",
+        "/private/tmp/srs-exec5-adapter.OnPju1/srsval_adapter"
+      ],
+      "command_ok": false,
+      "cwd": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01",
+      "ended_monotonic_ns": 1791381975846749000,
+      "exact_execution_repository_commit": "fef0b2fa5b3ac817a099bac885522fd17f4d3362",
+      "exact_input_bindings": {
+        "input_D": {
+          "exists": true,
+          "expected_sha256": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/fixture/inputs/D.md",
+          "relative_path": "fixture/inputs/D.md",
+          "resolved_path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/fixture/inputs/D.md",
+          "sha256": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+          "size_bytes": 501
+        },
+        "input_D_prime": {
+          "exists": true,
+          "expected_sha256": "8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955",
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/fixture/inputs/D_prime.md",
+          "relative_path": "fixture/inputs/D_prime.md",
+          "resolved_path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/fixture/inputs/D_prime.md",
+          "sha256": "8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955",
+          "size_bytes": 491
+        }
+      },
+      "executable_identity": {
+        "absolute_path": "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9",
+        "device_id": 16777234,
+        "inode": 95335271,
+        "sha256": "dff595035109e19c43c4b3e73ee08b5f4651e719f25f8b4713f819d28964dc19",
+        "size_bytes": 67
+      },
+      "expected_cwd": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01",
+      "expected_executable_sha256": "dff595035109e19c43c4b3e73ee08b5f4651e719f25f8b4713f819d28964dc19",
+      "expected_returncode": 0,
+      "missing_required_after": [],
+      "name": "frozen_driver",
+      "platform_platform": "macOS-26.6.2-arm64-arm-64bit",
+      "python_executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+      "python_version": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+      "required_after": {
+        "driver-events.jsonl": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/driver-events.jsonl",
+          "sha256": "27d8717ad6fbb3e8ad347229922885129cf5207442f673fe4346defc05678fc0",
+          "size_bytes": 2982
+        },
+        "es1-events.jsonl": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/es1-events.jsonl",
+          "sha256": "e584528a2f4d526329f3e61c9d3b25225656616454ae334ae3bd97b5bb972bc5",
+          "size_bytes": 4616
+        },
+        "es2-events.jsonl": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/es2-events.jsonl",
+          "sha256": "311dfc7e3b40354831a22088d18d7176cde0e9e24e32f190d89f68ba5e8faf70",
+          "size_bytes": 7255
+        },
+        "esn-events.jsonl": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/esn-events.jsonl",
+          "sha256": "1e2b3596ed2bd38ace2d738f1308a279154e5c2742e0bc431a19a5408c183aae",
+          "size_bytes": 6945
+        },
+        "invocation_graph-es2.json": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/invocation_graph-es2.json",
+          "sha256": "0c3c547af76ef386dfce65bc2d31cf2348eea2873b300cd23041eeae1c4df5e1",
+          "size_bytes": 4157
+        },
+        "invocation_graph-esn.json": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/invocation_graph-esn.json",
+          "sha256": "f964bc35124a87946acb1c2799e8bb24eb48e66ab965ea4e9258e88fc72ad22b",
+          "size_bytes": 4151
+        },
+        "materialize-events.jsonl": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/materialize-events.jsonl",
+          "sha256": "e209b9009da2b7af0fd86da7f36e5812f9222c84f1ff5cc9eb9e78850e1e5a03",
+          "size_bytes": 300
+        },
+        "mutate-n1-events.jsonl": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/mutate-n1-events.jsonl",
+          "sha256": "d625011140b1001dae50f401c7256fb1497f7c10eaeac46d997214245d2b4ef2",
+          "size_bytes": 83
+        }
+      },
+      "returncode": 1,
+      "started_monotonic_ns": 1791381974661589000,
+      "stderr_text": "",
+      "stdout_text": "",
+      "worktree_root": "/private/tmp/srs-exec5-fef0b2f.YSb19f"
+    },
+    {
+      "argv": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/fixture/observer/observer.py",
+        "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f",
+        "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/is"
+      ],
+      "command_ok": true,
+      "cwd": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01",
+      "ended_monotonic_ns": 1791381975871085000,
+      "exact_execution_repository_commit": "fef0b2fa5b3ac817a099bac885522fd17f4d3362",
+      "exact_input_bindings": {},
+      "executable_identity": {
+        "absolute_path": "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9",
+        "device_id": 16777234,
+        "inode": 95335271,
+        "sha256": "dff595035109e19c43c4b3e73ee08b5f4651e719f25f8b4713f819d28964dc19",
+        "size_bytes": 67
+      },
+      "expected_cwd": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01",
+      "expected_executable_sha256": "dff595035109e19c43c4b3e73ee08b5f4651e719f25f8b4713f819d28964dc19",
+      "expected_returncode": 0,
+      "missing_required_after": [],
+      "name": "post_exit_observer",
+      "platform_platform": "macOS-26.6.2-arm64-arm-64bit",
+      "python_executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+      "python_version": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+      "required_after": {
+        "observer_verdict.json": {
+          "exists": true,
+          "is_regular_file": true,
+          "path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/observer_verdict.json",
+          "sha256": "de21064e41bd1f6fdde074517c8933aee08b77373407d9ebcc8aec196ac53459",
+          "size_bytes": 953
+        }
+      },
+      "returncode": 0,
+      "started_monotonic_ns": 1791381975855002000,
+      "stderr_text": "",
+      "stdout_text": "observer verdict written: /private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/observer_verdict.json\n",
+      "worktree_root": "/private/tmp/srs-exec5-fef0b2f.YSb19f"
+    }
+  ],
+  "exact_execution_repository_commit": "fef0b2fa5b3ac817a099bac885522fd17f4d3362",
+  "expected_cwd": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01",
+  "output_path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/execution_provenance.json",
+  "overall_ok": false,
+  "plan_path": "/private/tmp/srs-exec5-fef0b2f.YSb19f/docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/provenance_plan.json",
+  "plan_sha256": "232631b6f7ba81ecb2a3403bc4087b62a96fae473f26a5f8da80fddc1a79b1b4",
+  "recorder_identity": "SRS-REAL-CLOSURE-01-EXECUTION_PROVENANCE_RECORDER_004",
+  "started_wall_ns": 1791381974661228000,
+  "worktree_root": "/private/tmp/srs-exec5-fef0b2f.YSb19f"
+}

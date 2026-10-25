@@ -1,0 +1,40 @@
+{
+  "all_checks_pass": true,
+  "checks": [
+    {
+      "check": "C1_object_write_once_integrity",
+      "pass": true
+    },
+    {
+      "check": "C2_E6_ledger_rederivation",
+      "counts": {
+        "driver-events.jsonl": 0,
+        "es1-events.jsonl": 1,
+        "es2-events.jsonl": 0,
+        "esn-events.jsonl": 0,
+        "materialize-events.jsonl": 0,
+        "mutate-n1-events.jsonl": 0
+      },
+      "expected": {
+        "es1-events.jsonl": 1,
+        "es2-events.jsonl": 0,
+        "esn-events.jsonl": 0
+      },
+      "pass": true
+    },
+    {
+      "check": "C3_persisted_vs_resolved_byte_equality",
+      "pass": true
+    },
+    {
+      "check": "C4_temporal_separation",
+      "order_evidence": {
+        "es1_exit_before_es2_spawn": true,
+        "es2_exit_before_mutate-n1_spawn": true,
+        "mutate-n1_exit_before_esn_spawn": true
+      },
+      "pass": true
+    }
+  ],
+  "observer": "SRS-REAL-CLOSURE-01-ROUND1-BOUNDED-OBSERVER"
+}

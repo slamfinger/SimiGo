@@ -1,0 +1,380 @@
+{
+  "device" : {
+    "brand" : "Apple M5",
+    "machine" : "arm64",
+    "operatingSystem" : "Version 26.6.2 (Build 25G83)",
+    "physicalMemoryBytes" : 34359738368
+  },
+  "gate" : "GATE5_MULTI_STATE_REAL_DEVICE",
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+  "report" : {
+    "allResident" : {
+      "cumulativeReleasedBytes" : 0,
+      "cumulativeReloadedBytes" : 0,
+      "outputs" : [
+        "ping",
+        "ping",
+        "ping",
+        "ping",
+        "ping"
+      ],
+      "policy" : "ALL_RESIDENT",
+      "totalGenerationMilliseconds" : 1535.383501,
+      "totalReleaseMilliseconds" : 0,
+      "totalReloadMilliseconds" : 0,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 335.647083,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423360,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 298.469375,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 300.031709,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 300.58425,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 300.651084,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        }
+      ]
+    },
+    "benchmarkPass" : false,
+    "idleReductionBytes" : 0,
+    "idleReductionObserved" : false,
+    "naiveOnDemand" : {
+      "cumulativeReleasedBytes" : 0,
+      "cumulativeReloadedBytes" : 0,
+      "outputs" : [
+        "ping",
+        "ping",
+        "ping",
+        "ping",
+        "ping"
+      ],
+      "policy" : "NAIVE_ON_DEMAND",
+      "totalGenerationMilliseconds" : 1482.011667,
+      "totalReleaseMilliseconds" : 21.545584,
+      "totalReloadMilliseconds" : 0.085332,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 298.977792,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 4.308417,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 296.625375,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 4.337917,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0.024333,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 295.085625,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 4.333791,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0.032916,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 295.228,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 4.325167,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0.013875,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 296.094875,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 4.240292,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0.014208,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        }
+      ]
+    },
+    "outputIdentityPass" : true,
+    "reloadReductionVsNaiveBytes" : 0,
+    "reloadReductionVsNaiveObserved" : false,
+    "stateDriven" : {
+      "cumulativeReleasedBytes" : 0,
+      "cumulativeReloadedBytes" : 0,
+      "outputs" : [
+        "ping",
+        "ping",
+        "ping",
+        "ping",
+        "ping"
+      ],
+      "policy" : "EXECUTION_STATE",
+      "totalGenerationMilliseconds" : 1483.202084,
+      "totalReleaseMilliseconds" : 19.645166000000003,
+      "totalReloadMilliseconds" : 0.073375,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 295.695833,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 4.557875,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0.018458,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 296.468542,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 5.175,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0.01175,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 297.230959,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 5.496666,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0.012834,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 297.57525,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 4.415625,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0.016833,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 6701423370,
+          "generationMilliseconds" : 296.2315,
+          "idleActiveBytes" : 6701423370,
+          "output" : "ping",
+          "readyActiveBytes" : 6701423370,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0.0135,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        }
+      ]
+    },
+    "states" : [
+      "STATE_A",
+      "STATE_B",
+      "STATE_AB",
+      "STATE_A",
+      "STATE_ALL"
+    ]
+  },
+  "residencyBenchmarkPass" : false,
+  "states" : [
+    "STATE_A",
+    "STATE_B",
+    "STATE_AB",
+    "STATE_A",
+    "STATE_ALL"
+  ]
+}

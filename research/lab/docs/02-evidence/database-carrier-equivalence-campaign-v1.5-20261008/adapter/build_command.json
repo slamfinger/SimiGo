@@ -1,0 +1,15 @@
+{
+  "command": [
+    "swiftc",
+    "-O",
+    "SRSVALInvocation.swift",
+    "SRSVALDecision.swift",
+    "SRSVALCore.swift",
+    "main.swift",
+    "-o",
+    "srsval_adapter"
+  ],
+  "returncode": 0,
+  "stderr": "",
+  "stdout": ""
+}

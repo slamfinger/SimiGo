@@ -1,0 +1,580 @@
+{
+  "boundary" : "SWIFT_CONTRACT_LIFECYCLE_AND_HTTP_EXECUTOR \/ HARNESS_LEVEL \/ NO_NATIVE_KV_AUTHORITY_CHANGE \/ NOT_A_PERFORMANCE_OR_PRODUCTION_CLAIM",
+  "checks" : {
+    "BRANCH_DIVERGED" : 30,
+    "CHILD_RESTORED_TO_FORK_POINT" : 30,
+    "PARENT_NON_INTERFERENCE" : 30,
+    "RESTORE_REPLAY_IDENTICAL" : 30
+  },
+  "divergentTokenPrefix" : [
+    12139,
+    279,
+    2235,
+    1622,
+    13,
+    3301,
+    6681,
+    25,
+    8029,
+    13053
+  ],
+  "host" : "127.0.0.1",
+  "inferenceClientMs" : {
+    "divergence" : {
+      "meanMs" : 533.1222124666666,
+      "medianMs" : 531.4299375,
+      "n" : 30
+    },
+    "reference" : {
+      "meanMs" : 362.94270279999995,
+      "medianMs" : 363.631979,
+      "n" : 30
+    },
+    "replayAfterRestore" : {
+      "meanMs" : 365.0115194333334,
+      "medianMs" : 366.19914600000004,
+      "n" : 30
+    }
+  },
+  "localForkCaptureMs" : {
+    "meanMs" : 0.013877666666666665,
+    "medianMs" : 0.0109995,
+    "n" : 30
+  },
+  "localReleaseRestoreMs" : {
+    "meanMs" : 0.0252875,
+    "medianMs" : 0.0230415,
+    "n" : 30
+  },
+  "overallPass" : true,
+  "parentTokenPrefix" : [
+    5423,
+    6681,
+    799,
+    3299,
+    25,
+    29018
+  ],
+  "port" : 18080,
+  "predictionTokens" : 8,
+  "protocolVersion" : "RQ3.LLAMA.SWIFT.EXECSTATE.FORK.RESTORE.V1",
+  "replayMinusReferenceClientMs" : {
+    "meanMs" : 2.0688166333333413,
+    "medianMs" : 3.7055210000000045,
+    "n" : 30
+  },
+  "samples" : [
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 520.056208,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.009,
+      "index" : 0,
+      "referenceClientMs" : 341.729833,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.024166,
+      "replayClientMs" : 366.057875,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 524.359959,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.019041,
+      "index" : 1,
+      "referenceClientMs" : 367.866709,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.03175,
+      "replayClientMs" : 365.456458,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 526.250958,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.013334,
+      "index" : 2,
+      "referenceClientMs" : 359.630625,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.024333,
+      "replayClientMs" : 366.52,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 549.147416,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.010708,
+      "index" : 3,
+      "referenceClientMs" : 354.308875,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.020333,
+      "replayClientMs" : 357.718583,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 529.49525,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.008542,
+      "index" : 4,
+      "referenceClientMs" : 360.232583,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.019125,
+      "replayClientMs" : 366.340417,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 516.708708,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.012916,
+      "index" : 5,
+      "referenceClientMs" : 361.702042,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.019167,
+      "replayClientMs" : 356.4395,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 546.787167,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.008708,
+      "index" : 6,
+      "referenceClientMs" : 360.109958,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.035833,
+      "replayClientMs" : 372.706542,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 544.324166,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.019542,
+      "index" : 7,
+      "referenceClientMs" : 374.532083,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.020167,
+      "replayClientMs" : 378.533417,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 525.656375,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.02125,
+      "index" : 8,
+      "referenceClientMs" : 365.519791,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.037625,
+      "replayClientMs" : 364.39375,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 528.14575,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.009833,
+      "index" : 9,
+      "referenceClientMs" : 378.205334,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.020208,
+      "replayClientMs" : 355.137625,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 528.914417,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.021833,
+      "index" : 10,
+      "referenceClientMs" : 351.183875,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.020292,
+      "replayClientMs" : 358.959375,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 544.365,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.013792,
+      "index" : 11,
+      "referenceClientMs" : 366.396375,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.041416,
+      "replayClientMs" : 373.957833,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 542.015458,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.00925,
+      "index" : 12,
+      "referenceClientMs" : 370.780084,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.02375,
+      "replayClientMs" : 359.876166,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 514.318584,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.008458,
+      "index" : 13,
+      "referenceClientMs" : 350.288083,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.016959,
+      "replayClientMs" : 358.668333,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 545.277666,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.019541,
+      "index" : 14,
+      "referenceClientMs" : 373.1415,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.022333,
+      "replayClientMs" : 370.728833,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 532.2635,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.021458,
+      "index" : 15,
+      "referenceClientMs" : 362.347584,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.019125,
+      "replayClientMs" : 360.820625,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 534.245875,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.008417,
+      "index" : 16,
+      "referenceClientMs" : 357.494667,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.020459,
+      "replayClientMs" : 368.0635,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 532.408333,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.024583,
+      "index" : 17,
+      "referenceClientMs" : 363.288208,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.024209,
+      "replayClientMs" : 371.212417,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 541.78725,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.009417,
+      "index" : 18,
+      "referenceClientMs" : 365.955625,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.04225,
+      "replayClientMs" : 366.806625,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 543.379375,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.009333,
+      "index" : 19,
+      "referenceClientMs" : 363.404,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.041375,
+      "replayClientMs" : 368.313542,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 533.162459,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.012708,
+      "index" : 20,
+      "referenceClientMs" : 378.197542,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.018541,
+      "replayClientMs" : 371.552667,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 527.808958,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.025792,
+      "index" : 21,
+      "referenceClientMs" : 365.658709,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.025666,
+      "replayClientMs" : 371.526208,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 549.425875,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.01,
+      "index" : 22,
+      "referenceClientMs" : 361.391458,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.02425,
+      "replayClientMs" : 354.719125,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 523.338125,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.007625,
+      "index" : 23,
+      "referenceClientMs" : 349.503333,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.029209,
+      "replayClientMs" : 376.34,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 531.154,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.021167,
+      "index" : 24,
+      "referenceClientMs" : 366.444125,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.033458,
+      "replayClientMs" : 373.1925,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 524.040334,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.009208,
+      "index" : 25,
+      "referenceClientMs" : 363.859958,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.019041,
+      "replayClientMs" : 352.507083,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 525.866,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.011291,
+      "index" : 26,
+      "referenceClientMs" : 347.030083,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.019209,
+      "replayClientMs" : 362.184958,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 547.542958,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.010541,
+      "index" : 27,
+      "referenceClientMs" : 371.8035,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.024625,
+      "replayClientMs" : 369.742,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 531.705875,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.019375,
+      "index" : 28,
+      "referenceClientMs" : 367.710834,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.021792,
+      "replayClientMs" : 364.092334,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    },
+    {
+      "checks" : {
+        "BRANCH_DIVERGED" : true,
+        "CHILD_RESTORED_TO_FORK_POINT" : true,
+        "PARENT_NON_INTERFERENCE" : true,
+        "RESTORE_REPLAY_IDENTICAL" : true
+      },
+      "divergenceClientMs" : 529.714375,
+      "divergenceContent" : " gamma delta\n\n<think>\nThe user wants",
+      "forkCaptureMs" : 0.009667,
+      "index" : 29,
+      "referenceClientMs" : 368.563708,
+      "referenceContent" : " or pong\n\n<think>\nThe user is",
+      "releaseRestoreMs" : 0.017959,
+      "replayClientMs" : 347.777292,
+      "replayContent" : " or pong\n\n<think>\nThe user is"
+    }
+  ],
+  "seed" : 42,
+  "status" : "PASS"
+}

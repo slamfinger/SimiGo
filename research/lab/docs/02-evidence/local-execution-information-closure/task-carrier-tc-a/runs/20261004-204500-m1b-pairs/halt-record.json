@@ -1,0 +1,14 @@
+{
+  "phase": "M1B_PAIR_BRANCH_HALTED",
+  "halted_at": "2026-10-04T20:52:00+08:00",
+  "reason": "human breadth-first redirect to Information Structure Coverage Matrix",
+  "observer": "NOT RUN",
+  "store": "NOT RUN",
+  "interpretation": "NOT PERFORMED",
+  "conditions": {
+    "S-B1F12": "EXECUTED_RAW_OUTPUT_PRESERVED_NOT_ADJUDICATED",
+    "S-B1F13": "NOT_RUN",
+    "S-B1F23": "NOT_RUN"
+  },
+  "s_b1f12_final_answer_sha256": "a854faee1f5395008c66bc58287fb7c6740e77c4620addb828f0f91f2d105f6c"
+}

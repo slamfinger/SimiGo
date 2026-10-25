@@ -1,0 +1,15 @@
+{"ts":"2026-09-30T16:00:53Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T16:00:59Z","case":"setup","model":"loaded: Nail-Qwen3.6-35B-A3B-MLX"}
+{"ts":"2026-09-30T16:00:59Z","case":"b0","restore_position":"17"}
+{"ts":"2026-09-30T16:01:26Z","case":"b0","response_chars":"0"}
+{"ts":"2026-09-30T16:01:26Z","case":"b0","response":""}
+{"ts":"2026-09-30T16:01:27Z","case":"b3","restore_position":"17"}
+{"ts":"2026-09-30T16:01:42Z","case":"b3","response_chars":"0"}
+{"ts":"2026-09-30T16:01:42Z","case":"b3","response":""}
+{"ts":"2026-09-30T16:01:42Z","case":"comparison","o_b0_chars":"0"}
+{"ts":"2026-09-30T16:01:42Z","case":"comparison","o_b3_chars":"0"}
+{"ts":"2026-09-30T16:01:42Z","case":"comparison","lccp_chars":"0"}
+{"ts":"2026-09-30T16:01:42Z","case":"comparison","identical":"YES"}
+{"ts":"2026-09-30T16:01:42Z","case":"comparison","reading":"IDENTICAL under greedy — explanation A (state not attached / insensitive to GDN content) strongly supported"}
+{"ts":"2026-09-30T16:01:42Z","case":"teardown","durability_writes":"ZERO"}
+{"ts":"2026-09-30T16:01:42Z","case":"teardown","real_branch_checkpoints_after":"204"}

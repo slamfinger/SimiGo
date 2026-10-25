@@ -1,0 +1,9 @@
+The baseline compatibility record below is dated 2026-09-01:
+
+```text
+alpha: baseline-compatible
+beta:  baseline-compatible
+gamma: baseline-compatible
+```
+
+Note: this record may not reflect the current baseline.

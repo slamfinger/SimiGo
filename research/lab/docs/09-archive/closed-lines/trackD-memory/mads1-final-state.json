@@ -1,0 +1,131 @@
+{
+  "authority_fingerprint" : "3ce4aee01b295c9471b6cc36c7ae5ab3921e9b9eefe97ce9ee68ec893458de71",
+  "carriers" : {
+    "f1" : {
+      "id" : "3E059170-821F-4D21-8DC6-145E3883C613",
+      "kind" : "FILE",
+      "locator" : "archive\/2026\/q3-notes.md",
+      "revision" : 5
+    },
+    "s1" : {
+      "id" : "7E96FF66-D5EF-4E4B-AEA1-F51CD030AEEE",
+      "kind" : "SESSION",
+      "revision" : 17
+    }
+  },
+  "f1_representations" : [
+    {
+      "digest" : "b362c8addb2d7042d2cc206a5c1f34b7e70aa4326034bdb677185d7575ef075b",
+      "id" : "f1-rep-1",
+      "revision" : "f1-rev-1"
+    },
+    {
+      "digest" : "345a7bf58b50131202cab40a7b29cd975d64cf9d7fbaaa16dc5af7b8eeac0b1b",
+      "id" : "f1-rep-3",
+      "revision" : "f1-rev-3"
+    },
+    {
+      "digest" : "87a31aab07e3bd1f0f13603476c71feb1f55e562bec1f91659eb7551af0296bb",
+      "id" : "f1-rep-4",
+      "revision" : "f1-rev-4"
+    }
+  ],
+  "ledger_rows" : 25,
+  "mappings" : [
+    {
+      "carrier" : "7E96FF66-D5EF-4E4B-AEA1-F51CD030AEEE",
+      "info" : "info-judgment-1",
+      "record" : "rec-ev-0",
+      "rep" : "-"
+    },
+    {
+      "carrier" : "7E96FF66-D5EF-4E4B-AEA1-F51CD030AEEE",
+      "info" : "info-f1",
+      "record" : "rec-ev-1",
+      "rep" : "f1-rep-1"
+    },
+    {
+      "carrier" : "3E059170-821F-4D21-8DC6-145E3883C613",
+      "info" : "info-f1",
+      "record" : "rec-c3-advance",
+      "rep" : "-"
+    }
+  ],
+  "s1_events" : [
+    {
+      "kind" : "JUDGMENT",
+      "payload" : "judgment: F1 rev1 design holds",
+      "seq" : 0
+    },
+    {
+      "kind" : "EVIDENCE_LINK",
+      "payload" : "evidence: F1@f1-rev-1 digest b362c8addb2d7042d2cc206a5c1f34b7e70aa4326034bdb677185d7575ef075b",
+      "seq" : 1
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "B reorganized F1",
+      "seq" : 2
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "day-note-1",
+      "seq" : 3
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "day-note-0",
+      "seq" : 4
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "day-note-3",
+      "seq" : 5
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "day-note-4",
+      "seq" : 6
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "day-note-5",
+      "seq" : 7
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "day-note-2",
+      "seq" : 8
+    },
+    {
+      "kind" : "RESULT",
+      "payload" : "step8 committed result",
+      "seq" : 9
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "late-note-0",
+      "seq" : 10
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "late-note-2",
+      "seq" : 11
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "late-note-3",
+      "seq" : 12
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "late-note-1",
+      "seq" : 13
+    },
+    {
+      "kind" : "NOTE",
+      "payload" : "post-summary note",
+      "seq" : 14
+    }
+  ]
+}

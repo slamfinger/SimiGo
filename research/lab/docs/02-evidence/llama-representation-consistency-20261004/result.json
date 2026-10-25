@@ -1,0 +1,154 @@
+{
+  "boundary" : "LLAMA_SERVER_FULL_PREFIX \/ EXECUTION_LOGIC_VS_PHYSICAL_PREFIX \/ REAL_GREEDY_LLAMA_EXECUTION \/ NOT_AN_INTEGRITY_DESIGN_PROPOSAL",
+  "c0" : {
+    "backendBindingAccepted" : true,
+    "caseName" : "C0",
+    "executionID" : "llama-repconsistency-single",
+    "generatedText" : "\nThe project directory ReferenceFiles contains project management documents.\n",
+    "generatedTokenIDs" : [
+      198,
+      760,
+      2313,
+      6025,
+      16699,
+      10492,
+      5435,
+      2313,
+      6044,
+      9017,
+      13,
+      198
+    ],
+    "logicalPosition" : 0,
+    "logicalPositionAfter" : 1,
+    "outputDifferenceFromC0" : "BASELINE",
+    "realLlamaExecution" : true,
+    "representationPosition" : 0
+  },
+  "c2OutputDifferencesFromC0" : [
+    "DIFFERENT_FROM_C0(token_ids)",
+    "DIFFERENT_FROM_C0(token_ids)",
+    "DIFFERENT_FROM_C0(token_ids)"
+  ],
+  "c2Runs" : [
+    {
+      "backendBindingAccepted" : true,
+      "caseName" : "C2.rep1",
+      "executionID" : "llama-repconsistency-single",
+      "generatedText" : "\nThe project directory ReferenceFiles contains project management century.\n",
+      "generatedTokenIDs" : [
+        198,
+        760,
+        2313,
+        6025,
+        16699,
+        10492,
+        5435,
+        2313,
+        6044,
+        9018,
+        13,
+        198
+      ],
+      "logicalPosition" : 0,
+      "logicalPositionAfter" : 1,
+      "outputDifferenceFromC0" : "DIFFERENT_FROM_C0(token_ids)",
+      "realLlamaExecution" : true,
+      "representationPosition" : 0
+    },
+    {
+      "backendBindingAccepted" : true,
+      "caseName" : "C2.rep2",
+      "executionID" : "llama-repconsistency-single",
+      "generatedText" : "\nThe project directory ReferenceFiles contains project management century.\n",
+      "generatedTokenIDs" : [
+        198,
+        760,
+        2313,
+        6025,
+        16699,
+        10492,
+        5435,
+        2313,
+        6044,
+        9018,
+        13,
+        198
+      ],
+      "logicalPosition" : 0,
+      "logicalPositionAfter" : 1,
+      "outputDifferenceFromC0" : "DIFFERENT_FROM_C0(token_ids)",
+      "realLlamaExecution" : true,
+      "representationPosition" : 0
+    },
+    {
+      "backendBindingAccepted" : true,
+      "caseName" : "C2.rep3",
+      "executionID" : "llama-repconsistency-single",
+      "generatedText" : "\nThe project directory ReferenceFiles contains project management century.\n",
+      "generatedTokenIDs" : [
+        198,
+        760,
+        2313,
+        6025,
+        16699,
+        10492,
+        5435,
+        2313,
+        6044,
+        9018,
+        13,
+        198
+      ],
+      "logicalPosition" : 0,
+      "logicalPositionAfter" : 1,
+      "outputDifferenceFromC0" : "DIFFERENT_FROM_C0(token_ids)",
+      "realLlamaExecution" : true,
+      "representationPosition" : 0
+    }
+  ],
+  "c2StableOutputDifference" : true,
+  "executionID" : "llama-repconsistency-single",
+  "mutatedPrefix" : {
+    "position" : 0,
+    "sha256" : "sha256:e2d421191f15bafb2bb47b1a84e7333d091f36a19821945c5cf2af19b864be1d",
+    "tokenCount" : 10,
+    "tokenIDs" : [
+      760,
+      2313,
+      6025,
+      16699,
+      10492,
+      5435,
+      2313,
+      6044,
+      9018,
+      13
+    ]
+  },
+  "nextInput" : "What folder did I create?",
+  "originalPrefix" : {
+    "position" : 0,
+    "sha256" : "sha256:c681aa9d1eaed1265bdc9baf5ef8f94eae2ce2401b375cf85b1b424da4a18304",
+    "tokenCount" : 10,
+    "tokenIDs" : [
+      760,
+      2313,
+      6025,
+      16699,
+      10492,
+      5435,
+      2313,
+      6044,
+      9017,
+      13
+    ]
+  },
+  "predictionTokens" : 12,
+  "protocolVersion" : "LAB.LLAMA.REPCONSISTENCY.V1",
+  "seed" : 42,
+  "seedText" : "The project directory ReferenceFiles contains project management documents.",
+  "serverModelPath" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "serverURL" : "http:\/\/127.0.0.1:18080",
+  "status" : "EXECUTED"
+}

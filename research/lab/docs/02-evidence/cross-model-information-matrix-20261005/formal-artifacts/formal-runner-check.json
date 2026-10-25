@@ -1,0 +1,58 @@
+{
+  "phase": "FORMAL_RUNNER_CHECK",
+  "checked_at": "2026-10-04T16:59:02.543192+00:00",
+  "runner_sha256": "a102a1e422e26dd87e92821daed46ff5bb85d945d4bbebc5be8171d3918f2c25",
+  "contract_sha256": "6f28579f82a109fbea6e6121cca80dfd2ada2761232a8293fa1ddc216ab93ee8",
+  "models_sha256": "93468387486e1693d8cf8d917c38dac242d9ae0c08b879709477b22094605502",
+  "samples_sha256": "73df810528ee3d420b584eb316a685aaedfb0bbc994665aae9c4680f047d46d9",
+  "checks": [
+    {
+      "id": "FR-01",
+      "name": "16 unique formal cells",
+      "status": "PASS",
+      "count": 16
+    },
+    {
+      "id": "FR-02",
+      "name": "sample inputs/hash verification",
+      "status": "PASS"
+    },
+    {
+      "id": "FR-03",
+      "name": "four deterministic non-identical sample prompts",
+      "status": "PASS"
+    },
+    {
+      "id": "FR-04",
+      "name": "model identity/configuration freeze",
+      "status": "PASS"
+    },
+    {
+      "id": "FR-05",
+      "name": "formal status enum",
+      "status": "PASS",
+      "statuses": [
+        "FORMAL",
+        "INCOMPLETE",
+        "INVALID_ISOLATION",
+        "PILOT_ONLY_NOT_FORMAL",
+        "RUNTIME_ERROR"
+      ]
+    },
+    {
+      "id": "FR-06",
+      "name": "runtime authorization required",
+      "status": "PASS",
+      "authorized": false
+    },
+    {
+      "id": "FR-07",
+      "name": "separate from pilot runner",
+      "status": "PASS",
+      "pilot_runner": "run_matrix.py",
+      "formal_runner": "formal_runner.py"
+    }
+  ],
+  "runtime_executed": false,
+  "readiness": "READY_FOR_AUTHORIZATION_ONLY"
+}

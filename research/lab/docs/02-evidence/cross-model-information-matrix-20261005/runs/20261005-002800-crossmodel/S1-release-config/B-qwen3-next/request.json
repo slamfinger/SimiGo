@@ -1,0 +1,12 @@
+{
+  "model": "mlx-community/Qwen3-Coder-Next-4bit",
+  "messages": [
+    {
+      "role": "user",
+      "content": "You must use only the supplied material. Do not use outside knowledge, tools, or prior reports.\n\nApply only the platform baseline and deployment rules to alpha, beta, and gamma. Decide release order and blocked services. Do not use outside knowledge.\n\nReturn exactly one strict JSON object with these keys: task_id, decision, findings, missing_or_uncertain, confidence. No markdown fence and no prose.\n\nThe findings array must contain no more than 8 items; each item has id, statement, evidence, function.\n\nAllowed function values: constraint, decision, evidence, relation, uncertainty, task_rule.\n\n=== INPUT docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/platform-baseline.json ===\n{\n  \"platform_id\": \"edge-release-testbed\",\n  \"max_schema_version\": 3,\n  \"required_flags\": {\n    \"metrics_v2\": true\n  },\n  \"deployment_rules\": {\n    \"mode\": \"sequential\",\n    \"allow_incompatible_pair\": false\n  }\n}\n\n\n=== INPUT docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-alpha.json ===\n{\n  \"service_id\": \"alpha\",\n  \"api_version\": 2,\n  \"schema_version\": 3,\n  \"port\": 8081,\n  \"flags\": {\n    \"metrics_v2\": true\n  },\n  \"queue_protocol\": \"mqtt\"\n}\n\n\n=== INPUT docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-beta.json ===\n{\n  \"service_id\": \"beta\",\n  \"api_version\": 2,\n  \"schema_version\": 3,\n  \"port\": 8082,\n  \"flags\": {\n    \"metrics_v2\": true\n  },\n  \"queue_protocol\": \"mqtt\"\n}\n\n\n=== INPUT docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/sources/service-gamma.json ===\n{\n  \"service_id\": \"gamma\",\n  \"api_version\": 3,\n  \"schema_version\": 2,\n  \"port\": 8081,\n  \"flags\": {\n    \"metrics_v2\": false\n  },\n  \"queue_protocol\": \"mqtt\"\n}\n\n"
+    }
+  ],
+  "temperature": 0,
+  "max_tokens": 2048,
+  "stream": false
+}

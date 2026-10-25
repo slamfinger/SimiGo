@@ -1,0 +1,116 @@
+{
+  "all_checks_pass" : false,
+  "artifact_check" : {
+    "aggregate_sha256" : "4c1bd7596b9480864ca7c5ac949fbb051c47b182b853a8219c80a171b22f6678",
+    "all_match" : true,
+    "expected_aggregate_sha256" : "4c1bd7596b9480864ca7c5ac949fbb051c47b182b853a8219c80a171b22f6678",
+    "source" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/p0\/20261020T072607Z\/artifact_check.json"
+  },
+  "checks" : {
+    "artifact_aggregate_matches_binding" : true,
+    "artifact_rows_match_binding" : true,
+    "baseline_generation_completed" : true,
+    "container_loaded" : true,
+    "hook_consulted" : true,
+    "hook_missed_on_empty_store" : true,
+    "hook_released" : true,
+    "hooked_generation_completed" : true,
+    "prompt_rendered" : true,
+    "store_initially_empty" : true,
+    "store_still_empty_after" : true,
+    "weights_digest_matches_binding" : false
+  },
+  "completed_at_utc" : "2026-10-20T07:26:14Z",
+  "duration_seconds" : 6.444861888885498,
+  "engine_content_identity" : {
+    "combined_digest" : "188a16c59bd1407be74e57c04e46e20b7dd9f54b2582d91391d0b01d727c0938",
+    "duration_seconds" : 0.00083804130554199219,
+    "expected_weights_digest_from_binding" : "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf",
+    "tokenizer_digest" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tokenizer_digest_note" : "order-sensitive over the tokenizer-like file contents; not derivable from the binding's per-file digests, recorded here as the P0 baseline that P1\/P2 must reproduce",
+    "weights_digest" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "weights_digest_matches_binding" : false
+  },
+  "executable_path" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/p0\/probe\/.build\/release\/G2P0Probe",
+  "executable_sha256" : "ec7bb6ca82e6952c0a1e869a0f26510a3eb871e23088f7ccd597a9ff93e9ced6",
+  "generation_baseline" : {
+    "chunk_count" : 1,
+    "chunk_sequence" : [
+      "ready"
+    ],
+    "completion_token_count" : 1,
+    "duration_seconds" : 3.1282819509506226,
+    "hook_installed" : false,
+    "text" : "ready"
+  },
+  "generation_hooked" : {
+    "chunk_count" : 1,
+    "chunk_sequence" : [
+      "ready"
+    ],
+    "completion_token_count" : 1,
+    "duration_seconds" : 0.13892793655395508,
+    "hook_installed" : true,
+    "hook_uninstalled" : true,
+    "text" : "ready"
+  },
+  "generation_outputs_identical" : true,
+  "hook_observations" : {
+    "calls" : 1,
+    "hits" : 0,
+    "interface" : "MLXPrefixCrossSessionCache.observations",
+    "matched_token_counts" : [
+
+    ]
+  },
+  "host" : {
+    "active_processor_count" : 10,
+    "operating_system" : "Version 27.0.1 (Build 26A434)",
+    "physical_memory_bytes" : 34359738368
+  },
+  "load" : {
+    "duration_seconds" : 2.803892970085144,
+    "ok" : true
+  },
+  "model_directory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "parent_pid" : 67373,
+  "pid" : 67947,
+  "probe_generation_settings" : {
+    "decoding" : "greedy (temperature = 0)",
+    "max_tokens" : 16,
+    "prefill_chunking" : "remainder",
+    "prefill_step_size" : 256
+  },
+  "process_group" : 67947,
+  "prompt" : "Reply with exactly one word: ready.",
+  "prompt_render" : {
+    "duration_seconds" : 0.34285295009613037,
+    "first_tokens" : [
+      151644,
+      872,
+      198,
+      20841,
+      448,
+      6896,
+      825,
+      3409
+    ],
+    "token_count" : 16,
+    "token_ids_sha256" : "99fd0fbc1dc3b1100798827ec1c29fe7d76452aac7e2976eb805cf60bb713ea2"
+  },
+  "schema_id" : "SIMIGO-G2-P0-PROBE-V1",
+  "started_at_utc" : "2026-10-20T07:26:07Z",
+  "store" : {
+    "inventory_before" : [
+
+    ],
+    "namespace_kv_fingerprint" : "chat-cross-session-v1-188a16c59bd1407be74e57c04e46e20b7dd9f54b2582d91391d0b01d727c0938",
+    "namespace_model_id" : "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "rescan_registered_artifacts" : 0,
+    "root" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/p0\/20261020T072607Z\/store\/6e302ea604ad9ab206367e2c501d1571023e7b6d-chat-cross-session-v1-188a16c59bd1407be74e57c04e46e20b7dd9f54b2582d91391d0b01d727c0938"
+  },
+  "store_base" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/p0\/20261020T072607Z\/store",
+  "store_inventory_after" : [
+
+  ]
+}

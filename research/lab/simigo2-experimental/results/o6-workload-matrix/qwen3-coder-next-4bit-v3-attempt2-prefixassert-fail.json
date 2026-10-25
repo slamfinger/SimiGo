@@ -1,0 +1,74 @@
+{
+  "boundary" : "EXECUTION_STATE_X_OVERSIZED \/ W0-W9_COOPERATIVE_CANCELLATION_MATRIX \/ HARNESS_LEVEL \/ NOT_A_PERFORMANCE_CLAIM",
+  "checks" : [
+    {
+      "detail" : "parent identity\/lineage unchanged across fork",
+      "name" : "PARENT_IDENTITY_STABLE",
+      "pass" : true
+    },
+    {
+      "detail" : "child lineage parent=P, root shared",
+      "name" : "CHILD_LINEAGE_TRACEABLE",
+      "pass" : true
+    },
+    {
+      "detail" : "child continuation diverged from parent continuation",
+      "name" : "FORK_DIVERGENCE",
+      "pass" : true
+    },
+    {
+      "detail" : "logical position rolled back to the fork point; segments re-materialize on demand",
+      "name" : "RESTORE_TO_FORK_POINT",
+      "pass" : true
+    },
+    {
+      "detail" : "run2 after evict+restore == run1, consuming the restored fork-point representation",
+      "name" : "CHILD_DETERMINISM_THROUGH_SEGMENT_EVICT_RESTORE",
+      "pass" : true
+    },
+    {
+      "detail" : "parent turn 2 after the child episode == pre-fork reference",
+      "name" : "PARENT_NON_INTERFERENCE",
+      "pass" : true
+    },
+    {
+      "detail" : "two repeated forks restored to the same checkpoint and replayed C's continuation",
+      "name" : "W6_REPEATED_FORK_RESTORE",
+      "pass" : true
+    },
+    {
+      "detail" : "two-continuation branch restored to root checkpoint and replayed C semantics",
+      "name" : "W7_LONG_RUNNING_BRANCH_RESTORE",
+      "pass" : true
+    },
+    {
+      "detail" : "after explicit oversized release: swap 0 MiB, footprint 7548 MiB; restored replay remained deterministic",
+      "name" : "W8_MEMORY_PRESSURE_RELEASE_RECOVERY",
+      "pass" : true
+    },
+    {
+      "detail" : "cancelled after one complete token; 1 token(s) returned, pre-cancel binding stayed at checkpoint position 1, consumed prefix reconstructed the advanced payload, restore\/replay matched C",
+      "name" : "W9_CANCELLATION_RECOVERY",
+      "pass" : false
+    },
+    {
+      "detail" : "peak footprint 8034 MiB <= 30720 MiB, max swap 0 MiB",
+      "name" : "RESIDENCY_BOUNDED_ZERO_SWAP",
+      "pass" : true
+    },
+    {
+      "detail" : "322 segment materialize\/release transitions executed",
+      "name" : "SEGMENT_TRANSITIONS_EXECUTED",
+      "pass" : true
+    }
+  ],
+  "maxSwapMiB" : 0,
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelType" : "qwen3_next",
+  "overallPass" : false,
+  "peakFootprintMiB" : 8034,
+  "protocolVersion" : "G1.9-O6.EXECSTATE.V3",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "status" : "FAIL"
+}

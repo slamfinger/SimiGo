@@ -1,0 +1,80 @@
+{
+  "records" : [
+    {
+      "application_bound" : true,
+      "application_position" : 1,
+      "application_prefix" : [
+        14,
+        1,
+        3,
+        8,
+        1,
+        14,
+        6,
+        14,
+        10,
+        11,
+        10,
+        2,
+        13,
+        8,
+        10,
+        1
+      ],
+      "case_id" : "P-LAWFUL",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : 0,
+      "application_prefix" : [
+        17,
+        23
+      ],
+      "case_id" : "P-SETTLED",
+      "setup_prefix" : [
+        17,
+        23
+      ]
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "P-BLOCKED",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "N-MISSING",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "N-STALE",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "N-AMBIGUOUS",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "N-ILLEGAL",
+      "setup_prefix" : [
+        31,
+        37
+      ]
+    }
+  ],
+  "schema_id" : "INTEGRATED-ES-PALACE-RUNTIME-REPRESENTATION-V1"
+}

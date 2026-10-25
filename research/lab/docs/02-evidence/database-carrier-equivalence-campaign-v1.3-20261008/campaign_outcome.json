@@ -1,0 +1,57 @@
+{
+  "boundary": {
+    "carrier_sqlite_equivalence": "NOT_ESTABLISHED",
+    "core_broader_claim": "NOT_ESTABLISHED",
+    "eq_matrix": "NOT_EVALUATED",
+    "rej_matrix": "NOT_EVALUATED",
+    "semantic_sequence": "NOT_RUN"
+  },
+  "campaign_id": "exec-dbcarrier-001-8ec72ba",
+  "evidence_chain": {
+    "E1_established": false,
+    "E2_established": false,
+    "E3_established": false,
+    "E4_established": false,
+    "E5_established": false,
+    "E6_established": false,
+    "N1_BLOCK_established": false
+  },
+  "exact_campaign_repository_commit": "8ec72ba51c039e5420b9fb3f5cdc0f970dbd2e3c",
+  "failure": {
+    "expected_working_database_schema": [
+      "dependency_entries",
+      "is_index_entries",
+      "is_objects"
+    ],
+    "measured_working_database_schema": [],
+    "measured_working_database_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "observed_stop": "DatabaseCarrierError: schema table mismatch: []",
+    "root_cause_class": "HARNESS_WORKING_DATABASE_COPY_BINDING_DEFECT",
+    "root_cause_detail": "run_equivalence_campaign.py copied the accepted fresh database to O0_DATABASE.sqlite but did not copy it to CAMPAIGN_DATABASE.sqlite before constructing DatabaseBackedIS; sqlite3.connect created an empty zero-byte database, and fail-closed schema validation stopped before any logical mutation.",
+    "responsible_layer": "PART_C_CAMPAIGN_HARNESS",
+    "working_database_line": 431,
+    "working_database_path": "CAMPAIGN_DATABASE.sqlite"
+  },
+  "outcome": "INVALID",
+  "preflight_result": {
+    "accepted_fresh_database_source_verified": true,
+    "adapter_runtime_rebuilt_and_verified": true,
+    "campaign_database_schema_preflight": "FAIL",
+    "exact_campaign_repository_verified": true,
+    "implementation_tree_unchanged_verified": true,
+    "reference_inputs_verified": true
+  },
+  "scope": {
+    "accepted_carrier_defective": false,
+    "accepted_fresh_database_mutated": false,
+    "adapter_invocations_attempted": 0,
+    "automatic_renewal": "FORBIDDEN",
+    "campaign_budget": "CONSUMED_BY_FAIL_CLOSED_ATTEMPT",
+    "instrumentation_budget": "CONSUMED",
+    "logical_rows_written": 0,
+    "observer_executed": false,
+    "rerun": "NOT_AUTHORIZED"
+  },
+  "stop_code": "CAMPAIGN_PREFLIGHT_SCHEMA_EMPTY",
+  "stop_point": "PRE_MUTATION_SCHEMA_PREFLIGHT"
+}

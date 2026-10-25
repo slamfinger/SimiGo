@@ -1,0 +1,1 @@
+attempt 01 is invalid: harness CLI parsed the mode as an operand; no E-run JSON, no Information formation, and no durable DB remained

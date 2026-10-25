@@ -1,0 +1,9 @@
+{
+  "note" : "no crash-testing: judgment at the invariant-assertion level per frozen design",
+  "outcome" : "NECESSITY_EVIDENCE(invariant-assertion level: continuation-of-THIS-state unconstructible from I\/P\/A; both divergent appends accepted without a legitimizing contract)",
+  "r0RunUUID" : "audit-20261001-694661AC",
+  "remaining_relations" : "I\/P\/A",
+  "removed_relation" : "continuation binding",
+  "role" : "gdeltaC",
+  "two_appends_accepted" : "YES"
+}

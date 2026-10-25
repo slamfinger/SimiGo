@@ -1,0 +1,52 @@
+{
+  "fixture_count": 3,
+  "fixtures": [
+    {
+      "context_canary_sha256": "3ad4275d7d1cd6eac1d1c423f458386178e877f305914491f227934dfe49c4f0",
+      "decoy_present": false,
+      "fixture_id": "fixture-1",
+      "path": "fixture-1.json",
+      "record_checksum": "2c146785",
+      "s1_sha256": "6aeae7cfd3e7b4bdd6d0cfe57e1b20c3bcf696cc2e36e2d77a36a402d71ffa88",
+      "s1_words": 223,
+      "sha256": "81d5afc2816d7b3ec2ef65c0c6f094cd5056b4e83d203f8c9f5911b2195d181b",
+      "token_counts": {
+        "s1": 315,
+        "u1_prompt": 394
+      },
+      "transfer_secret_sha256": "3ae2eab55d3d57667c8fa307b12a2bcf86ecdd6008996fc87dbbd9051ed37e19"
+    },
+    {
+      "context_canary_sha256": "731e2b6728ff2bac5f616348166c5b5922daa916358bd2a7daed0053397985a8",
+      "decoy_present": false,
+      "fixture_id": "fixture-2",
+      "path": "fixture-2.json",
+      "record_checksum": "c1d64b2d",
+      "s1_sha256": "1884313878dc16010369b5a5a8e52a1e65d76cf3792b5c914ccb670eeb9ee0a4",
+      "s1_words": 294,
+      "sha256": "af02af7e59a1de829179dd99b50cec0d8c1d717494bf80e6797dd0de60772d4b",
+      "token_counts": {
+        "s1": 392,
+        "u1_prompt": 471
+      },
+      "transfer_secret_sha256": "c39e596acca236803656c2d9337a73fbaba288812fed187bd5330ca6948e6253"
+    },
+    {
+      "context_canary_sha256": "4efc9d7ea9e1cf8843deddd163ce7370c062c25ccbd31d35ef6af82c06c5a4fc",
+      "decoy_present": true,
+      "fixture_id": "fixture-3",
+      "path": "fixture-3.json",
+      "record_checksum": "0ae90cda",
+      "s1_sha256": "7945d2fe7f5fc6e1745173e8a12f6a19458dedaee6a4057ec48d4f17478d8883",
+      "s1_words": 198,
+      "sha256": "743d81ae553b1aed56bd978f30961fbb1acd5a3f1b935460d29ca131369efb22",
+      "token_counts": {
+        "s1": 303,
+        "u1_prompt": 382
+      },
+      "transfer_secret_sha256": "424a3390cdb3312f7f846d92a4864c686b3df26357a192a7067162e5188d63fb"
+    }
+  ],
+  "schema_id": "SIMIGO-G2-FIXTURE-INDEX-V1",
+  "seed": "g2-fixtures-20261020"
+}

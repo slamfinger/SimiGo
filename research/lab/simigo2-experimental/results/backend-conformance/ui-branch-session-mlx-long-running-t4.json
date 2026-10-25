@@ -1,0 +1,86 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ OVERSIZED_MLX_LONG_RUNNING_BRANCH \/ SEQUENTIAL_TURNS_FORKPOINT_FINAL_RESTORE \/ HARNESS_LEVEL \/ NOT_A_UI_PRODUCT",
+  "checks" : {
+    "LONG_BRANCH_FINAL_PREFIX_EXACT" : true,
+    "LONG_BRANCH_RESTORES_FINAL_POSITION" : true,
+    "LONG_BRANCH_RESTORES_FORKPOINT" : true,
+    "LONG_SEQUENCE_COMPLETE" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+    "RELEASE_LONG_AND_SIBLING" : true,
+    "ROOT_SURVIVES_RELEASE" : true,
+    "SIBLING_ADVANCED_RETAINED" : true
+  },
+  "longBranchContents" : [
+    " The first step in",
+    " One edge case is",
+    " Here is a unit",
+    " The expected result for",
+    " The result shows that",
+    " TODO: Refactor"
+  ],
+  "maxSwapMiB" : 0,
+  "maxTokens" : 4,
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "peakFootprintMiB" : 8019,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.LONG.RUNNING.V1",
+  "seedText" : "def is_palindrome(s):",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 170,
+  "siblingContent" : " You should be able",
+  "siblingInput" : "Now write tests for it.",
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 38930.485541,
+      "executionID" : "mlx-long-sibling",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 38899.726833,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 39792.172791,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 2
+    },
+    {
+      "clientMs" : 40454.559917,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 3
+    },
+    {
+      "clientMs" : 41496.35775,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 4
+    },
+    {
+      "clientMs" : 42438.916542,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 5
+    },
+    {
+      "clientMs" : 43499.618708,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 6
+    }
+  ],
+  "turnInputs" : [
+    "Summarize the first implementation step.",
+    "List one edge case and how to handle it.",
+    "Add a focused unit test for that edge case.",
+    "Describe the expected result in one sentence.",
+    "Review the result and identify one improvement.",
+    "Finalize the implementation with a short TODO."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "campaign_id": "exec-dbcarrier-005-2a3b358",
+  "campaign_returncode": 1,
+  "campaign_stderr": "TypeError: the JSON object must be str, bytes or bytearray, not dict while binding persisted ES2 adapter output",
+  "campaign_stdout": "campaign fail-closed at ES2 adapter-output provenance binding after O0-O2; not a complete evidence package",
+  "exact_execution_commit": "2a3b3584344bcfd4f7df4dc8f2a0f1df8394a2c2",
+  "governing_request_commit": "1b518c822b586dc3a6a900327267f5e3512a7e49",
+  "part_r4_commit": "44514117f7657eda98b15155a916966d4e7c9b19",
+  "post_stop_capture": true,
+  "stop_code": "CAMPAIGN_ES2_OUTPUT_JSON_PARSE_BINDING_DEFECT"
+}

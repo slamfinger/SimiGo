@@ -1,0 +1,31 @@
+{"ts":"2026-09-30T11:29:20Z","case":"setup","conditionalRestore":"OFF (test-process tunable)"}
+{"ts":"2026-09-30T11:29:20Z","case":"setup","prefixPool":"env-NOT-disabled (hook reads real pool; read-only)"}
+{"ts":"2026-09-30T11:29:20Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T11:29:25Z","case":"setup","model":"loaded"}
+{"ts":"2026-09-30T11:37:15Z","case":"setup","conditionalRestore":"OFF (test-process tunable)"}
+{"ts":"2026-09-30T11:37:15Z","case":"setup","prefixPool":"OFF (env)"}
+{"ts":"2026-09-30T11:37:15Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T11:37:20Z","case":"setup","model":"loaded"}
+{"ts":"2026-09-30T11:37:48Z","case":"n0a","response":"继续执行。"}
+{"ts":"2026-09-30T11:37:48Z","case":"n0a","response_chars":"5"}
+{"ts":"2026-09-30T11:37:48Z","case":"n0a","input_msgs":"18"}
+{"ts":"2026-09-30T11:37:48Z","case":"n0a","wall_seconds":"27.9"}
+{"ts":"2026-09-30T11:38:02Z","case":"n0b","response":"继续执行。"}
+{"ts":"2026-09-30T11:38:02Z","case":"n0b","response_chars":"5"}
+{"ts":"2026-09-30T11:38:02Z","case":"n0b","input_msgs":"18"}
+{"ts":"2026-09-30T11:38:02Z","case":"n0b","wall_seconds":"13.8"}
+{"ts":"2026-09-30T11:38:02Z","case":"PN1","verdict":"CONFIRMED (greedy determinism: identical input -> identical response)"}
+{"ts":"2026-09-30T11:38:02Z","case":"n1","perturbation":"last assistant content += ' PALACE-NEEDLE'"}
+{"ts":"2026-09-30T11:38:16Z","case":"n1","response":"收到，需要我深入查看哪个具体文件的内容？"}
+{"ts":"2026-09-30T11:38:16Z","case":"n1","response_chars":"20"}
+{"ts":"2026-09-30T11:38:16Z","case":"n1","input_msgs":"18"}
+{"ts":"2026-09-30T11:38:16Z","case":"n1","wall_seconds":"14.1"}
+{"ts":"2026-09-30T11:38:16Z","case":"PN2","verdict":"CONFIRMED (history content change -> continuation behavior change; history is continuation-behavior-relevant)"}
+{"ts":"2026-09-30T11:38:16Z","case":"n2","perturbation":"all tool messages removed (3 dropped)"}
+{"ts":"2026-09-30T11:38:24Z","case":"n2","response":"I don't know what \"PALACE-1 R2n probe\" refers to — could you provide more context?"}
+{"ts":"2026-09-30T11:38:24Z","case":"n2","response_chars":"82"}
+{"ts":"2026-09-30T11:38:24Z","case":"n2","input_msgs":"15"}
+{"ts":"2026-09-30T11:38:24Z","case":"n2","wall_seconds":"8.3"}
+{"ts":"2026-09-30T11:38:24Z","case":"PN3","verdict":"CONFIRMED (tool-history removal -> continuation behavior change; agent execution history is continuation-bearing)"}
+{"ts":"2026-09-30T11:38:24Z","case":"teardown","real_branch_checkpoints_after":"204"}
+{"ts":"2026-09-30T11:38:24Z","case":"teardown","durability_writes":"ZERO (isolation recipe held)"}

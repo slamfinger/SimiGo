@@ -1,0 +1,7 @@
+--- artifact hashes ---
+357bdd280fea792646178fbec044616ceb2927dea0408275388a689749348d78  /Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/artifacts/e-run.json
+08a42ad84b62dd1014d00daee6f6ec363138706d60c5acbc83a07bb7f2369823  /Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/artifacts/v-e-run.json
+f3916b35a2fe7ceeb2c56af06c0c34e41f770c5dd2ccbfd27ed875bfb6f8c426  /Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/artifacts/v-n-run.json
+468ad340dcb7cd20dd5e4a952db2f29235edab50dab03bf3efded5c5a099b440  /Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/artifacts/x-run.json
+ce78c618ce499581063a9377d7f3b5cb803e056b898f5178de632410a320a33b  /Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/artifacts/experimental.sqlite
+74569c60eab39196ae828f5546015f58f192157349b3c7435ad4cd41867daf90  /Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/artifacts/negative.sqlite

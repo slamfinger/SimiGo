@@ -1,0 +1,118 @@
+{
+  "schema_id": "SIMIGO-G3-PREREGISTRATION-V1",
+  "revision": 4,
+  "revision_note": "revision 1 fixed the design. Revision 2 added the per-step expected sets, the arm-isolation invariants and the unit naming. Revision 3 splits the former 'unchanged' set into reused and unsettled, because an item with no settlement on either side was being counted as reuse; quotes the approved plan's budget sentence verbatim beside the measured dry-run numbers; and freezes the dependency graph itself (task_graph.dependency_edges, with the edge rule and the blocked-set definition) instead of leaving the edges implicit in the harness. Revision 4 closes a hole in the arm-isolation guarantee: the IS-only whitelist ran in __getattr__, so view._loop handed out the wrapped carrier and the isolation assertion could pass against an unrestricted arm. The whitelist now runs in __getattribute__, refuses writes, and the harness measures proxy non-piercability, cross-arm write invisibility and the read-only status of the shared fixture. Two overlapping clauses about model runtime resources were merged into model_resources so the guarantee is stated once. No model has run; the freeze is pre-execution.",
+  "scope": "CONTROLLED_SINGLE_VARIABLE_COMPARISON",
+  "frozen_at_utc": "2026-10-20T00:00:00Z",
+  "status": "FROZEN_PENDING_EXECUTION_AUTHORIZATION",
+  "model_execution_authorized": false,
+  "question": "On a controlled multi-step task graph, does the persisted execution state add anything to what the information space alone can express?",
+  "common_conditions": [
+    "same model copy for both arms, with a separate model instance per arm and no shared prefix cache",
+    "same frozen checker (g2/batch/checker.py, sha256 bc453515789a432d)",
+    "same task goal and same declared unit rule",
+    "same source version, same sealed validity policy, same validity window",
+    "same initial IS bytes: one prefix carrier is built once, copied twice, and the two copies are hash-compared before either arm runs",
+    "same frozen task graph, same evaluated_at_utc, same declared obligation-to-item mapping (both arms are given the task specification)"
+  ],
+  "single_variable": {
+    "es_plus_is": "restore_continuation() supplies the continuation position; the arm then reads IS for data",
+    "is_only": "no execution state at all; the position is derived from items and settlements only",
+    "enforcement": "ISOnlyView is a whitelist proxy; any attribute outside the IS surface raises AssertionError and is recorded in is_denied_touches, which must be empty"
+  },
+  "arm_isolation": {
+    "carriers": "each arm writes to its own SQLite file; both files start as byte-identical copies of the one prefix carrier (initial_is_bytes_identical)",
+    "execution_state_identity": "every execution_state:* record must land in the ES carrier; the IS carrier must hold zero such records (es_records_land_only_in_the_es_carrier)",
+    "calculators": "each arm gets its own calculator instance with its own call log (arms_use_distinct_calculator_instances)",
+    "model_resources": "a formal run gives each arm its own model instance; no KV cache, prefix cache, tokenizer handle or weight buffer may be reachable from both. A shared cache would let one arm warm the other, so this is a hard precondition failure, not a retry. The stub dry run cannot demonstrate it because no model exists there",
+    "no_cross_reads": "the IS arm may not read any ES entry point; the ES arm reads the IS of its own carrier only (is_arm_touched_no_es_entry_point, enforced through the proxy described under proxy_not_piercable)",
+    "proxy_not_piercable": "the IS-only whitelist is enforced in __getattribute__, not __getattr__, and refuses attribute writes. A __getattr__ hook fires only after normal lookup fails, so the wrapped loop was reachable as view._loop and every ES entry point with it, while the denied log stayed empty; the isolation check would have passed against an unrestricted arm. The harness probes _loop, carrier, restore_continuation and define_demand and requires all four refused (proxy_refuses_inner_loop_and_es_entries, proxy_refuses_attribute_write), then rolls the probe entries back so denied reports only what the arm really did",
+    "writes_do_not_cross": "separate carrier files is the argument, not the result. After both arms finish, the harness writes a probe item and its settlement into the ES carrier and requires that the IS arm sees neither the item nor the settlement (arm_writes_do_not_cross_to_the_other_arm). Writing the same probe into both arms makes that check false",
+    "shared_input_is_read_only": "the fixture is the one object both arms legitimately share. It is fingerprinted with canonical() before either arm runs and re-fingerprinted at the end (shared_fixture_inputs_not_mutated_by_either_arm), so shared input cannot quietly become shared state"
+  },
+  "unit_rule": {
+    "summary": "each unit carries the upstream secret/site, relabels itself, and emits ANSWER=<secret>-sha256(site.lower())[:8]",
+    "checker": "check_u2(answer_line, upstream_view, fixture) from the frozen G2 checker, verbatim",
+    "why_not_identical_values": "the settled value differs per unit through the `unit` label, while the ANSWER line stays a pure function of the settled upstream record"
+  },
+  "task_graph": {
+    "continuation_point": "<fixture_id>-downstream",
+    "item_universe": ["U1", "U2", "U3", "U_free"],
+    "dependency_edges": {"U1": [], "U2": ["U1"], "U3": ["U2"], "U_free": []},
+    "dependency_edge_rule": "A declared edge X <- Y means X's settlement records Y's settlement object id in result.dependency_object_ids and its value is a function of Y's settled value. The edge set is part of the frozen plan, not a property the harness may choose: the harness reads this object and refuses to run if its own UNIT_INPUTS disagree. U_free has no edges, which is what makes it an independent sibling rather than an unaffected upstream item.",
+    "steps": [
+      {"step_id": "d1", "required": ["U_free", "U1"], "obligations_after": ["settle u2 transfer", "settle u3 terminal artifact", "report the terminal artifact"],
+       "expected_recomputed": ["U1"], "expected_reused": ["U_free"], "expected_unsettled": ["U2", "U3"], "expected_blocked": []},
+      {"step_id": "d2", "required": ["U2"], "obligations_after": ["settle u3 terminal artifact", "report the terminal artifact"],
+       "expected_recomputed": ["U2"], "expected_reused": ["U1", "U_free"], "expected_unsettled": ["U3"], "expected_blocked": []},
+      {"step_id": "d3", "required": ["U1", "U2"], "obligations_after": ["settle u3 terminal artifact", "report the terminal artifact"],
+       "expected_recomputed": ["U1", "U2"], "expected_reused": ["U_free"], "expected_unsettled": ["U3"], "expected_blocked": []},
+      {"step_id": "d4", "required": ["U3", "U_free"], "obligations_after": ["report the terminal artifact"],
+       "expected_recomputed": ["U3"], "expected_reused": ["U1", "U2", "U_free"], "expected_unsettled": [], "expected_blocked": []}
+    ],
+    "set_definition": "Four sets, measured on the current settlement object id of every item in the frozen universe, so the basis is identical for both arms: recomputed when the id differs after the step; reused when the id is unchanged and non-empty; unsettled when there is no settlement on either side; blocked when the step refuses. The unsettled bucket exists so that reuse can never be satisfied by an item that was never settled, and the four sets must partition the universe after every step.",
+    "blocked_definition": "expected_blocked is empty at every formal step, and the check is stronger than that: both arms must report state ADVANCED at every step, so an unplanned block fails the step instead of merely leaving a set empty. Blocking is measured by the negative controls, each on its own copy, not by the formal arms.",
+    "source_change": "update_source(U1, v2) is applied after d2 and before d3; it is an IS mutation, not an ES transition",
+    "source_change_target": "the changed item is U1, the chain head. U1 is not an unaffected upstream result: it is the item whose declared source changed, so it must recompute. The independent sibling that must keep its settlement is U_free, which is unrelated and is asserted to hold exactly one settlement revision across the whole run",
+    "expected_computes_per_arm": [1, 1, 2, 1],
+    "terminal_item": "U3",
+    "answer_rule": [
+      "final_result = current settlement value of the terminal item",
+      "next_step = ES arm: the step after the restored demand; IS arm: the first declared step whose required items are not usable; 'complete' if none",
+      "open_obligations = the obligations still open after the step just applied"
+    ]
+  },
+  "negative_controls": [
+    {"case": "expired settlement", "mechanism": "gate subprocess on its own copy", "expect": "REFUSED / VALIDITY_EXPIRED", "processes": 1},
+    {"case": "tampered settlement", "mechanism": "gate subprocess on its own copy", "expect": "REFUSED / OBJECT_DIGEST_MISMATCH", "processes": 1},
+    {"case": "missing settlement", "mechanism": "in-process reuse-predicate assertion", "expect": "not reusable, reason MISSING_OR_SUPERSEDED_SETTLEMENT", "processes": 0},
+    {"case": "blocked state", "mechanism": "in-process: execute against an expired window, then restore_continuation", "expect": "BLOCKED_STALE_VALIDITY and restore refused", "processes": 0}
+  ],
+  "budget": {
+    "plan_quote_verbatim": "`2 fixtures × 2 arms × 5 = 20` 次模型启动；负向控制 `2 fixtures × 2 = 4` 个 gate 进程；总进程上限 24，0 重试。",
+    "plan_reference": "approved plan §7.4. The plan's unit is 'model start'; in the dry run the same slots are counted as calculator invocations and no model start occurs. The plan contains no 12-start table: its stated numbers are 20 slots, 4 gate processes and a process cap of 24.",
+    "invocation_slots_per_arm": 5,
+    "arms": 2,
+    "fixtures": 2,
+    "predicted_calculator_invocations": 20,
+    "predicted_gate_processes": 4,
+    "process_cap": 24,
+    "retries": 0,
+    "unit_note": "a calculator invocation is a design slot. With the stub it is not a model process; a formal run converts each slot into one model start, which is why this file states slots and the execution authorization will state starts",
+    "rule": "any identity or precondition failure invalidates the whole batch; the batch is never retried"
+  },
+  "dry_run": {
+    "calculator": "stub",
+    "measured_calculator_invocations": 20,
+    "measured_gate_processes": 4,
+    "actual_model_starts": 0,
+    "measured_matches_prediction": true,
+    "is_execution_evidence": false,
+    "record": "g3/G3_DRY_RUN_RESULT.json"
+  },
+  "artifacts": [
+    {"path": "g3/harness/g3_harness.py", "sha256": "PENDING_RECOMPUTE"},
+    {"path": "g3/fixtures/g3-fixture-1.json", "sha256": "70deb456b0d8e27915f6221bb4886664884b8da86b08e50f3b38008ad46688a8"},
+    {"path": "g3/fixtures/g3-fixture-2.json", "sha256": "750f502d48691eff10613819b5a4bef4f5dba110d0560eded322a291319fe1fe"},
+    {"path": "g3/G3_DRY_RUN_RESULT.json", "sha256": "PENDING_RECOMPUTE"}
+  ],
+  "decision_rules": [
+    "all three outputs agree on every probe -> record ES_INDEPENDENT_CONTRIBUTION_NOT_PROVEN; do not rewrite it as mechanism-works",
+    "any output diverges -> record the divergence verbatim; a divergence is an observation, not a proof, and the interpretation is the reviewer's",
+    "the IS arm must be as well-instrumented as the ES arm; if its per-step compute counts differ from the ES arm, the comparison is INCONCLUSIVE, not a win for ES",
+    "a fixture whose evidence identity, prefix bytes, window or frozen-set check fails is INVALID and contributes no comparison",
+    "a per-step set mismatch (recomputed / reused / blocked) invalidates the fixture: the selective-propagation claim is what the sets encode"
+  ],
+  "pre_registered_expectation": {
+    "final_result": "agrees at every probe (both arms read the same settlements)",
+    "open_obligations": "agrees at every probe (the IS arm is given the obligation-to-item mapping as task specification, otherwise the comparison would be rigged)",
+    "next_step": "may diverge where a declared step exists whose items are already settled, because IS alone cannot distinguish a declared step boundary from a satisfied one",
+    "work_sets": "the recomputed and reused sets must agree across arms at every step, because they are measured on settlement-object identity rather than on each arm's action log"
+  },
+  "non_claims": [
+    "this pre-registration is not model-execution authorization",
+    "the dry run starts no model and produces no execution evidence",
+    "a matching IS-only arm does not show the core API is unnecessary",
+    "a diverging IS-only arm does not by itself prove independent ES value"
+  ]
+}

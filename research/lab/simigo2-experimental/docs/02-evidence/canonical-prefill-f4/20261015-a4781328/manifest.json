@@ -1,0 +1,32 @@
+{
+  "schema": "simigo.canonical-prefill-f4.v1",
+  "capturedAtUTC": "2026-10-15T02:30:00Z",
+  "commit": "a4781328",
+  "branch": "codex/canonical-prefill-f4-lifecycle",
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit @ 6e302ea6 (switch target Nail-Qwen3.6-35B @ 31a01064)",
+  "canonicalResult": {
+    "profile": "remainder chunking, fixed stride, boundaries at stride multiples",
+    "verdict": "STRICT PASS",
+    "cases": [
+      {"stride": 512, "boundary": 512, "hit": "1@512", "chunksEqual": true, "countsEqual": true, "textsEqual": true},
+      {"stride": 256, "boundary": 512, "hit": "1@512", "chunksEqual": true, "countsEqual": true, "textsEqual": true},
+      {"stride": 256, "boundary": 768, "hit": "1@768", "chunksEqual": true, "countsEqual": true, "textsEqual": true}
+    ],
+    "tokenIDApiGap": "ChatSession exposes no generated token IDs; chunk sequence + generationTokenCount are the finest public strictness (registered fork API need)"
+  },
+  "f4Result": {
+    "staleSessionRejected": true,
+    "reAdoptedHitObserved": true,
+    "reAdoptedMatchedTokenCount": 900,
+    "foreignHookColdInBActiveWindow": true,
+    "lifecycleFixes": ["directory-only previous capture (container not held across load)", "in-flight cancel+drain (120s bound, overrun fails switch)", "foreign-hook measurement moved to B-active window"],
+    "openFollowUps": ["peak-residency RSS instrumentation around switch", "caller-held HostSession container references (host cannot reach caller refs)", "fork-side session-identity API for full caller closure"]
+  },
+  "fullSuite": {"executed": 367, "skipped": 3, "failures": 0},
+  "boundary": "Strict equality under the canonical profile only; no bar relaxation; no inference-behavior change; no GUI wiring; no governance closure.",
+  "logs": [
+    {"file": "canonical-stride512-boundary512.json", "sha256": "899c683acc5d87e96b551e7bc0efd4ac1de0d3daee88d94c94e4f6bfb662773a"},
+    {"file": "canonical-stride256-boundaries512-768.json", "sha256": "9b0d02fce12e25f88fa21a11c16948d3197bdb836751bf5bdfbc5ce323ecc964"},
+    {"file": "f4-probe-run2.json", "sha256": "3ea0f11f612ce8482e33db5ec4228652ffe93c6d87122cad059f4c78e21384c2"}
+  ]
+}

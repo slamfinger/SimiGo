@@ -1,0 +1,9 @@
+{
+  "completed_at_utc" : "2026-10-20T07:53:10Z",
+  "failed_checks" : [
+
+  ],
+  "probe_record" : "P0_PROBE.json",
+  "schema_id" : "SIMIGO-G2-P0-TERMINAL-V1",
+  "terminal_state" : "PASS"
+}

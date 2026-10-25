@@ -1,0 +1,11 @@
+{
+  "checkpointHash" : "formed-in-this-run",
+  "configHash" : "sha256:e21d5306e449fa7417a55a431c96922907043d0b7b2b36b4c2938e60b6cbd38e",
+  "gitCommit" : "dc12a0c1410cc2554858168066a632d7939192c8",
+  "gitDirty" : true,
+  "harnessSHA" : "sha256:1f816ebc16aaee46731e060b754079e94601c83e2d4c6c7a7153f5f899e4fbe4",
+  "modelHash" : "Nail-Qwen3.6-35B-A3B-MLX@31a0106483c94e9fbb0a6d3360ff122d47377058;config=sha256:46f215270b159f88fdf2eda2151894e2803e5def43062c34e376499ded6f277a",
+  "runUUID" : "audit-20261001-333E166E",
+  "startMonotonicNs" : "249030472885833",
+  "startWallTime" : "2026-10-01T07:06:14Z"
+}

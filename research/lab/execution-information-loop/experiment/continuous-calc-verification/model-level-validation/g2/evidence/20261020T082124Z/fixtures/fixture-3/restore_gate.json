@@ -1,0 +1,184 @@
+{
+  "all_checks_pass": true,
+  "checks": [
+    {
+      "check": "schema",
+      "ok": true
+    },
+    {
+      "check": "settlement_index_present",
+      "code": "SETTLEMENT_MISSING",
+      "detail": "index entry settlement:u1-result",
+      "ok": true
+    },
+    {
+      "check": "settlement_dependency_present",
+      "code": "SETTLEMENT_MISSING",
+      "detail": "dependency entry settlement:u1-result",
+      "ok": true
+    },
+    {
+      "check": "settlement_pointer_agrees",
+      "code": "OBJECT_DIGEST_MISMATCH",
+      "detail": "index=9530bfc5b3e988a91dbe261c79070ca4020b712c389c1e6fa67eee34f4abd9a1 dependency=9530bfc5b3e988a91dbe261c79070ca4020b712c389c1e6fa67eee34f4abd9a1",
+      "ok": true
+    },
+    {
+      "check": "settlement_object_present",
+      "code": "SETTLEMENT_MISSING",
+      "detail": "object 9530bfc5b3e988a91dbe261c79070ca4020b712c389c1e6fa67eee34f4abd9a1",
+      "ok": true
+    },
+    {
+      "check": "settlement_bytes_match_address",
+      "code": "OBJECT_DIGEST_MISMATCH",
+      "detail": "computed=9530bfc5b3e988a91dbe261c79070ca4020b712c389c1e6fa67eee34f4abd9a1 address=9530bfc5b3e988a91dbe261c79070ca4020b712c389c1e6fa67eee34f4abd9a1",
+      "ok": true
+    },
+    {
+      "check": "settlement_byte_size_matches",
+      "code": "OBJECT_DIGEST_MISMATCH",
+      "detail": "declared=926 actual=926",
+      "ok": true
+    },
+    {
+      "check": "settlement_schema",
+      "code": "SETTLEMENT_NOT_SETTLED",
+      "detail": "EINFO-SETTLEMENT-V1",
+      "ok": true
+    },
+    {
+      "check": "settlement_state_settled",
+      "code": "SETTLEMENT_NOT_SETTLED",
+      "detail": "SETTLED",
+      "ok": true
+    },
+    {
+      "check": "r1_digest_matches_payload",
+      "code": "OBJECT_DIGEST_MISMATCH",
+      "detail": "recomputed=5c1f23f36d65d78fcde9196e3234ea7a841f3d23f3a6251ab05f97bdef664c23 recorded=5c1f23f36d65d78fcde9196e3234ea7a841f3d23f3a6251ab05f97bdef664c23",
+      "ok": true
+    },
+    {
+      "check": "r1_matches_phase1_record",
+      "code": "OBJECT_DIGEST_MISMATCH",
+      "detail": "gate=5c1f23f36d65d78fcde9196e3234ea7a841f3d23f3a6251ab05f97bdef664c23 phase1=5c1f23f36d65d78fcde9196e3234ea7a841f3d23f3a6251ab05f97bdef664c23",
+      "ok": true
+    },
+    {
+      "check": "r1_canonical_matches_phase1_record",
+      "code": "OBJECT_DIGEST_MISMATCH",
+      "detail": "canonical text byte-equal",
+      "ok": true
+    },
+    {
+      "check": "source_present",
+      "code": "SOURCE_IDENTITY_MISMATCH",
+      "detail": "item:u1-result",
+      "ok": true
+    },
+    {
+      "check": "source_bytes_match_address",
+      "code": "SOURCE_IDENTITY_MISMATCH",
+      "detail": "source object 56e02e598a03cef34a33da12c7cd7d68e0cb1e2cd7bf12c05a3b37bba67efdf7",
+      "ok": true
+    },
+    {
+      "check": "source_object_identity_agrees",
+      "code": "SOURCE_IDENTITY_MISMATCH",
+      "detail": "basis=56e02e598a03cef34a33da12c7cd7d68e0cb1e2cd7bf12c05a3b37bba67efdf7 current=56e02e598a03cef34a33da12c7cd7d68e0cb1e2cd7bf12c05a3b37bba67efdf7",
+      "ok": true
+    },
+    {
+      "check": "source_version_agrees",
+      "code": "SOURCE_IDENTITY_MISMATCH",
+      "detail": "basis=v1 current=v1",
+      "ok": true
+    },
+    {
+      "check": "dependency_closure_agrees",
+      "code": "DEPENDENCY_CLOSURE_MISMATCH",
+      "detail": "current=['s1-source'] basis=['s1-source']",
+      "ok": true
+    },
+    {
+      "check": "dependency_present:s1-source",
+      "code": "DEPENDENCY_CLOSURE_MISMATCH",
+      "detail": "item:s1-source",
+      "ok": true
+    },
+    {
+      "check": "dependency_bytes_match_address:s1-source",
+      "code": "DEPENDENCY_CLOSURE_MISMATCH",
+      "detail": "6f42e3627a80781bf503ce5537ffa35fadaa8cde0f84612a846a153f71d38e13",
+      "ok": true
+    },
+    {
+      "check": "dependency_object_agrees:s1-source",
+      "code": "DEPENDENCY_CLOSURE_MISMATCH",
+      "detail": "basis=6f42e3627a80781bf503ce5537ffa35fadaa8cde0f84612a846a153f71d38e13 current=6f42e3627a80781bf503ce5537ffa35fadaa8cde0f84612a846a153f71d38e13",
+      "ok": true
+    },
+    {
+      "check": "validity_policy_digest_agrees",
+      "code": "VALIDITY_BASIS_MISMATCH",
+      "detail": "current=af664acf62adf7861249af4617644d9ad25b2ed783561bdd6acb4ac81d2409e3 basis=af664acf62adf7861249af4617644d9ad25b2ed783561bdd6acb4ac81d2409e3",
+      "ok": true
+    },
+    {
+      "check": "validity_current",
+      "code": "VALIDITY_BASIS_MISMATCH",
+      "detail": "version g2-validity-v1",
+      "ok": true
+    },
+    {
+      "check": "demand_present",
+      "code": "DEMAND_MISMATCH",
+      "detail": "demand:g2-fixture-3-demand",
+      "ok": true
+    },
+    {
+      "check": "demand_requires_item",
+      "code": "DEMAND_MISMATCH",
+      "detail": "required=['u1-result']",
+      "ok": true
+    }
+  ],
+  "code": null,
+  "database": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/B1/carrier/g2.sqlite",
+  "database_tree_digest_after": "1a454cb9de8dae743fdeed448c765d161f3aa4c1e4e64a663b8cc17dfbfad545",
+  "database_tree_digest_before": "1a454cb9de8dae743fdeed448c765d161f3aa4c1e4e64a663b8cc17dfbfad545",
+  "database_unchanged": true,
+  "decision": "RESTORED",
+  "dependency_closure": {
+    "ids": [
+      "s1-source"
+    ],
+    "object_ids": {
+      "s1-source": "6f42e3627a80781bf503ce5537ffa35fadaa8cde0f84612a846a153f71d38e13"
+    }
+  },
+  "item_id": "u1-result",
+  "model_loaded": false,
+  "schema_id": "SIMIGO-G2-RESTORE-GATE-V1",
+  "settlement": {
+    "byte_size": 926,
+    "dependency_revision": 1,
+    "object_id": "9530bfc5b3e988a91dbe261c79070ca4020b712c389c1e6fa67eee34f4abd9a1",
+    "r1_canonical": "{\"checksum\":\"0ae90cda\",\"secret\":\"e7727062f318\",\"site\":\"Quarry\"}",
+    "r1_sha256": "5c1f23f36d65d78fcde9196e3234ea7a841f3d23f3a6251ab05f97bdef664c23",
+    "sha256": "9530bfc5b3e988a91dbe261c79070ca4020b712c389c1e6fa67eee34f4abd9a1"
+  },
+  "source": {
+    "demand_id": "g2-fixture-3-demand",
+    "object_id": "56e02e598a03cef34a33da12c7cd7d68e0cb1e2cd7bf12c05a3b37bba67efdf7",
+    "source_kind": "model-extraction-u1",
+    "source_version": "v1"
+  },
+  "validity_basis": {
+    "policy_sha256": "af664acf62adf7861249af4617644d9ad25b2ed783561bdd6acb4ac81d2409e3",
+    "policy_source": "G2_PREREGISTRATION_20261020.md#7",
+    "policy_version": "g2-validity-v1",
+    "valid_until_utc": null
+  }
+}

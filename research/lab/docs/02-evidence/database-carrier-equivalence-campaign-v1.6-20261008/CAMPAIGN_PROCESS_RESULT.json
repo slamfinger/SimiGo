@@ -1,0 +1,16 @@
+{
+  "campaign_returncode": 1,
+  "campaign_stderr": "TypeError: Object of type PosixPath is not JSON serializable while writing PREFLIGHT_VERIFICATION",
+  "campaign_stdout": "campaign fail-closed at PREFLIGHT_VERIFICATION after complete O0-O5 sequence; not a complete evidence package",
+  "harness_argv": [
+    "/usr/bin/env",
+    "python3",
+    "database-carrier-replication/campaign/run_equivalence_campaign.py",
+    "--expected-head",
+    "8c7aca5c10dcd4ec3560897cb7537990d2bc9e6e",
+    "--output",
+    "docs/02-evidence/database-carrier-equivalence-campaign-v1.6-20261008"
+  ],
+  "post_stop_capture": true,
+  "stop_code": "CAMPAIGN_PREFLIGHT_VERIFICATION_JSON_SERIALIZATION_DEFECT"
+}

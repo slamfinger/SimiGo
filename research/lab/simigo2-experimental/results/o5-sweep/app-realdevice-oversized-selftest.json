@@ -1,0 +1,39 @@
+{
+  "determinismIdentical" : true,
+  "device" : {
+    "brand" : "Apple M5",
+    "machine" : "arm64",
+    "operatingSystem" : "Version 26.6.2 (Build 25G83)",
+    "physicalMemoryBytes" : 34359738368
+  },
+  "gate" : "O4_OVERSIZED_REAL_DEVICE_APP_SELFTEST",
+  "loadSeconds" : 0.819067875,
+  "maxSwapMiB" : 0,
+  "meanTokenMs" : 9074.548479125,
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "pass1Tokens" : [
+    8420,
+    594,
+    264,
+    13027,
+    729,
+    429,
+    80953,
+    1378
+  ],
+  "pass2Tokens" : [
+    8420,
+    594,
+    264,
+    13027,
+    729,
+    429,
+    80953,
+    1378
+  ],
+  "peakCapacityMiB" : 30720,
+  "peakFootprintMiB" : 8293,
+  "segmentCount" : 6,
+  "segmentSize" : 8
+}

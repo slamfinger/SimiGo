@@ -1,0 +1,8 @@
+audit_commit=bae68a852cfc
+prior_revision=aca117163904
+failed_baseline=1771000b86d3
+build=PASS
+tests=8/8 PASS
+protected_core_diff_bytes=0
+r_c1=NOT_RUN
+c_execute=NOT_AUTHORIZED

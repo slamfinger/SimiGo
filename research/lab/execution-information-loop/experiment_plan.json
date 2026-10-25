@@ -1,0 +1,72 @@
+{
+  "schema_version": "simigo-j-experiment-plan-v1",
+  "round": "J",
+  "label": "es-is-declarative-result-contract-20261023j",
+  "research_question": "Can the ordinary production task path validate and settle semantically sufficient structured results using item-declared contracts rather than task-ID-specific branches, then restore them across fresh execution instances for incremental continuation?",
+  "primary_entry": "native SimiGoTaskRun / ordinary continueTask",
+  "preconditions": [
+    "Pre-change worktree and protected-history snapshots captured",
+    "I-round attempt10 evidence reviewed, including documented empty native stdout limitation",
+    "model-free declaration/contract gate passes before real model loads",
+    "model snapshot and existing runtime binary identity recorded"
+  ],
+  "conditions": [
+    {
+      "id": "J0-UNSEEN-ID-CHAIN",
+      "kind": "real_model",
+      "stages": 3,
+      "expected": {
+        "fresh_runtime_item_ids": true,
+        "contract_dispatch_basis": "declared_contract",
+        "process_count": 3,
+        "distinct_pids": true,
+        "distinct_logical_es_ids": true,
+        "distinct_runtime_execution_instance_ids": true,
+        "u1_generation_count": 1,
+        "u2_generation_count": 1,
+        "u3_generation_count": 1,
+        "p2_u1_regeneration_count": 0,
+        "p3_u1_regeneration_count": 0,
+        "p3_u2_regeneration_count": 0,
+        "harness_direct_result_reads": 0,
+        "old_state_or_prefix_copied": false
+      }
+    },
+    {
+      "id": "J1-INCOMPLETE-FIELD",
+      "kind": "model_free_contract_control",
+      "expected": {"producer_contract_rejects": true, "valid_settlement_created": false, "signature_created": false}
+    },
+    {
+      "id": "J2-BINDING-MISMATCH",
+      "kind": "model_free_contract_control",
+      "expected": {"producer_contract_rejects": true, "valid_settlement_created": false, "signature_created": false}
+    },
+    {
+      "id": "J3-UNKNOWN-CONTRACT",
+      "kind": "model_free_contract_control",
+      "expected": {"fail_closed": true, "model_loads": 0, "text_tokenize_calls": 0, "seed_tokenize_calls": 0, "generation_calls": 0}
+    },
+    {
+      "id": "J4-UNCHANGED-REUSE",
+      "kind": "model_free_reuse_control",
+      "expected": {"all_eligible_items_reused": true, "model_loads": 0, "generation_calls": 0}
+    },
+    {
+      "id": "J5-MISSING-TRANSITIVE-DEPENDENCY",
+      "kind": "negative_control",
+      "expected": {"refusal_before_tokenize": true, "generation_calls": 0, "database_unchanged": true, "state_unchanged": true}
+    }
+  ],
+  "protected_roots": ["A-I round evidence", "G2 frozen batch", "run-20261022a"],
+  "prohibited": [
+    "modify carrier_loop.py reuse/recompute semantics",
+    "use hard-coded item IDs as semantic validation dispatch",
+    "read result values in harness to compose downstream prompts",
+    "copy prefix/KV/prompt/state/conversation between stage processes",
+    "silently retry a failed real-model generation",
+    "fake non-empty raw stdout by copying evidence JSON",
+    "stage/commit/push"
+  ],
+  "artifact_root": "$HOME/SimiGo-Agent-Runs/es-is-declarative-result-contract-20261023j/"
+}

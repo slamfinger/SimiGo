@@ -1,0 +1,71 @@
+{
+  "database" : "\/tmp\/information-space-init\/test.sqlite",
+  "directoriesScanned" : 2,
+  "entries" : [
+    {
+      "contentLength" : 143,
+      "extractionMode" : "directory-inventory",
+      "extractionStatus" : "stored",
+      "identity" : "56c44a87db3ec4864e6bbcc1",
+      "source" : "\/tmp\/information-space-init\/test-folder",
+      "sourceTime" : "2026-10-03T19:19:42Z"
+    },
+    {
+      "contentLength" : 34,
+      "extractionMode" : "verbatim-text",
+      "extractionStatus" : "stored",
+      "identity" : "fba1f7ce9a9703c1beccc517",
+      "source" : "\/tmp\/information-space-init\/test-folder\/a.txt",
+      "sourceTime" : "2026-10-03T19:19:42Z"
+    },
+    {
+      "contentLength" : 34,
+      "extractionMode" : "verbatim-text",
+      "extractionStatus" : "stored",
+      "identity" : "6c1dfe82fe39204edb814ca5",
+      "source" : "\/tmp\/information-space-init\/test-folder\/b.md",
+      "sourceTime" : "2026-10-03T19:19:42Z"
+    },
+    {
+      "extractionStatus" : "skipped",
+      "identity" : "not-formed:\/tmp\/information-space-init\/test-folder\/binary.bin",
+      "reason" : "unsupported or non-text format",
+      "source" : "\/tmp\/information-space-init\/test-folder\/binary.bin",
+      "sourceTime" : "2026-10-03T19:19:42Z"
+    },
+    {
+      "extractionMode" : "verbatim-text",
+      "extractionStatus" : "skipped",
+      "identity" : "not-formed:\/tmp\/information-space-init\/test-folder\/empty.txt",
+      "reason" : "empty text is not representable by current SQLiteStore decode",
+      "source" : "\/tmp\/information-space-init\/test-folder\/empty.txt",
+      "sourceTime" : "2026-10-03T19:19:42Z"
+    },
+    {
+      "contentLength" : 92,
+      "extractionMode" : "directory-inventory",
+      "extractionStatus" : "stored",
+      "identity" : "ca483b4bc6e2b858b706e290",
+      "source" : "\/tmp\/information-space-init\/test-folder\/sub",
+      "sourceTime" : "2026-10-03T19:19:42Z"
+    },
+    {
+      "contentLength" : 18,
+      "extractionMode" : "verbatim-text",
+      "extractionStatus" : "stored",
+      "identity" : "4a476f7f4ed0b10cacba82b0",
+      "source" : "\/tmp\/information-space-init\/test-folder\/sub\/c.txt",
+      "sourceTime" : "2026-10-03T19:19:42Z"
+    }
+  ],
+  "extractionFailed" : 0,
+  "extractionSkipped" : 2,
+  "extractionSucceeded" : 5,
+  "failures" : [
+
+  ],
+  "filesScanned" : 5,
+  "folder" : "\/tmp\/information-space-init\/test-folder",
+  "informationFormed" : 5,
+  "informationStored" : 5
+}

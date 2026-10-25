@@ -1,0 +1,211 @@
+{
+  "arms": [
+    {
+      "arm": "C-A",
+      "checkpoint_staging_count": 2,
+      "checkpoint_staging_phases": [
+        "OLD_PROCESS_STARTED",
+        "POST_CHANGE_OBSERVED"
+      ],
+      "checkpoint_staging_pointer_keys": [
+        [],
+        []
+      ],
+      "distinct_processes": true,
+      "evaluation": {
+        "failedAuditChecks": [],
+        "fullContinuationSuccess": false,
+        "invalidRun": false,
+        "partialSuccess": true,
+        "x1TaskIdentity": true,
+        "x2BeforeState": false,
+        "x3AfterState": false,
+        "x4DirectionalChange": false,
+        "x5NextAction": false
+      },
+      "fresh_command": "continue",
+      "fresh_lifecycle_marker": {
+        "phase": "fresh_process_started",
+        "pid": 57378,
+        "timestamp": "2026-10-03T04:07:50Z"
+      },
+      "fresh_pid": 57378,
+      "full_continuation_success": false,
+      "invalid_run": false,
+      "old_command": "old",
+      "old_lifecycle_marker": {
+        "phase": "old_process_terminated",
+        "pid": 57377,
+        "timestamp": "2026-10-03T04:07:50Z"
+      },
+      "old_pid": 57377,
+      "overwrite_reference": "RC1-A4-C-A-EXTERNAL-001",
+      "physical_after_sha256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+      "physical_before_sha256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+      "physical_evidence": {
+        "afterSHA256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+        "beforeSHA256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+        "declaredAt": "2026-10-03T04:07:50Z",
+        "observedAt": "2026-10-03T04:07:50Z",
+        "overwriteReference": "RC1-A4-C-A-EXTERNAL-001",
+        "sourcePath": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-A/physical/entity-E.txt"
+      },
+      "physical_source": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-A/physical/entity-E.txt",
+      "report": {
+        "blocker": "missing_allowed_carrier",
+        "schemaVersion": "c-impl-report-v2",
+        "sourceLegality": true,
+        "taskID": "C-T-001"
+      }
+    },
+    {
+      "arm": "C-B",
+      "checkpoint_staging_count": 3,
+      "checkpoint_staging_phases": [
+        "OLD_PROCESS_STARTED",
+        "S0_OBSERVED",
+        "POST_CHANGE_OBSERVED"
+      ],
+      "checkpoint_staging_pointer_keys": [
+        [],
+        [
+          "s0",
+          "task"
+        ],
+        [
+          "progress",
+          "s0",
+          "s1",
+          "task"
+        ]
+      ],
+      "distinct_processes": true,
+      "evaluation": {
+        "failedAuditChecks": [],
+        "fullContinuationSuccess": true,
+        "invalidRun": false,
+        "partialSuccess": false,
+        "x1TaskIdentity": true,
+        "x2BeforeState": true,
+        "x3AfterState": true,
+        "x4DirectionalChange": true,
+        "x5NextAction": true
+      },
+      "fresh_command": "continue",
+      "fresh_lifecycle_marker": {
+        "phase": "fresh_process_started",
+        "pid": 57405,
+        "timestamp": "2026-10-03T04:07:51Z"
+      },
+      "fresh_pid": 57405,
+      "full_continuation_success": true,
+      "invalid_run": false,
+      "old_command": "old",
+      "old_lifecycle_marker": {
+        "phase": "old_process_terminated",
+        "pid": 57396,
+        "timestamp": "2026-10-03T04:07:51Z"
+      },
+      "old_pid": 57396,
+      "overwrite_reference": "RC1-A4-C-B-EXTERNAL-001",
+      "physical_after_sha256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+      "physical_before_sha256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+      "physical_evidence": {
+        "afterSHA256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+        "beforeSHA256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+        "declaredAt": "2026-10-03T04:07:51Z",
+        "observedAt": "2026-10-03T04:07:51Z",
+        "overwriteReference": "RC1-A4-C-B-EXTERNAL-001",
+        "sourcePath": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-B/physical/entity-E.txt"
+      },
+      "physical_source": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-B/physical/entity-E.txt",
+      "report": {
+        "afterState": "alpha=42;mode=active",
+        "beforeState": "alpha=17;mode=quiet",
+        "blocker": "none",
+        "directionalChange": "changed=true;before=alpha=17;mode=quiet;after=alpha=42;mode=active",
+        "nextAction": "REQUEST_HEALTH_CHECK",
+        "schemaVersion": "c-impl-report-v2",
+        "sourceLegality": true,
+        "taskID": "C-T-001"
+      }
+    },
+    {
+      "arm": "C-C",
+      "checkpoint_staging_count": 3,
+      "checkpoint_staging_phases": [
+        "OLD_PROCESS_STARTED",
+        "S0_OBSERVED",
+        "POST_CHANGE_OBSERVED"
+      ],
+      "checkpoint_staging_pointer_keys": [
+        [],
+        [
+          "s0",
+          "task"
+        ],
+        [
+          "progress",
+          "relation",
+          "s0",
+          "s1",
+          "task"
+        ]
+      ],
+      "distinct_processes": true,
+      "evaluation": {
+        "failedAuditChecks": [],
+        "fullContinuationSuccess": true,
+        "invalidRun": false,
+        "partialSuccess": false,
+        "x1TaskIdentity": true,
+        "x2BeforeState": true,
+        "x3AfterState": true,
+        "x4DirectionalChange": true,
+        "x5NextAction": true
+      },
+      "fresh_command": "continue",
+      "fresh_lifecycle_marker": {
+        "phase": "fresh_process_started",
+        "pid": 57408,
+        "timestamp": "2026-10-03T04:07:51Z"
+      },
+      "fresh_pid": 57408,
+      "full_continuation_success": true,
+      "invalid_run": false,
+      "old_command": "old",
+      "old_lifecycle_marker": {
+        "phase": "old_process_terminated",
+        "pid": 57407,
+        "timestamp": "2026-10-03T04:07:51Z"
+      },
+      "old_pid": 57407,
+      "overwrite_reference": "RC1-A4-C-C-EXTERNAL-001",
+      "physical_after_sha256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+      "physical_before_sha256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+      "physical_evidence": {
+        "afterSHA256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+        "beforeSHA256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+        "declaredAt": "2026-10-03T04:07:51Z",
+        "observedAt": "2026-10-03T04:07:51Z",
+        "overwriteReference": "RC1-A4-C-C-EXTERNAL-001",
+        "sourcePath": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/physical/entity-E.txt"
+      },
+      "physical_source": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/physical/entity-E.txt",
+      "report": {
+        "afterState": "alpha=42;mode=active",
+        "beforeState": "alpha=17;mode=quiet",
+        "blocker": "none",
+        "directionalChange": "changed=true;before=alpha=17;mode=quiet;after=alpha=42;mode=active",
+        "nextAction": "REQUEST_HEALTH_CHECK",
+        "schemaVersion": "c-impl-report-v2",
+        "sourceLegality": true,
+        "taskID": "C-T-001"
+      }
+    }
+  ],
+  "attempt": 4,
+  "baseline": "569fe540d1ff",
+  "run_id": "RC1-A4-20261003T040749Z-57375",
+  "status": "COMPLETED_PENDING_EVIDENCE_AUDIT"
+}

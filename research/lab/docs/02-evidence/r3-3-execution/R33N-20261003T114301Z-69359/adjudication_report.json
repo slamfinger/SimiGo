@@ -1,0 +1,115 @@
+{
+  "batch_flags": [],
+  "campaign_reason": "all 10 probes HOLD + 3/3 SANITY BROKEN + K-0 hold",
+  "campaign_verdict": "NO-COUNTEREXAMPLE",
+  "counterexample_candidates": [],
+  "judgment_rule": {
+    "cons_version": "R2 rev.2 candidate: Cons(ES,IS) ⟺ I-condition ∧ A-condition ∧ C-condition",
+    "judgment_time": "campaign setup stage, before any ΔIS exists",
+    "spec": "SIMIGO_LAB_R3_1_JUDGMENT_SPECIFICATION_20261003.md (rev.2, RATIFIED)"
+  },
+  "n_inconclusive": 0,
+  "note": "outcome structure per design §5 rev.2; H-2 contagion applied; requirement (c) of H-3 delegated to second-layer audit where counterexamples exist",
+  "per_cell": [
+    {
+      "cell_id": "cell-01-R32N-Δ1",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ1",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-02-R32N-Δ2",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ2",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-03-R32N-Δ3",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ3",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-04-R32N-Δ4",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ4",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-05-R32N-Δ5",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ5",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-06-R32N-Δ6",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ6",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-07-R32N-Δ7",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ7",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-08-R32N-Δ8",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ8",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-09-R32N-Δ9",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ9",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-10-R32N-Δ10",
+      "op_class": "R3-N",
+      "op_id": "R32N-Δ10",
+      "prediction_ok": false,
+      "verdict": "HOLD"
+    },
+    {
+      "cell_id": "cell-11-R32N-SANITY-A",
+      "op_class": "SANITY",
+      "op_id": "R32N-SANITY-A",
+      "prediction_ok": false,
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-12-R32N-SANITY-I",
+      "op_class": "SANITY",
+      "op_id": "R32N-SANITY-I",
+      "prediction_ok": false,
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-13-R32N-SANITY-C",
+      "op_class": "SANITY",
+      "op_id": "R32N-SANITY-C",
+      "prediction_ok": false,
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-14-R32-K-0",
+      "op_class": "K-0",
+      "op_id": "R32-K-0",
+      "prediction_ok": false,
+      "verdict": "CONTROL-HOLD"
+    }
+  ],
+  "run_uuid": "R33N-20261003T114301Z-69359",
+  "sanity_failures": []
+}

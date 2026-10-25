@@ -1,0 +1,92 @@
+{
+  "checks" : {
+    "u1_generated" : true,
+    "u1_parsed" : true
+  },
+  "engine_content_identity" : {
+    "combined_digest" : "bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+    "tokenizer_digest" : "9bada7c8fddefc7e91cf3bbe9b56305d5234c73e16732518dc4f3825b2d84ac3",
+    "weights_digest" : "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf"
+  },
+  "exit_code" : 0,
+  "finished_at_utc" : "2026-10-20T08:23:18Z",
+  "host" : {
+    "active_processor_count" : 10,
+    "operating_system" : "Version 27.0.1 (Build 26A434)",
+    "physical_memory_bytes" : 34359738368
+  },
+  "load" : {
+    "duration_seconds" : 3.3822940587997437,
+    "ok" : true
+  },
+  "mode" : "phase1",
+  "model_directory" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+  "parent_pid" : 51216,
+  "pid" : 52095,
+  "process_group" : 52095,
+  "schema_id" : "SIMIGO-G2-HOST-RECORD-V1",
+  "started_at_utc" : "2026-10-20T08:23:05Z",
+  "store_base" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/evidence\/20261020T082124Z\/fixtures\/fixture-3\/B1\/store",
+  "u1" : {
+    "chunk_count" : 35,
+    "chunk_sequence" : [
+      "{\"",
+      "secret",
+      "\":",
+      " \"",
+      "e",
+      "7",
+      "7",
+      "2",
+      "7",
+      "0",
+      "6",
+      "2",
+      "f",
+      "3",
+      "1",
+      "8",
+      "\",",
+      " \"",
+      "site",
+      "\":",
+      " \"",
+      "Qu",
+      "arry",
+      "\",",
+      " \"",
+      "checksum",
+      "\":",
+      " \"",
+      "0",
+      "ae",
+      "9",
+      "0",
+      "c",
+      "da",
+      "\"}"
+    ],
+    "completion_token_count" : 35,
+    "duration_seconds" : 2.9393301010131836,
+    "prompt_token_count" : 437,
+    "prompt_token_ids_sha256" : "f7c9267beae62f29ca53a849f102bd5de13c09c1821783953424ff58a7c6209f",
+    "r1_canonical" : "{\"checksum\":\"0ae90cda\",\"secret\":\"e7727062f318\",\"site\":\"Quarry\"}",
+    "r1_parsed" : true,
+    "r1_sha256" : "5c1f23f36d65d78fcde9196e3234ea7a841f3d23f3a6251ab05f97bdef664c23",
+    "rendered_message_count" : 2,
+    "request_messages" : [
+      {
+        "content" : "You are a deterministic field-note extractor. Context tag: 6796e53a755d5367. Never mention, repeat or encode the context tag in any output.",
+        "role" : "system"
+      },
+      {
+        "content" : "Read the field note between the markers.\n<<<NOTE\nFIELD NOTE 3 - QUARRY RELAY\nsite: Quarry\ntransfer_secret: e7727062f318\nrecord_checksum: 0ae90cda\namount: 43861 SEK\nwindow: 2026-11-05 06:30-10:00 UTC\narchive tag: MARKER-C836BE\nnote: decoy_secret: 91b068acef23  (this value is a decoy and was superseded; do not use it)\n\nNothing in the depot inventory changed between the audit and the dispatch.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nNothing in the depot inventory changed between the audit and the dispatch.\nNothing in the depot inventory changed between the audit and the dispatch.\nNothing in the depot inventory changed between the audit and the dispatch.\nA routine inspection found the perimeter fencing intact and the gate log consistent.\nAccounting confirmed that the settlement reference would be issued after delivery.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nNo third party was granted access to the staging area during the preparation window.\nThe receiving clerk will confirm the transfer_secret and the record_checksum before releasing the downstream answer.\nNOTE>>>\nExtract exactly three values from the note: the site name, the transfer_secret (12 hex characters) and the record_checksum (8 hex characters). Reply with only one JSON object and nothing else, in this form: {\"secret\": \"<transfer_secret>\", \"site\": \"<site>\", \"checksum\": \"<record_checksum>\"}",
+        "role" : "user"
+      }
+    ],
+    "request_sha256" : "01ee7b59a2bcff975017d1d9c4c419580b0ceea3429d5da4c0f18eca93843a2d",
+    "request_text" : "Read the field note between the markers.\n<<<NOTE\nFIELD NOTE 3 - QUARRY RELAY\nsite: Quarry\ntransfer_secret: e7727062f318\nrecord_checksum: 0ae90cda\namount: 43861 SEK\nwindow: 2026-11-05 06:30-10:00 UTC\narchive tag: MARKER-C836BE\nnote: decoy_secret: 91b068acef23  (this value is a decoy and was superseded; do not use it)\n\nNothing in the depot inventory changed between the audit and the dispatch.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nNothing in the depot inventory changed between the audit and the dispatch.\nNothing in the depot inventory changed between the audit and the dispatch.\nNothing in the depot inventory changed between the audit and the dispatch.\nA routine inspection found the perimeter fencing intact and the gate log consistent.\nAccounting confirmed that the settlement reference would be issued after delivery.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nNo third party was granted access to the staging area during the preparation window.\nThe receiving clerk will confirm the transfer_secret and the record_checksum before releasing the downstream answer.\nNOTE>>>\nExtract exactly three values from the note: the site name, the transfer_secret (12 hex characters) and the record_checksum (8 hex characters). Reply with only one JSON object and nothing else, in this form: {\"secret\": \"<transfer_secret>\", \"site\": \"<site>\", \"checksum\": \"<record_checksum>\"}",
+    "text" : "{\"secret\": \"e7727062f318\", \"site\": \"Quarry\", \"checksum\": \"0ae90cda\"}",
+    "text_sha256" : "a3c6c31461c21aefda9fcd00d788600e4ccdbec28b87d4b82e51b0e043fd8352"
+  }
+}

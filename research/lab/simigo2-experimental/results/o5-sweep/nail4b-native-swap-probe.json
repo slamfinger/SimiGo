@@ -1,0 +1,111 @@
+{
+  "boundary" : "NATIVE_MLX_BASELINE \/ ZERO_SIMIGO_INTERVENTION \/ MEASUREMENT_ONLY \/ NOT_A_PERFORMANCE_CLAIM",
+  "firstForwardMilliseconds" : 184.61370799999997,
+  "generations" : [
+    {
+      "generatedTokens" : 48,
+      "index" : 1,
+      "promptTokens" : 201,
+      "tokensPerSecond" : 47000000,
+      "totalMilliseconds" : 250.773125,
+      "ttftMilliseconds" : 562.38175
+    },
+    {
+      "generatedTokens" : 48,
+      "index" : 2,
+      "promptTokens" : 201,
+      "tokensPerSecond" : 235.24401744307366,
+      "totalMilliseconds" : 705.55625,
+      "ttftMilliseconds" : 505.763709
+    },
+    {
+      "generatedTokens" : 48,
+      "index" : 3,
+      "promptTokens" : 201,
+      "tokensPerSecond" : 432.00002103012866,
+      "totalMilliseconds" : 635.467041,
+      "ttftMilliseconds" : 526.67075
+    }
+  ],
+  "loadMilliseconds" : 510.513833,
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+  "modelType" : "Qwen35MoEModel",
+  "notes" : [
+    "selective touch skipped: shard file not found"
+  ],
+  "physicalTotalBytes" : 34359738368,
+  "promptLogitsChecksum" : "aSU\/UbSkkeuxt1y8GD4TOtbkfpvSoN\/hdL8eHyNLgVY=",
+  "protocolVersion" : "G1.9-O2.BASELINE.V1",
+  "selectiveTouch" : [
+
+  ],
+  "snapshots" : [
+    {
+      "label" : "T0_PROCESS_START",
+      "mlxActiveBytes" : 0,
+      "mlxCacheBytes" : 0,
+      "mlxPeakBytes" : 0,
+      "physFootprintBytes" : 2949648,
+      "residentBytes" : 20201472,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 18
+    },
+    {
+      "label" : "T1_T2_LOAD_COMPLETE",
+      "mlxActiveBytes" : 20742340624,
+      "mlxCacheBytes" : 1700147492,
+      "mlxPeakBytes" : 21635412276,
+      "physFootprintBytes" : 22571122672,
+      "residentBytes" : 2290040832,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 528
+    },
+    {
+      "label" : "T3_FIRST_FORWARD_COMPLETE",
+      "mlxActiveBytes" : 20742340628,
+      "mlxCacheBytes" : 99827712,
+      "mlxPeakBytes" : 21635412276,
+      "physFootprintBytes" : 21051261152,
+      "residentBytes" : 913227776,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 791
+    },
+    {
+      "label" : "T4_GEN_1",
+      "mlxActiveBytes" : 20742340628,
+      "mlxCacheBytes" : 4668361376,
+      "mlxPeakBytes" : 21635412276,
+      "physFootprintBytes" : 25656410288,
+      "residentBytes" : 812023808,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 42
+    },
+    {
+      "label" : "T6_GEN_3",
+      "mlxActiveBytes" : 20742340628,
+      "mlxCacheBytes" : 4667996260,
+      "mlxPeakBytes" : 21635412276,
+      "physFootprintBytes" : 25655902384,
+      "residentBytes" : 811171840,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 383
+    },
+    {
+      "label" : "END",
+      "mlxActiveBytes" : 20742340628,
+      "mlxCacheBytes" : 4667996260,
+      "mlxPeakBytes" : 21635412276,
+      "physFootprintBytes" : 25655902384,
+      "residentBytes" : 811171840,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 384
+    }
+  ],
+  "status" : "COMPLETED"
+}

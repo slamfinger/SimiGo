@@ -1,0 +1,258 @@
+{
+  "bothBackendsPass" : true,
+  "boundary" : "SAME_NESTED_TEXT_WORKLOAD_AND_OPERATION_SEQUENCE \/ HARNESS_LEVEL \/ NO_NATIVE_KV_AUTHORITY_CHANGE \/ NOT_A_MODEL_IDENTITY_CLOSURE",
+  "branchAInput" : "Now write tests for it.",
+  "branchBInput" : "Add a one-line TODO.",
+  "closureBlocker" : "DIFFERENT_MODEL_ARTIFACTS_AND_TOKENIZERS",
+  "commonChecks" : {
+    "BRANCH_PREFIXES_DIVERGED" : true,
+    "FORK_POINT_ISOLATED" : true,
+    "NESTED_LINEAGE_ISOLATED" : true,
+    "PARENT_BRANCH_SURVIVES_RELEASE" : true,
+    "RELEASE_NESTED_AND_DIRECT_BRANCH" : true,
+    "REPEATED_ADVANCE_RETAINED" : true,
+    "REPEATED_RELEASE_RESTORE_REPLAYS" : true,
+    "ROOT_SURVIVES_RELEASE" : true
+  },
+  "crossBackendClosure" : false,
+  "cycles" : 2,
+  "llama" : {
+    "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ NESTED_BRANCH_GRAPH \/ REPEATED_RELEASE_RESTORE_SWITCH \/ HARNESS_LEVEL \/ NOT_A_UI_PRODUCT",
+    "branchAContent" : "\n   ",
+    "branchAInput" : "Now write tests for it.",
+    "branchBContent" : "\n   ",
+    "branchBInput" : "Add a one-line TODO.",
+    "checks" : {
+      "BRANCH_PREFIXES_DIVERGED" : true,
+      "FORK_POINT_ISOLATED" : true,
+      "NESTED_LINEAGE_ISOLATED" : true,
+      "PARENT_BRANCH_SURVIVES_RELEASE" : true,
+      "RELEASE_NESTED_AND_DIRECT_BRANCH" : true,
+      "REPEATED_ADVANCE_RETAINED" : true,
+      "REPEATED_RELEASE_RESTORE_REPLAYS" : true,
+      "ROOT_SURVIVES_RELEASE" : true
+    },
+    "cycles" : 2,
+    "host" : "127.0.0.1",
+    "modelPath" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "nestedContent" : "\n   ",
+    "nestedInput" : "Explain the first test.",
+    "nestedReplayContents" : [
+      "\n   ",
+      "\n   "
+    ],
+    "overallPass" : true,
+    "port" : 18080,
+    "predictionTokens" : 2,
+    "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.NESTED.V1",
+    "seedText" : "def is_palindrome(s):",
+    "status" : "PASS",
+    "steps" : [
+      {
+        "clientMs" : 0.046875,
+        "executionID" : "nested-branch-a1",
+        "operation" : "fork",
+        "position" : 0
+      },
+      {
+        "clientMs" : 179.75725,
+        "executionID" : "nested-branch-a",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 173.853417,
+        "executionID" : "nested-branch-a1",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 176.661833,
+        "executionID" : "nested-branch-b",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.004167,
+        "executionID" : "nested-branch-a1",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.008625,
+        "executionID" : "nested-branch-a1",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 0.018833,
+        "executionID" : "nested-branch-a1",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.002958,
+        "executionID" : "nested-branch-a1",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.004625,
+        "executionID" : "nested-branch-a1",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 0.018208,
+        "executionID" : "nested-branch-a1",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.006833,
+        "executionID" : "nested-branch-a1",
+        "operation" : "release",
+        "position" : 1
+      }
+    ]
+  },
+  "llamaOperationSequence" : [
+    "fork@0",
+    "continue@1",
+    "continue@1",
+    "continue@1",
+    "release@1",
+    "switch@0",
+    "switch@1",
+    "release@1",
+    "switch@0",
+    "switch@1",
+    "release@1"
+  ],
+  "mlx" : {
+    "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ OVERSIZED_MLX_NESTED_BRANCH_GRAPH \/ REPEATED_RELEASE_RESTORE_SWITCH \/ HARNESS_LEVEL \/ NOT_A_UI_PRODUCT",
+    "branchAContent" : " You should",
+    "branchAInput" : "Now write tests for it.",
+    "branchBContent" : "\n   ",
+    "branchBInput" : "Add a one-line TODO.",
+    "checks" : {
+      "BRANCH_PREFIXES_DIVERGED" : true,
+      "FORK_POINT_ISOLATED" : true,
+      "NESTED_LINEAGE_ISOLATED" : true,
+      "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+      "PARENT_BRANCH_SURVIVES_RELEASE" : true,
+      "RELEASE_NESTED_AND_DIRECT_BRANCH" : true,
+      "REPEATED_ADVANCE_RETAINED" : true,
+      "REPEATED_RELEASE_RESTORE_REPLAYS" : true,
+      "ROOT_SURVIVES_RELEASE" : true
+    },
+    "cycles" : 2,
+    "maxSwapMiB" : 0,
+    "maxTokens" : 2,
+    "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+    "nestedContent" : " The first",
+    "nestedInput" : "Explain the first test.",
+    "nestedReplayContents" : [
+      " You should",
+      " You should"
+    ],
+    "overallPass" : true,
+    "peakFootprintMiB" : 6079,
+    "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.NESTED.V1",
+    "seedText" : "def is_palindrome(s):",
+    "segmentCount" : 6,
+    "segmentSize" : 8,
+    "segmentTransitions" : 64,
+    "status" : "PASS",
+    "steps" : [
+      {
+        "clientMs" : 0.015959,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "fork",
+        "position" : 0
+      },
+      {
+        "clientMs" : 268616.917459,
+        "executionID" : "mlx-nested-branch-a",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 34641.571875,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 30727.249958,
+        "executionID" : "mlx-nested-branch-b",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 7.264291,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.417,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 0.018583,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 5.999584,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "release",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.006583,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 0.012917,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 11.605041,
+        "executionID" : "mlx-nested-branch-a1",
+        "operation" : "release",
+        "position" : 1
+      }
+    ]
+  },
+  "mlxOperationSequence" : [
+    "fork@0",
+    "continue@1",
+    "continue@1",
+    "continue@1",
+    "release@1",
+    "switch@0",
+    "switch@1",
+    "release@1",
+    "switch@0",
+    "switch@1",
+    "release@1"
+  ],
+  "nestedInput" : "Explain the first test.",
+  "overallPass" : true,
+  "predictionTokens" : 2,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.NESTED.CROSSBACKEND.V1",
+  "sameOperationSequence" : true,
+  "sameSemanticChecks" : true,
+  "sameWorkloadShape" : true,
+  "seedText" : "def is_palindrome(s):",
+  "status" : "PASS_WITH_BOUNDARY"
+}

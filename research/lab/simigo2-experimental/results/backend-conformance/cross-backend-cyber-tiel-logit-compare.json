@@ -1,0 +1,420 @@
+{
+  "boundary" : "PHASE2_LLAMA_ONLY \/ SAME_TEACHER_FORCED_DIVERGENCE_PREFIX \/ TOP_K_LOGPROB_COMPARE \/ NOT_A_QUANTIZATION_EQUIVALENCE_CLAIM",
+  "cases" : [
+    {
+      "candidates" : [
+        {
+          "logprob" : -0.8497573137283325,
+          "rank" : 0,
+          "token" : "请求",
+          "tokenID" : 101729
+        },
+        {
+          "logprob" : -1.7021647691726685,
+          "rank" : 1,
+          "token" : "访问",
+          "tokenID" : 99978
+        },
+        {
+          "logprob" : -2.22835636138916,
+          "rank" : 2,
+          "token" : "处理",
+          "tokenID" : 96961
+        },
+        {
+          "logprob" : -2.377185106277466,
+          "rank" : 3,
+          "token" : "计算",
+          "tokenID" : 97792
+        },
+        {
+          "logprob" : -3.290614366531372,
+          "rank" : 4,
+          "token" : "源",
+          "tokenID" : 96214
+        },
+        {
+          "logprob" : -3.824119806289673,
+          "rank" : 5,
+          "token" : "用户",
+          "tokenID" : 97237
+        },
+        {
+          "logprob" : -3.98819637298584,
+          "rank" : 6,
+          "token" : "使用者",
+          "tokenID" : 110958
+        },
+        {
+          "logprob" : -4.3655595779418945,
+          "rank" : 7,
+          "token" : "需求",
+          "tokenID" : 97887
+        },
+        {
+          "logprob" : -4.402636528015137,
+          "rank" : 8,
+          "token" : "CPU",
+          "tokenID" : 30576
+        },
+        {
+          "logprob" : -4.911041259765625,
+          "rank" : 9,
+          "token" : "当前",
+          "tokenID" : 99927
+        },
+        {
+          "logprob" : -5.022368431091309,
+          "rank" : 10,
+          "token" : "读取",
+          "tokenID" : 111388
+        },
+        {
+          "logprob" : -5.218067169189453,
+          "rank" : 11,
+          "token" : "处理器",
+          "tokenID" : 109787
+        },
+        {
+          "logprob" : -5.241162300109863,
+          "rank" : 12,
+          "token" : "源头",
+          "tokenID" : 112418
+        },
+        {
+          "logprob" : -5.408137321472168,
+          "rank" : 13,
+          "token" : "使用",
+          "tokenID" : 96402
+        },
+        {
+          "logprob" : -5.9669389724731445,
+          "rank" : 14,
+          "token" : "调用",
+          "tokenID" : 109185
+        },
+        {
+          "logprob" : -5.974269866943359,
+          "rank" : 15,
+          "token" : "热源",
+          "tokenID" : 147462
+        }
+      ],
+      "commonGeneratedPrefixLength" : 8,
+      "family" : "cjk",
+      "llamaFirstLogprob" : -0.8497573137283325,
+      "llamaFirstRank" : 0,
+      "llamaTopOneTokenID" : 101729,
+      "mlxFirstLogprobInLlama" : -1.7021647691726685,
+      "mlxFirstRankInLlama" : 1,
+      "promptID" : "P6",
+      "teacherPrefixTokenCount" : 205,
+      "topOneMatchesMlx" : false
+    },
+    {
+      "candidates" : [
+        {
+          "logprob" : -0.4819859564304352,
+          "rank" : 0,
+          "token" : "\"\"\"",
+          "tokenID" : 12237
+        },
+        {
+          "logprob" : -1.8169087171554565,
+          "rank" : 1,
+          "token" : "Returns",
+          "tokenID" : 15964
+        },
+        {
+          "logprob" : -2.3155620098114014,
+          "rank" : 2,
+          "token" : "```",
+          "tokenID" : 71093
+        },
+        {
+          "logprob" : -3.1522817611694336,
+          "rank" : 3,
+          "token" : "Return",
+          "tokenID" : 5423
+        },
+        {
+          "logprob" : -3.39292049407959,
+          "rank" : 4,
+          "token" : "Comput",
+          "tokenID" : 56074
+        },
+        {
+          "logprob" : -4.648806571960449,
+          "rank" : 5,
+          "token" : "   ",
+          "tokenID" : 262
+        },
+        {
+          "logprob" : -4.657896995544434,
+          "rank" : 6,
+          "token" : "Compute",
+          "tokenID" : 44712
+        },
+        {
+          "logprob" : -5.179356575012207,
+          "rank" : 7,
+          "token" : "`",
+          "tokenID" : 63
+        },
+        {
+          "logprob" : -5.33066463470459,
+          "rank" : 8,
+          "token" : "\"",
+          "tokenID" : 1
+        },
+        {
+          "logprob" : -6.180370330810547,
+          "rank" : 9,
+          "token" : "The",
+          "tokenID" : 760
+        },
+        {
+          "logprob" : -6.220250129699707,
+          "rank" : 10,
+          "token" : "Calcul",
+          "tokenID" : 55964
+        },
+        {
+          "logprob" : -6.712863922119141,
+          "rank" : 11,
+          "token" : "Calculate",
+          "tokenID" : 46270
+        },
+        {
+          "logprob" : -6.739391326904297,
+          "rank" : 12,
+          "token" : "C",
+          "tokenID" : 34
+        },
+        {
+          "logprob" : -7.073142051696777,
+          "rank" : 13,
+          "token" : "``",
+          "tokenID" : 13475
+        },
+        {
+          "logprob" : -7.298856735229492,
+          "rank" : 14,
+          "token" : "Median",
+          "tokenID" : 76776
+        },
+        {
+          "logprob" : -7.400413513183594,
+          "rank" : 15,
+          "token" : "'''",
+          "tokenID" : 18221
+        }
+      ],
+      "commonGeneratedPrefixLength" : 0,
+      "family" : "docstring",
+      "llamaFirstLogprob" : -0.4819859564304352,
+      "llamaFirstRank" : 0,
+      "llamaTopOneTokenID" : 12237,
+      "mlxFirstLogprobInLlama" : -2.3155620098114014,
+      "mlxFirstRankInLlama" : 2,
+      "promptID" : "P11",
+      "teacherPrefixTokenCount" : 207,
+      "topOneMatchesMlx" : false
+    },
+    {
+      "candidates" : [
+        {
+          "logprob" : -0.32473164796829224,
+          "rank" : 0,
+          "token" : " your",
+          "tokenID" : 678
+        },
+        {
+          "logprob" : -1.790677785873413,
+          "rank" : 1,
+          "token" : " at",
+          "tokenID" : 506
+        },
+        {
+          "logprob" : -2.3334386348724365,
+          "rank" : 2,
+          "token" : " the",
+          "tokenID" : 279
+        },
+        {
+          "logprob" : -4.722840785980225,
+          "rank" : 3,
+          "token" : " with",
+          "tokenID" : 440
+        },
+        {
+          "logprob" : -5.751808166503906,
+          "rank" : 4,
+          "token" : " runtime",
+          "tokenID" : 15135
+        },
+        {
+          "logprob" : -7.944169521331787,
+          "rank" : 5,
+          "token" : " a",
+          "tokenID" : 264
+        },
+        {
+          "logprob" : -8.217386245727539,
+          "rank" : 6,
+          "token" : " if",
+          "tokenID" : 413
+        },
+        {
+          "logprob" : -8.628768920898438,
+          "rank" : 7,
+          "token" : "运行时",
+          "tokenID" : 124490
+        },
+        {
+          "logprob" : -8.739062309265137,
+          "rank" : 8,
+          "token" : " an",
+          "tokenID" : 449
+        },
+        {
+          "logprob" : -9.40275764465332,
+          "rank" : 9,
+          "token" : " (",
+          "tokenID" : 318
+        },
+        {
+          "logprob" : -9.586276054382324,
+          "rank" : 10,
+          "token" : " run",
+          "tokenID" : 1542
+        },
+        {
+          "logprob" : -10.41491985321045,
+          "rank" : 11,
+          "token" : ".",
+          "tokenID" : 13
+        },
+        {
+          "logprob" : -10.48351764678955,
+          "rank" : 12,
+          "token" : " app",
+          "tokenID" : 878
+        },
+        {
+          "logprob" : -10.540637969970703,
+          "rank" : 13,
+          "token" : " program",
+          "tokenID" : 1957
+        },
+        {
+          "logprob" : -10.675788879394531,
+          "rank" : 14,
+          "token" : " when",
+          "tokenID" : 948
+        },
+        {
+          "logprob" : -10.762540817260742,
+          "rank" : 15,
+          "token" : " Runtime",
+          "tokenID" : 10634
+        }
+      ],
+      "commonGeneratedPrefixLength" : 8,
+      "family" : "risk",
+      "llamaFirstLogprob" : -0.32473164796829224,
+      "llamaFirstRank" : 0,
+      "llamaTopOneTokenID" : 678,
+      "mlxFirstLogprobInLlama" : -1.790677785873413,
+      "mlxFirstRankInLlama" : 1,
+      "promptID" : "P12",
+      "teacherPrefixTokenCount" : 211,
+      "topOneMatchesMlx" : false
+    }
+  ],
+  "checks" : {
+    "CASE_COUNT_COMPLETE" : true,
+    "RECORD_MODEL_DIRECTORY_MATCH" : true,
+    "RECORD_VALID" : true,
+    "RESOURCE_SWAP_DELTA_WITHIN_LIMIT" : true,
+    "RESOURCE_SWAP_SAMPLES_VALID" : true,
+    "TOP_K_COMPLETE" : true
+  },
+  "llamaModelPath" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "overallPass" : true,
+  "protocolVersion" : "LAB.CROSSBACKEND.LOGIT.COMPARE.V1",
+  "recordPath" : "results\/backend-conformance\/cross-backend-cyber-tiel-logit-record.json",
+  "recordSHA256" : "e60a67da603d23d366c4f765e454bade27997ac288a36b86eb61ff274d3f01fd",
+  "resource" : {
+    "steadySwapDeltaBytes" : 0,
+    "steadySwapDeltaLimitBytes" : 805306368,
+    "swapDeltaWithinLimit" : true,
+    "swapSamplesValid" : true
+  },
+  "resourceSnapshots" : [
+    {
+      "label" : "START",
+      "mlxActiveBytes" : 0,
+      "mlxCacheBytes" : 0,
+      "mlxPeakBytes" : 0,
+      "physFootprintBytes" : 3555832,
+      "residentBytes" : 22511616,
+      "swapUsedBytes" : 5183111168,
+      "tMilliseconds" : 13
+    },
+    {
+      "label" : "LLAMA_PROPS_RECEIVED",
+      "mlxActiveBytes" : 0,
+      "mlxCacheBytes" : 0,
+      "mlxPeakBytes" : 0,
+      "physFootprintBytes" : 7013024,
+      "residentBytes" : 50708480,
+      "swapUsedBytes" : 5183111168,
+      "tMilliseconds" : 28
+    },
+    {
+      "label" : "CASE_P6_COMPLETE",
+      "mlxActiveBytes" : 0,
+      "mlxCacheBytes" : 0,
+      "mlxPeakBytes" : 0,
+      "physFootprintBytes" : 7275168,
+      "residentBytes" : 51249152,
+      "swapUsedBytes" : 5183111168,
+      "tMilliseconds" : 174
+    },
+    {
+      "label" : "CASE_P11_COMPLETE",
+      "mlxActiveBytes" : 0,
+      "mlxCacheBytes" : 0,
+      "mlxPeakBytes" : 0,
+      "physFootprintBytes" : 7553720,
+      "residentBytes" : 51511296,
+      "swapUsedBytes" : 5183111168,
+      "tMilliseconds" : 261
+    },
+    {
+      "label" : "CASE_P12_COMPLETE",
+      "mlxActiveBytes" : 0,
+      "mlxCacheBytes" : 0,
+      "mlxPeakBytes" : 0,
+      "physFootprintBytes" : 7717584,
+      "residentBytes" : 51658752,
+      "swapUsedBytes" : 5183111168,
+      "tMilliseconds" : 400
+    },
+    {
+      "label" : "END",
+      "mlxActiveBytes" : 0,
+      "mlxCacheBytes" : 0,
+      "mlxPeakBytes" : 0,
+      "physFootprintBytes" : 7733968,
+      "residentBytes" : 51675136,
+      "swapUsedBytes" : 5183111168,
+      "tMilliseconds" : 402
+    }
+  ],
+  "status" : "PASS_WITH_BOUNDARY",
+  "topK" : 16,
+  "topOneAgreementCount" : 0,
+  "topOneAgreementRatio" : 0
+}

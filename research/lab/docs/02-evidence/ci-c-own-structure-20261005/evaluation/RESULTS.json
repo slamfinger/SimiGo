@@ -1,0 +1,411 @@
+{
+  "C4_core_criterion": "deployment_order == [alpha,beta] AND blocked_service_ids == [gamma]",
+  "C4_absent_criterion": "deployment_order == [] AND error == deployment_admissibility_relation_unavailable",
+  "contract_rule": "A preserved C4 in K1_ONLY/K2_ONLY/ID_BINDING_BROKEN is marked UNAUTHORIZED_INFERENCE because it requires recovering a relation/predicate explicitly marked unavailable.",
+  "release_decision_note": "blocked/partial wording is not part of the C4 core criterion.",
+  "summary": {
+    "A-qwen3-moe": {
+      "FULL": "C4_DEGRADED/OK",
+      "K1_ONLY": "C4_DEGRADED/OK",
+      "K2_ONLY": "C4_DEGRADED/OK",
+      "GAMMA_REDUCED": "C4_DEGRADED/OK",
+      "K3_DELETED": "C4_ABSENT/OK_ABSENCE",
+      "K3_PRECOMPUTED_F": "C4_PRESERVED/OK",
+      "ID_BINDING_BROKEN": "C4_DEGRADED/OK"
+    },
+    "C-gemma4-unified": {
+      "FULL": "C4_PRESERVED/OK",
+      "K1_ONLY": "C4_DEGRADED/OK",
+      "K2_ONLY": "C4_PRESERVED/UNAUTHORIZED_INFERENCE",
+      "GAMMA_REDUCED": "C4_PRESERVED/OK",
+      "K3_DELETED": "C4_ABSENT/OK_ABSENCE",
+      "K3_PRECOMPUTED_F": "C4_PRESERVED/OK",
+      "ID_BINDING_BROKEN": "C4_PRESERVED/UNAUTHORIZED_INFERENCE"
+    },
+    "N-nail-qwen3-5-moe": {
+      "FULL": "C4_PRESERVED/OK",
+      "K1_ONLY": "C4_PRESERVED/UNAUTHORIZED_INFERENCE",
+      "K2_ONLY": "C4_PRESERVED/UNAUTHORIZED_INFERENCE",
+      "GAMMA_REDUCED": "C4_PRESERVED/OK",
+      "K3_DELETED": "C4_ABSENT/OK_ABSENCE",
+      "K3_PRECOMPUTED_F": "C4_PRESERVED/OK",
+      "ID_BINDING_BROKEN": "C4_PRESERVED/UNAUTHORIZED_INFERENCE"
+    }
+  },
+  "rows": [
+    {
+      "model_id": "A-qwen3-moe",
+      "arm": "FULL",
+      "C4_core": "C4_DEGRADED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_DEGRADED/OK",
+      "observed": {
+        "C4_core": "C4_DEGRADED",
+        "release_decision": "block",
+        "deployment_order": [],
+        "blocked_service_ids": [
+          "gamma",
+          "alpha",
+          "beta"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "A-qwen3-moe",
+      "arm": "K1_ONLY",
+      "C4_core": "C4_DEGRADED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_DEGRADED/OK",
+      "observed": {
+        "C4_core": "C4_DEGRADED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha"
+        ],
+        "blocked_service_ids": [
+          "beta",
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "A-qwen3-moe",
+      "arm": "K2_ONLY",
+      "C4_core": "C4_DEGRADED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_DEGRADED/OK",
+      "observed": {
+        "C4_core": "C4_DEGRADED",
+        "release_decision": "block",
+        "deployment_order": [],
+        "blocked_service_ids": [
+          "alpha",
+          "beta"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "A-qwen3-moe",
+      "arm": "GAMMA_REDUCED",
+      "C4_core": "C4_DEGRADED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_DEGRADED/OK",
+      "observed": {
+        "C4_core": "C4_DEGRADED",
+        "release_decision": "block",
+        "deployment_order": [],
+        "blocked_service_ids": [
+          "gamma",
+          "alpha",
+          "beta"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "A-qwen3-moe",
+      "arm": "K3_DELETED",
+      "C4_core": "C4_ABSENT",
+      "authorization_contract": "OK_ABSENCE",
+      "combined_status": "C4_ABSENT/OK_ABSENCE",
+      "observed": {
+        "C4_core": "C4_ABSENT",
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_service_ids": [],
+        "error": "deployment_admissibility_relation_unavailable"
+      }
+    },
+    {
+      "model_id": "A-qwen3-moe",
+      "arm": "K3_PRECOMPUTED_F",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_PRESERVED/OK",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "A-qwen3-moe",
+      "arm": "ID_BINDING_BROKEN",
+      "C4_core": "C4_DEGRADED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_DEGRADED/OK",
+      "observed": {
+        "C4_core": "C4_DEGRADED",
+        "release_decision": "reject",
+        "deployment_order": [],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "C-gemma4-unified",
+      "arm": "FULL",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_PRESERVED/OK",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "C-gemma4-unified",
+      "arm": "K1_ONLY",
+      "C4_core": "C4_DEGRADED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_DEGRADED/OK",
+      "observed": {
+        "C4_core": "C4_DEGRADED",
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "C-gemma4-unified",
+      "arm": "K2_ONLY",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "UNAUTHORIZED_INFERENCE",
+      "combined_status": "C4_PRESERVED/UNAUTHORIZED_INFERENCE",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "C-gemma4-unified",
+      "arm": "GAMMA_REDUCED",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_PRESERVED/OK",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "C-gemma4-unified",
+      "arm": "K3_DELETED",
+      "C4_core": "C4_ABSENT",
+      "authorization_contract": "OK_ABSENCE",
+      "combined_status": "C4_ABSENT/OK_ABSENCE",
+      "observed": {
+        "C4_core": "C4_ABSENT",
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_service_ids": [],
+        "error": "deployment_admissibility_relation_unavailable"
+      }
+    },
+    {
+      "model_id": "C-gemma4-unified",
+      "arm": "K3_PRECOMPUTED_F",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_PRESERVED/OK",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "C-gemma4-unified",
+      "arm": "ID_BINDING_BROKEN",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "UNAUTHORIZED_INFERENCE",
+      "combined_status": "C4_PRESERVED/UNAUTHORIZED_INFERENCE",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "N-nail-qwen3-5-moe",
+      "arm": "FULL",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_PRESERVED/OK",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "N-nail-qwen3-5-moe",
+      "arm": "K1_ONLY",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "UNAUTHORIZED_INFERENCE",
+      "combined_status": "C4_PRESERVED/UNAUTHORIZED_INFERENCE",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "N-nail-qwen3-5-moe",
+      "arm": "K2_ONLY",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "UNAUTHORIZED_INFERENCE",
+      "combined_status": "C4_PRESERVED/UNAUTHORIZED_INFERENCE",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "N-nail-qwen3-5-moe",
+      "arm": "GAMMA_REDUCED",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_PRESERVED/OK",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "N-nail-qwen3-5-moe",
+      "arm": "K3_DELETED",
+      "C4_core": "C4_ABSENT",
+      "authorization_contract": "OK_ABSENCE",
+      "combined_status": "C4_ABSENT/OK_ABSENCE",
+      "observed": {
+        "C4_core": "C4_ABSENT",
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_service_ids": [],
+        "error": "deployment_admissibility_relation_unavailable"
+      }
+    },
+    {
+      "model_id": "N-nail-qwen3-5-moe",
+      "arm": "K3_PRECOMPUTED_F",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "OK",
+      "combined_status": "C4_PRESERVED/OK",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    },
+    {
+      "model_id": "N-nail-qwen3-5-moe",
+      "arm": "ID_BINDING_BROKEN",
+      "C4_core": "C4_PRESERVED",
+      "authorization_contract": "UNAUTHORIZED_INFERENCE",
+      "combined_status": "C4_PRESERVED/UNAUTHORIZED_INFERENCE",
+      "observed": {
+        "C4_core": "C4_PRESERVED",
+        "release_decision": "partial",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_service_ids": [
+          "gamma"
+        ],
+        "error": null
+      }
+    }
+  ]
+}

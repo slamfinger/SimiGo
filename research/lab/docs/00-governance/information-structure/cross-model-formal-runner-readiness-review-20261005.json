@@ -1,0 +1,170 @@
+{
+  "document": "Cross-model Formal Runner Readiness Review",
+  "date": "2026-10-05",
+  "status": "FORMAL_RUNNER_NOT_READY / RUNTIME_NOT_AUTHORIZED",
+  "scope": "Static readiness review only; no formal or pilot cell was launched by this review.",
+  "anchors": {
+    "static_scheduling_contract": "docs/00-governance/SIMIGO_LAB_CROSS_MODEL_STABILITY_SCHEDULING_CONTRACT_20261005.md",
+    "static_scheduling_contract_sha256": "6f28579f82a109fbea6e6121cca80dfd2ada2761232a8293fa1ddc216ab93ee8",
+    "cross_model_setup_freeze_commit": "e8ec3e0",
+    "round1_complete_commit": "c0f6e40"
+  },
+  "inventory": {
+    "samples": 4,
+    "models": 4,
+    "planned_cells": 16,
+    "unique_cell_ids": 16,
+    "cell_id_examples": [
+      "S1-release-config__A-qwen3-moe",
+      "S2-version-diff__B-qwen3-next",
+      "S3-column-unit-audit__C-gemma4-unified",
+      "S4-arithmetic-anomaly-audit__D-muse-glimmer"
+    ]
+  },
+  "checks": [
+    {
+      "id": "RR-01",
+      "requirement": "16 unique sample × model cell IDs",
+      "status": "PASS",
+      "evidence": "Frozen 4 samples × 4 models expand to 16 unique IDs; no duplicate was found."
+    },
+    {
+      "id": "RR-02",
+      "requirement": "Sample inputs are frozen and verifiable",
+      "status": "PASS",
+      "evidence": "`run_matrix.py --check-only` reported `OK 4 samples x 4 models`; sample size and SHA-256 checks passed."
+    },
+    {
+      "id": "RR-03",
+      "requirement": "Four prompt artifacts are frozen and hash-verified",
+      "status": "PASS",
+      "evidence": "All four entries in freeze/MANIFEST.sha256 for prompts passed."
+    },
+    {
+      "id": "RR-04",
+      "requirement": "Each model has frozen identity, architecture, snapshot, config hash, and inference config",
+      "status": "PASS",
+      "evidence": "All four entries in freeze/models.json contain model_id, repo_id, architecture, model_class, snapshot_revision, config_sha256, quantization, runtime_backend, and inference_config."
+    },
+    {
+      "id": "RR-05",
+      "requirement": "Endpoint identity is checked and recorded",
+      "status": "PARTIAL",
+      "evidence": "Runner queries /models, records active IDs, and can match repo_id or snapshot_revision; but there is no frozen expected endpoint identity and the fallback path is not yet covered by the frozen runner manifest."
+    },
+    {
+      "id": "RR-06",
+      "requirement": "I1 fresh execution/session is recorded",
+      "status": "FAIL",
+      "evidence": "No agent/session ID, fresh-session boolean, or fresh-session evidence field exists in cell RUN_RECORD."
+    },
+    {
+      "id": "RR-07",
+      "requirement": "I2 model and endpoint identity are recorded",
+      "status": "PARTIAL",
+      "evidence": "model_id, repo_id, architecture, active endpoint models, and endpoint_identity_match are present; endpoint identity contract remains partial."
+    },
+    {
+      "id": "RR-08",
+      "requirement": "I3 sample and prompt hashes are recorded",
+      "status": "PASS",
+      "evidence": "Runner records prompt_sha256; sample hashes are verified before rendering; request.json preserves the effective payload."
+    },
+    {
+      "id": "RR-09",
+      "requirement": "I4 no inherited cache/prefix reuse is proven",
+      "status": "FAIL",
+      "evidence": "No cache/prefix observation, counter, hit-rate, or isolation evidence is recorded; runtime_isolation is hardcoded to NOT ENFORCED BY THIS RUNNER."
+    },
+    {
+      "id": "RR-10",
+      "requirement": "I5 reload or fresh-process isolation is proven",
+      "status": "FAIL",
+      "evidence": "No reload/fresh-process method, before/after model state, PID, timestamp, or backend lifecycle evidence is recorded."
+    },
+    {
+      "id": "RR-11",
+      "requirement": "I6 start/finish evidence is recorded",
+      "status": "PARTIAL",
+      "evidence": "Only created_at and elapsed_seconds are present; no explicit request start and finish timestamps are recorded."
+    },
+    {
+      "id": "RR-12",
+      "requirement": "I7 no concurrent backend workload is proven",
+      "status": "FAIL",
+      "evidence": "No backend lock, workload probe, process/window audit, or exclusive-access assertion exists."
+    },
+    {
+      "id": "RR-13",
+      "requirement": "I8 no Round-1 residue/transcript enters the cell",
+      "status": "PARTIAL",
+      "evidence": "Static source review shows the runner supplies only frozen sample material and does not import Round-1 artifacts; runtime independence is not separately proven."
+    },
+    {
+      "id": "RR-14",
+      "requirement": "I9 no other cell state enters the cell",
+      "status": "FAIL",
+      "evidence": "No cross-cell contamination check, cache reset proof, or per-cell fresh-state assertion exists; all cells reuse the same runner and endpoint without isolation evidence."
+    },
+    {
+      "id": "RR-15",
+      "requirement": "J1/J2/J3 raw adjudication material is retained without normalization",
+      "status": "PASS",
+      "evidence": "Prompt, request, raw response, extracted final answer, model metadata, and hashes are retained; no normalization/stability conclusion is produced."
+    },
+    {
+      "id": "RR-16",
+      "requirement": "Formal status enum is implemented",
+      "status": "FAIL",
+      "evidence": "Required states FORMAL, PILOT_ONLY_NOT_FORMAL, INVALID_ISOLATION, RUNTIME_ERROR, and INCOMPLETE are absent."
+    },
+    {
+      "id": "RR-17",
+      "requirement": "Formal runner is separated from pilot runner and pilot outputs",
+      "status": "FAIL",
+      "evidence": "The current run_matrix.py is the pilot runner; its working copy is modified relative to freeze/MANIFEST.sha256, and pilot outputs remain under runs/."
+    },
+    {
+      "id": "RR-18",
+      "requirement": "Runner provenance is frozen",
+      "status": "FAIL",
+      "evidence": "freeze/MANIFEST.sha256 expects run_matrix.py 4838f1cb08d879a353aa2f2ccb0d5d5f3db857c209e64736f37dba02028addb7, but working hash is c3b8f0423ff8a560006b34c88f8fd1621ea795d880c043c12c26f3a6032bd774."
+    },
+    {
+      "id": "RR-19",
+      "requirement": "No formal runtime is launched by this review",
+      "status": "PASS",
+      "evidence": "Review performed static file/hash/source inspection only."
+    }
+  ],
+  "summary": {
+    "pass": 7,
+    "partial": 4,
+    "fail": 8,
+    "not_ready": true,
+    "critical_blockers": [
+      "BLOCKER-1: runner provenance mismatch against frozen manifest;",
+      "BLOCKER-2: isolation schema I1/I4/I5/I7/I8/I9 is absent;",
+      "BLOCKER-3: formal status enum is absent;",
+      "BLOCKER-4: formal runner is not separated from pilot runner and pilot outputs."
+    ],
+    "nonblocking_gaps": [
+      "endpoint identity contract should be frozen before execution;",
+      "explicit request start/finish timestamps should be added;",
+      "runtime no-Round-1-residue proof should be captured."
+    ]
+  },
+  "decision": {
+    "cross_model_formal_run": "NOT READY",
+    "runtime_execution": "NOT AUTHORIZED",
+    "next_permitted_step": "Implement and freeze a separate formal runner satisfying the failed checks; then rerun this readiness review."
+  },
+  "boundary": {
+    "observer": "NOT RUN",
+    "information_core_store": "NOT RUN",
+    "normalization": "NOT PERFORMED",
+    "stability_scoring": "NOT PERFORMED",
+    "vertical_decomposition": "NOT PERFORMED",
+    "mapping_to_846": "NOT PERFORMED"
+  }
+}

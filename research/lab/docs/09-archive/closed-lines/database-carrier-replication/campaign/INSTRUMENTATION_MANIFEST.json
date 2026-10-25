@@ -1,0 +1,28 @@
+{
+  "accepted_design_package_commit": "21acba4e07f312fcb818968f33fd9e0c185fccf0",
+  "accepted_design_package_sha256": "73f80c26cd3bb6636b82edf29c71b57b9fc5fb028294d13edf519abb768c2cc4",
+  "artifact_kind": "NON_SEMANTIC_OBSERVATION_AND_PROVENANCE_INSTRUMENTATION",
+  "artifacts": {
+    "run_equivalence_campaign.py": {
+      "sha256": "7874ff5a44b5036564b505f532afa14b2fa9dbd5f91e58e6016e81888dcd1222"
+    }
+  },
+  "authoritative_implementation_commit": "7392fcb79fb7e8465b73f9e1837c4634e56c0409",
+  "campaign_policy": {
+    "automatic_renewal": "FORBIDDEN",
+    "campaign_budget": 1,
+    "db_semantic_change": "FORBIDDEN",
+    "decision_boundary_change": "FORBIDDEN",
+    "document_reference_rerun": "FORBIDDEN",
+    "equivalence_adjudication": "HUMAN_EVIDENCE_AUDIT_ONLY",
+    "instrumentation_work_cycle_budget": 1,
+    "logical_import": "FORBIDDEN",
+    "observer_change": "FORBIDDEN",
+    "runner_fixture_tau_change": "FORBIDDEN",
+    "schema_change": "FORBIDDEN"
+  },
+  "governing_request_blob": "f3b6646cccb09c80097fc61c19677e917ee6777a",
+  "governing_request_commit": "a2739de0d76c3dc361d1a43e9abd12bedec9f269",
+  "governing_request_sha256": "d178a6722971e917ac67dd7f37e1209a8e2686795ac5c961ff394a33e50439f5",
+  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_CAMPAIGN_INSTRUMENTATION_MANIFEST_001"
+}

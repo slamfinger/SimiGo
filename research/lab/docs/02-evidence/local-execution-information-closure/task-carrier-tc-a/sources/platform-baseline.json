@@ -1,0 +1,11 @@
+{
+  "platform_id": "edge-release-testbed",
+  "max_schema_version": 3,
+  "required_flags": {
+    "metrics_v2": true
+  },
+  "deployment_rules": {
+    "mode": "sequential",
+    "allow_incompatible_pair": false
+  }
+}

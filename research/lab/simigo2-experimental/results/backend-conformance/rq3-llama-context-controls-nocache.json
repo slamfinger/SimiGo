@@ -1,0 +1,2699 @@
+{
+  "protocolVersion": "RQ3.LLAMA.CONTEXT.CONTROLS.V1",
+  "boundary": "BACKEND_CONTEXT_SEQUENCE_CONTROL / NO_EXECUTION_STATE_OBJECT / NOT_A_UNIVERSAL_PERFORMANCE_CLAIM",
+  "health": {
+    "status": "ok"
+  },
+  "request": {
+    "n_predict": 8,
+    "temperature": 0.0,
+    "seed": 42,
+    "cache_prompt": false,
+    "return_tokens": true
+  },
+  "serverCacheDisabled": true,
+  "prompts": {
+    "parent": "Return exactly one word: ping",
+    "divergent": "Ignore the old request. Return exactly: alpha beta",
+    "parentTokens": [
+      5423,
+      6681,
+      799,
+      3299,
+      25,
+      29018
+    ],
+    "divergentTokens": [
+      12139,
+      279,
+      2235,
+      1622,
+      13,
+      3301,
+      6681,
+      25,
+      8029,
+      13053
+    ]
+  },
+  "cyclesRequested": 20,
+  "sequenceDefinitions": {
+    "same": "C,C,C",
+    "diverge": "C,D,C"
+  },
+  "summary": {
+    "sameClientThirdMinusFirst": {
+      "n": 20.0,
+      "meanMs": -2.904487650000007,
+      "medianMs": -0.6649584999999831,
+      "p95Ms": 3.6037819000000026,
+      "minMs": -23.710751000000016,
+      "maxMs": 12.981666999999959
+    },
+    "divergeClientThirdMinusFirst": {
+      "n": 20.0,
+      "meanMs": 6.524512449999998,
+      "medianMs": 6.588062000000008,
+      "p95Ms": 28.74298844999997,
+      "minMs": -15.401166000000046,
+      "maxMs": 30.547750000000008
+    },
+    "samePredictedThirdMinusFirst": {
+      "n": 20.0,
+      "meanMs": 0.5275500000000009,
+      "medianMs": -0.010500000000007503,
+      "p95Ms": 6.317350000000027,
+      "minMs": -9.766999999999996,
+      "maxMs": 17.477000000000032
+    },
+    "divergePredictedThirdMinusFirst": {
+      "n": 20.0,
+      "meanMs": -0.8310500000000033,
+      "medianMs": 0.41499999999999204,
+      "p95Ms": 13.901450000000002,
+      "minMs": -18.031000000000006,
+      "maxMs": 16.209000000000003
+    },
+    "samePromptThirdMinusFirst": {
+      "n": 20.0,
+      "meanMs": 0.5503,
+      "medianMs": 0.2115000000000009,
+      "p95Ms": 4.619000000000003,
+      "minMs": -4.491,
+      "maxMs": 5.797000000000011
+    },
+    "divergePromptThirdMinusFirst": {
+      "n": 20.0,
+      "meanMs": -0.7054000000000009,
+      "medianMs": -0.26950000000000784,
+      "p95Ms": 3.4308000000000045,
+      "minMs": -9.974000000000004,
+      "maxMs": 5.669000000000011
+    },
+    "divergeMinusSameClientDeltaMeanMs": 9.429000100000005,
+    "sameThirdTokensIdenticalFirst": 20,
+    "divergeThirdTokensIdenticalFirst": 20
+  },
+  "cycles": [
+    {
+      "cycle": 0,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 353.494625,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.366,
+              "predictedMs": 236.383
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 332.579417,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.286,
+              "predictedMs": 232.306
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 336.809333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.579,
+              "predictedMs": 236.373
+            }
+          ],
+          "thirdMinusFirstClientMs": -16.685292000000004,
+          "thirdMinusFirstPredictedMs": -0.010000000000019327,
+          "thirdMinusFirstPromptMs": -0.7870000000000061,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 338.311375,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.825,
+              "predictedMs": 236.511
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 357.026833,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 124.082,
+              "predictedMs": 232.019
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 354.445916,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.597,
+              "predictedMs": 236.315
+            }
+          ],
+          "thirdMinusFirstClientMs": 16.134541000000013,
+          "thirdMinusFirstPredictedMs": -0.19599999999999795,
+          "thirdMinusFirstPromptMs": -1.2280000000000086,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 1,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 339.91775,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 98.742,
+              "predictedMs": 235.187
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 363.654625,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 126.114,
+              "predictedMs": 234.512
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 350.846458,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.901,
+              "predictedMs": 236.213
+            }
+          ],
+          "thirdMinusFirstClientMs": 10.928707999999972,
+          "thirdMinusFirstPredictedMs": 1.025999999999982,
+          "thirdMinusFirstPromptMs": 3.158999999999992,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 345.649917,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.863,
+              "predictedMs": 238.763
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 333.750334,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.259,
+              "predictedMs": 233.623
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 337.94875,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.834,
+              "predictedMs": 236.254
+            }
+          ],
+          "thirdMinusFirstClientMs": -7.701166999999998,
+          "thirdMinusFirstPredictedMs": -2.5090000000000146,
+          "thirdMinusFirstPromptMs": -0.028999999999996362,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 2,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 338.31325,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.49,
+              "predictedMs": 236.821
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 333.896,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.685,
+              "predictedMs": 233.325
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 335.074167,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.101,
+              "predictedMs": 233.987
+            }
+          ],
+          "thirdMinusFirstClientMs": -3.2390829999999937,
+          "thirdMinusFirstPredictedMs": -2.834000000000003,
+          "thirdMinusFirstPromptMs": -0.3889999999999958,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 337.567542,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.578,
+              "predictedMs": 237.025
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 360.979042,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 123.273,
+              "predictedMs": 234.195
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 344.58325,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.919,
+              "predictedMs": 235.129
+            }
+          ],
+          "thirdMinusFirstClientMs": 7.015708000000018,
+          "thirdMinusFirstPredictedMs": -1.896000000000015,
+          "thirdMinusFirstPromptMs": 1.340999999999994,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 3,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 342.162083,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.021,
+              "predictedMs": 236.395
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 365.086333,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 125.237,
+              "predictedMs": 236.347
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 346.758458,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.49,
+              "predictedMs": 237.529
+            }
+          ],
+          "thirdMinusFirstClientMs": 4.596375000000023,
+          "thirdMinusFirstPredictedMs": 1.1339999999999861,
+          "thirdMinusFirstPromptMs": -0.5310000000000059,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 342.725291,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.56,
+              "predictedMs": 234.822
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 335.499458,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.587,
+              "predictedMs": 236.94
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 344.887333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 103.423,
+              "predictedMs": 240.366
+            }
+          ],
+          "thirdMinusFirstClientMs": 2.1620419999999854,
+          "thirdMinusFirstPredictedMs": 5.544000000000011,
+          "thirdMinusFirstPromptMs": 1.8629999999999995,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 4,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 365.891042,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.55,
+              "predictedMs": 257.067
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 369.912875,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 110.806,
+              "predictedMs": 256.948
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 366.343333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 108.312,
+              "predictedMs": 255.452
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.4522909999999456,
+          "thirdMinusFirstPredictedMs": -1.615000000000009,
+          "thirdMinusFirstPromptMs": 0.7620000000000005,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 358.538125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.336,
+              "predictedMs": 249.098
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 398.558709,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 134.522,
+              "predictedMs": 257.656
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 352.375959,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.539,
+              "predictedMs": 234.518
+            }
+          ],
+          "thirdMinusFirstClientMs": -6.1621659999999565,
+          "thirdMinusFirstPredictedMs": -14.580000000000013,
+          "thirdMinusFirstPromptMs": -5.796999999999997,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 5,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.277833,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.597,
+              "predictedMs": 235.091
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 373.866208,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 129.437,
+              "predictedMs": 240.751
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 358.00775,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.266,
+              "predictedMs": 237.948
+            }
+          ],
+          "thirdMinusFirstClientMs": 17.729917,
+          "thirdMinusFirstPredictedMs": 2.8569999999999993,
+          "thirdMinusFirstPromptMs": 5.669000000000011,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 337.483083,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 97.351,
+              "predictedMs": 233.854
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.501166,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 103.239,
+              "predictedMs": 236.324
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 338.207166,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.294,
+              "predictedMs": 235.895
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.7240829999999505,
+          "thirdMinusFirstPredictedMs": 2.040999999999997,
+          "thirdMinusFirstPromptMs": 3.942999999999998,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 6,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 337.266417,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 98.324,
+              "predictedMs": 238.029
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.421875,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.876,
+              "predictedMs": 236.545
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 338.624958,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.517,
+              "predictedMs": 237.182
+            }
+          ],
+          "thirdMinusFirstClientMs": 1.3585410000000024,
+          "thirdMinusFirstPredictedMs": -0.8470000000000084,
+          "thirdMinusFirstPromptMs": 2.192999999999998,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 348.120458,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.787,
+              "predictedMs": 245.286
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 394.97925,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 135.161,
+              "predictedMs": 250.882
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 349.606333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 103.347,
+              "predictedMs": 232.664
+            }
+          ],
+          "thirdMinusFirstClientMs": 1.4858750000000214,
+          "thirdMinusFirstPredictedMs": -12.622000000000014,
+          "thirdMinusFirstPromptMs": 1.559999999999988,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 7,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 344.526292,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.539,
+              "predictedMs": 236.858
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 368.540833,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 129.021,
+              "predictedMs": 236.515
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 344.700875,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.04,
+              "predictedMs": 232.982
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.17458299999998417,
+          "thirdMinusFirstPredictedMs": -3.8760000000000048,
+          "thirdMinusFirstPromptMs": 0.5010000000000048,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 346.2255,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.272,
+              "predictedMs": 237.679
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.402583,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.993,
+              "predictedMs": 237.438
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 337.7885,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.661,
+              "predictedMs": 234.285
+            }
+          ],
+          "thirdMinusFirstClientMs": -8.437000000000012,
+          "thirdMinusFirstPredictedMs": -3.3940000000000055,
+          "thirdMinusFirstPromptMs": 0.3889999999999958,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 8,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 344.926917,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 104.842,
+              "predictedMs": 239.207
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.272708,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.89,
+              "predictedMs": 237.432
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 336.370125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.351,
+              "predictedMs": 235.123
+            }
+          ],
+          "thirdMinusFirstClientMs": -8.55679200000003,
+          "thirdMinusFirstPredictedMs": -4.084000000000003,
+          "thirdMinusFirstPromptMs": -4.491,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 339.973792,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.892,
+              "predictedMs": 236.045
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 382.553208,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 132.26,
+              "predictedMs": 246.439
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 364.92625,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.498,
+              "predictedMs": 248.477
+            }
+          ],
+          "thirdMinusFirstClientMs": 24.95245799999998,
+          "thirdMinusFirstPredictedMs": 12.432000000000016,
+          "thirdMinusFirstPromptMs": -2.3939999999999912,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 9,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 358.883084,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.242,
+              "predictedMs": 242.128
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 369.110542,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 130.083,
+              "predictedMs": 236.353
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 345.526,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 98.704,
+              "predictedMs": 238.779
+            }
+          ],
+          "thirdMinusFirstClientMs": -13.357083999999986,
+          "thirdMinusFirstPredictedMs": -3.3489999999999895,
+          "thirdMinusFirstPromptMs": -6.538000000000011,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 347.322833,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.426,
+              "predictedMs": 239.694
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 338.979667,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 103.05,
+              "predictedMs": 235.083
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 339.594541,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.544,
+              "predictedMs": 238.142
+            }
+          ],
+          "thirdMinusFirstClientMs": -7.72829200000001,
+          "thirdMinusFirstPredictedMs": -1.5519999999999925,
+          "thirdMinusFirstPromptMs": -0.882000000000005,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 10,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.431042,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.558,
+              "predictedMs": 238.87
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 336.292333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.895,
+              "predictedMs": 234.565
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.953125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.104,
+              "predictedMs": 238.859
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.5220830000000092,
+          "thirdMinusFirstPredictedMs": -0.01099999999999568,
+          "thirdMinusFirstPromptMs": 0.5459999999999923,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.825334,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 103.375,
+              "predictedMs": 236.427
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 375.6425,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 132.032,
+              "predictedMs": 239.745
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 371.373084,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.637,
+              "predictedMs": 250.207
+            }
+          ],
+          "thirdMinusFirstClientMs": 30.547750000000008,
+          "thirdMinusFirstPredictedMs": 13.780000000000001,
+          "thirdMinusFirstPromptMs": 2.2620000000000005,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 11,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 356.225833,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.344,
+              "predictedMs": 239.004
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 371.446,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 127.048,
+              "predictedMs": 239.189
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 358.913792,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.961,
+              "predictedMs": 238.206
+            }
+          ],
+          "thirdMinusFirstClientMs": 2.687958999999978,
+          "thirdMinusFirstPredictedMs": -0.7980000000000018,
+          "thirdMinusFirstPromptMs": 0.6170000000000044,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 342.246458,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.648,
+              "predictedMs": 234.528
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 338.462667,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.943,
+              "predictedMs": 237.541
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.387541,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.079,
+              "predictedMs": 238.244
+            }
+          ],
+          "thirdMinusFirstClientMs": -1.8589170000000195,
+          "thirdMinusFirstPredictedMs": 3.716000000000008,
+          "thirdMinusFirstPromptMs": -0.5690000000000026,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 12,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 337.37675,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.28,
+              "predictedMs": 236.18
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 333.129042,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 98.932,
+              "predictedMs": 233.208
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.2205,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.64,
+              "predictedMs": 236.531
+            }
+          ],
+          "thirdMinusFirstClientMs": 2.84375,
+          "thirdMinusFirstPredictedMs": 0.3509999999999991,
+          "thirdMinusFirstPromptMs": 2.3599999999999994,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.762667,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.952,
+              "predictedMs": 237.882
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 367.269125,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 123.89,
+              "predictedMs": 240.31
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 346.923083,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.596,
+              "predictedMs": 239.442
+            }
+          ],
+          "thirdMinusFirstClientMs": 6.160415999999998,
+          "thirdMinusFirstPredictedMs": 1.5600000000000023,
+          "thirdMinusFirstPromptMs": -1.3559999999999945,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 13,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 343.016459,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.371,
+              "predictedMs": 234.044
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 371.932958,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 128.484,
+              "predictedMs": 240.387
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 350.117375,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.004,
+              "predictedMs": 238.36
+            }
+          ],
+          "thirdMinusFirstClientMs": 7.100915999999984,
+          "thirdMinusFirstPredictedMs": 4.3160000000000025,
+          "thirdMinusFirstPromptMs": -1.3669999999999902,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 342.761625,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.829,
+              "predictedMs": 234.617
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 341.357,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.335,
+              "predictedMs": 238.068
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 343.060083,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.863,
+              "predictedMs": 240.21
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.2984580000000392,
+          "thirdMinusFirstPredictedMs": 5.593000000000018,
+          "thirdMinusFirstPromptMs": 0.034000000000006025,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 14,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 336.943291,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.987,
+              "predictedMs": 234.095
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 341.031084,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.686,
+              "predictedMs": 237.4
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 340.0535,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 103.34,
+              "predictedMs": 235.723
+            }
+          ],
+          "thirdMinusFirstClientMs": 3.1102089999999976,
+          "thirdMinusFirstPredictedMs": 1.6280000000000143,
+          "thirdMinusFirstPromptMs": 1.3530000000000086,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 336.067125,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.513,
+              "predictedMs": 233.737
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 371.4705,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 129.121,
+              "predictedMs": 238.809
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 347.880875,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.321,
+              "predictedMs": 238.34
+            }
+          ],
+          "thirdMinusFirstClientMs": 11.813750000000027,
+          "thirdMinusFirstPredictedMs": 4.603000000000009,
+          "thirdMinusFirstPromptMs": -1.1920000000000073,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 15,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 342.548958,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.56,
+              "predictedMs": 233.53
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 377.360125,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 131.054,
+              "predictedMs": 242.244
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 371.196959,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.873,
+              "predictedMs": 249.739
+            }
+          ],
+          "thirdMinusFirstClientMs": 28.648000999999965,
+          "thirdMinusFirstPredictedMs": 16.209000000000003,
+          "thirdMinusFirstPromptMs": 3.3130000000000024,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 361.091083,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 103.621,
+              "predictedMs": 244.962
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 365.138,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.681,
+              "predictedMs": 255.366
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 374.07275,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 109.418,
+              "predictedMs": 262.439
+            }
+          ],
+          "thirdMinusFirstClientMs": 12.981666999999959,
+          "thirdMinusFirstPredictedMs": 17.477000000000032,
+          "thirdMinusFirstPromptMs": 5.797000000000011,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 16,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 368.707,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.353,
+              "predictedMs": 258.309
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 366.321417,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 112.618,
+              "predictedMs": 251.893
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 365.411334,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 111.91,
+              "predictedMs": 252.006
+            }
+          ],
+          "thirdMinusFirstClientMs": -3.295665999999983,
+          "thirdMinusFirstPredictedMs": -6.303000000000026,
+          "thirdMinusFirstPromptMs": 4.557000000000002,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 374.386208,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 112.79,
+              "predictedMs": 258.921
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 401.399916,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 135.928,
+              "predictedMs": 257.592
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 359.338459,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.816,
+              "predictedMs": 240.89
+            }
+          ],
+          "thirdMinusFirstClientMs": -15.04774900000001,
+          "thirdMinusFirstPredictedMs": -18.031000000000006,
+          "thirdMinusFirstPromptMs": -9.974000000000004,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 17,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 362.749541,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 104.059,
+              "predictedMs": 246.589
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 376.925792,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 133.375,
+              "predictedMs": 236.759
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 347.348375,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 99.79,
+              "predictedMs": 238.94
+            }
+          ],
+          "thirdMinusFirstClientMs": -15.401166000000046,
+          "thirdMinusFirstPredictedMs": -7.649000000000001,
+          "thirdMinusFirstPromptMs": -4.268999999999991,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 344.689167,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.656,
+              "predictedMs": 235.409
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 338.450417,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 102.248,
+              "predictedMs": 235.297
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 343.224708,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.127,
+              "predictedMs": 241.139
+            }
+          ],
+          "thirdMinusFirstClientMs": -1.4644589999999766,
+          "thirdMinusFirstPredictedMs": 5.730000000000018,
+          "thirdMinusFirstPromptMs": -1.5290000000000106,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 18,
+      "order": "same+diverge",
+      "sequences": {
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 341.2545,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.747,
+              "predictedMs": 238.532
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 333.689,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 101.319,
+              "predictedMs": 231.479
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 341.389042,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 100.609,
+              "predictedMs": 239.929
+            }
+          ],
+          "thirdMinusFirstClientMs": 0.13454200000001038,
+          "thirdMinusFirstPredictedMs": 1.3969999999999914,
+          "thirdMinusFirstPromptMs": -1.1380000000000052,
+          "thirdTokensIdenticalFirst": true
+        },
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 360.387292,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.232,
+              "predictedMs": 253.824
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 382.28775,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 135.551,
+              "predictedMs": 240.803
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 359.816333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.356,
+              "predictedMs": 238.91
+            }
+          ],
+          "thirdMinusFirstClientMs": -0.5709590000000162,
+          "thirdMinusFirstPredictedMs": -14.914000000000016,
+          "thirdMinusFirstPromptMs": 2.1239999999999952,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    },
+    {
+      "cycle": 19,
+      "order": "diverge+same",
+      "sequences": {
+        "diverge": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 348.679917,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 104.302,
+              "predictedMs": 237.782
+            },
+            {
+              "content": " gamma\n\n<think>\nThe user is asking",
+              "tokens": [
+                20956,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369,
+                9859
+              ],
+              "clientWallMs": 372.341,
+              "promptN": 10,
+              "cachedN": 0,
+              "promptMs": 129.615,
+              "predictedMs": 239.611
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 359.732333,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 104.294,
+              "predictedMs": 241.155
+            }
+          ],
+          "thirdMinusFirstClientMs": 11.052415999999994,
+          "thirdMinusFirstPredictedMs": 3.3729999999999905,
+          "thirdMinusFirstPromptMs": -0.008000000000009777,
+          "thirdTokensIdenticalFirst": true
+        },
+        "same": {
+          "phases": [
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 368.608834,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 107.523,
+              "predictedMs": 249.069
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 342.29425,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 105.398,
+              "predictedMs": 235.615
+            },
+            {
+              "content": " or pong\n\n<think>\nThe user is",
+              "tokens": [
+                466,
+                74966,
+                271,
+                248068,
+                198,
+                760,
+                1156,
+                369
+              ],
+              "clientWallMs": 344.898083,
+              "promptN": 6,
+              "cachedN": 0,
+              "promptMs": 104.546,
+              "predictedMs": 239.302
+            }
+          ],
+          "thirdMinusFirstClientMs": -23.710751000000016,
+          "thirdMinusFirstPredictedMs": -9.766999999999996,
+          "thirdMinusFirstPromptMs": -2.9769999999999897,
+          "thirdTokensIdenticalFirst": true
+        }
+      }
+    }
+  ]
+}

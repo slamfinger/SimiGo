@@ -1,0 +1,5 @@
+{
+  "evidence": [],
+  "maximum_candidates": 1,
+  "rule": "registered stable object ID + exact content SHA256 + exact byte size"
+}

@@ -1,0 +1,7 @@
+{"wallTime":"2026-10-01T11:22:01Z","event":"run_start","monotonicNs":264377345480291,"runUUID":"audit-20261001-6BEE5FAE","payload":{"experiment":"P7-1","phase":"pollution"}}
+{"wallTime":"2026-10-01T11:22:01Z","event":"judgment_inputs","monotonicNs":264377346167791,"runUUID":"audit-20261001-6BEE5FAE","payload":{"fork_dir":"audit-20261001-67D87B20"}}
+{"wallTime":"2026-10-01T11:22:01Z","event":"J-PN2_parent_payload_sha","monotonicNs":264377346694666,"runUUID":"audit-20261001-6BEE5FAE","payload":{"value":"UNCHANGED"}}
+{"wallTime":"2026-10-01T11:22:01Z","event":"generate_start","monotonicNs":264377348097166,"runUUID":"audit-20261001-6BEE5FAE","payload":{"tag":"parent-replay"}}
+{"monotonicNs":264382471405916,"event":"generate_complete","wallTime":"2026-10-01T11:22:06Z","runUUID":"audit-20261001-6BEE5FAE","payload":{"tag":"parent-replay","original":"\n\nThe folder is called \"ReferenceFiles\"\n\nSo the answer is: ReferenceFiles\n\nThe question is straightforward - they explicitly state the folder is called \"Reference","J-PN1_replay_verbatim":"YES","replay":"\n\nThe folder is called \"ReferenceFiles\"\n\nSo the answer is: ReferenceFiles\n\nThe question is straightforward - they explicitly state the folder is called \"Reference","tokens":"32"}}
+{"monotonicNs":264382475650833,"event":"r0_verify","wallTime":"2026-10-01T11:22:06Z","runUUID":"audit-20261001-6BEE5FAE","payload":{"result":"ALL_PASS"}}
+{"monotonicNs":264382475990875,"event":"run_complete","wallTime":"2026-10-01T11:22:06Z","runUUID":"audit-20261001-6BEE5FAE","payload":{"phase":"pollution"}}

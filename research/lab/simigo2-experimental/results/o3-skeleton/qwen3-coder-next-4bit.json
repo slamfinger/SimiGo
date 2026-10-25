@@ -1,0 +1,55 @@
+{
+  "boundary" : "SKELETON_LOAD \/ SELECTIVE_RESIDENCY \/ REAL_FORWARD_CONSUMES_RESIDENCY \/ ZERO_FULL_WEIGHT_LOAD \/ NOT_A_PERFORMANCE_CLAIM",
+  "forwardMilliseconds" : 876.327625,
+  "generatedTokens" : 16,
+  "materializeSeconds" : 0.442817583,
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelType" : "qwen3_next",
+  "overallPass" : true,
+  "protocolVersion" : "G1.9-O3.SKELETON.V1",
+  "stages" : [
+    {
+      "detail" : "Qwen3NextModel constructed; lazy random init (no weights loaded)",
+      "pass" : true,
+      "physFootprintBytes" : 89146160,
+      "stage" : "A1_SKELETON_CONSTRUCT",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 0
+    },
+    {
+      "detail" : "quantized 542 modules from checkpoint .scales names",
+      "pass" : true,
+      "physFootprintBytes" : 91980592,
+      "stage" : "A2_QUANTIZE",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 51
+    },
+    {
+      "detail" : "materialized 1747 tensors \/ 28.26 GiB; skipped (evicted group) 13.50 GiB in 0.4s",
+      "pass" : true,
+      "physFootprintBytes" : 30424078248,
+      "stage" : "B_SELECTIVE_RESIDENCY",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 533
+    },
+    {
+      "detail" : "prompt 18 tokens → 16 tokens in 876.3ms; evicted-group weights were NOT resident during this forward",
+      "pass" : true,
+      "physFootprintBytes" : 46653921408,
+      "stage" : "C_REAL_FORWARD",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 501
+    }
+  ],
+  "status" : "PASS"
+}
+d group's 13.50 GiB random weights during the pass (footprint ~41.8 GiB -> over-physical thrash); hung, killed at 29 min"
+    }
+  ],
+  "verdict": {
+    "O3A": "PASS - skeleton load essentially free (0.09 GiB vs 41.76 GiB)",
+    "O3B": "PASS - 28.26 GiB selective residency under 32 GiB, <1 s, swap 0",
+    "O3C": "BLOCKED - streaming forward required (materialize group -> run layers -> release per range); also zero-placeholder release to suppress lazy-random materialization"
+  },
+  "finding": "oversized execution requires a STREAMING FORWARD (Route D at forward granularity); between-generation residency (L4 pattern) cannot help during a forward"
+}

@@ -1,0 +1,10 @@
+{
+  "original_anchored" : "YES",
+  "outcome" : "NECESSITY_EVIDENCE",
+  "outputs_differ" : "YES",
+  "r0RunUUID" : "audit-20261001-DF19FB70",
+  "relation_level_records_equal" : "YES",
+  "remaining_relations" : "I\/P\/C",
+  "removed_relation" : "anchor binding",
+  "role" : "gdeltaA"
+}

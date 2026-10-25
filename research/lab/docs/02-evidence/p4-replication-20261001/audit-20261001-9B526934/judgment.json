@@ -1,0 +1,27 @@
+{
+  "inputs" : {
+    "s1_run1" : "audit-20261001-41EB8D2A",
+    "s1_run2" : "audit-20261001-25E164C0",
+    "s2_run1" : "audit-20261001-3141ECC6",
+    "s2_run2" : "audit-20261001-BF2D5DE2"
+  },
+  "overall" : "PASS",
+  "s1" : {
+    "J1_identity" : "PASS",
+    "J2_divergence" : "PASS",
+    "J3_anchoring" : "PASS",
+    "J4_order_independence" : "PASS",
+    "J5_isolation" : "PASS",
+    "J6_evolution" : "PASS",
+    "verdict" : "PASS"
+  },
+  "s2" : {
+    "J1_identity" : "PASS",
+    "J2_divergence" : "PASS",
+    "J3_anchoring" : "PASS",
+    "J4_order_independence" : "PASS",
+    "J5_isolation" : "PASS",
+    "J6_evolution" : "PASS",
+    "verdict" : "PASS"
+  }
+}

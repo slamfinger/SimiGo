@@ -1,0 +1,5 @@
+status=ABORTED_ORCHESTRATION_MISSING_DECLARED_S1
+arms_executed=C_A_OLD_ONLY
+protocol_change=false
+implementation_change=false
+classification=ORCHESTRATION_INVALID_NOT_R_C1_RESULT

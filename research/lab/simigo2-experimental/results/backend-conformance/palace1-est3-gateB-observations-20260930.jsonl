@@ -1,0 +1,43 @@
+{"ts":"2026-09-30T15:37:54Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T15:37:59Z","case":"setup","model":"loaded: Nail-Qwen3.6-35B-A3B-MLX"}
+{"ts":"2026-09-30T15:37:59Z","case":"b0","load":"FAIL: generationFailed(\"session checkpoint generation mismatch: generation=c1185f0a-2cf9-4b02-85c6-c386f9177ea9\")"}
+{"ts":"2026-09-30T15:37:59Z","case":"b0","continuation_position":"NOT ESTABLISHED (load failed)"}
+{"ts":"2026-09-30T15:37:59Z","case":"b0","next_token":"NOT PRODUCED (load failed)"}
+{"ts":"2026-09-30T15:37:59Z","case":"b0","consistency":"N/A (no continuation established)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b1","load":"FAIL: generationFailed(\"session checkpoint generation mismatch: generation=c1185f0a-2cf9-4b02-85c6-c386f9177ea9\")"}
+{"ts":"2026-09-30T15:38:00Z","case":"b1","continuation_position":"NOT ESTABLISHED (load failed)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b1","next_token":"NOT PRODUCED (load failed)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b1","consistency":"N/A (no continuation established)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b2","load":"FAIL: generationFailed(\"session checkpoint generation mismatch: generation=c1185f0a-2cf9-4b02-85c6-c386f9177ea9\")"}
+{"ts":"2026-09-30T15:38:00Z","case":"b2","continuation_position":"NOT ESTABLISHED (load failed)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b2","next_token":"NOT PRODUCED (load failed)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b2","consistency":"N/A (no continuation established)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b3","load":"FAIL: generationFailed(\"session checkpoint generation mismatch: generation=c1185f0a-2cf9-4b02-85c6-c386f9177ea9\")"}
+{"ts":"2026-09-30T15:38:00Z","case":"b3","continuation_position":"NOT ESTABLISHED (load failed)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b3","next_token":"NOT PRODUCED (load failed)"}
+{"ts":"2026-09-30T15:38:00Z","case":"b3","consistency":"N/A (no continuation established)"}
+{"ts":"2026-09-30T15:38:00Z","case":"teardown","durability_writes":"ZERO"}
+{"ts":"2026-09-30T15:38:00Z","case":"teardown","real_branch_checkpoints_after":"204"}
+{"ts":"2026-09-30T15:41:37Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T15:41:42Z","case":"setup","model":"loaded: Nail-Qwen3.6-35B-A3B-MLX"}
+{"ts":"2026-09-30T15:41:42Z","case":"b0","load":"OK history_count=17"}
+{"ts":"2026-09-30T15:41:42Z","case":"b0","continuation_position":"17 (restored at checkpoint position)"}
+{"ts":"2026-09-30T15:42:09Z","case":"b0","next_token":"PRODUCED chars=55"}
+{"ts":"2026-09-30T15:42:09Z","case":"b0","response":"你是想继续查看其他目录吗？比如：\n\n- **三公司管理制度及规定**（另一个4号文件夹）\n- **国家及地方法"}
+{"ts":"2026-09-30T15:42:09Z","case":"PB1","crosscheck":"MATCH (identical to Phase-B deterministic baseline)"}
+{"ts":"2026-09-30T15:42:09Z","case":"b1","load":"FAIL: KVCacheError(message: \"Corrupt prompt cache: cache 0 has non-contiguous array indices.\")"}
+{"ts":"2026-09-30T15:42:09Z","case":"b1","continuation_position":"NOT ESTABLISHED (load failed)"}
+{"ts":"2026-09-30T15:42:09Z","case":"b1","next_token":"NOT PRODUCED (load failed)"}
+{"ts":"2026-09-30T15:42:09Z","case":"b1","consistency":"N/A (no continuation established)"}
+{"ts":"2026-09-30T15:42:10Z","case":"b2","load":"OK history_count=17"}
+{"ts":"2026-09-30T15:42:10Z","case":"b2","continuation_position":"17 (restored at checkpoint position)"}
+{"ts":"2026-09-30T15:42:24Z","case":"b2","next_token":"PRODUCED chars=0"}
+{"ts":"2026-09-30T15:42:24Z","case":"b2","response":""}
+{"ts":"2026-09-30T15:42:24Z","case":"b2","consistency":"DIFFERS from B0"}
+{"ts":"2026-09-30T15:42:24Z","case":"b3","load":"OK history_count=17"}
+{"ts":"2026-09-30T15:42:24Z","case":"b3","continuation_position":"17 (restored at checkpoint position)"}
+{"ts":"2026-09-30T15:42:38Z","case":"b3","next_token":"PRODUCED chars=55"}
+{"ts":"2026-09-30T15:42:38Z","case":"b3","response":"你是想继续查看其他目录吗？比如：\n\n- **三公司管理制度及规定**（另一个4号文件夹）\n- **国家及地方法"}
+{"ts":"2026-09-30T15:42:38Z","case":"b3","consistency":"IDENTICAL to B0"}
+{"ts":"2026-09-30T15:42:38Z","case":"teardown","durability_writes":"ZERO"}
+{"ts":"2026-09-30T15:42:38Z","case":"teardown","real_branch_checkpoints_after":"204"}

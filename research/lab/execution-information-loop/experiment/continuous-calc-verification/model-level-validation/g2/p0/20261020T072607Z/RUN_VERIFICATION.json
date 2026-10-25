@@ -1,0 +1,29 @@
+{
+  "created_at_utc": "2026-10-20T07:30:21Z",
+  "launch_record_present": false,
+  "note": "Derived independently from the probe facts and the pre-run records; the probe's own terminal record is never rewritten.",
+  "probe_checks_all_true": false,
+  "probe_failed_checks": [
+    "weights_digest_matches_binding"
+  ],
+  "probe_terminal_state": "FAIL",
+  "reverified_checks": {
+    "artifact_aggregate_matches_binding": true,
+    "artifact_rows_match_binding": true,
+    "baseline_generation_completed": true,
+    "container_loaded": true,
+    "engine_weights_digest_matches_binding": false,
+    "executable_is_the_built_product": true,
+    "hook_consulted": true,
+    "hook_missed_on_empty_store": true,
+    "hooked_generation_completed": true,
+    "probe_wrote_record": true,
+    "prompt_rendered": true,
+    "store_initially_empty": true,
+    "store_still_empty_after": true
+  },
+  "reverified_terminal_state": "FAIL",
+  "run_id": "20261020T072607Z",
+  "schema_id": "SIMIGO-G2-P0-VERIFICATION-V1",
+  "verdict_agrees": true
+}

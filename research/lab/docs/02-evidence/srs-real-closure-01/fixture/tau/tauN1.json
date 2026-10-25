@@ -1,0 +1,20 @@
+{
+  "task": "ES-N negative control: same srs_identity after dependency state advanced to D'",
+  "dependencies": [
+    {
+      "dependency_id": "D-1"
+    }
+  ],
+  "srs_identity": "RESOLVED_FROM_IS_INDEX_BY_ES1_OUTPUT",
+  "request_id": "req-esn-negative-1",
+  "request_class": "R1-continuation",
+  "boundary_id": "B-ESN",
+  "run_order": "after-mutate-n1",
+  "tau_content_ref": "TO_BE_BOUND_AT_EXECUTION",
+  "expected_decision": "BLOCK",
+  "expected_path": "BLOCKED_NON_RECOMPUTE_PATH via DP-1",
+  "expected_typed_failure": "HARD_BLOCK.dependencyBlockingInvalidation(D-1)",
+  "d_prime_seed_path": "fixture/inputs/D_prime.md",
+  "d_prime_expected_sha256": "8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955",
+  "d_prime_revision": 2
+}

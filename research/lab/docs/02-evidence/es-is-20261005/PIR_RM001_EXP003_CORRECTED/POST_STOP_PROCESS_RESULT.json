@@ -1,0 +1,11 @@
+{
+  "artifact_state": "FAILURE_POST_STOP_CAPTURE",
+  "campaign_returncode": 1,
+  "experiment_id": "MINIMAL-PIR-EXP-003",
+  "stop_code": "MINIMAL_PIR_STALE_FIXTURE_PRECHANGE_SNAPSHOT_DEFECT",
+  "root_cause_class": "HARNESS_FIXTURE_STALE_PRECHANGE_SNAPSHOT_ARTIFACT_DEFECT",
+  "failure_message": "E-L MOVE record in measured input lacked preserved pre_change_locator; reconciliation classified destination FRESH_WITHIN_WINDOW instead of PHYSICALLY_MOVED",
+  "post_stop_capture": true,
+  "repair_performed": false,
+  "rerun_performed": false
+}

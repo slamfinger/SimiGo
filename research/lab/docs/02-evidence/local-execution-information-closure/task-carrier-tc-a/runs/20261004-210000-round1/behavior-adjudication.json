@@ -1,0 +1,640 @@
+{
+  "phase": "ROUND1_BEHAVIOR_ADJUDICATION",
+  "adjudicated_at": "2026-10-05T00:55:00+08:00",
+  "raw_outputs_modified": false,
+  "observer_tool": "NOT RUN",
+  "store": "NOT RUN",
+  "hidden_understanding_claim": "FORBIDDEN / NOT MADE",
+  "pass_criteria": {
+    "json_valid": true,
+    "release_decision": "blocked",
+    "deployment_order": [
+      "alpha",
+      "beta"
+    ],
+    "blocked_services": [
+      "gamma"
+    ]
+  },
+  "conditions": [
+    {
+      "condition": "RD2-RAW",
+      "final_answer_sha256": "a6d4f9f18b8ecc555c028effe18148aa6e94f20fa0fb144b34a5f006f384ca0f",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "gamma is not individually baseline compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "PASS",
+      "observable_note": "exact raw U1 representation; expected continuation"
+    },
+    {
+      "condition": "RD2-DECODED-TEXT",
+      "final_answer_sha256": "a6d4f9f18b8ecc555c028effe18148aa6e94f20fa0fb144b34a5f006f384ca0f",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "gamma is not individually baseline compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "PASS",
+      "observable_note": "decoded U2 text; expected continuation"
+    },
+    {
+      "condition": "RD2-SEMANTIC-OBJECT",
+      "final_answer_sha256": "a6d4f9f18b8ecc555c028effe18148aa6e94f20fa0fb144b34a5f006f384ca0f",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "gamma is not individually baseline compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "PASS",
+      "observable_note": "semantic object representation; expected continuation"
+    },
+    {
+      "condition": "RD5-EXPLANATION-ABSENT",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "EXPECTED_CONTINUATION",
+      "continuation": "PASS",
+      "observable_note": "decision-only core; expected continuation"
+    },
+    {
+      "condition": "RD5-EXPLANATION-PRESENT",
+      "final_answer_sha256": "44efcaa32e64c2fb6a3be1d9a8d21dc0ec9d2c575d9ab79ea644a29f6b6076f5",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "gamma is not individually baseline compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "PARTIAL",
+      "adopted": "PARTIAL",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "FAIL",
+      "observable_note": "gamma blocker adopted but alpha-beta allow was not converted to deployment order"
+    },
+    {
+      "condition": "RD1A-WHOLE-REGISTER",
+      "final_answer_sha256": "a6d4f9f18b8ecc555c028effe18148aa6e94f20fa0fb144b34a5f006f384ca0f",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "gamma is not individually baseline compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "PASS",
+      "observable_note": "whole-register aggregation; expected continuation"
+    },
+    {
+      "condition": "RD1A-STRUCTURED-FACTS",
+      "final_answer_sha256": "40befae2ebd175c5e3e522b7b84e82af3b91ae55dfef9136fca2102839769ea0",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "gamma is not individually baseline compatible; port values are not different (both 8081); api_version values are not equal (2 vs 3)"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "PASS",
+      "observable_note": "structured U3+U4 aggregation; expected continuation"
+    },
+    {
+      "condition": "RD3-M2-DELETED",
+      "final_answer_sha256": "18ddf63a3b91688211118687a9b04f788149a9d27c13c795c80f8f4ac4819364",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "PARTIAL",
+      "adopted": "PARTIAL",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "FAIL",
+      "observable_note": "baseline gamma block adopted, but pair allow relation was absent and order was empty"
+    },
+    {
+      "condition": "RD4-M1-ALL",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "EXPECTED_CONTINUATION",
+      "continuation": "PASS",
+      "observable_note": "all M1 predicates with M2.b; expected continuation"
+    },
+    {
+      "condition": "RD4-M1-GAMMA-ONLY",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "EXPECTED_CONTINUATION",
+      "continuation": "PASS",
+      "observable_note": "gamma-only M1 predicate with M2.b; expected continuation"
+    },
+    {
+      "condition": "RD4-M1-ABSENT",
+      "final_answer_sha256": "910325a04c19f6c03f1a1f8a0923f3b185ddc7fc38e19a118133f6ec29bd4ded",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": [
+          {
+            "service_id": "alpha",
+            "reason": "incompatible with gamma"
+          },
+          {
+            "service_id": "gamma",
+            "reason": "incompatible with alpha"
+          }
+        ]
+      },
+      "semantic_referenced": "PARTIAL",
+      "adopted": "PARTIAL",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "FAIL",
+      "observable_note": "pair blocks were partially adopted but alpha-beta allow was not preserved"
+    },
+    {
+      "condition": "RD8-HASH-VALID",
+      "final_answer_sha256": "18ddf63a3b91688211118687a9b04f788149a9d27c13c795c80f8f4ac4819364",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "PARTIAL",
+      "adopted": "PARTIAL",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "FAIL",
+      "observable_note": "gamma blocker adopted but deployment order was empty"
+    },
+    {
+      "condition": "RD8-HASH-STALE",
+      "final_answer_sha256": "18ddf63a3b91688211118687a9b04f788149a9d27c13c795c80f8f4ac4819364",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "PARTIAL",
+      "adopted": "PARTIAL",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "FAIL",
+      "observable_note": "gamma blocker adopted but deployment order was empty"
+    },
+    {
+      "condition": "RD8-HASH-ABSENT",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "EXPECTED_CONTINUATION",
+      "continuation": "PASS",
+      "observable_note": "absent hashes; expected continuation"
+    },
+    {
+      "condition": "RD9-TOOL-PRESENT",
+      "final_answer_sha256": "18ddf63a3b91688211118687a9b04f788149a9d27c13c795c80f8f4ac4819364",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "PARTIAL",
+      "adopted": "PARTIAL",
+      "behavioral": "DIFFERS_FROM_EXPECTED",
+      "continuation": "FAIL",
+      "observable_note": "gamma blocker adopted but deployment order was empty"
+    },
+    {
+      "condition": "RD9-TOOL-ABSENT",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "EXPECTED_CONTINUATION",
+      "continuation": "PASS",
+      "observable_note": "absent tool evidence; expected continuation"
+    },
+    {
+      "condition": "RD9-TOOL-SUMMARY",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "final_answer_json_parse": "PASS",
+      "expected": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [
+          "alpha",
+          "beta"
+        ],
+        "blocked_services": [
+          {
+            "service_id": "gamma",
+            "reason": "not baseline-compatible"
+          }
+        ]
+      },
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "EXPECTED_CONTINUATION",
+      "continuation": "PASS",
+      "observable_note": "summary tool evidence; expected continuation"
+    }
+  ],
+  "design_readings": {
+    "R-D2": "ALL PASS; exact raw, decoded text, and semantic object representations all supported the same bounded continuation.",
+    "R-D5": "Explanation absence PASS; explanation presence FAIL because alpha-beta allow was not projected into deployment order.",
+    "R-D1A": "Whole-register and structured-facts forms both PASS; aggregation packaging was not sufficient by itself to cause continuation loss.",
+    "R-D3": "Deleting M2.b failed; M1.b alone did not preserve the compatible alpha-beta order.",
+    "R-D4": "All-M1 and gamma-only M1 PASS with M2.b fixed; M1 absent FAIL. M2.b is required in this frame.",
+    "R-D8": "Valid/stale hashes produced empty order; absent hashes passed. Hash validity/staleness had no stable protective effect.",
+    "R-D9": "Tool evidence present produced empty order; absent/summary evidence passed. Tool evidence was not required in this frame."
+  },
+  "bounded_conclusions": [
+    "In this exact TC-A prompt/model/frame, representation form alone did not change the successful continuation across raw, decoded-text, and semantic-object forms.",
+    "Explanation presence was not sufficient and was associated with loss of alpha-beta projection in this run.",
+    "M2.b pair decisions were required; M1.b alone failed, while gamma-only M1.b with M2.b passed.",
+    "Tested source-hash validity/staleness and tool evidence did not act as stable semantic rescue mechanisms; observed differences require repetition before causal attribution."
+  ],
+  "non_claims": [
+    "No universal irreducibility claim;",
+    "no final Information minimality claim;",
+    "no claim that representation/provenance effects generalize beyond this prompt/model/frame;",
+    "single-run differences are not causal proof."
+  ]
+}

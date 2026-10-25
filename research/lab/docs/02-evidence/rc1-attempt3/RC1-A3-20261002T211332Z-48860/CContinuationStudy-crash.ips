@@ -1,0 +1,119 @@
+{"app_name":"CContinuationStudy","timestamp":"2026-10-03 05:13:35.00 +0800","app_version":"","slice_uuid":"c0a3e8fa-aab2-3693-9397-135c14b8a377","build_version":"","platform":1,"share_with_app_devs":0,"is_first_party":1,"bug_type":"309","os_version":"macOS 26.6.2 (25G83)","roots_installed":0,"incident_id":"DDAEA386-5A5D-41BC-AD09-69270FB8914A","name":"CContinuationStudy"}
+{
+  "uptime" : 26000,
+  "procRole" : "Unspecified",
+  "version" : 2,
+  "userID" : 501,
+  "deployVersion" : 210,
+  "modelCode" : "Mac17,4",
+  "coalitionID" : 1232,
+  "osVersion" : {
+    "train" : "macOS 26.6.2",
+    "build" : "25G83",
+    "releaseType" : "User"
+  },
+  "captureTime" : "2026-10-03 05:13:34.7942 +0800",
+  "codeSigningMonitor" : 2,
+  "incident" : "DDAEA386-5A5D-41BC-AD09-69270FB8914A",
+  "pid" : 48880,
+  "translated" : false,
+  "cpuType" : "ARM-64",
+  "procLaunch" : "2026-10-03 05:13:34.7347 +0800",
+  "procStartAbsTime" : 640526994229,
+  "procExitAbsTime" : 640528417488,
+  "procName" : "CContinuationStudy",
+  "procPath" : "\/private\/tmp\/*\/CContinuationStudy",
+  "parentProc" : "Python",
+  "parentPid" : 48860,
+  "coalitionName" : "com.openai.codex",
+  "crashReporterKey" : "A93F48CA-21BD-D127-1603-A108FF1ACB41",
+  "appleIntelligenceStatus" : {"reasons":["regionIneligible"],"state":"unavailable"},
+  "developerMode" : 1,
+  "responsiblePid" : 1533,
+  "responsibleProc" : "ChatGPT",
+  "codeSigningID" : "CContinuationStudy",
+  "codeSigningTeamID" : "",
+  "codeSigningFlags" : 570556929,
+  "codeSigningValidationCategory" : 10,
+  "codeSigningTrustLevel" : 4294967295,
+  "codeSigningAuxiliaryInfo" : 0,
+  "instructionByteStream" : {"beforePC":"IAAg1MEF+LfpAwC54gMDquMDBKrkAwWq5QMGquYDB6rnAwiqrAIAlA==","atPC":"IAAg1CgAgFKJEoBS6BMAuekHAPlIAIBS6AMAOWAaALAAEDWRYxoAsA=="},
+  "bootSessionUUID" : "2BA68254-04D5-4D82-B0DB-AADB8E5D0AF6",
+  "sip" : "enabled",
+  "exception" : {"codes":"0x0000000000000001, 0x00000001a024cd04","rawCodes":[1,6981733636],"type":"EXC_BREAKPOINT","signal":"SIGTRAP"},
+  "termination" : {"flags":0,"code":5,"namespace":"SIGNAL","indicator":"Trace\/BPT trap: 5","byProc":"exc handler","byPid":48880},
+  "os_fault" : {"process":"CContinuationStudy"},
+  "extMods" : {"caller":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"system":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"targeted":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"warnings":0},
+  "faultingThread" : 0,
+  "threads" : [{"triggered":true,"id":486674,"threadState":{"x":[{"value":4373076280},{"value":8589934595},{"value":2815},{"value":9},{"value":4373065792},{"value":3},{"value":32},{"value":18446726482597246976},{"value":18446744065119617024},{"value":259},{"value":4373065712},{"value":4373069952},{"value":5},{"value":3597},{"value":88},{"value":581235843792980},{"value":8589934595},{"value":3},{"value":0},{"value":17293822569102704721},{"value":6101574896},{"value":4373065440},{"value":4373076272},{"value":8476539488,"symbolLocation":0,"symbol":"vm_page_mask"},{"value":6985203904,"symbolLocation":11879,"symbol":"(anonymous namespace)::OldDemangler::demangleIdentifier(unsigned int, std::__1::optional<swift::Demangle::__runtime::Node::Kind>)::op_char_table"},{"value":0},{"value":8476539504,"symbolLocation":0,"symbol":"mach_task_self_"},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6981733636},"cpsr":{"value":1610612736},"fp":{"value":6101574832},"sp":{"value":6101574704},"esr":{"value":4060086273,"description":"(Breakpoint) brk 1"},"pc":{"value":6981733636,"matchesCrashFrame":1},"far":{"value":0}},"queue":"com.apple.main-thread","frames":[{"imageOffset":1449220,"symbol":"_assertionFailure(_:_:file:line:flags:)","symbolLocation":172,"imageIndex":1},{"imageOffset":267684,"symbol":"swift_errorInMain","symbolLocation":632,"imageIndex":1},{"imageOffset":9864,"sourceFile":"main.swift","symbol":"main","symbolLocation":56,"imageIndex":0},{"imageOffset":132324,"symbol":"start","symbolLocation":6992,"imageIndex":2}]}],
+  "usedImages" : [
+  {
+    "source" : "P",
+    "arch" : "arm64",
+    "base" : 4365303808,
+    "size" : 229376,
+    "uuid" : "c0a3e8fa-aab2-3693-9397-135c14b8a377",
+    "path" : "\/private\/tmp\/*\/CContinuationStudy",
+    "name" : "CContinuationStudy"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6980284416,
+    "size" : 5908480,
+    "uuid" : "83794fb3-de9b-3d23-ab5e-2c1d5d30f134",
+    "path" : "\/usr\/lib\/swift\/libswiftCore.dylib",
+    "name" : "libswiftCore.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6649741312,
+    "size" : 734464,
+    "uuid" : "74e52480-c2bd-3c8d-812d-95fe2b74a096",
+    "path" : "\/usr\/lib\/dyld",
+    "name" : "dyld"
+  },
+  {
+    "size" : 0,
+    "source" : "A",
+    "base" : 0,
+    "uuid" : "00000000-0000-0000-0000-000000000000"
+  }
+],
+  "sharedCache" : {
+  "base" : 6648610816,
+  "size" : 6010847232,
+  "uuid" : "f2e86c53-6052-388b-ba71-5a0c9b569413"
+},
+  "legacyInfo" : {
+  "threadTriggered" : {
+    "queue" : "com.apple.main-thread"
+  }
+},
+  "logWritingSignature" : "e8e6359c2994e113d8b026c63a89461bce1aec7a",
+  "bug_type" : "309",
+  "roots_installed" : 0,
+  "trmStatus" : 2048,
+  "trialInfo" : {
+  "rollouts" : [
+    {
+      "rolloutId" : "6425c75e4327780c10cc4252",
+      "factorPackIds" : [
+        "642600a457e7664b1698eb32"
+      ],
+      "deploymentId" : 240000004
+    },
+    {
+      "rolloutId" : "67d07cd6a7affa169ae21f45",
+      "factorPackIds" : [
+
+      ],
+      "deploymentId" : 240000002
+    }
+  ],
+  "experiments" : [
+
+  ]
+}
+}

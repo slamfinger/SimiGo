@@ -1,0 +1,132 @@
+{
+  "all_checks_pass": true,
+  "canonical_carrier": {
+    "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/B1/carrier/g2.sqlite",
+    "sqlite_digest_after_phase2": "a5012e29d0c8bf85a637e836b37c2dfb65b98ce04fccce304b2b650371800798",
+    "sqlite_digest_after_settlement": "69210099f2f4b14a20aa6110d120c27e76f0334ccccf4ca3759f5d86d415edcd",
+    "unchanged_after_negative_controls_and_phase2": false
+  },
+  "checks": {
+    "c_missing_code": true,
+    "c_missing_copy_unchanged": true,
+    "c_missing_no_model_load": true,
+    "c_missing_refused": true,
+    "c_tampered_code": true,
+    "c_tampered_copy_unchanged": true,
+    "c_tampered_no_model_load": true,
+    "c_tampered_refused": true,
+    "canary_absent_from_phase2": true,
+    "canary_absent_from_r1": true,
+    "no_new_settlement_in_phase2": true,
+    "no_u1_compute_in_phase2": true,
+    "phase1_esrch": true,
+    "phase1_group_empty": true,
+    "phase1_host_terminated": true,
+    "phase1_settled": true,
+    "phase1_store_digest_unchanged": true,
+    "phase1_store_empty": true,
+    "phase1_store_unreadable_during_phase2": true,
+    "phase1_u1_parsed": true,
+    "phase2_hook_calls_positive": true,
+    "phase2_hook_hits_zero": true,
+    "phase2_namespace_matches_p0": true,
+    "phase2_new_pgid": true,
+    "phase2_new_pid": true,
+    "phase2_no_phase1_prefix_match": true,
+    "phase2_store_base_distinct": true,
+    "phase2_store_still_empty": true,
+    "phase2_u2_generated": true,
+    "r1_matches_phase1": true,
+    "restore_decision_restored": true,
+    "restored_dependency_closure_equal": true,
+    "restored_object_id_equal": true,
+    "restored_source_version_equal": true,
+    "restored_validity_basis_equal": true,
+    "s1_absent_from_phase2": true,
+    "settlement_object_id_unchanged": true,
+    "u1_not_reexecuted_in_phase2": true,
+    "u2_checker_pass": true,
+    "u2_contains_transfer_secret": true
+  },
+  "claims": {
+    "G2-A": {
+      "all_rows_pass": true,
+      "failed_rows": [],
+      "missing_rows": [],
+      "rows": [
+        "phase1_host_terminated",
+        "phase1_esrch",
+        "phase1_group_empty",
+        "phase2_new_pid",
+        "phase2_new_pgid",
+        "phase2_store_base_distinct",
+        "phase1_store_empty",
+        "phase1_store_unreadable_during_phase2",
+        "phase2_hook_calls_positive",
+        "phase2_hook_hits_zero",
+        "phase2_no_phase1_prefix_match",
+        "phase2_store_still_empty",
+        "phase1_store_digest_unchanged",
+        "canary_absent_from_r1",
+        "canary_absent_from_phase2"
+      ]
+    },
+    "G2-B": {
+      "all_rows_pass": true,
+      "failed_rows": [],
+      "missing_rows": [],
+      "rows": [
+        "phase1_settled",
+        "restore_decision_restored",
+        "restored_object_id_equal",
+        "restored_source_version_equal",
+        "restored_dependency_closure_equal",
+        "restored_validity_basis_equal",
+        "c_missing_refused",
+        "c_missing_code",
+        "c_missing_copy_unchanged",
+        "c_missing_no_model_load",
+        "c_tampered_refused",
+        "c_tampered_code",
+        "c_tampered_copy_unchanged",
+        "c_tampered_no_model_load",
+        "settlement_object_id_unchanged",
+        "no_u1_compute_in_phase2",
+        "no_new_settlement_in_phase2"
+      ]
+    },
+    "G2-C": {
+      "all_rows_pass": true,
+      "failed_rows": [],
+      "missing_rows": [],
+      "rows": [
+        "phase1_u1_parsed",
+        "phase2_u2_generated",
+        "u2_checker_pass",
+        "u2_contains_transfer_secret",
+        "r1_matches_phase1",
+        "u1_not_reexecuted_in_phase2",
+        "s1_absent_from_phase2"
+      ]
+    }
+  },
+  "evidence": {
+    "arm_a": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/A",
+    "arm_a_launch": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/A/launch.json",
+    "c_missing": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/C_missing",
+    "c_tampered": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/C_tampered",
+    "phase1": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/B1",
+    "phase1_carrier": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/B1/carrier/g2.sqlite",
+    "phase2": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/B2",
+    "phase2_launch": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-2/B2/launch.json"
+  },
+  "failed_checks": [],
+  "fixture_id": "fixture-2",
+  "scan": {
+    "canary_in_phase2_evidence": [],
+    "canary_in_r1": false,
+    "canary_in_restore_record": false,
+    "s1_marker_in_phase2_evidence": []
+  },
+  "schema_id": "SIMIGO-G2-BATCH-FIXTURE-VERIFICATION-V1"
+}

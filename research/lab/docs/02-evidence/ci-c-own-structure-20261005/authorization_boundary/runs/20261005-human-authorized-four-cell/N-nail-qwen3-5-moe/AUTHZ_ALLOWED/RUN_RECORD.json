@@ -1,0 +1,12 @@
+{
+  "model_id": "N-nail-qwen3-5-moe",
+  "repo_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "authz_state": "AUTHZ_ALLOWED",
+  "http_status": 200,
+  "elapsed_seconds": 15.128037,
+  "template_sha256": "3677086ea5554ce75a3d22da0b893494b596ed701e0888c1d821f396752a5d1b",
+  "prompt_sha256": "1025f5dc56ff12ff37a7839c27a7528ac3a728d9a2e6b2862cc31bd49db343a8",
+  "request_sha256": "fa32881cc0290075544a16c470fad8d79cdfb1c2d55d15d3584590310c574946",
+  "response_sha256": "83f50c5aeb053207adae5fd49b3138e334188fe6c7ca90505d45437b47901834",
+  "created_at": "2026-10-05T08:22:37+08:00"
+}

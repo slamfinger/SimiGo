@@ -1,0 +1,1141 @@
+{
+  "boundary" : "SWIFT_REPRESENTATION_CONSUMING_HTTP_CLIENT \/ HARNESS_LEVEL \/ NO_NATIVE_KV_AUTHORITY_CHANGE \/ NOT_A_PERFORMANCE_OR_PRODUCTION_CLAIM",
+  "checks" : [
+    {
+      "detail" : "captured LLAMAServerPrefixPayload produced the warm reference",
+      "name" : "SWIFT_REPRESENTATION_PAYLOAD_CONSUMED",
+      "pass" : true
+    },
+    {
+      "detail" : "30\/30 matched reference",
+      "name" : "OFF_SEMANTIC_STABILITY",
+      "pass" : true
+    },
+    {
+      "detail" : "30\/30 matched reference",
+      "name" : "SWIFT_EXECSTATE_SEMANTIC_STABILITY",
+      "pass" : true
+    }
+  ],
+  "host" : "127.0.0.1",
+  "overallPass" : true,
+  "pairedOnMinusOffClientMs" : {
+    "meanMs" : 0.07135140000000509,
+    "medianMs" : -0.11633349999999609,
+    "n" : 30
+  },
+  "port" : 18080,
+  "predictionTokens" : 8,
+  "protocolVersion" : "RQ3.LLAMA.SWIFT.EXECSTATE.HOTPATH.AB.V1",
+  "results" : {
+    "off" : {
+      "meanMs" : 355.97386666666677,
+      "medianMs" : 357.383125,
+      "n" : 30,
+      "semanticIdentical" : 30
+    },
+    "swiftExecutionStateOn" : {
+      "meanMs" : 356.0452180666667,
+      "medianMs" : 353.9439585,
+      "n" : 30,
+      "semanticIdentical" : 30
+    }
+  },
+  "samples" : [
+    {
+      "clientMs" : 350.242959,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 0,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 343.036542,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 0,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004875,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 345.850333,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 1,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.007375,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 344.574042,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 1,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 341.654459,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 2,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 345.924,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 2,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004833,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 344.920166,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 3,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.007709,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 342.712875,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 3,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 347.919208,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 4,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 345.593875,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 4,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004917,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 355.110833,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 5,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004375,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 355.342708,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 5,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 346.173166,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 6,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 344.893375,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 6,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.00525,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 346.801459,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 7,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.003958,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 339.993791,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 7,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 345.881584,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 8,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 347.707625,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 8,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004416,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 339.849583,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 9,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004292,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 345.656958,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 9,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 348.112083,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 10,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 360.755709,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 10,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.00475,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 375.460125,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 11,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.0055,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 361.119625,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 11,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 359.945125,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 12,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 359.515,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 12,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.009209,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 359.610208,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 13,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004542,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 369.932708,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 13,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 361.913459,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 14,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 364.469792,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 14,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.005417,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 368.016958,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 15,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.006875,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 367.361209,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 15,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 360.780125,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 16,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 352.275417,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 16,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.0095,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 345.5695,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 17,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004375,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 345.570292,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 17,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 359.423542,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 18,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 353.668167,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 18,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004875,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 347.236208,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 19,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004459,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 348.307708,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 19,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 344.996584,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 20,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 348.965292,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 20,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.00475,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 366.558708,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 21,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.005042,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 367.733833,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 21,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 374.044667,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 22,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 367.543209,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 22,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.008042,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 366.912458,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 23,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004625,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 364.776375,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 23,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 349.768916,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 24,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 344.7015,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 24,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.005625,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 354.21975,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 25,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.0045,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 359.759375,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 25,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 374.405083,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 26,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 379.322208,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 26,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.011458,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 360.296834,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 27,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.020542,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 372.534334,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 27,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 362.175541,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 28,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 369.347125,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 28,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.005208,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 377.224583,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 29,
+      "mode" : "swift_execution_state_on",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.004917,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    },
+    {
+      "clientMs" : 366.403666,
+      "content" : " or pong\n\n<think>\nThe user is",
+      "index" : 29,
+      "mode" : "off",
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0,
+      "tokens" : [
+        466,
+        74966,
+        271,
+        248068,
+        198,
+        760,
+        1156,
+        369
+      ]
+    }
+  ],
+  "seed" : 42,
+  "stateOperation" : {
+    "meanMs" : 0.006207033333333334,
+    "medianMs" : 0.004917,
+    "n" : 30
+  },
+  "status" : "PASS",
+  "tokenPrefix" : [
+    5423,
+    6681,
+    799,
+    3299,
+    25,
+    29018
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "esrch_on_pid": true,
+  "esrch_on_process_group": true,
+  "exit_code": -15,
+  "fixture_id": "fixture-2",
+  "host_pid": 51635,
+  "process_group": 51635,
+  "schema_id": "SIMIGO-G2-BATCH-TERMINATION-V1",
+  "signal_sent": "SIGTERM",
+  "store_chmod": "000",
+  "store_digest_inside_phase1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "store_inventory_inside_phase1": [],
+  "terminated_at_utc": "2026-10-20T08:22:37Z"
+}

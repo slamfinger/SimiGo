@@ -1,0 +1,320 @@
+{
+  "status": "PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6.COST.SUMMARY.V1",
+  "boundary": "OVERSIZED_MLX_COST_OBSERVATION_INDEX / SMALL_SAMPLES / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "segmentSize": 8,
+  "segmentCount": 6,
+  "profiles": [
+    {
+      "id": "COST1",
+      "status": "PASS",
+      "protocolVersion": "LAB.MLX.EXECSTATE.COST.PROFILE.V1",
+      "artifact": "simigo2-experimental/results/backend-conformance/mlx-execstate-cost-profile.json",
+      "scope": "paired direct-vs-state generation; capture/fork/diverge/release/restore/replay lifecycle",
+      "checksPassed": 5,
+      "checksTotal": 5,
+      "observations": {
+        "pairedCycles": 3,
+        "directGenerationMeanMs": 19203.369097333332,
+        "stateGenerationMeanMs": 19243.577389,
+        "pairedStateMinusDirectMeanMs": 40.2082916666659,
+        "pairedStateMinusDirectMedianMs": -59.289709000000585,
+        "pairedStateMinusDirectMinMs": -807.9199160000026,
+        "pairedStateMinusDirectMaxMs": 987.8345000000008,
+        "stateLocalMeanMs": 0.022111333333333334,
+        "lifecycleLocalMeanMs": 7.6958755,
+        "lifecycleReleaseMeanMs": 7.651396
+      }
+    },
+    {
+      "id": "COST2",
+      "status": "PASS",
+      "protocolVersion": "LAB.MLX.EXECSTATE.COST.SCALE.V1",
+      "artifact": "simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile.json",
+      "scope": "prefix token lengths 8/64/256; direct-vs-state; one-token generation; two pairs per length",
+      "checksPassed": 3,
+      "checksTotal": 3,
+      "observations": {
+        "tokenLengths": [
+          8,
+          64,
+          256
+        ],
+        "pairsPerLength": 2,
+        "points": [
+          {
+            "allSemanticIdentical": true,
+            "directMeanMs": 9947.3857915,
+            "directTokensPerSec": 0.201057849963856,
+            "pairedStateMinusDirectMeanMs": -15.811062499999935,
+            "pairs": 2,
+            "peakFootprintMiB": 7954,
+            "stateLocalMeanMs": 0.0105835,
+            "stateMeanMs": 9931.574729,
+            "stateTokensPerSec": 0.2013779339705354,
+            "tokenLength": 8
+          },
+          {
+            "allSemanticIdentical": true,
+            "directMeanMs": 11943.8995005,
+            "directTokensPerSec": 0.16744950004948345,
+            "pairedStateMinusDirectMeanMs": 27.7443119999989,
+            "pairs": 2,
+            "peakFootprintMiB": 7266,
+            "stateLocalMeanMs": 0.011729,
+            "stateMeanMs": 11971.643812499999,
+            "stateTokensPerSec": 0.16706143544896754,
+            "tokenLength": 64
+          },
+          {
+            "allSemanticIdentical": true,
+            "directMeanMs": 17177.5005835,
+            "directTokensPerSec": 0.11643137430139967,
+            "pairedStateMinusDirectMeanMs": 388.4418539999988,
+            "pairs": 2,
+            "peakFootprintMiB": 5880,
+            "stateLocalMeanMs": 0.0148545,
+            "stateMeanMs": 17565.9424375,
+            "stateTokensPerSec": 0.11385668643262624,
+            "tokenLength": 256
+          }
+        ]
+      }
+    },
+    {
+      "id": "COST3",
+      "status": "PASS",
+      "protocolVersion": "LAB.MLX.EXECSTATE.RELEASE.COST.V1",
+      "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-cost-profile.json",
+      "scope": "release-action isolation without generation; lengths 8/64/256; ten samples per length",
+      "checksPassed": 6,
+      "checksTotal": 6,
+      "observations": {
+        "samplesTotal": 30,
+        "currentReleaseMeanMs": 4.061400133333332,
+        "currentReleaseMedianMs": 4.037834,
+        "staleReleaseNoopMeanMs": 0.00018756666666666668,
+        "restoreMeanMs": 0.0005333333333333336,
+        "points": [
+          {
+            "captureCheckpointMeanMs": 0.0011834000000000003,
+            "captureCurrentMeanMs": 0.000254,
+            "currentReleaseMeanMs": 4.1129708,
+            "restoreMeanMs": 0.0005958,
+            "samples": 10,
+            "staleOverCurrentMeanRatio": 4.865096538006056e-05,
+            "staleReleaseNoopMeanMs": 0.0002001,
+            "tokenLength": 8
+          },
+          {
+            "captureCheckpointMeanMs": 0.0003376000000000001,
+            "captureCurrentMeanMs": 0.0002542,
+            "currentReleaseMeanMs": 4.0225336,
+            "restoreMeanMs": 0.0004750999999999999,
+            "samples": 10,
+            "staleOverCurrentMeanRatio": 4.559315551770656e-05,
+            "staleReleaseNoopMeanMs": 0.0001834,
+            "tokenLength": 64
+          },
+          {
+            "captureCheckpointMeanMs": 0.0003751,
+            "captureCurrentMeanMs": 0.0002835,
+            "currentReleaseMeanMs": 4.0486960000000005,
+            "restoreMeanMs": 0.0005291,
+            "samples": 10,
+            "staleOverCurrentMeanRatio": 4.4261164582374166e-05,
+            "staleReleaseNoopMeanMs": 0.0001792,
+            "tokenLength": 256
+          }
+        ]
+      }
+    },
+    {
+      "id": "COST4",
+      "status": "PASS",
+      "protocolVersion": "LAB.MLX.EXECSTATE.RELEASE.RECOVERY.COST.V1",
+      "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-profile.json",
+      "scope": "RETAIN vs RELEASE_RESTORE before identical 2-token cacheless generation; four cycles",
+      "checksPassed": 7,
+      "checksTotal": 7,
+      "observations": {
+        "cycles": 4,
+        "retain": {
+          "actionMeanMs": 0.008479,
+          "actionTransitionDeltaMean": 0,
+          "allAdvancedBindingsExact": true,
+          "allSemanticIdentical": true,
+          "cycles": 4,
+          "generationMeanMs": 21294.929573,
+          "generationTransitionDeltaMean": 12,
+          "recoveryTokensPerSec": 0.3756762835291674,
+          "strategy": "RETAIN",
+          "totalMeanMs": 21294.938051999998
+        },
+        "releaseRestore": {
+          "actionMeanMs": 4.51998975,
+          "actionTransitionDeltaMean": 1,
+          "allAdvancedBindingsExact": true,
+          "allSemanticIdentical": true,
+          "cycles": 4,
+          "generationMeanMs": 21084.89712475,
+          "generationTransitionDeltaMean": 12,
+          "recoveryTokensPerSec": 0.37941849811585715,
+          "strategy": "RELEASE_RESTORE",
+          "totalMeanMs": 21089.417114499996
+        },
+        "pairedOutputsExact": true
+      }
+    },
+    {
+      "id": "COST5",
+      "status": "PASS",
+      "protocolVersion": "LAB.MLX.EXECSTATE.RELEASE.RECOVERY.TOKEN.SCALE.V1",
+      "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-token-scale-summary.json",
+      "scope": "RETAIN vs RELEASE_RESTORE across 1/2/4-token budgets; two cycles per strategy per budget",
+      "checksPassed": 5,
+      "checksTotal": 5,
+      "observations": {
+        "maxTokens": [
+          1,
+          2,
+          4
+        ],
+        "cyclesPerStrategy": 2,
+        "points": [
+          {
+            "maxTokens": 1,
+            "cyclesPerStrategy": 2,
+            "retainGenerationMeanMs": 10438.334667,
+            "releaseRestoreGenerationMeanMs": 10431.7926665,
+            "strategyGenerationMeanMs": 10435.06366675,
+            "marginalGenerationMeanMsVsPrevious": null,
+            "retainActionMeanMs": 0.002062,
+            "releaseRestoreActionMeanMs": 4.447208,
+            "generationTransitionDeltaMean": 6,
+            "aggregateRecoveryTokensPerSec": 0.3833230086315132,
+            "pairedOutputsExact": true
+          },
+          {
+            "maxTokens": 2,
+            "cyclesPerStrategy": 2,
+            "retainGenerationMeanMs": 21862.1672295,
+            "releaseRestoreGenerationMeanMs": 21581.829583,
+            "strategyGenerationMeanMs": 21721.99840625,
+            "marginalGenerationMeanMsVsPrevious": 11286.9347395,
+            "retainActionMeanMs": 0.002188,
+            "releaseRestoreActionMeanMs": 4.6701875,
+            "generationTransitionDeltaMean": 12,
+            "aggregateRecoveryTokensPerSec": 0.368290239709169,
+            "pairedOutputsExact": true
+          },
+          {
+            "maxTokens": 4,
+            "cyclesPerStrategy": 2,
+            "retainGenerationMeanMs": 50240.500771,
+            "releaseRestoreGenerationMeanMs": 51091.0190415,
+            "strategyGenerationMeanMs": 50665.75990625,
+            "marginalGenerationMeanMsVsPrevious": 28943.7615,
+            "retainActionMeanMs": 0.0026875,
+            "releaseRestoreActionMeanMs": 7.196896,
+            "generationTransitionDeltaMean": 24,
+            "aggregateRecoveryTokensPerSec": 0.31579512533919935,
+            "pairedOutputsExact": true
+          }
+        ],
+        "rawArtifacts": [
+          "simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens1.json",
+          "simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens2.json",
+          "simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens4.json"
+        ]
+      }
+    }
+  ],
+  "findings": {
+    "noForkStateLocalBookkeepingMeanMs": 0.022111333333333334,
+    "pairedGenerationDeltaInterpretation": "SMALL_SAMPLE_DIRECTION_UNSTABLE / NO_STABLE_OVERHEAD_CLAIM",
+    "prefixLengthLatencyObservation": {
+      "tokenLengths": [
+        8,
+        64,
+        256
+      ],
+      "directMeanMs": [
+        9947.3857915,
+        11943.8995005,
+        17177.5005835
+      ],
+      "stateMeanMs": [
+        9931.574729,
+        11971.643812499999,
+        17565.9424375
+      ]
+    },
+    "releaseIsolation": {
+      "currentReleaseMeanMs": 4.061400133333332,
+      "staleReleaseNoopMeanMs": 0.00018756666666666668,
+      "checkpointRestoreMeanMs": 0.0005333333333333336,
+      "prefixLengthMeansMs": [
+        4.1129708,
+        4.0225336,
+        4.0486960000000005
+      ]
+    },
+    "retainVsReleaseRestore": {
+      "actionMeanMs": [
+        0.008479,
+        4.51998975
+      ],
+      "generationMeanMs": [
+        21294.929573,
+        21084.89712475
+      ],
+      "pairedOutputsExact": true,
+      "interpretation": "ACTION_COST_OBSERVED / GENERATION_DIFFERENCE_SMALL_SAMPLE_NO_CLAIM"
+    },
+    "tokenBudgetScale": {
+      "maxTokens": [
+        1,
+        2,
+        4
+      ],
+      "strategyGenerationMeanMs": [
+        10435.06366675,
+        21721.99840625,
+        50665.75990625
+      ],
+      "generationTransitionDelta": [
+        6,
+        12,
+        24
+      ],
+      "releaseRestoreActionMeanMs": [
+        4.447208,
+        4.6701875,
+        7.196896
+      ]
+    }
+  },
+  "checks": {
+    "ALL_SOURCE_REPORTS_PASS": true,
+    "ALL_SOURCE_CHECKS_PASS": true,
+    "ALL_EXPECTED_PROFILES_PRESENT": true,
+    "ALL_TOKEN_SCALE_RUNS_PASS": true,
+    "ALL_RECOVERY_PAIRED_OUTPUTS_EXACT": true
+  },
+  "openQuestions": [
+    "FULL_FACTORIAL_PREFIX_LENGTH_BY_GENERATED_TOKENS_BY_SEGMENT_SIZE",
+    "DISTRIBUTION_REPORTING_WITH_MORE_SAMPLES_AND_ORDER_COUNTERBALANCING",
+    "WARM_KV_OR_SEGMENT_RESIDENCY_POLICY_IS_NOT_IMPLEMENTED_IN_THIS_PATH",
+    "CROSS_BACKEND_COST_NORMALIZATION_IS_NOT_DEFINED"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_WARM_KV_RETENTION_CLAIM",
+    "NOT_A_RELEASE_POLICY_RECOMMENDATION",
+    "NOT_A_CROSS_BACKEND_OR_CROSS_HARDWARE_COMPARISON"
+  ],
+  "overallPass": true
+}

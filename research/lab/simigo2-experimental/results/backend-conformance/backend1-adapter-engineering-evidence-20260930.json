@@ -1,0 +1,22 @@
+{
+  "evidence": "BACKEND1_ADAPTER_ENGINEERING_ROUND1_TARGETED",
+  "date": "2026-09-30",
+  "base": "5ab7247 + audit 7f1fa4a + impl 2cf5adb + tests (this commit)",
+  "worktree": "main worktree; evidence ran on 2cf5adb PLUS the restore-fallback source fix (uncommitted at run time, committed post-seal with this provenance note)",
+  "command": "swift test --filter 'LLAMAServerExecutionStateAdapterTests|ExecutionContinuityContractTests|ExecutionContinuityLifecycleTreeTests|RuntimeBackendContractTests|BackendConformanceMatrixTests|ExecutionContinuityCoordinatorTests|Fork3StructuralBattery|ExecutionStatePrefixPoolTests|PrefixSnapshotStoreTests|MaterializationCoordinatorTests|OversizedBackendAtomicityTests|PrefixPoolSessionLifecycleTests'",
+  "total": { "passed": 75, "failed": 0 },
+  "bundles": {
+    "SimiGoRuntimeContractTests": 19,
+    "SimiGo2ExperimentalTests_selected": 56
+  },
+  "newAdapterSuites": {
+    "LLAMAServerExecutionStateAdapterTests": 14,
+    "note": "T1 capture guards / T2 derive foreign+mispositioned fail-closed / T3 restore happy+missing / T4 stale-release no-op + discard release-failure retryable / T5 full lifecycle through adapter / T6 server-500 + tokenize-500 + missing-tokens fail-closed / T7 cancellation-before-commit / T8 shared conformance backend type"
+  },
+  "priorEvidence": {
+    "phaseC": "61/61 (2026-09-30, clean ebe4aec) — no regression: all suites re-pass in this union run",
+    "liveServer": "RQ1 live smoke (semanticIdentical + branchDiverged), not re-run"
+  },
+  "transportStub": "URLProtocol stub drives the real URLSession transport deterministically (500/missing-tokens/mid-flight cancellation); no live server needed",
+  "nature": "targeted structural adapter evidence; not production readiness, not performance, not artifact portability"
+}

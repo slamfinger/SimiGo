@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "# Execution B Instruction\n\nYou are Execution B, a fresh local model reached through an HTTP server. You have no prior conversation.\n\n## Tool rule\n\nUse no tools. Do not fetch, read, search, compute externally, or request source files.\n\n## Supplied compatibility residue\n\nService-level residue:\n\n```text\nalpha is baseline-compatible;\nbeta is baseline-compatible;\ngamma is not baseline-compatible.\n```\n\nPair residue uses internal relation ids only:\n\n```text\nR1 ↔ R2 = allow;\nR1 ↔ R3 = block;\nR2 ↔ R3 = block.\n```\n\nNo mapping between `R1`, `R2`, `R3` and `alpha`, `beta`, `gamma` is supplied.\n\n## Release request\n\nThe release candidate set is:\n\n```text\n[\"alpha\", \"beta\", \"gamma\"]\n```\n\nDeployment mode is sequential. Apply only these rules:\n\n1. A service is blocked if the supplied compatibility residue marks it as not individually baseline-compatible.\n2. Two services may both appear in the deployment order only when their supplied pair residue marks them as mutually compatible.\n3. Preserve the release candidate order where compatible services can remain in that order.\n4. Do not infer the missing id mapping. Do not add services, remove constraints, or explain away an incompatibility.\n\n## Final output\n\nReturn only one minified JSON object and no Markdown, explanation, or code fence. Use this exact shape:\n\n```json\n{\"release_decision\":\"...\",\"deployment_order\":[\"...\"],\"blocked_services\":[{\"service_id\":\"...\",\"reason\":\"...\"}]}\n```\n"
+    }
+  ],
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "temperature": 0,
+  "max_tokens": 1024,
+  "stream": false
+}

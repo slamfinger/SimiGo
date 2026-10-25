@@ -1,0 +1,24 @@
+01 PASS SQLite integrity
+02 PASS exact logical table set
+03 PASS canonical dependency-history API
+04 PASS object write/read bytes
+05 PASS same-byte object idempotence
+06 PASS object hash verification
+07 PASS divergent stored bytes rejected
+08 PASS missing object rejected
+09 PASS first-match SRS resolution
+10 PASS SRS append order preserved
+11 PASS failed logical group raised
+12 PASS failed dependency append exposed none
+13 PASS failed group exposed no object
+14 PASS committed dependency current
+15 PASS canonical dependency history
+16 PASS compatibility alias has same behavior
+17 PASS nested transaction-safe append
+18 PASS UPDATE committed logical object denied by authorizer
+19 PASS DELETE committed dependency history denied by authorizer
+20 PASS DROP committed logical table denied by authorizer
+21 PASS closed database integrity
+22 PASS committed dependency row remained after authorizer tests
+23 PASS closed database logical table set
+SELFcheck=23/23_PASS

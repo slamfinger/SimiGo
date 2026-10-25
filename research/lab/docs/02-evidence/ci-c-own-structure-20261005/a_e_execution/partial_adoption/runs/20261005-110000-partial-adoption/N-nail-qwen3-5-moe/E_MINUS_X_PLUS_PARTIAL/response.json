@@ -1,0 +1,16 @@
+{
+  "id": "chatcmpl-8331bfdf-b8cd-4919-a49b-5fc376d0f789",
+  "created": 1791166029,
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"source_ledger\":{\"F_content_visible\":true,\"F_premise_adopted\":false,\"partial_fragment_usage\":{\"individual_compatibility_statements_used\":false,\"pair_relations_used\":false,\"derived_implications_used\":false,\"deployment_fields_used\":false,\"summary\":\"F is visible for audit but explicitly prohibited from adoption as premise, evidence, or justification per A_epistemic. No fragments were used.\"},\"adoption_reason\":\"A_epistemic status is PREMISE_ADOPTION_NOT_ALLOWED. F cannot be adopted.\"},\"analysis\":{\"admissible_premises\":[],\"relational_conclusion\":\"No premises adopted; no relational conclusion derived from F.\"},\"execution_gate\":{\"status\":\"INELIGIBLE\",\"reason\":\"No premises were adopted into the execution path due to A_epistemic restrictions.\"},\"continuation\":{\"emitted\":false,\"deployment_order\":[],\"blocked_services\":[]},\"provenance\":{\"used_model_prior\":false,\"used_visible_but_nonadopted_F\":false,\"reason\":\"F was visible but strictly excluded from analysis and execution per A_epistemic.\"}}"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ],
+  "object": "chat.completion",
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"
+}

@@ -1,0 +1,40 @@
+```json
+{
+  "task_id": "boundary-study/exp1-x1",
+  "decision": "2026-03-08",
+  "findings": [
+    {
+      "id": "diff_1",
+      "statement": "Cumulative investment amount is 5.04 billion yuan in the 2026-03-08 extract.",
+      "evidence": "Table 2 in the 2026-03-08 extract lists '累计金额5.04亿元'",
+      "function": "evidence"
+    },
+    {
+      "id": "diff_2",
+      "statement": "The 2026-03-08 extract includes a clause about not purchasing second-hand materials.",
+      "evidence": "Section 2 under '工程材料' in the 2026-03-08 extract",
+      "function": "evidence"
+    },
+    {
+      "id": "diff_3",
+      "statement": "Cumulative on-site management fee is 28.8134 million yuan in the 2026-03-08 extract.",
+      "evidence": "Section (五) of the 2026-03-08 extract",
+      "function": "evidence"
+    },
+    {
+      "id": "diff_4",
+      "statement": "The 2026-03-08 extract specifies three locations for water retaining station construction.",
+      "evidence": "Section (二) under '物资集采情况' in the 2026-03-08 extract",
+      "function": "evidence"
+    },
+    {
+      "id": "diff_5",
+      "statement": "The 2026-03-08 extract specifies one location for asphalt station construction.",
+      "evidence": "Section (二) under '物资集采情况' in the 2022-03-08 extract",
+      "function": "evidence"
+    }
+  ],
+  "missing_or_uncertain": null,
+  "confidence": 1.0
+}
+```

@@ -1,0 +1,20 @@
+{
+  "checksum_matches_recomputed": true,
+  "checksum_recomputed_from_settled_r1_site": "0ae90cda",
+  "format_ok": true,
+  "line_count": 1,
+  "parsed_checksum": "0ae90cda",
+  "parsed_secret": "e7727062f318",
+  "pass": true,
+  "r1_checksum": "0ae90cda",
+  "r1_secret": "e7727062f318",
+  "r1_site": "Quarry",
+  "raw_text": "ANSWER=e7727062f318-0ae90cda\n",
+  "recomputed_checksum": "0ae90cda",
+  "rule": "ANSWER=<secret>-<checksum>",
+  "schema_id": "SIMIGO-G2-CHECKER-V1",
+  "secret_matches_settled_r1": true,
+  "secret_present": true,
+  "settled_r1_checksum_self_consistent": true,
+  "transfer_secret_matches_fixture": true
+}

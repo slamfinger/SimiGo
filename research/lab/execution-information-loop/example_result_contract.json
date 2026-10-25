@@ -1,0 +1,15 @@
+{
+  "schema_version": "simigo.result-contract/v1",
+  "fields": {
+    "origin_code": {"pattern": "^ORIGIN=([A-Z]+)$", "capture_group": 1, "type": "string", "required": true, "match_policy": "exactly_one"},
+    "destination_code": {"pattern": "^DEST=([A-Z]+)$", "capture_group": 1, "type": "string", "required": true, "match_policy": "exactly_one"},
+    "route_key": {"pattern": "^ROUTE=([A-Z]+>[A-Z]+)$", "capture_group": 1, "type": "string", "required": true, "match_policy": "exactly_one"},
+    "priority": {"pattern": "^PRIORITY=([0-9]+)$", "capture_group": 1, "type": "integer", "minimum": 0, "maximum": 9, "required": true, "match_policy": "exactly_one"}
+  },
+  "constraints": [
+    {"kind": "equals_binding", "field": "origin_code", "binding": "origin_code"},
+    {"kind": "equals_binding", "field": "destination_code", "binding": "destination_code"},
+    {"kind": "equals_binding", "field": "priority", "binding": "priority"},
+    {"kind": "concat", "field": "route_key", "parts": ["origin_code", "destination_code"], "separator": ">"}
+  ]
+}

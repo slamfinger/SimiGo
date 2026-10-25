@@ -1,0 +1,11 @@
+{"monotonicNs":264390740851333,"event":"run_start","runUUID":"audit-20261001-EC02BCE8","payload":{"role":"judgment","experiment":"P7-1"},"wallTime":"2026-10-01T11:22:14Z"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390742099166,"payload":{"restore":"audit-20261001-95E010A2","form":"audit-20261001-5340FE99","fork":"audit-20261001-67D87B20","pollution":"audit-20261001-6BEE5FAE"},"runUUID":"audit-20261001-EC02BCE8","event":"judgment_inputs"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390742385750,"payload":{"cell":"C4_continuation","value":"PASS"},"runUUID":"audit-20261001-EC02BCE8","event":"judgment"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390742449333,"payload":{"cell":"C3_anchor","value":"PASS"},"runUUID":"audit-20261001-EC02BCE8","event":"judgment"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390742506791,"payload":{"cell":"C2_position","value":"PASS"},"runUUID":"audit-20261001-EC02BCE8","event":"judgment"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390742562291,"payload":{"cell":"verdict","value":"CONTINUATION_VALIDATED_CROSSBACKEND"},"runUUID":"audit-20261001-EC02BCE8","event":"judgment"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390742617666,"payload":{"cell":"C5_parent_non_pollution","value":"PASS"},"runUUID":"audit-20261001-EC02BCE8","event":"judgment"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390742673166,"payload":{"cell":"C1_identity","value":"PASS"},"runUUID":"audit-20261001-EC02BCE8","event":"judgment"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390742728833,"payload":{"text":"mechanical application of P7-1 §5–§6 frozen rules; wording per P7-0 §6 — 'backend-independent' claims prohibited"},"runUUID":"audit-20261001-EC02BCE8","event":"judgment_note"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390743378291,"payload":{"result":"ALL_PASS"},"runUUID":"audit-20261001-EC02BCE8","event":"r0_verify"}
+{"wallTime":"2026-10-01T11:22:14Z","monotonicNs":264390743437625,"payload":{"role":"judgment","overall":"CONTINUATION_VALIDATED_CROSSBACKEND"},"runUUID":"audit-20261001-EC02BCE8","event":"run_complete"}

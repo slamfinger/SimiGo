@@ -1,0 +1,12 @@
+{
+  "baselineOutput" : "## Trade",
+  "crossSessionHitObserved" : true,
+  "hookCalls" : 1,
+  "hookHits" : 1,
+  "matchedTokenCount" : 23,
+  "outputsMatch" : true,
+  "pass" : true,
+  "prefixTokenCount" : 23,
+  "promptTokenCount" : 24,
+  "warmOutput" : "## Trade"
+}

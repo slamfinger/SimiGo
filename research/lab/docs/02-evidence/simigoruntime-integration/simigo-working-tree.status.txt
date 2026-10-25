@@ -1,0 +1,11 @@
+ M Packages/SimiGoRuntime/Package.swift
+ M SimiGo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+AM SimiGoTests/Replication/ReplicationAuditRunner.swift
+A  SimiGoTests/Replication/ReplicationAuditSelfTest.swift
+?? Packages/SimiGoRuntime/Package.resolved
+?? Packages/SimiGoRuntime/Sources/SimiGoRuntimeMemory/
+?? SimiGoTests/Replication/GDeltaMinimalityTests.swift
+?? SimiGoTests/Replication/P4ReplicationAudit.swift
+?? SimiGoTests/Replication/P4Sample3ReplicationAudit.swift
+?? SimiGoTests/Replication/P5ReplicationAudit.swift
+?? SimiGoTests/Replication/P71CrossBackendTests.swift

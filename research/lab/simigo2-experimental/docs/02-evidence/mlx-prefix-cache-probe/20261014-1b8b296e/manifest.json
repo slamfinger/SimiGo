@@ -1,0 +1,35 @@
+{
+  "artifact": {
+    "namespaceDirectory": "0502eedd82ab4c7d",
+    "sidecar": "artifact-sidecar.json",
+    "sidecarSHA256": "49af49d52c3914acc92e54042f0076f3147e2974f4ed783f545e3f13745e66da",
+    "snapshotBytes": 2269760,
+    "snapshotSHA256": "ddbf7955e47bfe2f9d14543b2150e1f75a5d1a0b88902551fc81219bd049ae26"
+  },
+  "capturedAtUTC": "2026-10-14T13:51:38.746209+00:00",
+  "command": ".build/debug/simigo2ctl mlx-prefix-cache-probe <model> --prefix-tokens 32 --tokens 2 --root <temporary>",
+  "commit": "1b8b296e5749884798754f8824a5fdae3e575186",
+  "host": {
+    "cpu": "Apple M5",
+    "hardware": "Mac17,4",
+    "memoryBytes": 34359738368
+  },
+  "model": {
+    "repository": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "snapshot": "6e302ea604ad9ab206367e2c501d1571023e7b6d"
+  },
+  "probe": {
+    "baselineOutput": "## Trade",
+    "crossSessionHitObserved": true,
+    "hookCalls": 1,
+    "hookHits": 1,
+    "matchedTokenCount": 23,
+    "outputsMatch": true,
+    "pass": true,
+    "prefixTokenCount": 23,
+    "promptTokenCount": 24,
+    "warmOutput": "## Trade"
+  },
+  "schema": "simigo.mlx-prefix-cache-system-acceptance.v1",
+  "verdict": "PASS"
+}

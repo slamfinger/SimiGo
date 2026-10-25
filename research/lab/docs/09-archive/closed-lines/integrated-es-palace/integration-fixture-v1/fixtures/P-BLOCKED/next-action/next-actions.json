@@ -1,0 +1,1 @@
+{"actions":[{"action_id":"NA-P-BLOCKED","blocking_condition":"REGISTERED_BLOCK","boundary":"D002-PACKAGE-V1.0","boundary_digest":"96ba11fd029ed8efb72c440fb475ae31157c4b7a40dd594de46ac80afe2c4af6","continuation_class":"BLOCKED_LAWFUL_CONTINUATION","target_digest":"a8fad29f929219d6f893f51e1cfe2bd30dce0a9d7200bd05a1926c4282c35690"}],"schema_id":"D002-NEXT-ACTION-V1"}

@@ -1,0 +1,2 @@
+cdb2e4fd681380f7e2f8ec13d8fce86b339020ea29aa2298c5507b7eb45de104  docs/02-evidence/t5-execution/pinning/a-instruction-rev1.txt
+e591f265b2d08af98734e28da929f19a72fe29312fa3aaeca00b6d087be6067a  docs/02-evidence/t5-execution/pinning/b-instruction-template-rev1.txt

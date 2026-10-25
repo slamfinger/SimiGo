@@ -1,0 +1,14 @@
+SimiGo-Lab
+Copyright 2026 Mr.Simi (slamfinger)
+
+Layered licensing:
+
+1. Apache License 2.0 (`LICENSE`) applies to source code, executable runtime
+   material, conformance code, build configuration, and scripts.
+2. Creative Commons Attribution 4.0 International (`LICENSE-DOCS`) applies to
+   documentation, specifications, contracts, research records, and experiment
+   evidence.
+3. The SimiGo name, logo, and official-product identity are not licensed here.
+
+This repository does not distribute model weights. Third-party dependencies
+remain under their own licenses; see THIRD_PARTY_NOTICES.md.

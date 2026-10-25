@@ -1,0 +1,127 @@
+{
+ "dropped_no_provenance": 0,
+ "armA": {
+  "arm": "client-summary",
+  "memory_chars": 1284,
+  "memory_tokens_est": 321,
+  "score": {
+   "PARTIAL": 5,
+   "PASS": 2,
+   "FAIL": 3
+  },
+  "results": [
+   {
+    "id": 1,
+    "verdict": "PARTIAL",
+    "answer": "B1 裁定结果：记忆未覆盖。\n\n之后进入的阶段：记忆未覆盖（下一步顺序为「以含 B1 未提交修改的工作树为基线 → 修复请求解析边界 → 接入 B3 V2 验签与权限映射 → 回归测试 → macOS build + XCTest」，但 B"
+   },
+   {
+    "id": 2,
+    "verdict": "PASS",
+    "answer": "B3 当前状态：候选实现，未通过审阅验收。"
+   },
+   {
+    "id": 3,
+    "verdict": "PASS",
+    "answer": "B4 尚未启动。\n\n记忆明确记录「B4 未启动」，并在结尾重申「本轮……没有启动 B4」。"
+   },
+   {
+    "id": 4,
+    "verdict": "PARTIAL",
+    "answer": "新增阻塞项：现有 HTTP 解析器在接线前必须修复，具体为 `readRequest` 将 method 大写并从 path 剥离 query string、以及请求头用 `headers[key] = value` 覆盖重复头（如 Hos"
+   },
+   {
+    "id": 5,
+    "verdict": "PARTIAL",
+    "answer": "PR #10，状态为 Draft。"
+   },
+   {
+    "id": 6,
+    "verdict": "PARTIAL",
+    "answer": "记忆未覆盖。\n\n本地 fetch-only 核验确认的提交链（按顺序）不在本次记忆的覆盖范围内——记忆只记录了远端核对到的 `388caa24` 与 Lab 记录 `e22a3cab`，未列出本地 fetch-only 核验所确认的提交序列"
+   },
+   {
+    "id": 7,
+    "verdict": "FAIL",
+    "answer": "记忆未覆盖。\n\n记忆只记录了 B3 是候选实现、B4 未启动，以及产品 HTTP 接线前的静态审查发现和必要顺序，没有记录对 B1 未提交修改的具体处理方式。"
+   },
+   {
+    "id": 8,
+    "verdict": "PARTIAL",
+    "answer": "B3 本轮没有跑 macOS build，也没有跑 XCTest。\n\n实际做的验证：对产品仓远端 `main`（提交 `388caa24`）的静态检查，确认了 HTTP 解析器的三个问题（method 大写与 query string 剥离"
+   },
+   {
+    "id": 9,
+    "verdict": "FAIL",
+    "answer": "记忆未覆盖。\n\n记忆只记录了现象（method 转大写、query string 被剥离、重复头用 `headers[key] = value` 覆盖无拒绝），未记录对请求头解析的**约束要求**。"
+   },
+   {
+    "id": 10,
+    "verdict": "FAIL",
+    "answer": "记忆未覆盖。"
+   }
+  ]
+ },
+ "armB": {
+  "arm": "structured-warm",
+  "memory_chars": 8858,
+  "memory_tokens_est": 2214,
+  "score": {
+   "PASS": 7,
+   "PARTIAL": 2,
+   "FAIL": 1
+  },
+  "results": [
+   {
+    "id": 1,
+    "verdict": "PASS",
+    "answer": "B1 裁定：PASS/GO（最终放行），B1 全部阻塞闭合。之后进入 B3，按顺序推进——先完成并审阅通过 B3（请求内容绑定签名接线），再进入 B4，不并行推进。"
+   },
+   {
+    "id": 2,
+    "verdict": "PASS",
+    "answer": "B3 当前状态：候选，未通过审阅验收。\n\n依据记忆：\n- B3 核心实现已推送 Lab（`f0ee2083`），仍是**候选未达审阅验收**。\n- 产品侧 B3 接线（从实际解析请求构造被签名对象、服务端权限映射、验签/路由/分发消费同一份"
+   },
+   {
+    "id": 3,
+    "verdict": "PASS",
+    "answer": "B4 未启动。\n\n记忆多次明确：B3 仍为候选未达审阅验收，B4 排在 B3 之后、不并行推进；`pending` 亦为「再跑 build+XCTest→B3 审阅验收→才进入 B4」。"
+   },
+   {
+    "id": 4,
+    "verdict": "PARTIAL",
+    "answer": "新增阻塞项：产品 HTTP 接线前必须先修请求解析器（保留原始 method 与完整 request-target、拒绝重复头覆盖歧义、统一 body framing）。\n\n排在 B3 之前的原因：`readRequest` 现把 meth"
+   },
+   {
+    "id": 5,
+    "verdict": "PASS",
+    "answer": "B3 关联 PR：SimiGo-Lab#10，状态 Open/Draft。"
+   },
+   {
+    "id": 6,
+    "verdict": "PARTIAL",
+    "answer": "记忆未覆盖。\n\n记忆记录了 Lab 分支最新提交 `f0ee2083`、本地此前缺失该提交（本地 HEAD 为 `dbaeedcf`），以及远端产品仓 `388caa24/388caa2`，但未记录“fetch-only 核验确认的提交链”"
+   },
+   {
+    "id": 7,
+    "verdict": "PASS",
+    "answer": "执行基线第①步：修产品解析器时须保留 B1 本机未提交的 TLS / fail-closed 修改（约束 [33]、pending [35]）。\n\n本机未提交工作树是产品侧工作的必要基线（decisions [33]、pending [8]"
+   },
+   {
+    "id": 8,
+    "verdict": "FAIL",
+    "answer": "B3 本轮**没有**跑 macOS build，也**没有**跑 XCTest。\n\n实际做的验证：\n- 在 Lab 侧跑了 fetch-only 核验（提交链、三项代码与文档声明及边界对齐，`f0ee2083`）。\n- 在 Lab 侧跑了"
+   },
+   {
+    "id": 9,
+    "verdict": "PASS",
+    "answer": "请求头解析约束（依据记忆）：\n\n- **重复头**：拒绝歧义。Host、Content-Length 等重复头被覆盖即视为无歧义，须 fail-closed 拒绝（不得静默覆盖）。\n- **method**：保留原始 method，不转大写"
+   },
+   {
+    "id": 10,
+    "verdict": "PASS",
+    "answer": "记忆未覆盖。\n\n记忆中有 fail-closed 优先级回归（B1 阻塞闭合项、接线须保留 B1 TLS/fail-closed），但无 fail-closed 决策与缓存身份（transport identity / Keychain）之"
+   }
+  ]
+ }
+}

@@ -1,0 +1,88 @@
+{
+  "event": "TRANSACTION_BEGIN",
+  "operation_classes": [
+    "INSERT is_objects",
+    "INSERT dependency_entries"
+  ],
+  "stage": "materialize",
+  "time_ns": 1791424634878793000,
+  "utc": "2026-10-08T01:57:14.878802+00:00"
+}
+{
+  "dependency_order": 1,
+  "event": "TRANSACTION_COMMIT",
+  "object_id": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+  "operation_classes": [
+    "INSERT is_objects",
+    "INSERT dependency_entries"
+  ],
+  "stage": "materialize",
+  "time_ns": 1791424634879283000,
+  "utc": "2026-10-08T01:57:14.879283+00:00"
+}
+{
+  "event": "TRANSACTION_BEGIN",
+  "operation_classes": [
+    "INSERT is_objects",
+    "INSERT is_index_entries"
+  ],
+  "stage": "es1",
+  "time_ns": 1791424634879586000,
+  "utc": "2026-10-08T01:57:14.879586+00:00"
+}
+{
+  "event": "TRANSACTION_COMMIT",
+  "index_order": 1,
+  "object_id": "26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9",
+  "operation_classes": [
+    "INSERT is_objects",
+    "INSERT is_index_entries"
+  ],
+  "stage": "es1",
+  "time_ns": 1791424634879919000,
+  "utc": "2026-10-08T01:57:14.879920+00:00"
+}
+{
+  "event": "TRANSACTION_BEGIN",
+  "operation_classes": [
+    "INSERT is_objects",
+    "INSERT is_index_entries"
+  ],
+  "stage": "es2_continuation",
+  "time_ns": 1791424636239678000,
+  "utc": "2026-10-08T01:57:16.239683+00:00"
+}
+{
+  "event": "TRANSACTION_COMMIT",
+  "index_order": 2,
+  "object_id": "1703f2d664c58d4fe88032b7b3750ab885522c1a5a73e04570be108f7c6bf026",
+  "operation_classes": [
+    "INSERT is_objects",
+    "INSERT is_index_entries"
+  ],
+  "stage": "es2_continuation",
+  "time_ns": 1791424636240581000,
+  "utc": "2026-10-08T01:57:16.240582+00:00"
+}
+{
+  "event": "TRANSACTION_BEGIN",
+  "operation_classes": [
+    "INSERT is_objects",
+    "INSERT dependency_entries"
+  ],
+  "stage": "mutate_n1",
+  "time_ns": 1791424636241393000,
+  "utc": "2026-10-08T01:57:16.241394+00:00"
+}
+{
+  "dependency_order": 2,
+  "event": "TRANSACTION_COMMIT",
+  "object_id": "8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955",
+  "operation_classes": [
+    "INSERT is_objects",
+    "INSERT dependency_entries"
+  ],
+  "stage": "mutate_n1",
+  "time_ns": 1791424636241963000,
+  "utc": "2026-10-08T01:57:16.241965+00:00"
+}

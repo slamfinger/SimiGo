@@ -1,0 +1,148 @@
+{
+  "document": "Cross-model pre-runtime comparative observation",
+  "date": "2026-10-05",
+  "status": "STATIC_PRE_RUNTIME_COMPARISON_ONLY / NO_J3_SCORING / NO_846_MAPPING / NO_RUNTIME",
+  "purpose": "Compare already existing pilot and Round-1 observations to select observable dimensions and candidate invariants for the future formal 16-cell run.",
+  "authorization_boundary": {
+    "formal_runtime": "NOT AUTHORIZED",
+    "observer": "NOT RUN",
+    "information_core_store": "NOT RUN",
+    "semantic_normalization": "NOT PERFORMED",
+    "j1_j2_j3_scoring": "NOT PERFORMED",
+    "stability_matrix": "NOT PERFORMED",
+    "vertical_decomposition": "NOT PERFORMED",
+    "mapping_to_846": "NOT PERFORMED"
+  },
+  "evidence_streams": [
+    {
+      "id": "E-R1",
+      "name": "TC-A Information Reduction Round 1",
+      "status": "FORMAL_COMPLETE",
+      "arms": 17,
+      "valid_json": 17,
+      "isolated": true,
+      "scope": "TC-A release gate only",
+      "observations": {
+        "representation_RAW_DECODED_SEMANTIC": "PASS/PASS/PASS",
+        "M2_deleted": "FAIL",
+        "M1_all_or_gamma_only_with_M2": "PASS/PASS",
+        "M1_absent": "FAIL",
+        "explanation_present": "FAIL",
+        "source_hash_or_tool_evidence": "NO_STABLE_PROTECTIVE_EFFECT_IN_THIS_RUN"
+      }
+    },
+    {
+      "id": "E-CM",
+      "name": "Cross-model pilot raw stream",
+      "status": "PILOT_ONLY_NOT_FORMAL",
+      "runtime_isolation": "NOT ENFORCED BY THIS RUNNER",
+      "inventory": "11 final-answer files; Model B has no final answers; aggregate RUN_RECORD tracks only 4 C-model cells",
+      "raw_parse": {
+        "strict_json": 3,
+        "markdown_fence_strippable_json": 2,
+        "invalid_or_degenerate": 6
+      },
+      "note": "Use only for candidate-generation; not for stability claims."
+    }
+  ],
+  "comparison_dimensions": [
+    {
+      "id": "D1",
+      "name": "task outcome presence",
+      "question": "Does each model/sample produce an identifiable task decision or explicit failure?"
+    },
+    {
+      "id": "D2",
+      "name": "key-decision structure",
+      "question": "Does the output contain the decision type required by the sample (release/block, version choice, supported/rejected, anomaly list)?"
+    },
+    {
+      "id": "D3",
+      "name": "required-information presence",
+      "question": "Are the minimally needed facts/evidence items present?"
+    },
+    {
+      "id": "D4",
+      "name": "relation/conjunction formation",
+      "question": "Are separate facts combined into the relation needed by the task?"
+    },
+    {
+      "id": "D5",
+      "name": "representation compliance",
+      "question": "Is the required strict JSON contract satisfied without repair?"
+    },
+    {
+      "id": "D6",
+      "name": "explanation sensitivity",
+      "question": "Does adding explanation change decision/order/output viability?"
+    },
+    {
+      "id": "D7",
+      "name": "provenance/tool sensitivity",
+      "question": "Does process evidence affect immediate task behavior?"
+    },
+    {
+      "id": "D8",
+      "name": "uncertainty boundary",
+      "question": "Does the model explicitly preserve missing or uncertain evidence?"
+    },
+    {
+      "id": "D9",
+      "name": "degradation mode",
+      "question": "Is failure truncation, markdown wrapping, schema drift, repetition, or semantic contradiction?"
+    }
+  ],
+  "observed_candidates": [
+    {
+      "id": "CI-A",
+      "candidate": "Task-relative decision skeleton",
+      "observation": "All nondegenerate pilot outputs attempt a sample-specific decision or list; Round 1 formal arms likewise emitted decision/order/blocker JSON.",
+      "status": "CANDIDATE_OBSERVABLE_ONLY"
+    },
+    {
+      "id": "CI-B",
+      "candidate": "Evidence-grounded findings",
+      "observation": "Valid A/C outputs usually attach source-grounded evidence or reason fields; degenerate/truncated outputs cannot support this reading.",
+      "status": "CANDIDATE_OBSERVABLE_ONLY"
+    },
+    {
+      "id": "CI-C",
+      "candidate": "Relation/conjunction dependence",
+      "observation": "Round 1 shows S1 continuation needs gamma baseline decision plus pair decisions; isolated M1.b or M2.b arms failed. S1 pilot conflict also shows relation interpretation can differ across models.",
+      "status": "PRIORITY_FOR_FORMAL_16_CELL_OBSERVATION"
+    },
+    {
+      "id": "CI-D",
+      "candidate": "Representation compliance is separable from semantic intent",
+      "observation": "Several outputs contain plausible task semantics while failing strict JSON because of truncation or markdown fencing.",
+      "status": "CANDIDATE_OBSERVABLE_ONLY"
+    },
+    {
+      "id": "CI-E",
+      "candidate": "Long/high-complexity inputs increase degradation",
+      "observation": "Model A is strict-valid on short S1/S3 but truncated on longer S2/S4; Model C wraps output and has schema drift; Model D degenerates.",
+      "status": "CANDIDATE_OBSERVABLE_ONLY"
+    },
+    {
+      "id": "CI-F",
+      "candidate": "Explanation/provenance are not obviously core for immediate continuation",
+      "observation": "Round 1 explanation-present failed once; hash/tool evidence variations showed no stable rescue. Pilot cannot confirm because isolation is absent.",
+      "status": "CANDIDATE_OBSERVABLE_ONLY"
+    }
+  ],
+  "formal_16_cell_observation_priorities": [
+    "D1 task outcome presence;",
+    "D2 normalized decision class, not wording;",
+    "D3 minimal fact/evidence presence;",
+    "D4 relation/conjunction formation;",
+    "D5 strict JSON and schema compliance;",
+    "D8 failure mode classification."
+  ],
+  "explicit_nonclaims": [
+    "No J3 PASS/FAIL is assigned;",
+    "no stable invariant is declared;",
+    "no 846 atom is deleted, merged, retained, or mapped;",
+    "pilot isolation was not enforced;",
+    "single-run differences are not causal findings."
+  ]
+}

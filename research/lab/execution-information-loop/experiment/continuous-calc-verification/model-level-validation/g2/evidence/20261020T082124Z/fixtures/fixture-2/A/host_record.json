@@ -1,0 +1,148 @@
+{
+  "checks" : {
+    "u1_generated" : true,
+    "u1_parsed" : true,
+    "u2_generated" : true
+  },
+  "engine_content_identity" : {
+    "combined_digest" : "bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+    "tokenizer_digest" : "9bada7c8fddefc7e91cf3bbe9b56305d5234c73e16732518dc4f3825b2d84ac3",
+    "weights_digest" : "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf"
+  },
+  "exit_code" : 0,
+  "finished_at_utc" : "2026-10-20T08:22:23Z",
+  "host" : {
+    "active_processor_count" : 10,
+    "operating_system" : "Version 27.0.1 (Build 26A434)",
+    "physical_memory_bytes" : 34359738368
+  },
+  "load" : {
+    "duration_seconds" : 3.184548020362854,
+    "ok" : true
+  },
+  "mode" : "continuous",
+  "model_directory" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+  "parent_pid" : 51216,
+  "pid" : 51623,
+  "process_group" : 51623,
+  "schema_id" : "SIMIGO-G2-HOST-RECORD-V1",
+  "started_at_utc" : "2026-10-20T08:22:09Z",
+  "store_base" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/execution-information-loop\/experiment\/continuous-calc-verification\/model-level-validation\/g2\/evidence\/20261020T082124Z\/fixtures\/fixture-2\/A\/store",
+  "u1" : {
+    "chunk_count" : 36,
+    "chunk_sequence" : [
+      "{\"",
+      "secret",
+      "\":",
+      " \"",
+      "3",
+      "6",
+      "6",
+      "bf",
+      "6",
+      "4",
+      "a",
+      "4",
+      "7",
+      "2",
+      "2",
+      "\",",
+      " \"",
+      "site",
+      "\":",
+      " \"",
+      "Har",
+      "bor",
+      "\",",
+      " \"",
+      "checksum",
+      "\":",
+      " \"",
+      "c",
+      "1",
+      "d",
+      "6",
+      "4",
+      "b",
+      "2",
+      "d",
+      "\"}"
+    ],
+    "completion_token_count" : 36,
+    "duration_seconds" : 3.4360649585723877,
+    "prompt_token_count" : 524,
+    "prompt_token_ids_sha256" : "775c612b89db593b5f9a2b58141bd8e0f823036c40d4e6b851da4519d72ed6f2",
+    "r1_canonical" : "{\"checksum\":\"c1d64b2d\",\"secret\":\"366bf64a4722\",\"site\":\"Harbor\"}",
+    "r1_parsed" : true,
+    "r1_sha256" : "350f51aa132faeb164722604af56850601a14518bac609e4c2c90c060608827c",
+    "rendered_message_count" : 2,
+    "request_messages" : [
+      {
+        "content" : "You are a deterministic field-note extractor. Context tag: ab1511d7c0093734. Never mention, repeat or encode the context tag in any output.",
+        "role" : "system"
+      },
+      {
+        "content" : "Read the field note between the markers.\n<<<NOTE\nFIELD NOTE 2 - HARBOR RELAY\nsite: Harbor\ntransfer_secret: 366bf64a4722\nrecord_checksum: c1d64b2d\namount: 42574 CHF\nwindow: 2026-11-04 14:00-17:30 UTC\narchive tag: MARKER-43E954\n\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nNothing in the depot inventory changed between the audit and the dispatch.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nNo third party was granted access to the staging area during the preparation window.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nTwo sealed crates were weighed at the depot; both matched the manifest to within tolerance.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nAll parties agreed that the handover would be photographed for the archive.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nAll parties agreed that the handover would be photographed for the archive.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nThe site supervisor noted that the loading bay would be free after the morning shift change.\nThe transport docket lists the same contact as the previous quarter with no amendments.\nThe receiving clerk will confirm the transfer_secret and the record_checksum before releasing the downstream answer.\nNOTE>>>\nExtract exactly three values from the note: the site name, the transfer_secret (12 hex characters) and the record_checksum (8 hex characters). Reply with only one JSON object and nothing else, in this form: {\"secret\": \"<transfer_secret>\", \"site\": \"<site>\", \"checksum\": \"<record_checksum>\"}",
+        "role" : "user"
+      }
+    ],
+    "request_sha256" : "17ae2b91a426dd48d0316bdef9a34188adde832f953ab45e5f83ce7c8a9b6329",
+    "request_text" : "Read the field note between the markers.\n<<<NOTE\nFIELD NOTE 2 - HARBOR RELAY\nsite: Harbor\ntransfer_secret: 366bf64a4722\nrecord_checksum: c1d64b2d\namount: 42574 CHF\nwindow: 2026-11-04 14:00-17:30 UTC\narchive tag: MARKER-43E954\n\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nNothing in the depot inventory changed between the audit and the dispatch.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nNo third party was granted access to the staging area during the preparation window.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nTwo sealed crates were weighed at the depot; both matched the manifest to within tolerance.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nAll parties agreed that the handover would be photographed for the archive.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nAll parties agreed that the handover would be photographed for the archive.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nThe site supervisor noted that the loading bay would be free after the morning shift change.\nThe transport docket lists the same contact as the previous quarter with no amendments.\nThe receiving clerk will confirm the transfer_secret and the record_checksum before releasing the downstream answer.\nNOTE>>>\nExtract exactly three values from the note: the site name, the transfer_secret (12 hex characters) and the record_checksum (8 hex characters). Reply with only one JSON object and nothing else, in this form: {\"secret\": \"<transfer_secret>\", \"site\": \"<site>\", \"checksum\": \"<record_checksum>\"}",
+    "text" : "{\"secret\": \"366bf64a4722\", \"site\": \"Harbor\", \"checksum\": \"c1d64b2d\"}",
+    "text_sha256" : "1b9ab41fc832c7cf2f8f3caf5b594437ef96a42511dba4b63a9724b1a9e524e6"
+  },
+  "u2" : {
+    "chunk_count" : 22,
+    "chunk_sequence" : [
+      "ANS",
+      "WER",
+      "=",
+      "3",
+      "6",
+      "6",
+      "bf",
+      "6",
+      "4",
+      "a",
+      "4",
+      "7",
+      "2",
+      "2",
+      "-c",
+      "1",
+      "d",
+      "6",
+      "4",
+      "b",
+      "2",
+      "d"
+    ],
+    "completion_token_count" : 22,
+    "duration_seconds" : 0.89285600185394287,
+    "prompt_token_count" : 633,
+    "prompt_token_ids_sha256" : "af56da2fdefdf25cc774661108c95ce8c2d4e59391803b8a3aca84d7baa46501",
+    "rendered_message_count" : 4,
+    "request_messages" : [
+      {
+        "content" : "You are a deterministic field-note extractor. Context tag: ab1511d7c0093734. Never mention, repeat or encode the context tag in any output.",
+        "role" : "system"
+      },
+      {
+        "content" : "Read the field note between the markers.\n<<<NOTE\nFIELD NOTE 2 - HARBOR RELAY\nsite: Harbor\ntransfer_secret: 366bf64a4722\nrecord_checksum: c1d64b2d\namount: 42574 CHF\nwindow: 2026-11-04 14:00-17:30 UTC\narchive tag: MARKER-43E954\n\nThe operations desk keeps a paper copy of the rota in case the network is unavailable.\nNothing in the depot inventory changed between the audit and the dispatch.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nNo third party was granted access to the staging area during the preparation window.\nThe backup relay station was tested on a separate circuit and remained idle throughout.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nTwo sealed crates were weighed at the depot; both matched the manifest to within tolerance.\nWeather on the day of transfer is expected to be clear with light wind from the north.\nAll parties agreed that the handover would be photographed for the archive.\nThe receiving clerk will verify the seal number against the dispatch note on arrival.\nAll parties agreed that the handover would be photographed for the archive.\nThe courier route was reviewed against the seasonal timetable and no exceptions were filed.\nThe site supervisor noted that the loading bay would be free after the morning shift change.\nThe transport docket lists the same contact as the previous quarter with no amendments.\nThe receiving clerk will confirm the transfer_secret and the record_checksum before releasing the downstream answer.\nNOTE>>>\nExtract exactly three values from the note: the site name, the transfer_secret (12 hex characters) and the record_checksum (8 hex characters). Reply with only one JSON object and nothing else, in this form: {\"secret\": \"<transfer_secret>\", \"site\": \"<site>\", \"checksum\": \"<record_checksum>\"}",
+        "role" : "user"
+      },
+      {
+        "content" : "{\"secret\": \"366bf64a4722\", \"site\": \"Harbor\", \"checksum\": \"c1d64b2d\"}",
+        "role" : "assistant"
+      },
+      {
+        "content" : "Settled record from the Information Space:\n{\"checksum\":\"c1d64b2d\",\"secret\":\"366bf64a4722\",\"site\":\"Harbor\"}\nUsing only that settled record, reply with exactly one line and nothing else: ANSWER=<secret>-<checksum>",
+        "role" : "user"
+      }
+    ],
+    "request_sha256" : "39d6e84a48be05923cd6cbbac56fc6781d5040352d7a05c7faf4092c538ecdca",
+    "request_text" : "Settled record from the Information Space:\n{\"checksum\":\"c1d64b2d\",\"secret\":\"366bf64a4722\",\"site\":\"Harbor\"}\nUsing only that settled record, reply with exactly one line and nothing else: ANSWER=<secret>-<checksum>",
+    "text" : "ANSWER=366bf64a4722-c1d64b2d",
+    "text_sha256" : "1b1af4030d7b32cee5ad5de5bc5ca35ea344fd94f9cfa3be80639a48eaa42d90"
+  }
+}

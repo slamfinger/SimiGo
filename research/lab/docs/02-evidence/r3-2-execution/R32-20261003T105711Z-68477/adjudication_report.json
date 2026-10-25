@@ -1,0 +1,197 @@
+{
+  "batch_inconclusive": false,
+  "campaign_verdict": "SUPPORTED",
+  "inconclusive_reasons": [],
+  "judgment_rule": {
+    "cons_version": "R2 rev.2 candidate: Cons(ES,IS) ⟺ I-condition ∧ A-condition ∧ C-condition",
+    "judgment_time": "campaign setup stage, before any ΔIS exists",
+    "spec": "SIMIGO_LAB_R3_1_JUDGMENT_SPECIFICATION_20261003.md (rev.2, RATIFIED)"
+  },
+  "note": "campaign scope = single-variable campaign over the frozen catalog; IS-X not instantiated (design §3/§4a)",
+  "per_cell": [
+    {
+      "cell_id": "cell-01-R32-I-Δ1",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-I",
+      "op_id": "R32-I-Δ1",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-02-R32-I-Δ2",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-I",
+      "op_id": "R32-I-Δ2",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-03-R32-I-Δ3",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-I",
+      "op_id": "R32-I-Δ3",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-04-R32-A-Δ1",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-A",
+      "op_id": "R32-A-Δ1",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-05-R32-A-Δ2",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-A",
+      "op_id": "R32-A-Δ2",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-06-R32-A-Δ3",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-A",
+      "op_id": "R32-A-Δ3",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-07-R32-C-Δ1",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-C",
+      "op_id": "R32-C-Δ1",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-08-R32-C-Δ2",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-C",
+      "op_id": "R32-C-Δ2",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-09-R32-C-Δ3",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-C",
+      "op_id": "R32-C-Δ3",
+      "prediction_ok": false,
+      "verdict": "PREDICTION-MATCH"
+    },
+    {
+      "cell_id": "cell-10-R32-B-Δ1",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-B",
+      "op_id": "R32-B-Δ1",
+      "prediction_ok": false,
+      "verdict": "DERIVATION-CONSISTENT"
+    },
+    {
+      "cell_id": "cell-11-R32-B-Δ2",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "IS-B",
+      "op_id": "R32-B-Δ2",
+      "prediction_ok": false,
+      "verdict": "DERIVATION-CONSISTENT"
+    },
+    {
+      "cell_id": "cell-12-R32-K-1a",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "K-1",
+      "op_id": "R32-K-1a",
+      "prediction_ok": false,
+      "verdict": "CONTROL-HOLD"
+    },
+    {
+      "cell_id": "cell-13-R32-K-1b",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "K-1",
+      "op_id": "R32-K-1b",
+      "prediction_ok": false,
+      "verdict": "CONTROL-HOLD"
+    },
+    {
+      "cell_id": "cell-14-R32-K-0",
+      "class_ok": true,
+      "matched_conditions": [
+        "I",
+        "A",
+        "C"
+      ],
+      "op_class": "K-0",
+      "op_id": "R32-K-0",
+      "prediction_ok": false,
+      "verdict": "CONTROL-HOLD"
+    }
+  ],
+  "rq34_material": [],
+  "run_uuid": "R32-20261003T105711Z-68477"
+}

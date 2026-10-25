@@ -1,0 +1,11 @@
+{
+  "adapter_invocations": 0,
+  "logical_rows_written": 0,
+  "o1_o5_executed": false,
+  "observer_executed": false,
+  "semantic_sequence_executed": false,
+  "source_database_sha256_after": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d",
+  "source_database_sha256_before": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d",
+  "source_database_unchanged": true,
+  "working_copy_opened": false
+}

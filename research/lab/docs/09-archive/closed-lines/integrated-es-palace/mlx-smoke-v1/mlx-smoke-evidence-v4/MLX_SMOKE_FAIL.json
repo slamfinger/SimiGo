@@ -1,0 +1,10 @@
+{
+  "completed_at_utc" : "2026-10-10T15:37:17Z",
+  "duration_seconds" : 2.6973729133605957,
+  "failure" : "modelExecutionFailed(reason: \"[model_execution] noBoundRepresentation(SimiGoRuntimeContract.ExecutionID(rawValue: \\\"PRODUCTION-REAL-PALACE\\\"))\")",
+  "manifest_sha256" : "52a9a10a9f52b2853dd2b5f0053573b6c1830f9a84e9a07485a5af88b2d862b2",
+  "run_count" : 1,
+  "schema_id" : "ACTUAL-MLX-SMOKE-RECORD-V1",
+  "started_at_utc" : "2026-10-10T15:37:15Z",
+  "terminal_state" : "MLX_SMOKE_FAIL"
+}

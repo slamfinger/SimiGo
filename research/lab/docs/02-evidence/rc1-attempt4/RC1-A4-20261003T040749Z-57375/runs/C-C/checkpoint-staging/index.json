@@ -1,0 +1,35 @@
+[
+  {
+    "carrier_pointer_keys": [],
+    "lifecycle_phase": "OLD_PROCESS_STARTED",
+    "sequence": 1,
+    "sha256": "40dbd314ca8c82e7cf663f82d935b036ec2e40bb5a3de5d3b9ed98433efc5bd3",
+    "staged_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/checkpoint-staging/40dbd314ca8c82e7cf663f82d935b036ec2e40bb5a3de5d3b9ed98433efc5bd3.json",
+    "timestamp": "2026-10-03T04:07:51.681102Z"
+  },
+  {
+    "carrier_pointer_keys": [
+      "s0",
+      "task"
+    ],
+    "lifecycle_phase": "S0_OBSERVED",
+    "sequence": 2,
+    "sha256": "1d4a88b133f7d8e637567f07b2ac771cfc036ec4efeaca8f1db9eaa6d7dfa0fc",
+    "staged_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/checkpoint-staging/1d4a88b133f7d8e637567f07b2ac771cfc036ec4efeaca8f1db9eaa6d7dfa0fc.json",
+    "timestamp": "2026-10-03T04:07:51.683949Z"
+  },
+  {
+    "carrier_pointer_keys": [
+      "progress",
+      "relation",
+      "s0",
+      "s1",
+      "task"
+    ],
+    "lifecycle_phase": "POST_CHANGE_OBSERVED",
+    "sequence": 3,
+    "sha256": "043daf852a9d914ee258659cbf898a7cb087b0f3709af818c8cb1d410e63fbc6",
+    "staged_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/checkpoint-staging/043daf852a9d914ee258659cbf898a7cb087b0f3709af818c8cb1d410e63fbc6.json",
+    "timestamp": "2026-10-03T04:07:51.691834Z"
+  }
+]

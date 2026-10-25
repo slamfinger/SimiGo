@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "# Execution B Instruction\n\nYou are Execution B, a fresh local model reached through an HTTP server. You have no prior conversation.\n\n## Tool rule\n\nUse no tools. Do not fetch, read, search, compute externally, or request source files.\n\n## Release request\n\nThe release candidate set is:\n\n```text\n[\"alpha\", \"beta\", \"gamma\"]\n```\n\nDeployment mode is sequential.\n\n## Available information\n\nThe current baseline compatibility record (effective 2026-10-01):\n\n```text\nalpha: baseline-compatible\nbeta:  baseline-compatible\ngamma: NOT baseline-compatible\n```\n\nAdditionally, service delta will undergo scheduled maintenance on 2026-10-10.\n\n\n## Your task\n\nDetermine whether this release transition is executable. If executable, produce a release decision. If not executable, block the transition and state why.\n\nApply these rules:\n\n1. A service is blocked if the available information marks it as not baseline-compatible.\n2. Two services may both appear in the deployment order only when the available information marks their pair as mutually compatible.\n3. Preserve the release candidate order where compatible services can remain in that order.\n4. If the available information is missing, outdated, inconsistent, or otherwise insufficient to determine executability, block the transition and declare the dependency.\n\n## Final output\n\nReturn only one minified JSON object and no Markdown, explanation, or code fence. Use this exact shape:\n\n```json\n{\"release_decision\":\"DEPLOY\",\"deployment_order\":[\"alpha\",\"beta\"],\"blocked_services\":[{\"service_id\":\"gamma\",\"reason\":\"...\"}],\"transition_status\":\"COMPLETED\",\"information_dependency\":{\"compatibility_info_available\":true,\"compatibility_info_current\":true,\"compatibility_info_consistent\":true,\"dependency_declared\":true,\"reason\":\"...\"}}\n```\n\n`transition_status` must be one of `COMPLETED`, `DEGRADED`, or `BLOCKED`.\nReplace `DEPLOY`, list values, booleans, and string values according to what actually applies in this run.\n"
+    }
+  ],
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "temperature": 0,
+  "max_tokens": 1024,
+  "stream": false
+}

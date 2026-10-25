@@ -1,0 +1,114 @@
+{
+  "acceptance_record": {
+    "match": true,
+    "sha256": "4a34bd9befe056b778bc918afe478fa9e5f803fc4df0dd7f707bcc5696ceb2b6"
+  },
+  "completion_record": {
+    "match": true,
+    "sha256": "87b6587bc81b6c76d6bdd3ed1d96844cc8780e02cefbb0f7df93046866456c55"
+  },
+  "environment": {
+    "expected_identity": "ad2abb6809ead5a4d198f35d6f1b8a06624a803c6fc7e161dbb06f1f0838f15a",
+    "match": true,
+    "measured_sha256": "ad2abb6809ead5a4d198f35d6f1b8a06624a803c6fc7e161dbb06f1f0838f15a"
+  },
+  "exact_execution_repository_commit": "9966d311e7e52ab3f5ca828e593ea569cddb008e",
+  "fixture_artifacts": {
+    "adapter/BUILD.md": {
+      "expected_git_blob": "8573c1a60ce304323e582db6f5073e9435303740",
+      "match": true,
+      "sha256": "af2384b0bf20ae73d8fdcee1a929a273d6e052666cc36ac2b3314ae38779d2ba"
+    },
+    "adapter/srsval_adapter.swift": {
+      "expected_git_blob": "1573ae9eb7c7b334589a6ac901ea1889a20703a0",
+      "match": true,
+      "sha256": "61b8ad39c467ed7ff90e4d8670ea903bf7be12e20166c7cff21df4bdbf0231ac"
+    },
+    "inputs/D.md": {
+      "expected_git_blob": "f39361db5ac4c583287b1ae15d75e928f3bedfab",
+      "match": true,
+      "sha256": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c"
+    },
+    "inputs/D_prime.md": {
+      "expected_git_blob": "daaeae4eb3dab4ad52bba2214ea29eddeee0a2b8",
+      "match": true,
+      "sha256": "8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955"
+    },
+    "is_layout/IS_LAYOUT.md": {
+      "expected_git_blob": "4ea38dd5b81bb5a99f8e82ee5379939a30008d6b",
+      "match": true,
+      "sha256": "68f0590f273f644f75c8120f5721220b027d345b9bde1f9ef079bc71a9bdf113"
+    },
+    "observer/observer.py": {
+      "expected_git_blob": "248d3003c08609bbe3823ae7c05fb5c8747e2b52",
+      "match": true,
+      "sha256": "787b70d9cc291cfab081d9313877c58e375249875857f36dd93da45a44a80aaa"
+    },
+    "runner/es_runner.py": {
+      "expected_git_blob": "875cb1d9577940e65fa507bf8228d477b2e171ff",
+      "match": true,
+      "sha256": "bc393362a5693527196b71149d59df53ad27aef58fd30255718ded831d669833"
+    },
+    "schema/validate_srs.py": {
+      "expected_git_blob": "8c8fd9e8f87175debf77c485d7169e4e46c5e50b",
+      "match": true,
+      "sha256": "c1d75a7592652ba8eeb3831d734701b4494e6be0b14b0a6a295261fbe8822422"
+    },
+    "tau/tau1.json": {
+      "expected_git_blob": "678bdec2fd2911e9df317a2a0cac16b8de1ce5d1",
+      "match": true,
+      "sha256": "bc31ce63e764aa79068fccf232767648d3b79eb1c15a57faf25dd0da465f63b0"
+    },
+    "tau/tau2.json": {
+      "expected_git_blob": "4b4aae5986abca0505306fd28cab51eec99b95c5",
+      "match": true,
+      "sha256": "bb8122d34d3bec16494cdeeee840f45140645eb54ae232dfb47721e02531e464"
+    },
+    "tau/tauN1.json": {
+      "expected_git_blob": "eda97c2ae1ff6e1c74e464ee6c30d36413180ea4",
+      "match": true,
+      "sha256": "fe211518e4082636b4ce3c34aabf96406308b68719ce4be47d6e3f66564fdd3f"
+    }
+  },
+  "manifest": {
+    "match": true,
+    "sha256": "19fe1a702202f7f6441aac18af1c7cb5dac25acf92e906148217fe531a3905df"
+  },
+  "mechanical_directory_setup": [
+    "is/objects",
+    "is/current"
+  ],
+  "provenance_recorder": {
+    "expected_sha256": "492f6f0e5c4a7207a04365c008c0f0a61b841a621e1109c9ead0a88cd6438a79",
+    "match": true,
+    "sha256": "492f6f0e5c4a7207a04365c008c0f0a61b841a621e1109c9ead0a88cd6438a79"
+  },
+  "pycache_forbidden": true,
+  "request_v05": {
+    "match": true,
+    "sha256": "bb3b9e427bbc07d1ee60c0bcb22df223b61d6d513607a4607c316fbd8b3a0a21"
+  },
+  "run_id": "exec-003-9966d31",
+  "runtime_artifact": {
+    "expected_sha256": "e88c996b9a64df10dd03f7622ffa8757551baf352908e4d7bf8704295eaffcc7",
+    "match": true,
+    "sha256": "e88c996b9a64df10dd03f7622ffa8757551baf352908e4d7bf8704295eaffcc7"
+  },
+  "timpl_sources": {
+    "SRSVALCore.swift": {
+      "git_blob": "9f11ef1af45be6bc9450e0fbdc0117211f99a74a",
+      "match": true,
+      "sha256": "9725217063b9aa560752e8485dac64aae41a314c429f6b9aa1d8808a4860d56e"
+    },
+    "SRSVALDecision.swift": {
+      "git_blob": "cbd24721a97f3c06e012fb02649feb19c2b9cb8b",
+      "match": true,
+      "sha256": "e219aeeadceb74a2d37cb20fdb76ee18d23ee739a743ecf6309e7384b58b15de"
+    },
+    "SRSVALInvocation.swift": {
+      "git_blob": "0fd65bdf40b7c9885de2ada491d66348ebfa28fa",
+      "match": true,
+      "sha256": "6583a80444848a3b42b55ea82f9de6cc1350af6154f6f23c3c3ab61427226c75"
+    }
+  }
+}

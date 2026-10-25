@@ -1,0 +1,70 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ MULTI_TURN_LONG_RUNNING_BRANCH \/ FORKPOINT_AND_FINAL_POSITION_RESTORE \/ HARNESS_LEVEL \/ NOT_A_UI_PRODUCT",
+  "checks" : {
+    "LONG_BRANCH_FINAL_PREFIX_EXACT" : true,
+    "LONG_BRANCH_RESTORES_FINAL_POSITION" : true,
+    "LONG_BRANCH_RESTORES_FORKPOINT" : true,
+    "LONG_SEQUENCE_COMPLETE" : true,
+    "RELEASE_LONG_AND_SIBLING" : true,
+    "ROOT_SURVIVES_RELEASE" : true,
+    "SIBLING_BASELINE_RETAINED" : true
+  },
+  "host" : "127.0.0.1",
+  "longBranchContents" : [
+    "\n\n    return s",
+    "\n\n    return s",
+    "\n\n    return s",
+    "\n\n    return s",
+    "\n\n    return s",
+    "\n\n    return s"
+  ],
+  "modelPath" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "overallPass" : true,
+  "port" : 18080,
+  "predictionTokens" : 4,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.LONG.RUNNING.V1",
+  "rootInput" : "Explain it briefly.",
+  "seedText" : "def is_palindrome(s):",
+  "siblingContent" : "\n    s =",
+  "siblingInput" : "Now write tests for it.",
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 0.052125,
+      "executionID" : "long-branch",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.009292,
+      "executionID" : "long-branch",
+      "operation" : "continue",
+      "position" : 2
+    },
+    {
+      "clientMs" : 0.00725,
+      "executionID" : "long-branch",
+      "operation" : "continue",
+      "position" : 3
+    },
+    {
+      "clientMs" : 0.00875,
+      "executionID" : "long-branch",
+      "operation" : "continue",
+      "position" : 4
+    },
+    {
+      "clientMs" : 0.009583,
+      "executionID" : "long-branch",
+      "operation" : "continue",
+      "position" : 5
+    },
+    {
+      "clientMs" : 0.011416,
+      "executionID" : "long-branch",
+      "operation" : "continue",
+      "position" : 6
+    }
+  ],
+  "turns" : 6
+}

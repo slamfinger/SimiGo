@@ -1,0 +1,3927 @@
+{
+  "protocolVersion": "RQ3.LLAMA.FORK.RESTORE.COST.V1",
+  "boundary": "FORK_DIVERGE_RELEASE_RESTORE_REPLAY / TOKEN_PREFIX_REPRESENTATION / LOCAL_STATE_COST_AND_INFERENCE_COST_SEPARATE / NOT_A_UNIVERSAL_PERFORMANCE_CLAIM",
+  "health": {
+    "status": "ok"
+  },
+  "request": {
+    "n_predict": 8,
+    "temperature": 0.0,
+    "seed": 42,
+    "cache_prompt": true,
+    "return_tokens": true
+  },
+  "prompts": {
+    "parent": "Return exactly one word: ping",
+    "divergent": "Ignore the old request. Return exactly: alpha beta",
+    "parentTokens": [
+      5423,
+      6681,
+      799,
+      3299,
+      25,
+      29018
+    ],
+    "divergentTokens": [
+      12139,
+      279,
+      2235,
+      1622,
+      13,
+      3301,
+      6681,
+      25,
+      8029,
+      13053
+    ]
+  },
+  "samplesRequested": 30,
+  "sequence": "parent bind/capture -> reference -> derive child -> diverge -> release divergent -> restore fork point -> replay reference",
+  "results": {
+    "checks": {
+      "restoreReplayIdentical": 30,
+      "branchDiverged": 30,
+      "parentPrefixNonInterference": 30,
+      "childRestoredToForkPoint": 30
+    },
+    "operationCostsMs": {
+      "bind": {
+        "n": 120.0,
+        "meanMs": 0.002906975,
+        "medianMs": 0.001833,
+        "p95Ms": 0.008237199999999998,
+        "minMs": 0.000375,
+        "maxMs": 0.03375
+      },
+      "capture": {
+        "n": 60.0,
+        "meanMs": 0.0012958833333333334,
+        "medianMs": 0.0006045,
+        "p95Ms": 0.003300349999999999,
+        "minMs": 0.000458,
+        "maxMs": 0.009917
+      },
+      "derive": {
+        "n": 30.0,
+        "meanMs": 0.0010722,
+        "medianMs": 0.0006665,
+        "p95Ms": 0.0029581500000000005,
+        "minMs": 0.000458,
+        "maxMs": 0.003708
+      },
+      "release": {
+        "n": 30.0,
+        "meanMs": 0.0010972666666666667,
+        "medianMs": 0.000584,
+        "p95Ms": 0.002667,
+        "minMs": 0.000334,
+        "maxMs": 0.003125
+      },
+      "restore": {
+        "n": 30.0,
+        "meanMs": 0.0011361000000000001,
+        "medianMs": 0.0005,
+        "p95Ms": 0.0027583,
+        "minMs": 0.000375,
+        "maxMs": 0.003209
+      }
+    },
+    "forkRestoreReleaseLocalCostMs": {
+      "n": 30.0,
+      "meanMs": 0.003305566666666667,
+      "medianMs": 0.001813,
+      "p95Ms": 0.0077467000000000005,
+      "minMs": 0.0012079999999999999,
+      "maxMs": 0.008417000000000001
+    },
+    "forkRestoreReleaseLocalVsAbsClientNoiseRatio": 0.0005466389427761295,
+    "inferenceClientWallMs": {
+      "reference": {
+        "n": 30.0,
+        "meanMs": 301.3549640666667,
+        "medianMs": 296.884396,
+        "p95Ms": 321.90621685,
+        "minMs": 289.497167,
+        "maxMs": 325.756583
+      },
+      "divergence": {
+        "n": 30.0,
+        "meanMs": 424.94807633333335,
+        "medianMs": 416.830125,
+        "p95Ms": 449.3683788,
+        "minMs": 411.218625,
+        "maxMs": 456.254958
+      },
+      "replayAfterRestore": {
+        "n": 30.0,
+        "meanMs": 303.5051610333333,
+        "medianMs": 295.8896665,
+        "p95Ms": 325.2429333,
+        "minMs": 292.327,
+        "maxMs": 328.293166
+      },
+      "replayMinusReference": {
+        "n": 30.0,
+        "meanMs": 2.1501969666666736,
+        "medianMs": 0.7335620000000063,
+        "p95Ms": 18.78727905000001,
+        "minMs": -19.10537499999998,
+        "maxMs": 20.028457000000003
+      },
+      "replayMinusReferenceAbsolute": {
+        "n": 30.0,
+        "meanMs": 6.04707496666667,
+        "medianMs": 3.6613960000000247,
+        "p95Ms": 19.281191850000003,
+        "minMs": 0.37299999999999045,
+        "maxMs": 20.028457000000003
+      }
+    },
+    "inferenceServerPredictedMs": {
+      "reference": {
+        "n": 30.0,
+        "meanMs": 237.1736,
+        "medianMs": 235.656,
+        "p95Ms": 251.2356,
+        "minMs": 229.671,
+        "maxMs": 254.07
+      },
+      "divergence": {
+        "n": 30.0,
+        "meanMs": 240.83596666666665,
+        "medianMs": 235.68200000000002,
+        "p95Ms": 256.21094999999997,
+        "minMs": 232.951,
+        "maxMs": 259.237
+      },
+      "replayAfterRestore": {
+        "n": 30.0,
+        "meanMs": 238.49286666666666,
+        "medianMs": 234.4175,
+        "p95Ms": 253.11995000000002,
+        "minMs": 231.177,
+        "maxMs": 256.391
+      },
+      "replayMinusReference": {
+        "n": 30.0,
+        "meanMs": 1.3192666666666686,
+        "medianMs": 0.3444999999999965,
+        "p95Ms": 14.936350000000015,
+        "minMs": -11.900999999999982,
+        "maxMs": 18.213000000000022
+      }
+    }
+  },
+  "samples": [
+    {
+      "sample": 0,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.003916
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001375
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.003083
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001041
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.010458
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.003584
+        },
+        {
+          "name": "release",
+          "durationMs": 0.003125
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.003209
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.005333
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 306.821959,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 235.811,
+          "promptMs": 70.161
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 436.19725,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 251.78,
+          "promptMs": 183.071
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 314.507042,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 246.248,
+          "promptMs": 66.582
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 1,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.002416
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.00225
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.005375
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001667
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.008208
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.003459
+        },
+        {
+          "name": "release",
+          "durationMs": 0.002083
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.002625
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.003667
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 318.731583,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 247.491,
+          "promptMs": 69.672
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 445.879875,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 253.629,
+          "promptMs": 190.705
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 316.0095,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 246.127,
+          "promptMs": 68.558
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 2,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.00125
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001334
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.0035
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.004959
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.002042
+        },
+        {
+          "name": "release",
+          "durationMs": 0.00125
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.001583
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.010209
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 308.196417,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 240.471,
+          "promptMs": 67.007
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 438.113625,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 249.155,
+          "promptMs": 188.022
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 326.204208,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 253.187,
+          "promptMs": 71.424
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 3,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.002708
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.003
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00575
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.002083
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.007459
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.003292
+        },
+        {
+          "name": "release",
+          "durationMs": 0.002084
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.002667
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.003875
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 324.224917,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 253.707,
+          "promptMs": 68.87
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 442.521625,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 243.675,
+          "promptMs": 197.28
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 312.850792,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 241.806,
+          "promptMs": 69.876
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 4,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.001166
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001208
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.003625
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001208
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00925
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.003209
+        },
+        {
+          "name": "release",
+          "durationMs": 0.002667
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.002833
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.004583
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 304.643,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 236.285,
+          "promptMs": 67.444
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 438.314792,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 250.482,
+          "promptMs": 186.421
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 324.068042,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 253.038,
+          "promptMs": 69.475
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 5,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.001833
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.00175
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.03375
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.003708
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.007417
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.002875
+        },
+        {
+          "name": "release",
+          "durationMs": 0.001916
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.002291
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.005
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 325.756583,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 254.07,
+          "promptMs": 70.174
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 443.934125,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 251.421,
+          "promptMs": 190.625
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 323.357833,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 251.969,
+          "promptMs": 69.876
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 6,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.001708
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001667
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00475
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001833
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00625
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.002791
+        },
+        {
+          "name": "release",
+          "durationMs": 0.002041
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.002083
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.003792
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 308.264709,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 238.178,
+          "promptMs": 68.966
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 447.777,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 257.133,
+          "promptMs": 189.467
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 328.293166,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 256.391,
+          "promptMs": 70.452
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 7,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000959
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.003083
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001208
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002625
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001209
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000875
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.001125
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002125
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 319.07225,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 231.732,
+          "promptMs": 86.487
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 421.085458,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 239.388,
+          "promptMs": 180.87
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 299.966875,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 237.398,
+          "promptMs": 61.709
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 8,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.001125
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001125
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002667
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001208
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001666
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000625
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000625
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000416
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002042
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 294.826875,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 232.525,
+          "promptMs": 61.489
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 413.135208,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 233.828,
+          "promptMs": 178.64
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 296.905834,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 234.414,
+          "promptMs": 61.908
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 9,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.0015
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001666
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000541
+        },
+        {
+          "name": "release",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000375
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.0015
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 289.497167,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 229.671,
+          "promptMs": 59.245
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 411.218625,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 232.951,
+          "promptMs": 177.677
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 294.157583,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 234.25,
+          "promptMs": 59.338
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 10,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001584
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000708
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001459
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000583
+        },
+        {
+          "name": "release",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000541
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001917
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 291.237875,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 230.478,
+          "promptMs": 60.178
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 414.531625,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 234.926,
+          "promptMs": 179.041
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 294.637834,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 234.554,
+          "promptMs": 59.523
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 11,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000792
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000583
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001792
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001709
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000666
+        },
+        {
+          "name": "release",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000375
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001709
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 291.73725,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 230.885,
+          "promptMs": 60.268
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 414.642708,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 234.989,
+          "promptMs": 179.055
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 293.283042,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 233.046,
+          "promptMs": 59.638
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 12,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000416
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001833
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000583
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002833
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000584
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000417
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001708
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 291.617084,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 230.76,
+          "promptMs": 60.247
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 414.81625,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 234.498,
+          "promptMs": 179.711
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 293.344416,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 233.27,
+          "promptMs": 59.506
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 13,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000417
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000625
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002042
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002208
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000542
+        },
+        {
+          "name": "release",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000417
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00175
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 291.880084,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 231.011,
+          "promptMs": 60.245
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 414.704917,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 234.838,
+          "promptMs": 179.272
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.967792,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 235.669,
+          "promptMs": 59.719
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 14,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000583
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000625
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.006666
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.0025
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.008792
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.003167
+        },
+        {
+          "name": "release",
+          "durationMs": 0.002416
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.002625
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.006417
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 310.904125,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 248.215,
+          "promptMs": 61.515
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 450.670416,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 255.084,
+          "promptMs": 193.782
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 322.988292,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 250.485,
+          "promptMs": 70.672
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 15,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.002416
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.002417
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.009583
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.003333
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00675
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.009917
+        },
+        {
+          "name": "release",
+          "durationMs": 0.002667
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.002417
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002792
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 316.776667,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 246.558,
+          "promptMs": 68.562
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 456.254958,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 259.237,
+          "promptMs": 195.264
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 320.6995,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 247.469,
+          "promptMs": 72.073
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 16,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.001209
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001042
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002667
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001084
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001875
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000541
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000417
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000375
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001625
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 297.654208,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 236.102,
+          "promptMs": 60.72
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 420.064625,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 236.059,
+          "promptMs": 183.338
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.729583,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 234.421,
+          "promptMs": 60.773
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 17,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000417
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001709
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000583
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001875
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000584
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000375
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001584
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 293.228,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 233.036,
+          "promptMs": 59.65
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 416.400292,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.308,
+          "promptMs": 180.541
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 293.713,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 232.844,
+          "promptMs": 60.336
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 18,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000584
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001542
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002458
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000958
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000708
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000791
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002792
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 293.791458,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 234.582,
+          "promptMs": 58.675
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 415.49825,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.769,
+          "promptMs": 179.06
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 301.937166,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 237.328,
+          "promptMs": 63.843
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 19,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000959
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.001
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00275
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.001042
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001708
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000542
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000541
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000375
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001541
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 300.165542,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 237.58,
+          "promptMs": 61.727
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 420.057792,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.75,
+          "promptMs": 183.605
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.1315,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 233.598,
+          "promptMs": 60.957
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 20,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00175
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000584
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001875
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "release",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001917
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 296.000084,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 234.599,
+          "promptMs": 60.838
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 416.8835,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.6,
+          "promptMs": 180.719
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 292.956667,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 232.054,
+          "promptMs": 60.323
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 21,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000417
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001708
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000542
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001792
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000583
+        },
+        {
+          "name": "release",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000541
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001541
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.423083,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 235.605,
+          "promptMs": 59.272
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 414.951417,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.062,
+          "promptMs": 179.304
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.811541,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 232.818,
+          "promptMs": 62.458
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 22,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000542
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000584
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002125
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001584
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000541
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000584
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001625
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 294.090167,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 234.97,
+          "promptMs": 58.634
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 414.776542,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.193,
+          "promptMs": 179.021
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.020583,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 233.324,
+          "promptMs": 61.117
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 23,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000416
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001708
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001667
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000542
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000584
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001834
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 296.779167,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 235.288,
+          "promptMs": 60.936
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 416.247333,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.231,
+          "promptMs": 180.442
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 292.327,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 231.177,
+          "promptMs": 60.583
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 24,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000375
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001917
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001875
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001625
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.89725,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 236.252,
+          "promptMs": 59.091
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 416.77675,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.763,
+          "promptMs": 180.443
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.52425,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 232.255,
+          "promptMs": 62.71
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 25,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000583
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.00175
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000666
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000583
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000417
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001417
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 293.732375,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 234.633,
+          "promptMs": 58.474
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 415.460333,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.614,
+          "promptMs": 179.231
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 294.269083,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 232.188,
+          "promptMs": 61.505
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 26,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000542
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002083
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001834
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000417
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001458
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 299.048584,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 237.542,
+          "promptMs": 60.954
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 417.049042,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.233,
+          "promptMs": 181.259
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 294.733583,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 231.646,
+          "promptMs": 62.529
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 27,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000542
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001667
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001583
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000334
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000416
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001708
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.747542,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 235.551,
+          "promptMs": 59.651
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 414.915166,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 235.338,
+          "promptMs": 179.046
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 293.952166,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 231.786,
+          "promptMs": 61.588
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 28,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.000375
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000458
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.004333
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.00075
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.002042
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000625
+        },
+        {
+          "name": "release",
+          "durationMs": 0.000541
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001375
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 297.913292,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 235.707,
+          "promptMs": 61.644
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 416.452291,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 234.777,
+          "promptMs": 180.997
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 295.998083,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 233.232,
+          "promptMs": 62.191
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    },
+    {
+      "sample": 29,
+      "operations": [
+        {
+          "name": "bind",
+          "durationMs": 0.0005
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.000459
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.001792
+        },
+        {
+          "name": "derive",
+          "durationMs": 0.000625
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.006375
+        },
+        {
+          "name": "capture",
+          "durationMs": 0.00275
+        },
+        {
+          "name": "release",
+          "durationMs": 0.001834
+        },
+        {
+          "name": "restore",
+          "durationMs": 0.001959
+        },
+        {
+          "name": "bind",
+          "durationMs": 0.003875
+        }
+      ],
+      "reference": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 296.989625,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 235.913,
+          "promptMs": 60.5
+        }
+      },
+      "divergence": {
+        "promptTokens": [
+          5423,
+          6681,
+          799,
+          3299,
+          25,
+          29018,
+          12139,
+          279,
+          2235,
+          1622,
+          13,
+          3301,
+          6681,
+          25,
+          8029,
+          13053
+        ],
+        "content": " gamma delta\n\n<think>\nThe user wants",
+        "tokens": [
+          20956,
+          9197,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          6587
+        ],
+        "clientWallMs": 429.1105,
+        "server": {
+          "promptN": 14,
+          "cachedN": 2,
+          "predictedMs": 247.368,
+          "promptMs": 180.847
+        }
+      },
+      "replayAfterRestore": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "tokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "clientWallMs": 310.808875,
+        "server": {
+          "promptN": 4,
+          "cachedN": 2,
+          "predictedMs": 236.794,
+          "promptMs": 72.813
+        }
+      },
+      "checks": {
+        "restoreReplayIdentical": true,
+        "branchDiverged": true,
+        "parentPrefixNonInterference": true,
+        "childRestoredToForkPoint": true
+      }
+    }
+  ]
+}

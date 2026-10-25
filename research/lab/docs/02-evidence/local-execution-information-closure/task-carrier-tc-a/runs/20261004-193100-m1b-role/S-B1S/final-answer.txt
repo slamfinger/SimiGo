@@ -1,0 +1,1 @@
+{"release_decision":"blocked","deployment_order":[],"blocked_services":[{"service_id":"gamma","reason":"individual block"}]}

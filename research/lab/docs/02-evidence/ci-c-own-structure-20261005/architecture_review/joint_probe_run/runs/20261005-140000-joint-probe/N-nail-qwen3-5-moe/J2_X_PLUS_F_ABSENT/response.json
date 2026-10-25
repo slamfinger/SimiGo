@@ -1,0 +1,16 @@
+{
+  "id": "chatcmpl-abd54ce3-f1d4-4a1f-80f1-56f7bd6bd3c2",
+  "object": "chat.completion",
+  "created": 1791174751,
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"source_ledger\":{\"F_content_visible\":false,\"F_premise_adopted\":false,\"adoption_reason\":\"No F content provided in context; cannot adopt as premise.\"},\"analysis\":{\"admissible_premises\":[],\"relational_conclusion\":\"Insufficient information to determine compatibility or execution eligibility.\"},\"execution_gate\":{\"status\":\"BLOCKED\",\"reason\":\"Execution path not eligible due to missing baseline compatibility information and lack of adopted premises.\"},\"continuation\":{\"emitted\":false,\"deployment_order\":[],\"blocked_services\":[{\"service_id\":\"alpha\",\"reason\":\"Missing baseline compatibility information.\"},{\"service_id\":\"beta\",\"reason\":\"Missing baseline compatibility information.\"},{\"service_id\":\"gamma\",\"reason\":\"Missing baseline compatibility information.\"}]},\"transition_status\":\"BLOCKED\",\"information_dependency\":{\"compatibility_info_available\":false,\"compatibility_info_current\":false,\"compatibility_info_consistent\":false,\"dependency_declared\":true,\"reason\":\"Baseline compatibility record is not available in this context, preventing determination of service compatibility and execution eligibility.\"},\"provenance\":{\"used_model_prior\":false,\"used_visible_but_nonadopted_F\":false,\"reason\":\"No F content was visible or adopted; decision based on missing information.\"}}"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ]
+}

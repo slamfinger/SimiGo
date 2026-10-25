@@ -1,0 +1,14 @@
+{
+  "placeholder_anchor_differs" : "YES",
+  "r0RunUUID" : "audit-20261001-569B3782",
+  "role" : "form",
+  "sA_anchor" : "553f8b417df939e03b2749aaa6b98e98f5bb027b7d00550205e9d03e6eca3f78",
+  "sA_executionID" : "gdelta-sA-6E591133",
+  "sA_position" : "2",
+  "sA_prefix_count" : "54",
+  "same_position_A_B" : "YES",
+  "sB_anchor" : "f3fc9b5c52d6d71c53a5ef1a54adf1c2c0c3c9399e73ca34bb94e6126aac9083",
+  "sB_executionID" : "gdelta-sB-646AF0DE",
+  "sB_position" : "2",
+  "sB_prefix_count" : "58"
+}

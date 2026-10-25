@@ -1,0 +1,356 @@
+{
+  "allResident" : {
+    "cumulativeReleasedBytes" : 0,
+    "cumulativeReloadedBytes" : 0,
+    "outputs" : [
+      "ping",
+      "ping",
+      "ping",
+      "ping",
+      "ping"
+    ],
+    "policy" : "ALL_RESIDENT",
+    "totalGenerationMilliseconds" : 15773.505166,
+    "totalReleaseMilliseconds" : 0,
+    "totalReloadMilliseconds" : 0,
+    "transitions" : [
+      {
+        "executionState" : "STATE_ALL",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3129.642916,
+        "idleActiveBytes" : 6701423370,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423360,
+        "releaseMilliseconds" : 0,
+        "releasedBytes" : 0,
+        "releasedGroupIDs" : [
+
+        ],
+        "reloadMilliseconds" : 0,
+        "reloadedBytes" : 0,
+        "reloadedGroupIDs" : [
+
+        ]
+      },
+      {
+        "executionState" : "STATE_AB",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3136.309083,
+        "idleActiveBytes" : 6701423370,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 0,
+        "releasedBytes" : 0,
+        "releasedGroupIDs" : [
+
+        ],
+        "reloadMilliseconds" : 0,
+        "reloadedBytes" : 0,
+        "reloadedGroupIDs" : [
+
+        ]
+      },
+      {
+        "executionState" : "STATE_BC",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3143.395375,
+        "idleActiveBytes" : 6701423370,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 0,
+        "releasedBytes" : 0,
+        "releasedGroupIDs" : [
+
+        ],
+        "reloadMilliseconds" : 0,
+        "reloadedBytes" : 0,
+        "reloadedGroupIDs" : [
+
+        ]
+      },
+      {
+        "executionState" : "STATE_AB",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3170.76525,
+        "idleActiveBytes" : 6701423370,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 0,
+        "releasedBytes" : 0,
+        "releasedGroupIDs" : [
+
+        ],
+        "reloadMilliseconds" : 0,
+        "reloadedBytes" : 0,
+        "reloadedGroupIDs" : [
+
+        ]
+      },
+      {
+        "executionState" : "STATE_ALL",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3193.392542,
+        "idleActiveBytes" : 6701423370,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 0,
+        "releasedBytes" : 0,
+        "releasedGroupIDs" : [
+
+        ],
+        "reloadMilliseconds" : 0,
+        "reloadedBytes" : 0,
+        "reloadedGroupIDs" : [
+
+        ]
+      }
+    ]
+  },
+  "benchmarkPass" : true,
+  "idleReductionBytes" : 1593310848,
+  "idleReductionObserved" : true,
+  "naiveOnDemand" : {
+    "cumulativeReleasedBytes" : 23887872000,
+    "cumulativeReloadedBytes" : 19110297600,
+    "outputs" : [
+      "ping",
+      "ping",
+      "ping",
+      "ping",
+      "ping"
+    ],
+    "policy" : "NAIVE_ON_DEMAND",
+    "totalGenerationMilliseconds" : 15788.441625,
+    "totalReleaseMilliseconds" : 97.53029200000002,
+    "totalReloadMilliseconds" : 698.8499989999999,
+    "transitions" : [
+      {
+        "executionState" : "STATE_ALL",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3166.902416,
+        "idleActiveBytes" : 1921490826,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 19.118,
+        "releasedBytes" : 4777574400,
+        "releasedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ],
+        "reloadMilliseconds" : 0,
+        "reloadedBytes" : 0,
+        "reloadedGroupIDs" : [
+
+        ]
+      },
+      {
+        "executionState" : "STATE_AB",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3155.051959,
+        "idleActiveBytes" : 1921490826,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 19.387042,
+        "releasedBytes" : 4777574400,
+        "releasedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ],
+        "reloadMilliseconds" : 175.216083,
+        "reloadedBytes" : 4777574400,
+        "reloadedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ]
+      },
+      {
+        "executionState" : "STATE_BC",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3164.045375,
+        "idleActiveBytes" : 1921490826,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 19.364625,
+        "releasedBytes" : 4777574400,
+        "releasedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ],
+        "reloadMilliseconds" : 174.416959,
+        "reloadedBytes" : 4777574400,
+        "reloadedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ]
+      },
+      {
+        "executionState" : "STATE_AB",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3128.24625,
+        "idleActiveBytes" : 1921490826,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 19.786375,
+        "releasedBytes" : 4777574400,
+        "releasedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ],
+        "reloadMilliseconds" : 174.695291,
+        "reloadedBytes" : 4777574400,
+        "reloadedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ]
+      },
+      {
+        "executionState" : "STATE_ALL",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3174.195625,
+        "idleActiveBytes" : 1921490826,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 19.87425,
+        "releasedBytes" : 4777574400,
+        "releasedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ],
+        "reloadMilliseconds" : 174.521666,
+        "reloadedBytes" : 4777574400,
+        "reloadedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ]
+      }
+    ]
+  },
+  "outputIdentityPass" : true,
+  "reloadReductionVsNaiveBytes" : 9555148800,
+  "reloadReductionVsNaiveObserved" : true,
+  "stateDriven" : {
+    "cumulativeReleasedBytes" : 4777574400,
+    "cumulativeReloadedBytes" : 9555148800,
+    "outputs" : [
+      "ping",
+      "ping",
+      "ping",
+      "ping",
+      "ping"
+    ],
+    "policy" : "EXECUTION_STATE_PLANNER",
+    "totalGenerationMilliseconds" : 15664.352168,
+    "totalReleaseMilliseconds" : 37.317292,
+    "totalReloadMilliseconds" : 386.10595800000004,
+    "transitions" : [
+      {
+        "executionState" : "STATE_ALL",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3128.065459,
+        "idleActiveBytes" : 6701423370,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 0,
+        "releasedBytes" : 0,
+        "releasedGroupIDs" : [
+
+        ],
+        "reloadMilliseconds" : 174.929,
+        "reloadedBytes" : 4777574400,
+        "reloadedGroupIDs" : [
+          "DENSE_MLP_L00_15",
+          "DENSE_MLP_L16_31",
+          "DENSE_MLP_L32_47"
+        ]
+      },
+      {
+        "executionState" : "STATE_AB",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3152.480667,
+        "idleActiveBytes" : 5108112522,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 11.897167,
+        "releasedBytes" : 1592524800,
+        "releasedGroupIDs" : [
+          "DENSE_MLP_L32_47"
+        ],
+        "reloadMilliseconds" : 0,
+        "reloadedBytes" : 0,
+        "reloadedGroupIDs" : [
+
+        ]
+      },
+      {
+        "executionState" : "STATE_BC",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3143.282667,
+        "idleActiveBytes" : 5108112522,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 12.754666,
+        "releasedBytes" : 1592524800,
+        "releasedGroupIDs" : [
+          "DENSE_MLP_L00_15"
+        ],
+        "reloadMilliseconds" : 72.022708,
+        "reloadedBytes" : 1592524800,
+        "reloadedGroupIDs" : [
+          "DENSE_MLP_L32_47"
+        ]
+      },
+      {
+        "executionState" : "STATE_AB",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3109.521917,
+        "idleActiveBytes" : 5108112522,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 12.665459,
+        "releasedBytes" : 1592524800,
+        "releasedGroupIDs" : [
+          "DENSE_MLP_L32_47"
+        ],
+        "reloadMilliseconds" : 68.684583,
+        "reloadedBytes" : 1592524800,
+        "reloadedGroupIDs" : [
+          "DENSE_MLP_L00_15"
+        ]
+      },
+      {
+        "executionState" : "STATE_ALL",
+        "generatedActiveBytes" : 6701423370,
+        "generationMilliseconds" : 3131.001458,
+        "idleActiveBytes" : 6701423370,
+        "output" : "ping",
+        "readyActiveBytes" : 6701423370,
+        "releaseMilliseconds" : 0,
+        "releasedBytes" : 0,
+        "releasedGroupIDs" : [
+
+        ],
+        "reloadMilliseconds" : 70.469667,
+        "reloadedBytes" : 1592524800,
+        "reloadedGroupIDs" : [
+          "DENSE_MLP_L32_47"
+        ]
+      }
+    ]
+  },
+  "states" : [
+    "STATE_ALL",
+    "STATE_AB",
+    "STATE_BC",
+    "STATE_AB",
+    "STATE_ALL"
+  ]
+}

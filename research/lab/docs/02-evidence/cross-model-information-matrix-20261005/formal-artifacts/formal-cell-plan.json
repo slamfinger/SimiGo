@@ -1,0 +1,123 @@
+{
+  "phase": "FORMAL_CROSS_MODEL_PLAN",
+  "created_at": "2026-10-04T16:55:38.195650+00:00",
+  "runner_sha256": "a102a1e422e26dd87e92821daed46ff5bb85d945d4bbebc5be8171d3918f2c25",
+  "contract_sha256": "6f28579f82a109fbea6e6121cca80dfd2ada2761232a8293fa1ddc216ab93ee8",
+  "models_sha256": "93468387486e1693d8cf8d917c38dac242d9ae0c08b879709477b22094605502",
+  "samples_sha256": "73df810528ee3d420b584eb316a685aaedfb0bbc994665aae9c4680f047d46d9",
+  "cells": [
+    {
+      "cell_id": "S1-release-config__A-qwen3-moe",
+      "sample_id": "S1-release-config",
+      "model_id": "A-qwen3-moe",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S1-release-config__B-qwen3-next",
+      "sample_id": "S1-release-config",
+      "model_id": "B-qwen3-next",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S1-release-config__C-gemma4-unified",
+      "sample_id": "S1-release-config",
+      "model_id": "C-gemma4-unified",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S1-release-config__D-muse-glimmer",
+      "sample_id": "S1-release-config",
+      "model_id": "D-muse-glimmer",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S2-version-diff__A-qwen3-moe",
+      "sample_id": "S2-version-diff",
+      "model_id": "A-qwen3-moe",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S2-version-diff__B-qwen3-next",
+      "sample_id": "S2-version-diff",
+      "model_id": "B-qwen3-next",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S2-version-diff__C-gemma4-unified",
+      "sample_id": "S2-version-diff",
+      "model_id": "C-gemma4-unified",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S2-version-diff__D-muse-glimmer",
+      "sample_id": "S2-version-diff",
+      "model_id": "D-muse-glimmer",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S3-column-unit-audit__A-qwen3-moe",
+      "sample_id": "S3-column-unit-audit",
+      "model_id": "A-qwen3-moe",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S3-column-unit-audit__B-qwen3-next",
+      "sample_id": "S3-column-unit-audit",
+      "model_id": "B-qwen3-next",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S3-column-unit-audit__C-gemma4-unified",
+      "sample_id": "S3-column-unit-audit",
+      "model_id": "C-gemma4-unified",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S3-column-unit-audit__D-muse-glimmer",
+      "sample_id": "S3-column-unit-audit",
+      "model_id": "D-muse-glimmer",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S4-arithmetic-anomaly-audit__A-qwen3-moe",
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_id": "A-qwen3-moe",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S4-arithmetic-anomaly-audit__B-qwen3-next",
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_id": "B-qwen3-next",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S4-arithmetic-anomaly-audit__C-gemma4-unified",
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_id": "C-gemma4-unified",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    },
+    {
+      "cell_id": "S4-arithmetic-anomaly-audit__D-muse-glimmer",
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_id": "D-muse-glimmer",
+      "status": "PLANNED_RUNTIME_NOT_AUTHORIZED",
+      "isolation_status": "NOT_CHECKED"
+    }
+  ],
+  "runtime_authorized": false
+}

@@ -1,0 +1,23 @@
+{"ts":"2026-09-30T12:39:32Z","case":"setup","pool":"OFF (env)"}
+{"ts":"2026-09-30T12:39:32Z","case":"setup","conditionalRestore":"OFF (tunable)"}
+{"ts":"2026-09-30T12:39:32Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T12:39:38Z","case":"setup","model":"loaded: Nail-Qwen3.6-35B-A3B-MLX"}
+{"ts":"2026-09-30T12:39:39Z","case":"b0a","restore_generation":"c1185f0a-2cf9-4b02-85c6-c386f9177ea9"}
+{"ts":"2026-09-30T12:39:39Z","case":"b0a","restore_history_count":"17"}
+{"ts":"2026-09-30T12:39:39Z","case":"b0a","restore_storageKey":"default/5401315f-faa7-4984-9639-fccef06ae188/main"}
+{"ts":"2026-09-30T12:40:21Z","case":"b0a","position_before":"17"}
+{"ts":"2026-09-30T12:40:21Z","case":"b0a","position_after":"18"}
+{"ts":"2026-09-30T12:40:21Z","case":"b0a","response":"你是想继续查看其他目录吗？比如：\n\n- **三公司管理制度及规定**（另一个4号文件夹）\n- **国家及地方法"}
+{"ts":"2026-09-30T12:40:21Z","case":"b0a","response_chars":"55"}
+{"ts":"2026-09-30T12:40:24Z","case":"b0a","rewind":"restored to checkpoint position for next run"}
+{"ts":"2026-09-30T12:40:24Z","case":"b0b","restore_generation":"c1185f0a-2cf9-4b02-85c6-c386f9177ea9"}
+{"ts":"2026-09-30T12:40:24Z","case":"b0b","restore_history_count":"17"}
+{"ts":"2026-09-30T12:40:24Z","case":"b0b","restore_storageKey":"default/5401315f-faa7-4984-9639-fccef06ae188/main"}
+{"ts":"2026-09-30T12:40:41Z","case":"b0b","position_before":"17"}
+{"ts":"2026-09-30T12:40:41Z","case":"b0b","position_after":"18"}
+{"ts":"2026-09-30T12:40:41Z","case":"b0b","response":"你是想继续查看其他目录吗？比如：\n\n- **三公司管理制度及规定**（另一个4号文件夹）\n- **国家及地方法"}
+{"ts":"2026-09-30T12:40:41Z","case":"b0b","response_chars":"55"}
+{"ts":"2026-09-30T12:40:42Z","case":"b0b","rewind":"restored to checkpoint position for next run"}
+{"ts":"2026-09-30T12:40:42Z","case":"PB1","verdict":"CONFIRMED (live-state baseline deterministic: O1 == O2 = 你是想继续查看其他目录吗？比如：\n\n- **三公司管理制度及规定**（另一个4号文件夹）\n- **国家及地方法)"}
+{"ts":"2026-09-30T12:40:42Z","case":"teardown","durability_writes":"ZERO"}
+{"ts":"2026-09-30T12:40:42Z","case":"teardown","real_branch_checkpoints_after":"204"}

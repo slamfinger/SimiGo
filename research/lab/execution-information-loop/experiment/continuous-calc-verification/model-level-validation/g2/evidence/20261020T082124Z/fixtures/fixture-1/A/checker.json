@@ -1,0 +1,20 @@
+{
+  "checksum_matches_recomputed": true,
+  "checksum_recomputed_from_settled_r1_site": "2c146785",
+  "format_ok": true,
+  "line_count": 1,
+  "parsed_checksum": "2c146785",
+  "parsed_secret": "d44be450e46a",
+  "pass": true,
+  "r1_checksum": "2c146785",
+  "r1_secret": "d44be450e46a",
+  "r1_site": "Lisbon",
+  "raw_text": "ANSWER=d44be450e46a-2c146785",
+  "recomputed_checksum": "2c146785",
+  "rule": "ANSWER=<secret>-<checksum>",
+  "schema_id": "SIMIGO-G2-CHECKER-V1",
+  "secret_matches_settled_r1": true,
+  "secret_present": true,
+  "settled_r1_checksum_self_consistent": true,
+  "transfer_secret_matches_fixture": true
+}

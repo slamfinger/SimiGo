@@ -1,0 +1,26 @@
+{
+  "corpus_change": "RQ-G3-1 RESULT GATE human ruling (see docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_GATE_20261002.md)",
+  "date": "2026-10-02",
+  "changes": [
+    {
+      "action": "ADD",
+      "files": [
+        "08.会议与汇报/02.经济与商务汇报/秦沈项目经济运行情况汇报_20260307.docx",
+        "08.会议与汇报/02.经济与商务汇报/秦沈项目经济运行情况汇报_20260308.docx"
+      ],
+      "marking": "0308 = 新增验证样本/后发现版本；不创建 version chain/lineage",
+      "note": "E-X1-A 经济运行族纳入成本控制相关候选语料（内容证据：成本×26/预算×16/盈利×10）；E-X1-B 0308 实质修订 +308万 现场管理费等"
+    },
+    {
+      "action": "MAINTAIN-EXCLUDED",
+      "files": [
+        "08.会议与汇报/02.经济与商务汇报/秦沈项目经济工作进展情况（一航局截至11月底）.docx"
+      ],
+      "note": "新鲜判定与原排除方向一致（成本×1 弱）"
+    },
+    {
+      "action": "REVOKE-HISTORICAL",
+      "note": "原「相邻主题」排除撤销，转存为历史排除记录（不再作为当前有效判断）"
+    }
+  ]
+}

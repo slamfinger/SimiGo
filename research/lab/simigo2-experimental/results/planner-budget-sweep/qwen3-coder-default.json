@@ -1,0 +1,1272 @@
+{
+  "boundary" : "SIMULATOR_ONLY \/ DESCRIPTIVE_RECENCY_HINTS \/ NOT_PREDICTION \/ NOT_DEMAND_CLAIM",
+  "coreBytes" : 873459712,
+  "entries" : [
+    {
+      "budgetBytes" : 4295228416,
+      "budgetPercent" : 25,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 5,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 6872365465,
+      "budgetPercent" : 40,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 2,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 8590456832,
+      "budgetPercent" : 50,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 2,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 10308548198,
+      "budgetPercent" : 60,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 2,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 12026639564,
+      "budgetPercent" : 70,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 1,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 13744730931,
+      "budgetPercent" : 80,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 1,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 15462822297,
+      "budgetPercent" : 90,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 1,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 17180913664,
+      "budgetPercent" : 100,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 18899005030,
+      "budgetPercent" : 110,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 20617096396,
+      "budgetPercent" : 120,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 25771370496,
+      "budgetPercent" : 150,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "BASELINE_ABA",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 4295228416,
+      "budgetPercent" : 25,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 5435817984,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 5,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 6872365465,
+      "budgetPercent" : 40,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 5435817984,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 8590456832,
+      "budgetPercent" : 50,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 5435817984,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 10308548198,
+      "budgetPercent" : 60,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 5435817984,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 12026639564,
+      "budgetPercent" : 70,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 13744730931,
+      "budgetPercent" : 80,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 15462822297,
+      "budgetPercent" : 90,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 17180913664,
+      "budgetPercent" : 100,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 18899005030,
+      "budgetPercent" : 110,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 20617096396,
+      "budgetPercent" : 120,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 25771370496,
+      "budgetPercent" : 150,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "LOCALITY_A",
+      "states" : [
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 4295228416,
+      "budgetPercent" : 25,
+      "cumulativeEvictedBytes" : 21743271936,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 5,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 6872365465,
+      "budgetPercent" : 40,
+      "cumulativeEvictedBytes" : 21743271936,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 8590456832,
+      "budgetPercent" : 50,
+      "cumulativeEvictedBytes" : 21743271936,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 10308548198,
+      "budgetPercent" : 60,
+      "cumulativeEvictedBytes" : 21743271936,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 12026639564,
+      "budgetPercent" : 70,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 13744730931,
+      "budgetPercent" : 80,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 15462822297,
+      "budgetPercent" : 90,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 17180913664,
+      "budgetPercent" : 100,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 18899005030,
+      "budgetPercent" : 110,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 20617096396,
+      "budgetPercent" : 120,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 25771370496,
+      "budgetPercent" : 150,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "ALTERNATE_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_A",
+        "STATE_B",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 4295228416,
+      "budgetPercent" : 25,
+      "cumulativeEvictedBytes" : 27179089920,
+      "cumulativeLoadedBytes" : 32614907904,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 6,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 6872365465,
+      "budgetPercent" : 40,
+      "cumulativeEvictedBytes" : 27179089920,
+      "cumulativeLoadedBytes" : 32614907904,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 8590456832,
+      "budgetPercent" : 50,
+      "cumulativeEvictedBytes" : 27179089920,
+      "cumulativeLoadedBytes" : 32614907904,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 10308548198,
+      "budgetPercent" : 60,
+      "cumulativeEvictedBytes" : 27179089920,
+      "cumulativeLoadedBytes" : 32614907904,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 6309277696,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 12026639564,
+      "budgetPercent" : 70,
+      "cumulativeEvictedBytes" : 16307453952,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 13744730931,
+      "budgetPercent" : 80,
+      "cumulativeEvictedBytes" : 16307453952,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 15462822297,
+      "budgetPercent" : 90,
+      "cumulativeEvictedBytes" : 16307453952,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 17180913664,
+      "budgetPercent" : 100,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 18899005030,
+      "budgetPercent" : 110,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 20617096396,
+      "budgetPercent" : 120,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 25771370496,
+      "budgetPercent" : 150,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "CYCLE_ABC",
+      "states" : [
+        "STATE_A",
+        "STATE_B",
+        "STATE_C",
+        "STATE_A",
+        "STATE_B",
+        "STATE_C"
+      ],
+      "transitionCount" : 6
+    },
+    {
+      "budgetBytes" : 4295228416,
+      "budgetPercent" : 25,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 5,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 6872365465,
+      "budgetPercent" : 40,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 2,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 8590456832,
+      "budgetPercent" : 50,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 2,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 10308548198,
+      "budgetPercent" : 60,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 6309277696,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 2,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 12026639564,
+      "budgetPercent" : 70,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 13744730931,
+      "budgetPercent" : 80,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 15462822297,
+      "budgetPercent" : 90,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 10871635968,
+      "finalResidentBytes" : 11745095680,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 11745095680,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 17180913664,
+      "budgetPercent" : 100,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 18899005030,
+      "budgetPercent" : 110,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 20617096396,
+      "budgetPercent" : 120,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 25771370496,
+      "budgetPercent" : 150,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "ALTERNATE_A_AB",
+      "states" : [
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A",
+        "STATE_AB",
+        "STATE_A"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 4295228416,
+      "budgetPercent" : 25,
+      "cumulativeEvictedBytes" : 21743271936,
+      "cumulativeLoadedBytes" : 38050725888,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 5,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 6872365465,
+      "budgetPercent" : 40,
+      "cumulativeEvictedBytes" : 21743271936,
+      "cumulativeLoadedBytes" : 38050725888,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 3,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 8590456832,
+      "budgetPercent" : 50,
+      "cumulativeEvictedBytes" : 21743271936,
+      "cumulativeLoadedBytes" : 38050725888,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 3,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 10308548198,
+      "budgetPercent" : 60,
+      "cumulativeEvictedBytes" : 21743271936,
+      "cumulativeLoadedBytes" : 38050725888,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 3,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 12026639564,
+      "budgetPercent" : 70,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 3,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 13744730931,
+      "budgetPercent" : 80,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 3,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 15462822297,
+      "budgetPercent" : 90,
+      "cumulativeEvictedBytes" : 10871635968,
+      "cumulativeLoadedBytes" : 27179089920,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : false,
+      "overflowTransitionCount" : 3,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 17180913664,
+      "budgetPercent" : 100,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 18899005030,
+      "budgetPercent" : 110,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 20617096396,
+      "budgetPercent" : 120,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    },
+    {
+      "budgetBytes" : 25771370496,
+      "budgetPercent" : 150,
+      "cumulativeEvictedBytes" : 0,
+      "cumulativeLoadedBytes" : 16307453952,
+      "finalResidentBytes" : 17180913664,
+      "fitsBudget" : true,
+      "overflowTransitionCount" : 0,
+      "peakResidentBytes" : 17180913664,
+      "sequenceID" : "FULL_PARTIAL",
+      "states" : [
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL",
+        "STATE_A",
+        "STATE_ALL"
+      ],
+      "transitionCount" : 5
+    }
+  ],
+  "recommendedBytes" : 17180913664
+}

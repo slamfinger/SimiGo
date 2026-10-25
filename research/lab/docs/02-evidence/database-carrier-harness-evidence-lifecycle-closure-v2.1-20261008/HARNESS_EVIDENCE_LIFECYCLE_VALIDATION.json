@@ -1,0 +1,198 @@
+{
+  "blockers": [
+    "fresh_e7_path_map_established"
+  ],
+  "blocking_defects": [
+    "fresh_e7_path_map_established"
+  ],
+  "campaign_budget_consumed": false,
+  "checks": [
+    {
+      "details": {
+        "blocker": "E6 adapter-build record remains bound as tuple[Path, dict]",
+        "build_return_annotation": "tuple[Path, dict]",
+        "build_return_expressions": [
+          "(binary, {'runtime_artifact_sha256': runtime_hash, 'build_returncode': 0})"
+        ],
+        "whole_tuple_caller_assignments": 0
+      },
+      "name": "adapter_build_tuple_unpack_binding",
+      "pass": true
+    },
+    {
+      "details": {
+        "binding_passed_to_json_loads": 0,
+        "persist_exact_json_return": "dict"
+      },
+      "name": "adapter_output_exact_persistence_contract",
+      "pass": true
+    },
+    {
+      "details": {
+        "allow_nan": "False",
+        "rejects_path_and_nonfinite_graph": true,
+        "sort_keys": "True"
+      },
+      "name": "canonical_json_serializer_boundary",
+      "pass": true
+    },
+    {
+      "details": {
+        "manifest_destinations": 31,
+        "statically_referenced_destinations": 31,
+        "unauthorized_destinations": [],
+        "unreferenced_destinations": []
+      },
+      "name": "producer_consumer_path_inventory",
+      "pass": true
+    },
+    {
+      "details": {
+        "log_event_uses_jsonl_helper": true,
+        "log_event_uses_pretty_helper": false,
+        "missing_functions": []
+      },
+      "name": "transaction_jsonl_producer_contract",
+      "pass": true
+    },
+    {
+      "details": {
+        "lifecycle_functions_present": true,
+        "process_result_registered_as_success_state": true
+      },
+      "name": "process_result_success_state_invariant",
+      "pass": true
+    },
+    {
+      "details": {
+        "accepted_forbidden_graphs": []
+      },
+      "name": "synthetic_path_and_nonfinite_rejection",
+      "pass": true
+    },
+    {
+      "details": {
+        "binding": {
+          "artifact_path": "safe.json",
+          "byte_length": 61,
+          "byte_persistence_exact": true,
+          "parsed_object_exact": true,
+          "pass": true,
+          "pre_write_serialization_check": "PASS",
+          "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+          "sha256": "a8007ee3603484ba6055674d46ac65ba2dfa6e12ba75370f5e9c659ab7f22b05"
+        }
+      },
+      "name": "canonical_json_write_reread_parse",
+      "pass": true
+    },
+    {
+      "details": {
+        "binding": {
+          "artifact_path": "exact.json",
+          "byte_length": 25,
+          "byte_persistence_exact": true,
+          "parsed_object_exact": true,
+          "pass": true,
+          "pre_write_serialization_check": "PASS",
+          "serialized_canonicalization": "REFERENCE_EXACT_BYTES",
+          "sha256": "43d947e420b338da8a478597eefe6ab4e89e92c888da425a82f41ab1bcc90a76"
+        },
+        "returns": "dict"
+      },
+      "name": "exact_reference_persistence_contract",
+      "pass": true
+    },
+    {
+      "details": {
+        "graph": "preflight.adapter_build = tuple[Path, dict]",
+        "rejected_pre_write": true
+      },
+      "name": "e6_tuple_graph_guard_simulation",
+      "pass": true
+    },
+    {
+      "details": {
+        "parsed_exact": true,
+        "physical_lines": 2,
+        "records": 2
+      },
+      "name": "transaction_jsonl_compact_record_contract",
+      "pass": true
+    },
+    {
+      "details": {
+        "failure_result_state": "FAILURE",
+        "failure_returncode": 1,
+        "success_state_discarded": true
+      },
+      "name": "failure_discards_success_and_persists_failure_result",
+      "pass": true
+    },
+    {
+      "details": {
+        "sha_coverage": "PASS",
+        "validated_success_destinations": 6
+      },
+      "name": "final_success_state_validation",
+      "pass": true
+    },
+    {
+      "details": {
+        "destination_version": 5,
+        "independent_e7_reserved_root": true,
+        "output_root": "docs/02-evidence/database-carrier-equivalence-campaign-v2.0-e7-reserved-20261008",
+        "root_absent_before_campaign": false,
+        "version_5": true
+      },
+      "name": "fresh_e7_path_map_established",
+      "pass": false
+    }
+  ],
+  "decision": "EVIDENCE_LIFECYCLE_CLOSURE_PASS",
+  "details": {
+    "readiness": {
+      "fresh": false,
+      "output_root": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v2.0-e7-reserved-20261008",
+      "root_absent": false,
+      "version_5": true
+    },
+    "runtime": {},
+    "static": {
+      "build_return": "tuple[Path, dict]",
+      "whole_tuple_assignments": 0
+    }
+  },
+  "e6_evidence_read_only_check": {
+    "after": {
+      "aggregate_sha256": "8d03fe664c8f5865062f1002d96d6f1070422faac32caf94158ddda0274cf778",
+      "file_count": 31
+    },
+    "before": {
+      "aggregate_sha256": "8d03fe664c8f5865062f1002d96d6f1070422faac32caf94158ddda0274cf778",
+      "file_count": 31
+    },
+    "unchanged": true
+  },
+  "e7_authorized": false,
+  "e7_draft_authorized": false,
+  "e8_authorized": false,
+  "e8_draft_authorized": false,
+  "evidence_lifecycle_closure_pass": true,
+  "generated_at_utc": "2026-10-08T02:20:18.642806+00:00",
+  "human_ruling": "继续，但只继续到 Evidence-Lifecycle Closure；暂不授权 E8。",
+  "known_defect_regression_status": {
+    "E3_observer_key_binding": "fixed; no regression found",
+    "E4_provenance_path_serialization": "boundary active; E6 exposed upstream tuple graph",
+    "E5_adapter_output_return_type": "fixed and exercised without recurrence",
+    "E6_adapter_build_tuple_unpack": "fixed by caller-side unpack; regression check PASS"
+  },
+  "lifecycle_blockers": [],
+  "manifest_destination_count": 31,
+  "manifest_destination_version": 5,
+  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_007",
+  "ready_for_e7_execution": false,
+  "ready_for_e7_launch_review": false,
+  "repository_head": "42db62cddf7da962fba3c12426821e8e45df2782",
+  "request": "Campaign Evidence-Lifecycle Closure Request v2.1"
+}

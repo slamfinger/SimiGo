@@ -1,0 +1,15 @@
+{
+  "driver_returncode": 0,
+  "observer_all_checks_pass": null,
+  "observer_returncode": 0,
+  "observer_verdict_error": "[Errno 2] No such file or directory: '/tmp/srs-exec2-9966d31.biuE6Q/docs/02-evidence/srs-real-closure-01/runs/exec-002-9966d31/observer_verdict.json'",
+  "stage_files": [
+    "driver-stderr.txt",
+    "driver-stdout.txt",
+    "environment_measurement.json",
+    "observer-stderr.txt",
+    "observer-stdout.txt",
+    "runtime_binding.json",
+    "step0_verification.json"
+  ]
+}

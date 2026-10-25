@@ -1,0 +1,15 @@
+{
+  "authoritative_path_map_consumed": true,
+  "independent_artifact_path_derivation": false,
+  "repository": {
+    "campaign_repository_commit": "8c7aca5c10dcd4ec3560897cb7537990d2bc9e6e",
+    "implementation_commit": "7392fcb79fb7e8465b73f9e1837c4634e56c0409",
+    "implementation_is_ancestor": true,
+    "implementation_tree_unchanged": true
+  },
+  "runtime": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python_version": "3.9.6",
+    "sqlite_version": "3.51.0"
+  }
+}

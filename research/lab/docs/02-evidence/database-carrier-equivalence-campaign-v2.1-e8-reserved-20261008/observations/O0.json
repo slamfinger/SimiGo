@@ -1,0 +1,15 @@
+{
+  "current_dependency": null,
+  "dependency_entries": [],
+  "extra_observable_entities": [],
+  "index_entries": [],
+  "integrity_check": "ok",
+  "logical_row_counts": {
+    "dependency_entries": 0,
+    "is_index_entries": 0,
+    "is_objects": 0
+  },
+  "object_reads": {},
+  "objects": [],
+  "srs_read": null
+}

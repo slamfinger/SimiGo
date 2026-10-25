@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-e3-7bRaY0s5/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 650, in <module>
+    sys.exit(main())
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-e3-7bRaY0s5/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 646, in main
+    return run(args.expected_head, Path(args.output).resolve())
+  File "/private/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T/srs-dbcarrier-e3-7bRaY0s5/worktree/database-carrier-replication/campaign/run_equivalence_campaign.py", line 537, in run
+    require(observer["C3"], "C3 mismatch")
+KeyError: 'C3'

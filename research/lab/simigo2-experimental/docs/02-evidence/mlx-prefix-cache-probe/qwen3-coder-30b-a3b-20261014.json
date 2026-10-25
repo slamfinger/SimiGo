@@ -1,0 +1,12 @@
+{
+  "baselineOutput" : "##",
+  "crossSessionHitObserved" : true,
+  "hookCalls" : 1,
+  "hookHits" : 1,
+  "matchedTokenCount" : 16,
+  "outputsMatch" : true,
+  "pass" : true,
+  "prefixTokenCount" : 16,
+  "promptTokenCount" : 24,
+  "warmOutput" : "##"
+}

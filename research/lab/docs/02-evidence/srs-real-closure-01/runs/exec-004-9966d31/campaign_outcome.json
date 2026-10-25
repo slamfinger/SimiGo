@@ -1,0 +1,87 @@
+{
+  "artifact_sha256": {
+    "driver-events.jsonl": "ee237f518f8f7b84c358aebb24e6fa9e38fca699c9f069a2eda6ff35906bae48",
+    "environment_measurement.json": "a10eafdef13d6f9f25e84a8d11d2038f6242aa24490dd1c1bbe48e6a0a0d7812",
+    "es1-events.jsonl": "d5da74c0e9c0dd198802bf1fc3af95319ab4a9d52bf04683433059907acf69be",
+    "es2-events.jsonl": "8cc44ff75eb0f0ce94d5dd9e7bbc0b71bb886696ab0f7c653b6668024e3563bd",
+    "esn-events.jsonl": "a15c8abaa134ab06fd920b0f5df2aae4e5c28fd97e338995c2c2463ca80dfea0",
+    "execution_provenance.json": "41ab03408ed50f4c221989e0490890df2d0ffcbb7de81e101e2be94f205357bf",
+    "invocation_graph-es2.json": "0c3c547af76ef386dfce65bc2d31cf2348eea2873b300cd23041eeae1c4df5e1",
+    "invocation_graph-esn.json": "f964bc35124a87946acb1c2799e8bb24eb48e66ab965ea4e9258e88fc72ad22b",
+    "materialize-events.jsonl": "0f4dc9cbef1e32a5b53762fa13d192b388f31914ac7ce5f1f9d077149840d156",
+    "mutate-n1-events.jsonl": "6828177507c14013fc6bb025b42cd1504b6e34b02c7c0e9beb3cf04722da1cc0",
+    "observer_verdict.json": "de21064e41bd1f6fdde074517c8933aee08b77373407d9ebcc8aec196ac53459",
+    "provenance_plan.json": "fda4b0a196821e7108214c3b90fcf0a05dcf80e50c73a7a92fcb0f93f6f37fbc",
+    "runtime_binding.json": "7d6ae32f32f9d43783169644bf0053e868e4a0d82f9437ca35a96fa073b27c6b",
+    "step0_verification.json": "71659295aca451e2a2912bdfaac760a38d1ec22f17c487064bca17fc418f3b71",
+    "tau2-runtime.json": "260fd15c41c07b712b6ed11ae55be84a68fdcc56327a5c5560050dbaec3e2570",
+    "tauN1-runtime.json": "fdb5be8bec7a489f104a6061005037e387743983b2ab6a005902f10eec9bcda4"
+  },
+  "authorization": {
+    "execution_sar": "SRS_REAL_CLOSURE_01_SAR_EXECUTION_004",
+    "is_mutation_sar": "SRS_REAL_CLOSURE_01_SAR_IS_MUTATION_004",
+    "observer_authorization_record": "SRS_REAL_CLOSURE_01_OBSERVER_AUTHORIZATION_RECORD_004",
+    "provenance_binding_closure_record": "SRS_REAL_CLOSURE_01_EXECUTION_PROVENANCE_AND_BINDING_CLOSURE_RECORD_004",
+    "records_commit": "b80c17a2a2f45a6843856d630f0b8dabc24f2d6b",
+    "request_commit": "8704c7572273769d6cec170bd2ab803c01dc38f3",
+    "request_sha256": "a6f0e2c35b6821154d630a648ea0cc1a77afb98d6818d2d8eec1775572e25772"
+  },
+  "boundary": {
+    "E1_E6_complete": false,
+    "N1_BLOCK_absent": true,
+    "core_claim": "NOT_ESTABLISHED",
+    "positive_REUSE_observed_but_not_campaign_evidence": true,
+    "repair_requires_new_human_authorization": true,
+    "results_interpretable_for_core_claim": false,
+    "semantic_hypothesis_refuted": false,
+    "semantic_hypothesis_supported": false
+  },
+  "budget_effect": {
+    "automatic_renewal": "forbidden",
+    "execution_campaign_budget_consumed": true,
+    "is_mutation_budget_consumed_by_partial_campaign": true,
+    "is_mutation_write_not_performed": [
+      "mutate-n1 D' object + revision-2 mapping"
+    ],
+    "is_mutation_writes_performed": [
+      "materialize D object + revision-1 mapping",
+      "es1 SRS object + index entry",
+      "es2 continuation object + index entry"
+    ],
+    "observer_use_budget_consumed": true
+  },
+  "exact_execution_repository_commit": "9966d311e7e52ab3f5ca828e593ea569cddb008e",
+  "outcome": "INVALID",
+  "provenance": {
+    "driver_command_ok": false,
+    "driver_returncode": 1,
+    "exact_cwd_enforced": true,
+    "input_bindings_verified": true,
+    "manifest": "execution_provenance.json",
+    "observer_command_ok": true,
+    "observer_returncode": 0,
+    "overall_ok": false,
+    "recorder_identity": "SRS-REAL-CLOSURE-01-EXECUTION_PROVENANCE_RECORDER_004",
+    "recorder_sha256": "c0aff998aabada80c87d6eec1cebdf35292e16f455e72389ec36e71ea99ee262",
+    "required_artifacts_verified": true
+  },
+  "run_id": "exec-004-9966d31",
+  "semantic_sequence": {
+    "N1_dependency_mutation": "NOT PERFORMED",
+    "es1": "PASS",
+    "es2": "PASS",
+    "es2_expected_decision": "REUSE",
+    "es2_expected_vs_actual_match": true,
+    "es2_primary_decision": "REUSE",
+    "esn": "RAN INVALID",
+    "esn_expected_decision": "BLOCK",
+    "esn_expected_vs_actual_match": false,
+    "esn_primary_decision": "REUSE",
+    "materialize": "PASS",
+    "mutate_n1": "FAIL",
+    "mutate_n1_error": "KeyError: d_prime_seed_path"
+  },
+  "step0": "PASS",
+  "stop_code": "MUTATE_N1_TAU_D_PRIME_SEED_PATH_BINDING_DEFECT",
+  "stop_point": "POST_FROZEN_SEQUENCE_EVIDENCE_AUDIT"
+}

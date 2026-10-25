@@ -1,0 +1,11 @@
+{"elt": "p3-arm-start", "arm": 1, "db": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-p3-arm1.sqlite", "_t": 0.0}
+{"elt": "settle-start", "cp": "arm1-cp", "units": ["U_upstream", "U_parse", "U_summarize"], "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_upstream", "text": "U_upstream->shU_upstre", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_parse", "text": "U_parse->shU_parse本", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_summarize", "text": "U_summarize->shU_summar", "real": true, "_t": 0.0}
+{"elt": "p3-settle-execute", "cp": "arm1-cp", "attempt": 0, "state": "ADVANCED", "applied": false, "computed": [], "reused": [], "_t": 0.0}
+{"elt": "execute-demand-note", "cp": "arm1-cp", "err": "ValueError: unknown demand: arm1-cp-apply", "_t": 0.0}
+{"elt": "settle-done", "cp": "arm1-cp", "runtime_status": "APPLIED_SWIFT", "_t": 0.0}
+{"elt": "p3-rerequest-arm1", "arm": 1, "notes": "re-request unchanged sources; expect ZERO new forward", "_t": 0.0}
+{"elt": "p3-rerequest-result-arm1", "arm": 1, "full_res_keys": ["demand_id", "state", "actions", "computed_item_ids", "reused_item_ids", "result", "advanced", "execution_state"], "recomputed_item_ids": [], "reused_item_ids": ["U_parse", "U_summarize", "U_upstream"], "state": "ADVANCED", "note": "a pure re-request does not change settle state; the proxy forward events on THIS re-run log are what prove 'no recompute' (must be zero), not recomputed/reused dicts", "_t": 0.0}
+{"elt": "p3-arm-done", "arm": 1, "expected_invalidation_set": [], "observed_invalidation_set": [], "observed_call_set": [], "carrier_match": true, "calc_match": true, "all_affected": true, "e_not_computed": true, "recompute_proven": true, "overall": true, "boundary": "real_Swift_Calculator integration here proves executor_integration + settlement_reuse + selective_recompute, NOT model-level continuous computation; carrier reuse != LLM_inference / KV_cache hit", "_t": 0.0}

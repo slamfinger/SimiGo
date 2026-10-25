@@ -1,0 +1,23 @@
+{
+  "I-S0": [
+    "objects/I-S0.json"
+  ],
+  "I-S1": [
+    "objects/I-S1.json"
+  ],
+  "anchor:state-diff": [
+    "objects/R-1.json"
+  ],
+  "archived-note": [
+    "archive/archived-note.json"
+  ],
+  "lineage-root": [
+    "lineage/lineage-root.json"
+  ],
+  "runtime-declaration": [
+    "runtime/runtime-declaration.json"
+  ],
+  "unreferenced-1": [
+    "objects/unreferenced-1.json"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "status": "PHENOMENON_COMPARISON_AND_CI_C_GATE_FROZEN",
+  "current_reduction_round1": "FROZEN_COMMIT_C65FC3A",
+  "raw_matrix": "3_HTTP_SUCCESS_MODELS_X_4_SAMPLES",
+  "semantic_matrix": "2_USABLE_MODELS_X_4_SAMPLES",
+  "expected_cells": 16,
+  "raw_successful_cells": 12,
+  "semantic_usable_cells": 8,
+  "completed_cells": 12,
+  "excluded_models": {
+    "B-qwen3-next": "runtime unavailable; availability fact only",
+    "D-muse-glimmer": "degenerate repetition after HTTP 200"
+  },
+  "authorized_now": [
+    "partial semantic normalization",
+    "partial stability matrix",
+    "partial candidate reporting"
+  ],
+  "not_authorized_now": [
+    "B retry",
+    "D retry",
+    "full 4-model stability claim",
+    "846 remapping",
+    "InformationCore store write",
+    "Observer run"
+  ],
+  "sm_partial_candidates": [
+    "TASK_CONSTRAINT_BINDING",
+    "EVIDENCE_GROUNDING",
+    "DECISION_COMMITMENT"
+  ],
+  "next_stage": "CI_C_OWN_STRUCTURE_DECOMPOSITION"
+}

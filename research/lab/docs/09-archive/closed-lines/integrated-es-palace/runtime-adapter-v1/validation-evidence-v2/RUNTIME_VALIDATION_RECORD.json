@@ -1,0 +1,447 @@
+{
+  "authorized_runs" : 1,
+  "canonical_information_space_mutation" : false,
+  "canonical_palace_mutation" : false,
+  "case_count" : 7,
+  "case_results" : [
+    {
+      "case_id" : "P-LAWFUL",
+      "checks" : {
+        "continuation_class_exact" : true,
+        "decision_exact" : true,
+        "expected_lifecycle_delta" : true,
+        "handle_position_consistent" : true,
+        "precedence_reason_exact" : true,
+        "receipt_decision_matches" : true,
+        "representation_bound" : true,
+        "representation_position_consistent" : true,
+        "runtime_advanced_once" : true,
+        "runtime_created" : true
+      },
+      "continuation_identity_digest" : "f1e1b003db916cad0665baa07b321983d5b349fd1ebbebe3245cbae78ef89fc4",
+      "expected" : {
+        "continuation_class" : "SETTLED_CONTINUATION",
+        "decision" : "CONTINUE",
+        "precedence_reason" : "LAWFUL_CURRENT_CONTINUATION"
+      },
+      "input_digest" : "df3e6db957df9e9ca262b5f4975c19917451f1b57afe43bd0911adc70ba9f0da",
+      "observed" : {
+        "continuation_class" : "SETTLED_CONTINUATION",
+        "decision" : "CONTINUE",
+        "precedence_reason" : "LAWFUL_CURRENT_CONTINUATION"
+      },
+      "opaque_locator" : "d002:\/\/snapshot\/embedding\/1",
+      "output_digest" : "e1381e6eaba2d8a126731fa012c6c4f5b182466042a3fd2b58c1db847c744038",
+      "result" : "PASS",
+      "runtime" : {
+        "advanced" : true,
+        "application_created" : true,
+        "lifecycle_records_after" : 2,
+        "lifecycle_records_before" : 0,
+        "position_after" : 1,
+        "position_before" : null,
+        "receipt_handle_returned" : true,
+        "representation_bound" : true,
+        "setup_created" : false
+      }
+    },
+    {
+      "case_id" : "P-SETTLED",
+      "checks" : {
+        "continuation_class_exact" : true,
+        "decision_exact" : true,
+        "precedence_reason_exact" : true,
+        "receipt_decision_matches" : true,
+        "reuse_did_not_advance" : true,
+        "reuse_did_not_create" : true,
+        "reuse_did_not_rebind" : true,
+        "reuse_handle_identity_consistent" : true,
+        "reuse_lifecycle_unchanged" : true,
+        "reuse_position_unchanged" : true,
+        "reuse_prefix_unchanged" : true
+      },
+      "continuation_identity_digest" : "c7d5d0f000580fee940e009bc6f8f79486c2ca872c42d68bf1c235a28f2ac53c",
+      "expected" : {
+        "continuation_class" : "SETTLED_CONTINUATION",
+        "decision" : "REUSE",
+        "precedence_reason" : "REUSE_PREDICATE_COMPLETE"
+      },
+      "input_digest" : "54c7c9c51340066543d3aa9681d0188da313609640a1cf89439e3e489c75921e",
+      "observed" : {
+        "continuation_class" : "SETTLED_CONTINUATION",
+        "decision" : "REUSE",
+        "precedence_reason" : "REUSE_PREDICATE_COMPLETE"
+      },
+      "opaque_locator" : "d002:\/\/snapshot\/embedding\/2",
+      "output_digest" : "26a30f126a4e8cafcb11efac1e166e7d18142815f4b7a2c0d4b7fe26d0d84edd",
+      "result" : "PASS",
+      "runtime" : {
+        "advanced" : false,
+        "application_created" : false,
+        "lifecycle_records_after" : 1,
+        "lifecycle_records_before" : 1,
+        "position_after" : 0,
+        "position_before" : 0,
+        "receipt_handle_returned" : true,
+        "representation_bound" : false,
+        "setup_created" : true
+      }
+    },
+    {
+      "case_id" : "P-BLOCKED",
+      "checks" : {
+        "block_did_not_advance" : true,
+        "block_did_not_create" : true,
+        "block_lifecycle_unchanged_by_application" : true,
+        "block_position_unchanged" : true,
+        "block_receipt_has_no_handle" : true,
+        "block_representation_unchanged" : true,
+        "continuation_class_exact" : true,
+        "decision_exact" : true,
+        "precedence_reason_exact" : true,
+        "receipt_decision_matches" : true
+      },
+      "continuation_identity_digest" : "a811a52e4d490b6b3ee4ef0a3e2c816f76533f28a46e9356de348654f3a3f042",
+      "expected" : {
+        "continuation_class" : "BLOCKED_LAWFUL_CONTINUATION",
+        "decision" : "BLOCK",
+        "precedence_reason" : "REGISTERED_BLOCKING_CONDITION"
+      },
+      "input_digest" : "00f6a66861ee21cc27d559912f43e1a2c81254365eefc61c2ea66f1fc7f6be7d",
+      "observed" : {
+        "continuation_class" : "BLOCKED_LAWFUL_CONTINUATION",
+        "decision" : "BLOCK",
+        "precedence_reason" : "REGISTERED_BLOCKING_CONDITION"
+      },
+      "opaque_locator" : "d002:\/\/snapshot\/embedding\/3",
+      "output_digest" : "5b24240712b71fee55ca2315cefa3c0438b9fbee181e0afcebbbbe16f1baf953",
+      "result" : "PASS",
+      "runtime" : {
+        "advanced" : false,
+        "application_created" : false,
+        "lifecycle_records_after" : 0,
+        "lifecycle_records_before" : 0,
+        "position_after" : null,
+        "position_before" : null,
+        "receipt_handle_returned" : false,
+        "representation_bound" : false,
+        "setup_created" : false
+      }
+    },
+    {
+      "case_id" : "N-MISSING",
+      "checks" : {
+        "block_did_not_advance" : true,
+        "block_did_not_create" : true,
+        "block_lifecycle_unchanged_by_application" : true,
+        "block_position_unchanged" : true,
+        "block_receipt_has_no_handle" : true,
+        "block_representation_unchanged" : true,
+        "continuation_class_exact" : true,
+        "decision_exact" : true,
+        "precedence_reason_exact" : true,
+        "receipt_decision_matches" : true
+      },
+      "continuation_identity_digest" : "94498f84607e37661e5f5e961060faa10f1e58f253563d8ca959b4582efb8ae1",
+      "expected" : {
+        "continuation_class" : "BLOCKED_DEFECT",
+        "decision" : "BLOCK",
+        "precedence_reason" : "MANDATORY_OBJECT_UNRESOLVABLE"
+      },
+      "input_digest" : "5e9f5e7ed0cc2b577cf61003c360865074e5c0944559d60d2554cb0c45ea1827",
+      "observed" : {
+        "continuation_class" : "BLOCKED_DEFECT",
+        "decision" : "BLOCK",
+        "precedence_reason" : "MANDATORY_OBJECT_UNRESOLVABLE"
+      },
+      "opaque_locator" : "d002:\/\/snapshot\/embedding\/4",
+      "output_digest" : "fd1fed6a29bc76f5c8f9eff31c9a587ad70b69ecf1befb7ab3aeaf76531a61c7",
+      "result" : "PASS",
+      "runtime" : {
+        "advanced" : false,
+        "application_created" : false,
+        "lifecycle_records_after" : 0,
+        "lifecycle_records_before" : 0,
+        "position_after" : null,
+        "position_before" : null,
+        "receipt_handle_returned" : false,
+        "representation_bound" : false,
+        "setup_created" : false
+      }
+    },
+    {
+      "case_id" : "N-STALE",
+      "checks" : {
+        "block_did_not_advance" : true,
+        "block_did_not_create" : true,
+        "block_lifecycle_unchanged_by_application" : true,
+        "block_position_unchanged" : true,
+        "block_receipt_has_no_handle" : true,
+        "block_representation_unchanged" : true,
+        "continuation_class_exact" : true,
+        "decision_exact" : true,
+        "precedence_reason_exact" : true,
+        "receipt_decision_matches" : true
+      },
+      "continuation_identity_digest" : "1ed3d673d8cf68623b26e89ad6c80446878441d9ef864abe16b6a5b9a61c1424",
+      "expected" : {
+        "continuation_class" : "BLOCKED_DEFECT",
+        "decision" : "BLOCK",
+        "precedence_reason" : "MANDATORY_EVIDENCE_SUPERSEDED"
+      },
+      "input_digest" : "c6daa383015148662adfae0c08ddbdf409be3efe3f3a5e6acd7c29a773d23bb1",
+      "observed" : {
+        "continuation_class" : "BLOCKED_DEFECT",
+        "decision" : "BLOCK",
+        "precedence_reason" : "MANDATORY_EVIDENCE_SUPERSEDED"
+      },
+      "opaque_locator" : "d002:\/\/snapshot\/embedding\/5",
+      "output_digest" : "0983abcc549f01dc03298dc2158d71f23b394b55ae840a2216c3ab1d124ef096",
+      "result" : "PASS",
+      "runtime" : {
+        "advanced" : false,
+        "application_created" : false,
+        "lifecycle_records_after" : 0,
+        "lifecycle_records_before" : 0,
+        "position_after" : null,
+        "position_before" : null,
+        "receipt_handle_returned" : false,
+        "representation_bound" : false,
+        "setup_created" : false
+      }
+    },
+    {
+      "case_id" : "N-AMBIGUOUS",
+      "checks" : {
+        "block_did_not_advance" : true,
+        "block_did_not_create" : true,
+        "block_lifecycle_unchanged_by_application" : true,
+        "block_position_unchanged" : true,
+        "block_receipt_has_no_handle" : true,
+        "block_representation_unchanged" : true,
+        "continuation_class_exact" : true,
+        "decision_exact" : true,
+        "precedence_reason_exact" : true,
+        "receipt_decision_matches" : true
+      },
+      "continuation_identity_digest" : "66b73f88e6d3928d1a3f981d72c6117e2b12d8f64a43eb92ae769922e110c081",
+      "expected" : {
+        "continuation_class" : "BLOCKED_DEFECT",
+        "decision" : "BLOCK",
+        "precedence_reason" : "CONFLICTING_VALID_POINTERS"
+      },
+      "input_digest" : "093625859e7db851443356a5eaef3de3c6a505fa40a11a9058f94ada5a1e3bda",
+      "observed" : {
+        "continuation_class" : "BLOCKED_DEFECT",
+        "decision" : "BLOCK",
+        "precedence_reason" : "CONFLICTING_VALID_POINTERS"
+      },
+      "opaque_locator" : "d002:\/\/snapshot\/embedding\/6",
+      "output_digest" : "d11fcb454875a8ebb7eeb877adb130a27ddbacded3e2c2cfacd1b8a0a13b4971",
+      "result" : "PASS",
+      "runtime" : {
+        "advanced" : false,
+        "application_created" : false,
+        "lifecycle_records_after" : 0,
+        "lifecycle_records_before" : 0,
+        "position_after" : null,
+        "position_before" : null,
+        "receipt_handle_returned" : false,
+        "representation_bound" : false,
+        "setup_created" : false
+      }
+    },
+    {
+      "case_id" : "N-ILLEGAL",
+      "checks" : {
+        "block_did_not_advance" : true,
+        "block_did_not_create" : true,
+        "block_existing_handle_retained" : true,
+        "block_lifecycle_unchanged_by_application" : true,
+        "block_position_unchanged" : true,
+        "block_receipt_has_no_handle" : true,
+        "block_representation_unchanged" : true,
+        "continuation_class_exact" : true,
+        "decision_exact" : true,
+        "precedence_reason_exact" : true,
+        "receipt_decision_matches" : true
+      },
+      "continuation_identity_digest" : "8e3c2d7948422dd81fff3af4e9f63de47f2bedd2ee735b11bcbf36571b202997",
+      "expected" : {
+        "continuation_class" : "BLOCKED_DEFECT",
+        "decision" : "BLOCK",
+        "precedence_reason" : "REGISTERED_BOUNDARY_VIOLATION_PROVEN"
+      },
+      "input_digest" : "af41183d010d7ac1b78fc981c53b51552aee23aa89e93365e5f1e375798ee038",
+      "observed" : {
+        "continuation_class" : "BLOCKED_DEFECT",
+        "decision" : "BLOCK",
+        "precedence_reason" : "REGISTERED_BOUNDARY_VIOLATION_PROVEN"
+      },
+      "opaque_locator" : "d002:\/\/snapshot\/embedding\/7",
+      "output_digest" : "f364751a1775f0e7421743497600f42a9e17da3a8fb55685d82130fba64fc6b0",
+      "result" : "PASS",
+      "runtime" : {
+        "advanced" : false,
+        "application_created" : false,
+        "lifecycle_records_after" : 1,
+        "lifecycle_records_before" : 1,
+        "position_after" : 3,
+        "position_before" : 3,
+        "receipt_handle_returned" : false,
+        "representation_bound" : false,
+        "setup_created" : true
+      }
+    }
+  ],
+  "d002_rerun_or_repair" : false,
+  "executed_runs" : 1,
+  "lifecycle_records" : [
+    {
+      "application_lifecycle_delta" : 2,
+      "case_id" : "P-LAWFUL",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "P-SETTLED",
+      "result" : "RECORDED",
+      "setup_created" : true,
+      "setup_position" : 0,
+      "setup_representation_prefix" : [
+        17,
+        23
+      ]
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "P-BLOCKED",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "N-MISSING",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "N-STALE",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "N-AMBIGUOUS",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "N-ILLEGAL",
+      "result" : "RECORDED",
+      "setup_created" : true,
+      "setup_position" : 3,
+      "setup_representation_prefix" : [
+        31,
+        37
+      ]
+    }
+  ],
+  "model_authority" : false,
+  "network_access" : false,
+  "representation_records" : [
+    {
+      "application_bound" : true,
+      "application_position" : 1,
+      "application_prefix" : [
+        14,
+        1,
+        3,
+        8,
+        1,
+        14,
+        6,
+        14,
+        10,
+        11,
+        10,
+        2,
+        13,
+        8,
+        10,
+        1
+      ],
+      "case_id" : "P-LAWFUL",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : 0,
+      "application_prefix" : [
+        17,
+        23
+      ],
+      "case_id" : "P-SETTLED",
+      "setup_prefix" : [
+        17,
+        23
+      ]
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "P-BLOCKED",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "N-MISSING",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "N-STALE",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "N-AMBIGUOUS",
+      "setup_prefix" : null
+    },
+    {
+      "application_bound" : false,
+      "application_position" : null,
+      "application_prefix" : null,
+      "case_id" : "N-ILLEGAL",
+      "setup_prefix" : [
+        31,
+        37
+      ]
+    }
+  ],
+  "result" : "PASS",
+  "schema_id" : "INTEGRATED-ES-PALACE-RUNTIME-VALIDATION-RECORD-V1",
+  "terminal_state" : "RUNTIME_VALIDATION_PASS",
+  "validated_adapter_sha256" : "87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec",
+  "validated_manifest_sha256" : "ef501f81ef105b8827bb7422c7222456302ca76b436a97321a6e20fd84a40d37"
+}

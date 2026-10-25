@@ -1,0 +1,110 @@
+{
+  "all_expected_matches": true,
+  "c3_role": "OBSERVATION_ONLY / NOT_PERFORMED",
+  "ev_r5_attribution": "NOT_APPLICABLE_NO_RESEARCH_FAILURE",
+  "fixtures": [
+    {
+      "c1_match": true,
+      "c2_match": true,
+      "c3": "NOT_PERFORMED",
+      "expected_c1": "PASS",
+      "expected_c2": "BLOCK_INSUFFICIENT",
+      "fixture_instance_id": "2F204D32-02A4-416E-BEE2-965CD5A626CE",
+      "fixture_role": "N-B",
+      "interruption_kind": "I-1",
+      "observed_c1": "PASS",
+      "observed_c2": "BLOCK_INSUFFICIENT",
+      "observed_pointer_targets": [
+        "B1",
+        "B2"
+      ],
+      "observed_reason": "AMBIGUOUS_POINTER_SET"
+    },
+    {
+      "c1_match": true,
+      "c2_match": true,
+      "c3": "NOT_PERFORMED",
+      "expected_c1": "PASS",
+      "expected_c2": "BLOCK_INSUFFICIENT",
+      "fixture_instance_id": "2F204D32-02A4-416E-BEE2-965CD5A626CE",
+      "fixture_role": "N-B",
+      "interruption_kind": "I-2",
+      "observed_c1": "PASS",
+      "observed_c2": "BLOCK_INSUFFICIENT",
+      "observed_pointer_targets": [
+        "B1",
+        "B2"
+      ],
+      "observed_reason": "AMBIGUOUS_POINTER_SET"
+    },
+    {
+      "c1_match": true,
+      "c2_match": true,
+      "c3": "NOT_PERFORMED",
+      "expected_c1": "FAIL",
+      "expected_c2": "BLOCK_INSUFFICIENT",
+      "fixture_instance_id": "DCC93C19-02B9-4E6C-BDD8-DF3371DF9871",
+      "fixture_role": "N-A",
+      "interruption_kind": "I-1",
+      "observed_c1": "FAIL",
+      "observed_c2": "BLOCK_INSUFFICIENT",
+      "observed_pointer_targets": [
+        "B1"
+      ],
+      "observed_reason": "RECONSTRUCTION_INCOMPLETE"
+    },
+    {
+      "c1_match": true,
+      "c2_match": true,
+      "c3": "NOT_PERFORMED",
+      "expected_c1": "FAIL",
+      "expected_c2": "BLOCK_INSUFFICIENT",
+      "fixture_instance_id": "DCC93C19-02B9-4E6C-BDD8-DF3371DF9871",
+      "fixture_role": "N-A",
+      "interruption_kind": "I-2",
+      "observed_c1": "FAIL",
+      "observed_c2": "BLOCK_INSUFFICIENT",
+      "observed_pointer_targets": [
+        "B1"
+      ],
+      "observed_reason": "RECONSTRUCTION_INCOMPLETE"
+    },
+    {
+      "c1_match": true,
+      "c2_match": true,
+      "c3": "NOT_PERFORMED",
+      "expected_c1": "PASS",
+      "expected_c2": "CONTINUE_CERTAIN",
+      "fixture_instance_id": "E3645CE9-F8E3-4DF5-8644-33CD96143F9C",
+      "fixture_role": "P-POS",
+      "interruption_kind": "I-1",
+      "observed_c1": "PASS",
+      "observed_c2": "CONTINUE_CERTAIN",
+      "observed_pointer_targets": [
+        "B1"
+      ],
+      "observed_reason": "EXACTLY_ONE_REGISTERED_BOUNDARY"
+    },
+    {
+      "c1_match": true,
+      "c2_match": true,
+      "c3": "NOT_PERFORMED",
+      "expected_c1": "PASS",
+      "expected_c2": "CONTINUE_CERTAIN",
+      "fixture_instance_id": "E3645CE9-F8E3-4DF5-8644-33CD96143F9C",
+      "fixture_role": "P-POS",
+      "interruption_kind": "I-2",
+      "observed_c1": "PASS",
+      "observed_c2": "CONTINUE_CERTAIN",
+      "observed_pointer_targets": [
+        "B1"
+      ],
+      "observed_reason": "EXACTLY_ONE_REGISTERED_BOUNDARY"
+    }
+  ],
+  "package_baseline": "39c1031",
+  "research_verdict": "PASS \u2014 CONTINUATION SUFFICIENT",
+  "run_label": "ES-CSP-RUN-01",
+  "s3_authorization": "EXPLICIT HUMAN AUTHORIZATION",
+  "schema_version": "es-csp/control-comparison-v1"
+}

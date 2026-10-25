@@ -1,0 +1,64 @@
+{
+  "phase": "S_B_BEHAVIOR_ADJUDICATION",
+  "adjudicated_at": "2026-10-04T18:22:00+08:00",
+  "raw_outputs_modified": false,
+  "observer_tool": "NOT RUN",
+  "store": "NOT RUN",
+  "hidden_understanding_claim": "FORBIDDEN / NOT MADE",
+  "conditions": [
+    {
+      "condition": "S-B0",
+      "final_answer_sha256": "2ecb418c5a427038eac8bf4a9aab70fc22746e87942d90d1dfe61098884df7f0",
+      "final_answer_json_parse": "PASS",
+      "located": "NOT_APPLICABLE_NO_RESIDUE",
+      "fetched": "NOT_APPLICABLE_DIRECT_INLINE",
+      "parsed": "NO_RESIDUE",
+      "semantic_referenced": "NO",
+      "adopted": "NO",
+      "behavioral": "VALID_ABSENCE_CONTROL",
+      "continuation": "ABSENCE_ONLY / NO_DEPLOYMENT_DECISION",
+      "gain_versus_s_b0": "NOT_APPLICABLE_BASELINE"
+    },
+    {
+      "condition": "S-B1",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "final_answer_json_parse": "PASS",
+      "located": "SUPPLIED",
+      "fetched": "NOT_APPLICABLE_DIRECT_INLINE",
+      "parsed": "PASS",
+      "semantic_referenced": "YES",
+      "adopted": "YES",
+      "behavioral": "DIFFERS_FROM_S_B0",
+      "continuation": "PASS",
+      "gain_versus_s_b0": "DEMONSTRATED",
+      "observable_basis": [
+        "deployment_order alpha,beta adopts alpha-beta allow;",
+        "gamma blocker adopts gamma not-baseline-compatible;",
+        "gamma exclusion is consistent with both gamma pair blocks."
+      ]
+    },
+    {
+      "condition": "S-B2",
+      "final_answer_sha256": "de5fa40deab171e5c15505600b58e9837eb46971a5e127edc8322c97548c2c5a",
+      "final_answer_json_parse": "FAIL",
+      "final_answer_json_parse_error": "Expecting ',' delimiter at line 1 column 1106",
+      "located": "SUPPLIED",
+      "fetched": "NOT_APPLICABLE_DIRECT_INLINE",
+      "parsed": "FAIL",
+      "semantic_referenced": "YES",
+      "adopted": "NOT_DEMONSTRATED_AT_VALID_OUTPUT_LAYER",
+      "behavioral": "DIFFERS_FROM_S_B0_BUT_MALFORMED_AND_INCONSISTENT",
+      "continuation": "FAIL",
+      "gain_versus_s_b0": "NOT_DEMONSTRATED",
+      "observable_basis": [
+        "output explicitly references alpha-beta allow, alpha-gamma block, beta-gamma block, and gamma block;",
+        "final JSON nevertheless gives deployment_order beta and blocks alpha;",
+        "output text states alpha and beta should remain while the emitted JSON excludes alpha;",
+        "unescaped quote makes the emitted object unparseable."
+      ]
+    }
+  ],
+  "approved_reading": "S-B1 PASS and S-B2 FAIL",
+  "bounded_reading": "In this exact TC-A prompt/model/frame, removing M1.b(gamma is not baseline-compatible) while retaining pair decisions and explicit gamma block was followed by loss of valid release-gate continuation.",
+  "non_claim": "This does not prove M1.b is generally or inherently irreducible, prove final Information minimality, or exclude prompt-sensitivity/representation-artifact causes."
+}

@@ -1,0 +1,449 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "simigo:persistent-srs-record:v1.3",
+  "title": "SimiGo Persistent SRS Record I0",
+  "description": "Closed normative value schema for Persistent SRS Representation Manifest Contract v1.3. This document is metadata and is not part of serialized I0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "payload_schema_id",
+    "logical_key",
+    "settled_relation_state",
+    "source_relation",
+    "dependency_set",
+    "result",
+    "provenance",
+    "lifecycle",
+    "freshness",
+    "resolution_policy",
+    "producer_authorization_reference",
+    "decision_core_binding",
+    "encoding_identity"
+  ],
+  "properties": {
+    "payload_schema_id": {
+      "const": "SIMIGO_PERSISTENT_SRS_RECORD_V1"
+    },
+    "logical_key": {
+      "$ref": "#/$defs/LogicalKey"
+    },
+    "settled_relation_state": {
+      "$ref": "#/$defs/SettledRelationState"
+    },
+    "source_relation": {
+      "$ref": "#/$defs/SourceRelation"
+    },
+    "dependency_set": {
+      "$ref": "#/$defs/DependencySet"
+    },
+    "result": {
+      "$ref": "#/$defs/Result"
+    },
+    "provenance": {
+      "$ref": "#/$defs/ProvenanceLifecycle"
+    },
+    "lifecycle": {
+      "$ref": "#/$defs/ProvenanceLifecycle"
+    },
+    "freshness": {
+      "$ref": "#/$defs/Freshness"
+    },
+    "resolution_policy": {
+      "$ref": "#/$defs/ResolutionPolicy"
+    },
+    "producer_authorization_reference": {
+      "$ref": "#/$defs/NonEmptyString"
+    },
+    "decision_core_binding": {
+      "$ref": "#/$defs/DecisionCoreBinding"
+    },
+    "encoding_identity": {
+      "const": "PERSISTENT_SRS_CANONICAL_V1"
+    }
+  },
+  "$defs": {
+    "String": {
+      "type": "string",
+      "maxLength": 1048576
+    },
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1048576
+    },
+    "Hex64": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "UTCTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$"
+    },
+    "LogicalKey": {
+      "description": "Ordered pair (identity, version). Never serialized or compared as concatenated key material.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "version"
+      ],
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "version": {
+          "$ref": "#/$defs/NonEmptyString"
+        }
+      }
+    },
+    "DecisionCoreBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_commit",
+        "source_sha256"
+      ],
+      "properties": {
+        "source_commit": {
+          "const": "1d47f3be56dfa8c6bf7619f4566b271ed74aad27"
+        },
+        "source_sha256": {
+          "const": "7fec2ed4d6e6f82fe677a7f098ec98d3e99bf4138420f1dd051570c75cf1c72e"
+        }
+      }
+    },
+    "Binding": {
+      "description": "Maps to SRSVALBinding. A null property elsewhere means Swift nil; an empty array elsewhere means an explicit empty collection.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "version",
+        "content_digest"
+      ],
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "version": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "content_digest": {
+          "$ref": "#/$defs/Hex64"
+        }
+      }
+    },
+    "SettledRelationState": {
+      "description": "Maps to SRSVALSettledRelationState.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding",
+        "settlement_id",
+        "status",
+        "source_relation_identity",
+        "result_identity",
+        "requires_canonical_identity_rule",
+        "canonical_identity_rule",
+        "provenance_bindings"
+      ],
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/Binding"
+        },
+        "settlement_id": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "status": {
+          "enum": [
+            "DECLARED_SETTLED",
+            "CONTESTED",
+            "UNRESOLVED_LIFECYCLE_CONFLICT",
+            "INVALIDATED"
+          ]
+        },
+        "source_relation_identity": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "result_identity": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "requires_canonical_identity_rule": {
+          "type": "boolean"
+        },
+        "canonical_identity_rule": {
+          "$ref": "#/$defs/Binding"
+        },
+        "provenance_bindings": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 1000000,
+          "items": {
+            "$ref": "#/$defs/Binding"
+          }
+        }
+      }
+    },
+    "SourceRelation": {
+      "description": "Maps to SRSVALSourceRelation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding",
+        "semantic_binding",
+        "applicability_coverage",
+        "invalidation_record",
+        "invalidation_status",
+        "identity_rule",
+        "status"
+      ],
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/Binding"
+        },
+        "semantic_binding": {
+          "$ref": "#/$defs/Binding"
+        },
+        "applicability_coverage": {
+          "$ref": "#/$defs/Binding"
+        },
+        "invalidation_record": {
+          "$ref": "#/$defs/Binding"
+        },
+        "invalidation_status": {
+          "enum": [
+            "none",
+            "superseded",
+            "invalidated"
+          ]
+        },
+        "identity_rule": {
+          "$ref": "#/$defs/Binding"
+        },
+        "status": {
+          "enum": [
+            "current",
+            "superseded",
+            "invalidated"
+          ]
+        }
+      }
+    },
+    "Dependency": {
+      "description": "Maps to SRSVALDependency.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding",
+        "role",
+        "necessity",
+        "resolution",
+        "status"
+      ],
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/Binding"
+        },
+        "role": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "necessity": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "resolution": {
+          "enum": [
+            "resolved",
+            "unresolved"
+          ]
+        },
+        "status": {
+          "enum": [
+            "current",
+            "superseded",
+            "invalidated"
+          ]
+        }
+      }
+    },
+    "Result": {
+      "description": "Maps to SRSVALResult.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding",
+        "resolution",
+        "interpretability_evidence",
+        "status"
+      ],
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/Binding"
+        },
+        "resolution": {
+          "enum": [
+            "RESOLVED_WITHOUT_RECOMPUTE",
+            "unresolved"
+          ]
+        },
+        "interpretability_evidence": {
+          "$ref": "#/$defs/Binding"
+        },
+        "status": {
+          "enum": [
+            "current",
+            "superseded",
+            "invalidated"
+          ]
+        }
+      }
+    },
+    "ResolutionPolicy": {
+      "description": "Maps to SRSVALResolutionPolicy.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resolution_rule",
+        "policies",
+        "boundary"
+      ],
+      "properties": {
+        "resolution_rule": {
+          "$ref": "#/$defs/Binding"
+        },
+        "policies": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 1000000,
+          "items": {
+            "$ref": "#/$defs/Binding"
+          }
+        },
+        "boundary": {
+          "$ref": "#/$defs/Binding"
+        }
+      }
+    },
+    "ProvenanceLifecycle": {
+      "description": "Maps to SRSVALProvenanceLifecycle.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindings",
+        "lifecycle",
+        "boundary"
+      ],
+      "properties": {
+        "bindings": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 1000000,
+          "items": {
+            "$ref": "#/$defs/Binding"
+          }
+        },
+        "lifecycle": {
+          "enum": [
+            "DECLARED_SETTLED",
+            "CONTESTED",
+            "UNRESOLVED_LIFECYCLE_CONFLICT",
+            "INVALIDATED"
+          ]
+        },
+        "boundary": {
+          "$ref": "#/$defs/Binding"
+        }
+      }
+    },
+    "DependencySet": {
+      "description": "Maps to SRSVALDependencySet.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boundary",
+        "dependencies"
+      ],
+      "properties": {
+        "boundary": {
+          "$ref": "#/$defs/Binding"
+        },
+        "dependencies": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 1000000,
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          }
+        }
+      }
+    },
+    "FreshnessRequirement": {
+      "description": "Maps to SRSVALFreshnessRequirement.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "evidence",
+        "expected_evidence_digest",
+        "status",
+        "valid_until_utc",
+        "observed_at_utc"
+      ],
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Binding"
+        },
+        "expected_evidence_digest": {
+          "$ref": "#/$defs/NonEmptyString"
+        },
+        "status": {
+          "enum": [
+            "current",
+            "FRESHNESS_RECHECK_REQUIRED"
+          ]
+        },
+        "valid_until_utc": {
+          "$ref": "#/$defs/UTCTimestamp"
+        },
+        "observed_at_utc": {
+          "$ref": "#/$defs/UTCTimestamp"
+        }
+      }
+    },
+    "Freshness": {
+      "description": "Maps to SRSVALFreshness.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boundary",
+        "requirements"
+      ],
+      "properties": {
+        "boundary": {
+          "$ref": "#/$defs/Binding"
+        },
+        "requirements": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 1000000,
+          "items": {
+            "$ref": "#/$defs/FreshnessRequirement"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "child_pid": 6193,
+  "child_process_group": 6193,
+  "duration_seconds": 13.247,
+  "environment_passed": {
+    "G2P0_EVIDENCE_ROOT": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/p0/20261020T075257Z",
+    "G2P0_EXPECTED_AGGREGATE": "4c1bd7596b9480864ca7c5ac949fbb051c47b182b853a8219c80a171b22f6678",
+    "G2P0_EXPECTED_WEIGHTS_DIGEST": "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf",
+    "G2P0_MODEL_DIR": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+    "G2P0_PREFILL_STRIDE": "256",
+    "G2P0_PROBE_MAX_TOKENS": "16",
+    "G2P0_PROMPT": "Reply with exactly one word: ready.",
+    "G2P0_STORE_BASE": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/p0/20261020T075257Z/store",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1"
+  },
+  "exit_code": 0,
+  "model_starts_consumed": 1,
+  "run_id": "20261020T075257Z",
+  "schema_id": "SIMIGO-G2-P0-LAUNCH-V1",
+  "started_at_utc": "2026-10-20T07:52:57Z",
+  "timed_out": false,
+  "timeout_seconds": 1200
+}

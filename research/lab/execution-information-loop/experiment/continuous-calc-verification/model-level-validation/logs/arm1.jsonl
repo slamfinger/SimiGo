@@ -1,0 +1,9 @@
+{"elt": "arm-start", "arm": 1, "tag": "arm1", "_t": 1792494504.388662}
+{"elt": "new-stage", "handle": "stage-arm1-1", "_t": 1792494504.388777}
+{"elt": "execute", "arm": 1, "unit": "U_upstream", "deps": [], "_t": 1792494504.388861}
+{"elt": "calc", "arm": 1, "stage": "stage-arm1-1", "unit": "U_upstream", "prefix_len": 2, "real": true, "_t": 1792494504.388931}
+{"elt": "execute", "arm": 1, "unit": "U_parse", "deps": ["U_upstream"], "_t": 1792494504.38898}
+{"elt": "calc", "arm": 1, "stage": "stage-arm1-1", "unit": "U_parse", "prefix_len": 2, "real": true, "_t": 1792494504.389044}
+{"elt": "execute", "arm": 1, "unit": "U_summarize", "deps": ["U_parse"], "_t": 1792494504.389107}
+{"elt": "calc", "arm": 1, "stage": "stage-arm1-1", "unit": "U_summarize", "prefix_len": 2, "real": true, "_t": 1792494504.389178}
+{"elt": "arm-done", "arm": 1, "tag": "arm1", "_t": 1792494504.3892338}

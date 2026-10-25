@@ -1,0 +1,18 @@
+{
+  "evidence_destination_binding_sha256": "4147a039f8572bca2ff467dbb2156b52103da7612dc9da93dae599039f12b7e2",
+  "fixture_instance_id": "525502d856a646786f43f97d2722a4fbbb1b240a9cdbb37d168d76ebcee41bb9",
+  "is_update_authorized": false,
+  "m": 0,
+  "measured_input_sha256": "833cf5b469d1634fe682b713b7d2f8e871ad6a5f7e4f10ed2709cbc8c8598c39",
+  "n": 20,
+  "oracle_ledger_present": true,
+  "oracle_ledger_sha256": "dac0840446abf4c639fc3b0a951384a6677d00a3ab1a6dd8214f9faa4000fcd9",
+  "physical_observations_generated": 0,
+  "physical_state_archive": "physical-state.tar",
+  "physical_state_archive_sha256": "f4f78c889071cbf8ddb55bbc58a45d19a985c138a12dda644c01acb1e6de1da3",
+  "physical_state_member_count": 20,
+  "r": 20,
+  "shape": "C-NOCHANGE-S",
+  "w_latency_ms": 5000,
+  "w_obs_age_ms": 60000
+}

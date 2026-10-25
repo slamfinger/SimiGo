@@ -1,0 +1,7 @@
+audit_root=AUDIT_ROOT=/tmp/simigo-cimpl-audit.YicvcW
+commit=1771000b86d3
+protected_diff_bytes_against_3016844=0
+build=PASS
+tests=4/4 PASS
+swift_test_xctest_count=0_expected_swift_testing_count=4
+c_execute=NOT_RUN

@@ -1,0 +1,382 @@
+"""I-1 G-2 — Instantiate pipeline (steps 0-5) + Verification Surface VV-1..VV-7
+per the frozen I-1c contract (instantiate(R2, τ2★, substrate) → S2;
+IPAC_INSTANTIATE_COMPLETENESS_CONCEPTUAL_DESIGN_V0.3.md, main 6c3cf6a) and
+the frozen I-1d contract (IPAC_INSTANTIATE_RUNTIME_REALIZATION_VERIFICATION_
+CONCEPTUAL_DESIGN_V0.3.md, branch 1832676).
+
+Frozen obligations realized here:
+  pipeline     0 precondition / 1 bind / 2 restore(opt) / 3 materialize
+               [CREATION POINT] / 4 attach / 5 record
+  VV surface   VV-1..VV-7, tiers VERIFIED / COVENANTED / FAILED; applicable
+               only after the precondition gate passes; NOT ENTERED on
+               PRECONDITION-BLOCK (applicability fact, not a verdict tier)
+  dispositions exactly one primary disposition per outcome:
+               BLOCK{PRECONDITION-BLOCK, CREATE-BLOCK, POLICY-BLOCK} /
+               PROCEED-WITH-ANNOTATION / DECLARED-ALTERNATIVE;
+               POST-CREATION-ANOMALY = lifecycle state orthogonal, with the
+               original attempt's primary disposition PROCEED-WITH-ANNOTATION
+  bindings     BOUND / UNBOUND / MISMATCH (mechanical; no semantic inference)
+
+No semantic judgment anywhere (IC-6). The substrate here is a CONFORMANCE
+SUBSTRATE (MC-1..MC-6 minimal testbed realizing G-1's ContentStore as the
+information side) — carrier-form restore is not taken (document-form first
+run, per the gate package).
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+from i1_records import ContentStore, sha256_hex
+from i1_resolve import resolve
+
+
+class ConformanceSubstrate:
+    """MC-1..MC-6 minimal testbed substrate (readback-capable). Realizes
+    bind / materialize / attach surface readback (VV-2/VV-4 VERIFIED path);
+    restore is available but not taken (document-form)."""
+
+    def __init__(self, engine_id: str, tokenizer_id: str,
+                 weights_id: str) -> None:
+        self.engine_id = engine_id
+        self.tokenizer_id = tokenizer_id
+        self.weights_id = weights_id
+        self._materialized: Optional[Dict[str, Any]] = None
+
+    # MC-1: bind — configuration; records what was configured -----------
+    def bind(self, declared_weights_id: Optional[str],
+             envelope: Dict[str, Any]) -> Dict[str, Any]:
+        self._envelope = envelope
+        self._bound_weights_id = declared_weights_id or self.weights_id
+        return {"declared_weights_id": self._bound_weights_id,
+                "envelope": envelope}
+
+    # MC-2: materialize — accepts the continuation surface as BYTES; the
+    # substrate keeps it addressable and returns an object handle ---------
+    def materialize(self, surface: bytes) -> Dict[str, Any]:
+        handle = {"surface_digest": sha256_hex(surface),
+                  "size": len(surface),
+                  "addressable": True}
+        self._materialized = handle
+        return handle
+
+    def continuation_object(self) -> Optional[Dict[str, Any]]:
+        """The addressable continuation object S2 as realized by this
+        substrate: the materialized surface plus the binding/position the
+        substrate holds. G-3's T2 adapter consumes THIS (IF-G3-01) — the
+        object instantiate produced, not a parallel construction."""
+        if self._materialized is None:
+            return None
+        return {"handle": dict(self._materialized),
+                "surface_bytes": self._surface_bytes,
+                "bound_weights_id": self._bound_weights_id,
+                "position_units": len(self._surface_bytes)}
+
+    # readback interface (VERIFIED path for VV-2/VV-4) --------------------
+    # IF-G2-08: observability is an EXPLICIT CAPABILITY, declared via the
+    # capability interface below — never inferred from a class name or from
+    # internal state.
+    def surface_readback_available(self) -> bool:
+        """Can this substrate expose the materialized surface for byte
+        comparison? Capability declaration — the caller never guesses."""
+        return True
+
+    def readback_surface(self) -> bytes:
+        # The conformance substrate is surface-faithful by construction; a
+        # real engine exposes this or the check lands COVENANTED.
+        return self._surface_bytes
+
+    def envelope_readback(self) -> Dict[str, Any]:
+        """Effective-envelope readback. Raising NotImplementedError = the
+        capability is absent (the caller then records COVENANTED)."""
+        return dict(self._envelope)
+
+    def feed_surface(self, surface: bytes) -> None:
+        self._surface_bytes = surface
+
+    # MC-6: tokenizer ------------------------------------------------------
+    def tokenize_position(self, surface: bytes) -> int:
+        return len(surface)  # unit-position derivation (deterministic)
+
+    # MC-3/IC-7: restore (available; document-form does NOT take it) -------
+    def restore(self, carrier_state: bytes) -> Dict[str, Any]:
+        data = hashlib.sha256(carrier_state).digest()
+        return {"consumed_prefix_units": int.from_bytes(data[:4], "big") % 1024,
+                "taken": True}
+
+
+class OpaqueSubstrate(ConformanceSubstrate):
+    """IF-G2-06/08: an opaque substrate — the readback CAPABILITY is absent,
+    declared via the capability interface (not a class-name special case in
+    the caller). VV-2/VV-4 cannot observe the property on it: the checks
+    land COVENANTED (explicit trust boundary recorded), never VERIFIED and
+    never ENVELOPE-DRIFT."""
+
+    def surface_readback_available(self) -> bool:
+        return False
+
+    def readback_surface(self) -> bytes:
+        raise NotImplementedError("opaque substrate: surface unobservable")
+
+    def envelope_readback(self) -> Dict[str, Any]:
+        raise NotImplementedError("opaque substrate: envelope unobservable")
+
+
+def decide_binding(r2: Dict[str, Any], tau_star: Dict[str, Any]) -> Dict[str, Any]:
+    """IC-2 three-state binding decision (mechanical; no inference).
+    Predecessor weights identity = read from the root CR's provenance
+    (surfaced into R2 by resolve upstream), where the formation recorded it
+    — the frozen MAY-carry rule; absence ⇒ UNBOUND, never inference."""
+    pred = r2.get("predecessor_weights_id")
+    declared = tau_star.get("weights_id")
+    if pred is not None and declared is not None:
+        state = "BOUND" if pred == declared else "MISMATCH"
+        return {"state": state,
+                "predecessor_weights_id": pred,
+                "declared_weights_id": declared}
+    return {"state": "UNBOUND", "predecessor_weights_id": pred,
+            "declared_weights_id": declared}
+
+
+def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
+                substrate: ConformanceSubstrate,
+                attempt_id: str,
+                verify_lineage_identity: bool = True,
+                actor: str = "codex/g4-fix") -> Dict[str, Any]:
+    """The full pipeline. Returns the final IR dict (completed, or closed on
+    block). One primary disposition per outcome; lifecycle recorded."""
+    # IF-G4-02: the digest is over the supplied canonical tau_star object —
+    # never a convenience proxy such as task_ref.
+    canonical_tau = json.dumps(tau_star, sort_keys=True,
+                               separators=(",", ":"), ensure_ascii=False)
+    task_record = {
+        "task_ref": tau_star.get("task_ref", ""),
+        "task_content_digest": sha256_hex(canonical_tau.encode("utf-8")),
+        "declaration_source": tau_star.get("declaration_source", "external"),
+        "version": tau_star.get("version"),
+    }
+    ir: Dict[str, Any] = {
+        "type": "IR",
+        "attempt_id": attempt_id,
+        "stage": "ESTABLISHED",
+        "cr_ref": cr_ref,
+        "task_record": task_record,
+        "timestamp": datetime.now(timezone.utc).isoformat(
+            timespec="seconds").replace("+00:00", "Z"),
+        "actor": actor,
+        "r2_digest": None,
+        "used_item_identities": None,
+        "binding_record": None,
+        "execution_envelope": tau_star.get("envelope"),
+        "substrate_manifest": None,
+        "position_record": None,
+        "attached_segment_provenance": [],
+        "verification": [],
+        "disposition": None,
+        "lifecycle": {"anomaly": None, "recovery_of": None},
+        "meta": {},
+    }
+
+    def record_not_entered(reason: str) -> None:
+        # IF-G4-03: one uniform applicability fact per frozen VV id; this is
+        # not a fourth verdict tier.
+        for check_id in (f"VV-{i}" for i in range(1, 8)):
+            ir["verification"].append({
+                "check": check_id, "verdict": "NOT ENTERED",
+                "detail": f"precondition gate failed: {reason}"})
+
+    def finish(block_class: Optional[str] = None, subtype: str = "",
+               signatures: Optional[List[str]] = None,
+               annotations: Optional[List[str]] = None,
+               state: str = "CLOSED") -> Dict[str, Any]:
+        ir["stage"] = state
+        if block_class:
+            ir["disposition"] = {"class": "BLOCK", "subtype": subtype,
+                                 "signatures": signatures or []}
+        elif annotations is not None:
+            ir["disposition"] = {"class": "PROCEED-WITH-ANNOTATION",
+                                 "annotations": annotations}
+        return ir
+
+    # ---- step 0: precondition gate (R2 must be clean RESOLVED; τ2 present) -
+    res = resolve(cr_ref, store, verify_lineage_identity=verify_lineage_identity)
+    if res["state"] != "RESOLVED":
+        record_not_entered(f"resolve state = {res['state']}")
+        ir["disposition"] = {"class": "BLOCK", "subtype": "PRECONDITION-BLOCK",
+                             "signatures": [v["signature"]
+                                            for v in res["violations"]]}
+        return finish(state="CLOSED")
+    if not tau_star.get("task_ref"):
+        record_not_entered("tau2-star task_ref missing")
+        ir["disposition"] = {"class": "BLOCK", "subtype": "PRECONDITION-BLOCK",
+                             "signatures": ["TASK-MISSING"]}
+        return finish(state="CLOSED")
+    r2 = res["r2"]
+    ir["r2_digest"] = r2["r2_digest"]
+    # IF-G4-04: used-item identities are recorded directly in the IR, not
+    # left to an implicit cr_ref -> R2 lookup.
+    ir["used_item_identities"] = [
+        {"name": u.get("name", ""), "content_digest": u["pinned_digest"]}
+        for u in r2["used_items"]
+    ]
+
+    # ---- step 1: bind (IC-2/IC-3; BindingRecord) ---------------------------
+    binding = decide_binding(r2, tau_star)
+    ir["binding_record"] = binding
+    declared_weights = (binding["declared_weights_id"]
+                        or substrate.weights_id)
+    substrate.bind(declared_weights, tau_star.get("envelope", {}))
+    ir["verification"].append(
+        {"check": "VV-3", "verdict": "VERIFIED",
+         "detail": f"binding state = {binding['state']}"})
+    if binding["state"] == "MISMATCH":
+        env = tau_star.get("envelope", {})
+        if env.get("lineage_strict_required"):
+            ir["disposition"] = {"class": "BLOCK", "subtype": "POLICY-BLOCK",
+                                 "signatures": ["MISMATCH-LINEAGE-STRICT-REQUIRED"]}
+            return finish(state="CLOSED")
+        # IF-G2-03: DECLARED-ALTERNATIVE is the PRIMARY DISPOSITION recorded
+        # with the completed IR — NOT a lifecycle termination. The pipeline
+        # continues through steps 2-5 (the declared cross-model continuation
+        # is still instantiated, attached, recorded).
+        disposition_primary: Dict[str, Any] = {
+            "class": "DECLARED-ALTERNATIVE",
+            "annotations": ["MISMATCH: declared cross-model continuation"]}
+        annotations: List[str] = []
+    else:
+        disposition_primary = None
+        annotations = []
+        if binding["state"] == "UNBOUND":
+            annotations.append("UNBOUND: lineage-strict status UNDECIDABLE")
+
+    # ---- step 2: restore (optional; document-form does NOT take it) --------
+    # IF-G2-04: restore metrics are LIFECYCLE INSTRUMENTATION (IR annotation),
+    # never a Verification check — the VV numbering is frozen at VV-1..VV-7.
+    restore_note = None
+    if tau_star.get("carrier_state") is not None:
+        m = substrate.restore(tau_star["carrier_state"])
+        restore_note = (f"restore taken: consumed-prefix "
+                        f"{m['consumed_prefix_units']} units "
+                        f"(instrumentation, not a VV check)")
+    else:
+        restore_note = ("carrier state absent: no carrier-form no-recompute "
+                        "evidence (document-form run)")
+
+    # ---- step 3: materialize [CREATION POINT] ------------------------------
+    substrate.feed_surface(r2["surface"])
+    created = substrate.materialize(r2["surface"])
+    if not created.get("addressable"):
+        ir["verification"].append(
+            {"check": "VV-2", "verdict": "FAILED",
+             "signature": "SURFACE-INFIDELITY",
+             "detail": "substrate did not accept the surface as addressable"})
+        return finish(block_class="BLOCK", subtype="CREATE-BLOCK",
+                      signatures=["SURFACE-INFIDELITY"])
+
+    # ---- step 4: attach (IC-4; lineage + segment provenance) ---------------
+    attached = list(r2["lineage"]["segments"])
+    ir["attached_segment_provenance"] = attached
+    ir["verification"].append(
+        {"check": "VV-6", "verdict": "VERIFIED",
+         "detail": f"{len(attached)} inherited segment identifiers attached"})
+
+    # ---- step 5: record — Verification Surface ------------------------------
+    # IF-G2-05: past the creation point, a FAILED check is a
+    # POST-CREATION-ANOMALY (lifecycle state; primary disposition
+    # PROCEED-WITH-ANNOTATION with anomaly annotation + conservative
+    # re-instantiation as recovery) — never rewritten into CREATE-BLOCK.
+    # IF-G2-07: the anomaly helper takes the VV check id EXPLICITLY — the
+    # VV-2/VV-4 ownership never drifts into signature-prefix derivation.
+
+    def post_creation_anomaly(vv_check: str, signature: str,
+                              detail: str) -> Dict[str, Any]:
+        ir["verification"].append(
+            {"check": vv_check, "verdict": "FAILED",
+             "signature": signature, "detail": detail})
+        ir["lifecycle"]["anomaly"] = {
+            "state": "POST-CREATION-ANOMALY", "check": vv_check,
+            "signature": signature,
+            "recovery": "conservative re-instantiation from the same "
+                        "RESOLVED R2 (idempotence not claimed)"}
+        ir["disposition"] = {
+            "class": "PROCEED-WITH-ANNOTATION",
+            "annotations": (annotations
+                            + [f"IR-INCOMPLETE / POST-CREATION-ANOMALY "
+                               f"({vv_check} / {signature})"])}
+        ir["stage"] = "ANOMALY"
+        return ir
+
+    # VV-1: input precondition (R2 clean + digest match)
+    ir["verification"].insert(0, {
+        "check": "VV-1", "verdict": "VERIFIED",
+        "detail": f"R2 clean RESOLVED; r2_digest {r2['r2_digest']}"})
+    # VV-2: surface faithfulness — readback-verified (capability-gated),
+    # or COVENANTED on an opaque substrate (IF-G2-06/08); FAILED past
+    # creation = anomaly (IF-G2-05)
+    substrate.feed_surface(r2["surface"])
+    if substrate.surface_readback_available():
+        rb = substrate.readback_surface()
+        if rb == r2["surface"]:
+            ir["verification"].append(
+                {"check": "VV-2", "verdict": "VERIFIED",
+                 "detail": "readback byte-identical to R2.surface"})
+        else:
+            return post_creation_anomaly(
+                "VV-2", "SURFACE-INFIDELITY", "readback differs from R2.surface")
+    else:
+        ir["verification"].append(
+            {"check": "VV-2", "verdict": "COVENANTED",
+             "detail": "surface unobservable on this substrate — explicit "
+                       "trust boundary recorded (covenant, not verification)"})
+    # VV-4: envelope equality — readback-verified (capability-gated, per
+    # IF-G2-08: explicit readback capability, not class identity or private
+    # state), or COVENANTED when the effective envelope is unobservable
+    # (never "ENVELOPE-DRIFT": not knowing whether there is a violation !=
+    # discovering a violation)
+    try:
+        eff = substrate.envelope_readback()
+    except NotImplementedError:
+        ir["verification"].append(
+            {"check": "VV-4", "verdict": "COVENANTED",
+             "detail": "effective envelope unobservable on this substrate — "
+                       "explicit trust boundary recorded (covenant, not "
+                       "verification); ENVELOPE-DRIFT not claimable"})
+    else:
+        if eff == tau_star.get("envelope"):
+            ir["verification"].append(
+                {"check": "VV-4", "verdict": "VERIFIED",
+                 "detail": "effective envelope == declared ε2"})
+        else:
+            return post_creation_anomaly(
+                "VV-4", "ENVELOPE-DRIFT", "readback mismatch")
+    # VV-5: position derivation (PD-6 derived)
+    pos_units = substrate.tokenize_position(r2["surface"])
+    ir["position_record"] = {"method": "derived", "tokenizer_id":
+                             substrate.tokenizer_id, "units": pos_units}
+    ir["verification"].append(
+        {"check": "VV-5", "verdict": "VERIFIED",
+         "detail": f"position derived: {pos_units} units"})
+    # VV-7: substrate manifest
+    ir["substrate_manifest"] = {
+        "engine-id": substrate.engine_id,
+        "weights-id": substrate._bound_weights_id,
+        "tokenizer-id": substrate.tokenizer_id}
+    ir["verification"].append(
+        {"check": "VV-7", "verdict": "VERIFIED",
+         "detail": "manifest complete"})
+
+    # ---- annotations + disposition ------------------------------------------
+    if restore_note:
+        annotations.append(restore_note)
+    if disposition_primary is not None:
+        # MISMATCH + cross-model allowed: primary = DECLARED-ALTERNATIVE,
+        # recorded with the COMPLETED IR (full lifecycle, IF-G2-03)
+        disposition_primary["annotations"].extend(annotations)
+        ir["disposition"] = disposition_primary
+    else:
+        ir["disposition"] = {"class": "PROCEED-WITH-ANNOTATION",
+                             "annotations": annotations}
+    ir["stage"] = "COMPLETED"
+    return ir

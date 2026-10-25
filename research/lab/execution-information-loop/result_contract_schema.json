@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simigo.local/contracts/result-contract-v1.schema.json",
+  "title": "SimiGo Declarative Result Contract v1",
+  "type": "object",
+  "required": ["schema_version", "fields"],
+  "properties": {
+    "schema_version": {"const": "simigo.result-contract/v1"},
+    "fields": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["pattern"],
+        "properties": {
+          "pattern": {"type": "string", "minLength": 1},
+          "capture_group": {"oneOf": [{"type": "integer", "minimum": 0}, {"type": "string", "minLength": 1}]},
+          "type": {"enum": ["string", "integer", "boolean", "enum"]},
+          "required": {"type": "boolean"},
+          "match_policy": {"enum": ["exactly_one", "first"]},
+          "normalize": {"enum": ["trim", "upper", "lower"]},
+          "nonempty": {"type": "boolean"},
+          "values": {"type": "array", "items": {}},
+          "minimum": {"type": "integer"},
+          "maximum": {"type": "integer"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "field"],
+        "properties": {
+          "kind": {"enum": ["equals_binding", "concat", "equals_field", "equals_literal"]},
+          "field": {"type": "string"},
+          "binding": {"type": "string"},
+          "parts": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "separator": {"type": "string"},
+          "other_field": {"type": "string"},
+          "value": {}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

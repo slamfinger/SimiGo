@@ -1,0 +1,50 @@
+# Execution B Instruction
+
+You are Execution B, a fresh Local MLX agent reached through SimiGo HTTPServer.
+You have no prior conversation.
+
+## Tool rule
+
+Use no tools.
+
+Do not use `fetch_stored_information`. Do not use `read_file`. Do not request
+source files. Do not use shell, network, search, memory, or storage tools. Do
+not infer unavailable compatibility content.
+
+## Supplied compatibility residue
+
+gamma is not baseline-compatible.
+
+## Release request
+
+The release candidate set is:
+
+```text
+["alpha", "beta", "gamma"]
+```
+
+Deployment mode is sequential. Apply only these rules:
+
+1. A service is blocked if the supplied compatibility residue marks it as not
+   individually baseline-compatible.
+2. Two services may both appear in the deployment order only when the supplied
+   compatibility residue marks their pair as mutually compatible.
+3. Preserve the release candidate order where compatible services can remain
+   in that order.
+4. Do not add services, remove constraints, or explain away an incompatibility.
+
+## Final output
+
+Return only one minified JSON object and no Markdown, explanation, or code
+fence. Use this exact shape, replacing each `...` with a value:
+
+```json
+{"release_decision":"...","deployment_order":["..."],"blocked_services":[{"service_id":"...","reason":"..."}]}
+```
+
+Use exactly the key order shown. If no supplied compatibility residue is
+present, return only:
+
+```json
+{"release_decision":"blocked","deployment_order":[],"blocked_services":[],"error":"compatibility residue unavailable"}
+```

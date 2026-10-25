@@ -1,0 +1,67 @@
+{
+  "records" : [
+    {
+      "application_lifecycle_delta" : 2,
+      "case_id" : "P-LAWFUL",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "P-SETTLED",
+      "result" : "RECORDED",
+      "setup_created" : true,
+      "setup_position" : 0,
+      "setup_representation_prefix" : [
+        17,
+        23
+      ]
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "P-BLOCKED",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "N-MISSING",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "N-STALE",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "N-AMBIGUOUS",
+      "result" : "RECORDED",
+      "setup_created" : false,
+      "setup_position" : 0,
+      "setup_representation_prefix" : null
+    },
+    {
+      "application_lifecycle_delta" : 0,
+      "case_id" : "N-ILLEGAL",
+      "result" : "RECORDED",
+      "setup_created" : true,
+      "setup_position" : 3,
+      "setup_representation_prefix" : [
+        31,
+        37
+      ]
+    }
+  ],
+  "schema_id" : "INTEGRATED-ES-PALACE-RUNTIME-LIFECYCLE-V1"
+}

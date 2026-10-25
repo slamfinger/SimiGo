@@ -1,0 +1,149 @@
+{
+  "blockers": [
+    "adapter_build_tuple_unpack_binding",
+    "authoritative_path_map_is_fresh_for_next_campaign"
+  ],
+  "blocking_defects": [
+    "E6 adapter-build tuple-unpack binding defect remains unrepaired by authorization",
+    "no fresh, independently authorized E7 evidence-path map exists"
+  ],
+  "campaign_budget_consumed": false,
+  "checks": [
+    {
+      "details": {
+        "blocker": "E6 adapter-build record remains bound as tuple[Path, dict]",
+        "build_return_annotation": "tuple[Path, dict]",
+        "build_return_expressions": [
+          "(binary, {'runtime_artifact_sha256': runtime_hash, 'build_returncode': 0})"
+        ],
+        "whole_tuple_caller_assignments": 1
+      },
+      "name": "adapter_build_tuple_unpack_binding",
+      "pass": false
+    },
+    {
+      "details": {
+        "binding_passed_to_json_loads": 0,
+        "persist_exact_json_return": "dict"
+      },
+      "name": "adapter_output_exact_persistence_contract",
+      "pass": true
+    },
+    {
+      "details": {
+        "allow_nan": "False",
+        "rejects_path_and_nonfinite_graph": true,
+        "sort_keys": "True"
+      },
+      "name": "canonical_json_serializer_boundary",
+      "pass": true
+    },
+    {
+      "details": {
+        "manifest_destinations": 31,
+        "statically_referenced_destinations": 31,
+        "unauthorized_destinations": [],
+        "unreferenced_destinations": []
+      },
+      "name": "producer_consumer_path_inventory",
+      "pass": true
+    },
+    {
+      "details": {
+        "accepted_forbidden_graphs": []
+      },
+      "name": "synthetic_path_and_nonfinite_rejection",
+      "pass": true
+    },
+    {
+      "details": {
+        "binding": {
+          "artifact_path": "safe.json",
+          "byte_length": 61,
+          "byte_persistence_exact": true,
+          "parsed_object_exact": true,
+          "pass": true,
+          "pre_write_serialization_check": "PASS",
+          "serialized_canonicalization": "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + LF",
+          "sha256": "a8007ee3603484ba6055674d46ac65ba2dfa6e12ba75370f5e9c659ab7f22b05"
+        }
+      },
+      "name": "canonical_json_write_reread_parse",
+      "pass": true
+    },
+    {
+      "details": {
+        "binding": {
+          "artifact_path": "exact.json",
+          "byte_length": 25,
+          "byte_persistence_exact": true,
+          "parsed_object_exact": true,
+          "pass": true,
+          "pre_write_serialization_check": "PASS",
+          "serialized_canonicalization": "REFERENCE_EXACT_BYTES",
+          "sha256": "43d947e420b338da8a478597eefe6ab4e89e92c888da425a82f41ab1bcc90a76"
+        },
+        "returns": "dict"
+      },
+      "name": "exact_reference_persistence_contract",
+      "pass": true
+    },
+    {
+      "details": {
+        "graph": "preflight.adapter_build = tuple[Path, dict]",
+        "rejected_pre_write": true
+      },
+      "name": "e6_tuple_graph_guard_simulation",
+      "pass": true
+    },
+    {
+      "details": {
+        "blocker": "E7 requires a new independently authorized path map",
+        "fresh_e7_path_map_present": false,
+        "occupied_by_completed_invalid_e6": true,
+        "path": "docs/02-evidence/database-carrier-equivalence-campaign-v1.8-20261008"
+      },
+      "name": "authoritative_path_map_is_fresh_for_next_campaign",
+      "pass": false
+    }
+  ],
+  "decision": "NOT_READY_FOR_E7",
+  "details": {
+    "readiness": {
+      "occupied": true,
+      "occupied_root": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/database-carrier-equivalence-campaign-v1.8-20261008"
+    },
+    "runtime": {},
+    "static": {
+      "build_return": "tuple[Path, dict]",
+      "whole_tuple_assignments": 1
+    }
+  },
+  "e6_evidence_read_only_check": {
+    "after": {
+      "aggregate_sha256": "8d03fe664c8f5865062f1002d96d6f1070422faac32caf94158ddda0274cf778",
+      "file_count": 31
+    },
+    "before": {
+      "aggregate_sha256": "8d03fe664c8f5865062f1002d96d6f1070422faac32caf94158ddda0274cf778",
+      "file_count": 31
+    },
+    "unchanged": true
+  },
+  "e7_authorized": false,
+  "e7_draft_authorized": false,
+  "generated_at_utc": "2026-10-08T01:37:52.379377+00:00",
+  "human_ruling": "授权 Campaign Harness Readiness Validation Request",
+  "known_defect_regression_status": {
+    "E3_observer_key_binding": "fixed; no regression found",
+    "E4_provenance_path_serialization": "boundary active; E6 exposed upstream tuple graph",
+    "E5_adapter_output_return_type": "fixed and exercised without recurrence",
+    "E6_adapter_build_tuple_unpack": "OPEN BLOCKER"
+  },
+  "manifest_destination_count": 31,
+  "manifest_destination_version": 4,
+  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_006",
+  "ready_for_e7": false,
+  "repository_head": "8b22c154106b5efb1e7a5122f1829c4000a01867",
+  "request": "Campaign Harness Readiness Validation Request v1.9"
+}

@@ -1,0 +1,75 @@
+{
+  "status": "PASS_WITH_BOUNDARY",
+  "protocolVersion": "SIMIGO.UI.BRANCH.SESSIONS.LONG.RUNNING.CROSSBACKEND.V1",
+  "boundary": "SAME_SIX_TURN_WORKLOAD_AND_OUTCOME_SHAPE / DIFFERENT_MODEL_ARTIFACTS_TOKENIZERS_AND_EXECUTION / HARNESS_LEVEL / NOT_A_SAME_CHECKPOINT_CLOSURE / NOT_A_PERFORMANCE_BENCHMARK",
+  "seedText": "def is_palindrome(s):",
+  "rootInput": "Explain it briefly.",
+  "siblingInput": "Now write tests for it.",
+  "turnInputs": [
+    "Summarize the first implementation step.",
+    "List one edge case and how to handle it.",
+    "Add a focused unit test for that edge case.",
+    "Describe the expected result in one sentence.",
+    "Review the result and identify one improvement.",
+    "Finalize the implementation with a short TODO."
+  ],
+  "turns": 6,
+  "tokensPerTurn": 4,
+  "commonChecks": {
+    "LONG_SEQUENCE_COMPLETE": true,
+    "LONG_BRANCH_FINAL_PREFIX_EXACT": true,
+    "LONG_BRANCH_RESTORES_FORKPOINT": true,
+    "LONG_BRANCH_RESTORES_FINAL_POSITION": true,
+    "SIBLING_BASELINE_RETAINED": true,
+    "RELEASE_LONG_AND_SIBLING": true,
+    "ROOT_SURVIVES_RELEASE": true
+  },
+  "llama": {
+    "backend": "LLAMA GGUF",
+    "modelPath": "<LOCAL_HOME>/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/snapshots/d835c87ac12ef0d02867e6e03cb6d425ddeb373b/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "status": "PASS",
+    "predictionTokens": 4,
+    "checks": {
+      "LONG_BRANCH_FINAL_PREFIX_EXACT": true,
+      "LONG_BRANCH_RESTORES_FINAL_POSITION": true,
+      "LONG_BRANCH_RESTORES_FORKPOINT": true,
+      "LONG_SEQUENCE_COMPLETE": true,
+      "RELEASE_LONG_AND_SIBLING": true,
+      "ROOT_SURVIVES_RELEASE": true,
+      "SIBLING_BASELINE_RETAINED": true
+    },
+    "overallPass": true
+  },
+  "mlx": {
+    "backend": "oversized MLX Qwen3-Coder-Next-4bit",
+    "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+    "status": "PASS",
+    "maxTokens": 4,
+    "segmentSize": 8,
+    "segmentCount": 6,
+    "peakFootprintMiB": 8019,
+    "maxSwapMiB": 0,
+    "segmentTransitions": 170,
+    "checks": {
+      "LONG_BRANCH_FINAL_PREFIX_EXACT": true,
+      "LONG_BRANCH_RESTORES_FINAL_POSITION": true,
+      "LONG_BRANCH_RESTORES_FORKPOINT": true,
+      "LONG_SEQUENCE_COMPLETE": true,
+      "OVERSIZED_PROFILE_UNDER_30GIB": true,
+      "RELEASE_LONG_AND_SIBLING": true,
+      "ROOT_SURVIVES_RELEASE": true,
+      "SIBLING_ADVANCED_RETAINED": true
+    },
+    "overallPass": true
+  },
+  "sameWorkloadShape": true,
+  "sameOutcomeShape": true,
+  "bothBackendsPass": true,
+  "crossBackendClosure": false,
+  "closureBlocker": "DIFFERENT_MODEL_ARTIFACTS_TOKENIZERS_AND_EXECUTION_ENGINES",
+  "sourceArtifacts": [
+    "ui-branch-session-llama-long-running.json",
+    "ui-branch-session-mlx-long-running-t4.json"
+  ],
+  "overallPass": true
+}

@@ -1,0 +1,24 @@
+{
+  "cell_id": "cell-09-R32-C-Δ3",
+  "es_artifact_sha256": "7cd6bfc87b04d66d540bf1f10f6add895ba32700ad44e670fc5fe85682ee422e",
+  "is0_canonical_sha256": "def59cc7d300365be35fce911cd5979d4cfd33c910dd6c4d8def81b6b0e81151",
+  "locked_at_utc": "2026-10-03T10:57:21Z",
+  "locked_before_evaluation": true,
+  "op_class": "IS-C",
+  "op_id": "R32-C-Δ3",
+  "predicted": {
+    "A": [
+      "SATISFIED",
+      null
+    ],
+    "C": [
+      "BROKEN",
+      "C-INV"
+    ],
+    "I": [
+      "SATISFIED",
+      null
+    ]
+  },
+  "run_uuid": "R32-20261003T105711Z-68477"
+}

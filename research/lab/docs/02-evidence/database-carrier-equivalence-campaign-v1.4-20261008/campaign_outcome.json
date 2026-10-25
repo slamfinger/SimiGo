@@ -1,0 +1,63 @@
+{
+  "boundary": {
+    "carrier_sqlite_equivalence": "NOT_ESTABLISHED",
+    "core_broader_claim": "NOT_ESTABLISHED",
+    "eq_matrix": "NOT_EVALUATED",
+    "rej_matrix": "NOT_EVALUATED",
+    "semantic_sequence": "NOT_RUN"
+  },
+  "campaign_id": "exec-dbcarrier-002-a951e4e",
+  "correction_result": {
+    "part_r_working_copy_binding": "PASS",
+    "schema_table_preflight": "PASS",
+    "schema_tables": [
+      "dependency_entries",
+      "is_index_entries",
+      "is_objects"
+    ],
+    "source_database_sha256": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d",
+    "working_copy_sha256_before_open": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d",
+    "zero_row_preflight": true
+  },
+  "evidence_chain": {
+    "E1_established": false,
+    "E2_established": false,
+    "E3_established": false,
+    "E4_established": false,
+    "E5_established": false,
+    "E6_established": false,
+    "N1_BLOCK_established": false
+  },
+  "exact_campaign_repository_commit": "a951e4e6ecb6a8b44cc355bc2405b15da7e31e97",
+  "failure": {
+    "failed_stage": "O0_OBSERVATION_ARTIFACT_WRITE",
+    "missing_parent_directory": "observations",
+    "observed_stop": "FileNotFoundError: [Errno 2] No such file or directory: .../observations/O0.json",
+    "root_cause_class": "HARNESS_OBSERVATION_OUTPUT_DIRECTORY_BINDING_DEFECT",
+    "root_cause_detail": "The corrected harness created the accepted working database and passed schema/zero-row preflight, but attempted to write observations/O0.json without first ensuring the observations directory existed.",
+    "responsible_layer": "PART_C_OR_PART_R_CAMPAIGN_HARNESS"
+  },
+  "outcome": "INVALID",
+  "preflight_result": {
+    "accepted_fresh_database_source_verified": true,
+    "adapter_runtime_rebuilt_and_verified": true,
+    "campaign_database_schema_preflight": "PASS",
+    "campaign_working_copy_binding": "PASS",
+    "exact_campaign_repository_verified": true,
+    "implementation_tree_unchanged_verified": true,
+    "observation_artifact_path_preflight": "FAIL",
+    "reference_inputs_verified": true
+  },
+  "scope": {
+    "accepted_carrier_defective": false,
+    "accepted_fresh_database_mutated": false,
+    "adapter_invocations_attempted": 0,
+    "automatic_renewal": "FORBIDDEN",
+    "campaign_budget": "CONSUMED_BY_FAIL_CLOSED_ATTEMPT",
+    "logical_rows_written": 0,
+    "observer_executed": false,
+    "rerun": "NOT_AUTHORIZED"
+  },
+  "stop_code": "CAMPAIGN_OBSERVATION_ARTIFACT_DIRECTORY_MISSING",
+  "stop_point": "O0_EVIDENCE_PERSISTENCE_PRE_MUTATION"
+}

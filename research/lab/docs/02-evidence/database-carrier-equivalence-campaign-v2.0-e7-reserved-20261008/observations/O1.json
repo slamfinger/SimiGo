@@ -1,0 +1,42 @@
+{
+  "current_dependency": {
+    "append_order": 1,
+    "content_address": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+    "dependency_id": "D-1",
+    "reason": "initial materialization",
+    "revision": 1
+  },
+  "dependency_entries": [
+    {
+      "append_order": 1,
+      "content_address": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+      "dependency_id": "D-1",
+      "reason": "initial materialization",
+      "revision": 1
+    }
+  ],
+  "extra_observable_entities": [],
+  "index_entries": [],
+  "integrity_check": "ok",
+  "logical_row_counts": {
+    "dependency_entries": 1,
+    "is_index_entries": 0,
+    "is_objects": 1
+  },
+  "object_reads": {
+    "D": {
+      "byte_size": 501,
+      "matches_object_id": true,
+      "sha256": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c"
+    }
+  },
+  "objects": [
+    {
+      "byte_size": 501,
+      "content_sha256": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+      "created_order": 1,
+      "object_id": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c"
+    }
+  ],
+  "srs_read": null
+}

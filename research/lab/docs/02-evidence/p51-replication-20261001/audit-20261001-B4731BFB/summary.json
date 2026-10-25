@@ -1,0 +1,91 @@
+{
+  "base" : {
+    "anchor" : "not-used-in-p5-1",
+    "key" : "default_p4-sample2-7f3a9c_main",
+    "metaSHA" : "5144fb557a8a2f4c430d6d7c10fa4e751a4a916add1bbb40546cd82031ef02a3",
+    "position" : 16,
+    "tensorSHA" : "5226874ea9db75c859f013b16feecf2092da2edd46a198324b1fd07fb78e2c4d"
+  },
+  "cells" : [
+    {
+      "baseline" : {
+        "cachedPromptTokens" : "1425",
+        "cacheEfficiency" : "0.9767",
+        "delta" : "PALACE-1 P4 probe: 这个会话此前在规划什么？用一句话概括。",
+        "generationTokens" : "21",
+        "restoredHistoryCount" : 16,
+        "restoreError" : "",
+        "streamEnd" : "NORMAL",
+        "text" : "规划一次11月3日出发、为期三天、节奏轻松不赶的京都旅行行程。",
+        "toolCalls" : [
+
+        ]
+      },
+      "delta" : "dA1",
+      "equalBaseline" : false,
+      "id1TensorSHA" : true,
+      "sample" : "s2",
+      "treatment" : {
+        "cachedPromptTokens" : "0",
+        "cacheEfficiency" : "0.0000",
+        "delta" : "PALACE-1 P4 probe: 这个会话此前在规划什么？用一句话概括。",
+        "generationTokens" : "20",
+        "restoredHistoryCount" : 0,
+        "restoreError" : "",
+        "streamEnd" : "NORMAL",
+        "text" : "该会话此前正在规划 PALACE-1 P4 探测器的任务设计或技术细节。",
+        "toolCalls" : [
+
+        ]
+      }
+    },
+    {
+      "baseline" : {
+        "cachedPromptTokens" : "1425",
+        "cacheEfficiency" : "0.9787",
+        "delta" : "从这个会话中找出一个具体的地名或日期，原样写出，不要解释。",
+        "generationTokens" : "5",
+        "restoredHistoryCount" : 16,
+        "restoreError" : "",
+        "streamEnd" : "NORMAL",
+        "text" : "11月3日",
+        "toolCalls" : [
+
+        ]
+      },
+      "delta" : "dB1",
+      "equalBaseline" : false,
+      "id1TensorSHA" : true,
+      "sample" : "s2",
+      "treatment" : {
+        "cachedPromptTokens" : "0",
+        "cacheEfficiency" : "0.0000",
+        "delta" : "从这个会话中找出一个具体的地名或日期，原样写出，不要解释。",
+        "generationTokens" : "1",
+        "restoredHistoryCount" : 0,
+        "restoreError" : "",
+        "streamEnd" : "NORMAL",
+        "text" : "无",
+        "toolCalls" : [
+
+        ]
+      }
+    }
+  ],
+  "checkpointsAfter" : 204,
+  "checkpointsBefore" : 204,
+  "checkpointsSHA256After" : "27948cb6c2cdbfee583e18c864ef97754abebb00f55ce93564cf656e58420b91",
+  "checkpointsSHA256Before" : "27948cb6c2cdbfee583e18c864ef97754abebb00f55ce93564cf656e58420b91",
+  "id1TensorSHA" : true,
+  "poolAfter" : 2,
+  "poolBefore" : 2,
+  "poolSHA256After" : "a892e6d28aeb51c50c0de5355b51c98c1e9cdfb537f19c6b19a2faa4e8eb94b1",
+  "poolSHA256Before" : "a892e6d28aeb51c50c0de5355b51c98c1e9cdfb537f19c6b19a2faa4e8eb94b1",
+  "r0RunUUID" : "audit-20261001-B4731BFB",
+  "role" : "run",
+  "sample" : "s2",
+  "surgeryChangedKeys" : "[history]",
+  "surgeryHistoryFrom" : 16,
+  "surgeryHistoryTo" : 0,
+  "surgeryRecord" : "history only; baseline computed in-run with fullHistory+delta (attempt-1 defect corrected)"
+}

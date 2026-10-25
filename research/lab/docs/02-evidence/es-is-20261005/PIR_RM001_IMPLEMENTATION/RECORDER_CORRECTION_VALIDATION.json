@@ -1,0 +1,47 @@
+{
+  "all_pass": true,
+  "checks": [
+    {
+      "details": {
+        "observations_path_write_text_calls": []
+      },
+      "name": "negative_bytes_to_text_guard",
+      "pass": true
+    },
+    {
+      "details": {
+        "observations_path_write_bytes_calls": [
+          "observations_path.write_bytes(observations_payload)"
+        ]
+      },
+      "name": "positive_bytes_to_bytes_guard",
+      "pass": true
+    },
+    {
+      "details": {
+        "byte_length": 113,
+        "parsed_records": 2,
+        "physical_lines": 2
+      },
+      "name": "synthetic_bytes_persistence_reread_parse",
+      "pass": true
+    },
+    {
+      "details": {
+        "entry_function_present": true,
+        "ev_p08_destination_present": true,
+        "runner": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/implementation/minimal_pir_experiment.py"
+      },
+      "name": "fresh_experiment_entry_validation",
+      "pass": true
+    }
+  ],
+  "decision": "RECORDER_CORRECTION_VALIDATION_PASS",
+  "exp_002_authorized": false,
+  "experiment_execution_authorized": false,
+  "fixture_mutations": 0,
+  "is_mutations": 0,
+  "request": "PIR Experiment Recorder Correction + Validation Request v2.6",
+  "runner": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/implementation/minimal_pir_experiment.py",
+  "runner_sha256": "824df579dd0110abf1e3a9ed287d8afb44a942bed0d1b115992e34b3fb102828"
+}

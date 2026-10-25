@@ -1,0 +1,9 @@
+{
+  "copy_complete": true,
+  "open_allowed_after_verification": true,
+  "source_commit": "32ef3b06a4af808917cf7f4e248e9539c684b35f",
+  "source_path": "docs/02-evidence/database-carrier-fresh-initialization-v1.2-20261008/FRESH_EMPTY_IS.sqlite",
+  "source_sha256": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d",
+  "working_copy_path": "docs/02-evidence/database-carrier-equivalence-campaign-v1.8-20261008/CAMPAIGN_DATABASE.sqlite",
+  "working_copy_sha256_before_open": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d"
+}

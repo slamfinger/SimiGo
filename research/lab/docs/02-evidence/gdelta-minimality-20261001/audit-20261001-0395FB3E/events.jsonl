@@ -1,0 +1,4 @@
+{"event":"run_start","runUUID":"audit-20261001-0395FB3E","wallTime":"2026-10-01T11:59:09Z","payload":{"cell":"FULL","experiment":"G-delta"},"monotonicNs":266605380184458}
+{"event":"m1_identity","runUUID":"audit-20261001-0395FB3E","wallTime":"2026-10-01T11:59:29Z","payload":{"J-I2":"YES","J-I1":"YES"},"monotonicNs":266625463141208}
+{"wallTime":"2026-10-01T11:59:53Z","monotonicNs":266649273073625,"payload":{"result":"ALL_PASS"},"event":"r0_verify","runUUID":"audit-20261001-0395FB3E"}
+{"wallTime":"2026-10-01T11:59:53Z","monotonicNs":266649273281000,"payload":{"cell":"FULL","consistent":"YES"},"event":"run_complete","runUUID":"audit-20261001-0395FB3E"}

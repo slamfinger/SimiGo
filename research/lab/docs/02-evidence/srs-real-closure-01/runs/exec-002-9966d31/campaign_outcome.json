@@ -1,0 +1,54 @@
+{
+  "authorization": {
+    "execution_sar": "SRS_REAL_CLOSURE_01_SAR_EXECUTION_002",
+    "is_mutation_sar": "SRS_REAL_CLOSURE_01_SAR_IS_MUTATION_002",
+    "observer_authorization_record": "SRS_REAL_CLOSURE_01_OBSERVER_AUTHORIZATION_RECORD_002",
+    "records_commit": "86df16bbb145e24927716284b3b2b84da928456f",
+    "request_commit": "79ce4e3d313f13b66f946e2ed1e948745e4a1e82",
+    "request_sha256": "d64e4ebcc821f70601960cc53bea5b7e42630bd0d61a3edfd29ae476ca8368c4"
+  },
+  "boundary": {
+    "core_claim": "NOT_ESTABLISHED",
+    "repair_requires_new_human_authorization": true,
+    "results_interpretable": false,
+    "root_cause_final": "NOT_ESTABLISHED_BY_THIS_EVIDENCE"
+  },
+  "budget_effect": {
+    "automatic_renewal": "forbidden",
+    "execution_campaign_budget_consumed": true,
+    "is_mutation_budget_consumed": false,
+    "observer_use_budget_consumed": true
+  },
+  "exact_repository_commit": "9966d311e7e52ab3f5ca828e593ea569cddb008e",
+  "not_performed_or_not_evidenced": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "positive REUSE decision",
+    "N1 BLOCK decision",
+    "observer re-derivation verdict",
+    "core-claim evaluation"
+  ],
+  "outcome": "INVALID",
+  "pre_stop_facts": {
+    "adapter_runtime_sha256": "e88c996b9a64df10dd03f7622ffa8757551baf352908e4d7bf8704295eaffcc7",
+    "decision_outputs": 0,
+    "driver_event_logs": 0,
+    "driver_returncode": 0,
+    "environment_measurement_sha256": "a10eafdef13d6f9f25e84a8d11d2038f6242aa24490dd1c1bbe48e6a0a0d7812",
+    "expected_environment_identity": "ad2abb6809ead5a4d198f35d6f1b8a06624a803c6fc7e161dbb06f1f0838f15a",
+    "invocation_graphs": 0,
+    "is_index_entries": 0,
+    "is_objects": 0,
+    "observer_returncode": 0,
+    "observer_verdict": false,
+    "per_process_event_logs": 0
+  },
+  "run_id": "exec-002-9966d31",
+  "step0": "PASS",
+  "stop_code": "CAMPAIGN_EVIDENCE_ARTIFACTS_MISSING",
+  "stop_point": "POST_PROCESS_EVIDENCE_COMPLETENESS_CHECK"
+}

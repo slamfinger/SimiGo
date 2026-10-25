@@ -1,0 +1,107 @@
+diff --git a/Packages/SimiGoRuntime/Package.swift b/Packages/SimiGoRuntime/Package.swift
+index 24c6e69..2ee2a97 100644
+--- a/Packages/SimiGoRuntime/Package.swift
++++ b/Packages/SimiGoRuntime/Package.swift
+@@ -15,8 +15,10 @@ let package = Package(
+     products: [
+         .library(name: "SimiGo2Experimental", targets: ["SimiGo2Experimental"]),
+         .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
++        .library(name: "SimiGoRuntimeMemory", targets: ["SimiGoRuntimeMemory"]),
+     ],
+     dependencies: [
++        .package(path: "../../../SimiGo-Lab/trackD-memory"),
+         .package(url: "https://github.com/slamfinger/mlx-swift", revision: "ef5f1b6bb24e27922189316362f3057c64261704"),
+         .package(
+             url: "https://github.com/slamfinger/mlx-swift-lm.git",
+@@ -25,6 +27,12 @@ let package = Package(
+         .package(url: "https://github.com/huggingface/swift-transformers.git", from: "1.3.3"),
+     ],
+     targets: [
++        .target(
++            name: "SimiGoRuntimeMemory",
++            dependencies: [
++                .product(name: "InformationCore", package: "trackD-memory")
++            ]
++        ),
+         .target(
+             name: "SimiGoRuntimeContract"
+         ),
+diff --git a/SimiGo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved b/SimiGo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+index 9db668e..1b9abea 100644
+--- a/SimiGo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
++++ b/SimiGo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+@@ -1,5 +1,5 @@
+ {
+-  "originHash" : "d269ef4fecf849f518f99968ade0e54e25aa777145cb5019129072294b863b5f",
++  "originHash" : "0a340a43c78f3c06bed72f51968598db46b2af8d9672ba4aed5571d55badbfc2",
+   "pins" : [
+     {
+       "identity" : "eventsource",
+@@ -23,7 +23,6 @@
+       "kind" : "remoteSourceControl",
+       "location" : "https://github.com/slamfinger/mlx-swift-lm.git",
+       "state" : {
+-        "branch" : "release/v2.0-beta-ml",
+         "revision" : "fd5d1b4a8a5ad83e1d78617fecc817fa196a64fc"
+       }
+     },
+diff --git a/SimiGoTests/Replication/ReplicationAuditRunner.swift b/SimiGoTests/Replication/ReplicationAuditRunner.swift
+index c7e2953..cadcbc2 100644
+--- a/SimiGoTests/Replication/ReplicationAuditRunner.swift
++++ b/SimiGoTests/Replication/ReplicationAuditRunner.swift
+@@ -10,14 +10,18 @@ struct AuditRunContext {
+   let gitDirty: Bool
+   let modelHash: String?
+   let checkpointHash: String?
++  let harnessSHA: String?
++  let configHash: String?
+   let startWallTime: String
+   let startMonotonicNs: UInt64
+ 
+-  static func create(modelHash: String? = nil, checkpointHash: String? = nil) -> AuditRunContext {
++  static func create(modelHash: String? = nil, checkpointHash: String? = nil,
++                     repoPath: String? = nil, harnessSHA: String? = nil,
++                     configHash: String? = nil) -> AuditRunContext {
+     let formatter = DateFormatter()
+     formatter.dateFormat = "yyyyMMdd"
+     let uuid = "audit-\(formatter.string(from: Date()))-\(UUID().uuidString.prefix(8))"
+-    let (commit, dirty) = AuditRunContext.gitSnapshot()
++    let (commit, dirty) = AuditRunContext.gitSnapshot(repoPath: repoPath)
+     let clock = ContinuousClock()
+     let mono = DispatchTime.now().uptimeNanoseconds
+     return AuditRunContext(
+@@ -26,13 +30,22 @@ struct AuditRunContext {
+       gitDirty: dirty,
+       modelHash: modelHash,
+       checkpointHash: checkpointHash,
++      harnessSHA: harnessSHA,
++      configHash: configHash,
+       startWallTime: ISO8601DateFormatter().string(from: Date()),
+       startMonotonicNs: mono)
+   }
+ 
+-  static func gitSnapshot() -> (commit: String, dirty: Bool) {
+-    let commit = runShell("git rev-parse HEAD") ?? "UNKNOWN"
+-    let status = runShell("git status --porcelain") ?? ""
++  static func gitSnapshot(repoPath: String? = nil) -> (commit: String, dirty: Bool) {
++    let prefix: String
++    if let repoPath {
++      let quoted = repoPath.contains(" ") ? "'\(repoPath)'" : repoPath
++      prefix = "git -C \(quoted) "
++    } else {
++      prefix = "git "
++    }
++    let commit = runShell(prefix + "rev-parse HEAD") ?? "UNKNOWN"
++    let status = runShell(prefix + "status --porcelain") ?? ""
+     return (commit, !status.isEmpty)
+   }
+ 
+@@ -100,6 +113,8 @@ final class AuditArtifactStore: @unchecked Sendable {
+       "gitDirty": context.gitDirty,
+       "modelHash": context.modelHash ?? "N/A",
+       "checkpointHash": context.checkpointHash ?? "N/A",
++      "harnessSHA": context.harnessSHA ?? "N/A",
++      "configHash": context.configHash ?? "N/A",
+       "startWallTime": context.startWallTime,
+       "startMonotonicNs": "\(context.startMonotonicNs)",
+     ]

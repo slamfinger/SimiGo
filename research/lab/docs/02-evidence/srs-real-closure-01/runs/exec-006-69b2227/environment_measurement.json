@@ -1,0 +1,13 @@
+{
+  "adapter_runtime_artifact_sha256": "e88c996b9a64df10dd03f7622ffa8757551baf352908e4d7bf8704295eaffcc7",
+  "mac_version": "26.6.2",
+  "platform_machine": "arm64",
+  "platform_platform": "macOS-26.6.2-arm64-arm-64bit",
+  "probe_identity": "SRS-REAL-CLOSURE-01-ENV-PROBE-V1",
+  "python_executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+  "python_executable_sha256": "dff595035109e19c43c4b3e73ee08b5f4651e719f25f8b4713f819d28964dc19",
+  "python_version": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "swiftc_path": "/usr/bin/swiftc",
+  "swiftc_sha256": "b8763cf250e607a778bb4603cecb5b90338814d0a3dfcba0d57b1de242f610e9",
+  "swiftc_version": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx26.0"
+}

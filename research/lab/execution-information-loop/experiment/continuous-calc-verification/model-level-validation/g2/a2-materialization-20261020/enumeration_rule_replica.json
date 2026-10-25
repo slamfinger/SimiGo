@@ -1,0 +1,11 @@
+{
+  "root": "~/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+  "entries_yielded": 17,
+  "is_regular_file_true": 17,
+  "is_symbolic_link_true": 0,
+  "weight_lines": 4,
+  "weights_digest": "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf",
+  "tokenizer_bytes_appended": 4461426,
+  "tokenizer_digest": "9bada7c8fddefc7e91cf3bbe9b56305d5234c73e16732518dc4f3825b2d84ac3",
+  "empty_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

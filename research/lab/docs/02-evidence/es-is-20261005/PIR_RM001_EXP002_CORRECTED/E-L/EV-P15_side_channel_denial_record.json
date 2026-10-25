@@ -1,0 +1,9 @@
+{
+  "control_cost_target_input": false,
+  "expected_verdict_input": false,
+  "fixture_role_input": false,
+  "ground_truth_input": false,
+  "planted_change_ledger_input": false,
+  "semantic_similarity_used": false,
+  "whole_space_scan_used": false
+}

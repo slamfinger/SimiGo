@@ -1,0 +1,56 @@
+# A_epistemic/A_execution 8-cell evidence freeze
+# Commit: e191067
+# Run root: runs/20261005-093200-a-e-execution
+# Frozen: 2026-10-05
+# Rules: after this freeze, raw run data is read-only. No edits, no re-runs of the same cells.
+# Cross-model prompt identity confirmed: same-arm prompt.rendered.txt has identical SHA256 across C and N.
+
+4207c4ceb8890b0c6503064f0cb651d5fac255a8c0dff78bf37d76d2661247f6  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_MINUS/RUN_RECORD.json
+adf4593520afa9b76d60c51b078973c7a7b4cd9fa9e5b7032566754dcbf326fb  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_MINUS/final-answer.txt
+445840aab6be9a696ec70637f0b491efe41d5467100f84c910aaada9469de134  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_MINUS/prompt.rendered.txt
+ea09964a47545e1fe5184f8bb65e3ce9185fa923debc30024a57c82d5cbca318  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_MINUS/request.json
+abea5de0c83eefa1bd50267ba75dee99ae7263147cad0e2f46cf7db897713862  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_MINUS/response.json
+fa1f4c90cd52832201929a904409bf05554fec16eb1101abdd34bd6cbdc3e36a  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_MINUS/response.raw.json
+6432f9ae47ce5636af4e874206291c901de90b6f4da84bff4ad691da7103333e  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_PLUS/RUN_RECORD.json
+a99a94be21f0bb5f5b498daa080c004fe632f21004a975602fd756f21d932a70  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_PLUS/final-answer.txt
+50f7ef31941623f97b4111232913330db92aa9cff30fefd5c71598c2b2463ca5  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_PLUS/prompt.rendered.txt
+ff13be315067f878b7677b944de7ce499ef5c6ccd7db37108c2a50e2fab1cc3e  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_PLUS/request.json
+ec9765424c5b201febad1de1f959d9bb9cfd26099a08dd0c3b1e7d331a5e0727  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_PLUS/response.json
+b8985c36890f6515518b9367b4a54e56c4cbc323ff6f6bbe9d70e10083b45a62  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_MINUS_X_PLUS/response.raw.json
+63cf049da12f168d69c59d26443efd414cebd981dd2585914a675b6f49c03383  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_MINUS/RUN_RECORD.json
+80346ddeb1707852215032888bd67ed34de9ce75ffe4d1c50d11a045fc4199a5  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_MINUS/final-answer.txt
+636924e5405196e882d307deb1e65f59ac488024f0b1a9e3487fc5ed45c22ff3  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_MINUS/prompt.rendered.txt
+acb171ccf792d18a840746acecfb5fc69e4f522d07a3a6c663d5155a280fd4b1  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_MINUS/request.json
+8d46a54f9c37e636858d230327b0c98aa44006dfebc5e6921d3830ba868b73d0  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_MINUS/response.json
+2fd300616150fabeb1449271a3912a2746a92a5966f68e6b5914f97ef6cee64b  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_MINUS/response.raw.json
+f41a317b452808a67e468bb3592be277ee9680770f2c2886baab2c75af2213e9  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_PLUS/RUN_RECORD.json
+43765b845b283a67505d67d13977ff3fdb2708967dbbd1d747d511729876b115  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_PLUS/final-answer.txt
+da433e75c9618633ebaffaf9a89e122ade1070d18da03efe3634d44bffbf3019  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_PLUS/prompt.rendered.txt
+2a747139efc9bf87ff44f7381e39673823b448beb74c78a826cb5112107c03c2  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_PLUS/request.json
+489ac47a11df3b08a8b94de150221cb628585ea41786e49e54ffc5ffd6756e79  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_PLUS/response.json
+7655bca09cf64a34cccfc9c6cc36328b2c2f220985101ec76503e001f2f17a32  runs/20261005-093200-a-e-execution/C-gemma4-unified/E_PLUS_X_PLUS/response.raw.json
+b2bf5e43bde3ea3d5902e39e6098004ade33fe987b5207038aeaba8759608f29  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_MINUS/RUN_RECORD.json
+6fcce5a376a58861f9c5f15df8ab18a29c7030fec80bdc29fa54317e07de8b42  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_MINUS/final-answer.txt
+445840aab6be9a696ec70637f0b491efe41d5467100f84c910aaada9469de134  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_MINUS/prompt.rendered.txt
+27f24ebea3b272eed2d96db56c4e81c044dea459ed258ffa43fea586dc268180  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_MINUS/request.json
+6bf15be55ad07de258aa1d35692ab470e85aeaed3c78042abf90b58320e8ee19  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_MINUS/response.json
+3cd7e6148c685ecd83cd0ccf0fb8e436f0df134a049e1c15fc81b85f5e175a84  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_MINUS/response.raw.json
+d12168d276d964aa4d3f16a956b0fbfca5785f29f9b41426c4b4ec014f451a4e  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_PLUS/RUN_RECORD.json
+d39bf5a1c905dc6022f5bec9a1c8aa9823b7ebccbf1e3a4afe5c842f6e5cfbe2  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_PLUS/final-answer.txt
+50f7ef31941623f97b4111232913330db92aa9cff30fefd5c71598c2b2463ca5  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_PLUS/prompt.rendered.txt
+90a0d38c21caca9af99483920719bae21bd39eed8668a5f80a5906d3d6c2419c  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_PLUS/request.json
+5dfc856f6885877c34020a01c4468fa2b161191b3baa35f153a0fa20ff3f36a0  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_PLUS/response.json
+36a51ae8c61df18aca5f63c4f52047e41e8987e5f21d413f54c9ee6915fb2cf2  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_MINUS_X_PLUS/response.raw.json
+b42dabb4bc2ea659019f2d6836772b1320bdea1154aaca54808697da365ed399  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_MINUS/RUN_RECORD.json
+193be12f68337171adf4ae63adf4294c92510d94fc897bc49715a28bfb98376b  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_MINUS/final-answer.txt
+636924e5405196e882d307deb1e65f59ac488024f0b1a9e3487fc5ed45c22ff3  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_MINUS/prompt.rendered.txt
+e89fe8176ea45e2657be3fb0d46a26718e4b3ff69cf6bbfd059981842d17475f  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_MINUS/request.json
+4519ec209157124dd39e6a36e79deef3b48b3d925b31d379b8c78b9ce8796e77  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_MINUS/response.json
+fd49df0bd1032285c50b14eab35f28d0bc478a33c5f2f311ea30d57df1a5b56d  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_MINUS/response.raw.json
+1fd4385c781ba91033508ac6ad5a68ee18adf5a165fec891f55f53d498c8e0ff  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_PLUS/RUN_RECORD.json
+df3576ae3e9e47dbaa3fa1977fcdc140c79967ab22acd62ab80e7cdf249bd41c  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_PLUS/final-answer.txt
+da433e75c9618633ebaffaf9a89e122ade1070d18da03efe3634d44bffbf3019  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_PLUS/prompt.rendered.txt
+2c3be82c2d96af147a1efdae7e9ae20d6f0bdfa814188dcbcadcf854e28848a4  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_PLUS/request.json
+8f39e32b2b95407580c71ef2ca742c645b4ada4e8303f47d734e449203526f6f  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_PLUS/response.json
+ab0331b0bb207ea4baef739884d9e005f75531d6514aa90ab3d4dab73d982eb6  runs/20261005-093200-a-e-execution/N-nail-qwen3-5-moe/E_PLUS_X_PLUS/response.raw.json
+f3aa2720ebc4f87280ff78617bcd3b99537050877037556c85c51b165f568087  runs/20261005-093200-a-e-execution/RUNTIME_META.json

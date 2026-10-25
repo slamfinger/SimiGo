@@ -1,0 +1,1200 @@
+#!/usr/bin/env python3
+"""E2E test for ES/IS loop using the existing D002 append-only carrier."""
+from __future__ import annotations
+
+import argparse
+import concurrent.futures
+import hashlib
+import json
+import sqlite3
+import tempfile
+import threading
+import contextlib
+from typing import Optional
+from pathlib import Path
+
+from carrier_loop import (
+    CarrierInformationLoop,
+    SettlementContractViolation,
+    audit_settlement_contracts,
+    digest,
+)
+from db_is import DatabaseBackedIS, MissingLogicalEntry
+
+
+def canonical(value) -> str:
+    import hashlib, json
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def calculator(item_id: str, source_payload: dict, dependencies: dict) -> dict:
+    if item_id == "A":
+        return {"item": "A", "value": source_payload["input"] * 2}
+    if item_id == "B":
+        return {"item": "B", "value": dependencies["A"]["value"] + source_payload["input"]}
+    if item_id == "C":
+        return {"item": "C", "value": dependencies["B"]["value"] * source_payload["factor"]}
+    raise ValueError(f"no calculator for {item_id}")
+
+
+def actions(result: dict) -> dict:
+    return {item["item_id"]: item["action"] for item in result["actions"]}
+
+
+def sealed_policy(policy: dict) -> dict:
+    body = {key: value for key, value in policy.items() if key != "policy_sha256"}
+    return {**policy, "policy_sha256": digest(body)}
+
+
+class ObservableCarrier(DatabaseBackedIS):
+    def __init__(
+        self,
+        *args,
+        before_begin: threading.Event,
+        after_begin: threading.Event,
+        busy_conflict: Optional[threading.Event] = None,
+        retry_release: Optional[threading.Event] = None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.before_begin = before_begin
+        self.after_begin = after_begin
+        self.busy_conflict = busy_conflict
+        self.retry_release = retry_release
+
+    @contextlib.contextmanager
+    def transaction(self):
+        self.before_begin.set()
+        if self.busy_conflict is not None:
+            # A zero busy timeout converts the lock conflict into an explicit
+            # SQLITE_BUSY observation instead of an opaque timed wait.
+            self.connection.execute("PRAGMA busy_timeout = 0")
+            try:
+                self.connection.execute("BEGIN IMMEDIATE")
+            except sqlite3.OperationalError as error:
+                if "database is locked" not in str(error):
+                    raise
+                self.busy_conflict.set()
+                if self.retry_release is None or not self.retry_release.wait(
+                    timeout=5
+                ):
+                    raise TimeoutError("SQLITE_BUSY retry was not released")
+            else:
+                self.connection.rollback()
+                raise AssertionError("competitor unexpectedly acquired the write lock")
+        with super().transaction():
+            self.after_begin.set()
+            yield
+
+
+class CriticalGate:
+    """Prove a holder is waiting before allowing a competitor to start."""
+
+    def __init__(self):
+        self.entered_condition = threading.Condition()
+        self.continue_condition = threading.Condition()
+        self.entered = False
+        self.release = False
+
+    def hold(self):
+        with self.continue_condition:
+            with self.entered_condition:
+                self.entered = True
+                self.entered_condition.notify_all()
+            while not self.release:
+                self.continue_condition.wait()
+
+    def wait_entered(self):
+        with self.entered_condition:
+            if not self.entered_condition.wait_for(
+                lambda: self.entered, timeout=5
+            ):
+                raise TimeoutError("critical section holder did not enter")
+
+    def confirm_waiting(self):
+        # This lock is held by hold() while it waits; acquiring it proves the
+        # holder has released it inside Condition.wait().
+        with self.continue_condition:
+            pass
+
+    def release_holder(self):
+        with self.continue_condition:
+            self.release = True
+            self.continue_condition.notify_all()
+
+
+class ExecutionGateLoop(CarrierInformationLoop):
+    gate = CriticalGate()
+
+    def __init__(self, *args, gate: bool = False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.gate = type(self).gate if gate else None
+
+    def _execute_demand_in_transaction(self, *args, **kwargs):
+        if self.gate:
+            self.gate.hold()
+        return super()._execute_demand_in_transaction(*args, **kwargs)
+
+
+class ConfirmationGateLoop(CarrierInformationLoop):
+    gate = CriticalGate()
+
+    def _find_state_by_id(self, state_id):
+        self.gate.hold()
+        return super()._find_state_by_id(state_id)
+
+
+class BlockedAppendGateLoop(CarrierInformationLoop):
+    gate = CriticalGate()
+
+    def record_execution_state(self, *args, **kwargs):
+        if args and isinstance(args[0], str) and "blocked" in args[0]:
+            self.gate.hold()
+        return super().record_execution_state(*args, **kwargs)
+
+
+def new_race_database(
+    database_path: str,
+    required_item_ids: list[str],
+    put_sources: bool = True,
+) -> None:
+    setup = CarrierInformationLoop.create(database_path)
+    setup.define_demand(
+        "race-demand",
+        continuation_point="race-continuation",
+        pending_obligations=["prove state transition serialization"],
+        continuation_conditions=["state transitions remain serialized"],
+        required_item_ids=required_item_ids,
+    )
+    for item_id in required_item_ids if put_sources else []:
+        setup.put_source(
+            "race-demand", item_id, "manual_input", "v1",
+            {"input": 7}, valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=sealed_policy({
+                "policy_version": "race-v1",
+                "policy_source": "DETERMINISTIC_RACE",
+            }),
+        )
+    setup.commit()
+    setup.close()
+
+
+def append_race_recovery(
+    database_path: str,
+    prior_state_id: str,
+    *,
+    before_begin: threading.Event,
+    after_begin: threading.Event,
+    busy_conflict: threading.Event,
+    retry_release: threading.Event,
+) -> None:
+    writer_loop = CarrierInformationLoop(ObservableCarrier(
+        database_path,
+        before_begin=before_begin,
+        after_begin=after_begin,
+        busy_conflict=busy_conflict,
+        retry_release=retry_release,
+    ))
+    latest = writer_loop.latest_execution_state("race-continuation")
+    writer_loop.record_execution_state(
+        "race-after-confirmation",
+        continuation_point="race-continuation",
+        prior_state_id=prior_state_id,
+        demand_id="race-demand",
+        status="ADVANCED",
+        pending_obligations=[],
+        next_continuation_point="race-continuation",
+        result_digest=digest({"race": "recovery"}),
+        runtime_application_status="APPLIED_SWIFT",
+    )
+    writer_loop.commit()
+    writer_loop.close()
+
+
+def contract_checks(validity_policy: dict) -> dict:
+    """Prove the single settlement contract is enforced at write and at reuse.
+
+    Runs on its own isolated carrier: a contract violation must leave the
+    append-only ledgers untouched, and a pre-contract settlement must stay
+    readable while never being reused as work.
+    """
+    checks = {}
+    with tempfile.TemporaryDirectory(prefix="simigo-einfo-contract-") as temporary:
+        database = str(Path(temporary) / "carrier_contract.sqlite")
+        loop = CarrierInformationLoop.create(database)
+        loop.define_demand(
+            "contract-demand",
+            continuation_point="contract-continuation",
+            pending_obligations=[],
+            continuation_conditions=[],
+            required_item_ids=["A"],
+        )
+        loop.put_source(
+            "contract-demand", "A", "manual_input", "v1", {"input": 3},
+            valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
+        )
+        loop.commit()
+
+        def ledger_counts() -> tuple:
+            return tuple(loop.carrier.connection.execute(
+                "SELECT (SELECT COUNT(*) FROM is_objects),"
+                "       (SELECT COUNT(*) FROM is_index_entries),"
+                "       (SELECT COUNT(*) FROM dependency_entries)"
+            ).fetchone())
+
+        before = ledger_counts()
+        source_payload_sha256 = digest({"input": 3})
+        value = {"answer": 6}
+        shared = {
+            "source_payload_sha256": source_payload_sha256,
+            "result_value_sha256": digest(value),
+            "source_version": "v1",
+            "dependency_object_ids": {},
+            "evaluated_at_utc": "2026-10-09T00:00:00Z",
+            "valid_until_utc": "2030-12-31T23:59:59Z",
+            "validity_policy": validity_policy,
+        }
+        good_result = {"value": value, **shared}
+        good_basis = dict(shared)
+
+        missing_result = dict(good_result)
+        missing_result.pop("result_value_sha256")
+        try:
+            loop.settle("adv-contract", "A", missing_result, good_basis)
+        except SettlementContractViolation as error:
+            checks["settlement_contract_rejects_missing_field"] = (
+                "result.result_value_sha256" in error.missing
+            )
+        else:
+            checks["settlement_contract_rejects_missing_field"] = False
+
+        try:
+            loop.settle(
+                "adv-contract", "A",
+                dict(good_result, source_payload_sha256="not-a-digest"), good_basis)
+        except SettlementContractViolation as error:
+            checks["settlement_contract_rejects_malformed_digest"] = (
+                "result.source_payload_sha256" in error.mismatched
+            )
+        else:
+            checks["settlement_contract_rejects_malformed_digest"] = False
+
+        # The two digest domains must never stand in for one another. A
+        # settlement that records the input digest as its result digest is a
+        # violation even though both strings are well-formed SHA-256.
+        swapped_result = dict(
+            good_result, result_value_sha256=source_payload_sha256
+        )
+        try:
+            loop.settle("adv-contract", "A", swapped_result, good_basis)
+        except SettlementContractViolation as error:
+            checks["settlement_contract_rejects_cross_domain_digest"] = (
+                "result.result_value_sha256!=digest(result.value)"
+                in error.mismatched
+                and "result.result_value_sha256!=basis.result_value_sha256"
+                in error.mismatched
+            )
+        else:
+            checks["settlement_contract_rejects_cross_domain_digest"] = False
+
+        checks["settlement_contract_violation_writes_nothing"] = (
+            ledger_counts() == before
+        )
+
+        # The two scopes are one envelope. If `result` and `basis` disagree
+        # about which source version or which evaluation instant the settlement
+        # describes, no reader can say what was settled, even though every
+        # field on its own is well-formed.
+        for label, field, other in (
+            ("source_version", "source_version", "v2"),
+            ("evaluated_at", "evaluated_at_utc", "2026-10-08T23:59:59Z"),
+        ):
+            scope_result = dict(good_result)
+            scope_result[field] = other
+            try:
+                loop.settle("adv-contract", "A", scope_result, good_basis)
+            except SettlementContractViolation as error:
+                checks["settlement_contract_rejects_cross_scope_%s" % label] = (
+                    "result.%s!=basis.%s" % (field, field) in error.mismatched
+                )
+            else:
+                checks["settlement_contract_rejects_cross_scope_%s" % label] = False
+
+        # A pre-contract settlement stays readable but must never be reused.
+        legacy_value = {
+            "schema_id": "EINFO-SETTLEMENT-V1",
+            "state": "SETTLED",
+            "advancement_id": "legacy",
+            "item_id": "A",
+            "result": {"prefix": [1, 2, 3]},
+            "basis": {"source_payload": {"input": 3}},
+        }
+        with loop.carrier.atomic_write_group():
+            legacy_id, _ = loop.carrier.atomic_dependency_materialization(
+                canonical(legacy_value).encode(),
+                {
+                    "dependency_id": "settlement:A",
+                    "content_address": "",
+                    "revision": len(
+                        loop.carrier.get_dependency_history("settlement:A")
+                    ) + 1,
+                    "reason": "legacy settlement",
+                },
+            )
+            loop.carrier.append_index_entry({
+                "srs_identity": "settlement:A",
+                "record_object": legacy_id,
+            })
+        loop.commit()
+
+        audit = audit_settlement_contracts(database)
+        checks["contract_audit_classifies_legacy_opaque"] = (
+            audit["counts"].get("OPAQUE") == 1
+        )
+
+        rerun = loop.execute_demand(
+            "contract-demand", "adv-contract-2", calculator,
+            evaluated_at_utc="2026-10-09T00:00:00Z",
+        )
+        action = rerun["actions"][0]
+        checks["opaque_settlement_is_not_reused"] = (
+            rerun["state"] == "ADVANCED"
+            and action["action"] == "COMPUTE"
+            and action.get("reason") == "SETTLEMENT_CONTRACT_OPAQUE"
+        )
+        loop.close()
+    return checks
+
+
+def invalidation_checks(validity_policy: dict) -> dict:
+    """Prove invalidation closes over real dependencies and nothing else.
+
+    Four properties: an unknown target is refused without writing, a dependency
+    that exists only in a settlement's basis still propagates, an item that does
+    not depend on the target is never invalidated, and `strict=False` reproduces
+    the pre-W4 return shape for callers written against it.
+
+    The basis-only item cannot be produced by `execute_demand`, which derives the
+    basis from the item's own dependency list. Its settlement is therefore
+    written directly, which is exactly the external-writer shape the union is
+    there to defend against.
+    """
+    checks = {}
+    with tempfile.TemporaryDirectory(prefix="simigo-einfo-invalidation-") as temporary:
+        database = str(Path(temporary) / "carrier_invalidation.sqlite")
+        loop = CarrierInformationLoop.create(database)
+        loop.define_demand(
+            "invalidation-demand",
+            continuation_point="invalidation-continuation",
+            pending_obligations=[],
+            continuation_conditions=[],
+            required_item_ids=["A"],
+        )
+
+        def put(item_id: str, dependencies: list) -> dict:
+            return loop.put_source(
+                "invalidation-demand", item_id, "manual_input", "v1",
+                {"item": item_id},
+                dependencies=list(dependencies),
+                valid_until_utc="2030-12-31T23:59:59Z",
+                validity_policy=validity_policy,
+            )
+
+        def settle(item_id: str, dependency_object_ids: dict) -> str:
+            payload = {"answer": item_id}
+            shared = {
+                "source_payload_sha256": digest({"item": item_id}),
+                "result_value_sha256": digest(payload),
+                "source_version": "v1",
+                "dependency_object_ids": dict(dependency_object_ids),
+                "evaluated_at_utc": "2026-10-09T00:00:00Z",
+                "valid_until_utc": "2030-12-31T23:59:59Z",
+                "validity_policy": validity_policy,
+            }
+            return loop.settle(
+                "adv-%s" % item_id, item_id,
+                {"value": payload, **shared}, dict(shared),
+            )["object_id"]
+
+        put("A", [])
+        a_object = settle("A", {})
+        put("B", ["A"])
+        b_object = settle("B", {"A": a_object})
+        put("C", ["B"])
+        settle("C", {"B": b_object})
+        put("D", [])
+        settle("D", {"A": a_object})
+        put("U", [])
+        settle("U", {})
+        loop.commit()
+
+        def ledger_counts() -> tuple:
+            return tuple(loop.carrier.connection.execute(
+                "SELECT (SELECT COUNT(*) FROM is_objects),"
+                "       (SELECT COUNT(*) FROM is_index_entries),"
+                "       (SELECT COUNT(*) FROM dependency_entries)"
+            ).fetchone())
+
+        before = ledger_counts()
+        try:
+            loop.invalidate_settlement("no-such-item", reason="typo")
+        except MissingLogicalEntry:
+            checks["unknown_target_raises_missing_logical_entry"] = True
+        else:
+            checks["unknown_target_raises_missing_logical_entry"] = False
+        checks["unknown_target_writes_nothing"] = ledger_counts() == before
+
+        # Historical callers were written against a dict that always came back.
+        legacy = loop.invalidate_settlement(
+            "no-such-item", reason="legacy", strict=False)
+        checks["non_strict_preserves_legacy_shape"] = (
+            set(legacy) == {"invalidated_item_ids", "invalidated_records", "reason"}
+            and legacy["invalidated_item_ids"] == ["no-such-item"]
+            and legacy["invalidated_records"] == []
+            and legacy["reason"] == "legacy"
+        )
+        checks["non_strict_writes_nothing"] = ledger_counts() == before
+
+        invalidation = loop.invalidate_settlement("A", reason="source-a-changed")
+        affected = set(invalidation["invalidated_item_ids"])
+        checks["basis_only_dependency_propagates"] = (
+            "D" in affected
+            and loop.current_settlement("D")
+            and loop.current_settlement("D").get("state") == "INVALID"
+        )
+        checks["declared_and_transitive_dependencies_propagate"] = (
+            {"A", "B", "C"} <= affected)
+        checks["unrelated_item_not_invalidated"] = (
+            "U" not in affected
+            and loop.current_settlement("U").get("state") == "SETTLED"
+        )
+        checks["invalidation_scope_is_exactly_the_closure"] = (
+            affected == {"A", "B", "C", "D"}
+            and len(invalidation["invalidated_records"]) == 4
+        )
+        loop.close()
+    return checks
+
+
+def run() -> dict:
+    checks = {}
+    validity_policy = sealed_policy({
+        "policy_version": "carrier-selftest-v1",
+        "policy_source": "ISOLATED_SELFTEST",
+    })
+    checks.update(contract_checks(validity_policy))
+    checks.update(invalidation_checks(validity_policy))
+    with tempfile.TemporaryDirectory(prefix="simigo-einfo-carrier-") as temporary:
+        database = str(Path(temporary) / "carrier_information_space.sqlite")
+
+        loop = CarrierInformationLoop.create(database)
+        loop.define_demand(
+            "demand-001",
+            continuation_point="report-generation",
+            pending_obligations=["produce report", "advance workflow"],
+            continuation_conditions=["A and B are current", "C can be derived"],
+            required_item_ids=["A", "B", "C"],
+        )
+        loop.put_source(
+            "demand-001", "A", "manual_input", "v1", {"input": 21},
+            valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
+        )
+        loop.put_source(
+            "demand-001", "B", "derived_input", "v1", {"input": 5}, ["A"],
+            valid_until_utc="2026-10-09T00:01:30Z",
+            validity_policy=validity_policy,
+        )
+        loop.put_source(
+            "demand-001", "C", "derived_input", "v1", {"factor": 3}, ["B"],
+            valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
+        )
+        loop.commit()
+        loop.close()
+
+        restored = CarrierInformationLoop.open(database)
+        first = restored.execute_demand(
+            "demand-001", "advance-001", calculator,
+            evaluated_at_utc="2026-10-09T00:00:00Z",
+        )
+        run_results = {"first": first}
+        checks["first_run_computes_all_three"] = actions(first) == {
+            "A": "COMPUTE", "B": "COMPUTE", "C": "COMPUTE"
+        }
+        checks["first_run_advances_es"] = first["advanced"] is True
+        checks["settlement_and_es_intent_commit_atomically"] = (
+            first["execution_state"]["runtime_application_status"] == "PENDING_SWIFT"
+        )
+        settlement = restored.current_settlement("B")
+        checks["validity_policy_bound_to_settlement"] = (
+            settlement is not None
+            and settlement["result"]["validity_policy"] == validity_policy
+            and settlement["basis"]["validity_policy"] == validity_policy
+        )
+        try:
+            restored.execute_demand(
+                "demand-001", "advance-before-confirmation", calculator,
+                evaluated_at_utc="2026-10-09T00:00:30Z",
+            )
+            pending_failure = False
+        except ValueError as error:
+            pending_failure = "pending runtime application" in str(error)
+        checks["pending_runtime_application_blocks_continuation"] = pending_failure
+        restored.confirm_runtime_application("advance-001")
+        checks["runtime_confirmation_is_append_only"] = (
+            restored.latest_execution_state("report-generation")[
+                "runtime_application_status"
+            ] == "APPLIED_SWIFT"
+        )
+        restored.commit()
+        restored.close()
+
+        reused = CarrierInformationLoop.open(database)
+        second = reused.execute_demand(
+            "demand-001", "advance-002", calculator,
+            evaluated_at_utc="2026-10-09T00:01:00Z",
+        )
+        run_results["second"] = second
+        checks["second_run_reuses_all_three"] = actions(second) == {
+            "A": "REUSE", "B": "REUSE", "C": "REUSE"
+        }
+        reused.commit()
+        reused.close()
+
+        restored_state = CarrierInformationLoop.open(database)
+        state_record = restored_state.record_execution_state(
+            "state-after-advance-002",
+            continuation_point="report-generation",
+            prior_state_id=None,
+            demand_id="demand-001",
+            status="ADVANCED",
+            pending_obligations=["advance workflow"],
+            next_continuation_point="await-source-or-invalidation",
+            result_digest=digest(second["result"]),
+            runtime_application_status="APPLIED_SWIFT",
+        )
+        restored_state.commit()
+        restored_state.close()
+
+        recovered = CarrierInformationLoop.open(database)
+        latest_state = recovered.latest_execution_state("report-generation")
+        checks["execution_state_restored"] = (
+            latest_state is not None
+            and latest_state["state_id"] == "state-after-advance-002"
+            and latest_state["status"] == "ADVANCED"
+            and latest_state["demand_id"] == "demand-001"
+        )
+        recovered.close()
+
+        stale = CarrierInformationLoop.open(database)
+        stale_result = stale.execute_demand(
+            "demand-001", "advance-stale", calculator,
+            evaluated_at_utc="2026-10-09T00:02:00Z",
+        )
+        run_results["stale"] = stale_result
+        stale_state = stale.latest_execution_state("report-generation")
+        checks["expired_transitive_dependency_fails_closed"] = (
+            stale_result["state"] == "BLOCKED_STALE_VALIDITY"
+            and stale_result["validity_failure_item_ids"] == ["B"]
+            and stale_result["advanced"] is False
+            and stale_state["status"] == "BLOCKED"
+            and stale_state["prior_state_id"] == "state-after-advance-002"
+            and stale_state["pending_obligations"] == [
+                "source validity expired without refreshed authorization"
+            ]
+        )
+        stale.commit()
+        stale.close()
+
+        with tempfile.TemporaryDirectory(
+            prefix="simigo-transitive-"
+        ) as transitive_temporary:
+            transitive_database = str(
+                Path(transitive_temporary) / "transitive.sqlite"
+            )
+            transitive = CarrierInformationLoop.create(transitive_database)
+            transitive.define_demand(
+                "transitive-demand",
+                continuation_point="transitive-report",
+                pending_obligations=["resolve root C"],
+                continuation_conditions=["full dependency closure is valid"],
+                required_item_ids=["C"],
+            )
+            for item_id, dependencies, payload, valid_until in [
+                ("A", [], {"input": 1}, "2030-12-31T23:59:59Z"),
+                ("B", ["A"], {"input": 2}, "2030-12-31T23:59:59Z"),
+                ("C", ["B"], {"factor": 3}, "2030-12-31T23:59:59Z"),
+            ]:
+                transitive.put_source(
+                    "transitive-demand", item_id, "manual_input", "v1",
+                    payload, dependencies,
+                    valid_until_utc=valid_until,
+                    validity_policy=validity_policy,
+                )
+            transitive.commit()
+            transitive.close()
+
+            transitive_loop = CarrierInformationLoop.open(transitive_database)
+            calculator_for_transitive = calculator
+            first = transitive_loop.execute_demand(
+                "transitive-demand", "transitive-initial",
+                calculator_for_transitive,
+                evaluated_at_utc="2026-10-09T00:00:00Z",
+            )
+            transitive_loop.confirm_runtime_application("transitive-initial")
+            settlement_count_before = transitive_loop.carrier.connection.execute(
+                "SELECT COUNT(*) FROM dependency_entries "
+                "WHERE dependency_id LIKE 'settlement:%'"
+            ).fetchone()[0]
+            transitive_loop.update_source(
+                "B", "v2", {"input": "stale"}, "middle dependency expired",
+                valid_until_utc="2026-10-08T23:59:59Z",
+            )
+            stale_transitive = transitive_loop.execute_demand(
+                "transitive-demand", "transitive-stale",
+                calculator_for_transitive,
+                evaluated_at_utc="2026-10-09T00:01:00Z",
+            )
+            stale_state = transitive_loop.latest_execution_state(
+                "transitive-report"
+            )
+            settlement_count_after = transitive_loop.carrier.connection.execute(
+                "SELECT COUNT(*) FROM dependency_entries "
+                "WHERE dependency_id LIKE 'settlement:%'"
+            ).fetchone()[0]
+            checks["transitive_middle_dependency_blocks_without_required_listing"] = (
+                stale_transitive["state"] == "BLOCKED_STALE_VALIDITY"
+                and stale_transitive["validity_failure_item_ids"] == ["B"]
+                and stale_transitive["advanced"] is False
+                and stale_state["status"] == "BLOCKED"
+                and settlement_count_after == settlement_count_before == 3
+            )
+            transitive_loop.commit()
+            transitive_loop.close()
+
+        changed = CarrierInformationLoop.open(database)
+        changed.update_source(
+            "B",
+            "v2",
+            {"input": 8},
+            "upstream source version changed",
+            valid_until_utc="2030-12-31T23:59:59Z",
+        )
+        try:
+            changed.execute_demand(
+                "demand-001", "blocked-direct-continuation", calculator,
+                evaluated_at_utc="2026-10-09T00:02:30Z",
+            )
+            blocked_gate = False
+        except ValueError as error:
+            blocked_gate = "blocked execution state cannot continue" in str(error)
+        checks["blocked_state_requires_explicit_recovery"] = blocked_gate
+        blocked_latest = changed.latest_execution_state("report-generation")
+        changed.record_execution_state(
+            "recovery-after-stale",
+            continuation_point="report-generation",
+            prior_state_id=blocked_latest["state_id"],
+            demand_id="demand-001",
+            status="ADVANCED",
+            pending_obligations=["resume after refreshed source"],
+            next_continuation_point="report-generation",
+            result_digest=digest({"recovery": "refreshed source"}),
+            runtime_application_status="APPLIED_SWIFT",
+        )
+        third = changed.execute_demand(
+            "demand-001", "advance-003", calculator,
+            evaluated_at_utc="2026-10-09T00:03:00Z",
+        )
+        run_results["third"] = third
+        checks["source_change_recomputes_B_and_C"] = actions(third) == {
+            "A": "REUSE", "B": "COMPUTE", "C": "COMPUTE"
+        }
+        changed.confirm_runtime_application("advance-003")
+        changed.commit()
+        changed.close()
+
+        missing = CarrierInformationLoop.open(database)
+        missing.define_demand(
+            "demand-missing",
+            continuation_point="blocked-report",
+            pending_obligations=["produce blocked report"],
+            continuation_conditions=["D must be present"],
+            required_item_ids=["D"],
+        )
+        blocked = missing.execute_demand(
+            "demand-missing", "advance-blocked", calculator,
+            evaluated_at_utc="2026-10-09T00:04:00Z",
+        )
+        checks["missing_information_blocks_without_guess"] = (
+            blocked["state"] == "BLOCKED_MISSING_INFORMATION"
+            and blocked["missing_item_ids"] == ["D"]
+            and blocked["advanced"] is False
+        )
+        blocked_state = missing.latest_execution_state("blocked-report")
+        checks["blocked_state_is_persisted"] = (
+            blocked_state is not None
+            and blocked_state["state_id"] == "advance-blocked"
+            and blocked_state["status"] == "BLOCKED"
+        )
+        missing.commit()
+        missing.close()
+
+        rollback = CarrierInformationLoop.open(database)
+        rollback.put_source(
+            "demand-001", "D", "manual_input", "v1", {"input": 9},
+            valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
+        )
+        rollback.put_source(
+            "demand-001", "E", "manual_input", "v1", {"input": 10},
+            valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
+        )
+        rollback.define_demand(
+            "demand-rollback",
+            continuation_point="atomic-rollback-check",
+            pending_obligations=["prove partial demand writes do not persist"],
+            continuation_conditions=["D computes, then planned failure occurs"],
+            required_item_ids=["D", "E"],
+        )
+
+        def failing_calculator(item_id: str, source_payload: dict, dependencies: dict) -> dict:
+            if item_id == "D":
+                return {"item": "D", "value": source_payload["input"]}
+            raise RuntimeError("planned mid-demand failure")
+
+        object_count_before = rollback.carrier.connection.execute(
+            "SELECT COUNT(*) FROM is_objects"
+        ).fetchone()[0]
+        try:
+            rollback.execute_demand(
+                "demand-rollback", "advance-rollback", failing_calculator,
+                evaluated_at_utc="2026-10-09T00:05:00Z",
+            )
+            raised = False
+        except RuntimeError:
+            raised = True
+        object_count_after = rollback.carrier.connection.execute(
+            "SELECT COUNT(*) FROM is_objects"
+        ).fetchone()[0]
+        d_settlement_absent = rollback.current_settlement("D") is None
+        object_count_unchanged = object_count_before == object_count_after
+        checks["mid_demand_failure_rolls_back_partial_settlement"] = (
+            raised and d_settlement_absent and object_count_unchanged
+        )
+        rollback.commit()
+        rollback.close()
+
+        malformed = CarrierInformationLoop.open(database)
+        malformed_result = malformed.execute_demand(
+            "demand-001", "advance-malformed", calculator,
+            evaluated_at_utc="not-a-time",
+        )
+        checks["malformed_observation_time_blocks_without_guess"] = (
+            malformed_result["state"] == "BLOCKED_VALIDITY_FAILURE"
+            and malformed_result["advanced"] is False
+            and malformed_result["actions"] == []
+        )
+        try:
+            malformed.put_source(
+                "demand-001", "E", "manual_input", "v1", {},
+                valid_until_utc="not-a-time",
+            )
+            invalid_source_validity_rejected = False
+        except ValueError:
+            invalid_source_validity_rejected = True
+        checks["invalid_source_validity_rejected_before_persistence"] = (
+            invalid_source_validity_rejected
+        )
+        malformed.commit()
+        malformed.close()
+
+        with tempfile.TemporaryDirectory(
+            prefix="simigo-policy-race-"
+        ) as policy_temporary:
+            policy_database = str(Path(policy_temporary) / "policy-race.sqlite")
+            policy_setup = CarrierInformationLoop.create(policy_database)
+            current_policy = sealed_policy({
+                "policy_version": "deployment-v1",
+                "policy_source": "POLICY_RACE",
+            })
+            policy_setup.define_demand(
+                "policy-race-demand",
+                continuation_point="policy-race",
+                pending_obligations=["prove transaction policy binding"],
+                continuation_conditions=["expected deployment policy matches"],
+                required_item_ids=["A"],
+            )
+            policy_setup.put_source(
+                "policy-race-demand", "A", "manual_input", "v1", {"input": 3},
+                valid_until_utc="2030-12-31T23:59:59Z",
+                validity_policy=current_policy,
+            )
+            policy_setup.commit()
+            policy_setup.close()
+
+            # This update models another writer committing after the bridge
+            # loaded its expected SHA but before execute_demand acquires the
+            # SQLite write lock.
+            race_writer = CarrierInformationLoop.open(policy_database)
+            replacement_policy = sealed_policy({
+                "policy_version": "deployment-v2",
+                "policy_source": "POLICY_RACE",
+            })
+            race_writer.update_source(
+                "A", "v2", {"input": 3}, "concurrent deployment policy change",
+                validity_policy=replacement_policy,
+            )
+            race_writer.commit()
+            race_writer.close()
+
+            execution_loop = CarrierInformationLoop.open(policy_database)
+            calculator_calls = []
+
+            def counting_calculator(item_id, source_payload, dependencies):
+                calculator_calls.append(item_id)
+                return calculator(item_id, source_payload, dependencies)
+
+            settlement_count_before = execution_loop.carrier.connection.execute(
+                "SELECT COUNT(*) FROM dependency_entries "
+                "WHERE dependency_id LIKE 'settlement:%'"
+            ).fetchone()[0]
+            mismatch = execution_loop.execute_demand(
+                "policy-race-demand",
+                "policy-race-attempt",
+                counting_calculator,
+                evaluated_at_utc="2026-10-09T00:06:30Z",
+                expected_validity_policy_sha256=current_policy["policy_sha256"],
+                require_deployment_policy=True,
+            )
+            settlement_count_after = execution_loop.carrier.connection.execute(
+                "SELECT COUNT(*) FROM dependency_entries "
+                "WHERE dependency_id LIKE 'settlement:%'"
+            ).fetchone()[0]
+            mismatch_state = execution_loop.latest_execution_state("policy-race")
+            checks["deployment_policy_sha_bound_in_transaction"] = (
+                mismatch["state"] == "BLOCKED_POLICY_MISMATCH"
+                and mismatch["validity_failure_item_ids"] == ["A"]
+                and calculator_calls == []
+                and settlement_count_after == settlement_count_before == 0
+                and mismatch_state["status"] == "BLOCKED"
+            )
+            execution_loop.commit()
+            execution_loop.close()
+
+        with tempfile.TemporaryDirectory(
+            prefix="simigo-state-races-"
+        ) as race_temporary:
+            race_database = str(Path(race_temporary) / "state-races.sqlite")
+            new_race_database(race_database, ["A"])
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+                first_before_begin = threading.Event()
+                first_after_begin = threading.Event()
+                first_future = pool.submit(
+                    lambda: ExecutionGateLoop(
+                        ObservableCarrier(
+                            race_database,
+                            before_begin=first_before_begin,
+                            after_begin=first_after_begin,
+                        ),
+                        gate=True,
+                    ).execute_demand(
+                        "race-demand",
+                        "race-first",
+                        calculator,
+                        evaluated_at_utc="2026-10-09T00:07:00Z",
+                    )
+                )
+                ExecutionGateLoop.gate.wait_entered()
+                ExecutionGateLoop.gate.confirm_waiting()
+                if not first_after_begin.wait(timeout=5):
+                    raise TimeoutError("first execution missed SQLite write lock")
+                second_before_begin = threading.Event()
+                second_after_begin = threading.Event()
+                second_busy_conflict = threading.Event()
+                second_retry_release = threading.Event()
+                second_future = pool.submit(
+                    lambda: CarrierInformationLoop(
+                        ObservableCarrier(
+                            race_database,
+                            before_begin=second_before_begin,
+                            after_begin=second_after_begin,
+                            busy_conflict=second_busy_conflict,
+                            retry_release=second_retry_release,
+                        )
+                    ).execute_demand(
+                        "race-demand",
+                        "race-second",
+                        calculator,
+                        evaluated_at_utc="2026-10-09T00:07:00Z",
+                    )
+                )
+                if not second_before_begin.wait(timeout=5):
+                    raise TimeoutError("second execution missed write-lock race")
+                if not second_busy_conflict.wait(timeout=5):
+                    raise TimeoutError("second execution missed SQLITE_BUSY")
+                if second_retry_release.is_set():
+                    raise AssertionError("SQLITE_BUSY retry released before holder")
+                competitor_blocked = (
+                    second_busy_conflict.is_set()
+                    and not second_after_begin.is_set()
+                )
+                ExecutionGateLoop.gate.release_holder()
+                first_result = first_future.result(timeout=5)
+                second_retry_release.set()
+                try:
+                    second_future.result(timeout=5)
+                    second_rejected = False
+                except ValueError as error:
+                    second_rejected = "pending runtime application" in str(error)
+                competitor_acquired_after_release = second_after_begin.wait(
+                    timeout=5
+                )
+            checks["execution_race_cannot_stack_pending_intents"] = (
+                first_result["advanced"] is True
+                and second_rejected
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["execution_race_competitor_blocked_at_write_lock"] = (
+                second_before_begin.is_set()
+                and second_busy_conflict.is_set()
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["execution_race_sqlite_busy_conflict_observed"] = (
+                second_busy_conflict.is_set()
+                and competitor_acquired_after_release
+            )
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                confirmation_before_begin = threading.Event()
+                confirmation_after_begin = threading.Event()
+                confirmation_future = pool.submit(
+                    lambda: ConfirmationGateLoop(
+                        ObservableCarrier(
+                            race_database,
+                            before_begin=confirmation_before_begin,
+                            after_begin=confirmation_after_begin,
+                        )
+                    ).confirm_runtime_application("race-first")
+                )
+                ConfirmationGateLoop.gate.wait_entered()
+                ConfirmationGateLoop.gate.confirm_waiting()
+                if not confirmation_after_begin.wait(timeout=5):
+                    raise TimeoutError("confirmation missed SQLite write lock")
+                recovery_started = threading.Event()
+                recovery_ready = threading.Event()
+                recovery_before_begin = threading.Event()
+                recovery_after_begin = threading.Event()
+                recovery_busy_conflict = threading.Event()
+                recovery_retry_release = threading.Event()
+
+                def recovery_writer():
+                    recovery_started.set()
+                    recovery_ready.wait(timeout=5)
+                    append_race_recovery(
+                        race_database,
+                        "race-first:runtime-applied",
+                        before_begin=recovery_before_begin,
+                        after_begin=recovery_after_begin,
+                        busy_conflict=recovery_busy_conflict,
+                        retry_release=recovery_retry_release,
+                    )
+
+                recovery_thread = threading.Thread(target=recovery_writer)
+                recovery_thread.start()
+                recovery_started.wait(timeout=5)
+                recovery_ready.set()
+                if not recovery_before_begin.wait(timeout=5):
+                    raise TimeoutError("recovery writer missed confirmation lock race")
+                if not recovery_busy_conflict.wait(timeout=5):
+                    raise TimeoutError("recovery writer missed SQLITE_BUSY")
+                if recovery_retry_release.is_set():
+                    raise AssertionError("SQLITE_BUSY retry released before holder")
+                competitor_blocked = (
+                    recovery_busy_conflict.is_set()
+                    and not recovery_after_begin.is_set()
+                )
+                ConfirmationGateLoop.gate.release_holder()
+                confirmation_future.result(timeout=5)
+                recovery_retry_release.set()
+                recovery_thread.join(timeout=5)
+                competitor_acquired_after_release = recovery_after_begin.wait(
+                    timeout=5
+                )
+            final_race_state = CarrierInformationLoop.open(
+                race_database
+            ).latest_execution_state("race-continuation")
+            checks["confirmation_and_recovery_are_serialized"] = (
+                final_race_state["state_id"] == "race-after-confirmation"
+                and final_race_state["prior_state_id"]
+                == "race-first:runtime-applied"
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["confirmation_race_competitor_blocked_at_write_lock"] = (
+                recovery_before_begin.is_set()
+                and recovery_busy_conflict.is_set()
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["confirmation_race_sqlite_busy_conflict_observed"] = (
+                recovery_busy_conflict.is_set()
+                and competitor_acquired_after_release
+            )
+            blocked_race_database = str(
+                Path(race_temporary) / "blocked-race.sqlite"
+            )
+            new_race_database(
+                blocked_race_database, ["MISSING-RACE"], put_sources=False
+            )
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                blocked_before_begin = threading.Event()
+                blocked_after_begin = threading.Event()
+                blocked_future = pool.submit(
+                    lambda: BlockedAppendGateLoop(
+                        ObservableCarrier(
+                            blocked_race_database,
+                            before_begin=blocked_before_begin,
+                            after_begin=blocked_after_begin,
+                        )
+                    ).execute_demand(
+                        "race-demand",
+                        "blocked-race-attempt",
+                        calculator,
+                        evaluated_at_utc="2026-10-09T00:08:00Z",
+                    )
+                )
+                BlockedAppendGateLoop.gate.wait_entered()
+                BlockedAppendGateLoop.gate.confirm_waiting()
+                if not blocked_after_begin.wait(timeout=5):
+                    raise TimeoutError("blocked append missed SQLite write lock")
+                recovery_started = threading.Event()
+                recovery_ready = threading.Event()
+                recovery_before_begin = threading.Event()
+                recovery_after_begin = threading.Event()
+                recovery_busy_conflict = threading.Event()
+                recovery_retry_release = threading.Event()
+
+                def blocked_recovery_writer():
+                    recovery_started.set()
+                    recovery_ready.wait(timeout=5)
+                    append_race_recovery(
+                        blocked_race_database,
+                        "blocked-race-attempt",
+                        before_begin=recovery_before_begin,
+                        after_begin=recovery_after_begin,
+                        busy_conflict=recovery_busy_conflict,
+                        retry_release=recovery_retry_release,
+                    )
+
+                recovery_thread = threading.Thread(target=blocked_recovery_writer)
+                recovery_thread.start()
+                recovery_started.wait(timeout=5)
+                recovery_ready.set()
+                if not recovery_before_begin.wait(timeout=5):
+                    raise TimeoutError("recovery writer missed blocked lock race")
+                if not recovery_busy_conflict.wait(timeout=5):
+                    raise TimeoutError("recovery writer missed SQLITE_BUSY")
+                if recovery_retry_release.is_set():
+                    raise AssertionError("SQLITE_BUSY retry released before holder")
+                competitor_blocked = (
+                    recovery_busy_conflict.is_set()
+                    and not recovery_after_begin.is_set()
+                )
+                BlockedAppendGateLoop.gate.release_holder()
+                blocked_result = blocked_future.result(timeout=5)
+                recovery_retry_release.set()
+                recovery_thread.join(timeout=5)
+                competitor_acquired_after_release = recovery_after_begin.wait(
+                    timeout=5
+                )
+            final_blocked = CarrierInformationLoop.open(
+                blocked_race_database
+            ).latest_execution_state("race-continuation")
+            checks["blocked_and_recovery_are_serialized"] = (
+                blocked_result["advanced"] is False
+                and final_blocked["state_id"] == "race-after-confirmation"
+                and final_blocked["prior_state_id"] == "blocked-race-attempt"
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["blocked_race_competitor_blocked_at_write_lock"] = (
+                recovery_before_begin.is_set()
+                and recovery_busy_conflict.is_set()
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["blocked_race_sqlite_busy_conflict_observed"] = (
+                recovery_busy_conflict.is_set()
+                and competitor_acquired_after_release
+            )
+
+        final = CarrierInformationLoop.open(database)
+        checks["carrier_schema_passes"] = True
+        try:
+            final.carrier.validate_schema()
+            checks["carrier_schema_passes"] = True
+        except Exception:
+            checks["carrier_schema_passes"] = False
+        object_rows = final.carrier.connection.execute(
+            "SELECT object_id,content,byte_size FROM is_objects ORDER BY created_order"
+        ).fetchall()
+        historical_before = [
+            (row["object_id"], bytes(row["content"]), row["byte_size"])
+            for row in object_rows
+        ]
+        proof_content = canonical({"append_only": "proof", "run": "carrier-selftest"}).encode()
+        proof_id = final.carrier.write_object(proof_content)
+        object_rows_after = final.carrier.connection.execute(
+            "SELECT object_id,content,byte_size FROM is_objects ORDER BY created_order"
+        ).fetchall()
+        historical_after = [
+            (row["object_id"], bytes(row["content"]), row["byte_size"])
+            for row in object_rows_after[:len(historical_before)]
+        ]
+        checks["carrier_object_store_is_append_only_hash_addressed"] = (
+            historical_before == historical_after
+            and len(object_rows_after) == len(historical_before) + 1
+            and proof_id == hashlib.sha256(proof_content).hexdigest()
+            and final.carrier.verify_object(proof_id)
+        )
+        checks["carrier_objects_verify"] = all(
+            final.carrier.verify_object(row["object_id"]) for row in object_rows
+        )
+
+    checks["closed_loop_end_to_end"] = all(checks.values())
+    return {
+        "schema_id": "D002-EXECUTION-INFORMATION-CARRIER-SELFTEST-V1",
+        "carrier": "existing D002 DatabaseBackedIS",
+        "database_path": database,
+        "isolated_scope": "SYNTHETIC_SQLITE_REFERENCE",
+        "real_palace_touched": False,
+        "d002_campaign_rerun": False,
+        "d001_executed": False,
+        "checks": checks,
+        "restored_execution_state": latest_state,
+        "run_results": run_results,
+        "result": "PASS" if checks["closed_loop_end_to_end"] else "FAIL",
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output")
+    args = parser.parse_args()
+    report = run()
+    text = canonical(report) + "\n"
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    print(text, end="")
+    return 0 if report["result"] == "PASS" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

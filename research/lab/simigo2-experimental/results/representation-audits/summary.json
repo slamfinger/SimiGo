@@ -1,0 +1,63 @@
+{
+  "status": "COMPLETE",
+  "forwardExecuted": false,
+  "activationCaptured": false,
+  "models": [
+    {
+      "alias": "qwen3-coder",
+      "repo": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+      "snapshot": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+      "modelType": "Qwen3MoEModel",
+      "observedModulePathCount": 627,
+      "candidateLayerCount": 48,
+      "firstCandidateLayer": "model.layers.0",
+      "lastCandidateLayer": "model.layers.47",
+      "stableObservationContract": false,
+      "recommendedRoute": "isolatedInstrumentation",
+      "boundary": "MODULE_INVENTORY_ONLY / NOT_ACTIVATION_CAPTURE / FORWARDS_SEMANTICS_UNCHANGED",
+      "resultFile": "qwen3-coder.json"
+    },
+    {
+      "alias": "nail-qwen36",
+      "repo": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+      "snapshot": "31a0106483c94e9fbb0a6d3360ff122d47377058",
+      "modelType": "Qwen35MoEModel",
+      "observedModulePathCount": 683,
+      "candidateLayerCount": 40,
+      "firstCandidateLayer": "language_model.model.layers.0",
+      "lastCandidateLayer": "language_model.model.layers.39",
+      "stableObservationContract": false,
+      "recommendedRoute": "isolatedInstrumentation",
+      "boundary": "MODULE_INVENTORY_ONLY / NOT_ACTIVATION_CAPTURE / FORWARDS_SEMANTICS_UNCHANGED",
+      "resultFile": "nail-qwen36.json"
+    },
+    {
+      "alias": "gemma4-coder",
+      "repo": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+      "snapshot": "6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+      "modelType": "Gemma4Model",
+      "observedModulePathCount": 714,
+      "candidateLayerCount": 48,
+      "firstCandidateLayer": "language_model.model.layers.0",
+      "lastCandidateLayer": "language_model.model.layers.47",
+      "stableObservationContract": false,
+      "recommendedRoute": "isolatedInstrumentation",
+      "boundary": "MODULE_INVENTORY_ONLY / NOT_ACTIVATION_CAPTURE / FORWARDS_SEMANTICS_UNCHANGED",
+      "resultFile": "gemma4-coder.json"
+    },
+    {
+      "alias": "muse-glimmer-local",
+      "repo": "RadixArk/Muse-Glimmer-q4-MLX",
+      "snapshot": "4a4f54af27b7bc3f25351588a25335b28585cc49",
+      "modelType": "MuseGlimmerTextLLMModel",
+      "observedModulePathCount": 680,
+      "candidateLayerCount": 52,
+      "firstCandidateLayer": "model.layers.0",
+      "lastCandidateLayer": "model.layers.51",
+      "stableObservationContract": false,
+      "recommendedRoute": "isolatedInstrumentation",
+      "boundary": "MODULE_INVENTORY_ONLY / NOT_ACTIVATION_CAPTURE / FORWARDS_SEMANTICS_UNCHANGED",
+      "resultFile": "muse-glimmer.json"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "sample_id": "S1-release-config",
+  "model_id": "B-qwen3-next",
+  "repo_id": "mlx-community/Qwen3-Coder-Next-4bit",
+  "architecture": "qwen3_next",
+  "http_status": 0,
+  "status": "FAILED_TIMEOUT_BEFORE_HTTP_RESPONSE",
+  "error_type": "socket.timeout",
+  "timeout_seconds": 900,
+  "request_sha256": "df3f221e40d53bc977b0d4eb85b32dbf2b39986168eb0469285590fab427bf6d",
+  "request_created_at": "2026-10-05T00:33:36+08:00",
+  "failure_recorded_at": "2026-10-05T00:49:06+08:00",
+  "endpoint_health_after_failure": "{\"status\":\"unavailable\",\"model\":\"7b9321eabb85ce79625cac3f61ea691e4ea984b5\"}",
+  "runtime_isolation": "NOT ESTABLISHED",
+  "retry_authorized": false
+}

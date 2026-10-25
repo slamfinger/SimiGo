@@ -1,0 +1,428 @@
+{
+  "allFinite": true,
+  "boundary": "THREE_Q8_0_VS_MLX_AFFINE_TENSORS / FULL_DEQUANT / NO_WEIGHT_BYTES_EQUIVALENCE_CLAIM",
+  "elementwiseCorrelationNearZero": true,
+  "exactTensorCount": 0,
+  "interpretation": "LAYOUT_OR_SOURCE_MISMATCH_UNRESOLVED / QUANTIZER_DRIFT_NOT_ATTRIBUTABLE",
+  "layer": 1,
+  "layoutResolved": false,
+  "nonClaims": [
+    "same checkpoint bytes",
+    "same quantization grid",
+    "dequantization equivalence",
+    "tensor element mapping established",
+    "quantizer drift established",
+    "full model drift characterization",
+    "MTP mechanism explanation"
+  ],
+  "overallPass": true,
+  "protocolVersion": "LAB.NAMED_SOURCE.QUANTIZED.DRIFT.PILOT.V1",
+  "quantizationFormats": {
+    "gguf": "Q8_0 block scale + int8",
+    "mlx": "affine scales/biases with per-tensor group size and bits"
+  },
+  "records": [
+    {
+      "absHistogramCountsGreaterOrEqual": [
+        650734,
+        908213,
+        1523482,
+        2892704,
+        6504275,
+        3788472,
+        501769,
+        7559,
+        8,
+        0,
+        0
+      ],
+      "absHistogramThresholds": [
+        0.001,
+        0.0025,
+        0.005,
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.5
+      ],
+      "cosineSimilarity": 0.00022379502818495634,
+      "count": 16777216,
+      "exactCount": 35644,
+      "family": "linear_attn_qkv",
+      "finite": true,
+      "gguf": "blk.1.attn_qkv.weight",
+      "ggufDimensions": [
+        2048,
+        8192
+      ],
+      "ggufFormat": "Q8_0",
+      "maxAbsDiff": 0.2934703826904297,
+      "meanAbsDiff": 0.017756716414385365,
+      "mlx": "language_model.model.layers.1.linear_attn.in_proj_qkv",
+      "mlxLogicalShape": [
+        8192,
+        256
+      ],
+      "mlxPhysicalShapes": {
+        "biases": [
+          8192,
+          32
+        ],
+        "scales": [
+          8192,
+          32
+        ],
+        "weight": [
+          8192,
+          256
+        ]
+      },
+      "mlxQuantization": {
+        "bits": 4,
+        "groupSize": 64,
+        "mode": "affine"
+      },
+      "orientation": "GGUF transpose ↔ MLX dequantized",
+      "pearsonCorrelation": 0.0002237526179267368,
+      "topDifferences": [
+        {
+          "absDiff": 0.1740279197692871,
+          "flatIndex": 16194548,
+          "gguf": 0.0021529197692871094,
+          "mlx": -0.171875
+        },
+        {
+          "absDiff": 0.17340373992919922,
+          "flatIndex": 7483635,
+          "gguf": 0.009341239929199219,
+          "mlx": -0.1640625
+        },
+        {
+          "absDiff": 0.17318439483642578,
+          "flatIndex": 3644647,
+          "gguf": 0.008145332336425781,
+          "mlx": -0.1650390625
+        },
+        {
+          "absDiff": 0.17271685600280762,
+          "flatIndex": 16348206,
+          "gguf": -0.005017518997192383,
+          "mlx": -0.177734375
+        },
+        {
+          "absDiff": 0.171875,
+          "flatIndex": 4939464,
+          "gguf": 0.0,
+          "mlx": -0.171875
+        },
+        {
+          "absDiff": 0.1714019775390625,
+          "flatIndex": 7044722,
+          "gguf": -0.0092926025390625,
+          "mlx": 0.162109375
+        },
+        {
+          "absDiff": 0.17101287841796875,
+          "flatIndex": 7468078,
+          "gguf": 0.00890350341796875,
+          "mlx": -0.162109375
+        },
+        {
+          "absDiff": 0.169677734375,
+          "flatIndex": 7525422,
+          "gguf": -0.008544921875,
+          "mlx": 0.1611328125
+        },
+        {
+          "absDiff": 0.16946792602539062,
+          "flatIndex": 4985902,
+          "gguf": -0.010288238525390625,
+          "mlx": 0.1591796875
+        },
+        {
+          "absDiff": 0.16700267791748047,
+          "flatIndex": 3994670,
+          "gguf": -0.01856517791748047,
+          "mlx": 0.1484375
+        }
+      ],
+      "transposeColumnNormPearson": 0.02366142895875389,
+      "transposeRowNormPearson": -0.01086694369460476,
+      "transposeSortedColumnNormPearson": 0.7960129857575649,
+      "transposeSortedRowNormPearson": 0.8751883803759244
+    },
+    {
+      "absHistogramCountsGreaterOrEqual": [
+        308481,
+        461906,
+        759766,
+        1444780,
+        3265322,
+        1898105,
+        247363,
+        2873,
+        12,
+        0,
+        0
+      ],
+      "absHistogramThresholds": [
+        0.001,
+        0.0025,
+        0.005,
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.5
+      ],
+      "cosineSimilarity": 0.00015646258932641127,
+      "count": 8388608,
+      "exactCount": 1212,
+      "family": "linear_attn_gate",
+      "finite": true,
+      "gguf": "blk.1.attn_gate.weight",
+      "ggufDimensions": [
+        2048,
+        4096
+      ],
+      "ggufFormat": "Q8_0",
+      "maxAbsDiff": 0.3343944549560547,
+      "meanAbsDiff": 0.0177558148990542,
+      "mlx": "language_model.model.layers.1.linear_attn.in_proj_z",
+      "mlxLogicalShape": [
+        4096,
+        320
+      ],
+      "mlxPhysicalShapes": {
+        "biases": [
+          4096,
+          16
+        ],
+        "scales": [
+          4096,
+          16
+        ],
+        "weight": [
+          4096,
+          320
+        ]
+      },
+      "mlxQuantization": {
+        "bits": 5,
+        "groupSize": 128,
+        "mode": "affine"
+      },
+      "orientation": "GGUF transpose ↔ MLX dequantized",
+      "pearsonCorrelation": 0.00015608292587347643,
+      "topDifferences": [
+        {
+          "absDiff": 0.16480112075805664,
+          "flatIndex": 8045940,
+          "gguf": -0.007073879241943359,
+          "mlx": -0.171875
+        },
+        {
+          "absDiff": 0.1628096103668213,
+          "flatIndex": 7931861,
+          "gguf": 0.011018514633178711,
+          "mlx": 0.173828125
+        },
+        {
+          "absDiff": 0.16232967376708984,
+          "flatIndex": 8357663,
+          "gguf": 0.14255428314208984,
+          "mlx": -0.019775390625
+        },
+        {
+          "absDiff": 0.15063023567199707,
+          "flatIndex": 8100638,
+          "gguf": -0.04320836067199707,
+          "mlx": 0.107421875
+        },
+        {
+          "absDiff": 0.14699387550354004,
+          "flatIndex": 8061650,
+          "gguf": 0.006326436996459961,
+          "mlx": 0.1533203125
+        },
+        {
+          "absDiff": 0.14280343055725098,
+          "flatIndex": 8278738,
+          "gguf": -0.024639368057250977,
+          "mlx": 0.1181640625
+        },
+        {
+          "absDiff": 0.13670778274536133,
+          "flatIndex": 8190978,
+          "gguf": 0.11766481399536133,
+          "mlx": -0.01904296875
+        },
+        {
+          "absDiff": 0.13449859619140625,
+          "flatIndex": 8080731,
+          "gguf": -0.01100921630859375,
+          "mlx": -0.1455078125
+        },
+        {
+          "absDiff": 0.1328129768371582,
+          "flatIndex": 8052856,
+          "gguf": 0.0541996955871582,
+          "mlx": -0.07861328125
+        },
+        {
+          "absDiff": 0.13026714324951172,
+          "flatIndex": 8118967,
+          "gguf": 0.0013608932495117188,
+          "mlx": -0.12890625
+        }
+      ],
+      "transposeColumnNormPearson": 0.024573155105897977,
+      "transposeRowNormPearson": -0.007590087895045202,
+      "transposeSortedColumnNormPearson": 0.9664669029467938,
+      "transposeSortedRowNormPearson": 0.9821405571801954
+    },
+    {
+      "absHistogramCountsGreaterOrEqual": [
+        326281,
+        486768,
+        800903,
+        1514998,
+        3304176,
+        1752658,
+        197835,
+        4761,
+        219,
+        9,
+        0
+      ],
+      "absHistogramThresholds": [
+        0.001,
+        0.0025,
+        0.005,
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.5
+      ],
+      "cosineSimilarity": 9.317496157339456e-05,
+      "count": 8388608,
+      "exactCount": 1454,
+      "family": "linear_attn_out",
+      "finite": true,
+      "gguf": "blk.1.ssm_out.weight",
+      "ggufDimensions": [
+        4096,
+        2048
+      ],
+      "ggufFormat": "Q8_0",
+      "maxAbsDiff": 0.6274337768554688,
+      "meanAbsDiff": 0.016930476030104558,
+      "mlx": "language_model.model.layers.1.linear_attn.out_proj",
+      "mlxLogicalShape": [
+        2048,
+        640
+      ],
+      "mlxPhysicalShapes": {
+        "biases": [
+          2048,
+          32
+        ],
+        "scales": [
+          2048,
+          32
+        ],
+        "weight": [
+          2048,
+          640
+        ]
+      },
+      "mlxQuantization": {
+        "bits": 5,
+        "groupSize": 128,
+        "mode": "affine"
+      },
+      "orientation": "GGUF transpose ↔ MLX dequantized",
+      "pearsonCorrelation": 9.15405732877272e-05,
+      "topDifferences": [
+        {
+          "absDiff": 0.278087854385376,
+          "flatIndex": 1381621,
+          "gguf": -0.008556604385375977,
+          "mlx": 0.26953125
+        },
+        {
+          "absDiff": 0.26993465423583984,
+          "flatIndex": 8113397,
+          "gguf": 0.012122154235839844,
+          "mlx": -0.2578125
+        },
+        {
+          "absDiff": 0.26594340801239014,
+          "flatIndex": 8166645,
+          "gguf": 0.0016347169876098633,
+          "mlx": 0.267578125
+        },
+        {
+          "absDiff": 0.25197553634643555,
+          "flatIndex": 3532021,
+          "gguf": -0.003883838653564453,
+          "mlx": -0.255859375
+        },
+        {
+          "absDiff": 0.2501077651977539,
+          "flatIndex": 8043735,
+          "gguf": 0.007920265197753906,
+          "mlx": -0.2421875
+        },
+        {
+          "absDiff": 0.24930322170257568,
+          "flatIndex": 3994869,
+          "gguf": -0.020787596702575684,
+          "mlx": 0.228515625
+        },
+        {
+          "absDiff": 0.23196697235107422,
+          "flatIndex": 3076479,
+          "gguf": -0.19729900360107422,
+          "mlx": 0.03466796875
+        },
+        {
+          "absDiff": 0.21306705474853516,
+          "flatIndex": 3290766,
+          "gguf": 0.22564029693603516,
+          "mlx": 0.0125732421875
+        },
+        {
+          "absDiff": 0.21089839935302734,
+          "flatIndex": 3964149,
+          "gguf": -0.017617225646972656,
+          "mlx": -0.228515625
+        },
+        {
+          "absDiff": 0.20704960823059082,
+          "flatIndex": 3816658,
+          "gguf": 0.02150273323059082,
+          "mlx": -0.185546875
+        }
+      ],
+      "transposeColumnNormPearson": -0.008927475741247732,
+      "transposeRowNormPearson": -0.0004713922903117815,
+      "transposeSortedColumnNormPearson": 0.7197150687360306,
+      "transposeSortedRowNormPearson": 0.6600866916074131
+    }
+  ],
+  "status": "PASS_WITH_BOUNDARY",
+  "tensorCount": 3,
+  "zeroDriftTensorCount": 0
+}

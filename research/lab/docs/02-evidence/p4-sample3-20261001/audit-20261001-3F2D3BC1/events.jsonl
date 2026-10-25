@@ -1,0 +1,13 @@
+{"wallTime":"2026-10-01T09:40:40Z","event":"run_start","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296131845666,"payload":{"experiment":"P4-sample3","role":"judgment"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment_inputs","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296133331041,"payload":{"run1":"audit-20261001-BD7E1260","run2":"audit-20261001-6728547C"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296140631916,"payload":{"value":"PASS","cell":"J1_identity"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296140689416,"payload":{"value":"PASS","cell":"J2_divergence"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296140741416,"payload":{"value":"CHANGED(见 F-2 常态导出注记)","cell":"J5_isolation_content_sha"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296140792000,"payload":{"value":"PASS","cell":"J3_anchoring"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296140843875,"payload":{"value":"FAIL","cell":"verdict"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296140897541,"payload":{"value":"PASS","cell":"J6_evolution"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296140945875,"payload":{"value":"PASS","cell":"J5_isolation_counts"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296140996458,"payload":{"value":"PASS","cell":"J4_order_independence"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"judgment_note","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296141044375,"payload":{"text":"mechanical J1..J6 per design 792afbc §6; order swap GENUINE (F-5); recursive content witness (F-3 fix); pool content changes are registered runtime export behavior (F-2) and are recorded, not judged"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"r0_verify","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296141746333,"payload":{"result":"ALL_PASS"}}
+{"wallTime":"2026-10-01T09:40:40Z","event":"run_complete","runUUID":"audit-20261001-3F2D3BC1","monotonicNs":258296141810958,"payload":{"overall":"FAIL","role":"judgment"}}

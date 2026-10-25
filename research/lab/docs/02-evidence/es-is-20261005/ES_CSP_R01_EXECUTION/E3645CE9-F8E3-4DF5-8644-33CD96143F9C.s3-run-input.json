@@ -1,0 +1,9 @@
+{
+  "isolated_carrier_data_root_path": "/Users/mr.simi/Documents/SimiGo-Lab-R01-Fixtures/data/E3645CE9-F8E3-4DF5-8644-33CD96143F9C/carrier-root",
+  "opaque_fixture_instance_id": "E3645CE9-F8E3-4DF5-8644-33CD96143F9C",
+  "opaque_stable_session_locator": "uasession:BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+  "reconstruction_manifest_schema_version": "es-csp/reconstruction-manifest-v1",
+  "run_label": "ES-CSP-RUN-01",
+  "schema_version": "es-csp/reconstruction-input-v1",
+  "source_baseline_identifier": "39c1031"
+}

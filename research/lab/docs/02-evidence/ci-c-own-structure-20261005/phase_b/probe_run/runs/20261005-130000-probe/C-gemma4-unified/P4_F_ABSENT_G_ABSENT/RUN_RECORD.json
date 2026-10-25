@@ -1,0 +1,10 @@
+{
+  "cell": "P4_F_ABSENT_G_ABSENT",
+  "model_id": "C-gemma4-unified",
+  "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "http_status": 200,
+  "elapsed_seconds": 7.540661,
+  "prompt_sha256": "1c53f4c37c2a8d8b2c05e74e7734a7417e3be41b9848d896151e526058f688d9",
+  "response_sha256": "515f79b4dfdaa47c0c477184c37b939abd21d6189fb375f2190dddeaa48dcdab",
+  "created_at": "2026-10-05T12:17:21+08:00"
+}

@@ -1,0 +1,16 @@
+{"elt": "p3-arm-start", "arm": 3, "db": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-p3-arm2.sqlite", "_t": 0.0}
+{"elt": "settle-start", "cp": "arm2-cp", "units": ["U_upstream", "U_parse", "U_summarize"], "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_upstream", "text": "U_upstream->shU_upstre", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_parse", "text": "U_parse->shU_parse本", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_summarize", "text": "U_summarize->shU_summar", "real": true, "_t": 0.0}
+{"elt": "p3-settle-execute", "cp": "arm2-cp", "attempt": 0, "state": "ADVANCED", "applied": false, "computed": [], "reused": [], "_t": 0.0}
+{"elt": "execute-demand-note", "cp": "arm2-cp", "err": "ValueError: unknown demand: arm2-cp-apply", "_t": 0.0}
+{"elt": "settle-done", "cp": "arm2-cp", "runtime_status": "APPLIED_SWIFT", "_t": 0.0}
+{"elt": "p3-invalidate-arm3", "arm": 3, "invalidated_item_ids": ["U_parse", "U_summarize", "U_upstream"], "reason": "upstream-input-changed", "include_dependents": true, "note": "invalidate_settlement closure is observed; it is NOT itself the recompute-set proof", "_t": 0.0}
+{"elt": "p3-update-source-arm3", "arm": 3, "unit": "U_upstream", "source_version": "v2", "_t": 0.0}
+{"elt": "p3-rerequest-arm3", "arm": 3, "notes": "re-run after upstream change; settle-once reconcile", "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_upstream", "text": "U_upstream->shU_upstre", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_parse", "text": "U_parse->shU_parse本", "real": true, "_t": 0.0}
+{"elt": "swift-forward", "unit": "U_summarize", "text": "U_summarize->shU_summar", "real": true, "_t": 0.0}
+{"elt": "p3-rerequest-result-arm3", "arm": 3, "full_res_keys": ["demand_id", "state", "actions", "computed_item_ids", "reused_item_ids", "result", "advanced", "execution_state"], "recomputed_item_ids": [], "reused_item_ids": [], "state": "ADVANCED", "note": "carriers computed/reused are empty on a pure recompute; do NOT read them as the recompute set", "_t": 0.0}
+{"elt": "p3-arm-done", "arm": 3, "expected_invalidation_set": ["U_parse", "U_summarize", "U_upstream"], "observed_invalidation_set": ["U_parse", "U_summarize", "U_upstream"], "observed_call_set": ["U_parse", "U_summarize", "U_upstream"], "carrier_match": true, "calc_match": true, "all_affected": true, "e_not_computed": true, "recompute_proven": true, "overall": true, "boundary": "real_Swift_Calculator integration here proves executor_integration + settlement_reuse + selective_recompute, NOT model-level continuous computation; carrier reuse != LLM_inference / KV_cache hit", "_t": 0.0}
