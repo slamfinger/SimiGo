@@ -95,23 +95,49 @@ public struct LOCALBTransportIdentityStore {
 
     public init(service: String = "com.simigo.localb-transport-identity",
                 account: String = "tls-identity-v1",
-                keychainPath: String? = LOCALBTransportIdentityStore.defaultIsolatedKeychainPath()) {
+                keychainPath: String? = LOCALBTransportIdentityStore.defaultScopedKeychainPath()) {
         self.service = service
         self.account = account
         self.keychainPath = keychainPath
     }
 
-    /// Default scoping rule: only an explicitly isolated managed root scopes
-    /// the identity into its own keychain file.
-    public static func defaultIsolatedKeychainPath(
+    /// Scoped file keychain location for the transport identity.
+    ///
+    /// Priority: an isolated `SIMIGO_HOME` root first (tests/experiments never
+    /// touch the user's real state), then the production managed root
+    /// `<home>/.simigo/localb/…`. The production branch exists because the
+    /// login-Keychain alternative binds private-key items to the code signature
+    /// of whichever ad-hoc build created them: every re-signed build (each RC)
+    /// is then refused with CSSMERR_CSP_OPERATION_AUTH_DENIED on
+    /// `SecKeyCopyPublicKey` — surfaced as `transportIdentityMismatch` and
+    /// blocking real-domain startup entirely (observed 2026-10-26 on the
+    /// admission-increment candidate). A 0600 file inside the user's own home
+    /// carries an equivalent user-domain trust boundary without depending on
+    /// any particular code signature.
+    public static func defaultScopedKeychainPath(
         env: [String: String] = ProcessInfo.processInfo.environment
     ) -> String? {
-        guard let home = env["SIMIGO_HOME"], !home.isEmpty else { return nil }
-        let root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
+        let root: URL
+        if let home = env["SIMIGO_HOME"], !home.isEmpty {
+            root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
+        } else {
+            root = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".simigo", isDirectory: true)
+        }
         return root
             .appendingPathComponent("localb", isDirectory: true)
             .appendingPathComponent("transport-identity.keychain-db", isDirectory: false)
             .path
+    }
+
+    /// Legacy name kept for source compatibility; the default is now ALWAYS a
+    /// scoped file keychain (isolated root first, production managed root
+    /// second) — see ``defaultScopedKeychainPath(env:)``.
+    @available(*, deprecated, renamed: "defaultScopedKeychainPath")
+    public static func defaultIsolatedKeychainPath(
+        env: [String: String] = ProcessInfo.processInfo.environment
+    ) -> String? {
+        defaultScopedKeychainPath(env: env)
     }
 
     /// Physical tags are unique PER ATTEMPT, not per logical generation: a
@@ -664,16 +690,35 @@ public struct LOCALBKeychainScope {
         self.fileName = fileName
     }
 
-    public static func isolatedDefault(
+    /// Same scoping rule as the transport identity: isolated `SIMIGO_HOME`
+    /// first, then the production managed root `<home>/.simigo/localb/…`.
+    /// The production branch avoids login-Keychain ACLs that bind items to
+    /// the creating build's code signature (see
+    /// ``LOCALBTransportIdentityStore/defaultScopedKeychainPath(env:)``).
+    public static func scopedDefault(
         fileName: String,
         env: [String: String] = ProcessInfo.processInfo.environment
     ) -> String? {
-        guard let home = env["SIMIGO_HOME"], !home.isEmpty else { return nil }
-        let root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
+        let root: URL
+        if let home = env["SIMIGO_HOME"], !home.isEmpty {
+            root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
+        } else {
+            root = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".simigo", isDirectory: true)
+        }
         return root
             .appendingPathComponent("localb", isDirectory: true)
             .appendingPathComponent(fileName, isDirectory: false)
             .path
+    }
+
+    /// Legacy name; defaults are now always a scoped file keychain.
+    @available(*, deprecated, renamed: "scopedDefault(fileName:env:)")
+    public static func isolatedDefault(
+        fileName: String,
+        env: [String: String] = ProcessInfo.processInfo.environment
+    ) -> String? {
+        scopedDefault(fileName: fileName, env: env)
     }
 
     func resolve() throws -> SecKeychain? {

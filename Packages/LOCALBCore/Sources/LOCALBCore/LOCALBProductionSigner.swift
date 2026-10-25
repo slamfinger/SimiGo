@@ -848,7 +848,7 @@ public struct LOCALBKeychainSignerStore {
 
     public init(service: String = "com.simigo.localb-production-signer",
                 account: String = "signing-key-v1",
-                keychainPath: String? = LOCALBKeychainScope.isolatedDefault(
+                keychainPath: String? = LOCALBKeychainScope.scopedDefault(
                     fileName: "production-signer.keychain-db")) {
         self.service = service
         self.account = account

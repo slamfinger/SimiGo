@@ -342,17 +342,27 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
         }
     }
 
-    /// Scoping is derived from the isolation roots, never from a separate
-    /// switch: a run that redirects `SIMIGO_HOME` cannot keep writing
-    /// identities into the real login Keychain.
-    func testDefaultKeychainPathOnlyFollowsAnIsolatedManagedRoot() {
-        XCTAssertNil(LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(env: [:]))
-        XCTAssertNil(LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(
-            env: ["SIMIGO_HOME": ""]))
+    /// Scoping follows the managed roots: an isolated `SIMIGO_HOME` first, then
+    /// the production managed root. The login Keychain is never the default:
+    /// its per-signature ACLs refused every re-signed build (2026-10-26
+    /// real-domain failure, CSSMERR_CSP_OPERATION_AUTH_DENIED).
+    func testDefaultKeychainPathFollowsManagedRoots() {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".simigo/localb/transport-identity.keychain-db").path
+        XCTAssertEqual(LOCALBTransportIdentityStore.defaultScopedKeychainPath(env: [:]), home)
         XCTAssertEqual(
-            LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(
+            LOCALBTransportIdentityStore.defaultScopedKeychainPath(
+                env: ["SIMIGO_HOME": ""]),
+            home)
+        XCTAssertEqual(
+            LOCALBTransportIdentityStore.defaultScopedKeychainPath(
                 env: ["SIMIGO_HOME": "/Users/example/iso-root"]),
             "/Users/example/iso-root/localb/transport-identity.keychain-db")
+        XCTAssertEqual(
+            LOCALBKeychainScope.scopedDefault(
+                fileName: "production-signer.keychain-db", env: [:]),
+            FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".simigo/localb/production-signer.keychain-db").path)
     }
 
     private func indexQueryDict(for store: LOCALBTransportIdentityStore) -> [String: Any] {
