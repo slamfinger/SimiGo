@@ -180,7 +180,11 @@ final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate 
 
     func openWizardWindow() {
         NSApp.activate(ignoringOtherApps: true)
+        // 每次都是全新向导：缓存窗口会残留上一次的 step @State，
+        // 表现为"重跑直接跳到完成页"（owner 实测 2026-10-26）。
         if let controller = wizardWindowController {
+            controller.window?.contentViewController = NSHostingController(
+                rootView: FirstRunWizardView())
             controller.showWindow(nil)
             controller.window?.makeKeyAndOrderFront(nil)
             return

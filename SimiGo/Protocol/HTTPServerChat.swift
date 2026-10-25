@@ -1,4 +1,5 @@
 import Foundation
+import SimiGoRuntimeContract
 import CryptoKit
 import Network
 
@@ -667,6 +668,22 @@ extension HTTPServer {
 
             let message: [String: Any]
 
+            // 对话落库（Information Space）：assistant 回复 + 原始请求体（含 user 轮）写入权威库
+            if let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true) {
+                try? db.runMigrations()
+                let model = (json["model"] as? String) ?? "unknown"
+                if let requestData = try? JSONSerialization.data(
+                    withJSONObject: json, options: [.sortedKeys])
+                {
+                    try? db.appendChatMessage(
+                        sessionID: sessionId, role: "user",
+                        content: String(data: requestData, encoding: .utf8) ?? "",
+                        model: model, createdAt: Date())
+                }
+                try? db.appendChatMessage(
+                    sessionID: sessionId, role: "assistant",
+                    content: content, model: model, createdAt: Date())
+            }
             if calls.isEmpty {
                 message = [
                     "role": "assistant",

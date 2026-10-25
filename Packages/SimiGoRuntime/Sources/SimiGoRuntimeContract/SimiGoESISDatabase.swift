@@ -178,6 +178,23 @@ public final class SimiGoESISDatabase {
                 try recordMigrationRow(3, "simigo-es-is-v3")
             }
         }
+        if try schemaVersion() < 4 {
+            try transaction {
+                try Self.rawExec(handle, """
+                CREATE TABLE chat_messages(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    model TEXT,
+                    content_sha256 TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE INDEX idx_chat_messages_session ON chat_messages(session_id, id);
+                """)
+                try recordMigrationRow(4, "simigo-chat-persistence-v4")
+            }
+        }
     }
 
     private func recordMigrationRow(_ version: Int, _ checksum: String) throws {
@@ -475,11 +492,13 @@ public final class SimiGoESISDatabase {
     // MARK: - External roots / work-file / agent-session indexing
     //
     // The database stores INDEXES and metadata only — NEVER the external file
-    // bytes. A "root" is an externally-owned directory (Hugging Face cache, a user
-    // work folder, an agent-session store) tracked by root_id + relative path;
-    // original work files stay where they are, with no second physical copy.
+    /// Remove a registered root (cascades its indexed files). Idempotent.
+    public func removeRoot(rootID: String) throws {
+        try execBinding("DELETE FROM roots WHERE root_id = ?;") { stmt in
+            bind(stmt, 1, rootID)
+        }
+    }
 
-    /// A registered external root, as stored in the `roots` table.
     public struct RootRow: Equatable, Sendable {
         public let rootID: String
         public let category: String
@@ -506,6 +525,56 @@ public final class SimiGoESISDatabase {
             rows.append(RootRow(
                 rootID: col(0), category: col(1), displayName: col(2),
                 locatorType: col(3), status: col(4)))
+        }
+        return rows
+    }
+
+    // MARK: - 对话落库（Information Space：会话即信息）
+
+    public func appendChatMessage(
+        sessionID: String, role: String, content: String, model: String?, createdAt: Date
+    ) throws {
+        let digest = NativeSHA256.hexDigest(Data(content.utf8))
+        try execBinding("""
+        INSERT INTO chat_messages(session_id, role, content, model, content_sha256, created_at)
+        VALUES(?,?,?,?,?,?);
+        """) { stmt in
+            bind(stmt, 1, sessionID)
+            bind(stmt, 2, role)
+            bind(stmt, 3, content)
+            if let model { bind(stmt, 4, model) } else { sqlite3_bind_null(stmt, 4) }
+            bind(stmt, 5, digest)
+            bind(stmt, 6, Self.stamp(createdAt))
+        }
+    }
+
+    public struct ChatMessageRow: Equatable, Sendable {
+        public let sessionID: String
+        public let role: String
+        public let content: String
+        public let model: String?
+        public let contentSHA256: String
+        public let createdAt: String
+    }
+
+    public func listChatMessages(sessionID: String? = nil, limit: Int = 500) throws -> [ChatMessageRow] {
+        let sql = sessionID == nil
+            ? "SELECT session_id, role, content, model, content_sha256, created_at FROM chat_messages ORDER BY id DESC LIMIT \(limit);"
+            : "SELECT session_id, role, content, model, content_sha256, created_at FROM chat_messages WHERE session_id='"
+                + sessionID!.replacingOccurrences(of: "'", with: "''")
+                + "' ORDER BY id ASC LIMIT \(limit);"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [ChatMessageRow] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func col(_ i: Int32) -> String {
+                guard let c = sqlite3_column_text(stmt, i) else { return "" }
+                return String(cString: c)
+            }
+            rows.append(ChatMessageRow(
+                sessionID: col(0), role: col(1), content: col(2),
+                model: col(3).isEmpty ? nil : col(3),
+                contentSHA256: col(4), createdAt: col(5)))
         }
         return rows
     }
