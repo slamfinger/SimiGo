@@ -35,6 +35,7 @@ SimiGo-v*-*.dmg
 SimiGo-v*-Installer.pkg
 
 # Research archive: imported evidence only; never commit runtime/build artifacts or key material
+research/_artifacts/
 research/**/.build/
 research/**/DerivedData/
 research/**/scratch/
