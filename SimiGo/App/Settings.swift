@@ -4,6 +4,24 @@ import SimiGoRuntimeContract
 
 struct Settings: View {
     @State private var envMessage = ""
+    @State private var infoRoots: [SimiGoESISDatabase.RootRow] = []
+
+    private func loadInfoRoots() {
+        if let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true) {
+            infoRoots = (try? db.listRoots()) ?? []
+        }
+    }
+
+    private func removeInfoRoot(_ root: SimiGoESISDatabase.RootRow) {
+        if let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true) {
+            _ = try? db.removeRoot(rootID: root.rootID)
+        }
+        loadInfoRoots()
+    }
+
+    func onSettingsAppear() {
+        loadInfoRoots()
+    }
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
     @State private var cloudAPIKeyInput = ""
@@ -31,46 +49,42 @@ struct Settings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // MARK: - All Backends
-                sectionBox("生成环境") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Button("添加外部工作目录…") {
-                            let panel = NSOpenPanel()
-                            panel.canChooseFiles = false
-                            panel.canChooseDirectories = true
-                            if panel.runModal() == .OK, let url = panel.url {
-                                let r = EnvManager.shared.registerWorkRoot(url.path)
-                                envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))"
-                            }
+                sectionBox("Information Space（外部工作目录）") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        if infoRoots.isEmpty {
+                            Text("尚未注册外部工作目录").font(.caption).foregroundStyle(.secondary)
                         }
-                        Button("安装外部二进制（URL）…") {
-                            let alert = NSAlert()
-                            alert.messageText = "安装外部二进制（自动：下载 → bin → 清缓存）"
-                            alert.informativeText = "二进制直链 URL（macOS arm64 Mach-O）："
-                            let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
-                            alert.accessoryView = input
-                            alert.addButton(withTitle: "安装")
-                            alert.addButton(withTitle: "取消")
-                            if alert.runModal() == .alertFirstButtonReturn,
-                                let raw = input.stringValue.trimmingCharacters(in: .whitespaces) as String?,
-                                let url = URL(string: raw), url.scheme?.hasPrefix("http") == true
-                            {
-                                Task { @MainActor in
-                                    let r = await EnvManager.shared.installExternalBinary(from: url)
-                                    envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?")"
+                        ForEach(infoRoots, id: \.rootID) { root in
+                            HStack {
+                                Image(systemName: root.category == "work" ? "folder" : "cube")
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(root.displayName ?? root.rootID)
+                                        .lineLimit(1).truncationMode(.middle)
+                                    Text("\(root.rootID) · \(root.category)")
+                                        .font(.caption2).foregroundStyle(.secondary)
                                 }
+                                Spacer()
+                                Button {
+                                    removeInfoRoot(root)
+                                } label: { Image(systemName: "minus.circle") }
+                                    .buttonStyle(.borderless)
                             }
+                            .padding(.vertical, 2)
                         }
-                        Button("更新已装二进制（llama.cpp / hf）") {
-                            Task { @MainActor in
-                                let r = await EnvManager.shared.updateInstalledBinaries()
-                                envMessage = r.map { key, value -> String in
-                                    let st = (value as? [String: Any])?["status"] ?? "?"
-                                    return "\(key): \(st)"
-                                }.sorted().joined(separator: "；")
+                        HStack {
+                            Button {
+                                let panel = NSOpenPanel()
+                                panel.canChooseFiles = false
+                                panel.canChooseDirectories = true
+                                if panel.runModal() == .OK, let url = panel.url {
+                                    let r = EnvManager.shared.registerWorkRoot(url.path)
+                                    envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?")"
+                                    loadInfoRoots()
+                                }
+                            } label: {
+                                Label("添加", systemImage: "plus.circle")
                             }
-                        }
-                        Button("重新运行安装向导") {
-                            StatusBarCoordinator.shared.openWizardWindow()
+                            Spacer()
                         }
                         if !envMessage.isEmpty {
                             Text(envMessage).font(.caption).foregroundStyle(.secondary)
@@ -308,7 +322,7 @@ struct Settings: View {
                     .frame(maxWidth: .infinity, alignment: .center)
             }
             .padding()
-            .onAppear { cloudAPIKeyInput = svc.cloudAPIKey }
+            .onAppear { cloudAPIKeyInput = svc.cloudAPIKey; onSettingsAppear() }
         }
     }
 

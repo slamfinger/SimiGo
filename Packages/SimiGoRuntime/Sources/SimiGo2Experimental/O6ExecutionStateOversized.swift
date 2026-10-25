@@ -28,7 +28,7 @@ import Tokenizers
 
 // MARK: - Payload / result
 
-public struct OversizedPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable {
+public struct OversizedPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable, Codable {
   public let tokenPrefix: [Int]
   public init(tokenPrefix: [Int]) {
     self.tokenPrefix = tokenPrefix
@@ -418,11 +418,13 @@ public final class OversizedSegmentedStateBackend: ExecutionStateBackend, @unche
     from parent: ExecutionRepresentation, for child: ExecutionStateHandle
   ) async throws -> ExecutionRepresentation {
     // Registered gap G-1: direct backend calls must fail closed exactly like
-    // coordinator-driven forks, instead of relying on coordinator masking. A
-    // child may only derive from a parent bound at the same logical position.
+    // coordinator-driven forks, instead of relying on coordinator masking.
     guard parent.position == child.position else {
       throw ExecutionStateBackendError.representationPositionMismatch(
-        executionID: child.id, bound: parent.position, logical: child.position)
+        executionID: child.id,
+        bound: parent.position,
+        logical: child.position
+      )
     }
     guard let parentPayload = parent.payload as? OversizedPrefixPayload else {
       throw ExecutionStateBackendError.foreignRepresentationPayload(parent.executionID)

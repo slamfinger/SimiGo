@@ -1,5 +1,5 @@
 import Foundation
-import MLXLMCommon
+import Crypto
 
 /// Disk artifact for one pool entry (B-2): the KV snapshot written by the
 /// session-side exporter plus a sidecar carrying the content claims.
@@ -8,19 +8,42 @@ import MLXLMCommon
 /// `ChatSession.saveCache(to:)`, which takes no user metadata — a sidecar
 /// avoids re-serializing multi-GB KV arrays just to attach claims. This is
 /// the same safetensors + JSON-sidecar pattern the product already runs.
-public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable, Sendable {
+public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable {
     public let snapshotURL: URL
     public let metadataURL: URL
+    /// Nil only for artifacts registered by pre-generation sidecars.
+    public let generation: UUID?
+        private let publishedPhysicalByteCount: Int?
 
     public var physicalByteCount: Int? {
-        let snapshotBytes = (try? snapshotURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        let metadataBytes = (try? metadataURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        if let publishedPhysicalByteCount { return publishedPhysicalByteCount }
+        guard
+            let snapshotAttributes = try? FileManager.default.attributesOfItem(
+                atPath: snapshotURL.path),
+            let metadataAttributes = try? FileManager.default.attributesOfItem(
+                atPath: metadataURL.path),
+            let snapshotBytes = snapshotAttributes[.size] as? Int,
+            let metadataBytes = metadataAttributes[.size] as? Int
+        else {
+            return nil
+        }
         return snapshotBytes + metadataBytes
     }
 
-    public init(snapshotURL: URL, metadataURL: URL) {
+    public init(
+        snapshotURL: URL, metadataURL: URL, generation: UUID? = nil,
+        publishedPhysicalByteCount: Int? = nil
+    ) {
         self.snapshotURL = snapshotURL
         self.metadataURL = metadataURL
+        self.generation = generation
+        self.publishedPhysicalByteCount = publishedPhysicalByteCount
+    }
+
+    public static func == (lhs: DiskPrefixArtifact, rhs: DiskPrefixArtifact) -> Bool {
+        lhs.snapshotURL == rhs.snapshotURL
+            && lhs.metadataURL == rhs.metadataURL
+            && lhs.generation == rhs.generation
     }
 }
 
@@ -33,6 +56,14 @@ public enum PrefixSnapshotStoreError: Error, Equatable {
         entryTokens: Int, entryHash: UInt64, snapshotTokens: Int, snapshotHash: UInt64)
     case namespaceMismatch(expected: PrefixPoolNamespace, snapshot: PrefixPoolNamespace)
     case artifactUnreadable(String)
+    case artifactGenerationMismatch(expected: UUID?, actual: UUID?)
+    case artifactDeletionFailed(path: String, underlyingDescription: String)
+    case artifactContentMismatch(path: String)
+    case physicalUseUnavailable(path: String)
+    case quarantineLedgerCorrupt(path: String)
+    case quarantineLedgerWriteFailed(
+        path: String, rollbackDescription: String, underlyingDescription: String)
+    case quarantineClearFailed(path: String, underlyingDescription: String)
 }
 
 struct PrefixSnapshotSidecar: Codable, Equatable {
@@ -42,6 +73,34 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
     var tokenCount: Int
     var chainHash: UInt64
     var createdAt: Date
+    var generation: UUID? = nil
+    /// Added with generation sidecars; nil is accepted only for pre-G-6
+    /// legacy artifacts without an identified generation.
+    var snapshotSHA256: String? = nil
+}
+
+private struct RescanArtifactChanged: Error {}
+
+/// Durable tombstone for an artifact whose publication rollback failed.
+/// Records live under `<root>/.invalidated` so restart/rescan cannot
+/// resurrect a mixed publication.
+public struct QuarantinedArtifactRecord: Codable, Equatable {
+    public let artifactPath: String
+    public let generation: UUID?
+    public let rollbackFailure: String
+    public let quarantinedAt: Date
+
+    public init(
+        artifactPath: String,
+        generation: UUID?,
+        rollbackFailure: String,
+        quarantinedAt: Date
+    ) {
+        self.artifactPath = artifactPath
+        self.generation = generation
+        self.rollbackFailure = rollbackFailure
+        self.quarantinedAt = quarantinedAt
+    }
 }
 
 /// B-2 — the KV artifact adapter: disk-backed store wiring the prefix
@@ -68,32 +127,124 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// holds the artifact is deferred until release (D-C1/C2) — the P2
     /// delete-on-evict semantics are unchanged for the no-in-flight case.
     public let physicalUse: PhysicalUseRegistry
+    private let artifactIOLock: NSLock
     private let fileManager = FileManager.default
+    private let willPublishSidecar: @Sendable (URL) throws -> Void
+    private let willRollback: @Sendable () throws -> Void
+    private let willCommitPoolEntry: @Sendable () -> Void
+    private let willBeginRescanGeneration: @Sendable () throws -> Void
+    private let quarantineDirectory: URL
 
-    public init(root: URL, pool: ExecutionStatePrefixPool) {
+    internal init(
+        root: URL,
+        pool: ExecutionStatePrefixPool,
+        artifactIOLock: NSLock,
+        deleteArtifact: @escaping (String, UUID?) throws -> Void,
+        willPublishSidecar: @escaping @Sendable (URL) throws -> Void = { _ in },
+        willRollback: @escaping @Sendable () throws -> Void = { },
+        willCommitPoolEntry: @escaping @Sendable () -> Void = { },
+        willBeginRescanGeneration: @escaping @Sendable () throws -> Void = { },
+        quarantineDirectory: URL? = nil
+    ) {
         self.root = root
         self.pool = pool
-        let fileManager = FileManager.default
         try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
-        let registry = PhysicalUseRegistry(onDelete: { key in
-            let snapshotURL = URL(fileURLWithPath: key)
-            let metadataURL = snapshotURL.deletingPathExtension()
-                .appendingPathExtension("json")
-            try? fileManager.removeItem(at: snapshotURL)
-            try? fileManager.removeItem(at: metadataURL)
-        })
-        self.physicalUse = registry
+        self.artifactIOLock = artifactIOLock
+        self.physicalUse = PhysicalUseRegistry(onDelete: deleteArtifact)
+        self.willPublishSidecar = willPublishSidecar
+        self.willRollback = willRollback
+        self.willCommitPoolEntry = willCommitPoolEntry
+        self.willBeginRescanGeneration = willBeginRescanGeneration
+        self.quarantineDirectory = quarantineDirectory ?? root.appendingPathComponent(
+            ".invalidated", isDirectory: true)
         // P2 eviction persistence: an evicted entry's artifact is deleted
         // (immediately when unused; deferred while a physical operation
         // holds it — Gate D) — eviction must survive restarts (rescan
         // only finds files that were never evicted).
-        pool.onEvict = { entry in
-            guard let artifact = entry.artifact as? DiskPrefixArtifact else {
+        pool.onEvict = { [weak self] entry in
+            guard let self, let artifact = entry.artifact as? DiskPrefixArtifact else {
                 return
             }
-            registry.requestDelete(artifact.snapshotURL.path)
+            self.physicalUse.requestDelete(
+                artifact.snapshotURL.path, generation: artifact.generation)
+        }
+        // A durable tombstone must do more than block rescan: after restart
+        // the registry's in-memory invalidated state is gone, so direct
+        // admission must also stay closed until explicit repair/dismissal.
+        let persistedQuarantine = (try? quarantinedArtifacts()) ?? []
+        for record in persistedQuarantine {
+            physicalUse.markGenerationQuarantined(
+                record.artifactPath, generation: record.generation)
         }
     }
+
+    public convenience init(root: URL, pool: ExecutionStatePrefixPool) {
+        let artifactIOLock = NSLock()
+        self.init(
+            root: root,
+            pool: pool,
+            artifactIOLock: artifactIOLock,
+            deleteArtifact: { key, expectedGeneration in
+                let snapshotURL = URL(fileURLWithPath: key)
+                let metadataURL = snapshotURL.deletingPathExtension()
+                    .appendingPathExtension("json")
+                artifactIOLock.lock()
+                defer { artifactIOLock.unlock() }
+                let snapshotExists = FileManager.default.fileExists(atPath: snapshotURL.path)
+                let metadataExists = FileManager.default.fileExists(atPath: metadataURL.path)
+                guard snapshotExists || metadataExists else { return }
+                let sidecar = FileManager.default.contents(atPath: metadataURL.path)
+                    .flatMap { try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0) }
+                guard let sidecar else {
+                    throw PrefixSnapshotStoreError.artifactUnreadable(
+                        "artifact sidecar missing or unreadable: \(metadataURL.path)")
+                }
+                guard sidecar.generation == expectedGeneration else {
+                    throw PrefixSnapshotStoreError.artifactGenerationMismatch(
+                        expected: expectedGeneration, actual: sidecar.generation)
+                }
+                do {
+                    if FileManager.default.fileExists(atPath: snapshotURL.path) {
+                        try FileManager.default.removeItem(at: snapshotURL)
+                    }
+                } catch {
+                    throw PrefixSnapshotStoreError.artifactDeletionFailed(
+                        path: snapshotURL.path,
+                        underlyingDescription: String(describing: error))
+                }
+                do {
+                    if FileManager.default.fileExists(atPath: metadataURL.path) {
+                        try FileManager.default.removeItem(at: metadataURL)
+                    }
+                } catch {
+                    throw PrefixSnapshotStoreError.artifactDeletionFailed(
+                        path: metadataURL.path,
+                        underlyingDescription: String(describing: error))
+                }
+            },
+            willPublishSidecar: { _ in }
+        )
+    }
+
+    #if DEBUG
+    /// Crash-harness injection face. Production callers use the default init;
+    /// this remains unavailable in release builds.
+    public convenience init(
+        root: URL,
+        pool: ExecutionStatePrefixPool,
+        willPublishSidecar: @escaping @Sendable (URL) throws -> Void,
+        willRollback: @escaping @Sendable () throws -> Void
+    ) {
+        self.init(
+            root: root,
+            pool: pool,
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: willPublishSidecar,
+            willRollback: willRollback
+        )
+    }
+    #endif
 
     // MARK: - Export (turn commit)
 
@@ -112,6 +263,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         let baseName = "\(String(hash, radix: 16))-\(tokens.count)"
         let snapshotURL = dir.appendingPathComponent(baseName + ".safetensors")
         let metadataURL = dir.appendingPathComponent(baseName + ".json")
+        let generation = UUID()
 
         // Write through a temp file so a failing exporter cannot leave a
         // truncated snapshot at the final location. The file is
@@ -119,42 +271,159 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         // before writing, which fails with ENOENT on a missing file.
         let tempURL = dir.appendingPathComponent(".tmp-\(UUID().uuidString).safetensors")
         fileManager.createFile(atPath: tempURL.path, contents: Data())
-        defer { try? fileManager.removeItem(at: tempURL) }
+        var newSnapshotPublished = false
+        defer {
+            if !newSnapshotPublished { try? fileManager.removeItem(at: tempURL) }
+        }
         try await write(tempURL)
         guard fileManager.fileExists(atPath: tempURL.path) else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
                 "exporter produced no file (e.g. noCacheAvailable)")
         }
-        // Same-content re-exports (persistent pool across runs) hit an
-        // existing destination: replace it — moveItem alone throws 516.
-        if fileManager.fileExists(atPath: snapshotURL.path) {
-            try? fileManager.removeItem(at: snapshotURL)
-        }
-        try fileManager.moveItem(at: tempURL, to: snapshotURL)
-
         let sidecar = PrefixSnapshotSidecar(
             modelID: namespace.modelID,
             kvFingerprint: namespace.kvFingerprint,
             tokenCount: tokens.count,
             chainHash: hash,
-            createdAt: Date())
-        let data = try JSONEncoder().encode(sidecar)
-        try data.write(to: metadataURL, options: .atomic)
+            createdAt: Date(),
+            generation: generation,
+            snapshotSHA256: try sha256File(at: tempURL))
+        let sidecarData = try JSONEncoder().encode(sidecar)
+        let sidecarTempURL = dir.appendingPathComponent(".tmp-\(UUID().uuidString)-sidecar")
+        try sidecarData.write(to: sidecarTempURL, options: .atomic)
+        let snapshotAttributes = try fileManager.attributesOfItem(atPath: tempURL.path)
+        guard let snapshotByteCount = snapshotAttributes[.size] as? Int else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "exporter byte count unavailable")
+        }
+        var sidecarPublished = false
+        defer {
+            if !sidecarPublished { try? fileManager.removeItem(at: sidecarTempURL) }
+        }
 
-        return pool.export(
-            namespace: namespace, tokens: tokens,
-            artifact: DiskPrefixArtifact(snapshotURL: snapshotURL, metadataURL: metadataURL))
+        // Replace the complete snapshot/sidecar pair or restore the old pair.
+        var publishedEntry: PrefixPoolEntry?
+        try physicalUse.beginGeneration(
+            snapshotURL.path,
+            generation: generation,
+            publish: { [artifactIOLock, fileManager, pool] in
+            let backupSnapshotURL = dir.appendingPathComponent(
+                ".backup-\(UUID().uuidString).safetensors")
+            let backupMetadataURL = dir.appendingPathComponent(
+                ".backup-\(UUID().uuidString).metadata")
+            var oldSnapshotMoved = false
+            var oldMetadataMoved = false
+
+            func quarantine(_ url: URL) throws {
+                guard fileManager.fileExists(atPath: url.path) else { return }
+                try fileManager.moveItem(
+                    at: url,
+                    to: dir.appendingPathComponent(".quarantine-\(UUID().uuidString)"))
+            }
+
+            artifactIOLock.lock()
+            do {
+                defer { artifactIOLock.unlock() }
+            do {
+                if fileManager.fileExists(atPath: snapshotURL.path) {
+                    try fileManager.moveItem(at: snapshotURL, to: backupSnapshotURL)
+                    oldSnapshotMoved = true
+                }
+                if fileManager.fileExists(atPath: metadataURL.path) {
+                    try fileManager.moveItem(at: metadataURL, to: backupMetadataURL)
+                    oldMetadataMoved = true
+                }
+                try fileManager.moveItem(at: tempURL, to: snapshotURL)
+                newSnapshotPublished = true
+                try willPublishSidecar(metadataURL)
+                try fileManager.moveItem(at: sidecarTempURL, to: metadataURL)
+                sidecarPublished = true
+                let publishedSidecar = fileManager.contents(atPath: metadataURL.path)
+                    .flatMap { try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0) }
+                guard publishedSidecar?.generation == generation else {
+                    throw PrefixSnapshotStoreError.artifactGenerationMismatch(
+                        expected: generation, actual: publishedSidecar?.generation)
+                }
+            } catch {
+                var rollbackError: Error?
+                do {
+                    try willRollback()
+                    if newSnapshotPublished {
+                        try quarantine(metadataURL)
+                    }
+                    if oldMetadataMoved {
+                        try fileManager.moveItem(at: backupMetadataURL, to: metadataURL)
+                    }
+                    if newSnapshotPublished {
+                        try quarantine(snapshotURL)
+                    }
+                    if oldSnapshotMoved {
+                        try fileManager.moveItem(at: backupSnapshotURL, to: snapshotURL)
+                    }
+                } catch {
+                    rollbackError = error
+                }
+                if let rollbackError {
+                    physicalUse.markGenerationQuarantined(
+                        snapshotURL.path, generation: generation)
+                    let quarantineFailure: Error
+                    do {
+                        try persistQuarantine(
+                            artifactPath: snapshotURL.path,
+                            generation: generation,
+                            rollbackError: rollbackError)
+                        quarantineFailure = rollbackError
+                    } catch {
+                        quarantineFailure = PrefixSnapshotStoreError.quarantineLedgerWriteFailed(
+                            path: snapshotURL.path,
+                            rollbackDescription: String(describing: rollbackError),
+                            underlyingDescription: String(describing: error))
+                    }
+                    throw PhysicalUseRegistry.PublicationQuarantinedError(
+                        key: snapshotURL.path,
+                        generation: generation,
+                        underlyingError: quarantineFailure)
+                }
+                throw error
+            }
+
+            try? fileManager.removeItem(at: backupSnapshotURL)
+            try? fileManager.removeItem(at: backupMetadataURL)
+            } catch {
+                throw error
+            }
+
+            // Keep pool registration inside `beginGeneration`: admission and
+            // another publication must not run between disk publication and
+            // the pool's generation switch.
+            willCommitPoolEntry()
+            publishedEntry = pool.export(
+                namespace: namespace, tokens: tokens,
+                artifact: DiskPrefixArtifact(
+                    snapshotURL: snapshotURL, metadataURL: metadataURL,
+                    generation: generation,
+                    publishedPhysicalByteCount: snapshotByteCount + sidecarData.count))
+            }
+        )
+
+        do {
+            try clearQuarantine(forArtifactAt: snapshotURL.path)
+        } catch {
+            physicalUse.markGenerationQuarantined(snapshotURL.path, generation: generation)
+            throw PrefixSnapshotStoreError.quarantineClearFailed(
+                path: snapshotURL.path,
+                underlyingDescription: String(describing: error))
+        }
+
+        guard let publishedEntry else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "publication returned without a committed pool entry")
+        }
+        return publishedEntry
     }
 
     // MARK: - Bind (admission → verified snapshot)
 
-    /// Remove one pool entry by ARTIFACT identity when it carries a
-    /// `DiskPrefixArtifact`. The pool's `==` is content-only (namespace,
-    /// tokenCount, boundaryHash), so a stale handle — an expired load or an
-    /// explicit remove of a superseded entry — is otherwise indistinguishable
-    /// from a same-content replacement and would wrongly evict the newer entry.
-    /// Every removal path funnels through here so the artifact guard cannot be
-    /// bypassed. Foreign artifact handles fall back to content-based removal.
     private func removeFromPool(_ entry: PrefixPoolEntry) {
         if let artifact = entry.artifact as? DiskPrefixArtifact {
             _ = pool.remove(entry, artifact: artifact)
@@ -163,61 +432,174 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         }
     }
 
-    /// Reconcile the admitted entry against the artifact's own claims,
-    /// then load the snapshot. Any disagreement or unreadability removes
-    /// the entry from the pool and throws LOUD — never a silent miss, and
-    /// never a bind that continues on an unreconciled representation.
-    public func load(_ admission: PrefixAdmission) async throws -> PromptCacheSnapshot {
+    /// Remove a failed admission from the pool and request generation-bound
+    /// cleanup. A stale request cannot delete a replacement; an invalid
+    /// sidecar leaves the cleanup failure observable in the registry.
+    private func retireFailedArtifact(_ entry: PrefixPoolEntry) {
+        removeFromPool(entry)
+        guard let artifact = entry.artifact as? DiskPrefixArtifact else { return }
+        _ = physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+    }
+
+    /// Reconcile the admitted entry and invoke `reader` while its artifact is
+    /// still protected. The core store is backend-neutral: the caller chooses
+    /// the payload decoder (for example, an MLX adapter).
+    public func load<Payload>(
+        _ admission: PrefixAdmission,
+        reader: (URL) throws -> Payload
+    ) async throws -> Payload {
         let entry = admission.entry
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
-        do {
-            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
-            return snapshot
-        } catch let error as PrefixSnapshotStoreError {
-            removeFromPool(entry)
-            throw error
-        } catch {
-            removeFromPool(entry)
-            throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
-        }
+        try Task.checkCancellation()
+        return try leasedReconciledArtifact(
+            entry: entry, artifact: artifact, reader: reader)
     }
 
     /// Drop the entry and its files (budget eviction with disk cleanup is
-    /// the caller's policy; this is the explicit remove).
-    public func remove(_ entry: PrefixPoolEntry) {
-        if let artifact = entry.artifact as? DiskPrefixArtifact {
-            try? fileManager.removeItem(at: artifact.snapshotURL)
-            try? fileManager.removeItem(at: artifact.metadataURL)
+    /// the caller's policy; this is the explicit remove. Immediate deletion
+    /// failures are thrown. If deletion is deferred behind an active lease,
+    /// later failures remain observable through
+    /// `PhysicalUseRegistry.takeDeleteFailures(_:)`.
+    public func remove(_ entry: PrefixPoolEntry) throws {
+        guard let artifact = entry.artifact as? DiskPrefixArtifact else {
+            removeFromPool(entry)
+            return
         }
-        removeFromPool(entry)
+        // A prior failed remove has already detached the entry. Reissuing the
+        // generation-bound request makes retry observable; a replacement makes
+        // a stale retry harmless.
+        pool.remove(entry, artifact: artifact)
+        if let failure = physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+        {
+            throw failure
+        }
     }
 
     /// Synchronous twin of `load` for host hooks that run inside a
     /// session's synchronous consult path (B-6). Same reconciliation, same
     /// self-healing.
-    public func loadSync(_ admission: PrefixAdmission) throws -> PromptCacheSnapshot {
+    public func loadSync<Payload>(
+        _ admission: PrefixAdmission,
+        reader: (URL) throws -> Payload
+    ) throws -> Payload {
         let entry = admission.entry
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
+        return try leasedReconciledArtifact(
+            entry: entry, artifact: artifact, reader: reader)
+    }
+
+    private func leasedReconciledArtifact<Payload>(
+        entry: PrefixPoolEntry,
+        artifact: DiskPrefixArtifact,
+        reader: (URL) throws -> Payload
+    ) throws -> Payload {
+        guard let lease = physicalUse.acquire(artifact.snapshotURL.path) else {
+            throw PrefixSnapshotStoreError.physicalUseUnavailable(
+                path: artifact.snapshotURL.path)
+        }
         do {
-            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
-            return snapshot
+            defer { physicalUse.release(lease) }
+            return try reconciledArtifact(
+                entry: entry, artifact: artifact, reader: reader)
         } catch let error as PrefixSnapshotStoreError {
-            removeFromPool(entry)
+            retireFailedArtifact(entry)
             throw error
         } catch {
-            removeFromPool(entry)
+            retireFailedArtifact(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
 
+    // MARK: - Durable quarantine ledger
+
+    /// Durable quarantine records survive process restart. `rescan()` skips
+    /// these paths until explicit repair/dismissal.
+    public func quarantinedArtifacts() throws -> [QuarantinedArtifactRecord] {
+        artifactIOLock.lock()
+        defer { artifactIOLock.unlock() }
+        guard fileManager.fileExists(atPath: quarantineDirectory.path) else {
+            return []
+        }
+        return try fileManager.contentsOfDirectory(
+            at: quarantineDirectory,
+            includingPropertiesForKeys: nil
+        ).compactMap { url in
+            guard url.pathExtension == "quarantine" else { return nil }
+            do {
+                return try JSONDecoder().decode(
+                    QuarantinedArtifactRecord.self,
+                    from: Data(contentsOf: url)
+                )
+            } catch {
+                throw PrefixSnapshotStoreError.quarantineLedgerCorrupt(path: url.path)
+            }
+        }
+    }
+
+    /// Explicit repair/dismissal for a durable quarantine tombstone.
+    public func clearQuarantine(forArtifactAt path: String) throws {
+        artifactIOLock.lock()
+        defer { artifactIOLock.unlock() }
+        guard fileManager.fileExists(atPath: quarantineDirectory.path) else { return }
+        for url in try fileManager.contentsOfDirectory(
+            at: quarantineDirectory,
+            includingPropertiesForKeys: nil
+        ) {
+            guard url.pathExtension == "quarantine" else { continue }
+            let record: QuarantinedArtifactRecord
+            do {
+                record = try JSONDecoder().decode(
+                    QuarantinedArtifactRecord.self,
+                    from: Data(contentsOf: url))
+            } catch {
+                throw PrefixSnapshotStoreError.quarantineLedgerCorrupt(path: url.path)
+            }
+            guard record.artifactPath == path else { continue }
+            try fileManager.removeItem(at: url)
+        }
+    }
+
+    private func persistQuarantine(
+        artifactPath: String,
+        generation: UUID?,
+        rollbackError: Error
+    ) throws {
+        try fileManager.createDirectory(
+            at: quarantineDirectory,
+            withIntermediateDirectories: true
+        )
+        let record = QuarantinedArtifactRecord(
+            artifactPath: artifactPath,
+            generation: generation,
+            rollbackFailure: String(describing: rollbackError),
+            quarantinedAt: Date()
+        )
+        try JSONEncoder().encode(record).write(
+            to: quarantineDirectory.appendingPathComponent(
+                "\(UUID().uuidString).quarantine"
+            ),
+            options: .atomic
+        )
+    }
+
+    private func quarantinedArtifactPaths() throws -> Set<String> {
+        Set(try quarantinedArtifacts().map(\.artifactPath))
+    }
+
     /// Shared reconciliation + snapshot read for both load paths.
-    private func reconciledSnapshot(
-        entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
-    ) throws -> PromptCacheSnapshot {
+    private func reconciledArtifact<Payload>(
+        entry: PrefixPoolEntry,
+        artifact: DiskPrefixArtifact,
+        reader: (URL) throws -> Payload
+    ) throws -> Payload {
+        artifactIOLock.lock()
+        defer { artifactIOLock.unlock() }
         let sidecarData = fileManager.contents(atPath: artifact.metadataURL.path)
         guard let sidecar = sidecarData.flatMap({
             try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0)
@@ -231,6 +613,19 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             throw PrefixSnapshotStoreError.namespaceMismatch(
                 expected: entry.namespace, snapshot: snapshotNamespace)
         }
+        guard sidecar.generation == artifact.generation else {
+            throw PrefixSnapshotStoreError.artifactGenerationMismatch(
+                expected: artifact.generation, actual: sidecar.generation)
+        }
+        if let expectedSHA256 = sidecar.snapshotSHA256 {
+            guard try sha256File(at: artifact.snapshotURL) == expectedSHA256 else {
+                throw PrefixSnapshotStoreError.artifactContentMismatch(
+                    path: artifact.snapshotURL.path)
+            }
+        } else if artifact.generation != nil {
+            throw PrefixSnapshotStoreError.artifactContentMismatch(
+                path: artifact.snapshotURL.path)
+        }
         guard sidecar.tokenCount == entry.tokenCount,
             sidecar.chainHash == entry.boundaryHash
         else {
@@ -238,7 +633,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 entryTokens: entry.tokenCount, entryHash: entry.boundaryHash,
                 snapshotTokens: sidecar.tokenCount, snapshotHash: sidecar.chainHash)
         }
-        return try loadPromptCacheSnapshot(url: artifact.snapshotURL, materializeArrays: true)
+        return try reader(artifact.snapshotURL)
     }
 
     // MARK: - Restart (disk → pool)
@@ -254,6 +649,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     @discardableResult
     public func rescan() throws -> Int {
         var registered = 0
+        let quarantinedPaths = try quarantinedArtifactPaths()
         let dirs = try fileManager.contentsOfDirectory(
             at: root, includingPropertiesForKeys: [.isDirectoryKey])
         for dir in dirs where dir.hasDirectoryPath {
@@ -267,20 +663,97 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 else { continue }
                 let snapshotURL = metaURL.deletingPathExtension()
                     .appendingPathExtension("safetensors")
+                guard !quarantinedPaths.contains(snapshotURL.path) else { continue }
                 guard fileManager.fileExists(atPath: snapshotURL.path) else {
                     continue
                 }
-                pool.register(
-                    namespace: PrefixPoolNamespace(
-                        modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
-                    tokenCount: sidecar.tokenCount,
-                    boundaryHash: sidecar.chainHash,
-                    artifact: DiskPrefixArtifact(
-                        snapshotURL: snapshotURL, metadataURL: metaURL))
+                artifactIOLock.lock()
+                do {
+                    if let expectedSHA256 = sidecar.snapshotSHA256 {
+                        guard try sha256File(at: snapshotURL) == expectedSHA256 else {
+                            throw PrefixSnapshotStoreError.artifactContentMismatch(
+                                path: snapshotURL.path)
+                        }
+                    } else if sidecar.generation != nil {
+                        throw PrefixSnapshotStoreError.artifactContentMismatch(
+                            path: snapshotURL.path)
+                    }
+                } catch {
+                    artifactIOLock.unlock()
+                    throw error
+                }
+                artifactIOLock.unlock()
+                try willBeginRescanGeneration()
+                // Register the generation before pool.commit: immediate
+                // self-eviction must issue a live delete, not a stale no-op.
+                let registeredThisScan: Bool
+                do {
+                    registeredThisScan = try physicalUse.beginGenerationIfCurrentOrUnregistered(
+                        snapshotURL.path, generation: sidecar.generation
+                    ) {
+                    // The scan itself is outside the I/O lock. Revalidate while
+                    // preparing blocks a newly started delete; if a delete has
+                    // already completed, this sees the vanished generation.
+                    func validateStillOnDisk() throws -> (snapshotBytes: Int, metadataBytes: Int) {
+                        artifactIOLock.lock()
+                        defer { artifactIOLock.unlock() }
+                        let currentData = fileManager.contents(atPath: metaURL.path)
+                        let currentSidecar = currentData.flatMap {
+                            try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0)
+                        }
+                        guard currentSidecar == sidecar,
+                            fileManager.fileExists(atPath: snapshotURL.path)
+                        else {
+                            throw RescanArtifactChanged()
+                        }
+                        if let expectedSHA256 = sidecar.snapshotSHA256 {
+                            guard try sha256File(at: snapshotURL) == expectedSHA256 else {
+                                throw PrefixSnapshotStoreError.artifactContentMismatch(
+                                    path: snapshotURL.path)
+                            }
+                        } else if sidecar.generation != nil {
+                            throw PrefixSnapshotStoreError.artifactContentMismatch(
+                                path: snapshotURL.path)
+                        }
+                        let snapshotAttributes = try fileManager.attributesOfItem(
+                            atPath: snapshotURL.path)
+                        guard let snapshotBytes = snapshotAttributes[.size] as? Int else {
+                            throw PrefixSnapshotStoreError.artifactUnreadable(
+                                "rescanned artifact byte count unavailable")
+                        }
+                        return (snapshotBytes, currentData?.count ?? 0)
+                    }
+                    let diskByteCount = try validateStillOnDisk()
+                    pool.register(
+                        namespace: PrefixPoolNamespace(
+                            modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
+                        tokenCount: sidecar.tokenCount,
+                        boundaryHash: sidecar.chainHash,
+                        artifact: DiskPrefixArtifact(
+                            snapshotURL: snapshotURL, metadataURL: metaURL,
+                            generation: sidecar.generation,
+                            publishedPhysicalByteCount: diskByteCount.snapshotBytes + diskByteCount.metadataBytes))
+                    }
+                } catch is RescanArtifactChanged {
+                    continue
+                }
+                guard registeredThisScan else { continue }
                 registered += 1
             }
         }
         return registered
+    }
+
+    /// ponytail: 1 MiB chunks; switch to a platform streaming file hash if
+    /// profiling shows this is hot on multi-GB snapshots.
+    private func sha256File(at url: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     // MARK: - Layout

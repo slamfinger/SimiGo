@@ -12,7 +12,7 @@ import SimiGoRuntimeContract
 /// This backend is pure data: it holds bindings and captured
 /// representations but performs no model execution. Execution consumes the
 /// bound representation through the MLXPrefixRecomputeExecutor.
-public struct MLXPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable {
+public struct MLXPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable, Codable {
     public let tokenPrefix: [Int]
 
     public init(tokenPrefix: [Int]) {
@@ -29,16 +29,45 @@ public final class MLXExecutionStateBackend: ExecutionStateBackend, @unchecked S
 
     private var prefixes: [ExecutionID: [Int]] = [:]
     private var boundPositions: [ExecutionID: ExecutionPosition] = [:]
+    /// Executions whose PHYSICAL CARRIER was explicitly released via
+    /// ``releaseCarrier(for:)``. Once retired, this backend instance refuses to
+    /// serve that identity on any path — bound read, restore, capture, derive or
+    /// a re-bind — so the old Execution State can never reuse the old carrier.
+    /// A fresh Execution State must be recovered into a NEW backend instance;
+    /// the tombstone is what turns "drop the binding" into "the carrier is
+    /// genuinely unusable" instead of merely "currently unbound".
+    private var retiredCarriers: Set<ExecutionID> = []
 
     public init() {}
 
+    /// Explicit, ONE-WAY carrier release. Drops the current physical binding and
+    /// RETIRES this carrier for the execution so it can no longer serve the old
+    /// ES. Deliberately stronger than ``releaseRepresentation(_:)``: that drops
+    /// one captured representation but leaves the carrier re-bindable, whereas a
+    /// retired carrier refuses every later bind/restore/capture/derive/read.
+    /// Idempotent — releasing an already-retired carrier stays retired.
+    public func releaseCarrier(for executionID: ExecutionID) {
+        prefixes.removeValue(forKey: executionID)
+        boundPositions.removeValue(forKey: executionID)
+        retiredCarriers.insert(executionID)
+    }
+
+    /// Whether the carrier for `executionID` was retired on THIS backend instance.
+    /// A retired carrier is unusable by the old ES by construction.
+    public func isCarrierRetired(for executionID: ExecutionID) -> Bool {
+        retiredCarriers.contains(executionID)
+    }
+
     /// Host records the physical prefix after a generation pass: this is
     /// how the backend learns the execution's current physical state.
+    /// A retired carrier is never re-armed — the write is ignored so the carrier
+    /// stays unusable even against a caller that tries to re-bind it.
     public func bind(
         executionID: ExecutionID,
         position: ExecutionPosition,
         tokenPrefix: [Int]
     ) {
+        guard !retiredCarriers.contains(executionID) else { return }
         prefixes[executionID] = tokenPrefix
         boundPositions[executionID] = position
     }
@@ -48,6 +77,12 @@ public final class MLXExecutionStateBackend: ExecutionStateBackend, @unchecked S
     public func boundPrefix(
         for state: ExecutionStateHandle
     ) throws -> (prefix: [Int], position: ExecutionPosition) {
+        // The retirement tombstone wins over any (impossible) residual binding:
+        // a released carrier is reported as released, not as merely unbound, so
+        // the old ES cannot mistake a retired carrier for one it can rebind.
+        if retiredCarriers.contains(state.id) {
+            throw ExecutionStateBackendError.carrierReleased(state.id)
+        }
         guard let prefix = prefixes[state.id], let bound = boundPositions[state.id] else {
             throw ExecutionStateBackendError.noBoundRepresentation(state.id)
         }
@@ -96,6 +131,10 @@ public final class MLXExecutionStateBackend: ExecutionStateBackend, @unchecked S
         guard let payload = parent.payload as? MLXPrefixPayload else {
             throw ExecutionStateBackendError.foreignRepresentationPayload(child.id)
         }
+        // A retired child carrier cannot be re-armed by a fork derivation.
+        if retiredCarriers.contains(child.id) {
+            throw ExecutionStateBackendError.carrierReleased(child.id)
+        }
         prefixes[child.id] = payload.tokenPrefix
         boundPositions[child.id] = child.position
         return ExecutionRepresentation(
@@ -110,6 +149,12 @@ public final class MLXExecutionStateBackend: ExecutionStateBackend, @unchecked S
     ) async throws {
         guard let payload = representation.payload as? MLXPrefixPayload else {
             throw ExecutionStateBackendError.foreignRepresentationPayload(representation.executionID)
+        }
+        // Recovery into a retired carrier is the exact hazard req1 forbids: the
+        // old ES must not reuse the old carrier. Refuse so a fresh carrier (a NEW
+        // backend instance) is required to resume settled work.
+        if retiredCarriers.contains(representation.executionID) {
+            throw ExecutionStateBackendError.carrierReleased(representation.executionID)
         }
         prefixes[representation.executionID] = payload.tokenPrefix
         boundPositions[representation.executionID] = representation.position
