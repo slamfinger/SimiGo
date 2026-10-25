@@ -479,6 +479,37 @@ public final class SimiGoESISDatabase {
     // work folder, an agent-session store) tracked by root_id + relative path;
     // original work files stay where they are, with no second physical copy.
 
+    /// A registered external root, as stored in the `roots` table.
+    public struct RootRow: Equatable, Sendable {
+        public let rootID: String
+        public let category: String
+        public let displayName: String?
+        public let locatorType: String?
+        public let status: String
+    }
+
+    /// List registered external roots (optionally one category), read-only.
+    /// Same index-read pattern as ``listExternalFiles(rootID:)``.
+    public func listRoots(category: String? = nil) throws -> [RootRow] {
+        let sql = category == nil
+            ? "SELECT root_id, category, display_name, locator_type, status FROM roots ORDER BY root_id;"
+            : "SELECT root_id, category, display_name, locator_type, status FROM roots WHERE category='"
+                + category!.replacingOccurrences(of: "'", with: "''") + "' ORDER BY root_id;"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [RootRow] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func col(_ i: Int32) -> String {
+                guard let c = sqlite3_column_text(stmt, i) else { return "" }
+                return String(cString: c)
+            }
+            rows.append(RootRow(
+                rootID: col(0), category: col(1), displayName: col(2),
+                locatorType: col(3), status: col(4)))
+        }
+        return rows
+    }
+
     /// Register or refresh an external root. Idempotent upsert keyed on root_id.
     public func upsertRoot(rootID: String, category: String, displayName: String?,
                            locatorType: String?, status: String) throws {
