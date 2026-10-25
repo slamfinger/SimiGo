@@ -152,6 +152,49 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         XCTAssertEqual(next.settlementID, commit.settlementID)
     }
 
+    // MARK: - 2b. The persisted child IS the projected child (durable lineage)
+
+    /// A child created by a continuation must survive a reload with the SAME
+    /// representation the graph projected. Otherwise a restarted product reads the
+    /// child back with an empty prefix and the next `continueState` silently drops
+    /// every ancestor — the settlement would be durable while its lineage is not.
+    @MainActor
+    func testChildStateSurvivesReloadWithFullLineage() throws {
+        let store = ExecutionStateGraphStore()
+        let parent = try stagedParent(store: store, value: "LINEAGE-A")
+        let parentPrefix = try XCTUnwrap(store.state(parent.id)).prefix
+        let admitted = try store.admitContinuation(stateID: parent.id, consumer: consumer)
+
+        let child = "es-child-lineage-\(UUID().uuidString.lowercased())"
+        try store.settleContinuationResult(
+            generatedText: "RESULT=LINEAGE-A",
+            parentStateID: parent.id,
+            childStateID: child,
+            verifiedBindings: admitted.verifiedBindings,
+            producerIdentity: consumer)
+
+        let projected = try XCTUnwrap(store.state(child))
+
+        // A fresh store = what a restarted product reads back from SQLite.
+        let reloaded = ExecutionStateGraphStore()
+        let durable = try XCTUnwrap(reloaded.state(child))
+        XCTAssertEqual(durable.nextInput, projected.nextInput,
+                       "the durable child must carry the value the projection carries")
+        XCTAssertEqual(durable.nextInput, "LINEAGE-A")
+        XCTAssertEqual(durable.prefix, projected.prefix,
+                       "the durable child must carry the same lineage as the projection")
+        XCTAssertEqual(durable.prefix, parentPrefix + ["LINEAGE-A"],
+                       "the child's lineage is the parent's prefix plus its own value")
+        XCTAssertEqual(durable.parentID, parent.id)
+        XCTAssertEqual(durable.anchor, projected.anchor)
+
+        // Continuing the durable child APPENDS to that lineage.
+        let next = try reloaded.continueState(durable, input: "LINEAGE-B")
+        XCTAssertEqual(next.prefix, parentPrefix + ["LINEAGE-A", "LINEAGE-B"],
+                       "continuing the child must not reset its ancestry")
+        XCTAssertEqual(next.nextInput, "LINEAGE-B")
+    }
+
     // MARK: - 3. No orphan child, no double create
 
     @MainActor

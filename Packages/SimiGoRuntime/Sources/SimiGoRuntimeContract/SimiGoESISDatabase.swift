@@ -265,10 +265,15 @@ public final class SimiGoESISDatabase {
         public let continuationID: String
         public let anchor: String
         public let createdAt: Date
+        /// The value the child's own IS carries (what a later admission recovers).
+        public let nextInput: String
+        /// Full lineage: the parent's prefix plus this child's own value. Written
+        /// with the row so a reload cannot downgrade the lineage to an empty one.
+        public let prefix: [String]
 
         public init(id: String, parentID: String, modelIdentity: String,
                     position: Int, continuationID: String, anchor: String,
-                    createdAt: Date) {
+                    createdAt: Date, nextInput: String, prefix: [String]) {
             self.id = id
             self.parentID = parentID
             self.modelIdentity = modelIdentity
@@ -276,6 +281,8 @@ public final class SimiGoESISDatabase {
             self.continuationID = continuationID
             self.anchor = anchor
             self.createdAt = createdAt
+            self.nextInput = nextInput
+            self.prefix = prefix
         }
     }
 
@@ -312,6 +319,39 @@ public final class SimiGoESISDatabase {
             bind(stmt, 6, anchor)
             bind(stmt, 7, lifecycle)
             bind(stmt, 8, Self.stamp( createdAt))
+        }
+    }
+
+    /// Insert a continuation's child ES with its FULL representation. Separate
+    /// from `insertExecutionStateRow` on purpose: `recordExecutionState` mirrors a
+    /// state the caller already owns and must not overwrite lineage columns it was
+    /// never given, while a continuation child is authored here and must be
+    /// durable exactly as the graph projects it.
+    private func insertContinuationChildRow(_ child: ChildExecutionState) throws {
+        let enc = JSONEncoder()
+        let prefixJSON = String(
+            data: (try? enc.encode(child.prefix)) ?? Data("[]".utf8),
+            encoding: .utf8) ?? "[]"
+        try execBinding("""
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(state_id) DO UPDATE SET
+            parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
+            continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
+            created_at=excluded.created_at, next_input=excluded.next_input,
+            prefix_json=excluded.prefix_json, checkpoint_ids_json=excluded.checkpoint_ids_json;
+        """) { stmt in
+            bind(stmt, 1, child.id)
+            bind(stmt, 2, child.parentID)
+            bind(stmt, 3, child.modelIdentity)
+            bind(stmt, 4, Int64(child.position))
+            bind(stmt, 5, child.continuationID)
+            bind(stmt, 6, child.anchor)
+            bind(stmt, 7, "active")
+            bind(stmt, 8, Self.stamp(child.createdAt))
+            bind(stmt, 9, child.nextInput)
+            bind(stmt, 10, prefixJSON)
+            bind(stmt, 11, "[]")
         }
     }
 
@@ -352,11 +392,7 @@ public final class SimiGoESISDatabase {
         let settlementID = settlementUUID.uuidString
         try transaction {
             if let childState {
-                try insertExecutionStateRow(
-                    id: childState.id, parentID: childState.parentID,
-                    modelIdentity: childState.modelIdentity, position: childState.position,
-                    continuationID: childState.continuationID, anchor: childState.anchor,
-                    lifecycle: "active", createdAt: childState.createdAt)
+                try insertContinuationChildRow(childState)
             }
             try insertNativeSettlementRows(
                 settled, settlementID: settlementID, stateID: stateID)

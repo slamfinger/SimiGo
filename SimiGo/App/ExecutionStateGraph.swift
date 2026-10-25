@@ -547,6 +547,11 @@ final class ExecutionStateGraphStore: ObservableObject {
                 persistError ?? "ES/IS authoritative database unavailable")
         }
         let createdAt = Date()
+        // The child's value is exactly what THIS request settled, and its lineage
+        // is the parent's prefix plus that value — the same shape `continueState`
+        // produces, so continuing the child later appends instead of resetting.
+        let childNextInput = Self.settledContent(settled)
+        let childPrefix = parent.prefix + [childNextInput]
         let child = SimiGoESISDatabase.ChildExecutionState(
             id: childStateID,
             parentID: parent.id,
@@ -554,7 +559,9 @@ final class ExecutionStateGraphStore: ObservableObject {
             position: parent.position + 1,
             continuationID: UUID().uuidString,
             anchor: settled.payloadDigest,
-            createdAt: createdAt
+            createdAt: createdAt,
+            nextInput: childNextInput,
+            prefix: childPrefix
         )
         // One transaction: child ES + settlement + constraint rows + producer
         // identity bindings. The method returns only after all of it committed.
@@ -575,9 +582,9 @@ final class ExecutionStateGraphStore: ObservableObject {
             createdAt: createdAt,
             position: child.position,
             continuationID: child.continuationID,
-            nextInput: Self.settledContent(settled),
+            nextInput: childNextInput,
             anchor: child.anchor,
-            prefix: parent.prefix,
+            prefix: childPrefix,
             lifecycle: .active,
             checkpointIDs: []))
         updated.settlements = (updated.settlements ?? []) + [SettlementReceipt(
