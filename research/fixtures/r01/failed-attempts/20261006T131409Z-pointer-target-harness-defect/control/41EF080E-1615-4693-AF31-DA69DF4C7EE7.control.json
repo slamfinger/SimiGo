@@ -1,0 +1,9 @@
+{
+  "deficiency" : "continuation pointer set is ambiguous with cardinality two",
+  "expected_c1" : "PASS",
+  "expected_c2" : "BLOCK_INSUFFICIENT",
+  "fixture_instance_id" : "41EF080E-1615-4693-AF31-DA69DF4C7EE7",
+  "fixture_role" : "N-B",
+  "schema_version" : "es-csp/control-manifest-v1",
+  "sealed_at" : "2026-10-06T13:12:45Z"
+}

@@ -1,0 +1,33 @@
+{
+  "execution_status" : "NOT RUN / NOT AUTHORIZED",
+  "fixtures" : [
+    {
+      "fixture_instance_id" : "3AEB996B-B7B9-45B5-9933-6588C2B8FCEF",
+      "fixture_role" : "P-POS",
+      "gc_result" : "FAIL",
+      "gr_result" : "FAIL",
+      "manifest_sha256" : "af0abf8945e915e124d4e95a4a9351080b41b6c4f8da370bf52fa9757c2ad09c",
+      "stable_session_locator" : "uasession:6210D1C0-0B18-41F2-B629-94BD44E173CF"
+    },
+    {
+      "fixture_instance_id" : "FCB2B33D-D656-4EEC-90F7-4E40D7677982",
+      "fixture_role" : "N-A",
+      "gc_result" : "FAIL",
+      "gr_result" : "PASS",
+      "manifest_sha256" : "bce1ac83acad23e755c70218e455ee428307bb778e6c4cf9046445d7501fb071",
+      "stable_session_locator" : "uasession:BCD849CB-2BA1-4C10-8B71-B1705D8DAFF5"
+    },
+    {
+      "fixture_instance_id" : "41EF080E-1615-4693-AF31-DA69DF4C7EE7",
+      "fixture_role" : "N-B",
+      "gc_result" : "FAIL",
+      "gr_result" : "FAIL",
+      "manifest_sha256" : "73be5b96a8d52465e1099fa7d84ab0dfdb39a8fcb23874cbcce4292b9ccbe5fd",
+      "stable_session_locator" : "uasession:1F1B0CDF-726B-4F68-9099-285EEAB94106"
+    }
+  ],
+  "package_baseline" : "39c1031",
+  "run_label" : "ES-CSP-RUN-01",
+  "schema_version" : "es-csp/fixture-preparation-result-v1",
+  "stage" : "S1"
+}

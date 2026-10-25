@@ -1,0 +1,9 @@
+{
+  "deficiency" : "required input reference does not resolve",
+  "expected_c1" : "FAIL",
+  "expected_c2" : "BLOCK_INSUFFICIENT",
+  "fixture_instance_id" : "06734734-4664-4656-AB60-F4FBCD92141E",
+  "fixture_role" : "N-A",
+  "schema_version" : "es-csp/control-manifest-v1",
+  "sealed_at" : "2026-10-06T13:11:10Z"
+}
