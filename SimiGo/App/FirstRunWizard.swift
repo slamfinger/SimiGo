@@ -173,7 +173,16 @@ struct FirstRunWizardView: View {
                 Button("下一步") { step = 2 }.keyboardShortcut(.defaultAction)
             }
         }
-        .onAppear { if workRoots.isEmpty { pickAnother() } }
+        .onAppear {
+            // 延后异步弹选择器：onAppear 阶段直接 runModal 会吞掉向导窗口
+            // 自身的显示（modal 重入主循环，窗口未完成首帧），表现为"闪退"。
+            if workRoots.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    NSApp.activate(ignoringOtherApps: true)
+                    pickAnother()
+                }
+            }
+        }
     }
 
     private func pickAnother() {
