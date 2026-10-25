@@ -15,19 +15,19 @@ STAGE="$(mktemp -d)/dmg"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/SimiGo.app"
 ln -s /Applications "$STAGE/Applications"
-cat > "$STAGE/双击 SimiGo 开始安装.txt" <<'TXT'
-SimiGo 安装
-1. 双击 SimiGo.app（可直接从本窗口运行）
-2. 安装向导引导：设定外部工作目录 → 勾选引擎二进制（自动安装入 ~/.simigo/bin）→ 自举
-3. 向导最后自动把 SimiGo 落位 /Applications 并重启
-   （或把 SimiGo.app 拖到右侧 Applications 后启动）
-TXT
-# 安装窗口视图：图标排列 + 说明
-osascript <<OSA
-tell application "Finder"
-  make new file at POSIX file "$STAGE" as alias with properties {name:".background"}
-end tell
-OSA
+cat > "$STAGE/安装SimiGo.command" <<'CMD'
+#!/bin/zsh
+# 双击即装：拷贝 SimiGo 到 /Applications 并启动（首启向导自动出现）
+set -e
+VOL="$(cd "$(dirname "$0")" && pwd)"
+TARGET="/Applications/SimiGo.app"
+if [ -d "$TARGET" ]; then rm -rf "$TARGET"; fi
+cp -R "$VOL/SimiGo.app" "$TARGET"
+open "$TARGET"
+echo "✅ SimiGo 已安装到 /Applications 并启动"
+sleep 2
+CMD
+chmod +x "$STAGE/安装SimiGo.command"
 hdiutil create -volname "SimiGo 安装" -srcfolder "$STAGE" -ov -format UDZO "$OUT" >/dev/null 2>&1
 hdiutil verify "$OUT" >/dev/null
 echo "$OUT"
