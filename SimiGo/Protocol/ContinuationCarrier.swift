@@ -41,6 +41,86 @@ public enum ContinuationCarrierMode: String, Sendable, Equatable {
     case auto
 }
 
+/// How the branch fork that carries the parent's KV must relate to the
+/// parent's STORAGE.
+///
+/// This is an argument of the fork operation, never a global mode: the caller
+/// states what THIS request needs, that value travels to the runtime, and the
+/// runtime either does it or refuses. A policy that were implied by something
+/// else (a tuning flag, or "is this request warm") would make a strict fork and
+/// an ordinary one indistinguishable both at the call site and on the wire.
+public enum BranchForkPolicy: String, Sendable, Equatable, CaseIterable {
+    /// Plain in-process fork (`ChatSession.fork()`). The child reads slices of
+    /// the source's KV buffers: enough for two live branches that write on
+    /// their own, not enough for a host that intends to RETIRE the source.
+    case sharedCOW = "shared_cow"
+    /// The child owns KV storage the source does not read. The copy is
+    /// evaluated and verified BEFORE the child is registered, and a failure is
+    /// a refusal — never a downgrade to `sharedCOW`.
+    case detached = "detached"
+}
+
+/// What a `detached` fork PROVED, in the terms the gate checked.
+///
+/// Present only on a `detached` fork, and only after the runtime's
+/// `forkDetached()` returned: these counters come from the verification itself,
+/// not from a second, independent count. Nothing here is a durable claim — an
+/// address means something only while both sessions are alive, and no field
+/// says the source's last reference was released or that the OS reclaimed a
+/// page. Those two stay unobserved on the release path.
+public struct BranchForkStorageIsolation: Sendable, Equatable, Codable {
+    /// KV cache leaves the copy covered (a `CacheList` counts as its children).
+    public let leaves: Int
+    /// Arrays compared: addresses differed and values matched for every one.
+    public let arrays: Int
+    /// Sum of the copies' byte counts (logical bytes, not allocator pages).
+    public let bytes: Int
+    public let valuesMatched: Int
+    public let addressesSeparated: Int
+    public let processedTokenCount: Int
+    public let cacheKinds: [String]
+
+    public init(
+        leaves: Int,
+        arrays: Int,
+        bytes: Int,
+        valuesMatched: Int,
+        addressesSeparated: Int,
+        processedTokenCount: Int,
+        cacheKinds: [String]
+    ) {
+        self.leaves = leaves
+        self.arrays = arrays
+        self.bytes = bytes
+        self.valuesMatched = valuesMatched
+        self.addressesSeparated = addressesSeparated
+        self.processedTokenCount = processedTokenCount
+        self.cacheKinds = cacheKinds
+    }
+
+    /// Every compared array read different storage than its source.
+    public var storageSeparated: Bool { arrays > 0 && addressesSeparated == arrays }
+    /// Every compared array presented the same values as its source.
+    public var valuesPreserved: Bool { arrays > 0 && valuesMatched == arrays }
+    public var isVerified: Bool { storageSeparated && valuesPreserved }
+
+    /// Published inside `continuation_carrier`, so "detached" is a measurement
+    /// on the wire rather than an adjective in a log line.
+    public var responsePayload: [String: Any] {
+        [
+            "leaves": leaves,
+            "arrays": arrays,
+            "bytes": bytes,
+            "values_matched": valuesMatched,
+            "addresses_separated": addressesSeparated,
+            "storage_separated": storageSeparated,
+            "values_preserved": valuesPreserved,
+            "processed_token_count": processedTokenCount,
+            "cache_kinds": cacheKinds,
+        ]
+    }
+}
+
 /// Where the chosen source branch name came from.
 public enum ContinuationCarrierSourceOrigin: String, Sendable, Equatable {
     /// Derived from the verified parent ES row (its carrier name is its id).
@@ -81,11 +161,24 @@ struct ContinuationCarrierDecision: Sendable, Equatable {
     let runtimeForkSource: String?
     /// How many tokens the fork carried (0 when no fork).
     let forkTokenCount: Int?
+    /// The storage policy this request asked for, and that the fork operation
+    /// was actually given. Published so "detached" is never inferred.
+    let forkPolicy: BranchForkPolicy
+    /// What a `detached` fork proved. `nil` for `sharedCOW` (nothing is
+    /// claimed) and for decisions taken before any fork (cold / notApplicable).
+    let storageIsolation: BranchForkStorageIsolation?
     /// Stable, audit-safe degradation reason when the fork failed.
     let reason: String?
 
     var isVerifiedWarmReuse: Bool {
         resolution == .forked && sourceOrigin == .esLineage
+    }
+
+    /// The storage claim, independently of the lineage claim: a fork can be
+    /// verified along ES lineage and still share its KV buffers.
+    var hasVerifiedDetachedStorage: Bool {
+        resolution == .forked && forkPolicy == .detached
+            && (storageIsolation?.isVerified ?? false)
     }
 
     var clientBranchMismatch: Bool {
@@ -105,7 +198,12 @@ struct ContinuationCarrierDecision: Sendable, Equatable {
             "source_branch_id": sourceBranchID ?? "-",
             "runtime_fork_source": runtimeForkSource ?? "-",
             "fork_token_count": forkTokenCount ?? 0,
+            "fork_policy": forkPolicy.rawValue,
+            "detached_storage_verified": hasVerifiedDetachedStorage,
         ]
+        if let storageIsolation {
+            out["storage_isolation"] = storageIsolation.responsePayload
+        }
         if let reason { out["reason"] = reason }
         return out
     }
@@ -115,12 +213,17 @@ struct ContinuationCarrierDecision: Sendable, Equatable {
     var traceLine: String {
         "[CARRIER] continuation_carrier mode=\(mode.rawValue)"
             + " resolution=\(resolution.rawValue)"
+            + " policy=\(forkPolicy.rawValue)"
             + " origin=\(sourceOrigin.rawValue)"
             + " source=\(sourceBranchID ?? "-")"
             + " target=\(targetBranchID)"
             + " client=\(clientBranchID)"
             + " mismatch=\(clientBranchMismatch)"
             + " forkTokens=\(forkTokenCount ?? 0)"
+            + (storageIsolation.map {
+                " detachedArrays=\($0.arrays) detachedBytes=\($0.bytes)"
+                    + " separated=\($0.addressesSeparated)/\($0.arrays)"
+            } ?? "")
             + (reason.map { " reason=\($0)" } ?? "")
     }
 }
@@ -135,6 +238,16 @@ enum ContinuationCarrierFailure: Error, Equatable {
     /// carrier was already released or the process restarted). The raw runtime
     /// error stays in the trace; the wire contract carries only the stable code.
     case forkFailed
+    /// This request asked for detached KV storage and the runtime could not
+    /// establish it: an unsupported cache kind, a copy that failed verification,
+    /// or a source that is alive but holds no realized cache. Refused before
+    /// generation — a detached request never receives a shared fork.
+    case detachedUnavailable
+    /// This request asked for detached KV storage but will not fork a branch
+    /// (no settle continuation, or a declared `cold`). There is no parent KV to
+    /// copy, so the guarantee cannot be met and the flag is not silently
+    /// ignored.
+    case detachedRequiresFork
 }
 
 extension ContinuationCarrierFailure {
@@ -155,6 +268,24 @@ extension ContinuationCarrierFailure {
                     + "could not be forked",
                 errorKind: "CARRIER_FORK_FAILED",
                 reasonCode: "fork_failed"
+            )
+        case .detachedUnavailable:
+            return ContinuationTerminal(
+                status: 422,
+                message: "Continuation refused before generation: detached KV storage "
+                    + "could not be established (the source cache cannot be copied and "
+                    + "verified), and this request does not accept a shared fork",
+                errorKind: "CARRIER_DETACHED_UNAVAILABLE",
+                reasonCode: "detached_unavailable"
+            )
+        case .detachedRequiresFork:
+            return ContinuationTerminal(
+                status: 422,
+                message: "Continuation refused before generation: detached KV storage "
+                    + "was required but this request will not fork a branch (no settle "
+                    + "continuation, or a declared `cold`), so there is no copy to detach",
+                errorKind: "CARRIER_DETACHED_REQUIRES_FORK",
+                reasonCode: "detached_requires_fork"
             )
         }
     }

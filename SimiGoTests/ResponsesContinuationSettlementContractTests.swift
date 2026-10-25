@@ -58,7 +58,7 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
             generateHandler: { _, _, _, _, _, _, _, _, _ in
                 GenerationResult(text: "", usage: nil)
             },
-            forkBranchHandler: { _, _, _, _ in
+            forkBranchHandler: { _, _, _, _, _ in
                 SessionCacheMetadata(
                     storageKey: "t/main", modelId: "settlement-contract-test",
                     savedAt: Date(), history: [])

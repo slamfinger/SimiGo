@@ -12,7 +12,7 @@ final class ResponsesSplitEnvelopeTests: XCTestCase {
             generateHandler: { _, _, _, _, _, _, _, _, _ in
                 GenerationResult(text: "", usage: nil)
             },
-            forkBranchHandler: { _, _, _, _ in
+            forkBranchHandler: { _, _, _, _, _ in
                 SessionCacheMetadata(
                     storageKey: "test/main",
                     modelId: "test-model",

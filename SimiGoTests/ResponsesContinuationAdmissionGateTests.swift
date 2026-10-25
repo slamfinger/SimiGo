@@ -47,7 +47,7 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
             generateHandler: { _, _, _, _, _, _, _, _, _ in
                 GenerationResult(text: "", usage: nil)
             },
-            forkBranchHandler: { _, _, _, _ in
+            forkBranchHandler: { _, _, _, _, _ in
                 SessionCacheMetadata(
                     storageKey: "t/main", modelId: "admission-gate-test",
                     savedAt: Date(), history: [])

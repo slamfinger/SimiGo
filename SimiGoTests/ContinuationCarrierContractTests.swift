@@ -44,6 +44,7 @@ final class ContinuationCarrierContractTests: XCTestCase {
         private var _generate = 0
         private var _settlement = 0
         private var _forkPairs: [(source: String, target: String)] = []
+        private var _forkPolicies: [BranchForkPolicy] = []
         private var _releases: [String] = []
         private var _generateBranches: [String] = []
 
@@ -52,8 +53,11 @@ final class ContinuationCarrierContractTests: XCTestCase {
             lock.withLock { _generate += 1; _generateBranches.append(branch) }
         }
         func bumpSettlement() { lock.withLock { _settlement += 1 } }
-        func bumpFork(source: String, target: String) {
-            lock.withLock { _forkPairs.append((source, target)) }
+        func bumpFork(source: String, target: String, policy: BranchForkPolicy) {
+            lock.withLock {
+                _forkPairs.append((source, target))
+                _forkPolicies.append(policy)
+            }
         }
         func bumpRelease(_ branch: String) { lock.withLock { _releases.append(branch) } }
 
@@ -61,6 +65,7 @@ final class ContinuationCarrierContractTests: XCTestCase {
         var generate: Int { lock.withLock { _generate } }
         var settlement: Int { lock.withLock { _settlement } }
         var forkPairs: [(source: String, target: String)] { lock.withLock { _forkPairs } }
+        var forkPolicies: [BranchForkPolicy] { lock.withLock { _forkPolicies } }
         var releases: [String] { lock.withLock { _releases } }
         var lastGenerateBranch: String? { lock.withLock { _generateBranches.last } }
     }
@@ -96,6 +101,7 @@ final class ContinuationCarrierContractTests: XCTestCase {
         let settlement: Int
         let generateBranch: String?
         let forkPairs: [(source: String, target: String)]
+        let forkPolicies: [BranchForkPolicy]
         let releases: [String]
 
         var carrier: [String: Any] { body["continuation_carrier"] as? [String: Any] ?? [:] }
@@ -170,7 +176,31 @@ final class ContinuationCarrierContractTests: XCTestCase {
 
     // MARK: - Server (real product wiring, text-only generation)
 
-    private func makeServer(stub: Stub, forkFails: Bool) -> HTTPServer {
+    /// What the substituted fork primitive does when it is asked for a fork.
+    private enum ForkBehavior {
+        /// Honour the requested policy: a `detached` fork answers with the
+        /// isolation record a verified copy would produce.
+        case honourPolicy
+        /// Throw, as a runtime with no live source session does.
+        case fail
+        /// Succeed WITHOUT answering the policy — the shape a runtime that
+        /// ignored the 5th argument (or predates it) returns.
+        case ignorePolicy
+    }
+
+    /// The shape of a verified 2-leaf / 4-array copy. Fixed on purpose: these
+    /// counters are the STUB's, and the assertions that use them only check that
+    /// the gate and the wire carry them — never that a real copy happened.
+    private static let stubIsolation = BranchForkStorageIsolation(
+        leaves: 2,
+        arrays: 4,
+        bytes: 16_384,
+        valuesMatched: 4,
+        addressesSeparated: 4,
+        processedTokenCount: 11,
+        cacheKinds: ["KVCacheSimple"])
+
+    private func makeServer(stub: Stub, fork: ForkBehavior) -> HTTPServer {
         let mp = modelPath!
         let admission: ContinuationAdmissionHandler = { esStateID in
             stub.bumpAdmission()
@@ -199,17 +229,28 @@ final class ContinuationCarrierContractTests: XCTestCase {
                 onChunk("RESULT=7143")
                 return GenerationResult(text: "RESULT=7143", usage: nil)
             },
-            forkBranchHandler: { _, _, source, target in
-                stub.bumpFork(source: source, target: target)
-                if forkFails {
+            forkBranchHandler: { _, _, source, target, policy in
+                // The policy is recorded as RECEIVED, so "the request's policy
+                // reached the fork operation" is asserted, not assumed.
+                stub.bumpFork(source: source, target: target, policy: policy)
+                switch fork {
+                case .fail:
                     throw RuntError.generationFailed(
                         "no live source session for s/\(source); cannot fork")
+                case .ignorePolicy:
+                    return SessionCacheMetadata(
+                        storageKey: "s/\(target)", modelId: "carrier-contract-test",
+                        savedAt: Date(), history: [],
+                        forkPoint: BranchForkPoint(
+                            sourceStorageKey: "s/\(source)", atMessage: 3, atToken: 11))
+                case .honourPolicy:
+                    return SessionCacheMetadata(
+                        storageKey: "s/\(target)", modelId: "carrier-contract-test",
+                        savedAt: Date(), history: [],
+                        forkPoint: BranchForkPoint(
+                            sourceStorageKey: "s/\(source)", atMessage: 3, atToken: 11),
+                        forkIsolation: policy == .detached ? Self.stubIsolation : nil)
                 }
-                return SessionCacheMetadata(
-                    storageKey: "s/\(target)", modelId: "carrier-contract-test",
-                    savedAt: Date(), history: [],
-                    forkPoint: BranchForkPoint(
-                        sourceStorageKey: "s/\(source)", atMessage: 3, atToken: 11))
             },
             deleteBranchHandler: { _, _, _ in },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
@@ -221,10 +262,10 @@ final class ContinuationCarrierContractTests: XCTestCase {
 
     private func dispatch(
         body: [String: Any],
-        forkFails: Bool = false
+        fork: ForkBehavior = .honourPolicy
     ) async throws -> Outcome {
         let stub = Stub()
-        let server = makeServer(stub: stub, forkFails: forkFails)
+        let server = makeServer(stub: stub, fork: fork)
         server.configureLOCALBTransport(identity: host.identity)
         server.configureLOCALBRequestAuthorization(
             coordinator: host.coordinator, trustedCheckpoint: host.checkpointProvider)
@@ -262,13 +303,15 @@ final class ContinuationCarrierContractTests: XCTestCase {
             settlement: stub.settlement,
             generateBranch: stub.lastGenerateBranch,
             forkPairs: stub.forkPairs,
+            forkPolicies: stub.forkPolicies,
             releases: stub.releases)
     }
 
     private func continuationBody(
         anchor: String,
         carrier: String?,
-        branch: String? = nil
+        branch: String? = nil,
+        requireDetached: Bool? = nil
     ) -> [String: Any] {
         var json: [String: Any] = [
             "model": "carrier-contract-test",
@@ -288,6 +331,7 @@ final class ContinuationCarrierContractTests: XCTestCase {
         ]
         if let carrier { json["continuation_carrier"] = carrier }
         if let branch { json["logical_branch_id"] = branch }
+        if let requireDetached { json["require_detached_kv"] = requireDetached }
         return json
     }
 
@@ -371,6 +415,12 @@ final class ContinuationCarrierContractTests: XCTestCase {
         // The runtime's own answer to "where did the KV come from".
         XCTAssertEqual(o.carrier["runtime_fork_source"] as? String, "s/\(childAnchor)")
         XCTAssertEqual(o.carrier["fork_token_count"] as? Int, 11)
+        // Nothing was asked about storage, so the request must not claim any:
+        // the default is the shared fork, and it is PUBLISHED as such.
+        XCTAssertEqual(o.carrier["fork_policy"] as? String, "shared_cow")
+        XCTAssertEqual(o.carrier["detached_storage_verified"] as? Bool, false)
+        XCTAssertNil(o.carrier["storage_isolation"])
+        XCTAssertEqual(o.forkPolicies, [.sharedCOW])
 
         XCTAssertEqual(o.forkPairs.count, 1)
         XCTAssertEqual(o.forkPairs.first?.source, childAnchor,
@@ -389,7 +439,7 @@ final class ContinuationCarrierContractTests: XCTestCase {
 
         let o = try await dispatch(
             body: continuationBody(anchor: childAnchor, carrier: "warm"),
-            forkFails: true)
+            fork: .fail)
 
         XCTAssertEqual(o.status, 422, o.text)
         XCTAssertEqual(o.errorKind, "CARRIER_FORK_FAILED")
@@ -429,7 +479,7 @@ final class ContinuationCarrierContractTests: XCTestCase {
     func testAutoForkFailureIsPublishedAndStillSettles() async throws {
         let anchor = try stageRootSettledAnchor(value: "7143")
         let o = try await dispatch(
-            body: continuationBody(anchor: anchor, carrier: nil), forkFails: true)
+            body: continuationBody(anchor: anchor, carrier: nil), fork: .fail)
 
         XCTAssertEqual(o.status, 200, o.text)
         XCTAssertEqual(o.carrier["resolution"] as? String, "degraded_fork_failed")
@@ -445,6 +495,132 @@ final class ContinuationCarrierContractTests: XCTestCase {
     func testUnknownCarrierModeIsRejectedWithoutGenerating() async throws {
         let anchor = try stageRootSettledAnchor(value: "7143")
         let o = try await dispatch(body: continuationBody(anchor: anchor, carrier: "lukewarm"))
+
+        XCTAssertEqual(o.status, 400, o.text)
+        XCTAssertEqual(o.generate, 0)
+        XCTAssertTrue(o.forkPairs.isEmpty)
+    }
+
+    // MARK: - 8) strict storage: the policy is CARRIED and the claim published
+
+    @MainActor
+    func testDetachedPolicyReachesTheForkAndIsPublishedAsVerified() async throws {
+        let childAnchor = try await makeVerifiedChildAnchor()
+        let o = try await dispatch(
+            body: continuationBody(
+                anchor: childAnchor, carrier: "warm", requireDetached: true))
+
+        XCTAssertEqual(o.status, 200, o.text)
+        // The request's policy reached the fork operation as an ARGUMENT; it
+        // was not inferred by the runtime from `warm` (a warm request without
+        // the flag above asserts `shared_cow`).
+        XCTAssertEqual(o.forkPolicies, [.detached])
+        XCTAssertEqual(o.carrier["fork_policy"] as? String, "detached")
+        XCTAssertEqual(o.carrier["detached_storage_verified"] as? Bool, true)
+        let isolation = try XCTUnwrap(
+            o.carrier["storage_isolation"] as? [String: Any])
+        XCTAssertEqual(isolation["arrays"] as? Int, 4)
+        XCTAssertEqual(isolation["addresses_separated"] as? Int, 4)
+        XCTAssertEqual(isolation["values_matched"] as? Int, 4)
+        XCTAssertEqual(isolation["storage_separated"] as? Bool, true)
+        XCTAssertEqual(isolation["values_preserved"] as? Bool, true)
+        XCTAssertEqual(isolation["cache_kinds"] as? [String], ["KVCacheSimple"])
+        XCTAssertEqual(o.generate, 1)
+        XCTAssertEqual(o.settlement, 1)
+    }
+
+    // MARK: - 9) strict storage: a fork that did not answer the policy is refused
+
+    @MainActor
+    func testDetachedRequestRefusedWhenForkIgnoresPolicy() async throws {
+        let childAnchor = try await makeVerifiedChildAnchor()
+        let statesBefore = try totalExecutionStates()
+        let settlementsBefore = try totalSettlements()
+
+        // The runtime forks and returns ordinary metadata: exactly what a
+        // shared fork (or a runtime without the detached API) produces.
+        let o = try await dispatch(
+            body: continuationBody(
+                anchor: childAnchor, carrier: "warm", requireDetached: true),
+            fork: .ignorePolicy)
+
+        XCTAssertEqual(o.status, 422, o.text)
+        XCTAssertEqual(o.errorKind, "CARRIER_DETACHED_UNAVAILABLE")
+        XCTAssertEqual(o.reasonCode, "detached_unavailable")
+        XCTAssertEqual(o.forkPolicies, [.detached], "the policy was asked for")
+        XCTAssertEqual(o.generate, 0, "an unverified copy must not generate")
+        XCTAssertEqual(o.settlement, 0)
+        // The target branch was created and will never be named: released.
+        XCTAssertEqual(o.releases, [try XCTUnwrap(o.forkPairs.first?.target)])
+        let statesAfter = try totalExecutionStates()
+        let settlementsAfter = try totalSettlements()
+        XCTAssertEqual(statesAfter, statesBefore, "no orphan child ES may be created")
+        XCTAssertEqual(settlementsAfter, settlementsBefore)
+    }
+
+    // MARK: - 10) strict storage: fork failure refuses instead of degrading
+
+    @MainActor
+    func testDetachedForkFailureRefusesEvenInAutoMode() async throws {
+        let childAnchor = try await makeVerifiedChildAnchor()
+        let o = try await dispatch(
+            body: continuationBody(
+                anchor: childAnchor, carrier: "auto", requireDetached: true),
+            fork: .fail)
+
+        XCTAssertEqual(o.status, 422, o.text)
+        XCTAssertEqual(o.errorKind, "CARRIER_DETACHED_UNAVAILABLE")
+        XCTAssertEqual(o.reasonCode, "detached_unavailable")
+        // Strict storage never degrades: `auto` would have settled on a rebuild
+        // without the flag.
+        XCTAssertEqual(o.generate, 0)
+        XCTAssertEqual(o.settlement, 0)
+        XCTAssertEqual(o.releases, [try XCTUnwrap(o.forkPairs.first?.target)])
+    }
+
+    // MARK: - 11) strict storage: a declared `cold` cannot be honoured
+
+    @MainActor
+    func testDetachedWithColdIsRefusedBeforeGeneration() async throws {
+        let anchor = try stageRootSettledAnchor(value: "7143")
+        let o = try await dispatch(
+            body: continuationBody(
+                anchor: anchor, carrier: "cold", requireDetached: true))
+
+        XCTAssertEqual(o.status, 422, o.text)
+        XCTAssertEqual(o.errorKind, "CARRIER_DETACHED_REQUIRES_FORK")
+        XCTAssertEqual(o.reasonCode, "detached_requires_fork")
+        XCTAssertEqual(o.generate, 0)
+        XCTAssertEqual(o.settlement, 0)
+        XCTAssertTrue(o.forkPairs.isEmpty, "cold never forks, so nothing to detach")
+    }
+
+    // MARK: - 12) strict storage: no fork is scheduled at all
+
+    @MainActor
+    func testDetachedWithoutAnyForkIsRefused() async throws {
+        // No anchor and no settle flag: the request will not fork, so the flag
+        // is refused rather than accepted and silently ignored.
+        var body = continuationBody(anchor: "", carrier: nil, requireDetached: true)
+        body.removeValue(forKey: "previous_es_state_id")
+        body.removeValue(forKey: "continuation_settle")
+
+        let o = try await dispatch(body: body)
+
+        XCTAssertEqual(o.status, 422, o.text)
+        XCTAssertEqual(o.reasonCode, "detached_requires_fork")
+        XCTAssertEqual(o.generate, 0)
+        XCTAssertTrue(o.forkPairs.isEmpty)
+    }
+
+    // MARK: - 13) strict storage: a non-boolean flag is malformed
+
+    @MainActor
+    func testNonBooleanDetachedFlagIsMalformed() async throws {
+        var body = continuationBody(anchor: "es-placeholder", carrier: nil)
+        body["require_detached_kv"] = "yes"
+
+        let o = try await dispatch(body: body)
 
         XCTAssertEqual(o.status, 400, o.text)
         XCTAssertEqual(o.generate, 0)

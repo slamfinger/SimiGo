@@ -97,7 +97,9 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
                     messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
                 )
             },
-            forkBranchHandler: { _, _, _, _ in
+            // Branching is a no-op on the oversized path, so no policy can be
+            // honoured here — including `detached`.
+            forkBranchHandler: { _, _, _, _, _ in
                 throw RuntError.notLoaded
             },
             deleteBranchHandler: { _, _, _ in

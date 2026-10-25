@@ -472,13 +472,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             onToolCall: onToolCall
                         )
                     },
-                    forkBranchHandler: { [weak self] agentId, sessionId, sourceBranch, targetBranch in
+                    // The requested policy is forwarded verbatim: this closure
+                    // is the ONLY door between the HTTP layer and the session
+                    // fork, so a policy that is not passed here does not exist.
+                    forkBranchHandler: { [weak self] agentId, sessionId, sourceBranch, targetBranch, policy in
                         guard let self else { throw RuntError.notLoaded }
                         return try await self.forkSessionBranch(
                             agentId: agentId,
                             sessionId: sessionId,
                             sourceBranch: sourceBranch,
-                            targetBranch: targetBranch
+                            targetBranch: targetBranch,
+                            policy: policy
                         )
                     },
                     deleteBranchHandler: { [weak self] agentId, sessionId, branchId in
@@ -2140,6 +2144,61 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    /// Regression witness only（分片感知）：一条分支**当前**由哪个会话承载。
+    ///
+    /// `integrationActiveSessionWitness` 只解析精确键，而首条消息是 system 的
+    /// 转录会让会话落在 `storageKey#<指纹>` 分片上
+    /// （``sessionMapKey(storageKey:firstMessage:)``），KV 就在那个分片里。
+    /// 所有权探针若只读精确键，会在真实 cache 驻留时读到 nil；本方法与
+    /// fork/release 用的是同一条 `branchPoolKeys` 规则。
+    ///
+    /// 返回的强引用归调用方所有：它会**延长**该会话及其 KV 的寿命，所以
+    /// “释放分支后 owner 应过期”这类断言必须先把引用置空。
+    func integrationBranchChatSession(
+        agentId: String? = nil,
+        sessionId: String,
+        logicalBranchId: String
+    ) -> ChatSession? {
+        guard let key = try? AgentExecutionKey.resolve(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId
+        ) else { return nil }
+        return state.withLock { state in
+            Self.branchPoolKeys(in: state.sessions.keys, for: key.storageKey)
+                .compactMap { state.sessions[$0] }
+                .max { $0.lastActivity < $1.lastActivity }
+                .map(\.session)
+        }
+    }
+
+    // MARK: - 所有权回归见证（2026-10-25；生产 nil，不参与任何决策）
+
+    /// 一次 fork 刚刚登记完 child、尚未返回时交给观察者的事件。
+    struct IntegrationForkWitnessEvent: @unchecked Sendable {
+        let sourceBranch: String
+        let targetBranch: String
+        let policy: BranchForkPolicy
+        let childSession: ChatSession
+    }
+
+    /// 为什么需要“fork 时刻”的钩子，而不是 fork 完再读：
+    ///
+    /// 第一次写入会**重新绑定**缓存数组（`concatenated` 产生新分配）。等 HTTP
+    /// 响应回来再快照，看到的是本轮生成之后的分配，既不能证明“fork 出来的副本
+    /// 与源分离”，也不能把“源 owner 已过期”归因到 detached 复制。观察点因此必须
+    /// 落在 child 登记之后、任何写入之前——也就是 fork 事务内部。
+    ///
+    /// 生产路径不设置（`nil`），fork 行为与未加此钩子时一致；只有所有权回归
+    /// 用例设置它。
+    private let forkWitness = Mutex<(@Sendable (IntegrationForkWitnessEvent) async -> Void)?>(nil)
+
+    func setIntegrationForkWitness(
+        _ witness: (@Sendable (IntegrationForkWitnessEvent) async -> Void)?
+    ) {
+        forkWitness.withLock { $0 = witness }
+    }
+
     // MARK: - Execution State 投影（2026-10-16 收敛；只读）
 
     /// 引擎真身只读投影：Execution State 窗口的展示层事实源。
@@ -2223,12 +2282,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     ///
     /// 覆盖语义：target 已存在时被覆盖（与 loadSessionCache 一致）——这正是
     /// 「选边提升」流程（客户端选定胜者 → fork 回 main → 其余分支 DELETE）。
+    ///
+    /// 存储策略：`policy` 告诉**本次** fork 需要什么，不是全局开关。
+    /// - `.sharedCOW`（默认）：`ChatSession.fork()`，数组共享 + 首写拷贝。
+    /// - `.detached`：`ChatSession.forkDetached()`，复制 → 求值 → 验证全部在
+    ///   返回前完成。失败直接抛错，不降级成共享 fork。保留此保证的调用方（要先
+    ///   退休旧载体的续算）才需要付这份拷贝与保留内存。
     @discardableResult
     public func forkSessionBranch(
         agentId: String? = nil,
         sessionId: String,
         sourceBranch: String,
         targetBranch: String,
+        policy: BranchForkPolicy = .sharedCOW,
         in storeDirectory: URL? = nil
     ) async throws -> SessionCacheMetadata {
         guard sourceBranch != targetBranch else {
@@ -2268,8 +2334,38 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             // 官方进程内 fork：数组共享 + 首写拷贝，零磁盘 IO、零序列化
             // （对照 v1：GB 级文件拷贝 + 0.15s@58k 双向序列化税）。
+            //
+            // `.detached` 在这同一位置完成复制/求值/验证：它失败就会在下面任何
+            // 代码触碰 target 之前抛错，因此不会留下半成品分支，也不会退回共享。
             let forkStartedAt = Date()
-            let childSession = await sourceManaged.session.fork()
+            let childSession: ChatSession
+            var isolation: BranchForkStorageIsolation?
+            switch policy {
+            case .sharedCOW:
+                childSession = await sourceManaged.session.fork()
+            case .detached:
+                let forked = try await sourceManaged.session.forkDetached()
+                // forkDetached 已在返回前拒绝过未通过验证的复制；这里再读一遍
+                // 它自己的计数，因为下面一行就是不可回头点：“我们要了 detached，
+                // 所以计数必须这么说”应该在注册前核验，而不是从“调用没抛错”推断。
+                guard forked.report.storageSeparated, forked.report.valuesPreserved else {
+                    throw RuntError.generationFailed(
+                        "detached fork returned an unverified cache (\(forked.report.summary))")
+                }
+                childSession = forked.session
+                isolation = BranchForkStorageIsolation(
+                    leaves: forked.report.leaves,
+                    arrays: forked.report.arrays,
+                    bytes: forked.report.bytes,
+                    valuesMatched: forked.report.sections.reduce(0) {
+                        $0 + $1.valuesMatched
+                    },
+                    addressesSeparated: forked.report.sections.reduce(0) {
+                        $0 + $1.addressesSeparated
+                    },
+                    processedTokenCount: forked.report.main.processedTokenCount,
+                    cacheKinds: forked.report.cacheKinds)
+            }
             let forkTokenCount = await childSession.cachedTokenIds().count
             let forkMs = Int(Date().timeIntervalSince(forkStartedAt) * 1000)
 
@@ -2308,6 +2404,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 $0.lastActivity = Date()
             }
 
+            // 所有权回归见证：child 已登记，尚未返回、尚未被写入。生产未设置时
+            // 这里只是一次 nil 读取，fork 行为不变。
+            if let witness = forkWitness.withLock({ $0 }) {
+                await witness(
+                    IntegrationForkWitnessEvent(
+                        sourceBranch: sourceBranch, targetBranch: targetBranch,
+                        policy: policy, childSession: childSession))
+            }
+
             // FORK-2 + STEP-10 R3 语义保持：child 绑定分叉点的 .residentKV
             // 表示（boundLength = fork 点 token 数）；parent 不绑——其池
             // 边界绑定不被 supersede（B-R2 单活行）。contentHash 标识本次
@@ -2337,8 +2442,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 ref: ref)
             traceLogger.trace(
                 "[MLX] branchFork session=\(sourceKey.traceKey) -> \(targetBranch)"
+                + " policy=\(policy.rawValue)"
                 + " history=\(sourceManaged.history.count) forkToken=\(forkTokenCount)"
                 + " forkMs=\(forkMs)"
+                + (isolation.map {
+                    " detachedArrays=\($0.arrays) detachedBytes=\($0.bytes)"
+                        + " separated=\($0.addressesSeparated)/\($0.arrays)"
+                        + " valuesMatched=\($0.valuesMatched)"
+                } ?? "")
                 + " bindingGen=\(childBinding.generation)"
                 + " refHash=\(String(ref.contentHash, radix: 16))")
             lineage.recordFork(parent: sourceKey.storageKey, child: targetKey.storageKey)
@@ -2355,7 +2466,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 savedAt: Date(),
                 history: sourceManaged.historyJSON,
                 kvFingerprint: sourceManaged.kvFingerprint,
-                forkPoint: child.pendingForkPoint)
+                forkPoint: child.pendingForkPoint,
+                forkIsolation: isolation)
         }
     }
 
@@ -2954,6 +3066,12 @@ nonisolated public struct SessionCacheMetadata: Codable, Sendable {
     /// the copy was registered by forkSessionBranch. Optional + decodeIfPresent:
     /// files saved outside a fork (and pre-STEP-10 files) decode without it.
     public var forkPoint: BranchForkPoint?
+    /// What a `detached` fork verified, when this copy was made with
+    /// ``BranchForkPolicy/detached``. Diagnostic only: it describes the fork
+    /// EVENT (array counts, bytes copied), not durable state, so nothing in the
+    /// restore path reads it. `nil` for shared forks and for files that predate
+    /// this field (optional + synthesized `decodeIfPresent` keeps them loadable).
+    public var forkIsolation: BranchForkStorageIsolation?
 
     public init(
         storageKey: String,
@@ -2963,7 +3081,8 @@ nonisolated public struct SessionCacheMetadata: Codable, Sendable {
         kvFingerprint: String? = nil,
         checkpointGeneration: String? = nil,
         cacheSHA256: String? = nil,
-        forkPoint: BranchForkPoint? = nil
+        forkPoint: BranchForkPoint? = nil,
+        forkIsolation: BranchForkStorageIsolation? = nil
     ) {
         self.storageKey = storageKey
         self.modelId = modelId
@@ -2973,6 +3092,7 @@ nonisolated public struct SessionCacheMetadata: Codable, Sendable {
         self.checkpointGeneration = checkpointGeneration
         self.cacheSHA256 = cacheSHA256
         self.forkPoint = forkPoint
+        self.forkIsolation = forkIsolation
     }
 }
 

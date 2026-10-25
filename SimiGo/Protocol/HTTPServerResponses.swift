@@ -450,6 +450,15 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     /// (`continuation_carrier`: warm | cold | auto). Absent means `auto`: best
     /// effort, with every deviation PUBLISHED in `continuation_carrier`.
     let continuationCarrierMode: ContinuationCarrierMode
+
+    /// Strict KV storage opt-in (`require_detached_kv`). When true the fork that
+    /// carries the parent's KV must produce storage the parent does not read:
+    /// a copy that was evaluated and verified before the child was registered.
+    /// This is a REQUEST field, not a server mode — and it is not implied by
+    /// `warm`, because "reuse the parent's KV" and "own a copy of it" are two
+    /// different promises, only the second of which survives retiring the
+    /// parent. Refused (422) rather than downgraded when it cannot be met.
+    let requireDetachedKV: Bool
 }
 
 
@@ -652,17 +661,39 @@ extension HTTPServer {
     ///
     /// Non-continuation requests keep the client's branch unchanged.
     ///
+    /// STORAGE policy is orthogonal to the source decision: `require_detached_kv`
+    /// makes this request demand a verified copy of the parent's KV, and that
+    /// policy travels to the fork operation as an ARGUMENT. A request that asks
+    /// for detached storage and cannot get it is refused — it never receives a
+    /// shared fork — while a request that did not ask keeps the old behaviour.
+    ///
     /// Returns `nil` only after an HTTP terminal was already written (the caller
     /// must return without generating).
     func continuationExecutionBranch(
         parsed: ResponsesParsedRequest,
         context: ConnectionContext
     ) async -> ContinuationCarrierDecision? {
+        let forkPolicy: BranchForkPolicy =
+            parsed.requireDetachedKV ? .detached : .sharedCOW
+
         // Only a continuation that will SETTLE gets a child ES identity: that
         // identity is created by the settlement commit. An admission-only
         // continuation settles nothing, so inventing a branch for it would
         // strand KV/checkpoints under an id no ES row will ever name.
-        guard parsed.continuationSettle, let binding = context.continuationBinding else {
+        let binding = parsed.continuationSettle ? context.continuationBinding : nil
+        guard let binding else {
+            // No fork happens here, so a strict storage request cannot be
+            // honoured. Refusing is the point: the flag never degrades into
+            // "shared, but we did not say so".
+            if parsed.requireDetachedKV {
+                RuntimeTraceLogger.shared.trace(
+                    "[CARRIER] continuation_carrier_refused"
+                    + " mode=\(parsed.continuationCarrierMode.rawValue) policy=detached"
+                    + " target=\(parsed.logicalBranchId) reason=no_fork_scheduled")
+                sendTerminal(
+                    ContinuationCarrierFailure.detachedRequiresFork.terminal, context: context)
+                return nil
+            }
             return ContinuationCarrierDecision(
                 mode: parsed.continuationCarrierMode,
                 resolution: .notApplicable,
@@ -672,6 +703,8 @@ extension HTTPServer {
                 clientBranchID: parsed.logicalBranchId,
                 runtimeForkSource: nil,
                 forkTokenCount: nil,
+                forkPolicy: forkPolicy,
+                storageIsolation: nil,
                 reason: nil)
         }
         let target = binding.childESStateID
@@ -679,6 +712,14 @@ extension HTTPServer {
 
         // Declared cold: no fork, no claim of reuse.
         if binding.carrierMode == .cold {
+            if parsed.requireDetachedKV {
+                RuntimeTraceLogger.shared.trace(
+                    "[CARRIER] continuation_carrier_refused mode=cold policy=detached"
+                    + " target=\(target) reason=declared_cold")
+                sendTerminal(
+                    ContinuationCarrierFailure.detachedRequiresFork.terminal, context: context)
+                return nil
+            }
             let decision = ContinuationCarrierDecision(
                 mode: .cold,
                 resolution: .cold,
@@ -688,6 +729,8 @@ extension HTTPServer {
                 clientBranchID: clientBranch,
                 runtimeForkSource: nil,
                 forkTokenCount: nil,
+                forkPolicy: forkPolicy,
+                storageIsolation: nil,
                 reason: nil)
             RuntimeTraceLogger.shared.trace(decision.traceLine)
             return decision
@@ -710,12 +753,36 @@ extension HTTPServer {
             verified == nil ? .clientAsserted : .esLineage
 
         do {
+            // The policy is an ARGUMENT of this fork. The runtime cannot infer
+            // it from anything else, so a fork that happened is a fork that was
+            // asked for.
             let metadata = try await forkBranchHandler(
                 parsed.agentId,
                 parsed.sessionId,
                 source,
-                target
+                target,
+                forkPolicy
             )
+            // A detached request is satisfied only by the runtime's OWN
+            // verification record. An implementation that ignored the policy
+            // (or predates it) returns exactly the metadata of a shared fork,
+            // and "the call did not throw" is not evidence that a copy exists.
+            if forkPolicy == .detached {
+                guard let isolation = metadata.forkIsolation, isolation.isVerified else {
+                    RuntimeTraceLogger.shared.trace(
+                        "[CARRIER] continuation_carrier_refused"
+                        + " mode=\(binding.carrierMode.rawValue) source=\(source)"
+                        + " target=\(target) reason=detached_unverified"
+                        + " isolation=\(metadata.forkIsolation == nil ? "absent" : "unverified")")
+                    // The target may exist, but it carries no storage claim and
+                    // no settlement will ever name it.
+                    await releaseRefusedContinuationBranch(
+                        parsed: parsed, branch: target, context: context)
+                    sendTerminal(
+                        ContinuationCarrierFailure.detachedUnavailable.terminal, context: context)
+                    return nil
+                }
+            }
             let decision = ContinuationCarrierDecision(
                 mode: binding.carrierMode,
                 resolution: .forked,
@@ -725,10 +792,26 @@ extension HTTPServer {
                 clientBranchID: clientBranch,
                 runtimeForkSource: metadata.forkPoint?.sourceStorageKey,
                 forkTokenCount: metadata.forkPoint?.atToken,
+                forkPolicy: forkPolicy,
+                storageIsolation: forkPolicy == .detached ? metadata.forkIsolation : nil,
                 reason: nil)
             RuntimeTraceLogger.shared.trace(decision.traceLine)
             return decision
         } catch {
+            // Strict storage never degrades, whatever the carrier mode says: a
+            // request that will not accept a shared fork must not receive one.
+            if forkPolicy == .detached {
+                RuntimeTraceLogger.shared.trace(
+                    "[CARRIER] continuation_carrier_refused"
+                    + " mode=\(binding.carrierMode.rawValue) source=\(source)"
+                    + " target=\(target) reason=detached_failed"
+                    + " err=\(error.localizedDescription)")
+                await releaseRefusedContinuationBranch(
+                    parsed: parsed, branch: target, context: context)
+                sendTerminal(
+                    ContinuationCarrierFailure.detachedUnavailable.terminal, context: context)
+                return nil
+            }
             // A declared warm request must not be papered over with a rebuild.
             if binding.carrierMode == .warm {
                 RuntimeTraceLogger.shared.trace(
@@ -751,6 +834,8 @@ extension HTTPServer {
                 clientBranchID: clientBranch,
                 runtimeForkSource: nil,
                 forkTokenCount: nil,
+                forkPolicy: forkPolicy,
+                storageIsolation: nil,
                 reason: "fork_failed")
             RuntimeTraceLogger.shared.trace(
                 decision.traceLine + " err=\(error.localizedDescription)")
@@ -1726,6 +1811,17 @@ extension HTTPServer {
         } else {
             carrierMode = .auto
         }
+        // Strict storage opt-in. Present-but-not-a-bool is malformed (the
+        // generic 400), never a silent `false`: a client that asked for
+        // detached storage must not be served a shared fork because its field
+        // had the wrong type.
+        let detachedRequired: Bool
+        if let raw = json["require_detached_kv"] {
+            guard let flag = raw as? Bool else { return nil }
+            detachedRequired = flag
+        } else {
+            detachedRequired = false
+        }
 
         return ResponsesParsedRequest(
             agentId: identity.agentId,
@@ -1742,7 +1838,8 @@ extension HTTPServer {
             esStateIDPresent: esAnchorPresent,
             esStateID: esAnchorValue,
             continuationSettle: esSettleRequested,
-            continuationCarrierMode: carrierMode
+            continuationCarrierMode: carrierMode,
+            requireDetachedKV: detachedRequired
         )
     }
 

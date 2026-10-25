@@ -298,7 +298,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                 onChunk(stub.text)
                 return GenerationResult(text: stub.text, usage: nil)
             },
-            forkBranchHandler: { _, _, _, target in
+            forkBranchHandler: { _, _, _, target, _ in
                 stub.bumpFork(target: target)
                 if forkFails {
                     // No live parent session in this process (e.g. after a

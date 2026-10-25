@@ -140,7 +140,7 @@ final class RealModelCarrierHandoffTests: XCTestCase {
 
     private func requestBody(
         input: [[String: Any]], anchor: String?, settle: Bool, branch: String = "main",
-        carrier: String? = nil
+        carrier: String? = nil, requireDetached: Bool? = nil
     ) -> [String: Any] {
         var json: [String: Any] = [
             "model": "carrier-handoff",
@@ -154,6 +154,7 @@ final class RealModelCarrierHandoffTests: XCTestCase {
         if let anchor { json["previous_es_state_id"] = anchor }
         if settle { json["continuation_settle"] = true }
         if let carrier { json["continuation_carrier"] = carrier }
+        if let requireDetached { json["require_detached_kv"] = requireDetached }
         return json
     }
 
@@ -220,6 +221,8 @@ final class RealModelCarrierHandoffTests: XCTestCase {
             "SIMIGO_CACHE_ROOT": ProcessInfo.processInfo.environment["SIMIGO_CACHE_ROOT"] ?? "-",
         ]
         evidence["not_proven"] = [
+            "source_allocation_final_reference": "NOT_OBSERVED：新分支不使用源分支的存储，"
+                + "不等于源 allocation 的最后一个引用已释放；引用计数不可观测，不宣称。",
             "kv_buffer_physical_release": "NOT_INSTRUMENTED：ChatSession 不暴露 buffer 身份，"
                 + "clear() 只证引用解除；物理页归还未观测，不宣称。",
             "per_layer_forward_calls": "NOT_INSTRUMENTED：无逐层 forward 钩子；"
@@ -631,6 +634,190 @@ final class RealModelCarrierHandoffTests: XCTestCase {
         evidence["phase_cold_after_release"] = [
             "exchange": cold2.summary,
             "engine": engineSnapshot(runtime, label: "cold-after-release"),
+            "live_branches": liveBranches(runtime),
+        ]
+
+        evidence["trace_tail"] = traceTail()
+        try writeEvidence()
+    }
+
+    // MARK: - Strict KV storage through the REAL product route
+
+    /// The product-side acceptance for the native detached copy: the strict
+    /// request travels the ordinary Responses route, the policy is carried to
+    /// the real branch fork, and what comes back on the wire is the runtime's
+    /// own verification of the copy — not a claim made by the gate.
+    ///
+    /// Three phases, all through POST /v1/responses with weights loaded:
+    ///   1. `require_detached_kv` + verified source ⇒ forked AND verified, the
+    ///      real engine reuses the copied KV, and the target stays live;
+    ///   2. the source carrier is released ⇒ REFUSED (422) before generation,
+    ///      no settlement, and NO branch left behind;
+    ///   3. `require_detached_kv` + `cold` ⇒ REFUSED: there is no fork to
+    ///      detach, and the flag is not silently ignored.
+    func testStrictDetachedKVThroughResponsesRoute() async throws {
+        port = 18_500
+        let modelPath = try Self.requireModel()
+        let modelInfo = ModelInfo(path: modelPath, kind: .mlx)
+        let value = Self.value
+        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        evidence["model"] = [
+            "path": modelPath,
+            "model_fingerprint": identity.model,
+            "tokenizer_fingerprint": identity.tokenizer,
+        ]
+
+        let runtime = NativeMLX(info: modelInfo, config: ModelConfig())
+        host = try LOCALBAuthorizedE2E.makeHost()
+        try await runtime.startWithLOCALB(
+            modelInfo,
+            port: port,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
+        defer { Task { await runtime.stop() } }
+
+        func passCount() -> Int {
+            runtime.observation.snapshot()["generate_passes"] as? Int ?? -1
+        }
+        func settlementCount() async throws -> Int {
+            try await MainActor.run { () -> Int in
+                guard let db = ExecutionStateGraphStore().esis else { return -1 }
+                return try db.readSettlementReceipts().count
+            }
+        }
+
+        // A parent ES settled OUTSIDE the fork path (no carrier relation).
+        let rootID = try await MainActor.run { () -> String in
+            let store = ExecutionStateGraphStore()
+            let root = try store.create()
+            try store.continueState(root, input: value)
+            let state = try XCTUnwrap(store.state(root.id))
+            _ = try store.settleProducerResult(
+                generatedText: "RESULT=\(value)",
+                boundToState: state,
+                producerIdentity: identity)
+            return state.id
+        }
+
+        let transcript: [[String: Any]] = [
+            ["role": "system", "content": Self.systemPrompt],
+            ["role": "user", "content": Self.primeUser],
+        ]
+        let prime = try await post(requestBody(input: transcript, anchor: nil, settle: false))
+        XCTAssertEqual(prime.status, 200, prime.raw)
+        XCTAssertTrue(liveBranches(runtime, contain: "main"),
+                      "the fork source must hold a real ChatSession with real KV")
+
+        // A VERIFIED carrier source: produced by the fork path, so its carrier
+        // name is its own id. `cold` here is only the cheapest way to get there.
+        let cold = try await post(
+            requestBody(input: transcript, anchor: rootID, settle: true, carrier: "cold"))
+        XCTAssertEqual(cold.status, 200, cold.raw)
+        let esA = try XCTUnwrap(cold.childESStateID, cold.raw)
+        XCTAssertTrue(liveBranches(runtime, contain: esA))
+        let passesBeforeStrict = passCount()
+
+        // ---- 1) strict: the policy reaches the REAL fork, and the copy is
+        //          verified by the runtime that performed it ----
+        let appended: [String: Any] = ["role": "user", "content": value]
+        let strictInput = transcript + [appended,
+                                        ["role": "assistant", "content": cold.assistantText]]
+        let strict = try await post(requestBody(
+            input: strictInput, anchor: esA, settle: true, branch: "main",
+            carrier: "warm", requireDetached: true))
+        XCTAssertEqual(strict.status, 200, strict.raw)
+        let esB = try XCTUnwrap(strict.childESStateID, strict.raw)
+        XCTAssertEqual(strict.carrier["resolution"] as? String, "forked")
+        XCTAssertEqual(strict.carrier["fork_policy"] as? String, "detached")
+        XCTAssertEqual(strict.carrier["detached_storage_verified"] as? Bool, true)
+        XCTAssertEqual(strict.carrier["verified_warm_reuse"] as? Bool, true)
+        let isolation = try XCTUnwrap(
+            strict.carrier["storage_isolation"] as? [String: Any],
+            "a detached fork must publish what it verified: \(strict.raw)")
+        let arrays = try XCTUnwrap(isolation["arrays"] as? Int)
+        let copiedBytes = try XCTUnwrap(isolation["bytes"] as? Int)
+        XCTAssertGreaterThan(arrays, 0, "a verified copy must cover at least one array")
+        XCTAssertEqual(isolation["addresses_separated"] as? Int, arrays)
+        XCTAssertEqual(isolation["values_matched"] as? Int, arrays)
+        XCTAssertEqual(isolation["storage_separated"] as? Bool, true)
+        XCTAssertEqual(isolation["values_preserved"] as? Bool, true)
+        XCTAssertGreaterThan(copiedBytes, 0)
+        XCTAssertEqual(isolation["processed_token_count"] as? Int,
+                       strict.carrier["fork_token_count"] as? Int,
+                       "the verified copy must cover the same tokens the fork carried")
+        let kinds = isolation["cache_kinds"] as? [String] ?? []
+        XCTAssertTrue(kinds.contains("KVCacheSimple"), "cache kinds seen: \(kinds)")
+        // Separation is not a substitute for a working branch: the real engine
+        // must reuse the copied KV and still satisfy the result contract.
+        XCTAssertGreaterThan(strict.cachedTokens, 0,
+                             "the copied KV must be the KV this turn actually used")
+        XCTAssertEqual(strict.assistantContractValue, "RESULT=\(value)", strict.raw)
+        XCTAssertEqual(passCount(), passesBeforeStrict + 1)
+        XCTAssertTrue(liveBranches(runtime, contain: esB))
+        XCTAssertTrue(liveBranches(runtime, contain: esA),
+                      "a detached fork must not retire its source")
+        evidence["phase_strict_detached_success"] = [
+            "exchange": strict.summary,
+            "engine": engineSnapshot(runtime, label: "strict-detached"),
+            "source_branch": esA,
+            "child_es_state_id": esB,
+            "copied_bytes": copiedBytes,
+            "arrays": arrays,
+            "live_branches": liveBranches(runtime),
+        ]
+
+        // ---- 2) strict after the source carrier was released: REFUSED, and
+        //          nothing half-built is left in the session pool ----
+        let owner = MLXRuntimeCarrierOwner(runtime: runtime)
+        _ = try await owner.releaseExecutionCarrier(
+            ExecutionCarrierRef(agentID: nil, sessionID: sessionID, branchID: esB))
+        try owner.verifyCarrierUnusable(
+            ExecutionCarrierRef(agentID: nil, sessionID: sessionID, branchID: esB))
+        let passesAfterStrict = passCount()
+        let settlementsBefore = try await settlementCount()
+        let liveBeforeRefusal = Set(liveBranches(runtime))
+
+        let refused = try await post(requestBody(
+            input: strictInput + [appended,
+                                  ["role": "assistant", "content": strict.assistantText]],
+            anchor: esB, settle: true, branch: "main",
+            carrier: "warm", requireDetached: true))
+        XCTAssertEqual(refused.status, 422, refused.raw)
+        XCTAssertEqual(refused.errorKind, "CARRIER_DETACHED_UNAVAILABLE")
+        XCTAssertEqual(refused.reasonCode, "detached_unavailable")
+        XCTAssertEqual(passCount(), passesAfterStrict,
+                       "a refused strict continuation must not generate")
+        // Hoisted: XCTest autoclosures cannot await.
+        let settlementsAfterRefusal = try await settlementCount()
+        XCTAssertEqual(settlementsAfterRefusal, settlementsBefore,
+                       "a refused strict continuation must not settle")
+        XCTAssertEqual(Set(liveBranches(runtime)), liveBeforeRefusal,
+                       "a refused strict fork must leave no branch registered")
+        evidence["phase_strict_detached_refused"] = [
+            "exchange": refused.summary,
+            "generate_passes_after_refusal": passCount(),
+            "settlements_before": settlementsBefore,
+            "settlements_after": settlementsAfterRefusal,
+            "live_branches_before": Array(liveBeforeRefusal).sorted(),
+            "live_branches_after": liveBranches(runtime),
+        ]
+
+        // ---- 3) strict + declared cold: there is no fork to detach ----
+        let noFork = try await post(requestBody(
+            input: transcript, anchor: rootID, settle: true,
+            carrier: "cold", requireDetached: true))
+        XCTAssertEqual(noFork.status, 422, noFork.raw)
+        XCTAssertEqual(noFork.errorKind, "CARRIER_DETACHED_REQUIRES_FORK")
+        XCTAssertEqual(noFork.reasonCode, "detached_requires_fork")
+        XCTAssertEqual(passCount(), passesAfterStrict)
+        XCTAssertEqual(Set(liveBranches(runtime)), liveBeforeRefusal)
+        evidence["phase_strict_detached_cold"] = [
+            "exchange": noFork.summary,
+            "generate_passes": passCount(),
             "live_branches": liveBranches(runtime),
         ]
 

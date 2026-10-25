@@ -75,11 +75,15 @@ public final class HTTPServer: @unchecked Sendable {
 
     public typealias CancelGenerationHandler = @Sendable (_ requestId: String) -> Void
 
+    /// The fifth argument is the STORAGE POLICY of this fork. It is a parameter
+    /// rather than a mode read from somewhere else so that every call site
+    /// states what it needs and the runtime can only answer that question.
     public typealias ForkBranchHandler = @Sendable (
         _ agentId: String?,
         _ sessionId: String,
         _ sourceBranch: String,
-        _ targetBranch: String
+        _ targetBranch: String,
+        _ policy: BranchForkPolicy
     ) async throws -> SessionCacheMetadata
 
     public typealias DeleteBranchHandler = @Sendable (
@@ -1710,6 +1714,27 @@ public final class HTTPServer: @unchecked Sendable {
                 return
             }
 
+            // Storage isolation is DECLARED per request. An unknown value is a
+            // malformed request, never a silent downgrade to the shared fork
+            // (same rule as `continuation_carrier`).
+            let policy: BranchForkPolicy
+            if let raw = json["storage_isolation"] {
+                guard let text = raw as? String,
+                      let parsedPolicy = BranchForkPolicy(rawValue: text) else {
+                    sendError(
+                        "branches/fork storage_isolation must be one of: "
+                            + BranchForkPolicy.allCases.map(\.rawValue).joined(separator: ", "),
+                        status: 400,
+                        on: context.connection,
+                        context: context
+                    )
+                    return
+                }
+                policy = parsedPolicy
+            } else {
+                policy = .sharedCOW
+            }
+
             let metadata =
                 try await forkBranchHandler(
                     resolveExplicitAgentId(
@@ -1718,17 +1743,24 @@ public final class HTTPServer: @unchecked Sendable {
                     ),
                     sessionId,
                     sourceBranch,
-                    targetBranch
+                    targetBranch,
+                    policy
                 )
 
+            var payload: [String: Any] = [
+                "ok": true,
+                "session_id": sessionId,
+                "fork_from_branch": sourceBranch,
+                "branch_id": targetBranch,
+                "fork_policy": policy.rawValue,
+                "history_messages": metadata.history.count,
+            ]
+            if let isolation = metadata.forkIsolation {
+                payload["storage_isolation"] = isolation.responsePayload
+            }
+
             sendJSON(
-                [
-                    "ok": true,
-                    "session_id": sessionId,
-                    "fork_from_branch": sourceBranch,
-                    "branch_id": targetBranch,
-                    "history_messages": metadata.history.count,
-                ],
+                payload,
                 status: 200,
                 on: context.connection,
                 context: context

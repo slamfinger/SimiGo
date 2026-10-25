@@ -92,11 +92,16 @@ extension HTTPServer {
             )
         {
             do {
+                // Chat's `fork_from_branch` is an ordinary branch copy: it is
+                // not the strict continuation path, so it asks for the shared
+                // fork explicitly rather than inheriting whatever the runtime
+                // might default to.
                 _ = try await forkBranchHandler(
                     agentId,
                     sessionId,
                     forkFrom,
-                    logicalBranchId
+                    logicalBranchId,
+                    .sharedCOW
                 )
             } catch {
                 sendError(
@@ -555,11 +560,16 @@ extension HTTPServer {
             )
         {
             do {
+                // Chat's `fork_from_branch` is an ordinary branch copy: it is
+                // not the strict continuation path, so it asks for the shared
+                // fork explicitly rather than inheriting whatever the runtime
+                // might default to.
                 _ = try await forkBranchHandler(
                     agentId,
                     sessionId,
                     forkFrom,
-                    logicalBranchId
+                    logicalBranchId,
+                    .sharedCOW
                 )
             } catch {
                 sendError(

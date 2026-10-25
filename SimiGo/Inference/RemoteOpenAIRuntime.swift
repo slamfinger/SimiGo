@@ -44,8 +44,15 @@ public final class RemoteOpenAIRuntime: Runtime, @unchecked Sendable {
             port: port,
             modelId: modelId,
             generateHandler: Self.unsupportedGenerate,
-            forkBranchHandler: { _, _, _, _ in
-                SessionCacheMetadata(storageKey: "remote/cloud", modelId: modelId, savedAt: Date(), history: [])
+            // A proxied cloud backend holds no local KV, so it cannot answer a
+            // detached request at all. Refuse instead of returning metadata for
+            // a copy that was never made.
+            forkBranchHandler: { _, _, _, _, policy in
+                guard policy == .sharedCOW else {
+                    throw RuntError.generationFailed(
+                        "remote backend cannot establish detached KV storage")
+                }
+                return SessionCacheMetadata(storageKey: "remote/cloud", modelId: modelId, savedAt: Date(), history: [])
             },
             deleteBranchHandler: { _, _, _ in },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
