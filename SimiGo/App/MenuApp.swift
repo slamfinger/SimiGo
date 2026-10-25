@@ -103,7 +103,7 @@ struct MenuPanelView: View {
             }
 
             MenuRowButton(title: "Information Space（数据库）...", icon: "cylinder.split.1x2") {
-                StatusBarCoordinator.shared.openStateGraphWindow()
+                StatusBarCoordinator.shared.openSettingsWindow()
             }
 
             Divider().padding(.vertical, 2)

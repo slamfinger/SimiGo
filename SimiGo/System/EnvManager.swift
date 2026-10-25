@@ -321,15 +321,41 @@ public final class EnvManager: ObservableObject {
             let source = SimiGoPaths.sources.appendingPathComponent("llama.cpp").path
             let build = SimiGoPaths.build.appendingPathComponent("llama.cpp").path
 
+            // 网络重试：github 连接间歇性失败（HTTP2 framing / 443 超时实测），
+            // 检出与更新各给 4 次机会（间隔 5s）。
+            func networkStep(_ label: String, _ body: () async throws -> Void) async throws {
+                var lastError: Error?
+                for attempt in 1 ... 4 {
+                    do {
+                        try await body()
+                        return
+                    } catch {
+                        lastError = error
+                        appendCommandLog("⚠️ \(label) 第 \(attempt) 次失败：\(error.localizedDescription)")
+                        if attempt < 4 {
+                            try? await Task.sleep(nanoseconds: 5_000_000_000)
+                        }
+                    }
+                }
+                throw NSError(domain: "EnvManager", code: 502, userInfo: [
+                    NSLocalizedDescriptionKey:
+                        "网络无法访问 github.com（已重试 4 次）：\(lastError?.localizedDescription ?? "")。请检查网络后重试。",
+                ])
+            }
+
             if !fm.fileExists(atPath: "\(source)/.git") {
                 appendCommandLog("📥 锁定检出 llama.cpp @ \(pinned) …")
-                for args in llamaRecipe.lockedCheckoutCommands(git: git, targetDir: source) {
-                    try await runCommand(args[0], args: Array(args.dropFirst()))
+                try await networkStep("锁定检出") {
+                    for args in llamaRecipe.lockedCheckoutCommands(git: git, targetDir: source) {
+                        try await runCommand(args[0], args: Array(args.dropFirst()))
+                    }
                 }
             } else {
                 appendCommandLog("🔒 校验 llama.cpp 检出到锁定版本 \(pinned) …")
-                try await runCommand(git, args: ["-C", source, "fetch", "--depth", "1", "origin", pinned])
-                try await runCommand(git, args: ["-C", source, "checkout", "--detach", pinned])
+                try await networkStep("校验更新") {
+                    try await runCommand(git, args: ["-C", source, "fetch", "--depth", "1", "origin", pinned])
+                    try await runCommand(git, args: ["-C", source, "checkout", "--detach", pinned])
+                }
             }
 
             if fm.fileExists(atPath: "\(build)/CMakeCache.txt") {

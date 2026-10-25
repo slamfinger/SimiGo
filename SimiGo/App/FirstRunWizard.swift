@@ -393,8 +393,11 @@ struct FirstRunWizardView: View {
             log("\(path): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))")
         }
         log("== 生成环境自举 ==")
-        let report = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
-        for key in ["engine_manifest", "llama_cpp", "hf", "database", "localb", "dmg"] {
+        var report = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
+        // LOCALB first-run ceremony（产品自身首启即完成；无交互 prepare→activate）
+        let ceremony = SimiGoEnvBootstrapEntry.bootstrapLOCALBCeremonyIfNeeded(optIn: true)
+        report["localb_ceremony"] = ceremony
+        for key in ["engine_manifest", "llama_cpp", "hf", "database", "localb", "localb_ceremony"] {
             if let v = report[key] as? [String: Any] {
                 log("\(key): \(v["status"] ?? v["ceremony"] ?? "?")")
             }

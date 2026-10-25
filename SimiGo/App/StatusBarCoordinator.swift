@@ -95,16 +95,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 /// 取代 MenuBarExtra(.window)——后者在系统睡眠唤醒后点击静默失效
 /// （2026-10-15 实证：performClick 受理、按钮高亮，面板零创建）。
 @MainActor
-final class StatusBarCoordinator: NSObject {
+final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate {
     static let shared = StatusBarCoordinator()
 
     private let svc = Service.shared
-    private let stateGraph = ExecutionStateGraphStore()
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
     private var settingsWindowController: NSWindowController?
     private var wizardWindowController: NSWindowController?
-    private var stateGraphWindowController: NSWindowController?
     private var cancellables: Set<AnyCancellable> = []
     private var popoverClosedAt = Date.distantPast
 
@@ -276,33 +274,6 @@ final class StatusBarCoordinator: NSObject {
         controller.showWindow(nil)
     }
 
-    func openStateGraphWindow() {
-        NSApp.activate(ignoringOtherApps: true)
-
-        if let controller = stateGraphWindowController {
-            controller.showWindow(nil)
-            controller.window?.makeKeyAndOrderFront(nil)
-            return
-        }
-
-        let window = NSWindow(contentViewController: NSHostingController(
-            rootView: ExecutionStateGraphView()
-                .environmentObject(stateGraph)
-                .environmentObject(svc)
-        ))
-        window.title = "Execution State"
-        window.setContentSize(NSSize(width: 820, height: 560))
-        window.contentMinSize = NSSize(width: 720, height: 480)
-        window.delegate = self
-        window.isReleasedWhenClosed = false
-
-        let controller = NSWindowController(window: window)
-        stateGraphWindowController = controller
-        controller.showWindow(nil)
-    }
-}
-
-extension StatusBarCoordinator: NSPopoverDelegate, NSWindowDelegate {
     func popoverDidClose(_ notification: Notification) {
         popoverClosedAt = Date()
     }
@@ -314,9 +285,6 @@ extension StatusBarCoordinator: NSPopoverDelegate, NSWindowDelegate {
         if window === settingsWindowController?.window {
             window.delegate = nil
             settingsWindowController = nil
-        } else if window === stateGraphWindowController?.window {
-            window.delegate = nil
-            stateGraphWindowController = nil
         }
     }
 }
