@@ -888,7 +888,8 @@ public struct LOCALBKeychainSignerStore {
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
             kSecValueData as String: generated.rawRepresentation
         ]
-        let status = SecItemAdd(try scope.addScope(attributes) as CFDictionary, nil)
+        let status = SecItemAdd(
+            try scope.addScope(LOCALBItemACL.attaching(to: attributes)) as CFDictionary, nil)
         if status == errSecSuccess { return generated }
         if status == errSecDuplicateItem, let winner = try readExisting() { return winner }
         throw LOCALBStatus.keychainUnavailable

@@ -379,7 +379,8 @@ public struct LOCALBTransportIdentityStore {
                 certLabel: certLabel(generation: generation, attemptID: attemptID)
             ))
         ]
-        let indexStatus = SecItemAdd(try scopedAdd(indexAttributes) as CFDictionary, nil)
+        let indexStatus = SecItemAdd(
+            try scopedAdd(LOCALBItemACL.attaching(to: indexAttributes)) as CFDictionary, nil)
         if indexStatus == errSecDuplicateItem {
             guard let winner = try readExisting() else {
                 // The other caller's items are incomplete: explicit failure,
@@ -537,7 +538,7 @@ public struct LOCALBTransportIdentityStore {
             kSecAttrIsPermanent as String: true,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
-        var keyRequest = keyAttributes
+        var keyRequest = LOCALBItemACL.attaching(to: keyAttributes)
         keyRequest[kSecUseKeychain as String] = try resolveKeychain()
         guard let storedKey = SecKeyCreateRandomKey(keyRequest as CFDictionary, nil) else {
             // Never destructive on failure: if the tag is taken, a concurrent
@@ -600,7 +601,8 @@ public struct LOCALBTransportIdentityStore {
             kSecAttrLabel as String: certLabel,
             kSecValueRef as String: secCertificate
         ]
-        let certStatus = SecItemAdd(try scopedAdd(certAttributes) as CFDictionary, nil)
+        let certStatus = SecItemAdd(
+            try scopedAdd(LOCALBItemACL.attaching(to: certAttributes)) as CFDictionary, nil)
         guard certStatus == errSecSuccess || certStatus == errSecDuplicateItem else {
             throw LOCALBStatus.keychainUnavailable
         }
@@ -681,6 +683,36 @@ extension Sequence where Element == UInt8 {
 /// `<SIMIGO_HOME>/localb/<file>.keychain-db`, scoped per call, so an isolated
 /// run cannot add items to real user state. Outside an isolated root `path` is
 /// nil and the default search list (the login Keychain) is used unchanged.
+/// An item ACL that trusts ANY application, for items inside the managed
+/// file keychains. The default ACL a Keychain write receives binds the item
+/// to THIS build's code signature; every re-signed build (each RC candidate)
+/// is then refused with a SecurityAgent prompt that no password satisfies
+/// (observed 2026-10-26, real domain). The store's trust boundary is the
+/// 0600 file inside the user's managed root, so opening the item ACL is a
+/// deliberate scope decision, not an oversight.
+public enum LOCALBItemACL {
+    public static func anyApplication() -> SecAccess? {
+        var anyApp: SecTrustedApplication?
+        guard SecTrustedApplicationCreateFromPath(nil, &anyApp) == errSecSuccess,
+            let anyApp
+        else { return nil }
+        var access: SecAccess?
+        guard SecAccessCreate(
+            "SimiGo managed-store item" as CFString, [anyApp] as CFArray, &access
+        ) == errSecSuccess else { return nil }
+        return access
+    }
+
+    /// Attributes with the relaxed ACL attached; nil access falls through
+    /// unchanged (the caller's write then keeps the platform default).
+    public static func attaching(to attributes: [String: Any]) -> [String: Any] {
+        guard let access = anyApplication() else { return attributes }
+        var out = attributes
+        out[kSecAttrAccess as String] = access
+        return out
+    }
+}
+
 public struct LOCALBKeychainScope {
     let path: String?
     let fileName: String
