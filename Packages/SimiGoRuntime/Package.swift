@@ -48,5 +48,9 @@ let package = Package(
             name: "SimiGoRuntimeContractTests",
             dependencies: ["SimiGoRuntimeContract"]
         ),
+        .testTarget(
+            name: "SimiGo2ExperimentalTests",
+            dependencies: ["SimiGo2Experimental"]
+        ),
     ]
 )
