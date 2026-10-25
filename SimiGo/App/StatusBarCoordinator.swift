@@ -30,6 +30,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        // Generation-environment bootstrap gate (SIMIGO_ENV_BOOTSTRAP=1):
+        // provisions the managed tree, llama.cpp, hf, and the blank ES/IS
+        // database (+ optional SIMIGO_WORKROOT registration), then exits. It
+        // is the one-command path from a bare install to a root where
+        // Execution State / Information Space can run; it never starts a model
+        // or a listener.
+        let envBootstrap = SimiGoEnvBootstrapEntry.evaluate()
+        if envBootstrap.requested {
+            guard envBootstrap.valid else {
+                FileHandle.standardError.write(
+                    ("env-bootstrap fail-closed: " + (envBootstrap.error ?? "unknown") + "\n")
+                        .data(using: .utf8)!)
+                exit(2)
+            }
+            FileHandle.standardError.write("env-bootstrap-entered\n".data(using: .utf8)!)
+            Task { @MainActor in
+                let code = await SimiGoEnvBootstrapEntry.run()
+                exit(code)
+            }
+            return
+        }
         // LOCALB local-management gate (env-gated, isolated roots only). The
         // product ships the first-run ceremony / pairing primitives but no
         // surface called them, so a never-activated host could not bind its

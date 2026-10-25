@@ -417,6 +417,188 @@ public final class EnvManager: ObservableObject {
     }
 
 
+    // MARK: - Generation environment bootstrap (env-bootstrap entry)
+
+    /// Provision the `hf` CLI into the managed bin.
+    ///
+    /// Discovery order: an already usable `hf` (PATH or managed bin) is adopted
+    /// as-is; otherwise Homebrew (a package manager, never `curl | bash`) is
+    /// used to install the official `huggingface-cli`, and the binary is
+    /// linked into `~/.simigo/bin`. Without Homebrew the step reports
+    /// `manual_required` with instructions instead of failing the bootstrap.
+    public func bootstrapHFTool() async -> [String: Any] {
+        let fm = FileManager.default
+        let binTarget = Self.binDir + "/hf"
+        if let existing = Self.findTool("hf") {
+            return ["status": "already_present", "path": existing]
+        }
+        if fm.fileExists(atPath: binTarget) && fm.isExecutableFile(atPath: binTarget) {
+            return ["status": "already_present", "path": binTarget]
+        }
+        guard let brew = Self.findTool("brew") else {
+            return [
+                "status": "manual_required",
+                "detail": "未找到 hf 且未安装 Homebrew：请安装官方 huggingface-cli 后重跑（禁止 curl | bash）",
+            ]
+        }
+        do {
+            appendCommandLog("📦 通过 Homebrew 安装官方 huggingface-cli …")
+            try await runCommand(brew, args: ["install", "huggingface-cli"])
+            // Locate the installed binary via brew's own prefix resolution.
+            let prefix = try await Self.captureCommand(brew, args: ["--prefix", "huggingface-cli"])
+            let candidate = (prefix as NSString).appendingPathComponent("/bin/hf")
+            guard fm.fileExists(atPath: candidate) else {
+                return ["status": "install_bin_missing", "detail": "brew 安装完成但未找到 \(candidate)"]
+            }
+            try? fm.removeItem(atPath: binTarget)
+            try fm.createSymbolicLink(atPath: binTarget, withDestinationPath: candidate)
+            try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: binTarget)
+            return ["status": "installed", "path": binTarget, "target": candidate]
+        } catch {
+            return ["status": "install_failed", "detail": error.localizedDescription]
+        }
+    }
+
+    /// Ensure a fresh authoritative ES/IS database exists and optionally
+    /// register the operator's work root.
+    ///
+    /// An EXISTING database is never reset — the blank-database semantics apply
+    /// to a new environment only. `workRoot`, when given, is registered in the
+    /// `roots` table (category `work`, locator `path`) so Execution State and
+    /// Information Space can index files under it without ever copying them in.
+    public func bootstrapFreshDatabase(workRoot: String?) -> [String: Any] {
+        let url = SimiGoPaths.databaseURL
+        let existedBefore = FileManager.default.fileExists(atPath: url.path)
+        do {
+            let db = try SimiGoESISDatabase(url: url, createIfNeeded: true)
+            try db.runMigrations()
+            var report: [String: Any] = [
+                "status": existedBefore ? "existing" : "created",
+                "path": url.path,
+                "schema_version": (try? db.schemaVersion()) ?? -1,
+            ]
+            if let workRoot, !workRoot.isEmpty {
+                let standardized = (workRoot as NSString).standardizingPath
+                let rootID = "work-" + Self.stableRootID(forPath: standardized)
+                try db.upsertRoot(
+                    rootID: rootID, category: "work",
+                    displayName: standardized, locatorType: "path", status: "registered")
+                report["work_root"] = [
+                    "root_id": rootID,
+                    "path": standardized,
+                    "registered": true,
+                ]
+            }
+            return report
+        } catch {
+            return ["status": "failed", "path": url.path, "detail": error.localizedDescription]
+        }
+    }
+
+    /// Ensure a version-locked engine manifest exists before building.
+    ///
+    /// The build path is fail-closed without a pinned `llama.cpp` ref; an
+    /// operator-supplied manifest is never overwritten. When none exists, this
+    /// writes the default lock file pinning llama.cpp to the commit already
+    /// validated in the user's real environment (2026-10-18, build 11720,
+    /// `0878f7c3…`) — self-bootstrap without upstream drift.
+    public func ensureDefaultEngineManifest() -> [String: Any] {
+        let url = SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName)
+        if FileManager.default.fileExists(atPath: url.path) {
+            return ["status": "present", "path": url.path]
+        }
+        let pinned = "0878f7c304cc13915c831ae17694534c94940176"
+        var recipes = SimiGoEngineRegistry.bundledDefaults
+        if let idx = recipes.firstIndex(where: { $0.id == "llama.cpp" }) {
+            recipes[idx] = EngineRecipe(
+                id: "llama.cpp", displayName: "llama.cpp", kind: .sourceBuild,
+                upstreamURL: "https://github.com/ggml-org/llama.cpp.git",
+                pinnedRef: pinned,
+                producedBinaryRelPath: "build/bin/llama-server")
+        }
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            try FileManager.default.createDirectory(
+                at: SimiGoPaths.manifests, withIntermediateDirectories: true)
+            try encoder.encode(recipes).write(to: url)
+            return ["status": "created", "pinned_ref": pinned, "path": url.path]
+        } catch {
+            return ["status": "failed", "detail": error.localizedDescription]
+        }
+    }
+
+    /// One-shot provisioning of the full generation environment: managed
+    /// directory tree, llama.cpp toolchain (version-locked build, caches
+    /// pruned to binaries), the `hf` CLI, and the authoritative ES/IS
+    /// database with an optional work-root registration. Returns a JSON-ready
+    /// report; a step that cannot run reports its own status instead of
+    /// aborting the rest.
+    public func bootstrapGenerationEnvironment(workRoot: String?) async -> [String: Any] {
+        var report: [String: Any] = [
+            "managed_root": SimiGoPaths.managedRoot().path,
+            "started_at": ISO8601DateFormatter().string(from: Date()),
+        ]
+        // 0) Version-locked engine manifest (operator manifest wins; the
+        //    default pins llama.cpp to the validated commit).
+        report["engine_manifest"] = ensureDefaultEngineManifest()
+        // 1) Directory tree + llama.cpp (reuses the shipped, version-locked
+        //    recipe path incl. cache pruning).
+        let previousEngine = selectedEngineID
+        selectedEngineID = "llama.cpp"
+        await setupEnvironment()
+        selectedEngineID = previousEngine
+        report["llama_cpp"] = [
+            "status": commandStatus,
+            "llama_server": Self.llamaServerExecutable,
+        ]
+        // 2) hf CLI.
+        report["hf"] = await bootstrapHFTool()
+        // 3) Fresh ES/IS database + work root.
+        report["database"] = bootstrapFreshDatabase(workRoot: workRoot)
+        report["finished_at"] = ISO8601DateFormatter().string(from: Date())
+        return report
+    }
+
+    /// Stable root id for a registered work root: FNV-1a over the
+    /// standardized path — reproducible across runs, no crypto requirement.
+    nonisolated static func stableRootID(forPath path: String) -> String {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in path.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return String(format: "%016x", hash)
+    }
+
+    /// Run a command and return its trimmed stdout (used by hf provisioning).
+    static func captureCommand(_ cmd: String, args: [String]) async throws -> String {
+        try await withCheckedThrowingContinuation { continuation in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: cmd)
+            process.arguments = args
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = Pipe()
+            process.terminationHandler = { process in
+                if process.terminationStatus == 0 {
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    continuation.resume(returning: String(data: data, encoding: .utf8)?
+                        .trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
+                } else {
+                    continuation.resume(throwing: NSError(
+                        domain: "EnvManager", code: Int(process.terminationStatus),
+                        userInfo: [NSLocalizedDescriptionKey: "\(cmd) exited \(process.terminationStatus)"]))
+                }
+            }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+
     // MARK: - Process Runner
     private func runCommand(_ cmd: String, args: [String]) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
