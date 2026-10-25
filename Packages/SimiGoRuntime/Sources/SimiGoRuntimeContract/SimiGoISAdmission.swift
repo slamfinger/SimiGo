@@ -40,6 +40,9 @@ public enum SimiGoISAdmission {
         case dependencyInvalid(settlementID: String, dependency: String)
         case producerBinding(SimiGoSettlementIdentityBinding.Verdict)
         case emptyValue(settlementID: String)
+        /// The settlement exists but its execution-state row does not: the store is
+        /// internally inconsistent and no child may be derived from it.
+        case missingParentState(stateID: String)
 
         public var description: String {
             switch self {
@@ -57,6 +60,8 @@ public enum SimiGoISAdmission {
                 return "producer identity binding refused: \(v.detail)"
             case .emptyValue(let s):
                 return "settlement \(s) carries no recoverable value"
+            case .missingParentState(let s):
+                return "state \(s) has a settlement but no execution-state row (inconsistent store)"
             }
         }
     }
@@ -157,6 +162,8 @@ public enum SimiGoISAdmission {
     ///     the child result is even processed — no generation, no settlement.
     ///   * the native contract runs BEFORE the store write, so a contract failure
     ///     throws with nothing written — no partially settled record;
+    ///   * a settlement whose parent execution-state row is absent refuses with
+    ///     `missingParentState` — no child is minted from a default lineage;
     ///   * the child state, its settlement and the identity bindings commit in one
     ///     transaction, so a failed identity write cannot leave an orphan child.
     public static func settleContinuation(
@@ -177,24 +184,31 @@ public enum SimiGoISAdmission {
         let settled = try SimiGoSettlementAuthority.authorize(
             generatedText: generatedText, contractJSON: contractJSON,
             verifiedBindings: admitted.verifiedBindings)
-        // (3) persist the child ES, the settlement, its constraint rows and both
+        // (3) the parent's authoritative ES row must exist. The settlement's FK
+        // normally guarantees it, but a store written by a connection with
+        // foreign keys off can hold a settlement whose state row is gone. Refuse
+        // instead of defaulting to a root child: borrowing position 1 and an
+        // empty prefix would silently invent a lineage nobody settled.
+        guard let parent = try db.readGraph().states.first(where: { $0.id == parentStateID }) else {
+            throw Refusal.missingParentState(stateID: parentStateID)
+        }
+        // (4) persist the child ES, the settlement, its constraint rows and both
         // producer identity bindings in ONE transaction. Three separate writes
         // could leave a child state behind a failed identity binding, so this
         // path uses the same atomic commit the product continuation uses. The
         // contract gate ran above: a rejection writes nothing at all.
-        let parent = try db.readGraph().states.first { $0.id == parentStateID }
         let childValue = Self.recoveredValue(from: settled.validatedPayload, field: valueField)
             ?? admitted.recoveredValue
         let child = SimiGoESISDatabase.ChildExecutionState(
             id: childStateID,
             parentID: parentStateID,
             modelIdentity: consumer.model,
-            position: (parent?.position ?? 0) + 1,
+            position: parent.position + 1,
             continuationID: UUID().uuidString,
             anchor: admitted.payloadDigest,
             createdAt: Date(),
             nextInput: childValue,
-            prefix: (parent?.prefix ?? []) + [childValue])
+            prefix: parent.prefix + [childValue])
         let sid = try db.recordNativeSettlementWithIdentity(
             settled, stateID: childStateID, identity: consumer, childState: child
         ).uuidString

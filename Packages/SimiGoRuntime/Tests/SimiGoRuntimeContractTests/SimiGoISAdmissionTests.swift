@@ -321,6 +321,37 @@ final class SimiGoISAdmissionTests: XCTestCase {
         XCTAssertNil(try db.latestSettlementID(forStateID: "CA"))
     }
 
+    /// A settlement can outlive its execution-state row (a second connection with
+    /// `foreign_keys = OFF` can delete it). That store is inconsistent, so the
+    /// continuation must refuse rather than mint a root child at position 1.
+    func testSettleContinuationRefusesParentStateMissingFromTheGraph() throws {
+        let (url, db) = try open("cont-ghost")
+        defer { db.close(); cleanup(url) }
+        try mkSettlement(db, stateID: "PGHOST", value: "ghost")
+        try execRaw(url, "PRAGMA foreign_keys=OFF; DELETE FROM execution_states WHERE state_id='PGHOST';")
+        XCTAssertNil(try db.readGraph().states.first { $0.id == "PGHOST" },
+                     "precondition: the parent state row is gone, its settlement is not")
+
+        let statesBefore = try db.count("execution_states")
+        let settlementsBefore = try db.count("settlements")
+        let bindingsBefore = try db.count("settlement_bindings")
+
+        XCTAssertThrowsError(try SimiGoISAdmission.settleContinuation(
+            db: db, parentStateID: "PGHOST", consumer: producer, childStateID: "CGHOST",
+            generatedText: "RESULT=ghost", contractJSON: Data(Self.referenceContract.utf8))
+        ) { error in
+            guard case SimiGoISAdmission.Refusal.missingParentState(let stateID) = error else {
+                return XCTFail("expected .missingParentState, got \(error)")
+            }
+            XCTAssertEqual(stateID, "PGHOST")
+        }
+        XCTAssertEqual(try db.count("execution_states"), statesBefore,
+                       "a refused continuation writes no child row")
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertEqual(try db.count("settlement_bindings"), bindingsBefore)
+        XCTAssertNil(try db.latestSettlementID(forStateID: "CGHOST"))
+    }
+
     // Only the recovered IS value drives the child result: a child result that
     // does not commit to the parent's settled value is refused and persists nothing.
     func testSettleContinuationIsValueSensitiveAndWritesNothingOnContractFailure() throws {
