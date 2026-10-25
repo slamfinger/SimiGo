@@ -33,3 +33,19 @@ default.profraw
 models/
 SimiGo-v*-*.dmg
 SimiGo-v*-Installer.pkg
+
+# Research archive: imported evidence only; never commit runtime/build artifacts or key material
+research/**/.build/
+research/**/DerivedData/
+research/**/scratch/
+research/**/checkouts/
+research/**/SourcePackages/
+research/**/envtest-root*/
+research/**/*.app/
+research/**/*.dmg
+research/**/*.sqlite3*
+research/**/*.keychain-db
+research/**/*.p12
+research/**/*.pem
+research/lab/vendor/
+research/lab/.transfer/
