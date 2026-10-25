@@ -12,22 +12,20 @@ BUILD="$(defaults read "$APP/Contents/Info.plist" CFBundleVersion)"
 EXE8="$(shasum -a 256 "$APP/Contents/MacOS/SimiGo" | cut -c1-8)"
 OUT="$ROOT/SimiGo-v${VER}-${BUILD}-${EXE8}.dmg"
 STAGE="$(mktemp -d)/dmg"
+TMPAPPLES="$(mktemp -d)/install.applescript"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/SimiGo.app"
 ln -s /Applications "$STAGE/Applications"
-cat > "$STAGE/安装SimiGo.command" <<'CMD'
-#!/bin/zsh
-# 双击即装：拷贝 SimiGo 到 /Applications 并启动（首启向导自动出现）
-set -e
-VOL="$(cd "$(dirname "$0")" && pwd)"
-TARGET="/Applications/SimiGo.app"
-if [ -d "$TARGET" ]; then rm -rf "$TARGET"; fi
-cp -R "$VOL/SimiGo.app" "$TARGET"
-open "$TARGET"
-echo "✅ SimiGo 已安装到 /Applications 并启动"
-sleep 2
-CMD
-chmod +x "$STAGE/安装SimiGo.command"
+cat > "$TMPAPPLES" <<'OSA'
+-- SimiGo 图形安装器（DMG 内双击运行）
+set myDir to POSIX file ((do shell script "dirname " & quoted form of (POSIX path of (path to me))) & "/")
+set src to POSIX path of myDir & "SimiGo.app"
+display dialog "安装 SimiGo 2.2.0" & return & return & "将把 SimiGo 安装到 /Applications（覆盖旧版本）。" & return & "安装完成后自动启动，进入安装向导。" buttons {"取消", "安装"} default button "安装" with icon note
+do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app" with administrator privileges
+display dialog "✅ 安装完成" & return & "正在启动 SimiGo（首次启动将进入安装向导）" buttons {"好"} default button "好" giving up after 4
+do shell script "open /Applications/SimiGo.app"
+OSA
+osacompile -o "$STAGE/安装SimiGo.app" "$TMPAPPLES"
 hdiutil create -volname "SimiGo 安装" -srcfolder "$STAGE" -ov -format UDZO "$OUT" >/dev/null 2>&1
 hdiutil verify "$OUT" >/dev/null
 echo "$OUT"
