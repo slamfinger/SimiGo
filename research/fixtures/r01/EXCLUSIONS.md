@@ -1,6 +1,6 @@
 # R01 Fixtures 导入排除清单
 
-来源：`/Users/mr.simi/Documents/SimiGo-Lab-R01-Fixtures`（快照于 2026-10-26）。
+来源：`/Users/mr.simi/Documents/SimiGo-Lab-R01-Fixtures`（快照于 2026-10-26），源目录已整体归档至 `research/_artifacts/SimiGo-Lab-R01-Fixtures/`。
 纳入规则：夹具数据、清单、控制/观测/回执 JSON、准备与 recon 的源码；排除 SwiftPM 构建目录。
 
 ## 排除项

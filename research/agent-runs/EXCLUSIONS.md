@@ -1,8 +1,8 @@
 # Agent-Runs 导入排除清单
 
-来源：`/Users/mr.simi/SimiGo-Agent-Runs`（快照于 2026-10-26）。
+来源：`/Users/mr.simi/SimiGo-Agent-Runs`（快照于 2026-10-26），源目录已整体归档至 `research/_artifacts/SimiGo-Agent-Runs/`。
 纳入规则：证据报告、证据 JSON、驱动脚本、源码补丁、清单与校验文件；单文件上限 50 MiB。
-本清单由导入脚本生成；被排除项仍保留在源目录原位，未删除、未修改。
+本清单由导入脚本生成；被排除项保留在本地归档 `research/_artifacts/SimiGo-Agent-Runs/`（gitignored），未删除、未修改。
 
 ## 各批次纳入量
 
@@ -84,4 +84,4 @@
 - `noninterference_*.json`（9–26 MiB）是隔离性门证据的大快照，已随本批纳入。
 - `derived/`、`run2/`、`scratch/`、`checkouts/`、`SourcePackages/` 为可再生成的构建/依赖产物。
 - `envtest-root*/`、`envtest-final/` 含测试运行期 SQLite 与本地环境，属运行态数据。
-- 完整还原需以源目录为准；本清单给出被排除项的原路径与体积。
+- 完整还原需以本地归档 `research/_artifacts/SimiGo-Agent-Runs/` 为准；本清单给出被排除项的相对路径与体积。
