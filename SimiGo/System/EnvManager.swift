@@ -735,7 +735,16 @@ public final class EnvManager: ObservableObject {
             try db.upsertRoot(
                 rootID: rootID, category: "work", displayName: standardized,
                 locatorType: "path", status: "registered")
-            return ["status": "registered", "root_id": rootID, "path": standardized]
+            // 注册即结算：索引执行的结果（路径+摘要+文本内容）按 Δ 落库
+            let settle = try db.settleWorkRootContents(
+                rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
+            return [
+                "status": "registered", "root_id": rootID, "path": standardized,
+                "content_settle": [
+                    "scanned": settle.scanned, "reused": settle.reused,
+                    "settled": settle.settled, "skipped": settle.skippedBinaryOrLarge,
+                ],
+            ]
         } catch {
             return ["status": "failed", "detail": error.localizedDescription]
         }

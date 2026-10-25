@@ -195,6 +195,80 @@ public final class SimiGoESISDatabase {
                 try recordMigrationRow(4, "simigo-chat-persistence-v4")
             }
         }
+        if try schemaVersion() < 5 {
+            try transaction {
+                try Self.rawExec(handle, """
+                CREATE TABLE file_contents(
+                    root_id TEXT NOT NULL REFERENCES roots(root_id) ON DELETE CASCADE,
+                    relative_path TEXT NOT NULL,
+                    content_sha256 TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    settled_at TEXT NOT NULL,
+                    PRIMARY KEY(root_id, relative_path)
+                );
+                """)
+                try recordMigrationRow(5, "simigo-file-content-settle-v5")
+            }
+        }
+        if try schemaVersion() < 6 {
+            try transaction {
+                try Self.rawExec(handle, """
+                CREATE TABLE retrieval_settlements(
+                    demand_id TEXT PRIMARY KEY,
+                    query TEXT NOT NULL,
+                    root_ids TEXT NOT NULL,
+                    inputs_digest TEXT NOT NULL,
+                    result_sha256 TEXT NOT NULL,
+                    result_json TEXT NOT NULL,
+                    hit_count INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    settled_at TEXT NOT NULL
+                );
+                """)
+                try recordMigrationRow(6, "simigo-demand-retrieval-settlement-v6")
+            }
+        }
+        // Repair pass: a build shipped with the v4/v5/v6 gates out of order, so
+        // MAX(version) moved straight to 6 and skipped the table creation for
+        // chat_messages and file_contents. Those databases report v6 while the
+        // tables are absent. Re-assert every later table idempotently.
+        if try schemaVersion() < 7 {
+            try transaction {
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS chat_messages(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    model TEXT,
+                    content_sha256 TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_session
+                    ON chat_messages(session_id, id);
+                CREATE TABLE IF NOT EXISTS file_contents(
+                    root_id TEXT NOT NULL REFERENCES roots(root_id) ON DELETE CASCADE,
+                    relative_path TEXT NOT NULL,
+                    content_sha256 TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    settled_at TEXT NOT NULL,
+                    PRIMARY KEY(root_id, relative_path)
+                );
+                CREATE TABLE IF NOT EXISTS retrieval_settlements(
+                    demand_id TEXT PRIMARY KEY,
+                    query TEXT NOT NULL,
+                    root_ids TEXT NOT NULL,
+                    inputs_digest TEXT NOT NULL,
+                    result_sha256 TEXT NOT NULL,
+                    result_json TEXT NOT NULL,
+                    hit_count INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    settled_at TEXT NOT NULL
+                );
+                """)
+                try recordMigrationRow(7, "simigo-schema-repair-v7")
+            }
+        }
     }
 
     private func recordMigrationRow(_ version: Int, _ checksum: String) throws {
@@ -527,6 +601,253 @@ public final class SimiGoESISDatabase {
                 locatorType: col(3), status: col(4)))
         }
         return rows
+    }
+
+    // MARK: - 工作目录内容结算（ES/IS：索引执行的结果落库，Δ 复用）
+
+    public struct ContentSettleReport: Equatable, Sendable {
+        public let scanned: Int
+        public let reused: Int
+        public let settled: Int
+        public let skippedBinaryOrLarge: Int
+    }
+
+    /// 结算一个工作根的文本内容：逐文件计算 SHA-256，digest 与库中一致的
+    /// 直接复用（不重写），仅新增/变更文件写入 `file_contents`。这是索引
+    /// 执行的结算结果——后续检索直接查库，不再重复读取。
+    /// 文本判定：utf8 可解码且 ≤ fileByteCap（默认 1 MiB）。超过的只记
+    /// external_files（路径+digest），不入内容表。
+    @discardableResult
+    public func settleWorkRootContents(
+        rootID: String, rootURL: URL,
+        fileByteCap: Int = 1 << 20, maxDepth: Int = 4
+    ) throws -> ContentSettleReport {
+        let fm = FileManager.default
+        var scanned = 0, reused = 0, settled = 0, skipped = 0
+        let enumerator = fm.enumerator(
+            at: rootURL,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants])
+        var pending: [(rel: String, url: URL, digest: String, content: String?)] = []
+        while let file = enumerator?.nextObject() as? URL {
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: file.path, isDirectory: &isDir),
+                !isDir.boolValue
+            else { continue }
+            // 深度限制
+            let relComponents = file.path
+                .replacingOccurrences(of: rootURL.path + "/", with: "")
+                .split(separator: "/").map(String.init)
+            guard relComponents.count <= maxDepth else { continue }
+            scanned += 1
+            guard let data = try? Data(contentsOf: file), data.count <= fileByteCap,
+                let text = String(data: data, encoding: .utf8)
+            else {
+                skipped += 1
+                continue
+            }
+            let digest = NativeSHA256.hexDigest(data)
+            let rel = file.path.replacingOccurrences(of: rootURL.path + "/", with: "")
+            // Δ 判定：digest 与已结算一致 → 复用
+            if let row = try? prepare(
+                "SELECT content_sha256 FROM file_contents WHERE root_id=? AND relative_path=?;")
+            {
+                defer { sqlite3_finalize(row) }
+                bind(row, 1, rootID)
+                bind(row, 2, rel)
+                if sqlite3_step(row) == SQLITE_ROW,
+                    let c = sqlite3_column_text(row, 0),
+                    String(cString: c) == digest
+                {
+                    reused += 1
+                    continue
+                }
+            }
+            pending.append((rel, file, digest, text))
+        }
+        for item in pending {
+            let now = Self.stamp(Date())
+            try execBinding("""
+            INSERT INTO file_contents(root_id, relative_path, content_sha256, content, settled_at)
+            VALUES(?,?,?,?,?)
+            ON CONFLICT(root_id, relative_path) DO UPDATE SET
+                content_sha256=excluded.content_sha256, content=excluded.content,
+                settled_at=excluded.settled_at;
+            """) { stmt in
+                bind(stmt, 1, rootID)
+                bind(stmt, 2, item.rel)
+                bind(stmt, 3, item.digest)
+                bind(stmt, 4, item.content ?? "")
+                bind(stmt, 5, now)
+            }
+            try indexExternalFile(
+                rootID: rootID, category: "work", relativePath: item.rel,
+                kind: (item.url.pathExtension as String?) ?? nil,
+                size: Int64((try? fm.attributesOfItem(atPath: item.url.path)[.size] as? Int) ?? 0),
+                modifiedAt: nil, contentDigest: item.digest)
+            settled += 1
+        }
+        return ContentSettleReport(
+            scanned: scanned, reused: reused, settled: settled, skippedBinaryOrLarge: skipped)
+    }
+
+    // MARK: - Demand 驱动的信息检索（原研究 execute_demand 语义）
+
+    public struct DemandRetrieval: Equatable, Sendable {
+        public let demandID: String
+        public let reused: Bool
+        public let hits: [ContentHit]
+        public let resultSHA256: String
+        public let status: String
+    }
+
+    /// 执行一次信息需求（demand）：
+    ///   demand_id = SHA256(query + 注册根集合 + 全部已结算内容摘要的规范串联)
+    /// 同一 demand 且结算有效 → 直接返回已结算结果（**不再重复计算**，即
+    /// ES₁ 已结算关系对 ES₂ 合法复用）；任一输入摘要变化 → 新 demand，重算
+    /// 并落新结算，旧结算置 invalidated。结果逐项摘要绑定，确定性 consumer
+    /// 不造内容。
+    public func executeInformationDemand(
+        query: String, rootID: String? = nil, limit: Int = 200
+    ) throws -> DemandRetrieval {
+        // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
+        var digests: [String] = []
+        var roots: [String] = []
+        let digestSQL = rootID == nil
+            ? "SELECT root_id, relative_path, content_sha256 FROM file_contents ORDER BY root_id, relative_path;"
+            : "SELECT root_id, relative_path, content_sha256 FROM file_contents WHERE root_id='"
+                + rootID!.replacingOccurrences(of: "'", with: "''")
+                + "' ORDER BY root_id, relative_path;"
+        let dstmt = try prepare(digestSQL)
+        defer { sqlite3_finalize(dstmt) }
+        while sqlite3_step(dstmt) == SQLITE_ROW {
+            func col(_ i: Int32) -> String {
+                guard let c = sqlite3_column_text(dstmt, i) else { return "" }
+                return String(cString: c)
+            }
+            digests.append("\(col(0))/\(col(1))=\(col(2))")
+            if !roots.contains(col(0)) { roots.append(col(0)) }
+        }
+        let canonical = query + "|" + digests.joined(separator: ";")
+        let demandID = NativeSHA256.hexDigest(Data(canonical.utf8))
+
+        // 2) 复用检查：同 demand 且 status=valid → 直接返回已结算结果
+        if let settled = try? prepare(
+            "SELECT result_json, result_sha256, hit_count FROM retrieval_settlements "
+                + "WHERE demand_id=? AND status='valid';")
+        {
+            defer { sqlite3_finalize(settled) }
+            bind(settled, 1, demandID)
+            if sqlite3_step(settled) == SQLITE_ROW {
+                func col(_ i: Int32) -> String {
+                    guard let c = sqlite3_column_text(settled, i) else { return "" }
+                    return String(cString: c)
+                }
+                let resultJSON = col(0)
+                if let rows = try? JSONDecoder().decode([ContentHit].self, from: Data(resultJSON.utf8)) {
+                    return DemandRetrieval(
+                        demandID: demandID, reused: true, hits: rows,
+                        resultSHA256: col(1), status: "reused")
+                }
+            }
+        }
+
+        // 3) 重算：在已结算内容索引上检索（确定性 consumer：只绑定摘要与原文行）
+        var hits = try searchSettledContent(query: query, rootID: rootID, limit: limit)
+        if hits.isEmpty {
+            // 文件名命中（external_files 路径匹配）也纳入 demand 结果
+            hits = try fileNameHits(query: query, rootID: rootID, limit: limit)
+        }
+        let resultData = try JSONEncoder().encode(hits)
+        let resultJSON = String(data: resultData, encoding: .utf8) ?? "[]"
+        let resultSHA = NativeSHA256.hexDigest(resultData)
+
+        // 4) 结算落库；同查询的旧 settlement 置 invalidated
+        try execBinding(
+            "UPDATE retrieval_settlements SET status='invalidated' WHERE query=? AND demand_id<>?;"
+        ) { stmt in
+            bind(stmt, 1, query)
+            bind(stmt, 2, demandID)
+        }
+        try execBinding("""
+        INSERT INTO retrieval_settlements(demand_id, query, root_ids, inputs_digest, result_sha256, result_json, hit_count, status, settled_at)
+        VALUES(?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(demand_id) DO UPDATE SET
+            result_sha256=excluded.result_sha256, result_json=excluded.result_json,
+            hit_count=excluded.hit_count, status='valid', settled_at=excluded.settled_at;
+        """) { stmt in
+            bind(stmt, 1, demandID)
+            bind(stmt, 2, query)
+            bind(stmt, 3, roots.joined(separator: ","))
+            bind(stmt, 4, canonical)
+            bind(stmt, 5, resultSHA)
+            bind(stmt, 6, resultJSON)
+            bind(stmt, 7, Int64(hits.count))
+            bind(stmt, 8, "valid")
+            bind(stmt, 9, Self.stamp(Date()))
+        }
+        return DemandRetrieval(
+            demandID: demandID, reused: false, hits: hits,
+            resultSHA256: resultSHA, status: "settled")
+    }
+
+    /// 文件名/路径命中的确定性 consumer（demand 结果的一部分）。
+    private func fileNameHits(query: String, rootID: String?, limit: Int) throws -> [ContentHit] {
+        var sql = "SELECT root_id, relative_path FROM external_files WHERE relative_path LIKE ?"
+        if rootID != nil { sql += " AND root_id='" + rootID!.replacingOccurrences(of: "'", with: "''") + "'" }
+        sql += " ORDER BY relative_path LIMIT \(limit);"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, "%" + query.replacingOccurrences(of: "'", with: "''") + "%")
+        var hits: [ContentHit] = []
+        while sqlite3_step(stmt) == SQLITE_ROW, hits.count < limit {
+            func col(_ i: Int32) -> String {
+                guard let c = sqlite3_column_text(stmt, i) else { return "" }
+                return String(cString: c)
+            }
+            hits.append(ContentHit(
+                rootID: col(0), relativePath: col(1), lineNo: 0,
+                lineText: col(1)))
+        }
+        return hits
+    }
+
+    public struct ContentHit: Equatable, Sendable, Codable {
+        public let rootID: String
+        public let relativePath: String
+        public let lineNo: Int
+        public let lineText: String
+    }
+
+    /// 信息拓扑检索：在已结算的内容索引上按关键词命中（文件名 + 行级），
+    /// 不重扫文件系统——结算过的结果直接使用。
+    public func searchSettledContent(query: String, rootID: String? = nil, limit: Int = 200)
+        throws -> [ContentHit]
+    {
+        guard !query.isEmpty else { return [] }
+        var hits: [ContentHit] = []
+        var sql = "SELECT root_id, relative_path, content FROM file_contents WHERE content LIKE ?"
+        if rootID != nil { sql += " AND root_id='" + rootID!.replacingOccurrences(of: "'", with: "''") + "'" }
+        sql += ";"
+        let pattern = "%" + query.replacingOccurrences(of: "'", with: "''") + "%"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, pattern)
+        while sqlite3_step(stmt) == SQLITE_ROW, hits.count < limit {
+            func col(_ i: Int32) -> String {
+                guard let c = sqlite3_column_text(stmt, i) else { return "" }
+                return String(cString: c)
+            }
+            let rootIDv = col(0), rel = col(1), content = col(2)
+            for (idx, line) in content.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
+            where line.localizedCaseInsensitiveContains(query) {
+                hits.append(ContentHit(
+                    rootID: rootIDv, relativePath: rel, lineNo: idx + 1,
+                    lineText: String(line.prefix(200))))
+                if hits.count >= limit { break }
+            }
+        }
+        return hits
     }
 
     // MARK: - 对话落库（Information Space：会话即信息）

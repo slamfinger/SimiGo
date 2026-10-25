@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -41,11 +42,61 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.schemaVersion(), 0)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 3)   // v3 additive validity column
+        XCTAssertEqual(try db.schemaVersion(), 7)   // v7 repair pass is the head
         XCTAssertTrue(try db.integrityCheck())
+        XCTAssertEqual(try db.count("chat_messages"), 0)
+        XCTAssertEqual(try db.count("file_contents"), 0)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
         // Idempotent: re-running does not error or double-apply.
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 3)
+        XCTAssertEqual(try db.schemaVersion(), 7)
+    }
+
+    /// A database stamped v6 by the old out-of-order gates reports the head
+    /// version while `chat_messages` and `file_contents` are absent. The v7
+    /// repair pass must recreate them without touching existing rows.
+    func testRepairsTablesSkippedByOutOfOrderGates() throws {
+        let url = tempURL("repair")
+        defer { cleanup(url) }
+        let db = try SimiGoESISDatabase(url: url)
+        try db.runMigrations()
+        XCTAssertEqual(try db.schemaVersion(), 7)
+        db.close()
+
+        try rawExec(url, """
+        DROP TABLE file_contents;
+        DROP TABLE chat_messages;
+        DROP TABLE retrieval_settlements;
+        DELETE FROM schema_migrations WHERE version >= 4;
+        INSERT INTO schema_migrations(version, applied_at, checksum)
+            VALUES(6, '2026-10-26T00:00:00Z', 'simigo-demand-retrieval-settlement-v6');
+        """)
+
+        let repaired = try SimiGoESISDatabase(url: url)
+        defer { repaired.close() }
+        XCTAssertEqual(try repaired.schemaVersion(), 6)
+        try repaired.runMigrations()
+        XCTAssertEqual(try repaired.schemaVersion(), 7)
+        XCTAssertEqual(try repaired.count("chat_messages"), 0)
+        XCTAssertEqual(try repaired.count("file_contents"), 0)
+        XCTAssertEqual(try repaired.count("retrieval_settlements"), 0)
+        try repaired.runMigrations()
+        XCTAssertEqual(try repaired.schemaVersion(), 7)
+    }
+
+    private func rawExec(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
+            sqlite3_close(handle)
+            throw SimiGoESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(handle) }
+        var message: UnsafeMutablePointer<CChar>?
+        guard sqlite3_exec(handle, sql, nil, nil, &message) == SQLITE_OK else {
+            let detail = message.map { String(cString: $0) } ?? "unknown error"
+            sqlite3_free(message)
+            throw SimiGoESISDatabase.DatabaseError.sql(detail)
+        }
     }
 
     func testLegacyImportWithReadBackAndReceipt() throws {

@@ -1208,6 +1208,8 @@ public final class HTTPServer: @unchecked Sendable {
              ("HEAD", "/health"),
              ("GET", "/v1/simigo/env"),
              ("GET", "/v1/simigo/roots"),
+             ("GET", "/v1/simigo/search"),
+             ("POST", "/v1/simigo/search"),
              ("PUT", "/v1/simigo/roots"),
              ("POST", "/v1/simigo/roots"),
              ("POST", "/localb/auth/challenge"):
@@ -1457,6 +1459,60 @@ public final class HTTPServer: @unchecked Sendable {
     /// (clientKeyID, permission).
     // MARK: - SimiGo local management endpoints (database interface)
 
+    /// GET/POST /v1/simigo/search?q=... — demand 驱动的信息检索：
+    /// 已结算结果直接复用（reused=true），输入变化才重算并落新结算。
+    private func handleSimigoSearchRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        var query: String?
+        var rootID: String?
+        if !request.body.isEmpty,
+            let obj = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any]
+        {
+            query = obj["q"] as? String ?? obj["query"] as? String
+            rootID = obj["root_id"] as? String
+        }
+        if query == nil,
+            let target = URL(string: "http://x" + request.requestTarget),
+            let comps = URLComponents(url: target, resolvingAgainstBaseURL: false)?.queryItems
+        {
+            query = comps.first(where: { $0.name == "q" })?.value
+            rootID = rootID ?? comps.first(where: { $0.name == "root_id" })?.value
+        }
+        guard let q = query, !q.isEmpty else {
+            sendJSON(
+                ["error": "INVALID_REQUEST", "detail": "expected q=<关键词>"],
+                status: 400, on: context.connection, context: context)
+            return
+        }
+        do {
+            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let retrieval = try db.executeInformationDemand(query: q, rootID: rootID)
+            sendJSON(
+                [
+                    "demand_id": retrieval.demandID,
+                    "reused": retrieval.reused,
+                    "status": retrieval.status,
+                    "result_sha256": retrieval.resultSHA256,
+                    "hits": retrieval.hits.map { [
+                        "root_id": $0.rootID,
+                        "path": $0.relativePath,
+                        "line": $0.lineNo,
+                        "text": $0.lineText,
+                    ] },
+                ],
+                status: 200,
+                on: context.connection,
+                context: context
+            )
+        } catch {
+            sendJSON(
+                ["error": "SEARCH_FAILED", "detail": "\(error)"],
+                status: 500, on: context.connection, context: context)
+        }
+    }
+
     /// GET /v1/simigo/env — generation-environment status: managed root,
     /// llama-server, hf, database, registered roots, LOCALB resolution.
     /// Read-only; every field is derived from the managed root at call time.
@@ -1561,6 +1617,9 @@ public final class HTTPServer: @unchecked Sendable {
             try db.upsertRoot(
                 rootID: rootID, category: "work", displayName: standardized,
                 locatorType: "path", status: "registered")
+            let settle = try db.settleWorkRootContents(
+                rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
+            _ = settle
             sendJSON(
                 ["root_id": rootID, "path": standardized, "registered": true],
                 status: 200, on: context.connection, context: context)
@@ -1705,6 +1764,10 @@ public final class HTTPServer: @unchecked Sendable {
                 request,
                 context: context
             )
+
+        case ("GET", "/v1/simigo/search"),
+             ("POST", "/v1/simigo/search"):
+            try await handleSimigoSearchRequest(request, context: context)
 
         case ("GET", "/v1/simigo/env"):
             try await handleSimigoEnvRequest(request, context: context)
