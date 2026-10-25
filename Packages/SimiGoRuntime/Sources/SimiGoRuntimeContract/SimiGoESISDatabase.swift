@@ -255,11 +255,47 @@ public final class SimiGoESISDatabase {
 
     // MARK: - Execution state write
 
+    /// A child Execution State recorded in the SAME authoritative transaction as
+    /// its settlement (continuation path). Fields mirror `recordExecutionState`.
+    public struct ChildExecutionState: Sendable {
+        public let id: String
+        public let parentID: String
+        public let modelIdentity: String
+        public let position: Int
+        public let continuationID: String
+        public let anchor: String
+        public let createdAt: Date
+
+        public init(id: String, parentID: String, modelIdentity: String,
+                    position: Int, continuationID: String, anchor: String,
+                    createdAt: Date) {
+            self.id = id
+            self.parentID = parentID
+            self.modelIdentity = modelIdentity
+            self.position = position
+            self.continuationID = continuationID
+            self.anchor = anchor
+            self.createdAt = createdAt
+        }
+    }
+
     /// Upsert an execution state into the authoritative store. Used by the app to
     /// mirror its execution graph into SQLite and to satisfy settlement FKs.
     public func recordExecutionState(id: String, parentID: String?, modelIdentity: String,
                                      position: Int, continuationID: String, anchor: String,
                                      lifecycle: String, createdAt: Date) throws {
+        try insertExecutionStateRow(
+            id: id, parentID: parentID, modelIdentity: modelIdentity,
+            position: position, continuationID: continuationID, anchor: anchor,
+            lifecycle: lifecycle, createdAt: createdAt)
+    }
+
+    /// Caller owns the transaction. Shared by the standalone upsert and the
+    /// atomic child-state + settlement commit, so a continuation can create its
+    /// child ES and settle it as one authoritative unit.
+    private func insertExecutionStateRow(id: String, parentID: String?, modelIdentity: String,
+                                         position: Int, continuationID: String, anchor: String,
+                                         lifecycle: String, createdAt: Date) throws {
         try execBinding("""
         INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at)
         VALUES(?,?,?,?,?,?,?,?)
@@ -301,15 +337,27 @@ public final class SimiGoESISDatabase {
     /// If any identity-binding insert fails, SQLite rolls the settlement row and
     /// all contract-binding rows back with it. Success therefore means the complete
     /// settlement + producer identity record committed as one authoritative unit.
+    ///
+    /// `childState`, when present, is inserted INSIDE the same transaction: a
+    /// continuation therefore cannot commit a settlement without its child ES,
+    /// and cannot leave a child ES behind when the settlement fails.
     @discardableResult
     public func recordNativeSettlementWithIdentity(
         _ settled: SimiGoSettlementAuthority.SettledResult,
         stateID: String,
-        identity: SimiGoSettlementIdentityBinding.Identity
+        identity: SimiGoSettlementIdentityBinding.Identity,
+        childState: ChildExecutionState? = nil
     ) throws -> UUID {
         let settlementUUID = UUID()
         let settlementID = settlementUUID.uuidString
         try transaction {
+            if let childState {
+                try insertExecutionStateRow(
+                    id: childState.id, parentID: childState.parentID,
+                    modelIdentity: childState.modelIdentity, position: childState.position,
+                    continuationID: childState.continuationID, anchor: childState.anchor,
+                    lifecycle: "active", createdAt: childState.createdAt)
+            }
             try insertNativeSettlementRows(
                 settled, settlementID: settlementID, stateID: stateID)
             try insertIdentityBindingRows(

@@ -98,7 +98,10 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
     func testPresentValidAnchorInvokesAuthorityAndAppendsRecoveredValue() async throws {
         let box = Box()
         box.behavior = { anchor in
-            ContinuationAdmissionOutcome(esStateID: anchor, recoveredValue: "RECOVERED-\(anchor)")
+            ContinuationAdmissionOutcome(
+                esStateID: anchor,
+                recoveredValue: "RECOVERED-\(anchor)",
+                verifiedBindings: ["next_input": .string("RECOVERED-\(anchor)")])
         }
         let server = makeServer(admission: { anchor in
             box.record(anchor); return try box.behavior(anchor)
@@ -187,7 +190,8 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
     func testMalformedAnchorFailsClosed() async throws {
         let server = makeServer(admission: { _ in
             XCTFail("authority must not run for a malformed anchor")
-            return ContinuationAdmissionOutcome(esStateID: "", recoveredValue: "")
+            return ContinuationAdmissionOutcome(
+                esStateID: "", recoveredValue: "", verifiedBindings: [:])
         })
         let parsed = try parse(server, [
             "model": "admission-gate-test",

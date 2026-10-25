@@ -501,6 +501,21 @@ extension HTTPServer {
         }
         do {
             let outcome = try await admission(anchor)
+            // Part 2 wiring: THIS request executes under a fresh child ES, and
+            // the admission's verified bindings travel with it. Both are pinned
+            // on the per-request context BEFORE generation, so generation, the
+            // settlement attribution and the returned child id are the same
+            // identity — not a decoration added after the fact.
+            let childESStateID = "es-" + UUID().uuidString.lowercased()
+            context.setContinuationBinding(
+                ContinuationRequestBinding(
+                    parentESStateID: anchor,
+                    childESStateID: childESStateID,
+                    verifiedBindings: outcome.verifiedBindings))
+            RuntimeTraceLogger.shared.trace(
+                "[PROTOCOL] continuation_admitted r=\(context.requestId)"
+                + " parent=\(anchor) child=\(childESStateID)"
+                + " bindings=\(outcome.verifiedBindings.count)")
             return parsed.canonicalMessages + [
                 JSONValue.object([
                     "role": .string("user"),
@@ -536,27 +551,85 @@ extension HTTPServer {
         context: ConnectionContext
     ) async -> ContinuationSettlementStep {
         guard parsed.continuationSettle else { return .notRequested }
-        guard
-            let handler = continuationSettlement,
-            let anchor = parsed.esStateID,
-            !anchor.isEmpty
-        else {
+        guard let handler = continuationSettlement else {
             sendTerminal(.settlementAuthorityUnavailable, context: context)
             return .refused
         }
+        // Fail closed: settlement is only ever authorized by THIS request's own
+        // successful admission. A missing binding (or one anchored elsewhere)
+        // never falls back to `state.nextInput`.
+        guard
+            let binding = context.continuationBinding,
+            let anchor = parsed.esStateID,
+            !anchor.isEmpty,
+            binding.parentESStateID == anchor
+        else {
+            sendTerminal(.settlementEngineError, context: context)
+            return .refused
+        }
         do {
-            return .settled(try await handler(generatedText, anchor))
+            return .settled(
+                try await handler(
+                    ContinuationSettlementRequest(
+                        generatedText: generatedText,
+                        parentESStateID: binding.parentESStateID,
+                        childESStateID: binding.childESStateID,
+                        verifiedBindings: binding.verifiedBindings)))
         } catch {
             sendTerminal(continuationSettlementTerminal(for: error), context: context)
             return .refused
         }
     }
 
+    /// Slice 8 Part 2: make the admitted child ES the EXECUTION/CACHE identity of
+    /// THIS generation. The runtime keys its session (and therefore its KV cache
+    /// and checkpoints) by (agent, session, branch), so the child ES becomes that
+    /// branch, forked from the request's branch to carry the parent's KV lineage.
+    ///
+    /// A fork that cannot run in this process (e.g. no live parent session after
+    /// a restart) degrades to a COLD child branch: the request messages are
+    /// replayed, so correctness is preserved, and the degradation is traced
+    /// instead of being claimed as a warm reuse. Non-continuation requests keep
+    /// the client's branch unchanged.
+    func continuationExecutionBranch(
+        parsed: ResponsesParsedRequest,
+        context: ConnectionContext
+    ) async -> String {
+        // Only a continuation that will SETTLE gets a child ES identity: that
+        // identity is created by the settlement commit. An admission-only
+        // continuation settles nothing, so inventing a branch for it would
+        // strand KV/checkpoints under an id no ES row will ever name.
+        guard parsed.continuationSettle, let binding = context.continuationBinding else {
+            return parsed.logicalBranchId
+        }
+        let source = parsed.logicalBranchId
+        guard source != binding.childESStateID else { return source }
+        do {
+            _ = try await forkBranchHandler(
+                parsed.agentId,
+                parsed.sessionId,
+                source,
+                binding.childESStateID
+            )
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[PROTOCOL] continuation_branch_cold child=\(binding.childESStateID)"
+                + " from=\(source) err=\(error.localizedDescription)")
+        }
+        RuntimeTraceLogger.shared.trace(
+            "[PROTOCOL] continuation_branch child=\(binding.childESStateID) from=\(source)")
+        return binding.childESStateID
+    }
+
     /// Success payload merged into the completed response body.
     func settlementPayload(_ outcome: ContinuationSettlementOutcome) -> [String: Any] {
         [
             "settlement_id": outcome.settlementID,
-            "identity_binding_published": outcome.identityBindingPublished
+            "identity_binding_published": outcome.identityBindingPublished,
+            // Child ES identity: the settlement belongs to this state, and it is
+            // the anchor a subsequent continuation must pass as
+            // `previous_es_state_id`.
+            "child_es_state_id": outcome.childESStateID
         ]
     }
 
@@ -648,11 +721,17 @@ extension HTTPServer {
                 return
             }
 
+            // A verified continuation executes under its child ES identity.
+            let executionBranchID = await continuationExecutionBranch(
+                parsed: parsed,
+                context: context
+            )
+
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
                 parsed.sessionId,
-                parsed.logicalBranchId,
+                executionBranchID,
                 continuationMessages,
                 parsed.tools,
                 parsed.config,
@@ -1003,11 +1082,17 @@ extension HTTPServer {
                 return
             }
 
+            // A verified continuation executes under its child ES identity.
+            let executionBranchID = await continuationExecutionBranch(
+                parsed: parsed,
+                context: context
+            )
+
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
                 parsed.sessionId,
-                parsed.logicalBranchId,
+                executionBranchID,
                 continuationMessages,
                 parsed.tools,
                 parsed.config,

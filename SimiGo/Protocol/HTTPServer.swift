@@ -228,6 +228,11 @@ public final class HTTPServer: @unchecked Sendable {
         private var _closed = false
         private var _cancelledByRuntime = false
 
+        /// Slice 8: this request's continuation admission result. Set by the
+        /// pre-generation gate, read by the post-generation settlement of the
+        /// SAME request — never looked up again from mutable ES state.
+        private var _continuationBinding: ContinuationRequestBinding?
+
         /// 生成期对端关闭监听（2026-10-15 孤儿推理收口）。
         /// NWConnection 对客户端优雅关闭（FIN）不产生 state 变化，只在
         /// receive 侧以 EOF 浮出；此前检测全靠出站 send 错误（流式）或
@@ -299,6 +304,18 @@ public final class HTTPServer: @unchecked Sendable {
                 _sessionId = sessionId
                 _logicalBranchId = logicalBranchId
                 _clientRequestId = clientRequestId
+            }
+        }
+
+        var continuationBinding: ContinuationRequestBinding? {
+            stateLock.withLock {
+                _continuationBinding
+            }
+        }
+
+        func setContinuationBinding(_ binding: ContinuationRequestBinding?) {
+            stateLock.withLock {
+                _continuationBinding = binding
             }
         }
 

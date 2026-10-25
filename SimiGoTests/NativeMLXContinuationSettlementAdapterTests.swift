@@ -181,19 +181,31 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
 
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
         // Model-free generation stand-in: the text a real generation would have
-        // produced, handed to the same entry the dispatch uses.
-        let outcome = try await handler("RESULT=\(value)", anchor)
+        // produced, handed to the same entry the dispatch uses, together with the
+        // bindings the pre-generation admission verified and the child ES.
+        let child = "es-child-\(UUID().uuidString.lowercased())"
+        let outcome = try await handler(ContinuationSettlementRequest(
+            generatedText: "RESULT=\(value)",
+            parentESStateID: anchor,
+            childESStateID: child,
+            verifiedBindings: ["next_input": .string(value)]))
 
         XCTAssertFalse(outcome.settlementID.isEmpty)
         XCTAssertTrue(outcome.identityBindingPublished)
+        XCTAssertEqual(outcome.childESStateID, child)
 
-        // The reported id is the authoritative store's own settlement id.
+        // The reported id is the authoritative store's own settlement id, and the
+        // settlement belongs to the CHILD execution state, not the anchor.
         let fresh = store()
-        let recorded = try XCTUnwrap(fresh.esis?.latestSettlementID(forStateID: anchor))
+        let recorded = try XCTUnwrap(
+            fresh.esis?.latestSettlementID(forStateID: outcome.childESStateID))
         XCTAssertEqual(recorded, outcome.settlementID,
                        "the adapter must report the id the authoritative store issued")
-        XCTAssertEqual(receipts(for: fresh, stateID: anchor).count, 1)
-        XCTAssertEqual(try authoritativeReceiptCount(stateID: anchor), 1)
+        XCTAssertEqual(receipts(for: fresh, stateID: child).count, 1)
+        XCTAssertEqual(try authoritativeReceiptCount(stateID: child), 1)
+        XCTAssertNotEqual(child, anchor)
+        XCTAssertEqual(fresh.state(child)?.parentID, anchor,
+                       "the settled state must be a child of the continuation anchor")
 
         // Identity binding really landed in settlement_bindings (read back).
         // The store persists `digest(identity.model|tokenizer)`, the same form
@@ -210,8 +222,9 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
             SimiGoSettlementIdentityBinding.digest(own.tokenizer))
 
         // Admission seam: the settlement this adapter published is admissible by
-        // the continuation path that follows.
-        let admitted = try fresh.admitContinuation(stateID: anchor, consumer: own)
+        // the continuation path that follows, THROUGH THE CHILD id it returned.
+        let admitted = try fresh.admitContinuation(
+            stateID: outcome.childESStateID, consumer: own)
         XCTAssertEqual(admitted.recoveredValue, value)
     }
 
@@ -223,17 +236,26 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         let anchor = try stageUnsettledAnchor(value: "ADAPTER-REFUSE-6312")
 
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
-        let error = await catchAsyncError { _ = try await handler("NOISE-OFF-CONTRACT", anchor) }
+        let child = "es-child-\(UUID().uuidString.lowercased())"
+        let error = await catchAsyncError {
+            _ = try await handler(ContinuationSettlementRequest(
+                generatedText: "NOISE-OFF-CONTRACT",
+                parentESStateID: anchor,
+                childESStateID: child,
+                verifiedBindings: ["next_input": .string("ADAPTER-REFUSE-6312")]))
+        }
         let unwrapped = try XCTUnwrap(error, "a violating output must be refused")
         let terminal = continuationSettlementTerminal(for: unwrapped)
         XCTAssertEqual(terminal.status, 422)
         XCTAssertEqual(terminal.errorKind, "NATIVE_RESULT_CONTRACT_REJECTED")
 
         let fresh = store()
-        XCTAssertTrue(receipts(for: fresh, stateID: anchor).isEmpty,
+        XCTAssertTrue(receipts(for: fresh, stateID: child).isEmpty,
                       "a refused settlement must leave no partial record")
-        XCTAssertEqual(try authoritativeReceiptCount(stateID: anchor), 0)
-        XCTAssertNil(try fresh.esis?.latestSettlementID(forStateID: anchor))
+        XCTAssertEqual(try authoritativeReceiptCount(stateID: child), 0)
+        XCTAssertNil(try fresh.esis?.latestSettlementID(forStateID: child))
+        XCTAssertNil(fresh.state(child),
+                     "a refused settlement must not leave a child execution state")
     }
 
     /// An anchor that names no state in the authoritative graph is an engine
@@ -247,7 +269,11 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
 
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
         let error = await catchAsyncError {
-            _ = try await handler("RESULT=anything", ghostAnchor)
+            _ = try await handler(ContinuationSettlementRequest(
+                generatedText: "RESULT=anything",
+                parentESStateID: ghostAnchor,
+                childESStateID: "es-child-\(UUID().uuidString.lowercased())",
+                verifiedBindings: ["next_input": .string("anything")]))
         }
         let terminal = continuationSettlementTerminal(for: try XCTUnwrap(error))
         XCTAssertEqual(terminal.status, 500)
@@ -268,18 +294,23 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     func testIdentityIsNotBorrowableAcrossExecutions() async throws {
         let anchor = try stageUnsettledAnchor(value: "ADAPTER-IDENTITY-6313")
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
-        let outcome = try await handler("RESULT=ADAPTER-IDENTITY-6313", anchor)
+        let outcome = try await handler(ContinuationSettlementRequest(
+            generatedText: "RESULT=ADAPTER-IDENTITY-6313",
+            parentESStateID: anchor,
+            childESStateID: "es-child-\(UUID().uuidString.lowercased())",
+            verifiedBindings: ["next_input": .string("ADAPTER-IDENTITY-6313")]))
         XCTAssertTrue(outcome.identityBindingPublished)
 
         let fresh = store()
         let own = SimiGoProducerIdentity.identity(fromPath: modelPath!)
-        let admitted = try fresh.admitContinuation(stateID: anchor, consumer: own)
+        let admitted = try fresh.admitContinuation(
+            stateID: outcome.childESStateID, consumer: own)
         XCTAssertEqual(admitted.recoveredValue, "ADAPTER-IDENTITY-6313")
 
         let borrowed = SimiGoSettlementIdentityBinding.Identity(
             model: "borrowed-model-digest", tokenizer: "borrowed-tokenizer-digest")
         XCTAssertThrowsError(
-            try fresh.admitContinuation(stateID: anchor, consumer: borrowed),
+            try fresh.admitContinuation(stateID: outcome.childESStateID, consumer: borrowed),
             "a borrowed identity must not admit this settlement"
         )
     }
@@ -305,8 +336,13 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         defer { try? executeIsolatedSQLite("DROP TRIGGER IF EXISTS \(trigger)") }
 
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
+        let child = "es-child-\(UUID().uuidString.lowercased())"
         let error = await catchAsyncError {
-            _ = try await handler("RESULT=ADAPTER-ATOMIC-6314", anchor)
+            _ = try await handler(ContinuationSettlementRequest(
+                generatedText: "RESULT=ADAPTER-ATOMIC-6314",
+                parentESStateID: anchor,
+                childESStateID: child,
+                verifiedBindings: ["next_input": .string("ADAPTER-ATOMIC-6314")]))
         }
         let terminal = continuationSettlementTerminal(for: try XCTUnwrap(
             error, "injected identity binding failure must fail the request"))
@@ -314,9 +350,11 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         XCTAssertEqual(terminal.errorKind, "SETTLEMENT_ENGINE_ERROR")
 
         let fresh = store()
-        XCTAssertNil(try fresh.esis?.latestSettlementID(forStateID: anchor))
-        XCTAssertTrue(receipts(for: fresh, stateID: anchor).isEmpty,
+        XCTAssertNil(try fresh.esis?.latestSettlementID(forStateID: child))
+        XCTAssertTrue(receipts(for: fresh, stateID: child).isEmpty,
                       "the graph projection must not gain a receipt before commit")
+        XCTAssertNil(fresh.state(child),
+                     "the child ES insert must roll back with its settlement")
         XCTAssertEqual(try authoritativeReceiptCountTotal(), settlementsBefore,
                        "settlement insert must roll back when identity insert fails")
         XCTAssertEqual(try authoritativeBindingCountTotal(), bindingsBefore,

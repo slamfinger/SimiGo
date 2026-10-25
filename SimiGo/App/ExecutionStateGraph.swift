@@ -501,20 +501,110 @@ final class ExecutionStateGraphStore: ObservableObject {
         return (settled, settlementUUID.uuidString)
     }
 
-    /// Settle and return the ID created by the same atomic transaction that
-    /// publishes producer identity. No post-commit "latest for state" query.
+    /// Result of a continuation settlement: the authoritative settlement id and
+    /// the child Execution State it belongs to (the id a later continuation uses
+    /// as `previous_es_state_id`).
+    struct ContinuationSettlementCommit: Sendable, Equatable {
+        let settlementID: String
+        let childStateID: String
+    }
+
+    /// Settle a continuation's generated result as a NEW child Execution State.
+    ///
+    /// The bindings are the ones the pre-generation IS admission verified for
+    /// THIS request — never re-derived from `nextInput`, which the graph may have
+    /// mutated (`continueState`) after the parent settled. The native contract
+    /// gate runs BEFORE anything is written, and the child state row, the
+    /// settlement row, its constraint rows and the producer identity bindings all
+    /// commit in ONE SQLite transaction: a refusal leaves no child ES, and a
+    /// store failure can never report a partial settlement as success.
     @discardableResult
     func settleContinuationResult(
         generatedText: String,
-        boundToState state: ExecutionStateRecord,
+        parentStateID: String,
+        childStateID: String,
+        verifiedBindings: [String: NativeContractValue],
         producerIdentity: SimiGoSettlementIdentityBinding.Identity
-    ) throws -> String {
-        let outcome = try settleProducerResultWithIdentity(
+    ) throws -> ContinuationSettlementCommit {
+        guard let parent = document.states.first(where: { $0.id == parentStateID }) else {
+            throw ExecutionGraphError.invalidTransition("continuation parent state not found")
+        }
+        guard parent.lifecycle != .discarded else {
+            throw ExecutionGraphError.invalidTransition("discarded state cannot be continued")
+        }
+        guard !document.states.contains(where: { $0.id == childStateID }) else {
+            throw ExecutionGraphError.invalidTransition("continuation child state already exists")
+        }
+
+        let settled = try SimiGoSettlementAuthority.authorize(
             generatedText: generatedText,
-            boundToState: state,
-            producerIdentity: producerIdentity
+            contractJSON: Self.referenceResultContractJSON,
+            verifiedBindings: verifiedBindings
         )
-        return outcome.settlementID
+
+        guard let db = ensureESIS() else {
+            throw ExecutionGraphError.storeUnavailable(
+                persistError ?? "ES/IS authoritative database unavailable")
+        }
+        let createdAt = Date()
+        let child = SimiGoESISDatabase.ChildExecutionState(
+            id: childStateID,
+            parentID: parent.id,
+            modelIdentity: parent.modelIdentity,
+            position: parent.position + 1,
+            continuationID: UUID().uuidString,
+            anchor: settled.payloadDigest,
+            createdAt: createdAt
+        )
+        // One transaction: child ES + settlement + constraint rows + producer
+        // identity bindings. The method returns only after all of it committed.
+        let settlementUUID = try db.recordNativeSettlementWithIdentity(
+            settled,
+            stateID: childStateID,
+            identity: producerIdentity,
+            childState: child
+        )
+
+        // Update ONLY the in-memory projection, and only after the whole
+        // authoritative commit. SQLite is the source of truth.
+        var updated = document
+        updated.states.append(ExecutionStateRecord(
+            id: childStateID,
+            parentID: parent.id,
+            modelIdentity: parent.modelIdentity,
+            createdAt: createdAt,
+            position: child.position,
+            continuationID: child.continuationID,
+            nextInput: Self.settledContent(settled),
+            anchor: child.anchor,
+            prefix: parent.prefix,
+            lifecycle: .active,
+            checkpointIDs: []))
+        updated.settlements = (updated.settlements ?? []) + [SettlementReceipt(
+            id: settlementUUID,
+            stateID: childStateID,
+            schemaVersion: settled.schemaVersion,
+            payload: settled.validatedPayload,
+            payloadDigest: settled.payloadDigest,
+            settledAt: settled.settledAt)]
+        document = updated
+        operationError = nil
+        persistError = nil
+        return ContinuationSettlementCommit(
+            settlementID: settlementUUID.uuidString,
+            childStateID: childStateID
+        )
+    }
+
+    /// The semantic value carried by a native-authorized payload, read the same
+    /// way the admission authority reads it back.
+    static func settledContent(_ settled: SimiGoSettlementAuthority.SettledResult) -> String {
+        guard let obj = try? JSONSerialization.jsonObject(with: settled.validatedPayload)
+                as? [String: Any] else { return "" }
+        if let direct = obj["content"] as? String { return direct }
+        if let values = obj["values"] as? [String: Any],
+           let value = values["content"] as? String { return value }
+        return ""
     }
 
     /// The IS admission (recovery) edge for a continuation, driven through the

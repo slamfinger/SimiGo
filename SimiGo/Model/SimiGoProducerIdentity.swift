@@ -83,21 +83,22 @@ enum SimiGoProducerIdentity {
     /// Drive the authoritative store's IS admission for a live continuation:
     /// recover the verified settled value for `stateID` under the consumer
     /// identity of the model resolved at `modelPath`, or throw a typed,
-    /// fail-closed refusal. It returns ONLY a product `String` and throws only
-    /// the product `ContinuationAdmissionFailure`, so the MLX-bearing inference
-    /// layer needs no contract-type import of its own. Reuses the existing
-    /// `ExecutionStateGraphStore.admitContinuation` -> native `SimiGoISAdmission`
-    /// authority; it opens no second settlement gate or database.
+    /// fail-closed refusal. It returns the FULL `Admitted` record — the value
+    /// alone would drop the bindings the settlement gate is required to use —
+    /// and throws only the product `ContinuationAdmissionFailure`. Reuses the
+    /// existing `ExecutionStateGraphStore.admitContinuation` -> native
+    /// `SimiGoISAdmission` authority; it opens no second settlement gate or
+    /// database.
     @MainActor
     static func recoverForContinuation(
         stateID: String,
         modelPath: String
-    ) throws -> String {
+    ) throws -> SimiGoISAdmission.Admitted {
         let store = ExecutionStateGraphStore()
         let consumer = identity(fromPath: modelPath)
         do {
             return try store.admitContinuation(
-                stateID: stateID, consumer: consumer).recoveredValue
+                stateID: stateID, consumer: consumer)
         } catch let refusal as SimiGoISAdmission.Refusal {
             // Known, typed IS semantic refusal -> business input refusal (422).
             throw ContinuationAdmissionFailure.refused(String(describing: refusal))

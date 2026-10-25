@@ -24,26 +24,32 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
     private final class Box: @unchecked Sendable {
         private let lock = NSLock()
         private var _admissions: [String] = []
-        private var _settlements: [(text: String, anchor: String)] = []
+        private var _settlements: [ContinuationSettlementRequest] = []
         var admissionBehavior: (String) throws -> ContinuationAdmissionOutcome = {
-            ContinuationAdmissionOutcome(esStateID: $0, recoveredValue: "RECOVERED")
+            ContinuationAdmissionOutcome(
+                esStateID: $0,
+                recoveredValue: "RECOVERED",
+                verifiedBindings: ["next_input": .string("RECOVERED")])
         }
-        var settlementBehavior: (String, String) throws -> ContinuationSettlementOutcome = { text, anchor in
-            ContinuationSettlementOutcome(settlementID: "settle-1", identityBindingPublished: true)
+        var settlementBehavior: (ContinuationSettlementRequest) throws -> ContinuationSettlementOutcome = { request in
+            ContinuationSettlementOutcome(
+                settlementID: "settle-1",
+                identityBindingPublished: true,
+                childESStateID: request.childESStateID)
         }
         func recordAdmission(_ anchor: String) { lock.withLock { _admissions.append(anchor) } }
-        func recordSettlement(_ text: String, _ anchor: String) { lock.withLock { _settlements.append((text, anchor)) } }
+        func recordSettlement(_ request: ContinuationSettlementRequest) { lock.withLock { _settlements.append(request) } }
         var admissionCalls: Int { lock.withLock { _admissions.count } }
         var settlementCalls: Int { lock.withLock { _settlements.count } }
-        var lastSettlement: (text: String, anchor: String)? { lock.withLock { _settlements.last } }
+        var lastSettlement: ContinuationSettlementRequest? { lock.withLock { _settlements.last } }
     }
 
     private func makeServer(box: Box, settlementWired: Bool) -> HTTPServer {
         var settlement: ContinuationSettlementHandler?
         if settlementWired {
-            settlement = { text, anchor in
-                box.recordSettlement(text, anchor)
-                return try box.settlementBehavior(text, anchor)
+            settlement = { request in
+                box.recordSettlement(request)
+                return try box.settlementBehavior(request)
             }
         }
         return HTTPServer(
@@ -196,7 +202,7 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
     @MainActor
     func testPostGenerationContractRejectionIsIndependent() async throws {
         let box = Box()
-        box.settlementBehavior = { _, _ in
+        box.settlementBehavior = { _ in
             throw ContinuationSettlementFailure.contractRejected(auditDetail: "value mismatch")
         }
         let server = makeServer(box: box, settlementWired: true)
@@ -204,15 +210,19 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
             "previous_es_state_id": "S-1",
             "continuation_settle": true,
         ]))
-        let gate = await server.continuationGate(parsed: parsed, context: makeContext())
+        // ONE request, ONE context: the settlement of this request consumes the
+        // admission of this same request.
+        let context = makeContext()
+        let gate = await server.continuationGate(parsed: parsed, context: context)
         XCTAssertNotNil(gate, "admission succeeds; only the later contract may refuse")
 
         let step = await server.settlementStep(
-            parsed: parsed, generatedText: "NOISE", context: makeContext())
+            parsed: parsed, generatedText: "NOISE", context: context)
         guard case .refused = step else { return XCTFail("expected refused, got \(step)") }
         XCTAssertEqual(box.settlementCalls, 1)
-        XCTAssertEqual(box.lastSettlement?.text, "NOISE", "settlement runs over the ACTUAL output")
-        XCTAssertEqual(box.lastSettlement?.anchor, "S-1")
+        XCTAssertEqual(box.lastSettlement?.generatedText, "NOISE",
+                       "settlement runs over the ACTUAL output")
+        XCTAssertEqual(box.lastSettlement?.parentESStateID, "S-1")
 
         let terminal = continuationSettlementTerminal(
             for: ContinuationSettlementFailure.contractRejected(auditDetail: "value mismatch"))
@@ -247,15 +257,25 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
             "previous_es_state_id": "S-1",
             "continuation_settle": true,
         ]))
-        _ = await server.continuationGate(parsed: parsed, context: makeContext())
+        let context = makeContext()
+        _ = await server.continuationGate(parsed: parsed, context: context)
         let step = await server.settlementStep(
-            parsed: parsed, generatedText: "RESULT=hello", context: makeContext())
+            parsed: parsed, generatedText: "RESULT=hello", context: context)
         guard case .settled(let outcome) = step else {
             return XCTFail("expected settled, got \(step)")
         }
         let payload = server.settlementPayload(outcome)
         XCTAssertEqual(payload["settlement_id"] as? String, "settle-1")
         XCTAssertEqual(payload["identity_binding_published"] as? Bool, true)
+        // The settlement handler received THIS admission's verified bindings and
+        // a child ES distinct from the parent anchor.
+        let received = try XCTUnwrap(box.lastSettlement)
+        XCTAssertEqual(
+            received.verifiedBindings["next_input"], .string("RECOVERED"),
+            "settlement must bind the value the admission VERIFIED, not ES state")
+        XCTAssertNotEqual(received.childESStateID, "S-1")
+        XCTAssertEqual(payload["child_es_state_id"] as? String, received.childESStateID,
+                       "the returned child ES id is the one the settlement belongs to")
 
         let legacy = try parse(server, baseJSON())
         let legacyStep = await server.settlementStep(

@@ -60,14 +60,21 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         private var _generate = 0
         private var _admission = 0
         private var _settlement = 0
+        private var _generateBranches: [String] = []
+        private var _forkTargets: [String] = []
         nonisolated(unsafe) var text: String = ""
 
-        func bumpGenerate() { lock.withLock { _generate += 1 } }
+        func bumpGenerate(branch: String) {
+            lock.withLock { _generate += 1; _generateBranches.append(branch) }
+        }
         func bumpAdmission() { lock.withLock { _admission += 1 } }
         func bumpSettlement() { lock.withLock { _settlement += 1 } }
+        func bumpFork(target: String) { lock.withLock { _forkTargets.append(target) } }
         var generate: Int { lock.withLock { _generate } }
         var admission: Int { lock.withLock { _admission } }
         var settlement: Int { lock.withLock { _settlement } }
+        var lastGenerateBranch: String? { lock.withLock { _generateBranches.last } }
+        var forkTargets: [String] { lock.withLock { _forkTargets } }
     }
 
     private struct Outcome {
@@ -77,6 +84,8 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         let generate: Int
         let admission: Int
         let settlement: Int
+        let generateBranch: String?
+        let forkTargets: [String]
     }
 
     // MARK: - Setup / teardown
@@ -160,6 +169,14 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         try XCTUnwrap(freshStore().esis).count("settlement_bindings")
     }
 
+    /// The child ES is inserted inside the SAME transaction as its settlement, so
+    /// a refusal or a failed commit must leave this count untouched: no orphan
+    /// child state may outlive a continuation that was never reported as settled.
+    @MainActor
+    private func totalExecutionStates() throws -> Int {
+        try XCTUnwrap(freshStore().esis).count("execution_states")
+    }
+
     @MainActor
     private func projectionReceiptCount(stateID: String) -> Int {
         (freshStore().document.settlements ?? []).filter { $0.stateID == stateID }.count
@@ -197,7 +214,8 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         stub: Stub,
         wireAdmission: Bool,
         wireSettlement: Bool,
-        faultAdmissionRawError: Bool
+        faultAdmissionRawError: Bool,
+        forkFails: Bool = false
     ) -> HTTPServer {
         let mp = modelPath!
         var admission: ContinuationAdmissionHandler?
@@ -218,11 +236,14 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             // The REAL admission authority, mirroring the NativeMLX wiring.
             admission = { esStateID in
                 stub.bumpAdmission()
-                let value = try await MainActor.run {
+                let admitted = try await MainActor.run {
                     try SimiGoProducerIdentity.recoverForContinuation(
                         stateID: esStateID, modelPath: mp)
                 }
-                return ContinuationAdmissionOutcome(esStateID: esStateID, recoveredValue: value)
+                return ContinuationAdmissionOutcome(
+                    esStateID: esStateID,
+                    recoveredValue: admitted.recoveredValue,
+                    verifiedBindings: admitted.verifiedBindings)
             }
         }
 
@@ -230,24 +251,33 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         if wireSettlement {
             // The REAL production settlement adapter.
             let inner = makeNativeMLXContinuationSettlementHandler(modelPath: mp)
-            settlement = { text, anchor in
+            settlement = { request in
                 stub.bumpSettlement()
-                return try await inner(text, anchor)
+                return try await inner(request)
             }
         }
 
         return HTTPServer(
             port: port,
             modelId: "http-integration-test",
-            generateHandler: { _, _, _, _, _, _, _, onChunk, _ in
+            generateHandler: { _, _, _, branch, _, _, _, onChunk, _ in
                 // The ONLY substituted component: a text stand-in, no model.
-                stub.bumpGenerate()
+                stub.bumpGenerate(branch: branch)
                 onChunk(stub.text)
                 return GenerationResult(text: stub.text, usage: nil)
             },
-            forkBranchHandler: { _, _, _, _ in
-                SessionCacheMetadata(
-                    storageKey: "t/main", modelId: "http-integration-test",
+            forkBranchHandler: { _, _, _, target in
+                stub.bumpFork(target: target)
+                if forkFails {
+                    // No live parent session in this process (e.g. after a
+                    // restart): lineage cannot be forked right now. Same error
+                    // the real fork path raises (NativeMLX.swift "no live
+                    // source session ... cannot fork").
+                    throw RuntError.generationFailed(
+                        "no live source session for t/\(target); cannot fork")
+                }
+                return SessionCacheMetadata(
+                    storageKey: "t/\(target)", modelId: "http-integration-test",
                     savedAt: Date(), history: [])
             },
             deleteBranchHandler: { _, _, _ in },
@@ -267,7 +297,8 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         emit text: String,
         wireAdmission: Bool = true,
         wireSettlement: Bool = true,
-        faultAdmissionRawError: Bool = false
+        faultAdmissionRawError: Bool = false,
+        forkFails: Bool = false
     ) async throws -> Outcome {
         let stub = Stub()
         stub.text = text
@@ -275,7 +306,8 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             stub: stub,
             wireAdmission: wireAdmission,
             wireSettlement: wireSettlement,
-            faultAdmissionRawError: faultAdmissionRawError)
+            faultAdmissionRawError: faultAdmissionRawError,
+            forkFails: forkFails)
         server.configureLOCALBTransport(identity: host.identity)
         server.configureLOCALBRequestAuthorization(
             coordinator: host.coordinator,
@@ -313,7 +345,9 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             raw: data,
             generate: stub.generate,
             admission: stub.admission,
-            settlement: stub.settlement)
+            settlement: stub.settlement,
+            generateBranch: stub.lastGenerateBranch,
+            forkTargets: stub.forkTargets)
     }
 
     private func baseJSON(_ extra: [String: Any] = [:]) -> [String: Any] {
@@ -370,13 +404,143 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         XCTAssertEqual(bindings[SimiGoSettlementIdentityBinding.tokenizerKey],
                        SimiGoSettlementIdentityBinding.digest(own.tokenizer))
 
-        // The in-memory receipt projection and the authoritative settlement row
-        // agree with the reported id.
-        XCTAssertEqual(projectionReceiptCount(stateID: anchor), 2,
-                       "staged settlement + this request's settlement both project")
+        // The settlement belongs to a NEW child Execution State, not the anchor,
+        // and the child id is returned so the next continuation can chain.
+        let childID = try XCTUnwrap(payload["child_es_state_id"] as? String)
+        XCTAssertNotEqual(childID, anchor, "the settlement must belong to a new child ES")
+        XCTAssertEqual(projectionReceiptCount(stateID: anchor), 1,
+                       "the staged parent settlement is the anchor's only receipt")
+        XCTAssertEqual(projectionReceiptCount(stateID: childID), 1,
+                       "THIS request's settlement projects on the child ES")
         let rows = try XCTUnwrap(freshStore().esis).readSettlementReceipts()
-        XCTAssertTrue(rows.contains { $0.id.uuidString == responseID },
-                      "the authoritative store must contain a settlement row with the reported id")
+        XCTAssertTrue(
+            rows.contains { $0.id.uuidString == responseID && $0.stateID == childID },
+            "the authoritative settlement row must belong to the child ES")
+
+        // Chainability through the real admission authority.
+        let chained = try freshStore().admitContinuation(stateID: childID, consumer: own)
+        XCTAssertEqual(chained.recoveredValue, value)
+        XCTAssertEqual(chained.settlementID, responseID)
+
+        // The child ES identity reached the REAL generation dispatch as its
+        // execution/cache branch, forked from the request's branch.
+        XCTAssertEqual(o.generateBranch, childID,
+                       "generation must run under the child ES identity, not the client branch")
+        XCTAssertEqual(o.forkTargets, [childID],
+                       "the child branch must be forked once from the request branch")
+    }
+
+    /// A continuation whose child branch cannot be forked (no live parent
+    /// session) still runs under the child ES identity and still settles: the
+    /// KV lineage is cold, correctness is not. The degradation is traced, never
+    /// reported as a warm reuse.
+    @MainActor
+    func testContinuationSurvivesUnforkableChildBranch() async throws {
+        let value = "HTTP-FORKDEGRADE-7102"
+        let anchor = try stageSettledAnchor(value: value)
+
+        let o = try await dispatch(
+            body: baseJSON([
+                "previous_es_state_id": anchor,
+                "continuation_settle": true,
+            ]),
+            emit: "RESULT=\(value)",
+            forkFails: true)
+
+        XCTAssertEqual(o.status, 200, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(o.forkTargets.count, 1, "a fork was attempted exactly once")
+        let payload = try XCTUnwrap(settlementPayload(o))
+        let childID = try XCTUnwrap(payload["child_es_state_id"] as? String)
+        XCTAssertEqual(o.generateBranch, childID,
+                       "a cold child branch still carries the child ES identity")
+        XCTAssertEqual(o.settlement, 1, "settlement is unaffected by a cold lineage")
+        XCTAssertEqual(o.generate, 1)
+    }
+
+    /// An anchor WITHOUT a settle request is admission-only: the recovered value
+    /// is still injected (unchanged product semantics) but no child ES is
+    /// created, so generation must stay on the client's branch instead of
+    /// inventing an identity that no ES row will ever carry.
+    @MainActor
+    func testAdmissionWithoutSettleStaysOnTheClientBranch() async throws {
+        let value = "HTTP-ADMITONLY-7103"
+        let anchor = try stageSettledAnchor(value: value)
+        let statesBefore = try totalExecutionStates()
+
+        let o = try await dispatch(
+            body: baseJSON([
+                "previous_es_state_id": anchor,
+            ]),
+            emit: "plain answer, no contract")
+
+        XCTAssertEqual(o.status, 200, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(o.admission, 1, "the real admission authority still runs")
+        XCTAssertEqual(o.settlement, 0, "no settlement was requested")
+        XCTAssertEqual(o.generate, 1)
+        XCTAssertEqual(o.generateBranch, "main",
+                       "an admission-only continuation keeps the client's branch")
+        XCTAssertTrue(o.forkTargets.isEmpty,
+                      "no child identity exists, so no branch may be forked")
+        XCTAssertEqual(try totalExecutionStates(), statesBefore,
+                       "admission alone must not create an ES row")
+    }
+
+    /// THE decisive regression for the gap this slice closes, driven end-to-end
+    /// over the real route: the parent IS settled `A`, then a real product
+    /// `continueState` moves the SAME ES `nextInput` to `B`. Settlement must bind
+    /// the value THIS request's admission verified (`A`), never the mutated ES
+    /// field — the pre-fix gate rebuilt its bindings from `nextInput` and would
+    /// have accepted `B` while refusing `A`.
+    @MainActor
+    func testContinuationBindsAdmittedValueNotMutatedESState() async throws {
+        let anchor = try stageSettledAnchor(value: "A")
+        let own = SimiGoProducerIdentity.identity(fromPath: modelPath)
+
+        // Durable product mutation of the same ES: nextInput A -> B.
+        let mutator = freshStore()
+        let parent = try XCTUnwrap(mutator.state(anchor))
+        _ = try mutator.continueState(parent, input: "B")
+        XCTAssertEqual(freshStore().state(anchor)?.nextInput, "B",
+                       "precondition: the authoritative ES field disagrees with the IS")
+
+        // 1) The output matching the ADMITTED value is accepted.
+        let accepted = try await dispatch(
+            body: baseJSON([
+                "previous_es_state_id": anchor,
+                "continuation_settle": true,
+            ]),
+            emit: "RESULT=A")
+
+        XCTAssertEqual(accepted.status, 200,
+                       String(decoding: accepted.raw, as: UTF8.self))
+        XCTAssertEqual(accepted.settlement, 1)
+        let payload = try XCTUnwrap(settlementPayload(accepted))
+        let childID = try XCTUnwrap(payload["child_es_state_id"] as? String)
+        let settled = try freshStore().admitContinuation(stateID: childID, consumer: own)
+        XCTAssertEqual(settled.recoveredValue, "A",
+                       "the child settlement must carry the ADMITTED value, not the mutated ES field")
+
+        // 2) The output matching the MUTATED ES field is refused, with no write.
+        let settlementsBefore = try totalSettlements()
+        let bindingsBefore = try totalBindings()
+        let statesBefore = try totalExecutionStates()
+
+        let refused = try await dispatch(
+            body: baseJSON([
+                "previous_es_state_id": anchor,
+                "continuation_settle": true,
+            ]),
+            emit: "RESULT=B")
+
+        XCTAssertEqual(refused.status, 422, String(decoding: refused.raw, as: UTF8.self))
+        XCTAssertEqual(errorKind(refused), "NATIVE_RESULT_CONTRACT_REJECTED")
+        XCTAssertNil(settlementPayload(refused), "a refused contract yields no settlement")
+        XCTAssertEqual(try totalSettlements(), settlementsBefore,
+                       "a refusal must add no settlement row")
+        XCTAssertEqual(try totalBindings(), bindingsBefore,
+                       "a refusal must add no binding row")
+        XCTAssertEqual(try totalExecutionStates(), statesBefore,
+                       "a refusal must add no child ES row")
     }
 
     // MARK: - 2) Legacy request keeps the original contract untouched
@@ -391,10 +555,14 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         XCTAssertNil(o.body["continuation_settlement"],
                      "a request that never opts in must gain no settlement payload")
         XCTAssertNil(errorInfo(o))
-        // No authority touched; ordinary generation still runs exactly once.
+        // No authority touched; ordinary generation still runs exactly once,
+        // under the client's own branch (no continuation identity, no fork).
         XCTAssertEqual(o.admission, 0)
         XCTAssertEqual(o.settlement, 0)
         XCTAssertEqual(o.generate, 1)
+        XCTAssertEqual(o.generateBranch, "main")
+        XCTAssertTrue(o.forkTargets.isEmpty,
+                      "a plain chat request must not fork any branch")
     }
 
     // MARK: - 3) Settlement asked WITHOUT an anchor -> 400, no generation
@@ -504,6 +672,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         let anchor = try stageSettledAnchor(value: "HTTP-CONTRACT-7109")
         let settlementsBefore = try totalSettlements()
         let bindingsBefore = try totalBindings()
+        let statesBefore = try totalExecutionStates()
 
         // Admission recovers the anchor's value; generation returns text that
         // VIOLATES the declared contract, so only the later settlement refuses.
@@ -526,6 +695,8 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                        "a contract rejection must add no settlement row")
         XCTAssertEqual(try totalBindings(), bindingsBefore,
                        "a contract rejection must add no identity binding row")
+        XCTAssertEqual(try totalExecutionStates(), statesBefore,
+                       "a contract rejection must add no child ES row")
     }
 
     // MARK: - 10) Settlement / identity-binding write failure -> 500, no partial commit
@@ -536,6 +707,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         let anchor = try stageSettledAnchor(value: value)
         let settlementsBefore = try totalSettlements()
         let bindingsBefore = try totalBindings()
+        let statesBefore = try totalExecutionStates()
         let projectionBefore = projectionReceiptCount(stateID: anchor)
 
         let trigger = "fail_http_identity_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
@@ -569,6 +741,8 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                        "identity + constraint bindings must all roll back")
         XCTAssertEqual(projectionReceiptCount(stateID: anchor), projectionBefore,
                        "the graph projection must not gain a receipt before commit")
+        XCTAssertEqual(try totalExecutionStates(), statesBefore,
+                       "the child ES insert must roll back with the settlement: no orphan state")
     }
 
     // MARK: - 11) Stream + settle -> HTTP 501 at the TRANSPORT level (fix A)

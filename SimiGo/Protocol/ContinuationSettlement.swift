@@ -102,13 +102,44 @@ extension ContinuationAdmissionFailure {
 /// Outcome of a successful post-generation settlement step through the
 /// product's IS settlement authority. `identityBindingPublished` reports
 /// whether the settlement's producer identity binding was made readable.
+/// `childESStateID` is the child Execution State the settlement belongs to; it
+/// is returned to the client so the NEXT continuation admits through it.
 public struct ContinuationSettlementOutcome: Sendable, Equatable {
     public let settlementID: String
     public let identityBindingPublished: Bool
+    public let childESStateID: String
 
-    public init(settlementID: String, identityBindingPublished: Bool) {
+    public init(
+        settlementID: String,
+        identityBindingPublished: Bool,
+        childESStateID: String
+    ) {
         self.settlementID = settlementID
         self.identityBindingPublished = identityBindingPublished
+        self.childESStateID = childESStateID
+    }
+}
+
+/// One continuation settlement request: the text THIS dispatch generated, the
+/// verified parent anchor, the child Execution State the settlement belongs to,
+/// and the bindings the pre-generation admission verified. There is no channel
+/// for a caller-fabricated result or a re-read of mutable ES state.
+public struct ContinuationSettlementRequest: Sendable {
+    public let generatedText: String
+    public let parentESStateID: String
+    public let childESStateID: String
+    public let verifiedBindings: [String: NativeContractValue]
+
+    public init(
+        generatedText: String,
+        parentESStateID: String,
+        childESStateID: String,
+        verifiedBindings: [String: NativeContractValue]
+    ) {
+        self.generatedText = generatedText
+        self.parentESStateID = parentESStateID
+        self.childESStateID = childESStateID
+        self.verifiedBindings = verifiedBindings
     }
 }
 
@@ -182,7 +213,7 @@ func continuationSettlementTerminal(for error: Error) -> ContinuationTerminal {
 /// Throws `ContinuationSettlementFailure` (or a raw store error, which maps
 /// through `init(storeError:)`).
 public typealias ContinuationSettlementHandler =
-    @Sendable (_ generatedText: String, _ esStateID: String) async throws
+    @Sendable (_ request: ContinuationSettlementRequest) async throws
     -> ContinuationSettlementOutcome
 
 /// Result of the post-generation settlement step on the dispatch path.
@@ -202,28 +233,29 @@ enum ContinuationSettlementStep {
 /// and it adds no second result-contract validation, signature or settlement
 /// logic:
 ///
-/// * the generated text and ES anchor are the ones the dispatch actually
-///   produced for THIS request (see `settlementStep`); the adapter never
-///   accepts a caller-fabricated result or an identity borrowed from another
-///   execution — the producer identity is re-derived from the runtime's own
-///   model snapshot, the same way the admission side derives its consumer;
-/// * settlement runs through the existing native entry
-///   `ExecutionStateGraphStore.settleContinuationResult` ->
-///   `settleProducerResult(...producerIdentity:)` -> native gate + authoritative
-///   SQLite commit + identity-binding publication;
+/// * the generated text, the verified parent anchor, the child Execution State
+///   and the verified bindings are the ones the pre-generation admission and
+///   the dispatch produced for THIS request (see `settlementStep`); the adapter
+///   never accepts a caller-fabricated result, a re-read of mutable ES state,
+///   or an identity borrowed from another execution — the producer identity is
+///   re-derived from the runtime's own model snapshot, the same way the
+///   admission side derives its consumer;
+/// * settlement runs through `ExecutionStateGraphStore.settleContinuationResult`
+///   -> native gate + ONE authoritative SQLite transaction that creates the
+///   child ES, its settlement and the producer identity bindings;
 /// * a native result-contract refusal surfaces as
 ///   `NATIVE_RESULT_CONTRACT_REJECTED`, any infrastructure or missing-authority
 ///   fault as `SETTLEMENT_ENGINE_ERROR`, and the native gate throws BEFORE the
-///   store writes, so a refused request leaves no half-settled record.
+///   store writes, so a refused request leaves no child state and no partial
+///   settlement.
 func makeNativeMLXContinuationSettlementHandler(
     modelPath: String
 ) -> ContinuationSettlementHandler {
-    return { text, esStateID in
+    return { request in
         try await MainActor.run {
             try settleForNativeMLXContinuation(
                 store: ExecutionStateGraphStore(),
-                generatedText: text,
-                esStateID: esStateID,
+                request: request,
                 modelPath: modelPath
             )
         }
@@ -232,34 +264,37 @@ func makeNativeMLXContinuationSettlementHandler(
 
 /// The adapter body, separated from the actor hop so it can be driven
 /// directly against an isolated authoritative store. Same authority, same
-/// native gate: it only calls the store's existing settlement entry.
+/// native gate: it only calls the store's continuation settlement entry.
 @MainActor
 func settleForNativeMLXContinuation(
     store: ExecutionStateGraphStore,
-    generatedText: String,
-    esStateID: String,
+    request: ContinuationSettlementRequest,
     modelPath: String
 ) throws -> ContinuationSettlementOutcome {
     // The anchor must name a live state in the authoritative graph; an
     // unknown anchor is an authority/infrastructure fault, never a
     // business (contract) refusal.
-    guard let state = store.state(esStateID) else {
+    guard store.state(request.parentESStateID) != nil else {
         throw ContinuationSettlementFailure.engine(
             safeReason: "continuation anchor not found in the authoritative graph")
     }
     // Producer identity is re-derived from THIS runtime's own model snapshot —
     // never supplied by the caller, never taken from another execution.
     let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
-    let settlementID = try store.settleContinuationResult(
-        generatedText: generatedText,
-        boundToState: state,
+    let commit = try store.settleContinuationResult(
+        generatedText: request.generatedText,
+        parentStateID: request.parentESStateID,
+        childStateID: request.childESStateID,
+        verifiedBindings: request.verifiedBindings,
         producerIdentity: producer
     )
-    // The atomic database method returns only after both producer identity rows
-    // commit with this exact settlement ID. Tests independently read the stored
-    // rows back from SQLite; no racy post-commit latest lookup is needed.
+    // The atomic database method returns only after the child state row, the
+    // settlement rows and both producer identity rows commit as one unit.
+    // Tests independently read the stored rows back from SQLite; no racy
+    // post-commit latest lookup is needed.
     return ContinuationSettlementOutcome(
-        settlementID: settlementID,
-        identityBindingPublished: true
+        settlementID: commit.settlementID,
+        identityBindingPublished: true,
+        childESStateID: commit.childStateID
     )
 }

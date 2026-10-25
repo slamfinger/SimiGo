@@ -10,6 +10,7 @@ import MLXVLM
 import Tokenizers
 import LOCALBCore
 import SimiGo2Experimental
+import SimiGoRuntimeContract
 
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
 /// SimiGo retains only service state around that API.
@@ -479,12 +480,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     continuationAdmission: { [weak self] esStateID in
                         guard let self else { throw ContinuationAdmissionFailure.unavailable }
                         let modelPath = self.modelPath
-                        let value = try await MainActor.run {
+                        // The admission's verified bindings are carried forward:
+                        // the settlement gate binds THIS request's result against
+                        // exactly what this admission verified.
+                        let admitted = try await MainActor.run {
                             try SimiGoProducerIdentity.recoverForContinuation(
                                 stateID: esStateID, modelPath: modelPath)
                         }
                         return ContinuationAdmissionOutcome(
-                            esStateID: esStateID, recoveredValue: value)
+                            esStateID: esStateID,
+                            recoveredValue: admitted.recoveredValue,
+                            verifiedBindings: admitted.verifiedBindings)
                     },
                     continuationSettlement: makeNativeMLXContinuationSettlementHandler(
                         modelPath: self.modelPath
