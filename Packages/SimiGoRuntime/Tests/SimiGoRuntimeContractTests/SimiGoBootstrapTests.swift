@@ -65,6 +65,10 @@ final class SimiGoBootstrapTests: XCTestCase {
         let workRowsAfterR2 = try db.listExternalFiles(rootID: "work-1").count
         XCTAssertEqual(workRowsAfterR2, r1.workFilesIndexed,
                        "work re-run must not duplicate (root_id, relative_path)")
+        let carrier = try db.carrierReport()
+        XCTAssertGreaterThan(carrier.objectCount, 0, "bootstrap carries work text")
+        XCTAssertEqual(carrier.unaddressedFileContents, 0)
+        XCTAssertEqual(carrier.inlineLegacyPayloads, 0)
     }
 
     // MARK: resumability of legacy migration
@@ -105,11 +109,12 @@ final class SimiGoBootstrapTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: root.appendingPathComponent("logs").path), "allowed runtime dirs are created")
     }
 
-    // MARK: external work files are indexed by (root_id, relative_path) and NEVER copied
+    // MARK: external work files are indexed by (root_id, relative_path) with no second physical copy
 
-    /// "导入外部 work 索引 / 不复制第二份物理文件": the DB stores root-relative index
-    /// rows only; the physical files stay in the external source and no copies land
-    /// under the managed root. Re-runs reconcile without duplicating.
+    /// "导入外部 work 索引 / 不复制第二份物理文件": the DB stores root-relative
+    /// index rows and carries settled text in the content-addressed object store;
+    /// the physical files stay in the external source and no copies land under the
+    /// managed root. Re-runs reconcile without duplicating.
     func testWorkFilesAreIndexedByRootRelativeAndNeverCopied() throws {
         let fm = FileManager.default
         let dbURL = tempURL("db.sqlite3"); defer { try? fm.removeItem(at: dbURL) }

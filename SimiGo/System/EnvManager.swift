@@ -522,10 +522,22 @@ public final class EnvManager: ObservableObject {
                 try db.upsertRoot(
                     rootID: rootID, category: "work",
                     displayName: standardized, locatorType: "path", status: "registered")
+                // Registration settles content into the IS carrier so a later
+                // execution period can reuse it without re-reading the disk.
+                let settle = try db.settleWorkRootContents(
+                    rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
                 report["work_root"] = [
                     "root_id": rootID,
                     "path": standardized,
                     "registered": true,
+                    "content_settle": [
+                        "scanned": settle.scanned, "reused": settle.reused,
+                        "settled": settle.settled, "skipped": settle.skippedBinaryOrLarge,
+                        "removed": settle.removed,
+                        "invalidated_settlements": settle.invalidatedSettlements,
+                        "objects_created": settle.objectsCreated,
+                        "deduplicated": settle.deduplicated,
+                    ],
                 ]
             }
             return report
@@ -743,6 +755,10 @@ public final class EnvManager: ObservableObject {
                 "content_settle": [
                     "scanned": settle.scanned, "reused": settle.reused,
                     "settled": settle.settled, "skipped": settle.skippedBinaryOrLarge,
+                    "changed": settle.changed, "removed": settle.removed,
+                    "invalidated_settlements": settle.invalidatedSettlements,
+                    "objects_created": settle.objectsCreated,
+                    "deduplicated": settle.deduplicated,
                 ],
             ]
         } catch {

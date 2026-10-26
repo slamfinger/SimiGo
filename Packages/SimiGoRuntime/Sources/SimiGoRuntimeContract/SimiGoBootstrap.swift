@@ -28,8 +28,10 @@ public struct BootstrapReport: Codable, Equatable, Sendable {
 /// Every step inspects current durable state before acting, so a re-run changes
 /// nothing (idempotent) and an interrupted run resumes correctly: completed steps
 /// stay completed, the failed one is simply retried. It NEVER destroys prior data,
-/// NEVER creates `work`/`models` under the managed root, and NEVER copies external
-/// files — it only indexes them by (root_id, relative_path).
+/// NEVER creates `work`/`models` under the managed root, and NEVER duplicates
+/// external files on disk. Work-root text is carried in the content-addressed
+/// object store (one copy per distinct byte sequence) and indexed by
+/// (root_id, relative_path); model weights stay external references only.
 public enum SimiGoBootstrap {
     public static func run(
         db: SimiGoESISDatabase,
@@ -94,20 +96,19 @@ public enum SimiGoBootstrap {
             return (.ok, "discovered \(found.count) model file(s)")
         }
 
-        // 5. Index declared external work roots (bounded depth, files only).
+        // 5. Settle declared external work roots: index by (root_id,
+        //    relative_path) AND carry textual content in the content-addressed
+        //    object store so later execution can reuse it. No second physical
+        //    copy lands on disk.
         step("index-work") {
             for entry in workRoots {
-                try db.upsertRoot(rootID: entry.rootID, category: entry.category,
-                                  displayName: entry.url.lastPathComponent, locatorType: "path", status: "present")
-                for file in enumerateFiles(entry.url, fm: fm, maxDepth: maxIndexDepth) {
-                    let rel = relative(file, under: entry.url)
-                    try db.indexExternalFile(rootID: entry.rootID, category: entry.category,
-                                             relativePath: rel, kind: file.pathExtension,
-                                             size: fileSize(file, fm: fm), modifiedAt: nil, contentDigest: nil)
-                    workIndexed += 1
-                }
+                let settled = try db.settleWorkRootContents(
+                    rootID: entry.rootID, rootURL: entry.url,
+                    category: entry.category, maxDepth: maxIndexDepth)
+                workIndexed += settled.scanned
             }
-            return (workRoots.isEmpty ? .skipped : .ok, "indexed \(workIndexed) work file(s)")
+            return (workRoots.isEmpty ? .skipped : .ok,
+                    "settled \(workIndexed) work file(s)")
         }
 
         let issues = steps.filter { $0.status == .failed }.count
@@ -133,28 +134,5 @@ public enum SimiGoBootstrap {
         let e = JSONEncoder()
         e.outputFormatting = [.prettyPrinted, .sortedKeys]
         return e
-    }
-
-    private static func enumerateFiles(_ root: URL, fm: FileManager, maxDepth: Int) -> [URL] {
-        var out: [URL] = []
-        var stack: [(URL, Int)] = [(root, 0)]
-        while let (dir, depth) = stack.popLast() {
-            if depth > maxDepth { continue }
-            guard let children = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else { continue }
-            for c in children {
-                let isDir = (try? c.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
-                if isDir { stack.append((c, depth + 1)) } else { out.append(c) }
-            }
-        }
-        return out
-    }
-
-    private static func relative(_ file: URL, under root: URL) -> String {
-        let a = file.standardizedFileURL.path, b = root.standardizedFileURL.path
-        return a.hasPrefix(b + "/") ? String(a.dropFirst(b.count + 1)) : file.lastPathComponent
-    }
-
-    private static func fileSize(_ file: URL, fm: FileManager) -> Int64 {
-        ((try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap { Int64($0) }) ?? 0
     }
 }

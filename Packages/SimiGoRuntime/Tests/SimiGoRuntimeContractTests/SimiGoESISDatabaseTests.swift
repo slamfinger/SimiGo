@@ -42,14 +42,14 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.schemaVersion(), 0)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 7)   // v7 repair pass is the head
+        XCTAssertEqual(try db.schemaVersion(), 8)   // v8 IS carrier is the head
         XCTAssertTrue(try db.integrityCheck())
         XCTAssertEqual(try db.count("chat_messages"), 0)
         XCTAssertEqual(try db.count("file_contents"), 0)
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
         // Idempotent: re-running does not error or double-apply.
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 7)
+        XCTAssertEqual(try db.schemaVersion(), 8)
     }
 
     /// A database stamped v6 by the old out-of-order gates reports the head
@@ -60,7 +60,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 7)
+        XCTAssertEqual(try db.schemaVersion(), 8)
         db.close()
 
         try rawExec(url, """
@@ -76,12 +76,12 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { repaired.close() }
         XCTAssertEqual(try repaired.schemaVersion(), 6)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 7)
+        XCTAssertEqual(try repaired.schemaVersion(), 8)
         XCTAssertEqual(try repaired.count("chat_messages"), 0)
         XCTAssertEqual(try repaired.count("file_contents"), 0)
         XCTAssertEqual(try repaired.count("retrieval_settlements"), 0)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 7)
+        XCTAssertEqual(try repaired.schemaVersion(), 8)
     }
 
     private func rawExec(_ url: URL, _ sql: String) throws {

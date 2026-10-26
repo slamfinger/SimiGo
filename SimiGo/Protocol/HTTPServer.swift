@@ -1208,6 +1208,7 @@ public final class HTTPServer: @unchecked Sendable {
              ("HEAD", "/health"),
              ("GET", "/v1/simigo/env"),
              ("GET", "/v1/simigo/roots"),
+             ("GET", "/v1/simigo/is/status"),
              ("GET", "/v1/simigo/search"),
              ("POST", "/v1/simigo/search"),
              ("PUT", "/v1/simigo/roots"),
@@ -1583,6 +1584,52 @@ public final class HTTPServer: @unchecked Sendable {
         )
     }
 
+    /// GET /v1/simigo/is/status[?deep=1] — physical Information-Space carrier
+    /// health: object store size, append-only index/dependency history, rows not
+    /// yet addressed to an object, dangling references, and (with `deep=1`)
+    /// per-object hash verification. Read-only and fail-closed: a database that
+    /// cannot be read returns 503 instead of a healthy-looking empty report.
+    private func handleSimigoCarrierStatusRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        let deep = URLComponents(string: "http://x" + request.requestTarget)?
+            .queryItems?.contains(where: {
+                $0.name == "deep" && ["1", "true", "yes"].contains($0.value ?? "")
+            }) ?? false
+        guard let db = try? SimiGoESISDatabase(
+            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        else {
+            sendJSON(
+                ["error": "DATABASE_UNAVAILABLE"],
+                status: 503, on: context.connection, context: context)
+            return
+        }
+        do {
+            let report = try db.carrierReport(deepVerify: deep)
+            sendJSON(
+                [
+                    "schema_version": report.schemaVersion,
+                    "object_count": report.objectCount,
+                    "object_bytes": report.objectBytes,
+                    "index_entries": report.indexEntries,
+                    "dependency_entries": report.dependencyEntries,
+                    "unaddressed_file_contents": report.unaddressedFileContents,
+                    "unaddressed_chat_messages": report.unaddressedChatMessages,
+                    "unaddressed_retrieval_results": report.unaddressedRetrievalResults,
+                    "unaddressed_settlements": report.unaddressedSettlements,
+                    "dangling_references": report.danglingReferences,
+                    "corrupt_objects": report.corruptObjects,
+                    "inline_legacy_payloads": report.inlineLegacyPayloads,
+                    "deep_verified": report.deepVerified,
+                ],
+                status: 200, on: context.connection, context: context)
+        } catch {
+            sendJSON(
+                ["error": "CARRIER_UNREADABLE", "detail": "\(error)"],
+                status: 503, on: context.connection, context: context)
+        }
+    }
+
     /// PUT/POST /v1/simigo/roots {"path": "/abs/work/dir"} — register (or
     /// refresh) a work root in the authoritative database. Absolute paths
     /// only; the directory must exist. Idempotent.
@@ -1619,9 +1666,18 @@ public final class HTTPServer: @unchecked Sendable {
                 locatorType: "path", status: "registered")
             let settle = try db.settleWorkRootContents(
                 rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
-            _ = settle
             sendJSON(
-                ["root_id": rootID, "path": standardized, "registered": true],
+                [
+                    "root_id": rootID, "path": standardized, "registered": true,
+                    "content_settle": [
+                        "scanned": settle.scanned, "reused": settle.reused,
+                        "settled": settle.settled, "skipped": settle.skippedBinaryOrLarge,
+                        "changed": settle.changed, "removed": settle.removed,
+                        "invalidated_settlements": settle.invalidatedSettlements,
+                        "objects_created": settle.objectsCreated,
+                        "deduplicated": settle.deduplicated,
+                    ],
+                ],
                 status: 200, on: context.connection, context: context)
         } catch {
             sendJSON(
@@ -1774,6 +1830,9 @@ public final class HTTPServer: @unchecked Sendable {
 
         case ("GET", "/v1/simigo/roots"):
             try await handleSimigoRootsRequest(request, context: context)
+
+        case ("GET", "/v1/simigo/is/status"):
+            try await handleSimigoCarrierStatusRequest(request, context: context)
 
         case ("PUT", "/v1/simigo/roots"), ("POST", "/v1/simigo/roots"):
             try await handleSimigoRootsPutRequest(request, context: context)
