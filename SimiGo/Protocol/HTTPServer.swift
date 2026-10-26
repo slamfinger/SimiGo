@@ -1215,8 +1215,16 @@ public final class HTTPServer: @unchecked Sendable {
              ("POST", "/v1/simigo/roots"),
              ("POST", "/localb/auth/challenge"):
             return .open
-        case ("GET", "/v1/models"), ("GET", "/models"):
+        case ("GET", "/v1/models"), ("GET", "/models"),
+             ("GET", "/v1/simigo/is/settlement"),
+             ("GET", "/v1/simigo/is/dependency"),
+             ("GET", "/v1/simigo/is/file"),
+             ("GET", "/v1/simigo/is/object"):
             return .protected(permission: .informationRead)
+        case ("POST", "/v1/simigo/is/reconcile"):
+            // Re-derives carried validity; it writes only derived IS state, so
+            // it needs the SRS-write permission rather than inference or admin.
+            return .protected(permission: .srsWrite)
         case ("POST", "/v1/chat/completions"),
              ("POST", "/chat/completions"),
              ("POST", "/v1/completions"),
@@ -1630,6 +1638,276 @@ public final class HTTPServer: @unchecked Sendable {
         }
     }
 
+    private func simigoQueryItem(_ request: HTTPRequest, _ name: String) -> String? {
+        guard let url = URL(string: "http://x" + request.requestTarget),
+            let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                .queryItems
+        else { return nil }
+        return items.first(where: { $0.name == name })?.value
+    }
+
+    private func simigoOptionalJSON(_ value: String?) -> Any {
+        value ?? NSNull()
+    }
+
+    /// Text when the bytes are UTF-8, base64 otherwise — never lossy.
+    private func simigoPayloadFields(_ data: Data) -> [String: Any] {
+        let size = data.count
+        if let text = String(data: data, encoding: .utf8) {
+            return ["encoding": "utf8", "payload": text, "payload_size": size]
+        }
+        return [
+            "encoding": "base64", "payload": data.base64EncodedString(),
+            "payload_size": size,
+        ]
+    }
+
+    private func simigoDependencyJSON(
+        _ entry: SimiGoESISDatabase.DependencyEntry
+    ) -> [String: Any] {
+        [
+            "dependency_id": entry.dependencyID,
+            "content_address": entry.contentAddress,
+            "revision": entry.revision,
+            "reason": entry.reason,
+            "recorded_at": entry.recordedAt,
+            "append_order": entry.appendOrder,
+        ]
+    }
+
+    /// GET /v1/simigo/is/settlement?id=... — read a settled result back with its
+    /// verified payload, producer bindings, validity, and dependency revisions.
+    private func handleSimigoSettlementRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        guard let id = simigoQueryItem(request, "id"), !id.isEmpty else {
+            sendJSON(
+                ["error": "INVALID_REQUEST", "detail": "expected id=<settlement_id>"],
+                status: 400, on: context.connection, context: context)
+            return
+        }
+        guard let db = try? SimiGoESISDatabase(
+            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        else {
+            sendJSON(
+                ["error": "DATABASE_UNAVAILABLE"],
+                status: 503, on: context.connection, context: context)
+            return
+        }
+        do {
+            guard let receipt = try db.settlementReceipt(id) else {
+                sendJSON(
+                    ["error": "SETTLEMENT_NOT_FOUND", "detail": id],
+                    status: 404, on: context.connection, context: context)
+                return
+            }
+            var body: [String: Any] = [
+                "settlement_id": receipt.settlementID,
+                "state_id": simigoOptionalJSON(receipt.stateID),
+                "payload_object_id": simigoOptionalJSON(receipt.payloadObjectID),
+                "payload_sha256": receipt.payloadSHA256,
+                "schema_version": simigoOptionalJSON(receipt.schemaVersion),
+                "contract_version": simigoOptionalJSON(receipt.contractVersion),
+                "settled_at": simigoOptionalJSON(receipt.settledAt),
+                "validation_status": simigoOptionalJSON(receipt.validationStatus),
+                "validity": receipt.validity,
+                "invalidated_at": simigoOptionalJSON(receipt.invalidatedAt),
+                "bindings": receipt.bindings,
+                "dependencies": receipt.dependencies.map(simigoDependencyJSON),
+            ]
+            body.merge(simigoPayloadFields(receipt.payload)) { _, new in new }
+            sendJSON(body, status: 200, on: context.connection, context: context)
+        } catch {
+            sendJSON(
+                ["error": "SETTLEMENT_PAYLOAD_UNVERIFIED", "detail": "\(error)"],
+                status: 409, on: context.connection, context: context)
+        }
+    }
+
+    /// GET /v1/simigo/is/dependency?id=... — current revision plus full history.
+    private func handleSimigoDependencyRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        guard let id = simigoQueryItem(request, "id"), !id.isEmpty else {
+            sendJSON(
+                ["error": "INVALID_REQUEST", "detail": "expected id=<dependency_id>"],
+                status: 400, on: context.connection, context: context)
+            return
+        }
+        guard let db = try? SimiGoESISDatabase(
+            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        else {
+            sendJSON(
+                ["error": "DATABASE_UNAVAILABLE"],
+                status: 503, on: context.connection, context: context)
+            return
+        }
+        do {
+            let history = try db.dependencyHistory(id)
+            guard let current = history.last else {
+                sendJSON(
+                    ["error": "DEPENDENCY_NOT_FOUND", "detail": id],
+                    status: 404, on: context.connection, context: context)
+                return
+            }
+            sendJSON(
+                [
+                    "dependency_id": id,
+                    "current": simigoDependencyJSON(current),
+                    "history": history.map(simigoDependencyJSON),
+                ],
+                status: 200, on: context.connection, context: context)
+        } catch {
+            sendJSON(
+                ["error": "DEPENDENCY_READ_FAILED", "detail": "\(error)"],
+                status: 500, on: context.connection, context: context)
+        }
+    }
+
+    /// GET /v1/simigo/is/file?root_id=...&path=... — settled file content,
+    /// read back through its content address.
+    private func handleSimigoFileRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        guard let rootID = simigoQueryItem(request, "root_id"), !rootID.isEmpty,
+            let path = simigoQueryItem(request, "path"), !path.isEmpty
+        else {
+            sendJSON(
+                ["error": "INVALID_REQUEST", "detail": "expected root_id=<id>&path=<relative>"],
+                status: 400, on: context.connection, context: context)
+            return
+        }
+        guard let db = try? SimiGoESISDatabase(
+            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        else {
+            sendJSON(
+                ["error": "DATABASE_UNAVAILABLE"],
+                status: 503, on: context.connection, context: context)
+            return
+        }
+        do {
+            guard let content = try db.carriedFileContent(
+                rootID: rootID, relativePath: path)
+            else {
+                sendJSON(
+                    ["error": "FILE_NOT_SETTLED", "detail": "\(rootID)/\(path)"],
+                    status: 404, on: context.connection, context: context)
+                return
+            }
+            var body: [String: Any] = [
+                "root_id": content.rootID,
+                "path": content.relativePath,
+                "content_sha256": content.contentSHA256,
+                "object_id": simigoOptionalJSON(content.objectID),
+                "settled_at": content.settledAt,
+                "status": simigoOptionalJSON(content.status),
+            ]
+            body.merge(simigoPayloadFields(content.content)) { _, new in new }
+            sendJSON(body, status: 200, on: context.connection, context: context)
+        } catch {
+            sendJSON(
+                ["error": "FILE_CONTENT_UNVERIFIED", "detail": "\(error)"],
+                status: 409, on: context.connection, context: context)
+        }
+    }
+
+    /// GET /v1/simigo/is/object?id=... — verify and return one stored object.
+    private func handleSimigoObjectRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        guard let id = simigoQueryItem(request, "id"), !id.isEmpty else {
+            sendJSON(
+                ["error": "INVALID_REQUEST", "detail": "expected id=<sha256>"],
+                status: 400, on: context.connection, context: context)
+            return
+        }
+        guard let db = try? SimiGoESISDatabase(
+            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        else {
+            sendJSON(
+                ["error": "DATABASE_UNAVAILABLE"],
+                status: 503, on: context.connection, context: context)
+            return
+        }
+        do {
+            guard let row = try db.objectRow(id) else {
+                sendJSON(
+                    ["error": "OBJECT_NOT_FOUND", "detail": id],
+                    status: 404, on: context.connection, context: context)
+                return
+            }
+            guard db.verifyObject(id) else {
+                sendJSON(
+                    ["error": "OBJECT_CORRUPT", "detail": id],
+                    status: 409, on: context.connection, context: context)
+                return
+            }
+            var body: [String: Any] = [
+                "object_id": row.objectID,
+                "created_order": row.createdOrder,
+                "verified": true,
+            ]
+            body.merge(simigoPayloadFields(row.content)) { _, new in new }
+            sendJSON(body, status: 200, on: context.connection, context: context)
+        } catch {
+            sendJSON(
+                ["error": "OBJECT_READ_FAILED", "detail": "\(error)"],
+                status: 500, on: context.connection, context: context)
+        }
+    }
+
+    /// POST /v1/simigo/is/reconcile — re-derive validity for registered roots.
+    /// Body is optional: {"category": "work", "max_age_seconds": 0}.
+    private func handleSimigoReconcileRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        var category = "work"
+        var maxAge: Double = 0
+        if !request.body.isEmpty,
+            let object = try? JSONSerialization.jsonObject(with: request.body)
+                as? [String: Any]
+        {
+            if let value = object["category"] as? String, !value.isEmpty {
+                category = value
+            }
+            if let value = object["max_age_seconds"] as? Double, value > 0 {
+                maxAge = value
+            }
+        }
+        guard let db = try? SimiGoESISDatabase(
+            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        else {
+            sendJSON(
+                ["error": "DATABASE_UNAVAILABLE"],
+                status: 503, on: context.connection, context: context)
+            return
+        }
+        do {
+            let result = try db.reconcileRegisteredRoots(
+                category: category, minAgeSeconds: maxAge)
+            sendJSON(
+                [
+                    "category": category,
+                    "root_count": result.rootCount,
+                    "settled_roots": result.settledRoots,
+                    "fresh_roots": result.freshRoots,
+                    "missing_roots": result.missingRoots,
+                    "unlocatable_roots": result.unlocatableRoots,
+                    "failed_roots": result.failedRoots,
+                    "scanned": result.scanned,
+                    "reused": result.reused,
+                    "changed": result.changed,
+                    "removed": result.removed,
+                    "invalidated_settlements": result.invalidatedSettlements,
+                ],
+                status: 200, on: context.connection, context: context)
+        } catch {
+            sendJSON(
+                ["error": "RECONCILE_FAILED", "detail": "\(error)"],
+                status: 500, on: context.connection, context: context)
+        }
+    }
+
     /// PUT/POST /v1/simigo/roots {"path": "/abs/work/dir"} — register (or
     /// refresh) a work root in the authoritative database. Absolute paths
     /// only; the directory must exist. Idempotent.
@@ -1833,6 +2111,21 @@ public final class HTTPServer: @unchecked Sendable {
 
         case ("GET", "/v1/simigo/is/status"):
             try await handleSimigoCarrierStatusRequest(request, context: context)
+
+        case ("GET", "/v1/simigo/is/settlement"):
+            try await handleSimigoSettlementRequest(request, context: context)
+
+        case ("GET", "/v1/simigo/is/dependency"):
+            try await handleSimigoDependencyRequest(request, context: context)
+
+        case ("GET", "/v1/simigo/is/file"):
+            try await handleSimigoFileRequest(request, context: context)
+
+        case ("GET", "/v1/simigo/is/object"):
+            try await handleSimigoObjectRequest(request, context: context)
+
+        case ("POST", "/v1/simigo/is/reconcile"):
+            try await handleSimigoReconcileRequest(request, context: context)
 
         case ("PUT", "/v1/simigo/roots"), ("POST", "/v1/simigo/roots"):
             try await handleSimigoRootsPutRequest(request, context: context)

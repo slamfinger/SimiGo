@@ -397,4 +397,145 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertNotEqual(third.demandID, first.demandID)
         XCTAssertFalse(third.reused, "a changed input digest forces a new demand")
     }
+
+    // MARK: - Read-back and reconciliation
+
+    func testRegisteredRootPathAndScanEvidenceSurviveSettlement() throws {
+        let (url, db) = try open("root-evidence")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("evidence", to: root, name: "a.md")
+        try db.upsertRoot(rootID: "work", category: "work",
+                          displayName: root.path, locatorType: "path", status: "present")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root)
+
+        let row = try XCTUnwrap(db.listRoots(category: "work").first)
+        XCTAssertEqual(row.displayName, root.path,
+                       "settlement must not erase the registered locator")
+        XCTAssertEqual(row.status, "present")
+        XCTAssertFalse(try rawText(url,
+            "SELECT last_scanned_at FROM roots WHERE root_id='work';").isEmpty)
+        XCTAssertFalse(try rawText(url,
+            "SELECT modified_at FROM external_files WHERE root_id='work' AND relative_path='a.md';").isEmpty,
+            "source version evidence is recorded")
+    }
+
+    func testReconcileSkipsFreshRootsAndDetectsChanges() throws {
+        let (url, db) = try open("reconcile")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("one", to: root, name: "a.md")
+        try db.upsertRoot(rootID: "work", category: "work",
+                          displayName: root.path, locatorType: "path", status: "present")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root)
+
+        let fresh = try db.reconcileRegisteredRoots(minAgeSeconds: 600)
+        XCTAssertEqual(fresh.freshRoots, 1)
+        XCTAssertEqual(fresh.settledRoots, 0)
+
+        try write("two", to: root, name: "a.md")
+        let forced = try db.reconcileRegisteredRoots()
+        XCTAssertEqual(forced.settledRoots, 1)
+        XCTAssertEqual(forced.changed, 1)
+        XCTAssertEqual(forced.scanned, 1)
+    }
+
+    func testReconcileMarksMissingRootWithoutClearingContent() throws {
+        let (url, db) = try open("missing-root")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("keep me", to: root, name: "a.md")
+        try db.upsertRoot(rootID: "work", category: "work",
+                          displayName: root.path, locatorType: "path", status: "present")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root)
+
+        try FileManager.default.removeItem(at: root)
+        let report = try db.reconcileRegisteredRoots()
+        XCTAssertEqual(report.missingRoots, 1)
+        XCTAssertEqual(report.settledRoots, 0)
+        XCTAssertEqual(try db.listRoots(category: "work").first?.status, "missing")
+
+        // An unmounted root must not read as mass deletion: carried bytes stay.
+        XCTAssertEqual(try db.carriedFileContent(rootID: "work", relativePath: "a.md")?
+                        .content, Data("keep me".utf8))
+        XCTAssertEqual(try db.count("file_contents"), 1)
+    }
+
+    func testSettlementReceiptReturnsVerifiedPayloadAndDependencies() throws {
+        let (url, db) = try open("receipt")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("source body", to: root, name: "src.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root)
+
+        let settlementID = try mkSettlement(db, stateID: "S-1", value: "answer")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlementID, binding: "source",
+            rootID: "work", relativePath: "src.md")
+
+        let receipt = try XCTUnwrap(db.settlementReceipt(settlementID))
+        let payloadJSON = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: receipt.payload) as? [String: Any])
+        XCTAssertEqual(payloadJSON["content"] as? String, "answer")
+        XCTAssertEqual(receipt.payloadSHA256, NativeSHA256.hexDigest(receipt.payload))
+        XCTAssertNotNil(receipt.payloadObjectID)
+        XCTAssertEqual(receipt.validity, "valid")
+        XCTAssertEqual(receipt.stateID, "S-1")
+        XCTAssertEqual(receipt.bindings["source"], "source")
+        let dependency = try XCTUnwrap(receipt.dependencies.first)
+        XCTAssertTrue(dependency.dependencyID.hasPrefix("settlement:\(settlementID) -> file:work/src.md"))
+        XCTAssertEqual(dependency.revision, 1)
+
+        XCTAssertNil(try db.settlementReceipt("no-such-settlement"))
+    }
+
+    func testSettlementReceiptFailsClosedWhenPayloadObjectIsCorrupt() throws {
+        let (url, db) = try open("receipt-corrupt")
+        defer { db.close(); cleanup(url) }
+
+        let settlementID = try mkSettlement(db, stateID: "S-1", value: "answer")
+        let receipt = try XCTUnwrap(db.settlementReceipt(settlementID))
+        let objectID = try XCTUnwrap(receipt.payloadObjectID)
+        // Same length as the stored payload so the CHECK constraints still pass
+        // and only the address check can catch the tampering.
+        let tamper = String(repeating: "X", count: receipt.payload.count)
+        try rawExec(url, """
+        DROP TRIGGER is_objects_append_only_update;
+        UPDATE is_objects SET content=CAST('\(tamper)' AS BLOB) WHERE object_id='\(objectID)';
+        """)
+        XCTAssertThrowsError(try db.settlementReceipt(settlementID),
+                             "a receipt must not carry bytes that fail hash verification")
+        XCTAssertFalse(db.verifyObject(objectID))
+    }
+
+    func testCarriedFileContentReadsBackAndVerifies() throws {
+        let (url, db) = try open("file-readback")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("read me", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root)
+
+        let content = try XCTUnwrap(
+            db.carriedFileContent(rootID: "work", relativePath: "a.md"))
+        XCTAssertEqual(String(data: content.content, encoding: .utf8), "read me")
+        XCTAssertEqual(content.contentSHA256, NativeSHA256.hexDigest(content.content))
+        XCTAssertEqual(content.status, "present")
+        XCTAssertTrue(db.verifyObject(try XCTUnwrap(content.objectID)))
+        XCTAssertNil(try db.carriedFileContent(rootID: "work", relativePath: "missing.md"))
+    }
 }

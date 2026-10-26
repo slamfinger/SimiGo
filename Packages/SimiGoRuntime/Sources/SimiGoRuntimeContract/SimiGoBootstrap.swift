@@ -111,6 +111,27 @@ public enum SimiGoBootstrap {
                     "settled \(workIndexed) work file(s)")
         }
 
+        // 6. Re-derive validity for roots registered in earlier runs, so content
+        //    changed while the app was closed is caught at launch. Roots scanned
+        //    in the last ten minutes (including the ones settled just above) are
+        //    skipped, which bounds launch-time work; a missing directory only
+        //    marks the root missing and never clears its carried content.
+        step("reconcile-roots") {
+            let result = try db.reconcileRegisteredRoots(
+                category: "work", minAgeSeconds: 600)
+            guard result.rootCount > 0 else {
+                return (.skipped, "no registered work roots")
+            }
+            let detail = """
+            roots=\(result.rootCount) settled=\(result.settledRoots) \
+            fresh=\(result.freshRoots) missing=\(result.missingRoots) \
+            unlocatable=\(result.unlocatableRoots) \
+            scanned=\(result.scanned) changed=\(result.changed) \
+            removed=\(result.removed) invalidated=\(result.invalidatedSettlements)
+            """
+            return (result.failedRoots > 0 ? .failed : .ok, detail)
+        }
+
         let issues = steps.filter { $0.status == .failed }.count
         var report = BootstrapReport(
             startedAt: started, finishedAt: fmt.string(from: Date()),
@@ -119,7 +140,7 @@ public enum SimiGoBootstrap {
             workFilesIndexed: workIndexed, legacyMigrated: legacyMigrated,
             issueCount: issues)
 
-        // 6. Emit the machine-readable report.
+        // 7. Emit the machine-readable report.
         step("write-report") {
             let data = try makeEncoder().encode(report)
             try fm.createDirectory(at: reportURL.deletingLastPathComponent(), withIntermediateDirectories: true)

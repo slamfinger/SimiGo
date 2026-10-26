@@ -1,3 +1,4 @@
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -5,6 +6,19 @@ final class SimiGoBootstrapTests: XCTestCase {
 
     private func tempURL(_ name: String) -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent("boot-\(UUID().uuidString)-\(name)")
+    }
+
+    /// Out-of-band statement, used to simulate time passing between launches.
+    private func rawExec(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
+            throw SimiGoESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(handle) }
+        guard sqlite3_exec(handle, sql, nil, nil, nil) == SQLITE_OK else {
+            throw SimiGoESISDatabase.DatabaseError.sql(
+                String(cString: sqlite3_errmsg(handle)))
+        }
     }
 
     private func makeFakeHFHub() -> (hub: URL, env: [String: String]) {
@@ -181,5 +195,47 @@ final class SimiGoBootstrapTests: XCTestCase {
         XCTAssertEqual(r2.issueCount, 0, "recovery run must complete healthy: \(r2.steps)")
         XCTAssertEqual(r2.steps.first(where: { $0.id == "ensure-dirs" })?.status, .ok)
         XCTAssertTrue(try db.integrityCheck(), "a prior failed step must not corrupt the authority")
+    }
+
+    // MARK: cross-session reconciliation
+
+    /// A change made while the app was closed is picked up by the next launch:
+    /// the reconcile step re-derives validity for roots registered in an earlier
+    /// session, and a vanished file becomes an explicit `missing` row rather
+    /// than a stale `present` one.
+    func testBootstrapReconcileCatchesChangesFromAnEarlierSession() throws {
+        let fm = FileManager.default
+        let dbURL = tempURL("db.sqlite3"); defer { try? fm.removeItem(at: dbURL) }
+        let reportURL = tempURL("bootstrap-report.json"); defer { try? fm.removeItem(at: reportURL) }
+        let (hub, env) = makeFakeHFHub(); defer { try? fm.removeItem(at: hub) }
+        let work = tempURL("work")
+        try fm.createDirectory(at: work, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: work) }
+        try Data("one".utf8).write(to: work.appendingPathComponent("keep.txt"))
+        try Data("two".utf8).write(to: work.appendingPathComponent("gone.txt"))
+
+        let db = try SimiGoESISDatabase(url: dbURL)
+        let r1 = SimiGoBootstrap.run(
+            db: db, env: env, fm: fm,
+            workRoots: [(rootID: "work-1", url: work, category: "work")],
+            modelHubs: [hub], reportURL: reportURL)
+        XCTAssertEqual(r1.issueCount, 0, "\(r1.steps)")
+
+        // The app was closed: a file disappeared, and the previous scan is old.
+        try fm.removeItem(at: work.appendingPathComponent("gone.txt"))
+        try rawExec(dbURL, "UPDATE roots SET last_scanned_at='0' WHERE root_id='work-1';")
+
+        let r2 = SimiGoBootstrap.run(
+            db: db, env: env, fm: fm, modelHubs: [hub], reportURL: reportURL)
+        XCTAssertEqual(r2.issueCount, 0, "\(r2.steps)")
+        XCTAssertEqual(
+            r2.steps.first(where: { $0.id == "reconcile-roots" })?.status, .ok)
+
+        let rows = try db.listExternalFiles(rootID: "work-1")
+        XCTAssertEqual(rows.first(where: { $0.relativePath == "gone.txt" })?.status,
+                       "missing")
+        XCTAssertEqual(rows.first(where: { $0.relativePath == "keep.txt" })?.status,
+                       "present")
+        XCTAssertNil(try db.carriedFileContent(rootID: "work-1", relativePath: "gone.txt"))
     }
 }

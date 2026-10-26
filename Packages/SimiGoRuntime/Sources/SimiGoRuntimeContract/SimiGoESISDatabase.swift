@@ -1,6 +1,40 @@
 import Foundation
 import SQLite3
 
+/// Carrier tables hold history, not mutable state. Triggers stop ordinary
+/// UPDATE/DELETE; the authorizer additionally denies ALTER/DROP and any
+/// UPDATE/DELETE that would remain after a trigger is dropped, so the
+/// append-only guarantee does not depend on a trigger still being present.
+private let simigoCarrierProtectedTables: Set<String> = [
+    "is_objects",
+    "is_index_entries",
+    "is_dependency_entries",
+]
+
+private func simigoCarrierAuthorizer(
+    _ userData: UnsafeMutableRawPointer?,
+    _ action: Int32,
+    _ arg1: UnsafePointer<CChar>?,
+    _ arg2: UnsafePointer<CChar>?,
+    _ dbName: UnsafePointer<CChar>?,
+    _ trigger: UnsafePointer<CChar>?
+) -> Int32 {
+    let table: String?
+    switch action {
+    case SQLITE_ALTER_TABLE, SQLITE_DROP_TABLE:
+        // arg1 is the database name, arg2 the table name.
+        table = arg2.map { String(cString: $0) }
+    case SQLITE_UPDATE, SQLITE_DELETE:
+        table = arg1.map { String(cString: $0) }
+    default:
+        return SQLITE_OK
+    }
+    guard let table, simigoCarrierProtectedTables.contains(table) else {
+        return SQLITE_OK
+    }
+    return SQLITE_DENY
+}
+
 /// Authoritative ES/IS persistence for SimiGo, backed by the system SQLite3.
 ///
 /// Execution State is the continuation authority. Information Space is the
@@ -63,6 +97,7 @@ public final class SimiGoESISDatabase {
             throw DatabaseError.notADatabase("integrity_check failed for \(url.lastPathComponent)")
         }
         try Self.applyPragmas(handle)
+        Self.installCarrierAuthorizer(handle)
     }
 
     public func close() { sqlite3_close_v2(handle) }
@@ -75,6 +110,11 @@ public final class SimiGoESISDatabase {
             "PRAGMA journal_mode = WAL;",
             "PRAGMA synchronous = FULL;"
         ] { try rawExec(db, sql) }
+    }
+
+    private static func installCarrierAuthorizer(_ db: OpaquePointer) {
+        // Failure here is not fatal: the SQL triggers remain the primary guard.
+        _ = sqlite3_set_authorizer(db, simigoCarrierAuthorizer, nil)
     }
 
     private static func rawExec(_ db: OpaquePointer, _ sql: String) throws {
@@ -494,6 +534,12 @@ public final class SimiGoESISDatabase {
             byteSize: Int(sqlite3_column_int64(stmt, 1)),
             content: data,
             createdOrder: Int(sqlite3_column_int64(stmt, 3)))
+    }
+
+    /// `true` only when the stored bytes still hash to their address. A missing
+    /// or corrupt object is `false`, never an empty success.
+    public func verifyObject(_ objectID: String) -> Bool {
+        (try? readObject(objectID)) != nil
     }
 
     /// Append an identity → object entry. History is never overwritten; callers
@@ -1233,7 +1279,10 @@ public final class SimiGoESISDatabase {
         let fm = FileManager.default
         // file_contents references roots, so the root must exist before any
         // content row is written (new roots start here, not in the index pass).
-        try upsertRoot(rootID: rootID, category: category, displayName: nil,
+        // Recording the absolute path here is what makes the locator evidence
+        // durable: later metadata-only upserts must not erase it.
+        try upsertRoot(rootID: rootID, category: category,
+                       displayName: rootURL.path,
                        locatorType: "path", status: "present")
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
@@ -1254,14 +1303,24 @@ public final class SimiGoESISDatabase {
         var seen = Set<String>()
         var pending: [PendingSettlement] = []
         var cleared: [(relativePath: String, previous: FileContentState, missing: Bool)] = []
-        var indexedFiles: [(rel: String, url: URL, size: Int64, digest: String?)] = []
+        var indexedFiles: [(rel: String, url: URL, size: Int64, modified: String?, digest: String?)] = []
+        let modifiedFormatter = ISO8601DateFormatter()
 
         let scanRoot = rootURL.resolvingSymlinksInPath()
-        let enumerator = fm.enumerator(
+        guard let enumerator = fm.enumerator(
             at: scanRoot,
-            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
+            includingPropertiesForKeys: [
+                .isRegularFileKey, .fileSizeKey, .contentModificationDateKey,
+            ],
             options: [.skipsHiddenFiles, .skipsPackageDescendants])
-        while let file = enumerator?.nextObject() as? URL {
+        else {
+            // Enumerating an unreadable root must not look like "every file was
+            // deleted" — that would strand the carried content behind a mass
+            // invalidation. Refuse and leave the previous settlement intact.
+            throw DatabaseError.sql(
+                "settleWorkRootContents: cannot enumerate root \(rootID)")
+        }
+        while let file = enumerator.nextObject() as? URL {
             var isDir: ObjCBool = false
             guard fm.fileExists(atPath: file.path, isDirectory: &isDir),
                 !isDir.boolValue
@@ -1272,18 +1331,24 @@ public final class SimiGoESISDatabase {
             else { continue }
             scanned += 1
             seen.insert(rel)
-            let size = Int64((try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            let values = try? file.resourceValues(forKeys: [
+                .fileSizeKey, .contentModificationDateKey,
+            ])
+            let size = Int64(values?.fileSize ?? 0)
+            let modified = values?.contentModificationDate.map {
+                modifiedFormatter.string(from: $0)
+            }
 
             guard let data = try? Data(contentsOf: file), data.count <= fileByteCap else {
                 skipped += 1
-                indexedFiles.append((rel, file, size, nil))
+                indexedFiles.append((rel, file, size, modified, nil))
                 if let old = previous[rel] {
                     cleared.append((rel, old, false))
                 }
                 continue
             }
             let digest = NativeSHA256.hexDigest(data)
-            indexedFiles.append((rel, file, size, digest))
+            indexedFiles.append((rel, file, size, modified, digest))
             guard String(data: data, encoding: .utf8) != nil else {
                 skipped += 1
                 if let old = previous[rel] {
@@ -1373,11 +1438,12 @@ public final class SimiGoESISDatabase {
                     rootID: rootID, category: category,
                     relativePath: file.rel,
                     kind: file.url.pathExtension.isEmpty ? nil : file.url.pathExtension,
-                    size: file.size, modifiedAt: nil,
+                    size: file.size, modifiedAt: file.modified,
                     contentDigest: file.digest)
             }
             try markSettlementsInvalidInTransaction(Array(invalidated))
         }
+        try markRootScanned(rootID)
 
         return ContentSettleReport(
             scanned: scanned, reused: reused, settled: pending.count,
@@ -1402,6 +1468,93 @@ public final class SimiGoESISDatabase {
             return fileParts[(start + rootParts.count)...].joined(separator: "/")
         }
         return ""
+    }
+
+    public struct RootReconcileReport: Equatable, Sendable {
+        public let rootCount: Int
+        public let settledRoots: Int
+        public let freshRoots: Int
+        public let missingRoots: Int
+        /// Registered before the locator was retained and therefore not
+        /// re-scannable until registered again. Not a scan failure.
+        public let unlocatableRoots: Int
+        public let failedRoots: Int
+        public let scanned: Int
+        public let reused: Int
+        public let changed: Int
+        public let removed: Int
+        public let invalidatedSettlements: Int
+    }
+
+    /// Re-derive validity for every registered root of `category` so carried
+    /// results stay trustworthy across execution periods. A root whose directory
+    /// is absent is marked `missing` and its content is NOT cleared; an
+    /// unreadable root is counted as failed. `minAgeSeconds` skips roots that
+    /// were scanned recently, which bounds launch-time work.
+    @discardableResult
+    public func reconcileRegisteredRoots(
+        category: String = "work", minAgeSeconds: TimeInterval = 0
+    ) throws -> RootReconcileReport {
+        let fm = FileManager.default
+        let stmt = try prepare("""
+        SELECT root_id, display_name, last_scanned_at FROM roots
+        WHERE category=? ORDER BY root_id;
+        """)
+        bind(stmt, 1, category)
+        var rows: [(id: String, path: String?, scanned: String?)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            rows.append((text(0) ?? "", text(1), text(2)))
+        }
+        sqlite3_finalize(stmt)
+
+        var settledRoots = 0, freshRoots = 0, missingRoots = 0, failedRoots = 0
+        var unlocatableRoots = 0
+        var scanned = 0, reused = 0, changed = 0, removed = 0, invalidated = 0
+        let now = Date()
+
+        for row in rows {
+            guard let path = row.path, !path.isEmpty else {
+                unlocatableRoots += 1
+                continue
+            }
+            if minAgeSeconds > 0, let scannedAt = row.scanned.flatMap(parseISO8601),
+                now.timeIntervalSince(scannedAt) < minAgeSeconds
+            {
+                freshRoots += 1
+                continue
+            }
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue else {
+                // An unmounted or moved root must not read as mass deletion.
+                try markRootStatus(row.id, status: "missing")
+                missingRoots += 1
+                continue
+            }
+            do {
+                let result = try settleWorkRootContents(
+                    rootID: row.id, rootURL: URL(fileURLWithPath: path),
+                    category: category)
+                settledRoots += 1
+                scanned += result.scanned
+                reused += result.reused
+                changed += result.changed
+                removed += result.removed
+                invalidated += result.invalidatedSettlements
+            } catch {
+                failedRoots += 1
+            }
+        }
+
+        return RootReconcileReport(
+            rootCount: rows.count, settledRoots: settledRoots,
+            freshRoots: freshRoots, missingRoots: missingRoots,
+            unlocatableRoots: unlocatableRoots,
+            failedRoots: failedRoots, scanned: scanned, reused: reused,
+            changed: changed, removed: removed,
+            invalidatedSettlements: invalidated)
     }
 
     // MARK: - Demand 驱动的信息检索（原研究 execute_demand 语义）
@@ -1666,11 +1819,12 @@ public final class SimiGoESISDatabase {
         let now = Self.stamp( Date())
         try execBinding("""
         INSERT INTO roots(root_id, category, display_name, locator_type, status, created_at, last_scanned_at)
-        VALUES(?,?,?,?,?,?,?)
+        VALUES(?,?,?,?,?,?,NULL)
         ON CONFLICT(root_id) DO UPDATE SET
-            category=excluded.category, display_name=excluded.display_name,
-            locator_type=excluded.locator_type, status=excluded.status,
-            last_scanned_at=excluded.last_scanned_at;
+            category=excluded.category,
+            display_name=COALESCE(excluded.display_name, display_name),
+            locator_type=COALESCE(excluded.locator_type, locator_type),
+            status=excluded.status;
         """) { stmt in
             bind(stmt, 1, rootID)
             bind(stmt, 2, category)
@@ -1678,7 +1832,27 @@ public final class SimiGoESISDatabase {
             bind(stmt, 4, locatorType)
             bind(stmt, 5, status)
             bind(stmt, 6, now)
-            bind(stmt, 7, now)
+        }
+    }
+
+    /// Record that a root has just been fully scanned. Kept separate from
+    /// `upsertRoot` so metadata refreshes never claim a scan that did not run.
+    public func markRootScanned(_ rootID: String, status: String = "present") throws {
+        try execBinding("""
+        UPDATE roots SET status=?, last_scanned_at=? WHERE root_id=?;
+        """) { stmt in
+            bind(stmt, 1, status)
+            bind(stmt, 2, Self.stamp(Date()))
+            bind(stmt, 3, rootID)
+        }
+    }
+
+    /// Change a root's state without pretending it was scanned — used when the
+    /// backing directory is absent, so its carried content is left untouched.
+    public func markRootStatus(_ rootID: String, status: String) throws {
+        try execBinding("UPDATE roots SET status=? WHERE root_id=?;") { stmt in
+            bind(stmt, 1, status)
+            bind(stmt, 2, rootID)
         }
     }
 
@@ -2068,6 +2242,179 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         if sqlite3_step(stmt) == SQLITE_ROW { return Int(sqlite3_column_int64(stmt, 0)) }
         return 0
+    }
+
+    /// A settlement read back from Information Space: the verified payload
+    /// object, its producer/constraint bindings, and every dependency revision
+    /// recorded for it. This is what an execution period consumes when it
+    /// re-uses a settled result.
+    public struct SettlementReceiptRecord: Equatable, Sendable {
+        public let settlementID: String
+        public let stateID: String?
+        public let payloadObjectID: String?
+        public let payloadSHA256: String
+        public let payload: Data
+        public let schemaVersion: String?
+        public let contractVersion: String?
+        public let settledAt: String?
+        public let validationStatus: String?
+        public let validity: String
+        public let invalidatedAt: String?
+        public let bindings: [String: String]
+        public let dependencies: [DependencyEntry]
+    }
+
+    public func settlementReceipt(_ settlementID: String) throws -> SettlementReceiptRecord? {
+        var stateID: String?
+        var payloadLegacy = Data()
+        var payloadObjectID: String?
+        var schemaVersion: String?
+        var contractVersion: String?
+        var settledAt: String?
+        var validationStatus: String?
+        var validity = "valid"
+        var invalidatedAt: String?
+        var found = false
+
+        let stmt = try prepare("""
+        SELECT state_id, payload, schema_version, contract_version, settled_at,
+               validation_status, validity, invalidated_at, payload_object_id
+        FROM settlements WHERE settlement_id=?;
+        """)
+        bind(stmt, 1, settlementID)
+        if sqlite3_step(stmt) == SQLITE_ROW {
+            found = true
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            stateID = text(0)
+            let bytes = Int(sqlite3_column_bytes(stmt, 1))
+            if let base = sqlite3_column_blob(stmt, 1), bytes > 0 {
+                payloadLegacy = Data(bytes: base, count: bytes)
+            }
+            schemaVersion = text(2)
+            contractVersion = text(3)
+            settledAt = text(4)
+            validationStatus = text(5)
+            validity = text(6) ?? "valid"
+            invalidatedAt = text(7)
+            payloadObjectID = text(8)
+        }
+        sqlite3_finalize(stmt)
+        guard found else { return nil }
+
+        let payload: Data
+        if let payloadObjectID, !payloadObjectID.isEmpty {
+            // Throws on a corrupt object: a receipt must not be handed out with
+            // bytes that no longer match their address.
+            payload = try readObject(payloadObjectID)
+        } else {
+            payload = payloadLegacy
+        }
+
+        return SettlementReceiptRecord(
+            settlementID: settlementID,
+            stateID: stateID,
+            payloadObjectID: payloadObjectID,
+            payloadSHA256: NativeSHA256.hexDigest(payload),
+            payload: payload,
+            schemaVersion: schemaVersion,
+            contractVersion: contractVersion,
+            settledAt: settledAt,
+            validationStatus: validationStatus,
+            validity: validity,
+            invalidatedAt: invalidatedAt,
+            bindings: try settlementBindings(settlementID: settlementID),
+            dependencies: try settlementDependencies(settlementID: settlementID))
+    }
+
+    /// Every dependency revision whose identity starts with
+    /// `settlement:<id> -> ` (sources and downstream results), oldest first.
+    public func settlementDependencies(settlementID: String) throws -> [DependencyEntry] {
+        let prefix = "settlement:\(settlementID) -> "
+        let stmt = try prepare("""
+        SELECT append_order, dependency_id, content_address, revision, reason, recorded_at
+        FROM is_dependency_entries
+        WHERE substr(dependency_id, 1, ?) = ?
+        ORDER BY append_order ASC;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, Int64(prefix.utf8.count))
+        bind(stmt, 2, prefix)
+        var out: [DependencyEntry] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            out.append(DependencyEntry(
+                appendOrder: Int(sqlite3_column_int64(stmt, 0)),
+                dependencyID: text(1),
+                contentAddress: text(2),
+                revision: Int(sqlite3_column_int64(stmt, 3)),
+                reason: text(4),
+                recordedAt: text(5)))
+        }
+        return out
+    }
+
+    /// A settled file's carried bytes, read back and verified through its
+    /// object. Legacy rows without an object fall back to their inline text.
+    public struct CarriedFileContent: Equatable, Sendable {
+        public let rootID: String
+        public let relativePath: String
+        public let contentSHA256: String
+        public let objectID: String?
+        public let settledAt: String
+        public let content: Data
+        public let status: String?
+    }
+
+    public func carriedFileContent(
+        rootID: String, relativePath: String
+    ) throws -> CarriedFileContent? {
+        var digest = ""
+        var objectID: String?
+        var settledAt = ""
+        var legacy = Data()
+        var status: String?
+        var found = false
+
+        let stmt = try prepare("""
+        SELECT f.content_sha256, f.object_id, f.settled_at, f.content, e.status
+        FROM file_contents f
+        LEFT JOIN external_files e
+          ON e.root_id=f.root_id AND e.relative_path=f.relative_path
+        WHERE f.root_id=? AND f.relative_path=?;
+        """)
+        bind(stmt, 1, rootID)
+        bind(stmt, 2, relativePath)
+        if sqlite3_step(stmt) == SQLITE_ROW {
+            found = true
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            digest = text(0) ?? ""
+            objectID = text(1)
+            settledAt = text(2) ?? ""
+            let bytes = Int(sqlite3_column_bytes(stmt, 3))
+            if let base = sqlite3_column_blob(stmt, 3), bytes > 0 {
+                legacy = Data(bytes: base, count: bytes)
+            }
+            status = text(4)
+        }
+        sqlite3_finalize(stmt)
+        guard found else { return nil }
+
+        let content: Data
+        if let objectID, !objectID.isEmpty {
+            content = try readObject(objectID)
+        } else {
+            content = legacy
+        }
+        return CarriedFileContent(
+            rootID: rootID, relativePath: relativePath,
+            contentSHA256: digest, objectID: objectID,
+            settledAt: settledAt, content: content, status: status)
     }
 
     /// The transitive UPSTREAM dependency closure of a settlement: every
