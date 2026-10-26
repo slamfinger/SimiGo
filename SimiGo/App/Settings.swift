@@ -7,6 +7,8 @@ struct Settings: View {
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
     @State private var cloudAPIKeyInput = ""
+    @State private var informationSpaceStatus = ""
+    @State private var informationSpaceBusy = false
 
     /// 版本脚注从 bundle 实读（CFBundleShortVersionString + CFBundleVersion），
     /// 随发版自动更新——硬编码 "SimiGo v1.3" 曾滞留四个大版本（2026-09-30）。
@@ -74,6 +76,26 @@ struct Settings: View {
                         }
                         if !envMessage.isEmpty {
                             Text(envMessage).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                sectionBox("Information Space（数据库）") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Button("刷新状态") { refreshInformationSpace(deep: false) }
+                            Button("深度校验") { refreshInformationSpace(deep: true) }
+                            Button("重新对账工作目录") { reconcileInformationSpace() }
+                            if informationSpaceBusy {
+                                ProgressView().controlSize(.small)
+                            }
+                        }
+                        .disabled(informationSpaceBusy)
+                        if !informationSpaceStatus.isEmpty {
+                            Text(informationSpaceStatus)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
                         }
                     }
                 }
@@ -314,6 +336,63 @@ struct Settings: View {
 
     private var cloudBaseURLInputInvalid: Bool {
         URL(string: svc.cloudBaseURL)?.host?.isEmpty ?? true
+    }
+
+    /// Carrier status is read off the main thread: deep verification re-hashes
+    /// every object, and even the cheap report must not stall the settings UI.
+    private func refreshInformationSpace(deep: Bool) {
+        informationSpaceBusy = true
+        informationSpaceStatus = "读取中…"
+        Task.detached(priority: .utility) {
+            let text: String
+            do {
+                let db = try SimiGoESISDatabase(
+                    url: SimiGoPaths.databaseURL, createIfNeeded: true)
+                try db.runMigrations()
+                let report = try db.carrierReport(deepVerify: deep)
+                let unaddressed = report.unaddressedFileContents
+                    + report.unaddressedChatMessages
+                    + report.unaddressedRetrievalResults
+                    + report.unaddressedSettlements
+                text = """
+                schema v\(report.schemaVersion) · 对象 \(report.objectCount)（\(report.objectBytes) 字节）· \
+                索引 \(report.indexEntries) · 依赖 \(report.dependencyEntries) · 未寻址 \(unaddressed) · \
+                内联旧载荷 \(report.inlineLegacyPayloads) · 悬空引用 \(report.danglingReferences) · \
+                损坏 \(report.corruptObjects)\(deep ? "（已逐对象校验）" : "")
+                """
+            } catch {
+                text = "读取失败：\(error)"
+            }
+            await MainActor.run {
+                informationSpaceStatus = text
+                informationSpaceBusy = false
+            }
+        }
+    }
+
+    private func reconcileInformationSpace() {
+        informationSpaceBusy = true
+        informationSpaceStatus = "对账中…"
+        Task.detached(priority: .utility) {
+            let text: String
+            do {
+                let db = try SimiGoESISDatabase(
+                    url: SimiGoPaths.databaseURL, createIfNeeded: true)
+                try db.runMigrations()
+                let result = try db.reconcileRegisteredRoots(category: "work")
+                text = """
+                对账完成：根 \(result.rootCount)（已结算 \(result.settledRoots) / 近期已扫 \(result.freshRoots)）· \
+                扫描 \(result.scanned) · 复用 \(result.reused) · 变更 \(result.changed) · 删除 \(result.removed) · \
+                失效结算 \(result.invalidatedSettlements) · 缺失 \(result.missingRoots) · 失败 \(result.failedRoots)
+                """
+            } catch {
+                text = "对账失败：\(error)"
+            }
+            await MainActor.run {
+                informationSpaceStatus = text
+                informationSpaceBusy = false
+            }
+        }
     }
 
     private func localBackendRow(title: String, path: String, selection: BackendSelection) -> some View {
