@@ -1339,7 +1339,11 @@ public final class SimiGoESISDatabase {
                 modifiedFormatter.string(from: $0)
             }
 
-            guard let data = try? Data(contentsOf: file), data.count <= fileByteCap else {
+            // Size from metadata first: a multi-GB root is mostly binaries, and
+            // reading them only to discard them made a stale scan I/O bound.
+            guard size <= Int64(fileByteCap),
+                let data = try? Data(contentsOf: file), data.count <= fileByteCap
+            else {
                 skipped += 1
                 indexedFiles.append((rel, file, size, modified, nil))
                 if let old = previous[rel] {
