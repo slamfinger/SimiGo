@@ -90,6 +90,19 @@ struct FirstRunWizardView: View {
     @State private var isRunning = false
     @State private var moveResult: String?
 
+    /// 标题里的版本只取 CFBundleShortVersionString；读不到就退回不带版本号的文案，
+    /// 不显示可能过期的硬编码版本。构建号 CFBundleVersion 独立，不进标题。
+    private var marketingVersion: String? {
+        let raw = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        guard let raw, !raw.isEmpty else { return nil }
+        return raw
+    }
+
+    private var wizardTitle: String {
+        guard let marketingVersion else { return "SimiGo 安装向导" }
+        return "SimiGo \(marketingVersion) 安装向导"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
@@ -113,7 +126,7 @@ struct FirstRunWizardView: View {
                 .font(.system(size: 30))
                 .foregroundStyle(.blue)
             VStack(alignment: .leading) {
-                Text("SimiGo 2.2.0 安装向导").font(.title2.bold())
+                Text(wizardTitle).font(.title2.bold())
                 Text("首次运行：设定工作目录、导入外部二进制、自举生成环境")
                     .font(.caption).foregroundStyle(.secondary)
             }
