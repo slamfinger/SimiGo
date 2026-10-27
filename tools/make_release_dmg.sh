@@ -20,7 +20,18 @@ cat > "$TMPAPPLES" <<'OSA'
 -- SimiGo 图形安装器（DMG 内双击运行）
 set myDir to POSIX file ((do shell script "dirname " & quoted form of (POSIX path of (path to me))) & "/")
 set src to POSIX path of myDir & "SimiGo.app"
-display dialog "安装 SimiGo 2.2.0" & return & return & "将把 SimiGo 安装到 /Applications（覆盖旧版本）。" & return & "安装完成后自动启动，进入安装向导。" buttons {"取消", "安装"} default button "安装" with icon note
+-- 提示里的版本实读本 DMG 内待安装的 bundle；读不到就用不带版本号的通用文案，
+-- 不显示可能与产物不符的固定版本。
+set ver to ""
+try
+    set ver to do shell script "defaults read " & quoted form of (src & "/Contents/Info.plist") & " CFBundleShortVersionString"
+end try
+if ver is "" then
+    set titleLine to "安装 SimiGo"
+else
+    set titleLine to "安装 SimiGo " & ver
+end if
+display dialog titleLine & return & return & "将把 SimiGo 安装到 /Applications（覆盖旧版本）。" & return & "安装完成后自动启动，进入安装向导。" buttons {"取消", "安装"} default button "安装" with icon note
 -- 覆盖安装 = 重新进入安装向导：重置首启标记（不动数据库与已装二进制）
 set userName to short user name of (system info)
 do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app && rm -f /Users/" & userName & "/.simigo/manifests/first-run-done.json" with administrator privileges
