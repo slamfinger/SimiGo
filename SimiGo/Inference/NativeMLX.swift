@@ -420,6 +420,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             Self.enforceDefaultBranchCheckpointRetention(
                 retaining: self.state.withLock { Set($0.sessions.keys) })
 
+            // Resolved once at load time (not per request): the IS producer
+            // identity is a pure re-derivation from the snapshot on disk.
+            let informationProducer = InformationTurnProducer(
+                modelIdentity: SimiGoProducerIdentity.canonicalModelIdentity(
+                    fromPath: info.path),
+                identity: SimiGoProducerIdentity.identity(fromPath: info.path))
+
             let server = await MainActor.run {
                 HTTPServer(
                     port: nodeConfiguration.port,
@@ -490,11 +497,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         return ContinuationAdmissionOutcome(
                             esStateID: esStateID,
                             recoveredValue: admitted.recoveredValue,
-                            verifiedBindings: admitted.verifiedBindings)
+                            verifiedBindings: admitted.verifiedBindings,
+                            kvBindings: admitted.kvBindings)
                     },
                     continuationSettlement: makeNativeMLXContinuationSettlementHandler(
                         modelPath: self.modelPath
-                    )
+                    ),
+                    settlementConsumption: makeNativeMLXSettlementConsumptionHandler(
+                        modelPath: self.modelPath
+                    ),
+                    managedContinuation: makeNativeMLXManagedContinuationHandler(
+                        modelPath: self.modelPath,
+                        generate: { [weak self] request, messages in
+                            guard let self else { throw RuntError.notLoaded }
+                            return try await self.generate(
+                                requestId: request.requestId,
+                                agentId: request.agentId,
+                                sessionId: request.sessionId,
+                                logicalBranchId: request.logicalBranchId,
+                                messages: messages,
+                                tools: request.tools,
+                                config: request.config,
+                                onChunk: { _ in },
+                                onToolCall: { _ in }
+                            )
+                        }
+                    ),
+                    informationTurnProducer: { informationProducer }
                 )
             }
 
@@ -697,10 +726,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
                 guard stillEligible else { return false }
 
-                // A checkpoint-enabled execution cannot be evicted from
-                // memory while its latest logical commit is still dirty. Retry
-                // the existing checkpoint path first; failure keeps the live
-                // session resident rather than silently discarding continuity.
+                // Retry the checkpoint path once, but a failed write must not
+                // keep ~20 GB resident (owner ruling U3, 2026-10-27): unsettled
+                // in-flight output is not a valid result, so it is discarded and
+                // the release proceeds.  ES/IS settled anchors remain the only
+                // continuity authority; this path never claims a recovery.
+                // kv_persist states what THIS suspend actually did, never more:
+                // disabled (U2 default) / not_attempted (nothing dirty, or the
+                // restore-policy gate skipped it) / attempted (write loop ran;
+                // per-key failures carry their own lines).
+                var kvPersist = RuntimeTuning.branchCheckpointsEnabled ? "not_attempted" : "disabled"
                 if RuntimeTuning.rollforwardEnabled || RuntimeTuning.conditionalRestoreEnabled {
                     let dirty = self.state.withLock { state in
                         state.sessions.compactMap { _, managed -> (AgentExecutionKey, ManagedSession)? in
@@ -711,33 +746,50 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             return (executionKey, managed)
                         }
                     }
-                    if !dirty.isEmpty {
-                        guard let container = self.state.withLock({ $0.modelContainer }) else {
-                            return false
-                        }
-                        let gate = self.gateHolder.withLock { $0 }
-                        for (executionKey, managed) in dirty {
-                            do {
-                                let retryGateKey = try self.generationGateKey(for: executionKey)
-                                _ = try await gate.withExclusive(retryGateKey) { [weak self] in
-                                    guard let self else { throw RuntError.notLoaded }
-                                    return try await self.performSave(
-                                        key: executionKey.storageKey,
-                                        traceKey: executionKey.traceKey,
-                                        container: container,
-                                        managed: managed,
-                                        directory: Self.defaultBranchCheckpointStore(),
-                                        modelPath: self.modelPath
+                    // 持久化关闭时不重试落盘：脏会话直接随 suspend 释放。
+                    // 连续性由 ES/IS 的已结算锚点承担，未结算的在途生成本来
+                    // 就不是有效结果，恢复时从合格锚点重跑。
+                    if RuntimeTuning.branchCheckpointsEnabled, !dirty.isEmpty {
+                        var unreleased: [String] = []
+                        if let container = self.state.withLock({ $0.modelContainer }) {
+                            kvPersist = "attempted"
+                            let gate = self.gateHolder.withLock { $0 }
+                            for (executionKey, managed) in dirty {
+                                do {
+                                    let retryGateKey = try self.generationGateKey(for: executionKey)
+                                    _ = try await gate.withExclusive(retryGateKey) { [weak self] in
+                                        guard let self else { throw RuntError.notLoaded }
+                                        return try await self.performSave(
+                                            key: executionKey.storageKey,
+                                            traceKey: executionKey.traceKey,
+                                            container: container,
+                                            managed: managed,
+                                            directory: Self.defaultBranchCheckpointStore(),
+                                            modelPath: self.modelPath
+                                        )
+                                    }
+                                    managed.checkpointDirty = false
+                                } catch {
+                                    unreleased.append(executionKey.traceKey)
+                                    self.traceLogger.trace(
+                                        "[LIFECYCLE] checkpoint_write_failed key=\(executionKey.traceKey)"
+                                            + " err=\(error.localizedDescription)"
                                     )
                                 }
-                                managed.checkpointDirty = false
-                            } catch {
-                                self.traceLogger.trace(
-                                    "[LIFECYCLE] suspend_blocked_dirtyCheckpoint key=\(executionKey.traceKey)"
-                                        + " err=\(error.localizedDescription)"
-                                )
-                                return false
                             }
+                        } else {
+                            kvPersist = "skipped_container_unavailable"
+                            unreleased = dirty.map { executionKey, _ in executionKey.traceKey }
+                            self.traceLogger.trace(
+                                "[LIFECYCLE] checkpoint_write_skipped reason=container_unavailable"
+                                    + " count=\(dirty.count)"
+                            )
+                        }
+                        if !unreleased.isEmpty {
+                            self.traceLogger.trace(
+                                "[LIFECYCLE] suspend_releases_unsettled count=\(unreleased.count)"
+                                    + " settled=false authority=es_is_anchor"
+                            )
                         }
                     }
                 }
@@ -770,7 +822,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 self.observation.noteResourceReclaim()
                 // 强制分配器归还空闲页，避免挂起后内存压力长时间黄色（2026-10-23）。
                 malloc_zone_pressure_relief(nil, 0)
-                self.traceLogger.trace("[LIFECYCLE] suspend_done")
+                self.traceLogger.trace(
+                    "[LIFECYCLE] suspend_done released_sessions=\(releasedCount)"
+                        + " kv_persist=\(kvPersist)")
                 self.observation.noteSuspend()
                 return true
             }
@@ -1101,12 +1155,35 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 命中即 cacheLoad 恢复同款形态（快照 KV + delta 契约），
             // 只付自己的尾巴——47.6s 冷税变快照加载 + delta prefill。
             var poolRestored: ManagedSession?
-            if let poolAdmission = NativeMLXPrefixPool.shared.admit(
+            var poolAdmission = NativeMLXPrefixPool.shared.admit(
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
                 incoming: incoming.map { (role: $0.role.rawValue, content: $0.content) }
-            ) {
+            )
+            // A-2 前置权威：这条边只在续跑准入发生时受门禁约束。
+            // 未受管（日常路径）逐字节保持 A-2 之前行为；被拒 = IS 没有为这个
+            // ES 结算过这条前缀边界，于是回退冷 prefill —— 盘上确实存在该
+            // 表示并不构成复用许可。
+            if let candidate = poolAdmission {
+                let bindGate = NativeMLXPrefixPool.shared.checkBindAuthority(
+                    esStateID: executionKey.logicalBranchId,
+                    modelID: modelName(from: modelPath),
+                    kvFingerprint: kvFingerprint,
+                    thinkingDisabled: thinkingDisabled,
+                    entry: candidate.entry
+                )
+                if !bindGate.permitsBind {
+                    traceLogger.trace(
+                        "[MLX] isKvBindRejected reason=\(bindGate.rejectionReason ?? "kv_binding_blocked")"
+                            + " messages=\(candidate.entry.tokenCount / 2)"
+                            + " key=\(executionKey.traceKey)"
+                    )
+                    observation.noteISKVBindRejected()
+                    poolAdmission = nil
+                }
+            }
+            if let poolAdmission {
                 do {
                     let snapshot = try await NativeMLXPrefixPool.shared.load(poolAdmission)
                     let coveredMessages = poolAdmission.entry.tokenCount / 2
@@ -1199,7 +1276,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // EXP-B：hedge-skip 判定（B_HEDGE_SKIP_EXPERIMENT_DESIGN §1）。
         // 仅在 restore 本会触发的轮次（复用会话 + 工具尾）评估；env 关闭时
         // 恒 false = 实验 A 行为，逐字节不变。
-        let restoreRiskFires = reusedSession && !poolRestoredTurn
+        let restoreRiskFires = RuntimeTuning.branchCheckpointsEnabled
+            && reusedSession && !poolRestoredTurn
             && ExecutionPolicy.rollforwardRisk(lastJSON: managed.historyJSON.last)
         let hedgeSkip = restoreRiskFires
             && RuntimeTuning.expHedgeSkipEnabled
@@ -1572,11 +1650,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 (role: $0.role.rawValue, content: $0.content)
             }
             let poolSession = managed.session
-            await NativeMLXPrefixPool.shared.export(
+            _ = await NativeMLXPrefixPool.shared.export(
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
                 executionID: executionKey.storageKey,
+                branchID: executionKey.logicalBranchId,
                 history: poolHistory
             ) { url in
                 _ = try await poolSession.saveCache(to: url)
@@ -1603,7 +1682,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 的第一来源，故两 flag 任一开启都落盘。
         // v2.1.1 留存作用域：请求级一次性会话（*-request:UUID）不参与
         // 跨请求 KV reuse，durable receipt 永无复访者——跳过落盘。
-        if (restorePolicy.legacyRollforwardEnabled || restorePolicy.conditionalRestoreEnabled),
+        if RuntimeTuning.branchCheckpointsEnabled,
+            (restorePolicy.legacyRollforwardEnabled || restorePolicy.conditionalRestoreEnabled),
             !AgentExecutionKey.isRequestScopedSession(executionKey.storageKey) {
             managed.checkpointDirty = true
             do {
@@ -1906,6 +1986,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         key: String, traceKey: String, container: ModelContainer,
         managed: ManagedSession, directory: URL, modelPath: String
     ) async throws -> URL {
+        guard RuntimeTuning.branchCheckpointsEnabled else {
+            throw RuntError.generationFailed(
+                "branch checkpoints are disabled (SIMIGO_BRANCH_CHECKPOINTS=0)")
+        }
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
 
@@ -1999,6 +2083,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         config: ModelConfig?, baseConfig: ModelConfig, directory: URL,
         modelPath: String
     ) async throws -> (managed: ManagedSession, metadata: SessionCacheMetadata) {
+        guard RuntimeTuning.branchCheckpointsEnabled else {
+            throw RuntError.generationFailed(
+                "branch checkpoints are disabled (SIMIGO_BRANCH_CHECKPOINTS=0); "
+                + "restore from persisted KV is unavailable by design")
+        }
         let expLoadStart = Date() // cacheLoadMs：恢复/对冲加载耗时的常设诊断字段（346ms 归因，2026-09-29 转正）
         let baseName = Self.cacheFileName(for: key)
         let cacheURL = directory.appendingPathComponent(baseName + ".safetensors")
@@ -2136,18 +2225,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     // MARK: - Branch Fork（生产分支协议 v1；证据链与设计见 docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md）
 
-    /// 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/（跨 suspend 持久；
-    /// suspend 会清空内存会话，落盘 checkpoint 是分支唯一的 durable 存活物）。
+    /// 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/。
+    /// 关闭持久化（`SIMIGO_BRANCH_CHECKPOINTS=0`）时不得创建该目录——目录
+    /// 本身就不该出现，而不是建了再不用。
     nonisolated public static func defaultBranchCheckpointStore() -> URL {
         let directory = SimiGoRuntimeCachePaths.branchCheckpointsRoot
-        try? FileManager.default.createDirectory(
-            at: directory, withIntermediateDirectories: true)
+        if RuntimeTuning.branchCheckpointsEnabled {
+            try? FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true)
+        }
         return directory
     }
 
     nonisolated private static func enforceDefaultBranchCheckpointRetention(
         retaining activeKeys: Set<String>
     ) {
+        guard RuntimeTuning.branchCheckpointsEnabled else { return }
         do {
             let result = try BranchCheckpointRetention.enforce(
                 directory: defaultBranchCheckpointStore(),
@@ -2248,9 +2341,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 await oldTarget.session.clear()
             }
             let targetBaseName = Self.cacheFileName(for: targetKey.storageKey)
-            for suffix in [".safetensors", ".meta.json"] {
-                try? FileManager.default.removeItem(
-                    at: store.appendingPathComponent(targetBaseName + suffix))
+            if RuntimeTuning.branchCheckpointsEnabled {
+                for suffix in [".safetensors", ".meta.json"] {
+                    try? FileManager.default.removeItem(
+                        at: store.appendingPathComponent(targetBaseName + suffix))
+                }
             }
 
             let child = ManagedSession(
@@ -2263,7 +2358,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 sourceStorageKey: sourceKey.storageKey,
                 atMessage: sourceManaged.history.count,
                 atToken: forkTokenCount)
-            child.checkpointDirty = true
+            child.checkpointDirty = RuntimeTuning.branchCheckpointsEnabled
             state.withLock {
                 $0.sessions[targetMapKey] = child
                 $0.lastActivity = Date()
@@ -2349,9 +2444,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // clears, so currentBinding/activeBindings stop resolving it.
             _ = NativeMLXPrefixPool.shared.bindings.detach(executionID: key.storageKey)
             let baseName = Self.cacheFileName(for: key.storageKey)
-            for suffix in [".safetensors", ".meta.json"] {
-                try? FileManager.default.removeItem(
-                    at: store.appendingPathComponent(baseName + suffix))
+            if RuntimeTuning.branchCheckpointsEnabled {
+                for suffix in [".safetensors", ".meta.json"] {
+                    try? FileManager.default.removeItem(
+                        at: store.appendingPathComponent(baseName + suffix))
+                }
             }
             traceLogger.trace("[MLX] branchDelete session=\(key.traceKey)")
         }
@@ -2374,10 +2471,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
         let filePrefix = Self.cacheFileName(for: prefix)
-        let checkpoints = ((try? FileManager.default.contentsOfDirectory(atPath: store.path)) ?? [])
-            .filter { $0.hasPrefix(filePrefix) && $0.hasSuffix(".safetensors") }
-            .map { String($0.dropFirst(filePrefix.count).dropLast(".safetensors".count)) }
-            .sorted()
+        let checkpoints: [String] = RuntimeTuning.branchCheckpointsEnabled
+            ? ((try? FileManager.default.contentsOfDirectory(atPath: store.path)) ?? [])
+                .filter { $0.hasPrefix(filePrefix) && $0.hasSuffix(".safetensors") }
+                .map { String($0.dropFirst(filePrefix.count).dropLast(".safetensors".count)) }
+                .sorted()
+            : []
         return (live, checkpoints)
     }
 

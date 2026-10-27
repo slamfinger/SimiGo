@@ -2,6 +2,7 @@ import Foundation
 import MLX
 import MLXLMCommon
 import SimiGo2Experimental
+import SimiGoRuntimeContract
 
 /// Route B 前缀池协调器（SIMIGO17_PREFIX_POOL 门 B-4）——跨会话内容寻址
 /// KV 共享在产品日常路径的接缝。
@@ -176,7 +177,9 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         var failedErrs: Set<String> = []
         for count in boundaries {
             let hash = cumulative[count - 1]
-            let key = "\(namespace.modelID)|\(namespace.kvFingerprint)|\(count)|\(hash)"
+            let key = SimiGoSettlementKVBinding.Representation(
+                modelID: namespace.modelID, kvFingerprint: namespace.kvFingerprint,
+                tokenCount: count, boundaryHash: hash).poolKey
             let known = lock.withLock { exportedTokenBoundaries.contains(key) }
             guard !known else { continue }
             do {
@@ -216,11 +219,11 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     }
     func export(
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
-        executionID: String,
+        executionID: String, branchID: String?,
         history: [(role: String, content: String)],
         save: @escaping (URL) async throws -> Void
-    ) async {
-        guard RuntimeTuning.prefixPoolEnabled else { return }
+    ) async -> PrefixPoolEntry? {
+        guard RuntimeTuning.prefixPoolEnabled else { return nil }
         let namespace = Self.namespace(
             modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
         let store = makeStore()
@@ -236,13 +239,129 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             // 只保留在 restore（poolBind）/ fork 位点。绑定居于 registry。
             _ = bindings.bind(
                 executionID: executionID, runtimeAddress: "live:\(executionID)", ref: ref)
+            // A-2 写侧：把这轮导出的表示按逻辑分支登记，供本轮结算读取。
+            // 结算在 generate 返回之后运行，而这里的导出是 awaited 的，所以
+            // 「结算时读到的表示」一定出自这一轮。登记的是内容声明（模型
+            // 身份 + KV 指纹 + 边界长度 + 链哈希），落库时只写其摘要。
+            if let branchID {
+                rememberRepresentation(
+                    SimiGoSettlementKVBinding.Representation(
+                        modelID: namespace.modelID,
+                        kvFingerprint: namespace.kvFingerprint,
+                        tokenCount: entry.tokenCount,
+                        boundaryHash: entry.boundaryHash),
+                    forBranch: branchID)
+            }
             RuntimeTraceLogger.shared.trace(
                 "[MLX] poolExport messages=\(entry.tokenCount / 2) "
                     + "refHash=\(String(entry.boundaryHash, radix: 16))")
+            return entry
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[MLX] poolExportFailed err=\(String(describing: error))")
+            return nil
         }
+    }
+
+    // MARK: - A-2: IS-authorised KV reuse
+
+    private static let representationRecordLimit = 64
+    private var exportedRepresentations: [(branchID: String, value: SimiGoSettlementKVBinding.Representation)] = []
+
+    /// The prefix representation this process exported for one logical branch —
+    /// i.e. the content claim a settlement is allowed to make on its behalf.
+    /// A branch that exported nothing (pool disabled, export failed, or the
+    /// artifact evicted before settlement) yields nil, and the settlement then
+    /// records no KV binding: the safe default, because a later continuation has
+    /// nothing authorised to reuse.
+    func representation(forBranch branchID: String) -> SimiGoSettlementKVBinding.Representation? {
+        lock.withLock {
+            exportedRepresentations.last(where: { $0.branchID == branchID })?.value
+        }
+    }
+
+    private func rememberRepresentation(
+        _ value: SimiGoSettlementKVBinding.Representation, forBranch branchID: String
+    ) {
+        lock.withLock {
+            exportedRepresentations.removeAll(where: { $0.branchID == branchID })
+            exportedRepresentations.append((branchID, value))
+            if exportedRepresentations.count > Self.representationRecordLimit {
+                exportedRepresentations.removeFirst(
+                    exportedRepresentations.count - Self.representationRecordLimit)
+            }
+        }
+    }
+
+    /// A-2 fail-closed gate at the bind site.
+    ///
+    /// A governed continuation may load pooled prefix state only when the IS
+    /// settlement it was admitted against recorded THIS entry as its prefix
+    /// boundary. The recorded rows are digests, so the comparison re-derives the
+    /// pool entry's own content claim (namespace + token count + chain hash) and
+    /// matches it against them — a stale entry, a different prefix of the same
+    /// length, or a different model/KV layout all fail.
+    ///
+    /// `.notGoverned` keeps the pre-A-2 daily path byte-for-byte: only requests
+    /// that ran a continuation admission appear in the authority map.
+    enum BindAuthority: Equatable {
+        case notGoverned
+        case allowed
+        case rejected(reason: String)
+
+        var permitsBind: Bool {
+            if case .rejected = self { return false }
+            return true
+        }
+
+        var rejectionReason: String? {
+            if case .rejected(let reason) = self { return reason }
+            return nil
+        }
+    }
+
+    /// Pure decision half of the gate: the gate lookup against the namespace +
+    /// the boundary the engine is ABOUT TO consume. Split out so the real
+    /// security boundary (digest comparison) is testable without a live pool
+    /// entry or a disk artifact — the entry's own claim is what gets checked,
+    /// never a caller's assurance that a matching artifact exists.
+    static func bindVerdict(
+        _ lookup: ISKVBindAuthority.Lookup,
+        namespace: PrefixPoolNamespace,
+        tokenCount: Int, boundaryHash: UInt64
+    ) -> BindAuthority {
+        switch lookup {
+        case .notGoverned:
+            return .notGoverned
+        case .verdict(.unauthorized(let reason)):
+            return .rejected(reason: reason)
+        case .verdict(.authorized(let recorded)):
+            let consumer = SimiGoSettlementKVBinding.Representation(
+                modelID: namespace.modelID,
+                kvFingerprint: namespace.kvFingerprint,
+                tokenCount: tokenCount,
+                boundaryHash: boundaryHash)
+            let verdict = SimiGoSettlementKVBinding.evaluate(
+                recorded: recorded, consumer: consumer)
+            guard verdict.status == .ok else {
+                return .rejected(reason: verdict.code ?? "kv_binding_blocked")
+            }
+            return .allowed
+        }
+    }
+
+    func checkBindAuthority(
+        esStateID: String,
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        entry: PrefixPoolEntry
+    ) -> BindAuthority {
+        Self.bindVerdict(
+            ISKVBindAuthority.shared.consume(esStateID: esStateID),
+            namespace: Self.namespace(
+                modelID: modelID, kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled),
+            tokenCount: entry.tokenCount,
+            boundaryHash: entry.boundaryHash)
     }
 
     /// 将快照的 KV 层截断到 claimed 边界（Gate C/D：artifact 是候选，

@@ -86,6 +86,14 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         _ = try await engine.load()
         state.withLock { $0.loaded = true }
 
+        // Same IS producer identity as the contiguous-model path: a pure
+        // re-derivation from the snapshot, so an oversized turn settles under
+        // the model revision that actually produced it.
+        let informationProducer = InformationTurnProducer(
+            modelIdentity: SimiGoProducerIdentity.canonicalModelIdentity(
+                fromPath: modelDirectory.path),
+            identity: SimiGoProducerIdentity.identity(fromPath: modelDirectory.path))
+
         let server = HTTPServer(
             port: port,
             modelId: modelDirectory.lastPathComponent
@@ -111,7 +119,8 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
                 // Beta: oversized generation is greedy and non-cancellable.
             },
             capabilitiesProvider: nil,
-            baseConfigProvider: { ModelConfig() }
+            baseConfigProvider: { ModelConfig() },
+            informationTurnProducer: { informationProducer }
         )
         // LOCALB B1: one shared transport-policy decision for every listener
         // site. Secure by default; LAN binds can never fall back to

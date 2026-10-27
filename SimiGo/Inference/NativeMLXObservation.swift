@@ -31,6 +31,7 @@ public final class NativeMLXObservation: @unchecked Sendable {
     private var prefixMismatch = 0
     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
     private var poolBindFailed = 0
+    private var isKVBindRejected = 0   // IS admission refused this KV reuse (A-2)
     private var cacheSave = 0          // branch-checkpoint save
     private var checkpointFailed = 0
     private var coldRebuild = 0        // new-session cold prefill (no existing session)
@@ -76,6 +77,11 @@ public final class NativeMLXObservation: @unchecked Sendable {
     nonisolated func notePrefixMismatch() { lock.withLock { prefixMismatch += 1; appendEventLocked("prefix_mismatch") } }
     nonisolated func notePoolBindHit()    { lock.withLock { poolBindHit += 1; appendEventLocked("pool_bind_hit") } }
     nonisolated func notePoolBindFailed() { lock.withLock { poolBindFailed += 1; appendEventLocked("pool_bind_failed") } }
+    /// A-2 gate fired: IS recorded no settled KV representation for this ES (or
+    /// the digest mismatched), so the pool bind was refused and the turn falls
+    /// back to cold prefill. Counted separately from pool_bind_failed — a refused
+    /// reuse is an authority decision, not an artifact error.
+    nonisolated func noteISKVBindRejected() { lock.withLock { isKVBindRejected += 1; appendEventLocked("is_kv_bind_rejected") } }
     nonisolated func noteCacheSave()      { lock.withLock { cacheSave += 1; appendEventLocked("cache_save") } }
     nonisolated func noteCheckpointFailed(){ lock.withLock { checkpointFailed += 1; appendEventLocked("checkpoint_failed") } }
     nonisolated func noteColdRebuild()    { lock.withLock { coldRebuild += 1; appendEventLocked("cold_rebuild") } }
@@ -119,6 +125,7 @@ public final class NativeMLXObservation: @unchecked Sendable {
                 "prefix_mismatch": prefixMismatch,
                 "pool_bind_hit_cacheLoad": poolBindHit,
                 "pool_bind_failed": poolBindFailed,
+                "is_kv_bind_rejected": isKVBindRejected,
                 "cache_save_checkpoint": cacheSave,
                 "checkpoint_failed": checkpointFailed,
                 "cold_rebuild": coldRebuild,

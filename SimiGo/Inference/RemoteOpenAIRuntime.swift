@@ -1,5 +1,6 @@
 import Foundation
 import LOCALBCore
+import SimiGoRuntimeContract
 import Synchronization
 
 public final class RemoteOpenAIRuntime: Runtime, @unchecked Sendable {
@@ -40,6 +41,15 @@ public final class RemoteOpenAIRuntime: Runtime, @unchecked Sendable {
         try backend.configuration.validated(apiKey: backend.apiKey)
 
         let modelId = backend.configuration.model.isEmpty ? "cloud-openai" : backend.configuration.model
+        // A cloud turn still settles into the local ES/IS; its producer identity
+        // names the remote model instead of pretending to be a local snapshot.
+        let remoteIdentity = InformationTurnProducer(
+            modelIdentity: "remote:" + modelId,
+            identity: SimiGoSettlementIdentityBinding.Identity(
+                model: SimiGoProducerIdentity.canonicalFingerprint(
+                    ["remote_model": modelId]),
+                tokenizer: SimiGoProducerIdentity.canonicalFingerprint(
+                    ["remote_provider": backend.configuration.baseURLString])))
         let server = HTTPServer(
             port: port,
             modelId: modelId,
@@ -52,7 +62,8 @@ public final class RemoteOpenAIRuntime: Runtime, @unchecked Sendable {
             checkHealthHandler: { [weak self] in
                 await self?.checkHealth() ?? false
             },
-            remoteBackend: backend
+            remoteBackend: backend,
+            informationTurnProducer: { remoteIdentity }
         )
 
         // LOCALB B1→B3: the remote-proxy listener reuses the SAME default

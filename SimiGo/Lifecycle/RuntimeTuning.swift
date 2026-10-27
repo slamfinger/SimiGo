@@ -40,13 +40,23 @@ nonisolated enum RuntimeTuning {
 
     /// Route B 前缀池（SIMIGO17_PREFIX_POOL 门，2026-09-27）：跨会话内容寻址
     /// KV 共享——新会话在冷重建前先查共享池，命中则只付 delta。默认开启；
-    /// `SIMIGO_PREFIX_POOL=0` 一键关闭（关闭后行为与 v1.7 完全一致）。
+    /// 默认关闭（owner 裁定 U2，2026-10-27）：持久化 KV 不得成为产品运行的
+    /// 前提。`SIMIGO_PREFIX_POOL=1` 显式开启，仅作为性能对照/研究实验模式。
     static let prefixPoolEnabled =
-        ProcessInfo.processInfo.environment["SIMIGO_PREFIX_POOL"] != "0"
+        ProcessInfo.processInfo.environment["SIMIGO_PREFIX_POOL"] == "1"
 
     /// 前缀池 token 预算（池内 LRU 逐出的记账单位；tokenCount 以消息流
     /// 元素计——每消息 2 元素）。
     static let prefixPoolTokenBudget = 200_000
+
+    /// branch-checkpoints 是可选缓存（2026-10-27 裁定：ES/IS 是语义连续性的
+    /// 唯一权威，持久化 KV 不得成为恢复前提）。`SIMIGO_BRANCH_CHECKPOINTS=0`
+    /// 关闭后：不建目录、不读、不写、不从这些文件恢复；suspend 不再因脏会话
+    /// 无法落盘而拒绝，未结算的在途生成直接丢弃，恢复交给 ES/IS 的已结算
+    /// 锚点与重新执行。默认关闭（owner 裁定 U2，2026-10-27）；
+    /// `SIMIGO_BRANCH_CHECKPOINTS=1` 显式开启，仅作为性能对照/研究实验模式。
+    static let branchCheckpointsEnabled =
+        ProcessInfo.processInfo.environment["SIMIGO_BRANCH_CHECKPOINTS"] == "1"
 
     /// EXP-B（B_HEDGE_SKIP_EXPERIMENT_DESIGN §1，实验）：hedge-skip 开关
     /// 与阈值。缺省关闭 = 实验 A 行为；threshold 仅为实验参数，不进入
