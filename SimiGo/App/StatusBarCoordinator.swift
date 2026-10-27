@@ -77,7 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // roots, external binaries into bin/, full bootstrap, then the
             // /Applications relocation. The wizard drives the bootstrap
             // itself; the background path below runs on every later start.
-            StatusBarCoordinator.shared.openWizardWindow()
+            StatusBarCoordinator.shared.showWizardIfMissingMarker()
         }
         // Autonomous, idempotent bootstrap off the main thread: the graph/
         // schema layer first, then the FULL generation environment (managed
@@ -105,6 +105,7 @@ final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate 
     private var wizardWindowController: NSWindowController?
     private var cancellables: Set<AnyCancellable> = []
     private var popoverClosedAt = Date.distantPast
+    private var autoWizardPrompted = false
 
     private override init() {
         super.init()
@@ -131,7 +132,26 @@ final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate 
                 Task { @MainActor [weak self] in self?.refreshIcon() }
             }
             .store(in: &cancellables)
+
+        // The installer deletes the first-run marker and re-opens the app. If an
+        // older instance was still running, `open` only activated it — that
+        // process had already passed the launch check, so the work-directory
+        // step never appeared (owner 2026-10-26). Re-check on every activation.
+        NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in self?.showWizardIfMissingMarker() }
+            }
+            .store(in: &cancellables)
         refreshIcon()
+    }
+
+    /// Show the first-run wizard when the marker is gone but this session has
+    /// not prompted yet; an already visible wizard is never reset.
+    func showWizardIfMissingMarker() {
+        guard FirstRunWizard.isNeeded(), !autoWizardPrompted else { return }
+        if let window = wizardWindowController?.window, window.isVisible { return }
+        autoWizardPrompted = true
+        openWizardWindow()
     }
 
     // MARK: - Icon
@@ -193,8 +213,9 @@ final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate 
             rootView: FirstRunWizardView()
         ))
         window.title = "SimiGo 安装向导"
-        window.styleMask.remove(.resizable)
-        window.setContentSize(NSSize(width: 520, height: 430))
+        window.styleMask.insert(.resizable)
+        window.setContentSize(NSSize(width: 720, height: 560))
+        window.contentMinSize = NSSize(width: 560, height: 460)
         window.center()
         window.delegate = self
         window.isReleasedWhenClosed = false

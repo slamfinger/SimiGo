@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 import SimiGoRuntimeContract
 
 struct Settings: View {
@@ -7,6 +8,8 @@ struct Settings: View {
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
     @State private var cloudAPIKeyInput = ""
+    @State private var workRoots: [EnvManager.WorkRootEntry] = []
+    @State private var workRootPendingRemoval: EnvManager.WorkRootEntry?
     @State private var informationSpaceStatus = ""
     @State private var informationSpaceBusy = false
 
@@ -20,68 +23,91 @@ struct Settings: View {
     }()
 
 
-    private func engineStageLabel(_ stage: EngineStage) -> String {
-        switch stage {
-        case .absent: return "未检出"
-        case .downloaded: return "已下载（未构建）"
-        case .built: return "已构建（未适配）"
-        case .adapted: return "已适配 · 可用"
+    private func refreshWorkRoots() {
+        workRoots = EnvManager.shared.listWorkRoots()
+    }
+
+    private func addWorkRoot() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let r = EnvManager.shared.registerWorkRoot(url.path)
+        envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))"
+        refreshWorkRoots()
+    }
+
+    private func removeWorkRoot(_ root: EnvManager.WorkRootEntry) {
+        let r = EnvManager.shared.removeWorkRoot(rootID: root.rootID)
+        envMessage = "\(root.path): \(r["status"] ?? "?")"
+        refreshWorkRoots()
+    }
+
+    /// 与首启向导同一张 `roots` 表：这里的 +/− 增减的就是安装时设定的
+    /// 外部工作目录，磁盘文件一律不动。
+    private var workRootsPanel: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("外部工作目录").font(.subheadline)
+                Spacer()
+                Button { addWorkRoot() } label: {
+                    Image(systemName: "plus")
+                }
+                .buttonStyle(.borderless)
+                .help("添加外部工作目录…")
+            }
+            if workRoots.isEmpty {
+                Text("尚未登记工作目录")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                ForEach(workRoots) { root in
+                    HStack(spacing: 6) {
+                        Image(systemName: "folder").font(.system(size: 11))
+                        Text(root.path)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer()
+                        Button { workRootPendingRemoval = root } label: {
+                            Image(systemName: "minus.circle")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("移除（只移除索引，不删除磁盘文件）")
+                    }
+                }
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(6)
+        .alert(
+            "移除工作目录？",
+            isPresented: Binding(
+                get: { workRootPendingRemoval != nil },
+                set: { if !$0 { workRootPendingRemoval = nil } }
+            ),
+            presenting: workRootPendingRemoval
+        ) { root in
+            Button("移除", role: .destructive) { removeWorkRoot(root) }
+            Button("取消", role: .cancel) { workRootPendingRemoval = nil }
+        } message: { root in
+            Text("\(root.path)\n只从数据库移除索引，不会删除磁盘上的文件。")
         }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // MARK: - All Backends
-                sectionBox("生成环境") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Button("添加外部工作目录…") {
-                            let panel = NSOpenPanel()
-                            panel.canChooseFiles = false
-                            panel.canChooseDirectories = true
-                            if panel.runModal() == .OK, let url = panel.url {
-                                let r = EnvManager.shared.registerWorkRoot(url.path)
-                                envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))"
-                            }
-                        }
-                        Button("安装外部二进制（URL）…") {
-                            let alert = NSAlert()
-                            alert.messageText = "安装外部二进制（自动：下载 → bin → 清缓存）"
-                            alert.informativeText = "二进制直链 URL（macOS arm64 Mach-O）："
-                            let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24))
-                            alert.accessoryView = input
-                            alert.addButton(withTitle: "安装")
-                            alert.addButton(withTitle: "取消")
-                            if alert.runModal() == .alertFirstButtonReturn,
-                                let raw = input.stringValue.trimmingCharacters(in: .whitespaces) as String?,
-                                let url = URL(string: raw), url.scheme?.hasPrefix("http") == true
-                            {
-                                Task { @MainActor in
-                                    let r = await EnvManager.shared.installExternalBinary(from: url)
-                                    envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?")"
-                                }
-                            }
-                        }
-                        Button("更新已装二进制（llama.cpp / hf）") {
-                            Task { @MainActor in
-                                let r = await EnvManager.shared.updateInstalledBinaries()
-                                envMessage = r.map { key, value -> String in
-                                    let st = (value as? [String: Any])?["status"] ?? "?"
-                                    return "\(key): \(st)"
-                                }.sorted().joined(separator: "；")
-                            }
-                        }
-                        Button("重新运行安装向导") {
-                            StatusBarCoordinator.shared.openWizardWindow()
-                        }
+                // MARK: - Information Space
+                sectionBox("Information Space（数据库）") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        workRootsPanel
                         if !envMessage.isEmpty {
                             Text(envMessage).font(.caption).foregroundStyle(.secondary)
                         }
-                    }
-                }
-
-                sectionBox("Information Space（数据库）") {
-                    VStack(alignment: .leading, spacing: 8) {
+                        Divider()
                         HStack {
                             Button("刷新状态") { refreshInformationSpace(deep: false) }
                             Button("深度校验") { refreshInformationSpace(deep: true) }
@@ -199,50 +225,6 @@ struct Settings: View {
                     }
                 }
 
-                // MARK: - 外部引擎 · 安装选择
-                sectionBox("外部引擎 · 安装选择") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Picker("引擎", selection: $envMgr.selectedEngineID) {
-                            ForEach(envMgr.availableEngines, id: \.id) { engine in
-                                Text(engine.displayName).tag(engine.id)
-                            }
-                        }
-                        .pickerStyle(.menu)
-
-                        Text("状态：\(engineStageLabel(envMgr.engineStage(for: envMgr.selectedEngineID)))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        Text("下载、构建、与 SimiGo 适配是三个独立状态；外部服务端（如 Ollama / LM Studio / SGLang）由 SimiGo 采用而非构建，llama.cpp 等源码引擎按锁定版本配方构建。")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        // requirement②：选择外部服务端必须真正接入推理，而不只是记录。
-                        // 复用已测的 OpenAI 兼容云端运行时：把采用端点/模型写入并切到「云端」。
-                        if let ep = envMgr.adoptedEndpoint(for: envMgr.selectedEngineID) {
-                            Divider().padding(.vertical, 2)
-                            Text("采用端点：\(ep.baseURL)\(ep.defaultModel.map { " · 默认模型 \($0)" } ?? "")")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Button("采用此外部服务端（填入云端运行时并选为当前后端）") {
-                                _ = envMgr.applyExternalAdoption(of: envMgr.selectedEngineID, to: svc)
-                            }
-                            .buttonStyle(.bordered)
-                            Text("将「云端 API」的 Base URL 指向该本机服务端；到上方『云端 API』点「启动」即经此外部服务端推理（Ollama/LM Studio 均兼容 OpenAI 协议）。")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        } else if envMgr.availableEngines.first(where: { $0.id == envMgr.selectedEngineID })?.kind == .externalServer {
-                            // fail-closed：外部服务端但未声明采用端点（如 SGLang）——绝不臆造 URL。
-                            Text("该外部服务端未声明采用端点（fail-closed）：请在引擎清单 engine-recipes.json 指定 endpointBaseURL 后再采用。")
-                                .font(.caption2)
-                                .foregroundColor(.orange)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                }
-
                 // MARK: - 统一命令控制台
                 sectionBox("统一命令控制台") {
                     VStack(alignment: .leading, spacing: 12) {
@@ -330,7 +312,13 @@ struct Settings: View {
                     .frame(maxWidth: .infinity, alignment: .center)
             }
             .padding()
-            .onAppear { cloudAPIKeyInput = svc.cloudAPIKey }
+            .onAppear {
+                cloudAPIKeyInput = svc.cloudAPIKey
+                refreshWorkRoots()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: EnvManager.workRootsDidChange)) { _ in
+                refreshWorkRoots()
+            }
         }
     }
 

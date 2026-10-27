@@ -30,8 +30,6 @@ struct MenuPanelView: View {
 
             Divider().padding(.vertical, 2)
 
-            Divider().padding(.vertical, 2)
-
             MenuRowButton(
                 title: svc.isRunning ? "启动 / 切换（停止）" : "启动 / 切换",
                 icon: svc.isRunning ? "stop.circle" : "arrow.2.squarepath"
@@ -80,9 +78,9 @@ struct MenuPanelView: View {
                 ) {
                     restartService()
                 }
-            }
 
-            Divider().padding(.vertical, 2)
+                Divider().padding(.vertical, 2)
+            }
 
             MenuRowButton(
                 title: "选择模型...",
@@ -99,10 +97,6 @@ struct MenuPanelView: View {
             Divider().padding(.vertical, 2)
 
             MenuRowButton(title: "设置...", icon: "gearshape") {
-                StatusBarCoordinator.shared.openSettingsWindow()
-            }
-
-            MenuRowButton(title: "Information Space（数据库）...", icon: "cylinder.split.1x2") {
                 StatusBarCoordinator.shared.openSettingsWindow()
             }
 

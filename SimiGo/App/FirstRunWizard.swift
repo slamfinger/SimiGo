@@ -82,6 +82,7 @@ enum FirstRunWizard {
 
 struct FirstRunWizardView: View {
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var envMgr = EnvManager.shared
 
     @State private var step = 0
     @State private var workRoots: [String] = []
@@ -103,7 +104,7 @@ struct FirstRunWizardView: View {
             }
         }
         .padding(20)
-        .frame(width: 520, height: 430)
+        .frame(minWidth: 560, idealWidth: 720, minHeight: 460, idealHeight: 600)
     }
 
     private var header: some View {
@@ -143,7 +144,7 @@ struct FirstRunWizardView: View {
     private var workRootStep: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("选择外部工作目录").font(.headline)
-            Text("Execution State / Information Space 的数据入库范围（可多次添加；之后菜单栏也可追加）")
+            Text("Execution State / Information Space 的数据入库范围（安装后可在“设置 → Information Space”中增减）")
                 .font(.caption).foregroundStyle(.secondary)
             VStack(alignment: .leading) {
                 if workRoots.isEmpty {
@@ -167,7 +168,7 @@ struct FirstRunWizardView: View {
             .padding(8).frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
             .background(Color(nsColor: .controlBackgroundColor)).cornerRadius(6)
             HStack {
-                Button("再选一个…") { pickAnother() }
+                Button(workRoots.isEmpty ? "选择目录…" : "再选一个…") { pickAnother() }
                 Spacer()
                 Button("跳过") { step = 2 }
                 Button("下一步") { step = 2 }.keyboardShortcut(.defaultAction)
@@ -179,6 +180,10 @@ struct FirstRunWizardView: View {
             if workRoots.isEmpty {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     NSApp.activate(ignoringOtherApps: true)
+                    // 面板必须以本向导为前台窗口：菜单栏常驻 App 被安装器
+                    // 激活时，runModal 可能落在其他窗口之后（owner 2026-10-26
+                    // 首装"工作目录界面未弹出"）。
+                    NSApp.keyWindow?.makeKeyAndOrderFront(nil)
                     pickAnother()
                 }
             }
@@ -206,12 +211,26 @@ struct FirstRunWizardView: View {
     private var binaryStep: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("外部二进制（引擎适配清单）").font(.headline)
-            Text("勾选要自动安装的引擎（自动下载/构建 → 移入 ~/.simigo/bin → 清理缓存）。适配一个即在此新增一个。")
+            Text("勾选要自动安装的引擎（自动下载/构建 → 移入 ~/.simigo/bin → 清理缓存）；hf 默认随生成环境安装。")
                 .font(.caption).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(engineRecipes, id: \.id) { recipe in
                     engineRow(recipe)
                 }
+                Divider()
+                // hf 是默认组件而非可选引擎：模型下载工具随生成环境一起装。
+                HStack {
+                    Image(systemName: "arrow.down.circle").foregroundStyle(.purple)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("huggingface-cli（hf）").font(.body.weight(.medium))
+                        Text("默认安装（模型下载工具 → ~/.simigo/bin/hf）")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Label("默认", systemImage: "checkmark.circle.fill")
+                        .font(.caption2).foregroundStyle(.green)
+                }
+                .padding(.vertical, 2)
             }
             .padding(8).frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
             .background(Color(nsColor: .controlBackgroundColor)).cornerRadius(6)
@@ -283,16 +302,38 @@ struct FirstRunWizardView: View {
 
     private var runStep: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("安装执行").font(.headline)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 3) {
-                    if runLog.isEmpty {
-                        Text("…").foregroundStyle(.secondary)
+            HStack {
+                Text("安装执行").font(.headline)
+                if isRunning { ProgressView().controlSize(.small) }
+                Spacer()
+                Text(envMgr.commandStatus).font(.caption).foregroundStyle(.secondary)
+            }
+            // Live console: setupEnvironment streams progress into commandLog,
+            // and showing only runLog made a long build look like "无进展".
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 3) {
+                        ForEach(Array(runLog.enumerated()), id: \.offset) { _, line in
+                            Text(line).font(.system(size: 11, design: .monospaced))
+                        }
+                        if !envMgr.commandLog.isEmpty {
+                            Divider().padding(.vertical, 4)
+                            ForEach(
+                                Array(envMgr.commandLog.split(separator: "\n").enumerated()),
+                                id: \.offset
+                            ) { _, line in
+                                Text(String(line))
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        Color.clear.frame(height: 1).id("console-bottom")
                     }
-                    ForEach(Array(runLog.enumerated()), id: \.offset) { _, line in
-                        Text(line).font(.system(size: 11, design: .monospaced))
-                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .onChange(of: envMgr.commandLog) { proxy.scrollTo("console-bottom", anchor: .bottom) }
+                .onChange(of: runLog) { proxy.scrollTo("console-bottom", anchor: .bottom) }
             }
             .frame(maxHeight: .infinity)
             .border(Color.secondary.opacity(0.3))
@@ -379,6 +420,9 @@ struct FirstRunWizardView: View {
         isRunning = true
         defer { isRunning = false }
 
+        log("== 默认组件（hf）==")
+        let hf = await EnvManager.shared.bootstrapHFTool()
+        log("hf: \(hf["status"] ?? "?") \(hf["path"] ?? hf["detail"] ?? "")")
         log("== 外部二进制（引擎适配清单自动安装）==")
         for engineID in selectedEngines.sorted() {
             let previous = EnvManager.shared.selectedEngineID
@@ -402,12 +446,12 @@ struct FirstRunWizardView: View {
                 log("\(key): \(v["status"] ?? v["ceremony"] ?? "?")")
             }
         }
-        FirstRunWizard.markDone(workRoots: workRoots, binaries: selectedEngines.sorted())
+        FirstRunWizard.markDone(workRoots: workRoots, binaries: selectedEngines.sorted() + ["hf"])
         log("== 完成 ==")
     }
 
     private func finish() {
-        FirstRunWizard.markDone(workRoots: workRoots, binaries: selectedEngines.sorted())
+        FirstRunWizard.markDone(workRoots: workRoots, binaries: selectedEngines.sorted() + ["hf"])
         _ = finishAndClose()
     }
 

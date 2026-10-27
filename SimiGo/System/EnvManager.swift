@@ -458,43 +458,95 @@ public final class EnvManager: ObservableObject {
 
     // MARK: - Generation environment bootstrap (env-bootstrap entry)
 
-    /// Provision the `hf` CLI into the managed bin.
+    /// Provision the `hf` CLI into the managed bin. hf is a DEFAULT part of the
+    /// generation environment (the model-download tool), not an opt-in engine.
     ///
-    /// Discovery order: an already usable `hf` (PATH or managed bin) is adopted
-    /// as-is; otherwise Homebrew (a package manager, never `curl | bash`) is
-    /// used to install the official `huggingface-cli`, and the binary is
-    /// linked into `~/.simigo/bin`. Without Homebrew the step reports
-    /// `manual_required` with instructions instead of failing the bootstrap.
+    /// Order: an already usable `hf` is adopted and linked into `~/.simigo/bin`;
+    /// otherwise a package manager installs the official CLI (Homebrew, or a
+    /// managed virtualenv when Homebrew is absent) — never `curl | bash`. Only
+    /// when no installer exists does the step report `manual_required`.
     public func bootstrapHFTool() async -> [String: Any] {
         let fm = FileManager.default
         let binTarget = Self.binDir + "/hf"
-        if let existing = Self.findTool("hf") {
+        if let existing = Self.findHFTool(), existing != binTarget {
+            // Adopt, but still expose it in the managed bin so the installed
+            // environment is self-describing (owner 2026-10-26: hf 默认安装).
+            if Self.linkHFTool(existing, at: binTarget) {
+                return ["status": "already_present", "path": binTarget, "target": existing]
+            }
             return ["status": "already_present", "path": existing]
         }
         if fm.fileExists(atPath: binTarget) && fm.isExecutableFile(atPath: binTarget) {
             return ["status": "already_present", "path": binTarget]
         }
-        guard let brew = Self.findTool("brew") else {
-            return [
-                "status": "manual_required",
-                "detail": "未找到 hf 且未安装 Homebrew：请安装官方 huggingface-cli 后重跑（禁止 curl | bash）",
-            ]
-        }
-        do {
-            appendCommandLog("📦 通过 Homebrew 安装官方 huggingface-cli …")
-            try await runCommand(brew, args: ["install", "huggingface-cli"])
-            // Locate the installed binary via brew's own prefix resolution.
-            let prefix = try await Self.captureCommand(brew, args: ["--prefix", "huggingface-cli"])
-            let candidate = (prefix as NSString).appendingPathComponent("/bin/hf")
-            guard fm.fileExists(atPath: candidate) else {
-                return ["status": "install_bin_missing", "detail": "brew 安装完成但未找到 \(candidate)"]
+        if let brew = Self.findTool("brew") {
+            do {
+                appendCommandLog("📦 通过 Homebrew 安装官方 huggingface-cli …")
+                try await runCommand(brew, args: ["install", "huggingface-cli"])
+                // Locate the installed binary via brew's own prefix resolution.
+                let prefix = try await Self.captureCommand(brew, args: ["--prefix", "huggingface-cli"])
+                // Newer releases ship `hf`; older ones only `huggingface-cli`.
+                let candidates = ["/bin/hf", "/bin/huggingface-cli"].map {
+                    (prefix as NSString).appendingPathComponent($0)
+                }
+                guard let candidate = candidates.first(where: { fm.isExecutableFile(atPath: $0) }),
+                    Self.linkHFTool(candidate, at: binTarget)
+                else {
+                    return ["status": "install_bin_missing", "detail": "brew 安装完成但未找到 hf（\(prefix)/bin）"]
+                }
+                return ["status": "installed", "path": binTarget, "target": candidate]
+            } catch {
+                return ["status": "install_failed", "detail": error.localizedDescription]
             }
-            try? fm.removeItem(atPath: binTarget)
-            try fm.createSymbolicLink(atPath: binTarget, withDestinationPath: candidate)
-            try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: binTarget)
-            return ["status": "installed", "path": binTarget, "target": candidate]
+        }
+        // No Homebrew: a managed virtualenv is still a package-manager install
+        // (PyPI), so "hf installed by default" holds without enabling curl|bash.
+        if let python = Self.findTool("python3") {
+            let venv = Self.binDir + "/.hf-venv"
+            do {
+                appendCommandLog("🐍 未找到 Homebrew，改用受管虚拟环境安装 huggingface_hub[cli] …")
+                try fm.createDirectory(atPath: Self.binDir, withIntermediateDirectories: true)
+                if !fm.fileExists(atPath: venv) {
+                    try await runCommand(python, args: ["-m", "venv", venv])
+                }
+                try await runCommand(venv + "/bin/python3", args: [
+                    "-m", "pip", "install", "--upgrade", "--quiet", "huggingface_hub[cli]",
+                ])
+                let candidates = [venv + "/bin/hf", venv + "/bin/huggingface-cli"]
+                guard let candidate = candidates.first(where: { fm.isExecutableFile(atPath: $0) }),
+                    Self.linkHFTool(candidate, at: binTarget)
+                else {
+                    return ["status": "install_bin_missing", "detail": "pip 安装完成但未找到 hf（\(venv)/bin）"]
+                }
+                return ["status": "installed", "path": binTarget, "target": candidate]
+            } catch {
+                return ["status": "install_failed", "detail": error.localizedDescription]
+            }
+        }
+        return [
+            "status": "manual_required",
+            "detail": "未找到 hf，且 Homebrew 与 python3 均不可用：请安装其一的官方包管理器后重跑（禁止 curl | bash）",
+        ]
+    }
+
+    /// Newer `huggingface_hub` releases ship `hf`, older ones only
+    /// `huggingface-cli`; both are the same CLI for our purposes.
+    private static func findHFTool() -> String? {
+        findTool("hf") ?? findTool("huggingface-cli")
+    }
+
+    /// Point `~/.simigo/bin/hf` at the resolved CLI without copying it.
+    private static func linkHFTool(_ source: String, at target: String) -> Bool {
+        let fm = FileManager.default
+        let dir = (target as NSString).deletingLastPathComponent
+        guard (try? fm.createDirectory(atPath: dir, withIntermediateDirectories: true)) != nil
+        else { return false }
+        try? fm.removeItem(atPath: target)
+        do {
+            try fm.createSymbolicLink(atPath: target, withDestinationPath: source)
+            return true
         } catch {
-            return ["status": "install_failed", "detail": error.localizedDescription]
+            return false
         }
     }
 
@@ -522,10 +574,12 @@ public final class EnvManager: ObservableObject {
                 try db.upsertRoot(
                     rootID: rootID, category: "work",
                     displayName: standardized, locatorType: "path", status: "registered")
-                // Registration settles content into the IS carrier so a later
-                // execution period can reuse it without re-reading the disk.
+                // Registration settles content into the IS carrier as a
+                // locator + digest index: the physical files stay the single
+                // copy of their own bytes.
                 let settle = try db.settleWorkRootContents(
-                    rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
+                    rootID: rootID, rootURL: URL(fileURLWithPath: standardized),
+                    carryText: false)
                 report["work_root"] = [
                     "root_id": rootID,
                     "path": standardized,
@@ -593,7 +647,11 @@ public final class EnvManager: ObservableObject {
         // 0) Version-locked engine manifest (operator manifest wins; the
         //    default pins llama.cpp to the validated commit).
         report["engine_manifest"] = ensureDefaultEngineManifest()
-        // 1) Directory tree + llama.cpp (reuses the shipped, version-locked
+        // 1) hf CLI first: it is a small default component, and putting it
+        //    behind a multi-minute llama.cpp build made a fresh install look
+        //    like hf was never provisioned (owner 2026-10-26).
+        report["hf"] = await bootstrapHFTool()
+        // 2) Directory tree + llama.cpp (reuses the shipped, version-locked
         //    recipe path incl. cache pruning).
         let previousEngine = selectedEngineID
         selectedEngineID = "llama.cpp"
@@ -603,8 +661,6 @@ public final class EnvManager: ObservableObject {
             "status": commandStatus,
             "llama_server": Self.llamaServerExecutable,
         ]
-        // 2) hf CLI.
-        report["hf"] = await bootstrapHFTool()
         // 3) Fresh ES/IS database + work root.
         report["database"] = bootstrapFreshDatabase(workRoot: workRoot)
         // 4) LOCALB operational status against the SAME managed root the
@@ -639,20 +695,26 @@ public final class EnvManager: ObservableObject {
         let cacheDir = SimiGoPaths.staging
         let tmp = cacheDir.appendingPathComponent("dl-\(UUID().uuidString)-\(name)")
         let fm = FileManager.default
+        binaryInstallProgress = 0
+        binaryInstallMessage = "连接 \(url.host ?? url.absoluteString)…"
+        defer { binaryInstallProgress = nil }
         do {
             try fm.createDirectory(at: cacheDir, withIntermediateDirectories: true)
-            let (data, response) = try await URLSession.shared.data(from: url)
-            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                return ["status": "download_failed", "detail": "HTTP \(http.statusCode)"]
+            let bytes = try await BinaryDownloader.download(from: url, to: tmp) { [weak self] written, expected in
+                Task { @MainActor in
+                    self?.reportBinaryDownload(written: written, expected: expected, name: name)
+                }
             }
-            try data.write(to: tmp)
+            binaryInstallProgress = 1
+            binaryInstallMessage = "校验 \(name) 的 Mach-O 头…"
             // executable check: Mach-O magic (MH_MAGIC_64 / FAT)
-            let magic = data.prefix(4)
+            let magic = try Data(contentsOf: tmp, options: [.mappedIfSafe]).prefix(4)
             let isMachO = magic == Data([0xCF, 0xFA, 0xED, 0xFE])
                 || magic == Data([0xCA, 0xFE, 0xBA, 0xBE])
                 || magic == Data([0xFE, 0xED, 0xFA, 0xCF])
             guard isMachO else {
                 try? fm.removeItem(at: tmp)
+                binaryInstallMessage = "\(name) 不是 Mach-O 可执行文件"
                 return ["status": "not_executable", "detail": "\(name) is not a Mach-O binary"]
             }
             let target = SimiGoPaths.bin.appendingPathComponent(name)
@@ -660,11 +722,33 @@ public final class EnvManager: ObservableObject {
             if fm.fileExists(atPath: target.path) { try fm.removeItem(at: target) }
             try fm.moveItem(at: tmp, to: target)
             try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
-            return ["status": "installed", "path": target.path, "bytes": data.count]
+            binaryInstallMessage = "已安装 \(target.path)（\(Self.byteText(bytes))）"
+            return ["status": "installed", "path": target.path, "bytes": bytes]
         } catch {
             try? fm.removeItem(at: tmp)  // cache cleanup even on failure
+            binaryInstallMessage = "安装失败：\(error.localizedDescription)"
             return ["status": "failed", "detail": error.localizedDescription]
         }
+    }
+
+    /// nil = idle; 0…1 while a URL install is in flight. The old alert gave no
+    /// signal at all, so a multi-hundred-MB download looked like a no-op.
+    @Published public var binaryInstallProgress: Double?
+    @Published public var binaryInstallMessage = ""
+
+    private func reportBinaryDownload(written: Int64, expected: Int64, name: String) {
+        guard expected > 0 else {
+            binaryInstallMessage = "下载 \(name)：\(Self.byteText(written))"
+            return
+        }
+        let fraction = min(1, Double(written) / Double(expected))
+        binaryInstallProgress = fraction
+        binaryInstallMessage =
+            "下载 \(name)：\(Self.byteText(written)) / \(Self.byteText(expected))（\(Int(fraction * 100))%）"
+    }
+
+    private static func byteText(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
     /// Update every installable binary in the managed bin (menu entry):
@@ -729,6 +813,45 @@ public final class EnvManager: ObservableObject {
         }
     }
 
+    public struct WorkRootEntry: Identifiable, Equatable, Sendable {
+        public let rootID: String
+        public let path: String
+        public var id: String { rootID }
+    }
+
+    /// Posted after a work root is registered or removed so the install
+    /// wizard and Settings render the SAME list (one `roots` table).
+    public static let workRootsDidChange = Notification.Name("SimiGoWorkRootsDidChange")
+
+    /// Registered external work roots, read from the authoritative database.
+    public func listWorkRoots() -> [WorkRootEntry] {
+        do {
+            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            return try db.listRoots(category: "work").compactMap { row in
+                guard let path = row.displayName, row.locatorType == "path" else { return nil }
+                return WorkRootEntry(rootID: row.rootID, path: path)
+            }
+        } catch {
+            return []
+        }
+    }
+
+    /// Unregister a work root; its indexed rows cascade, the directory on
+    /// disk is never touched.
+    @discardableResult
+    public func removeWorkRoot(rootID: String) -> [String: Any] {
+        do {
+            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            try db.removeRoot(rootID: rootID)
+            NotificationCenter.default.post(name: Self.workRootsDidChange, object: nil)
+            return ["status": "removed", "root_id": rootID]
+        } catch {
+            return ["status": "failed", "detail": error.localizedDescription]
+        }
+    }
+
     /// Register an external work root in the authoritative database
     /// (shared by the first-run wizard and the menu entry).
     @discardableResult
@@ -747,9 +870,11 @@ public final class EnvManager: ObservableObject {
             try db.upsertRoot(
                 rootID: rootID, category: "work", displayName: standardized,
                 locatorType: "path", status: "registered")
-            // 注册即结算：索引执行的结果（路径+摘要+文本内容）按 Δ 落库
+            // 注册即结算：按路径+摘要建立物理索引，不拷贝文件内容
             let settle = try db.settleWorkRootContents(
-                rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
+                rootID: rootID, rootURL: URL(fileURLWithPath: standardized),
+                carryText: false)
+            NotificationCenter.default.post(name: Self.workRootsDidChange, object: nil)
             return [
                 "status": "registered", "root_id": rootID, "path": standardized,
                 "content_settle": [
@@ -1095,5 +1220,82 @@ public final class EnvManager: ObservableObject {
                 continuation.resume(throwing: error)
             }
         }
+    }
+}
+
+/// Streams a binary to disk while reporting progress. `URLSession.data(from:)`
+/// buffered the whole executable in memory and exposed no progress at all.
+private final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+    private let destination: URL
+    private let progress: @Sendable (Int64, Int64) -> Void
+    private var continuation: CheckedContinuation<Int64, Error>?
+    private var session: URLSession?
+    private var settled = false
+
+    private init(destination: URL, progress: @escaping @Sendable (Int64, Int64) -> Void) {
+        self.destination = destination
+        self.progress = progress
+        super.init()
+    }
+
+    static func download(
+        from url: URL, to destination: URL,
+        progress: @escaping @Sendable (Int64, Int64) -> Void
+    ) async throws -> Int64 {
+        try await BinaryDownloader(destination: destination, progress: progress).run(url: url)
+    }
+
+    private func run(url: URL) async throws -> Int64 {
+        try await withCheckedThrowingContinuation { continuation in
+            self.continuation = continuation
+            let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+            self.session = session
+            session.downloadTask(with: url).resume()
+        }
+    }
+
+    func urlSession(
+        _ session: URLSession, downloadTask: URLSessionDownloadTask,
+        didWriteData bytesWritten: Int64, totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
+        progress(totalBytesWritten, totalBytesExpectedToWrite)
+    }
+
+    func urlSession(
+        _ session: URLSession, downloadTask: URLSessionDownloadTask,
+        didFinishDownloadingTo location: URL
+    ) {
+        if let http = downloadTask.response as? HTTPURLResponse,
+            !(200...299).contains(http.statusCode)
+        {
+            settle(.failure(NSError(
+                domain: "EnvManager", code: http.statusCode,
+                userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode)"])))
+            return
+        }
+        // The delegate's temp file is deleted when this returns; move it now.
+        do {
+            let fm = FileManager.default
+            try? fm.removeItem(at: destination)
+            try fm.moveItem(at: location, to: destination)
+            let size = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            settle(.success(Int64(size)))
+        } catch {
+            settle(.failure(error))
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error { settle(.failure(error)) }
+    }
+
+    private func settle(_ result: Result<Int64, Error>) {
+        guard !settled else { return }
+        settled = true
+        session?.invalidateAndCancel()
+        session = nil
+        continuation?.resume(with: result)
+        continuation = nil
     }
 }
