@@ -1,0 +1,4 @@
+[K3 17:46:05] phase c pid=['74450'] session=k3-source-20261027-174605
+[K3 17:46:08] source-chat-generation-k3 -> 200 2.273s gen=3 kv=2
+[K3 17:46:10] source settlement 44D692B6-1846-468C-93E5-8E7542B16DF0 value='k3-SETTLED-20261027-174605'
+[K3 17:46:12] phase c checks 7/7 failures=[] partial='INT-A01-202'

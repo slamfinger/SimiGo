@@ -1,0 +1,340 @@
+{
+ "nonce": "20261026-190618",
+ "events": [],
+ "identity": {
+  "commit": "97043902075b67eb1693749fd6ed50421eccf3ba",
+  "dirty_files": 24,
+  "dirty_digest": "90ca17817406e6f8",
+  "binary_sha256": "4f82de1c588d79a93d9bbeb7d0479cda3f9faf70a652779568e4c13cc184a1c9",
+  "plist": {
+   "CFBundleShortVersionString": "2.2.0",
+   "CFBundleVersion": "26",
+   "CFBundleIdentifier": "SwiftUI.SimiGo"
+  },
+  "models_http": 200,
+  "model": {
+   "runtime": {
+    "constraints": [
+     "serializeGeneration=true：并发生成跨 session 单飞（qwen3_5_moe 编译锁互堵缓解，2026-09-11 实测）"
+    ],
+    "cacheInvalidation": "kvFingerprint mismatch → 旧缓存失效，全量 prefill",
+    "concurrency": "global single-flight (serializeGeneration=true)"
+   },
+   "protocolEndpoints": {
+    "textCompletions": "supported",
+    "responses": "supported",
+    "chatCompletions": "supported"
+   },
+   "backend": "NativeMLX",
+   "architecture": "qwen3_5_moe",
+   "owned_by": "simigo",
+   "created": 1793012778,
+   "id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+   "capabilities": {
+    "reasoning": "unverified",
+    "chat": "supported",
+    "streaming": "supported",
+    "vision": "unsupported",
+    "toolCalling": "supported",
+    "structuredOutput": "unverified"
+   },
+   "object": "model"
+  },
+  "latest_binding": [
+   {
+    "binding_id": 12,
+    "settlement_id": "7F55A125-51F3-44DF-B8D9-E8117FCCE765",
+    "name": "producer.tokenizer_identity",
+    "value_digest": "1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71",
+    "source_root_id": null,
+    "source_file_id": null
+   }
+  ],
+  "is_status_http": 200,
+  "is_status": {
+   "schema_version": 10,
+   "unaddressed_chat_messages": 0,
+   "unaddressed_retrieval_results": 0,
+   "dependency_entries": 5582,
+   "settlement_summaries": 6,
+   "unaddressed_file_contents": 0,
+   "object_count": 478,
+   "dangling_references": 0,
+   "deep_verified": false,
+   "object_bytes": 1853283,
+   "corrupt_objects": 0,
+   "unaddressed_settlements": 0,
+   "index_entries": 624,
+   "inline_legacy_payloads": 0
+  }
+ },
+ "es_records": {
+  "states": [
+   {
+    "state_id": "chat-5809b828-f2a1-4177-8573-c3499b5f7fcf",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "lifecycle": "active",
+    "anchor": "7882f1969c4275cf30a90262c8f5454ea29638245a6aa2e489949aaf10644d5e",
+    "continuation_id": "DFC442E3-0CB8-41C0-81BA-5E9E6F2C6034"
+   },
+   {
+    "state_id": "chat-0f154f2d-f774-45b0-8af8-23f95502746c",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "lifecycle": "active",
+    "anchor": "6e9ab50b2138ff2c1b13f949935f6e34524c2375940873d7ec6ff877678fe7ec",
+    "continuation_id": "34BF2DA9-FCBB-4461-80E2-0EB979D0B7DB"
+   },
+   {
+    "state_id": "chat-b93269b4-4d7f-4168-8405-9f42edc3b740",
+    "parent_id": "chat-d259f50a-6b69-4833-b948-5588f3320a98",
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "lifecycle": "active",
+    "anchor": "9de6b1948a2c87a1ab3edbdd2f7621c6bf21411059019c6f9509a5be1181b4a6",
+    "continuation_id": "F2D4F362-9847-4B13-B19E-CFA310093EDD"
+   }
+  ],
+  "settlements": [
+   {
+    "settlement_id": "7F55A125-51F3-44DF-B8D9-E8117FCCE765",
+    "state_id": "chat-5809b828-f2a1-4177-8573-c3499b5f7fcf",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "payload_digest": "7882f1969c4275cf30a90262c8f5454ea29638245a6aa2e489949aaf10644d5e",
+    "payload_object_id": "7882f1969c4275cf30a90262c8f5454ea29638245a6aa2e489949aaf10644d5e",
+    "contract_version": "simigo.result-contract/v1",
+    "settled_at": "814705537.635149"
+   },
+   {
+    "settlement_id": "is-retrieval:c3cc139ea80f93acc5c27fa996946d841f2159165c4313310baf990b9505119b",
+    "state_id": null,
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "payload_digest": "89b1de31f95b6406b2ee7c6d44580018e31f0c984fbee7e262734e7325a5298c",
+    "payload_object_id": "89b1de31f95b6406b2ee7c6d44580018e31f0c984fbee7e262734e7325a5298c",
+    "contract_version": "simigo.is-retrieval/v1",
+    "settled_at": "814705529.31949306"
+   },
+   {
+    "settlement_id": "is-retrieval:07f83170a3a3d5581ede79a68294a4e13d202f00cdbde30b83f5c9c1b992bb4c",
+    "state_id": null,
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "payload_digest": "437d630cc085073b930b90f904c49d5d9c493881e3d8e4275d457ad22393c22e",
+    "payload_object_id": "437d630cc085073b930b90f904c49d5d9c493881e3d8e4275d457ad22393c22e",
+    "contract_version": "simigo.is-retrieval/v1",
+    "settled_at": "814705274.09014595"
+   }
+  ],
+  "bindings": [
+   {
+    "binding_id": 12,
+    "settlement_id": "7F55A125-51F3-44DF-B8D9-E8117FCCE765",
+    "name": "producer.tokenizer_identity",
+    "value_digest": "1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71",
+    "source_root_id": null,
+    "source_file_id": null
+   },
+   {
+    "binding_id": 11,
+    "settlement_id": "7F55A125-51F3-44DF-B8D9-E8117FCCE765",
+    "name": "producer.model_identity",
+    "value_digest": "0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53",
+    "source_root_id": null,
+    "source_file_id": null
+   },
+   {
+    "binding_id": 10,
+    "settlement_id": "A534040F-BC01-4122-8057-A8D777F7FAE8",
+    "name": "producer.tokenizer_identity",
+    "value_digest": "1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71",
+    "source_root_id": null,
+    "source_file_id": null
+   },
+   {
+    "binding_id": 9,
+    "settlement_id": "A534040F-BC01-4122-8057-A8D777F7FAE8",
+    "name": "producer.model_identity",
+    "value_digest": "0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53",
+    "source_root_id": null,
+    "source_file_id": null
+   }
+  ],
+  "advancements": [
+   {
+    "advancement_id": "926FC8C2-AC0B-4947-A7DA-46870BD39341",
+    "demand_id": "c3cc139ea80f93acc5c27fa996946d841f2159165c4313310baf990b9505119b",
+    "state_id": "chat-5809b828-f2a1-4177-8573-c3499b5f7fcf",
+    "settlement_id": "7F55A125-51F3-44DF-B8D9-E8117FCCE765",
+    "retrieval_settlement_id": "is-retrieval:c3cc139ea80f93acc5c27fa996946d841f2159165c4313310baf990b9505119b",
+    "actions_json": "[\"chat.completion\"]"
+   },
+   {
+    "advancement_id": "039129F5-857A-4F2C-9B34-E1B30DCD1EC1",
+    "demand_id": "7261493fed2305e4eab46c281b2f14e4a4173f0d9a2372b17fd81142ac779770",
+    "state_id": "chat-0f154f2d-f774-45b0-8af8-23f95502746c",
+    "settlement_id": "A534040F-BC01-4122-8057-A8D777F7FAE8",
+    "retrieval_settlement_id": "is-retrieval:7261493fed2305e4eab46c281b2f14e4a4173f0d9a2372b17fd81142ac779770",
+    "actions_json": "[\"chat.completion\"]"
+   },
+   {
+    "advancement_id": "EC0B93A8-8D76-4C93-9FFF-EECF06E5EB29",
+    "demand_id": "92ce260e93ce1edcb4f4816ef8361e6ae696ccd1a202b4d076d932695cbd6434",
+    "state_id": "chat-b93269b4-4d7f-4168-8405-9f42edc3b740",
+    "settlement_id": "1CAFA7CC-A4BE-45A7-9F0F-5B188A50CA52",
+    "retrieval_settlement_id": "is-retrieval:92ce260e93ce1edcb4f4816ef8361e6ae696ccd1a202b4d076d932695cbd6434",
+    "actions_json": "[\"chat.completion\"]"
+   }
+  ],
+  "summaries": [
+   {
+    "settlement_id": "7F55A125-51F3-44DF-B8D9-E8117FCCE765",
+    "session_id": "exp-20261026-190528-es1",
+    "query": "下面是一张表：\n第1行 编号7 权重13 记录911\n第2行 编号14 权重26 记录1822\n第3行 编号21 权重39 记录2733\n第4行 编号28 权重52 记录3644\n第5行 编号35 权重12 记录4555\n第6行 编号42 权重25 记录5466\n第7行 编号49 权重38 记录6377\n第8行 编号56 权重51 记录7288\n第9行 编号63 权重11 记录8199\n第10行 编号70 权重24 记录9110\n第11行 编号77 权重37 记录14\n第12行 编号84 权重50 记录925\n第13行 编号91 权重10 记录1836\n第14行 编号1 权重23 记录2747\n第15行 编号8 权重36 记录3658\n第16行 编号15 权重49 记录4569\n第17行 编号22 权重9 记录5480\n第18行 编号29 权重22 记录6391\n第19行 编号36 权重35 记录7302\n第20行 编号43 权重48 记录8213\n第21行 编号50 权重8 记录9124\n第22行 编号57 权重21 记录28\n第23行 编号64 权重34 记录939\n第24行 编号71 权重47 记录1850\n第25行 编号78 权重7 记录2761\n第26行 编号85 权重20 记录3672\n第27行 编号92 权重33 记录4583\n第28行 编号2 权重46 记录5494\n第29行 编号9 权重6 记录6405\n第30行 编号16 权重19 记录7316\n第31行 编号23 权重32 记录8227\n第32行 编号30 权重45 记录9138\n第33行 编号37 权重5 记录42\n第34行 编号44 权重18 记录953\n第35行 编号51 权重31 记录1864\n第36行 编号58 权重44 记录2775\n第37行 编号65 权重4 记录3686\n第38行 编号72 权重17 记录4597\n第39行 编号79 权重30 记录5508\n第40行 编号86 权重43 记录6419\n\n请先逐行核对，再给出：编号为奇数的行的权重之和，以及记录列中出现次数最多的数的前三位数字。结论请明确写出这两个数值。",
+    "summary": "编号为奇数的行的权重之和为279，记录列中出现次数最多的数的前三位数字是273。",
+    "summary_object_id": "25d144f56038b4d9d4ec1a3353b833b9e20fcc7c8f694b14e75c4a5eecb160d4"
+   },
+   {
+    "settlement_id": "A534040F-BC01-4122-8057-A8D777F7FAE8",
+    "session_id": "info-4c54a669a15ad124e87387f57a8a7f2e",
+    "query": "User: 你好\n\nAssistant: Unable to connect to the service, or the connection was interrupted. Check your network, VPN, or proxy, then try again.\n\nUser: 你好\n\nAssistant: Unable to connect to the service, or the connection was interrupted. Check your network, VPN, or proxy, then try again.\n\nUser: nih\n\nUser: nih\n\nUser: nih\n\nAssistant: 你好！有什么可以帮你的？\n\nUser: 信息空间里跟分包管理有关的内容\n\nAssistant: Grep for 分包/拆包/子包/分箱 in the working tree and check for any related knowledge entries.\n\nAssistant: 当前工作区里没有任何与\"分包管理\"相关的内容： - 代码/文本文件中不存在\"分包\"\"拆包\"\"子包\"\"分箱\"等关键词 - 项目知识库尚未生成，也没有相关条目\n\nUser: 你好\n\nAssistant: 你好！有什么需要帮忙的？\n\nUser: 查看数据库里分包管理相关的内容\n\nTool mcp_list: {\"includeDescription\":true,\"keyword\":\"database\"} -> ok; result: {\"tools\":[{\"name\":\"mcp__plugin_sites_qoder_sites__query_database_rows\",\"descript [...middle truncated...] ts must match. See sites-hosting Recovery for upgrading old calls.\"}],\"total\":10}\n\nTool mcp_call: {\"arguments\":{},\"toolName\":\"mcp__plugin_sites_qoder_sites__get_database_schema\"} -> error; result: Error: get_database_schema (plugin:sites:qoder_sites MCP Server) tool parameter validation failed: params must have required property 'siteId'\n\nAssistant: 需要先找到站点 ID，让我列出站点。\n\nTool mcp_call: {\"toolName\":\"mcp__plugin_sites_qoder_sites__list_sites\",\"arguments\":{}} -> ok; result: {\"scope\":\"owned\",\"pages\":{\"next_page\":0,\"total_size\":0},\"projects\":[]}\n\nAssistant: 当前账号下没有已注册的站点，因此也没有关联的数据库可以查询。如果你有一个 Qoder Site 或数据库需要查看，请提供站点 ID 或告诉我具体是哪个项目/数据库。",
+    "summary": "provide a site id or project name",
+    "summary_object_id": "d3eb54d60c2feaede43e92a2c4e046cb0a32188510c543cefa6dc3865cf8314b"
+   },
+   {
+    "settlement_id": "1CAFA7CC-A4BE-45A7-9F0F-5B188A50CA52",
+    "session_id": "info-bbf06cccb0f7aa63d175ab8b8fe887c1",
+    "query": "查看数据库里分包管理相关的内容",
+    "summary": "当前账号下没有已注册的站点，因此也没有关联的数据库可以查询。如果你有一个 Qoder Site 或数据库需要查看，请提供",
+    "summary_object_id": "9180f656dd3a1da9cfdd1c2dcb696dee95643166b09bbabbc743dd04c460d0e5"
+   }
+  ],
+  "demands": [
+   {
+    "demand_id": "c3cc139ea80f93acc5c27fa996946d841f2159165c4313310baf990b9505119b",
+    "state_id": null,
+    "session_id": "exp-20261026-190528-es1",
+    "state": "ADVANCED",
+    "retrieval_settlement_id": "is-retrieval:c3cc139ea80f93acc5c27fa996946d841f2159165c4313310baf990b9505119b",
+    "input_digest": "c3cc139ea80f93acc5c27fa996946d841f2159165c4313310baf990b9505119b"
+   },
+   {
+    "demand_id": "07f83170a3a3d5581ede79a68294a4e13d202f00cdbde30b83f5c9c1b992bb4c",
+    "state_id": null,
+    "session_id": "info-5a0495107064d336348ba493046b6256",
+    "state": "RESOLVED",
+    "retrieval_settlement_id": "is-retrieval:07f83170a3a3d5581ede79a68294a4e13d202f00cdbde30b83f5c9c1b992bb4c",
+    "input_digest": "07f83170a3a3d5581ede79a68294a4e13d202f00cdbde30b83f5c9c1b992bb4c"
+   },
+   {
+    "demand_id": "065766a768968278f18d87243f44fd8beb0037655679191862930b942c0dc8aa",
+    "state_id": null,
+    "session_id": null,
+    "state": "RESOLVED",
+    "retrieval_settlement_id": "is-retrieval:065766a768968278f18d87243f44fd8beb0037655679191862930b942c0dc8aa",
+    "input_digest": "065766a768968278f18d87243f44fd8beb0037655679191862930b942c0dc8aa"
+   }
+  ]
+ },
+ "anchor_state_id": "chat-5809b828-f2a1-4177-8573-c3499b5f7fcf",
+ "anchor_settlement": {
+  "settlement_id": "7F55A125-51F3-44DF-B8D9-E8117FCCE765",
+  "state_id": "chat-5809b828-f2a1-4177-8573-c3499b5f7fcf",
+  "validation_status": "VALID",
+  "validity": "valid",
+  "payload_digest": "7882f1969c4275cf30a90262c8f5454ea29638245a6aa2e489949aaf10644d5e",
+  "payload_object_id": "7882f1969c4275cf30a90262c8f5454ea29638245a6aa2e489949aaf10644d5e",
+  "contract_version": "simigo.result-contract/v1",
+  "settled_at": "814705537.635149"
+ },
+ "isolation": {
+  "moved": {
+   "prefix-pool": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/isolated-20261026-190618/prefix-pool",
+   "branch-checkpoints": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/isolated-20261026-190618/branch-checkpoints"
+  },
+  "marker": "renamed so no persisted KV/checkpoint is reachable",
+  "verified_absent": {
+   "prefix-pool": true,
+   "branch-checkpoints": true
+  }
+ },
+ "stage2": {
+  "http": 422,
+  "seconds": 2.94,
+  "question": "只用上一轮已结算的结论回答：编号为奇数的行的权重之和是多少？把这个数乘以 3 后取两位有效数字写出来。不要重新读取任何表格。",
+  "trace": [
+   "[2026-10-26 19:06:19.810] [PROTOCOL] arrive r=5d0e02 endpoint=responses stream=false agent=default s=respon branch=main",
+   "[2026-10-26 19:06:19.876] [PROTOCOL] continuation_admitted r=req-5d0e027d parent=chat-5809b828-f2a1-4177-8573-c3499b5f7fcf child=es-8c9b35e9-819e-4a94-bfe5-6f133d2587dc bindings=1",
+   "[2026-10-26 19:06:20.374] [PROTOCOL] continuation_branch_cold child=es-8c9b35e9-819e-4a94-bfe5-6f133d2587dc from=main err=生成失败: no live source session for default/responses-request:f803d34c-680f-4a11-b44d-df973be864b6/main; cannot fork",
+   "[2026-10-26 19:06:20.374] [LC] STATE_TRANSITION r=5d0e02 s=respon from=QUEUED to=RUNNING",
+   "[2026-10-26 19:06:20.374] [MLX] sessionClientSplit key=e864b6/es-8c9b35e9-819e-4a94-bfe5-6f133d2587dc#4ac568ca note=system-prompt client shard",
+   "[2026-10-26 19:06:20.374] [MLX] prefillStep=2048 est=1711 reuse=false",
+   "[2026-10-26 19:06:22.519] [MLX] prefill 2360/2360",
+   "[2026-10-26 19:06:22.733] [MLX] poolExport messages=4 refHash=2a566a9bf35102ff",
+   "[2026-10-26 19:06:22.734] [MLX] session=e864b6/es-8c9b35e9-819e-4a94-bfe5-6f133d2587dc messages=3 exec=62db2e history=4 delta=1 reuse=false ttft=2182ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2360 promptTime=2.2s tps=39.2 rawEv=3 rawB=3 emitB=3"
+  ],
+  "body_head": "{\"error\": {\"code\": null, \"type\": \"server_error\", \"error_kind\": \"NATIVE_RESULT_CONTRACT_REJECTED\", \"reason_code\": null, \"message\": \"Generated output refused by the native result contract: generated output does not satisfy the declared result contract (PRODUCER_RESULT_FIELD_MISSING)\", \"param\": null}}",
+  "continuation_settlement": null,
+  "usage": null
+ },
+ "control_no_is": {
+  "http": 200,
+  "seconds": 8.52,
+  "trace": [
+   "[2026-10-26 19:06:22.754] [LC] STATE_TRANSITION r=5d0e02 s=respon from=RUNNING to=CANCELLING",
+   "[2026-10-26 19:06:22.754] [LC] STATE_TRANSITION r=5d0e02 s=respon from=CANCELLING to=DRAINING",
+   "[2026-10-26 19:06:22.754] [LC] STATE_TRANSITION r=5d0e02 s=respon from=DRAINING to=RELEASING",
+   "[2026-10-26 19:06:22.754] [LC] RELEASED r=5d0e02 s=respon reason=cancelled_by_client",
+   "[2026-10-26 19:06:22.754] [PROTOCOL] arrive r=f5c67e endpoint=responses stream=false agent=default s=respon branch=main",
+   "[2026-10-26 19:06:23.190] [LC] STATE_TRANSITION r=f5c67e s=respon from=QUEUED to=RUNNING",
+   "[2026-10-26 19:06:23.190] [MLX] sessionClientSplit key=02fc30/main#19ccdb80 note=system-prompt client shard",
+   "[2026-10-26 19:06:23.191] [MLX] prefillStep=2048 est=1618 reuse=false",
+   "[2026-10-26 19:06:26.027] [MLX] prefill 3211/3211",
+   "[2026-10-26 19:06:31.272] [MLX] poolExport messages=3 refHash=10b34e0fcc8f17e7",
+   "[2026-10-26 19:06:31.273] [MLX] session=02fc30/main messages=2 exec=de41af history=3 delta=1 reuse=false ttft=2873ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=3211 promptTime=2.9s tps=38.8 rawEv=199 rawB=296 emitB=296"
+  ],
+  "usage": {
+   "input_tokens": 3211,
+   "output_tokens": 199,
+   "output_tokens_details": {
+    "reasoning_tokens": 0
+   },
+   "total_tokens": 3410,
+   "input_tokens_details": {
+    "cached_tokens": 0
+   }
+  }
+ },
+ "measurement": [
+  {
+   "case": "stage2",
+   "seconds": 2.94,
+   "prompt_tokens": null,
+   "completion_tokens": null,
+   "trace_prefill": [
+    "[2026-10-26 19:06:20.374] [MLX] prefillStep=2048 est=1711 reuse=false",
+    "[2026-10-26 19:06:22.519] [MLX] prefill 2360/2360"
+   ],
+   "trace_cache": [
+    "[2026-10-26 19:06:22.734] [MLX] session=e864b6/es-8c9b35e9-819e-4a94-bfe5-6f133d2587dc messages=3 exec=62db2e history=4 delta=1 reuse=false ttft=2182ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2360 promptTime=2.2s tps=39.2 rawEv=3 rawB=3 emitB=3"
+   ]
+  },
+  {
+   "case": "control_no_is",
+   "seconds": 8.52,
+   "prompt_tokens": 3211,
+   "completion_tokens": 199,
+   "trace_prefill": [
+    "[2026-10-26 19:06:23.191] [MLX] prefillStep=2048 est=1618 reuse=false",
+    "[2026-10-26 19:06:26.027] [MLX] prefill 3211/3211"
+   ],
+   "trace_cache": [
+    "[2026-10-26 19:06:31.273] [MLX] session=02fc30/main messages=2 exec=de41af history=3 delta=1 reuse=false ttft=2873ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=3211 promptTime=2.9s tps=38.8 rawEv=199 rawB=296 emitB=296"
+   ]
+  }
+ ]
+}

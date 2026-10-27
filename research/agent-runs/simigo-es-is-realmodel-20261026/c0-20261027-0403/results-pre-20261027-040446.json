@@ -1,0 +1,252 @@
+{
+ "nonce": "20261027-040446",
+ "phase": "pre-fix",
+ "started_at": "2026-10-27T04:04:46+0800",
+ "base_url": "http://127.0.0.1:8000",
+ "isolated_root_dir": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/c0-20261027-0403/root",
+ "steps": {
+  "source-chat-generation": {
+   "label": "source-chat-generation",
+   "path": "/v1/chat/completions",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "session_id": "c0-source-20261027-040446",
+    "max_tokens": 96,
+    "messages": [
+     {
+      "role": "system",
+      "content": "你是精确的标记输出器，只输出用户要求的那一行。"
+     },
+     {
+      "role": "user",
+      "content": "C0DEPMARK20261027040446 只输出这一行，不要解释：C0-SETTLED-20261027-040446"
+     }
+    ]
+   },
+   "status": 200,
+   "seconds": 31.259,
+   "body": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "content": "C0DEPMARK20261027040446",
+       "role": "assistant"
+      }
+     }
+    ],
+    "created": 1793045117,
+    "id": "chatcmpl-2fb5ed31-7c4d-41c1-aa07-fd17b5088caa",
+    "object": "chat.completion"
+   },
+   "error": null,
+   "generation_lines": [
+    "[2026-10-27 04:04:52.236] [MLX] prefillStep=2048 est=1194 reuse=false",
+    "[2026-10-27 04:05:10.612] [MLX] prefill 2347/2347",
+    "[2026-10-27 04:05:17.802] [MLX] poolExport messages=3 refHash=3234c3ea917e126a",
+    "[2026-10-27 04:05:17.872] [MLX] cacheSave session=040446/main history=3",
+    "[2026-10-27 04:05:17.873] [MLX] session=040446/main messages=2 exec=0b0d48 history=3 delta=1 reuse=false ttft=24557ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2347 promptTime=24.5s tps=20.5 rawEv=19 rawB=23 emitB=23"
+   ]
+  }
+ },
+ "identity": {
+  "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "installed_exe_sha256": "83635c736d7f913ebc63ffacbed29edbeb98ccc02e699d1ab11a870f02e32b89",
+  "pre_fix_build": true,
+  "app_pid": [
+   "82529"
+  ],
+  "head": "97043902075b67eb1693749fd6ed50421eccf3ba",
+  "diff_sha256": "de1ae812faf56e18dd2c069fabb3acf7386020eca699238cdd950ae026f2f26e  -",
+  "trace_size": 120255
+ },
+ "baseline": {
+  "counts": {
+   "settlements": 82,
+   "states": 37,
+   "consumptions": 4,
+   "contracts": 2,
+   "demands": 47,
+   "edges": 37,
+   "bindings": 158
+  },
+  "directories": {
+   "prefix_pool": {
+    "present": true,
+    "file_count": 58,
+    "listing_sha256": "c6381a7baa47258ce0a0b303c9e4197e980b1c5accc4388dc7c5089d34ca7086",
+    "files": [
+     "44eaa202ce92e06d/10b34e0fcc8f17e7-6.json|175|1793012791272153127|113423862",
+     "44eaa202ce92e06d/10b34e0fcc8f17e7-6.safetensors|134254540|1793012791270582002|113423861",
+     "44eaa202ce92e06d/1127226b50caa01f-12.json|176|1793016414871943023|113428816",
+     "44eaa202ce92e06d/1127226b50caa01f-12.safetensors|266780646|1793016414868435207|113428815",
+     "44eaa202ce92e06d/14851ea2796d8cfb-8.json|175|1793016393069696834|113428769",
+     "44eaa202ce92e06d/14851ea2796d8cfb-8.safetensors|257708004|1793016393066270293|113428768",
+     "44eaa202ce92e06d/21fa3ec44b12a04a-6.json|175|1793044224657365930|113679682",
+     "44eaa202ce92e06d/21fa3ec44b12a04a-6.safetensors|111112106|1793044224656346513|113679681",
+     "44eaa202ce92e06d/25287094bc102997-10.json|175|1793018209478870891|113433617",
+     "44eaa202ce92e06d/25287094bc102997-10.safetensors|264957964|1793018209478357516|113433616",
+     "44eaa202ce92e06d/2a566a9bf35102ff-8.json|175|1793012782732928352|113423854",
+     "44eaa202ce92e06d/2a566a9bf35102ff-8.safetensors|112811952|1793012782731589269|113423853",
+     "44eaa202ce92e06d/2d5ee8a5a7735336-6.json|175|1793017296443836701|113431764",
+     "44eaa202ce92e06d/2d5ee8a5a7735336-6.safetensors|224919522|1793017296442687991|113431763",
+     "44eaa202ce92e06d/36cc7b1a27b5a460-6.json|175|1793018198002607311|113433606",
+     "44eaa202ce92e06d/36cc7b1a27b5a460-6.safetensors|259059724|1793018198002064894|113433605",
+     "44eaa202ce92e06d/51e28e219c58053f-6.json|174|1793018186830496411|113433589",
+     "44eaa202ce92e06d/51e28e219c58053f-6.safetensors|259285004|1793018186829932661|113433588",
+     "44eaa202ce92e06d/55a4d1b00d691eb0-8.json|175|1793017305639891020|113431779",
+     "44eaa202ce92e06d/55a4d1b00d691eb0-8.safetensors|227028962|1793017305638789560|113431778",
+     "44eaa202ce92e06d/7b1a2442a5517435-6.json|175|1793044013170648653|113679359",
+     "44eaa202ce92e06d/7b1a2442a5517435-6.safetensors|112975790|1793044013164925982|113679358",
+     "44eaa202ce92e06d/8f0f3fd9f80e80b9-4.json|176|1793044084289229102|113679503",
+     "44eaa202ce92e06d/8f0f3fd9f80e80b9-4.safetensors|111419276|1793044084284623682|113679502",
+     "44eaa202ce92e06d/8f9d9754a338367a-4.json|176|1793019185982490081|113436983",
+     "44eaa202ce92e06d/8f9d9754a338367a-4.safetensors|92946335|1793019185978056198|113436982",
+     "44eaa202ce92e06d/9191bb342b9ed867-4.json|176|1793019628668803800|113437936",
+     "44eaa202ce92e06d/9191bb342b9ed867-4.safetensors|99418015|1793019628664971459|113437935",
+     "44eaa202ce92e06d/93a0dcbdfe26e473-4.json|176|1793019624699393389|113437929",
+     "44eaa202ce92e06d/93a0dcbdfe26e473-4.safetensors|98168735|1793019624695498881|113437928",
+     "44eaa202ce92e06d/9a90d216dd6ff0ca-8.json|176|1793017191484753610|113431678",
+     "44eaa202ce92e06d/9a90d216dd6ff0ca-8.safetensors|243208164|1793017191482063106|113431677",
+     "44eaa202ce92e06d/9b0596748111a969-8.json|176|1793016403957562876|113428799",
+     "44eaa202ce92e06d/9b0596748111a969-8.safetensors|257380324|1793016403954152960|113428798",
+     "44eaa202ce92e06d/a33aadd4948b4bec-4.json|176|1793019632770397069|113437946",
+     "44eaa202ce92e06d/a33aadd4948b4bec-4.safetensors|103042990|1793019632769745735|113437945",
+     "44eaa202ce92e06d/a34791c73ce7ed6f-8.json|176|1793017181276117939|113431665",
+     "44eaa202ce92e06d/a34791c73ce7ed6f-8.safetensors|241958884|1793017181272010058|113431664",
+     "44eaa202ce92e06d/b00d0cecd30ca710-6.json|176|1793044089467152042|113679514",
+     "44eaa202ce92e06d/b00d0cecd30ca710-6.safetensors|108818314|1793044089463360080|113679513",
+     "44eaa202ce92e06d/b057e546e239b69c-4.json|176|1793019636913197633|113437961",
+     "44eaa202ce92e06d/b057e546e239b69c-4.safetensors|103104430|1793019636912535423|113437960",
+     "44eaa202ce92e06d/b984a213b05f6981-8.json|176|1793012932923890620|113424353",
+     "44eaa202ce92e06d/b984a213b05f6981-8.safetensors|112443312|1793012932922240912|113424352",
+     "44eaa202ce92e06d/bc0e086e4a38f235-4.json|176|1793019190566272392|113437003",
+     "44eaa202ce92e06d/bc0e086e4a38f235-4.safetensors|115105724|1793019190565763974|113437002",
+     "44eaa202ce92e06d/df8072048b340c1a-4.json|176|1793019194015253738|113437015",
+     "44eaa202ce92e06d/df8072048b340c1a-4.safetensors|96898977|1793019194012461858|113437014",
+     "44eaa202ce92e06d/e3d83a74aa53a31b-12.json|177|1793012935815459250|113424359",
+     "44eaa202ce92e06d/e3d83a74aa53a31b-12.safetensors|112627632|1793012935811067709|113424358",
+     "44eaa202ce92e06d/e4890e3f1b45e353-12.json|177|1793017203006501706|113431694",
+     "44eaa202ce92e06d/e4890e3f1b45e353-12.safetensors|271286266|1793017203000890239|113431693",
+     "44eaa202ce92e06d/f543a6036277147-4.json|175|1793044085636996167|113679508",
+     "44eaa202ce92e06d/f543a6036277147-4.safetensors|68657005|1793044085635992625|113679507",
+     "44eaa202ce92e06d/fdc8da3b73405423-6.json|176|1793044074739725477|113679487",
+     "44eaa202ce92e06d/fdc8da3b73405423-6.safetensors|114040750|1793044074736907016|113679486",
+     "44eaa202ce92e06d/ffbe4f1833fcc65b-12.json|177|1793017315081924500|113431796",
+     "44eaa202ce92e06d/ffbe4f1833fcc65b-12.safetensors|229978084|1793017315077773869|113431795"
+    ]
+   },
+   "branch_checkpoints": {
+    "present": true,
+    "file_count": 36,
+    "listing_sha256": "53887526d2a8f8837f64de1f63afd011430f85f50970965a0e526ab21b186e35",
+    "files": [
+     "default_b7-source-20261027-034624_main.meta.json|5816|1793044013241186204|113679363",
+     "default_b7-source-20261027-034624_main.safetensors|112975790|1793044013235870909|113679362",
+     "default_b7-source-20261027-034749_main.meta.json|5567|1793044074807250692|113679491",
+     "default_b7-source-20261027-034749_main.safetensors|114040750|1793044074804546524|113679490",
+     "default_e4-cross-id-alpha_main.meta.json|4451|1793019194083018186|113437017",
+     "default_e4-cross-id-alpha_main.safetensors|96898977|1793019194080025723|113437016",
+     "default_e4-tamper-cache_main.meta.json|3961|1793019186045402145|113436985",
+     "default_e4-tamper-cache_main.safetensors|92946335|1793019186040371012|113436984",
+     "default_e4-tamper-fresh_main.meta.json|9915|1793019190662798805|113437007",
+     "default_e4-tamper-fresh_main.safetensors|115105724|1793019190660753427|113437006",
+     "default_e4b-205949-b_main.meta.json|4724|1793019628740612366|113437939",
+     "default_e4b-205949-b_main.safetensors|99418015|1793019628740008407|113437937",
+     "default_e4b-205949-c_main.meta.json|5174|1793019632851835864|113437948",
+     "default_e4b-205949-c_main.safetensors|103042990|1793019632850841945|113437947",
+     "default_e4b-205949-iso_main.meta.json|5182|1793019636988482039|113437963",
+     "default_e4b-205949-iso_main.safetensors|103104430|1793019636987963621|113437962",
+     "default_e4b-205949_main.meta.json|4583|1793019624781963769|113437931",
+     "default_e4b-205949_main.safetensors|98168735|1793019624777940177|113437930",
+     "default_exp-20261026-190528-es1_main.meta.json|5492|1793012935886547745|113424363",
+     "default_exp-20261026-190528-es1_main.safetensors|112627632|1793012935882553121|113424362",
+     "default_pb-20261026-201915-X_main.meta.json|34508|1793017203157371265|113431701",
+     "default_pb-20261026-201915-X_main.safetensors|271286266|1793017203155995222|113431700",
+     "default_pb-20261026-201915-Y_main.meta.json|31180|1793017191627419698|113431685",
+     "default_pb-20261026-201915-Y_main.safetensors|243208164|1793017191624375111|113431684",
+     "default_pc-20261026-200601-A_main.meta.json|34143|1793016415021158942|113428824",
+     "default_pc-20261026-200601-A_main.safetensors|266780646|1793016415017391288|113428822",
+     "default_pc-20261026-200601-B_main.meta.json|33720|1793016404112249153|113428806",
+     "default_pc-20261026-200601-B_main.safetensors|257380324|1793016404108548726|113428805",
+     "default_pc-20261026-202127-X_main.meta.json|29783|1793017315206970480|113431802",
+     "default_pc-20261026-202127-X_main.safetensors|229978084|1793017315205625602|113431801",
+     "default_pc-20261026-202127-Y_main.meta.json|29360|1793017305785246863|113431785",
+     "default_pc-20261026-202127-Y_main.safetensors|227028962|1793017305783914361|113431784",
+     "default_pc-20261026-203603-A_main.meta.json|33827|1793018209634346297|113433624",
+     "default_pc-20261026-203603-A_main.safetensors|264957964|1793018209631400460|113433623",
+     "default_pc-20261026-203603-B_main.meta.json|33531|1793018198141407947|113433613",
+     "default_pc-20261026-203603-B_main.safetensors|259059724|1793018198140356821|113433612"
+    ]
+   }
+  },
+  "db_backup": {
+   "path": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/c0-20261027-0403/db-pre-20261027-040446.sqlite3",
+   "sha256": "f222dc1a66a83ab4361f6584c61c8a81dd8b5598815d976dc0c57e10e7142092",
+   "size": 13008896
+  }
+ },
+ "root": {
+  "dir": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/c0-20261027-0403/root",
+  "files_before": {
+   "marker_primary.md": "f900f59ba3d045bcfa0bb71fef0e5565c963fb26cd12b9bed0c0405cfc9d22ae",
+   "marker_secondary.md": "454a0bf075a1b6c272401d3c82a8ce7d6edc5b77c5b9f34a7c5d20681fc581ea"
+  },
+  "register": {
+   "status": 200,
+   "seconds": 0.054,
+   "body": {
+    "registered": true,
+    "content_settle": {
+     "invalidated_settlements": 0,
+     "objects_created": 2,
+     "scanned": 2,
+     "deduplicated": 0,
+     "skipped": 0,
+     "reused": 0,
+     "settled": 2,
+     "removed": 0,
+     "changed": 0
+    },
+    "root_id": "work-00000000903bb636",
+    "path": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/c0-20261027-0403/root"
+   }
+  },
+  "root_id": "work-00000000903bb636"
+ },
+ "source": {
+  "settlement_id": "26966B8D-DF45-4AF3-BCE4-5509A3ACEF7E",
+  "state_id": "chat-d0a49b06-6ea6-45eb-9dca-3c52afbfb74f",
+  "validation_status": "VALID",
+  "validity": "valid",
+  "settled_value": "C0DEPMARK20261027040446",
+  "expected_value": "C0-SETTLED-20261027-040446",
+  "payload_digest_ok": true,
+  "payload_digest": "e148caff787049ec4a1a63d102a1d307210ec1e3c97c95259e32df2241ab9df1",
+  "bindings": {
+   "producer.model_identity": "0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53",
+   "producer.tokenizer_identity": "1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71"
+  },
+  "usage": null
+ },
+ "failure": {
+  "code": "SOURCE_SETTLEMENT_UNUSABLE",
+  "detail": {
+   "settlement_id": "26966B8D-DF45-4AF3-BCE4-5509A3ACEF7E",
+   "state_id": "chat-d0a49b06-6ea6-45eb-9dca-3c52afbfb74f",
+   "validation_status": "VALID",
+   "validity": "valid",
+   "settled_value": "C0DEPMARK20261027040446",
+   "expected_value": "C0-SETTLED-20261027-040446",
+   "payload_digest_ok": true,
+   "payload_digest": "e148caff787049ec4a1a63d102a1d307210ec1e3c97c95259e32df2241ab9df1",
+   "bindings": {
+    "producer.model_identity": "0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53",
+    "producer.tokenizer_identity": "1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71"
+   },
+   "usage": null
+  }
+ }
+}

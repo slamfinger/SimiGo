@@ -1,0 +1,1188 @@
+{
+ "case": "K3b2",
+ "nonce": "20261027-174333",
+ "started_at": "2026-10-27T17:43:33+0800",
+ "run_root": "/tmp/simigo-stage3-20261027-150733",
+ "kv_cache_root": "/tmp/simigo-stage3-20261027-150733/run/cache",
+ "root_id": "work-000000004154195b",
+ "steps": {
+  "source-chat-generation-k3": {
+   "label": "source-chat-generation-k3",
+   "path": "/v1/chat/completions",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "session_id": "k3-source-20261027-174333",
+    "max_tokens": 96,
+    "messages": [
+     {
+      "role": "system",
+      "content": "你是精确的标记输出器，只输出用户要求的那一行。"
+     },
+     {
+      "role": "user",
+      "content": "只输出这一行，不要解释：k3-SETTLED-20261027-174333"
+     }
+    ]
+   },
+   "status": 200,
+   "seconds": 2.03,
+   "body": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "id": "chatcmpl-01e768e4-784b-45a9-81f7-876e0393c67e",
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "k3-SETTLED-20261027-174333",
+       "role": "assistant"
+      }
+     }
+    ],
+    "object": "chat.completion",
+    "created": 1793094215
+   },
+   "generation_lines": [
+    "[2026-10-27 17:43:33.756] [MLX] prefillStep=2048 est=424 reuse=false",
+    "[2026-10-27 17:43:35.054] [MLX] prefill 1352/1352",
+    "[2026-10-27 17:43:35.769] [MLX] session=174333/main messages=2 exec=8acd37 history=3 delta=1 reuse=false ttft=1399ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=1352 promptTime=1.4s tps=35.8 rawEv=22 rawB=26 emitB=26"
+   ],
+   "kv_lines": [
+    "[2026-10-27 17:43:35.768] [MLX] poolExportFailed err=Error Domain=NSCocoaErrorDomain Code=512 \"The file “cache” couldn’t be saved in the folder “run”.\" UserInfo={NSFilePath=/tmp/simigo-stage3-20261027-150733/run/cache, NSURL=file:///tmp/simigo-stage3-20261027-150733/run/cache, NSUnderlyingError=0x7c90b746c0 {Error Domain=NSPOSIXErrorDomain Code=20 \"Not a directory\"}}",
+    "[2026-10-27 17:43:35.769] [MLX] action=checkpointFailed key=174333/main err=The file “cache” couldn’t be saved in the folder “run”."
+   ],
+   "trace_raw": "[2026-10-27 17:43:33.755] [PROTOCOL] arrive r=fabc39 endpoint=chat.completions stream=false agent=default s=k3-sou branch=main\n[2026-10-27 17:43:33.755] [LC] STATE_TRANSITION r=fabc39 s=k3-sou from=QUEUED to=RUNNING\n[2026-10-27 17:43:33.756] [MLX] sessionClientSplit key=174333/main#110aa5cc note=system-prompt client shard\n[2026-10-27 17:43:33.756] [MLX] prefillStep=2048 est=424 reuse=false\n[2026-10-27 17:43:35.054] [MLX] prefill 1352/1352\n[2026-10-27 17:43:35.768] [MLX] poolExportFailed err=Error Domain=NSCocoaErrorDomain Code=512 \"The file “cache” couldn’t be saved in the folder “run”.\" UserInfo={NSFilePath=/tmp/simigo-stage3-20261027-150733/run/cache, NSURL=file:///tmp/simigo-stage3-20261027-150733/run/cache, NSUnderlyingError=0x7c90b746c0 {Error Domain=NSPOSIXErrorDomain Code=20 \"Not a directory\"}}\n[2026-10-27 17:43:35.769] [MLX] action=checkpointFailed key=174333/main err=The file “cache” couldn’t be saved in the folder “run”.\n[2026-10-27 17:43:35.769] [MLX] session=174333/main messages=2 exec=8acd37 history=3 delta=1 reuse=false ttft=1399ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=1352 promptTime=1.4s tps=35.8 rawEv=22 rawB=26 emitB=26\n[2026-10-27 17:43:35.770] [LC] RELEASED r=fabc39 s=k3-sou reason=completed\n",
+   "at": "2026-10-27T17:43:36+0800"
+  },
+  "rerun-from-anchor-adequate-budget": {
+   "label": "rerun-from-anchor-adequate-budget",
+   "path": "/v1/chat/completions",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "session_id": "k3-source-20261027-174333",
+    "max_tokens": 1200,
+    "messages": [
+     {
+      "role": "system",
+      "content": "你是精确的编号输出器，逐行输出用户要求的编号，不要解释。"
+     },
+     {
+      "role": "user",
+      "content": "请逐行输出编号序列 INT-A01-20261027-174333 到 INT-A30-20261027-174333，每行一个，不要解释。"
+     }
+    ]
+   },
+   "status": 200,
+   "seconds": 19.282,
+   "body": {
+    "id": "chatcmpl-ec2540ff-a6f4-4538-a8d5-b4b476a45a11",
+    "choices": [
+     {
+      "index": 0,
+      "message": {
+       "role": "assistant",
+       "content": "INT-A01-20261027-174333\nINT-A02-20261027-174333\nINT-A03-20261027-174333\nINT-A04-20261027-174333\nINT-A05-20261027-174333\nINT-A06-20261027-174333\nINT-A07-20261027-174333\nINT-A08-20261027-174333\nINT-A09-20261027-174333\nINT-A10-20261027-174333\nINT-A11-20261027-174333\nINT-A12-20261027-174333\nINT-A13-20261027-174333\nINT-A14-20261027-174333\nINT-A15-20261027-174333\nINT-A16-20261027-174333\nINT-A17-20261027-174333\nINT-A18-20261027-174333\nINT-A19-20261027-174333\nINT-A20-20261027-174333\nINT-A21-20261027-174333\nINT-A22-20261027-174333\nINT-A23-20261027-174333\nINT-A24-20261027-174333\nINT-A25-20261027-174333\nINT-A26-20261027-174333\nINT-A27-20261027-174333\nINT-A28-20261027-174333\nINT-A29-20261027-174333\nINT-A30-20261027-174333"
+      },
+      "finish_reason": "stop"
+     }
+    ],
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "created": 1793094239,
+    "object": "chat.completion"
+   },
+   "generation_lines": [
+    "[2026-10-27 17:43:40.538] [MLX] prefillStep=2048 est=1999 reuse=true",
+    "[2026-10-27 17:43:42.041] [MLX] prefill 1575/1575",
+    "[2026-10-27 17:43:59.804] [MLX] session=174333/main messages=2 exec=0fbd51 history=3 delta=1 reuse=true ttft=1647ms cacheTokens=1499 cacheHitTokens=0 cacheEff=0.00 mode=rebuild promptTokens=1575 promptTime=1.6s tps=35.7 rawEv=629 rawB=719 emitB=719"
+   ],
+   "kv_lines": [
+    "[2026-10-27 17:43:59.803] [MLX] poolExportFailed err=Error Domain=NSCocoaErrorDomain Code=512 \"The file “cache” couldn’t be saved in the folder “run”.\" UserInfo={NSFilePath=/tmp/simigo-stage3-20261027-150733/run/cache, NSURL=file:///tmp/simigo-stage3-20261027-150733/run/cache, NSUnderlyingError=0x7c90b764f0 {Error Domain=NSPOSIXErrorDomain Code=20 \"Not a directory\"}}",
+    "[2026-10-27 17:43:59.804] [MLX] action=checkpointFailed key=174333/main err=The file “cache” couldn’t be saved in the folder “run”."
+   ],
+   "trace_raw": "[2026-10-27 17:43:40.538] [PROTOCOL] arrive r=049a41 endpoint=chat.completions stream=false agent=default s=k3-sou branch=main\n[2026-10-27 17:43:40.538] [LC] STATE_TRANSITION r=049a41 s=k3-sou from=QUEUED to=RUNNING\n[2026-10-27 17:43:40.538] [MLX] prefillStep=2048 est=1999 reuse=true\n[2026-10-27 17:43:42.041] [MLX] prefill 1575/1575\n[2026-10-27 17:43:59.803] [MLX] poolExportFailed err=Error Domain=NSCocoaErrorDomain Code=512 \"The file “cache” couldn’t be saved in the folder “run”.\" UserInfo={NSFilePath=/tmp/simigo-stage3-20261027-150733/run/cache, NSURL=file:///tmp/simigo-stage3-20261027-150733/run/cache, NSUnderlyingError=0x7c90b764f0 {Error Domain=NSPOSIXErrorDomain Code=20 \"Not a directory\"}}\n[2026-10-27 17:43:59.804] [MLX] poolTokenExportFailed count=2 first=2048 last=2205 err=Error Domain=NSCocoaErrorDomain Code=512 \"The file “cache” couldn’t be saved in the folder “run”.\" UserInfo={NSFilePath=/tmp/simigo-stage3-20261027-150733/run/cache, NSURL=file:///tmp/simigo-stage3-20261027-150733/run/cache, NSUnderlyingError=0x7c90b764f0 {Error Domain=NSPOSIXErrorDomain Code=20 \"Not a directory\"}}\n[2026-10-27 17:43:59.804] [MLX] action=checkpointFailed key=174333/main err=The file “cache” couldn’t be saved in the folder “run”.\n[2026-10-27 17:43:59.804] [MLX] session=174333/main messages=2 exec=0fbd51 history=3 delta=1 reuse=true ttft=1647ms cacheTokens=1499 cacheHitTokens=0 cacheEff=0.00 mode=rebuild promptTokens=1575 promptTime=1.6s tps=35.7 rawEv=629 rawB=719 emitB=719\n[2026-10-27 17:43:59.805] [LC] RELEASED r=049a41 s=k3-sou reason=completed\n",
+   "at": "2026-10-27T17:44:00+0800"
+  }
+ },
+ "app_state": {
+  "pids": [
+   "74450"
+  ],
+  "env": {
+   "SIMIGO_HOME": "/tmp/simigo-stage3-20261027-150733/run/home",
+   "SIMIGO_CACHE_ROOT": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "SIMIGO_STATE_GRAPH_STORE": "/tmp/simigo-stage3-20261027-150733/run/state-graph/reference-graph-v1.json"
+  },
+  "exe_sha256": "9ba486976d56de2b8614c2cb8537e2253955084e438a18c428838913a53c1a30",
+  "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"
+ },
+ "carried": {
+  "phase_a_pids": [
+   "72481"
+  ],
+  "first_b_failures": [
+   "rerun_complete_sequence",
+   "partial_never_entered_new_input"
+  ]
+ },
+ "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+ "block_check": {
+  "enforced_before_repair": true,
+  "probe": {
+   "prefix-pool": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/prefix-pool",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   },
+   "branch-checkpoints": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/branch-checkpoints",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   }
+  },
+  "cache": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "kind": "regular-file",
+   "size": 70,
+   "sha256": "737f30a8725b344f1aabb234c12aadfb5f7986f9a923f3709ae5a8c4a0245989",
+   "children": {
+    "prefix-pool": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    },
+    "branch-checkpoints": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    }
+   }
+  }
+ },
+ "real_home_before": {
+  "prefix-pool": {
+   "kind": "directory",
+   "mtime_ns": 1793012782633047735,
+   "mtime": "2026-10-26 19:06:22",
+   "entries": 1
+  },
+  "branch-checkpoints": {
+   "kind": "directory",
+   "mtime_ns": 1793045958320113695,
+   "mtime": "2026-10-27 04:19:18",
+   "entries": 44
+  },
+  "simigo.sqlite3": {
+   "kind": "regular-file",
+   "mtime_ns": 1793092327683580106,
+   "mtime": "2026-10-27 17:12:07"
+  }
+ },
+ "counters_before": {
+  "settlements": 22,
+  "execution_states": 12,
+  "settlement_bindings": 24,
+  "settlement_consumptions": 4,
+  "settlement_reuse_contracts": 2,
+  "checkpoints": 0,
+  "retrieval_settlements": 10,
+  "is_objects": 46,
+  "chat_messages": 18,
+  "chat_execution_links": 5,
+  "information_demands": 12,
+  "information_advancements": 12
+ },
+ "session_id": "k3-source-20261027-174333",
+ "anchor": {
+  "settlement_id": "1A990589-82D6-4E26-ADCC-79B648D87212",
+  "state_id": "chat-5185c9c0-6181-4727-9173-5da146827ff2",
+  "settled_at": "814787015.76918399",
+  "session_id": "k3-source-20261027-174333",
+  "marker": "k3-SETTLED-20261027-174333",
+  "generated_text": "k3-SETTLED-20261027-174333",
+  "settled_value": "k3-SETTLED-20261027-174333",
+  "payload_digest_ok": true,
+  "payload_digest": "109dae183b06e42e5d813e204aebfc75368ba4d107f35620887738b1dbc2aa71",
+  "generation_line_count": 3,
+  "marker_matched": true
+ },
+ "interrupted_prompt": "请逐行输出编号序列 INT-A01-20261027-174333 到 INT-A30-20261027-174333，每行一个，不要解释。",
+ "interrupted": {
+  "partial_text": "INT-A01-202",
+  "chunk_count": 8,
+  "seconds": 2.29,
+  "trace_raw": "[2026-10-27 17:43:38.237] [PROTOCOL] arrive r=18c5b0 endpoint=chat.completions stream=true agent=default s=k3-sou branch=main\n[2026-10-27 17:43:38.237] [LC] STATE_TRANSITION r=18c5b0 s=k3-sou from=QUEUED to=RUNNING\n[2026-10-27 17:43:38.237] [MLX] sessionClientSplit key=174333/main#33caca5f note=system-prompt client shard\n[2026-10-27 17:43:38.238] [MLX] prefillStep=2048 est=483 reuse=false\n[2026-10-27 17:43:39.747] [MLX] prefill 1490/1490\n[2026-10-27 17:43:40.106] [PROTOCOL] peerClosed r=18c5b0\n[2026-10-27 17:43:40.107] [CANCEL] r=req-18c5b0a5\n[2026-10-27 17:43:40.107] [MLX] cancelCommitSkip session=174333/main history=1 rawEv=8 rawB=11 emitB=11\n[2026-10-27 17:43:40.107] [LC] STATE_TRANSITION r=18c5b0 s=k3-sou from=RUNNING to=CANCELLING\n[2026-10-27 17:43:40.107] [LC] STATE_TRANSITION r=18c5b0 s=k3-sou from=CANCELLING to=DRAINING\n[2026-10-27 17:43:40.107] [LC] STATE_TRANSITION r=18c5b0 s=k3-sou from=DRAINING to=RELEASING\n[2026-10-27 17:43:40.107] [LC] RELEASED r=18c5b0 s=k3-sou reason=cancelled_by_client\n",
+  "generation_lines": [
+   "[2026-10-27 17:43:38.238] [MLX] prefillStep=2048 est=483 reuse=false",
+   "[2026-10-27 17:43:39.747] [MLX] prefill 1490/1490"
+  ],
+  "kv_lines": []
+ },
+ "session_view_after_interrupt": {
+  "chat_messages": [
+   {
+    "id": 19,
+    "session_id": "k3-source-20261027-174333",
+    "role": "user",
+    "content_len": 0,
+    "content_sha256": "62b94018dd84aadcbdcf1bef889fb8f43e69d1c7d63cde4eb7a6186dee390fb0",
+    "content_object_id": "62b94018dd84aadcbdcf1bef889fb8f43e69d1c7d63cde4eb7a6186dee390fb0",
+    "created_at": "814787013.75443697"
+   },
+   {
+    "id": 20,
+    "session_id": "k3-source-20261027-174333",
+    "role": "assistant",
+    "content_len": 0,
+    "content_sha256": "05a68f293ccc267212c42fce9121337ac53b3df21e01146f85014721b8102277",
+    "content_object_id": "05a68f293ccc267212c42fce9121337ac53b3df21e01146f85014721b8102277",
+    "created_at": "814787015.76868999"
+   },
+   {
+    "id": 21,
+    "session_id": "k3-source-20261027-174333",
+    "role": "user",
+    "content_len": 0,
+    "content_sha256": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "content_object_id": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "created_at": "814787018.23619998"
+   }
+  ],
+  "message_object_contents": [
+   {
+    "object_id": "62b94018dd84aadcbdcf1bef889fb8f43e69d1c7d63cde4eb7a6186dee390fb0",
+    "content": "只输出这一行，不要解释：k3-SETTLED-20261027-174333"
+   },
+   {
+    "object_id": "05a68f293ccc267212c42fce9121337ac53b3df21e01146f85014721b8102277",
+    "content": "k3-SETTLED-20261027-174333"
+   },
+   {
+    "object_id": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "content": "请逐行输出编号序列 INT-A01-20261027-174333 到 INT-A30-20261027-174333，每行一个，不要解释。"
+   }
+  ],
+  "execution_states": [
+   {
+    "state_id": "chat-184f3580-6ecf-4746-ac40-9d546d820a38",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "8EF9DE83-845B-4BD3-867F-64FAC451A2EB",
+    "anchor": "5326b241835c8216ae0c0d5fda8e57ed6153ec1845d1a92f19582efc7be290b4",
+    "lifecycle": "active",
+    "created_at": "814780021.19156301"
+   },
+   {
+    "state_id": "es-96f924aa-353c-4292-830f-ef40e3219b3f",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "F605B2CD-8DEB-476A-8258-8B8E0ECEE633",
+    "anchor": "5326b241835c8216ae0c0d5fda8e57ed6153ec1845d1a92f19582efc7be290b4",
+    "lifecycle": "active",
+    "created_at": "814780023.73396099"
+   },
+   {
+    "state_id": "es-8c24a6eb-8a07-46ab-bbe3-55a2ad6a4714",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "557AC4CD-4E08-4E69-BF30-CDCED7E8B794",
+    "anchor": "5326b241835c8216ae0c0d5fda8e57ed6153ec1845d1a92f19582efc7be290b4",
+    "lifecycle": "active",
+    "created_at": "814780024.17424095"
+   },
+   {
+    "state_id": "chat-31d9c6e7-cec2-4a76-af2a-b47ad9d12125",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "9FCD8E08-75AF-41B6-AF75-39BADC5ECFE4",
+    "anchor": "27d3fda11e15db4d6104f426c4cabc15c0cec7e3aa103a419978c8d9846dd569",
+    "lifecycle": "active",
+    "created_at": "814780026.61578298"
+   },
+   {
+    "state_id": "chat-a47f7deb-a0e7-457b-a6ec-0975d312e3ac",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "54007D12-7AFB-4644-BE87-679BF340D25B",
+    "anchor": "df468a3b2cc340d9cb850d2db5025eda14ff96d9c90bb9d6bd3ab9c63458f892",
+    "lifecycle": "active",
+    "created_at": "814780748.42533898"
+   },
+   {
+    "state_id": "es-a9f4f89f-a07a-41e7-9e82-a72734e0c8c1",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "384D73D3-6F25-4BB8-9D64-B7F94EB8DD44",
+    "anchor": "df468a3b2cc340d9cb850d2db5025eda14ff96d9c90bb9d6bd3ab9c63458f892",
+    "lifecycle": "active",
+    "created_at": "814785634.53613496"
+   },
+   {
+    "state_id": "chat-04c0e7ec-eb91-420b-8e4f-0677038a1890",
+    "parent_id": "chat-a47f7deb-a0e7-457b-a6ec-0975d312e3ac",
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "0BED6191-28FB-4548-9C27-5C7A3B7FA4B4",
+    "anchor": "23570dbd953ee01af3de061ba4afb3bc1ad71d9cd33ba29ffc22d432c42a9fd8",
+    "lifecycle": "active",
+    "created_at": "814785644.17672801"
+   },
+   {
+    "state_id": "es-fa1fe546-67d1-44b9-b594-6a6aee72688f",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "2926BED5-4B8C-48B1-A61D-B7A830EFEA50",
+    "anchor": "df468a3b2cc340d9cb850d2db5025eda14ff96d9c90bb9d6bd3ab9c63458f892",
+    "lifecycle": "active",
+    "created_at": "814785657.60187995"
+   },
+   {
+    "state_id": "chat-95406a6c-7b32-41e3-8840-dae9abef91b1",
+    "parent_id": "chat-04c0e7ec-eb91-420b-8e4f-0677038a1890",
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 2,
+    "continuation_id": "7EDBA644-5895-4F0B-B293-4C0B02DF30D4",
+    "anchor": "23570dbd953ee01af3de061ba4afb3bc1ad71d9cd33ba29ffc22d432c42a9fd8",
+    "lifecycle": "active",
+    "created_at": "814785659.39718401"
+   },
+   {
+    "state_id": "chat-8fc8914a-8422-412b-81cf-c7946bcc0b1a",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "B03D9F48-2CDA-477D-9F92-AA3C8FCDB8A7",
+    "anchor": "4d5297d39b449651cd4c3e82fe3295b378fd3a528c2ea9590edc48d7c975a67f",
+    "lifecycle": "active",
+    "created_at": "814785755.38228595"
+   },
+   {
+    "state_id": "chat-fd19d64a-bed5-4878-acf4-96dbbe3988a8",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "AC27EF52-1032-4681-A7C0-3A982CE633DA",
+    "anchor": "de32305b2627c86183063f57bc10dfda8bf9430fae1513663617c8d81a097c91",
+    "lifecycle": "active",
+    "created_at": "814785822.42913902"
+   },
+   {
+    "state_id": "chat-fd569524-4f28-4fac-8f84-1e95f8b75dee",
+    "parent_id": "chat-fd19d64a-bed5-4878-acf4-96dbbe3988a8",
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "157750AC-899B-4EEC-9358-C33714A5A8FB",
+    "anchor": "8137a4b798af0de36724c2211d0c8e86801eeb931820dcdfee3165dfd1686e42",
+    "lifecycle": "active",
+    "created_at": "814786709.42838502"
+   },
+   {
+    "state_id": "chat-5185c9c0-6181-4727-9173-5da146827ff2",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "005C8597-64E1-4DED-9B0E-918459DF2ED7",
+    "anchor": "109dae183b06e42e5d813e204aebfc75368ba4d107f35620887738b1dbc2aa71",
+    "lifecycle": "active",
+    "created_at": "814787015.76918399"
+   }
+  ],
+  "settlements": [
+   {
+    "settlement_id": "is-retrieval:57e69e85ff81b7f1318c1477303c2a17550b1398e483906db44ca77aa4e4e92b",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814780002.50180995"
+   },
+   {
+    "settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+    "state_id": "chat-184f3580-6ecf-4746-ac40-9d546d820a38",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814780021.19156301"
+   },
+   {
+    "settlement_id": "C49392D7-AA70-4B60-A6D6-8421595EEC2D",
+    "state_id": "es-96f924aa-353c-4292-830f-ef40e3219b3f",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814780023.73396099"
+   },
+   {
+    "settlement_id": "A6335682-DD0E-4D85-AC01-31FB4D3C9F0C",
+    "state_id": "es-8c24a6eb-8a07-46ab-bbe3-55a2ad6a4714",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814780024.17424095"
+   },
+   {
+    "settlement_id": "is-retrieval:245cb2a593ceb4358d4ed17ced46a5e049c5e1b8b03dc637cdf7e79198518b75",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814780025.05384505"
+   },
+   {
+    "settlement_id": "5B2527A3-DAFB-4FCF-8B4C-3D51491CFBD2",
+    "state_id": "chat-31d9c6e7-cec2-4a76-af2a-b47ad9d12125",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814780026.61578298"
+   },
+   {
+    "settlement_id": "is-retrieval:f33b1093aea8cd25e96f45618363c92a7ae8b77a3b6f544906c197114c5069ef",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814780730.84454203"
+   },
+   {
+    "settlement_id": "85D17085-C3C1-4C49-9882-759B60DE3C66",
+    "state_id": "chat-a47f7deb-a0e7-457b-a6ec-0975d312e3ac",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814780748.42533898"
+   },
+   {
+    "settlement_id": "8EEAF578-DACB-417F-8A4A-89BDFDA0551D",
+    "state_id": "es-a9f4f89f-a07a-41e7-9e82-a72734e0c8c1",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814785634.53613496"
+   },
+   {
+    "settlement_id": "is-retrieval:52370283a44b8cb91f74c003e3833e30688a004872dd3141bca8923653f2765e",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785634.95687997"
+   },
+   {
+    "settlement_id": "873FA0F5-7864-412E-9E88-3BE021F3340E",
+    "state_id": "chat-04c0e7ec-eb91-420b-8e4f-0677038a1890",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814785644.17672801"
+   },
+   {
+    "settlement_id": "109943C4-F3DB-4628-9BCB-BC654E94539B",
+    "state_id": "es-fa1fe546-67d1-44b9-b594-6a6aee72688f",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814785657.60187995"
+   },
+   {
+    "settlement_id": "is-retrieval:2ee9ffa1b41a35014274b7d6e61341f2e0624533758ff838254707ec7ef0a5c0",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785658.022609"
+   },
+   {
+    "settlement_id": "3C8852A8-7631-4F84-966F-8B6E940C37F2",
+    "state_id": "chat-95406a6c-7b32-41e3-8840-dae9abef91b1",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814785659.39718401"
+   },
+   {
+    "settlement_id": "is-retrieval:87ab95dbbc2f29859e408394e920e99cd0e5644be2812be3348dd52ef2654a98",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785751.85629904"
+   },
+   {
+    "settlement_id": "F50752CB-AE67-4708-B997-82F9B38DB232",
+    "state_id": "chat-8fc8914a-8422-412b-81cf-c7946bcc0b1a",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814785755.38228595"
+   },
+   {
+    "settlement_id": "is-retrieval:b966a34c61a78b6d102fd6f99148dc386cdcd91db54ed8b875e70b20ccee4360",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785757.83452499"
+   },
+   {
+    "settlement_id": "is-retrieval:9000e1901c947f0f9980524a3a99d24de4bb3ed1f0d9254f8cdb48eee3d1fcf6",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785820.14996696"
+   },
+   {
+    "settlement_id": "3FD020EE-561B-4297-AAD2-7633AC60F98E",
+    "state_id": "chat-fd19d64a-bed5-4878-acf4-96dbbe3988a8",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814785822.42913902"
+   },
+   {
+    "settlement_id": "is-retrieval:6439520b1dbbe2bf72fbb88d754f44f7acc813c6b7b14076fbe6e175b49d4c47",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785824.87585104"
+   },
+   {
+    "settlement_id": "is-retrieval:f4ca7870ecfc47a2ecef3eb1644ffbea561cee10c2c71cad573949f0b44fcd07",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814786686.92557096"
+   },
+   {
+    "settlement_id": "29B566C3-F9F6-4AB5-8048-D407AE6443E8",
+    "state_id": "chat-fd569524-4f28-4fac-8f84-1e95f8b75dee",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814786709.42838502"
+   },
+   {
+    "settlement_id": "is-retrieval:7befc8f6b1697346f5d69d05c67da50f34a89ea37c94131b4bbedb9252ba98ca",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814787013.75160098"
+   },
+   {
+    "settlement_id": "1A990589-82D6-4E26-ADCC-79B648D87212",
+    "state_id": "chat-5185c9c0-6181-4727-9173-5da146827ff2",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814787015.76918399"
+   },
+   {
+    "settlement_id": "is-retrieval:775e75e7d00bef11eb60a9d159c0a2e37ee359455585919f7d289046714ba3ad",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814787018.23308802"
+   }
+  ]
+ },
+ "new_valid_rows_from_interrupt": [],
+ "session_view_after_rerun": {
+  "chat_messages": [
+   {
+    "id": 19,
+    "session_id": "k3-source-20261027-174333",
+    "role": "user",
+    "content_len": 0,
+    "content_sha256": "62b94018dd84aadcbdcf1bef889fb8f43e69d1c7d63cde4eb7a6186dee390fb0",
+    "content_object_id": "62b94018dd84aadcbdcf1bef889fb8f43e69d1c7d63cde4eb7a6186dee390fb0",
+    "created_at": "814787013.75443697"
+   },
+   {
+    "id": 20,
+    "session_id": "k3-source-20261027-174333",
+    "role": "assistant",
+    "content_len": 0,
+    "content_sha256": "05a68f293ccc267212c42fce9121337ac53b3df21e01146f85014721b8102277",
+    "content_object_id": "05a68f293ccc267212c42fce9121337ac53b3df21e01146f85014721b8102277",
+    "created_at": "814787015.76868999"
+   },
+   {
+    "id": 21,
+    "session_id": "k3-source-20261027-174333",
+    "role": "user",
+    "content_len": 0,
+    "content_sha256": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "content_object_id": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "created_at": "814787018.23619998"
+   },
+   {
+    "id": 22,
+    "session_id": "k3-source-20261027-174333",
+    "role": "user",
+    "content_len": 0,
+    "content_sha256": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "content_object_id": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "created_at": "814787020.53741205"
+   },
+   {
+    "id": 23,
+    "session_id": "k3-source-20261027-174333",
+    "role": "assistant",
+    "content_len": 0,
+    "content_sha256": "da9fd99ffe9c4a8686d590551bf33f2ae5758a3c73c0ee4cf244530db93a0be9",
+    "content_object_id": "da9fd99ffe9c4a8686d590551bf33f2ae5758a3c73c0ee4cf244530db93a0be9",
+    "created_at": "814787039.80392897"
+   }
+  ],
+  "message_object_contents": [
+   {
+    "object_id": "62b94018dd84aadcbdcf1bef889fb8f43e69d1c7d63cde4eb7a6186dee390fb0",
+    "content": "只输出这一行，不要解释：k3-SETTLED-20261027-174333"
+   },
+   {
+    "object_id": "05a68f293ccc267212c42fce9121337ac53b3df21e01146f85014721b8102277",
+    "content": "k3-SETTLED-20261027-174333"
+   },
+   {
+    "object_id": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "content": "请逐行输出编号序列 INT-A01-20261027-174333 到 INT-A30-20261027-174333，每行一个，不要解释。"
+   },
+   {
+    "object_id": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+    "content": "请逐行输出编号序列 INT-A01-20261027-174333 到 INT-A30-20261027-174333，每行一个，不要解释。"
+   },
+   {
+    "object_id": "da9fd99ffe9c4a8686d590551bf33f2ae5758a3c73c0ee4cf244530db93a0be9",
+    "content": "INT-A01-20261027-174333\nINT-A02-20261027-174333\nINT-A03-20261027-174333\nINT-A04-20261027-174333\nINT-A05-20261027-174333\nINT-A06-20261027-174333\nINT-A07-20261027-174333\nINT-A08-20261027-174333\nINT-A09-20261027-174333\nINT-A10-20261027-174333\nINT-A11-20261027-174333\nINT-A12-20261027-174333\nINT-A13-20261027-174333\nINT-A14-20261027-174333\nINT-A15-20261027-174333\nINT-A16-20261027-174333\nINT-A17-20261027-174333\nINT-A18-20261027-174333\nINT-A19-20261027-174333\nINT-A20-20261027-174333\nINT-A21-20261027-174333\nINT-A22-20261027-174333\nINT-A23-20261027-174333\nINT-A24-20261027-174333\nINT-A25-20261027-174333\nINT-A26-20261027-174333\nINT-A27-20261027-174333\nINT-A28-20261027-174333\nINT-A29-20261027-174333\nINT-A30-20261027-174333"
+   }
+  ],
+  "execution_states": [
+   {
+    "state_id": "chat-184f3580-6ecf-4746-ac40-9d546d820a38",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "8EF9DE83-845B-4BD3-867F-64FAC451A2EB",
+    "anchor": "5326b241835c8216ae0c0d5fda8e57ed6153ec1845d1a92f19582efc7be290b4",
+    "lifecycle": "active",
+    "created_at": "814780021.19156301"
+   },
+   {
+    "state_id": "es-96f924aa-353c-4292-830f-ef40e3219b3f",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "F605B2CD-8DEB-476A-8258-8B8E0ECEE633",
+    "anchor": "5326b241835c8216ae0c0d5fda8e57ed6153ec1845d1a92f19582efc7be290b4",
+    "lifecycle": "active",
+    "created_at": "814780023.73396099"
+   },
+   {
+    "state_id": "es-8c24a6eb-8a07-46ab-bbe3-55a2ad6a4714",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "557AC4CD-4E08-4E69-BF30-CDCED7E8B794",
+    "anchor": "5326b241835c8216ae0c0d5fda8e57ed6153ec1845d1a92f19582efc7be290b4",
+    "lifecycle": "active",
+    "created_at": "814780024.17424095"
+   },
+   {
+    "state_id": "chat-31d9c6e7-cec2-4a76-af2a-b47ad9d12125",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "9FCD8E08-75AF-41B6-AF75-39BADC5ECFE4",
+    "anchor": "27d3fda11e15db4d6104f426c4cabc15c0cec7e3aa103a419978c8d9846dd569",
+    "lifecycle": "active",
+    "created_at": "814780026.61578298"
+   },
+   {
+    "state_id": "chat-a47f7deb-a0e7-457b-a6ec-0975d312e3ac",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "54007D12-7AFB-4644-BE87-679BF340D25B",
+    "anchor": "df468a3b2cc340d9cb850d2db5025eda14ff96d9c90bb9d6bd3ab9c63458f892",
+    "lifecycle": "active",
+    "created_at": "814780748.42533898"
+   },
+   {
+    "state_id": "es-a9f4f89f-a07a-41e7-9e82-a72734e0c8c1",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "384D73D3-6F25-4BB8-9D64-B7F94EB8DD44",
+    "anchor": "df468a3b2cc340d9cb850d2db5025eda14ff96d9c90bb9d6bd3ab9c63458f892",
+    "lifecycle": "active",
+    "created_at": "814785634.53613496"
+   },
+   {
+    "state_id": "chat-04c0e7ec-eb91-420b-8e4f-0677038a1890",
+    "parent_id": "chat-a47f7deb-a0e7-457b-a6ec-0975d312e3ac",
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "0BED6191-28FB-4548-9C27-5C7A3B7FA4B4",
+    "anchor": "23570dbd953ee01af3de061ba4afb3bc1ad71d9cd33ba29ffc22d432c42a9fd8",
+    "lifecycle": "active",
+    "created_at": "814785644.17672801"
+   },
+   {
+    "state_id": "es-fa1fe546-67d1-44b9-b594-6a6aee72688f",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "2926BED5-4B8C-48B1-A61D-B7A830EFEA50",
+    "anchor": "df468a3b2cc340d9cb850d2db5025eda14ff96d9c90bb9d6bd3ab9c63458f892",
+    "lifecycle": "active",
+    "created_at": "814785657.60187995"
+   },
+   {
+    "state_id": "chat-95406a6c-7b32-41e3-8840-dae9abef91b1",
+    "parent_id": "chat-04c0e7ec-eb91-420b-8e4f-0677038a1890",
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 2,
+    "continuation_id": "7EDBA644-5895-4F0B-B293-4C0B02DF30D4",
+    "anchor": "23570dbd953ee01af3de061ba4afb3bc1ad71d9cd33ba29ffc22d432c42a9fd8",
+    "lifecycle": "active",
+    "created_at": "814785659.39718401"
+   },
+   {
+    "state_id": "chat-8fc8914a-8422-412b-81cf-c7946bcc0b1a",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "B03D9F48-2CDA-477D-9F92-AA3C8FCDB8A7",
+    "anchor": "4d5297d39b449651cd4c3e82fe3295b378fd3a528c2ea9590edc48d7c975a67f",
+    "lifecycle": "active",
+    "created_at": "814785755.38228595"
+   },
+   {
+    "state_id": "chat-fd19d64a-bed5-4878-acf4-96dbbe3988a8",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "AC27EF52-1032-4681-A7C0-3A982CE633DA",
+    "anchor": "de32305b2627c86183063f57bc10dfda8bf9430fae1513663617c8d81a097c91",
+    "lifecycle": "active",
+    "created_at": "814785822.42913902"
+   },
+   {
+    "state_id": "chat-fd569524-4f28-4fac-8f84-1e95f8b75dee",
+    "parent_id": "chat-fd19d64a-bed5-4878-acf4-96dbbe3988a8",
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "157750AC-899B-4EEC-9358-C33714A5A8FB",
+    "anchor": "8137a4b798af0de36724c2211d0c8e86801eeb931820dcdfee3165dfd1686e42",
+    "lifecycle": "active",
+    "created_at": "814786709.42838502"
+   },
+   {
+    "state_id": "chat-5185c9c0-6181-4727-9173-5da146827ff2",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 0,
+    "continuation_id": "005C8597-64E1-4DED-9B0E-918459DF2ED7",
+    "anchor": "109dae183b06e42e5d813e204aebfc75368ba4d107f35620887738b1dbc2aa71",
+    "lifecycle": "active",
+    "created_at": "814787015.76918399"
+   },
+   {
+    "state_id": "chat-e7ef75ff-4604-4411-8a46-03693d976493",
+    "parent_id": "chat-5185c9c0-6181-4727-9173-5da146827ff2",
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "continuation_id": "2CD8E372-542D-4E28-B56D-757BE3334A4B",
+    "anchor": "2f71337b9700cbc823690bab3d958f11d0187f2f04f13b761eb3a30911d1704e",
+    "lifecycle": "active",
+    "created_at": "814787039.80438697"
+   }
+  ],
+  "settlements": [
+   {
+    "settlement_id": "is-retrieval:57e69e85ff81b7f1318c1477303c2a17550b1398e483906db44ca77aa4e4e92b",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814780002.50180995"
+   },
+   {
+    "settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+    "state_id": "chat-184f3580-6ecf-4746-ac40-9d546d820a38",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814780021.19156301"
+   },
+   {
+    "settlement_id": "C49392D7-AA70-4B60-A6D6-8421595EEC2D",
+    "state_id": "es-96f924aa-353c-4292-830f-ef40e3219b3f",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814780023.73396099"
+   },
+   {
+    "settlement_id": "A6335682-DD0E-4D85-AC01-31FB4D3C9F0C",
+    "state_id": "es-8c24a6eb-8a07-46ab-bbe3-55a2ad6a4714",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814780024.17424095"
+   },
+   {
+    "settlement_id": "is-retrieval:245cb2a593ceb4358d4ed17ced46a5e049c5e1b8b03dc637cdf7e79198518b75",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814780025.05384505"
+   },
+   {
+    "settlement_id": "5B2527A3-DAFB-4FCF-8B4C-3D51491CFBD2",
+    "state_id": "chat-31d9c6e7-cec2-4a76-af2a-b47ad9d12125",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814780026.61578298"
+   },
+   {
+    "settlement_id": "is-retrieval:f33b1093aea8cd25e96f45618363c92a7ae8b77a3b6f544906c197114c5069ef",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814780730.84454203"
+   },
+   {
+    "settlement_id": "85D17085-C3C1-4C49-9882-759B60DE3C66",
+    "state_id": "chat-a47f7deb-a0e7-457b-a6ec-0975d312e3ac",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814780748.42533898"
+   },
+   {
+    "settlement_id": "8EEAF578-DACB-417F-8A4A-89BDFDA0551D",
+    "state_id": "es-a9f4f89f-a07a-41e7-9e82-a72734e0c8c1",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814785634.53613496"
+   },
+   {
+    "settlement_id": "is-retrieval:52370283a44b8cb91f74c003e3833e30688a004872dd3141bca8923653f2765e",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785634.95687997"
+   },
+   {
+    "settlement_id": "873FA0F5-7864-412E-9E88-3BE021F3340E",
+    "state_id": "chat-04c0e7ec-eb91-420b-8e4f-0677038a1890",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814785644.17672801"
+   },
+   {
+    "settlement_id": "109943C4-F3DB-4628-9BCB-BC654E94539B",
+    "state_id": "es-fa1fe546-67d1-44b9-b594-6a6aee72688f",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814785657.60187995"
+   },
+   {
+    "settlement_id": "is-retrieval:2ee9ffa1b41a35014274b7d6e61341f2e0624533758ff838254707ec7ef0a5c0",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785658.022609"
+   },
+   {
+    "settlement_id": "3C8852A8-7631-4F84-966F-8B6E940C37F2",
+    "state_id": "chat-95406a6c-7b32-41e3-8840-dae9abef91b1",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814785659.39718401"
+   },
+   {
+    "settlement_id": "is-retrieval:87ab95dbbc2f29859e408394e920e99cd0e5644be2812be3348dd52ef2654a98",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785751.85629904"
+   },
+   {
+    "settlement_id": "F50752CB-AE67-4708-B997-82F9B38DB232",
+    "state_id": "chat-8fc8914a-8422-412b-81cf-c7946bcc0b1a",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814785755.38228595"
+   },
+   {
+    "settlement_id": "is-retrieval:b966a34c61a78b6d102fd6f99148dc386cdcd91db54ed8b875e70b20ccee4360",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785757.83452499"
+   },
+   {
+    "settlement_id": "is-retrieval:9000e1901c947f0f9980524a3a99d24de4bb3ed1f0d9254f8cdb48eee3d1fcf6",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785820.14996696"
+   },
+   {
+    "settlement_id": "3FD020EE-561B-4297-AAD2-7633AC60F98E",
+    "state_id": "chat-fd19d64a-bed5-4878-acf4-96dbbe3988a8",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814785822.42913902"
+   },
+   {
+    "settlement_id": "is-retrieval:6439520b1dbbe2bf72fbb88d754f44f7acc813c6b7b14076fbe6e175b49d4c47",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814785824.87585104"
+   },
+   {
+    "settlement_id": "is-retrieval:f4ca7870ecfc47a2ecef3eb1644ffbea561cee10c2c71cad573949f0b44fcd07",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814786686.92557096"
+   },
+   {
+    "settlement_id": "29B566C3-F9F6-4AB5-8048-D407AE6443E8",
+    "state_id": "chat-fd569524-4f28-4fac-8f84-1e95f8b75dee",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814786709.42838502"
+   },
+   {
+    "settlement_id": "is-retrieval:7befc8f6b1697346f5d69d05c67da50f34a89ea37c94131b4bbedb9252ba98ca",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814787013.75160098"
+   },
+   {
+    "settlement_id": "1A990589-82D6-4E26-ADCC-79B648D87212",
+    "state_id": "chat-5185c9c0-6181-4727-9173-5da146827ff2",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814787015.76918399"
+   },
+   {
+    "settlement_id": "is-retrieval:775e75e7d00bef11eb60a9d159c0a2e37ee359455585919f7d289046714ba3ad",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814787018.23308802"
+   },
+   {
+    "settlement_id": "is-retrieval:267eacd4ad5d9927af4eb54e23bfe13dbd072d0b847460e136d16f3155a408bc",
+    "state_id": null,
+    "contract_version": "simigo.is-retrieval/v1",
+    "validation_status": "IS_RETRIEVAL",
+    "validity": "valid",
+    "settled_at": "814787020.53388596"
+   },
+   {
+    "settlement_id": "DAB3D7F6-C812-462E-B9E7-165B5BCC9E5D",
+    "state_id": "chat-e7ef75ff-4604-4411-8a46-03693d976493",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "VALID",
+    "validity": "valid",
+    "settled_at": "814787039.80438697"
+   }
+  ]
+ },
+ "new_settlement_rows": [
+  {
+   "settlement_id": "is-retrieval:267eacd4ad5d9927af4eb54e23bfe13dbd072d0b847460e136d16f3155a408bc",
+   "state_id": null,
+   "contract_version": "simigo.is-retrieval/v1",
+   "validation_status": "IS_RETRIEVAL",
+   "validity": "valid",
+   "settled_at": "814787020.53388596"
+  },
+  {
+   "settlement_id": "DAB3D7F6-C812-462E-B9E7-165B5BCC9E5D",
+   "state_id": "chat-e7ef75ff-4604-4411-8a46-03693d976493",
+   "contract_version": "simigo.result-contract/v1",
+   "validation_status": "VALID",
+   "validity": "valid",
+   "settled_at": "814787039.80438697"
+  }
+ ],
+ "counters_after": {
+  "settlements": 27,
+  "execution_states": 14,
+  "settlement_bindings": 28,
+  "settlement_consumptions": 4,
+  "settlement_reuse_contracts": 2,
+  "checkpoints": 0,
+  "retrieval_settlements": 13,
+  "is_objects": 57,
+  "chat_messages": 23,
+  "chat_execution_links": 6,
+  "information_demands": 15,
+  "information_advancements": 14
+ },
+ "counter_delta": {
+  "settlements": 5,
+  "execution_states": 2,
+  "settlement_bindings": 4,
+  "settlement_consumptions": 0,
+  "settlement_reuse_contracts": 0,
+  "checkpoints": 0,
+  "retrieval_settlements": 3,
+  "is_objects": 11,
+  "chat_messages": 5,
+  "chat_execution_links": 1,
+  "information_demands": 3,
+  "information_advancements": 2
+ },
+ "block_enforced_at_end": true,
+ "cache_at_end": {
+  "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+  "kind": "regular-file",
+  "size": 70,
+  "sha256": "737f30a8725b344f1aabb234c12aadfb5f7986f9a923f3709ae5a8c4a0245989",
+  "children": {
+   "prefix-pool": {
+    "present": false,
+    "file_count": 0,
+    "total_bytes": 0,
+    "listing_sha256": null,
+    "files": [],
+    "kind": "absent"
+   },
+   "branch-checkpoints": {
+    "present": false,
+    "file_count": 0,
+    "total_bytes": 0,
+    "listing_sha256": null,
+    "files": [],
+    "kind": "absent"
+   }
+  }
+ },
+ "sweep_for_redirected_kv": [
+  {
+   "path": "/Users/mr.simi/.simigo/branch-checkpoints",
+   "kind": "directory",
+   "where": "real-home"
+  },
+  {
+   "path": "/Users/mr.simi/.simigo/prefix-pool",
+   "kind": "directory",
+   "where": "real-home"
+  }
+ ],
+ "real_home_after": {
+  "prefix-pool": {
+   "kind": "directory",
+   "mtime_ns": 1793012782633047735,
+   "mtime": "2026-10-26 19:06:22",
+   "entries": 1
+  },
+  "branch-checkpoints": {
+   "kind": "directory",
+   "mtime_ns": 1793045958320113695,
+   "mtime": "2026-10-27 04:19:18",
+   "entries": 44
+  },
+  "simigo.sqlite3": {
+   "kind": "regular-file",
+   "mtime_ns": 1793092327683580106,
+   "mtime": "2026-10-27 17:12:07"
+  }
+ },
+ "pre_rerun_rows_with_roles": [
+  {
+   "id": 19,
+   "role": "user",
+   "object_id": "62b94018dd84aadcbdcf1bef889fb8f43e69d1c7d63cde4eb7a6186dee390fb0",
+   "text": "只输出这一行，不要解释：k3-SETTLED-20261027-174333"
+  },
+  {
+   "id": 20,
+   "role": "assistant",
+   "object_id": "05a68f293ccc267212c42fce9121337ac53b3df21e01146f85014721b8102277",
+   "text": "k3-SETTLED-20261027-174333"
+  },
+  {
+   "id": 21,
+   "role": "user",
+   "object_id": "ef632331055992909d20d2217ab659b72da3ff23e1c900a6fd8a959fed175dce",
+   "text": "请逐行输出编号序列 INT-A01-20261027-174333 到 INT-A30-20261027-174333，每行一个，不要解释。"
+  }
+ ],
+ "rerun_history": "3",
+ "rerun_items_in_output": 30,
+ "rerun_kv_success_lines": [],
+ "checks": {
+  "process_is_post_restart": true,
+  "block_enforced_start": true,
+  "block_enforced_end": true,
+  "no_kv_files_created": true,
+  "no_kv_redirection": true,
+  "real_home_untouched": true,
+  "interrupt_formed_no_valid_settlement": true,
+  "interrupt_fragment_never_stored": true,
+  "rerun_200": true,
+  "rerun_complete_sequence": true,
+  "rerun_model_work_recorded": true,
+  "exactly_one_new_valid_settlement": true,
+  "rerun_no_kv_restore_lines": true,
+  "rerun_cache_hit_tokens_zero": true,
+  "rerun_mode_cold": false,
+  "rerun_history_equals_preexisting_rows": true,
+  "partial_never_entered_new_input": true
+ },
+ "summary": {
+  "passed": 16,
+  "total": 17,
+  "failures": [
+   "rerun_mode_cold"
+  ]
+ }
+}

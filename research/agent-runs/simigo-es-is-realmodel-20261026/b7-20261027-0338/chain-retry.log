@@ -1,0 +1,18 @@
+{
+ "status": 200,
+ "seconds": 5.055,
+ "output_text": "RESULT=B7-SETTLED-20261027-034749",
+ "continuation_settlement": {
+  "child_es_state_id": "es-0a3ab248-e7ca-4079-8b96-5521d9681e52",
+  "settlement_id": "636E187B-09CE-4386-B4D2-8430EABFC849",
+  "identity_binding_published": true
+ },
+ "checks": {
+  "status_200": true,
+  "settlement_recorded": true,
+  "generation_ran": true,
+  "derived_settlement_was_anchor": true,
+  "ok": true
+ }
+}
+wrote /Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/b7-20261027-0338/chain-retry-20261027-035025.json

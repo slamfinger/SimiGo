@@ -1,0 +1,64 @@
+{
+  "nonce": "20261026-202127",
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "sys_sha256": "864453410e8c8792882500f8e9c8ab20eaa22a47fa6160f83ba6e8d82fe80d98",
+  "probes": [
+    {
+      "probe": "Q1_cold_noinject",
+      "session": "pc-20261026-202127-X",
+      "http": 200,
+      "seconds": 9.1,
+      "prompt_tokens": null,
+      "content": "“glorp” 在提供的注册表（Register）中未定义。注册表仅包含从 Item 0",
+      "trace": [
+        "[2026-10-26 20:21:27.862] [PROTOCOL] arrive r=f47d12 endpoint=chat.completions stream=false agent=default s=pc-202 branch=main",
+        "[2026-10-26 20:21:27.863] [MLX] prefillStep=2048 est=7033 reuse=false",
+        "[2026-10-26 20:21:33.394] [MLX] prefill 5862/7814",
+        "[2026-10-26 20:21:35.615] [MLX] prefill 7814/7814",
+        "[2026-10-26 20:21:36.444] [MLX] poolExport messages=3 refHash=2d5ee8a5a7735336",
+        "[2026-10-26 20:21:36.568] [MLX] cacheSave session=X/main history=3",
+        "[2026-10-26 20:21:36.569] [MLX] session=X/main messages=2 exec=7c6a32 history=3 delta=1 reuse=false ttft=7798ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=7814 promptTime=7.8s tps=36.3 rawEv=24 rawB=90 emitB=90",
+        "[2026-10-26 20:21:36.570] [LC] RELEASED r=f47d12 s=pc-202 reason=completed"
+      ]
+    },
+    {
+      "probe": "Q2_crosssession_identical_noinject",
+      "session": "pc-20261026-202127-Y",
+      "http": 200,
+      "seconds": 9.22,
+      "prompt_tokens": null,
+      "content": "根据提供的注册目录（Register）和信息空间（Information Space），\"glorp\" 在注册表中未定义。",
+      "trace": [
+        "[2026-10-26 20:21:36.886] [PROTOCOL] arrive r=4dab0e endpoint=chat.completions stream=false agent=default s=pc-202 branch=main",
+        "[2026-10-26 20:21:36.887] [MLX] prefillStep=2048 est=7108 reuse=false",
+        "[2026-10-26 20:21:42.519] [MLX] prefill 5937/7917",
+        "[2026-10-26 20:21:44.796] [MLX] prefill 7917/7917",
+        "[2026-10-26 20:21:45.640] [MLX] poolExport messages=4 refHash=55a4d1b00d691eb0",
+        "[2026-10-26 20:21:45.785] [MLX] cacheSave session=Y/main history=4",
+        "[2026-10-26 20:21:45.786] [MLX] session=Y/main messages=3 exec=e3a686 history=4 delta=1 reuse=false ttft=7957ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=7917 promptTime=7.9s tps=36.1 rawEv=24 rawB=117 emitB=117",
+        "[2026-10-26 20:21:45.787] [LC] RELEASED r=4dab0e s=pc-202 reason=completed"
+      ]
+    },
+    {
+      "probe": "Q3_samesession_append_noinject",
+      "session": "pc-20261026-202127-X",
+      "http": 200,
+      "seconds": 9.42,
+      "prompt_tokens": null,
+      "content": "“glorp” 在提供的注册表（Register）中未定义。注册表仅包含从 Item 0",
+      "trace": [
+        "[2026-10-26 20:21:46.109] [PROTOCOL] arrive r=114371 endpoint=chat.completions stream=false agent=default s=pc-202 branch=main",
+        "[2026-10-26 20:21:46.110] [MLX] reuseMiss count=true fp=true prefix=false history=3 incoming=5 fpHistory=- fpIncoming=-",
+        "[2026-10-26 20:21:46.111] [MLX] prefixMismatch index=1 role=system historyTool=false incomingTool=false history=3 incoming=5",
+        "[2026-10-26 20:21:46.111] [MLX] prefixDiff index=1 stored(role=user,tool=0,len=15,fp=7274b71b) incoming(role=system,tool=0,len=328,fp=134c6f26) commonPrefix=0 stored='ζψξϑφπ 何谓 glorp' incoming='[Information Space] 已结算并'",
+        "[2026-10-26 20:21:46.111] [MLX] prefillStep=2048 est=7189 reuse=false",
+        "[2026-10-26 20:21:51.925] [MLX] prefill 6045/8061",
+        "[2026-10-26 20:21:54.235] [MLX] prefill 8061/8061",
+        "[2026-10-26 20:21:55.082] [MLX] poolExport messages=6 refHash=ffbe4f1833fcc65b",
+        "[2026-10-26 20:21:55.207] [MLX] cacheSave session=X/main history=6",
+        "[2026-10-26 20:21:55.207] [MLX] session=X/main messages=5 exec=434488 history=6 delta=1 reuse=false ttft=8160ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=8061 promptTime=8.1s tps=35.7 rawEv=24 rawB=90 emitB=90",
+        "[2026-10-26 20:21:55.209] [LC] RELEASED r=114371 s=pc-202 reason=completed"
+      ]
+    }
+  ]
+}

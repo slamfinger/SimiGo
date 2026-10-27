@@ -1,0 +1,35 @@
+model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX nonce=20261026-200601
+== P1_cold http=200 secs=32.05 prompt=None
+   [2026-10-26 20:06:01.481] [PROTOCOL] arrive r=b0760a endpoint=chat.completions stream=false agent=default s=pc-202 branch=main
+   [2026-10-26 20:06:01.483] [MLX] sessionClientSplit key=A/main#cea42a01 note=system-prompt client shard
+   [2026-10-26 20:06:01.483] [MLX] prefillStep=2048 est=8194 reuse=false
+   [2026-10-26 20:06:21.556] [MLX] prefill 5649/9415
+   [2026-10-26 20:06:25.650] [MLX] prefill 9415/9415
+   [2026-10-26 20:06:33.070] [MLX] poolExport messages=4 refHash=14851ea2796d8cfb
+   [2026-10-26 20:06:33.238] [MLX] cacheSave session=A/main history=4
+   [2026-10-26 20:06:33.238] [MLX] session=A/main messages=3 exec=6d2d5d history=4 delta=1 reuse=false ttft=30433ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=9415 promptTime=30.3s tps=24.9 rawEv=24 rawB=83 emitB=83
+   [2026-10-26 20:06:33.252] [LC] RELEASED r=b0760a s=pc-202 reason=completed
+== P2_crosssession_identical http=200 secs=10.86 prompt=None
+   [2026-10-26 20:06:33.496] [PROTOCOL] arrive r=2cce0a endpoint=chat.completions stream=false agent=default s=pc-202 branch=main
+   [2026-10-26 20:06:33.497] [MLX] sessionClientSplit key=B/main#cea42a01 note=system-prompt client shard
+   [2026-10-26 20:06:33.497] [MLX] prefillStep=2048 est=8163 reuse=false
+   [2026-10-26 20:06:38.762] [MLX] prefill 5640/9399
+   [2026-10-26 20:06:43.112] [MLX] prefill 9399/9399
+   [2026-10-26 20:06:43.958] [MLX] poolExport messages=4 refHash=9b0596748111a969
+   [2026-10-26 20:06:44.112] [MLX] cacheSave session=B/main history=4
+   [2026-10-26 20:06:44.113] [MLX] session=B/main messages=3 exec=3e8dcd history=4 delta=1 reuse=false ttft=9653ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=9399 promptTime=9.6s tps=36.8 rawEv=24 rawB=83 emitB=83
+   [2026-10-26 20:06:44.114] [LC] RELEASED r=2cce0a s=pc-202 reason=completed
+== P3_samesession_append http=200 secs=10.9 prompt=None
+   [2026-10-26 20:06:44.286] [PROTOCOL] arrive r=5233a0 endpoint=chat.completions stream=false agent=default s=pc-202 branch=main
+   [2026-10-26 20:06:44.287] [MLX] reuseMiss count=true fp=true prefix=false history=4 incoming=5 fpHistory=- fpIncoming=-
+   [2026-10-26 20:06:44.288] [MLX] prefixMismatch index=1 role=system historyTool=false incomingTool=false history=4 incoming=5
+   [2026-10-26 20:06:44.288] [MLX] prefixDiff index=1 stored(role=system,tool=0,len=3960,fp=bdddf9b8) incoming(role=system,tool=0,len=3843,fp=b97380d4) commonPrefix=87 stored='= 已结算结论）: - file:work-00' incoming='= 已结算结论）: - chat:pc-2026'
+   [2026-10-26 20:06:44.288] [MLX] sessionClientSplit key=A/main#cea42a01 note=system-prompt client shard
+   [2026-10-26 20:06:44.288] [MLX] prefillStep=2048 est=8253 reuse=false
+   [2026-10-26 20:06:49.799] [MLX] prefill 5916/9858
+   [2026-10-26 20:06:54.012] [MLX] prefill 9858/9858
+   [2026-10-26 20:06:54.872] [MLX] poolExport messages=6 refHash=1127226b50caa01f
+   [2026-10-26 20:06:55.021] [MLX] cacheSave session=A/main history=6
+   [2026-10-26 20:06:55.022] [MLX] session=A/main messages=5 exec=944367 history=6 delta=1 reuse=false ttft=9761ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=9858 promptTime=9.7s tps=36.2 rawEv=24 rawB=77 emitB=77
+   [2026-10-26 20:06:55.023] [LC] RELEASED r=5233a0 s=pc-202 reason=completed
+wrote e1-positive-control-20261026-200601.json

@@ -1,0 +1,94 @@
+{
+ "parent_payload": {
+  "undecoded": "Expecting value: line 1 column 1 (char 0)",
+  "head": ""
+ },
+ "parent_contract_version": "simigo.result-contract/v1",
+ "parent_validation": "VALID",
+ "payload_object_indexed": true,
+ "is_object_route": {
+  "http": 200,
+  "keys": [
+   "verified",
+   "object_id",
+   "payload",
+   "encoding",
+   "created_order",
+   "payload_size"
+  ],
+  "verified": true,
+  "bytes": 405
+ },
+ "probe_unknown_anchor": {
+  "http": 422,
+  "body": {
+   "error": {
+    "code": null,
+    "type": "server_error",
+    "error_kind": "INPUT_ADMISSION_REFUSED",
+    "reason_code": "is_refusal",
+    "message": "Continuation refused before generation: IS admission refused: no settled IS record for state es-does-not-exist-0001",
+    "param": null
+   }
+  },
+  "trace": [
+   "[2026-10-26 19:08:46.013] [PROTOCOL] arrive r=724890 endpoint=responses stream=false agent=default s=respon branch=main",
+   "[2026-10-26 19:08:46.037] [LC] RELEASED r=724890 s=respon reason=cancelled_internally"
+  ],
+  "secs": 0.02
+ },
+ "probe_recover_no_settle": {
+  "http": 200,
+  "secs": 6.89,
+  "trace": [
+   "[2026-10-26 19:08:46.038] [PROTOCOL] arrive r=8a322a endpoint=responses stream=false agent=default s=respon branch=main",
+   "[2026-10-26 19:08:46.057] [PROTOCOL] continuation_admitted r=req-8a322af9 parent=chat-5809b828-f2a1-4177-8573-c3499b5f7fcf child=es-c680fd63-cf75-43f2-9315-a0216c2c65c5 bindings=1",
+   "[2026-10-26 19:08:46.545] [MLX] prefillStep=2048 est=1686 reuse=false",
+   "[2026-10-26 19:08:52.678] [MLX] prefill 2342/2342",
+   "[2026-10-26 19:08:52.925] [MLX] session=b3c182/main messages=3 exec=32f32e history=4 delta=1 reuse=false ttft=6200ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2342 promptTime=6.2s tps=35.5 rawEv=3 rawB=3 emitB=3",
+   "[2026-10-26 19:08:52.929] [LC] RELEASED r=8a322a s=respon reason=completed"
+  ],
+  "body_head": "{\"id\": \"resp-3bfb5766-8326-4b69-9273-d438d5fc4370\", \"usage\": {\"total_tokens\": 2345, \"input_tokens\": 2342, \"input_tokens_details\": {\"cached_tokens\": 0}, \"output_tokens\": 3, \"output_tokens_details\": {\"reasoning_tokens\": 0}}, \"user\": null, \"instructions\": null, \"status\": \"completed\", \"error\": null, \"tool_choice\": \"auto\", \"parallel_tool_calls\": true, \"store\": true, \"previous_response_id\": null, \"metadata\": {}, \"text\": {\"format\": {\"type\": \"text\"}}, \"tools\": [], \"top_p\": 1, \"truncation\": \"disabled\", \"model\": \"peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX\", \"object\": \"response\", \"completed_at\": 1793012926, \"created_at\": 1793012926, \"temperature\": 1, \"output\": [{\"status\": \"completed\", \"type\": \"message\", \"content\": [{\"text\": \"837\", \"type\": \"output_text\", \"annotations\": []}], \"role\": \"assistant\", \"id\": \"msg-b93de947-0008-4ef1-b6a2-2cd5efb0f370\"}], \"incomplete_details\": null}"
+ },
+ "probe_same_session_kv": {
+  "http": 200,
+  "secs": 2.96,
+  "trace": [
+   "[2026-10-26 19:08:53.294] [PROTOCOL] arrive r=92590e endpoint=chat.completions stream=false agent=default s=exp-20 branch=main",
+   "[2026-10-26 19:08:53.295] [MLX] prefillStep=2048 est=1172 reuse=false",
+   "[2026-10-26 19:08:55.590] [MLX] prefill 2350/2350",
+   "[2026-10-26 19:08:55.887] [MLX] session=es1/main messages=5 exec=485958 history=6 delta=1 reuse=false ttft=2333ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2350 promptTime=2.3s tps=35.4 rawEv=4 rawB=4 emitB=4",
+   "[2026-10-26 19:08:55.888] [LC] RELEASED r=92590e s=exp-20 reason=completed"
+  ],
+  "usage": null
+ },
+ "roots": [
+  {
+   "root_id": "huggingface-cache",
+   "category": "model",
+   "display_name": null,
+   "locator_type": "path",
+   "status": "present",
+   "created_at": "814685648.20279801",
+   "last_scanned_at": null
+  },
+  {
+   "root_id": "work-00000000b2f5467d",
+   "category": "work",
+   "display_name": "/Users/mr.simi/Desktop/参考文件",
+   "locator_type": "path",
+   "status": "present",
+   "created_at": "814685818.38515401",
+   "last_scanned_at": "814696899.07297301"
+  },
+  {
+   "root_id": "work-00000000f79f9309",
+   "category": "work",
+   "display_name": "/Users/mr.simi/Desktop/26.秦沈项目",
+   "locator_type": "path",
+   "status": "present",
+   "created_at": "814685818.54895604",
+   "last_scanned_at": "814696899.28398097"
+  }
+ ]
+}

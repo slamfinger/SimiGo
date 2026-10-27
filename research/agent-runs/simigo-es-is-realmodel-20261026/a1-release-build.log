@@ -1,0 +1,1400 @@
+2026-10-26 20:26:36.817 xcodebuild[89321:8643365]  DVTErrorPresenter: Unable to load simulator devices.
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+Failure Reason: The version of the CoreSimulator framework installed on this Mac is out-of-date and not supported by this version of Xcode.
+Recovery Suggestion: Please ensure that you have installed all available updates to your Mac's software, and that you are running the most recent version of Xcode supported by macOS.
+--
+CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+--
+
+2026-10-26 20:26:36.818 xcodebuild[89321:8643365]  iOSSimulator: [SimServiceContext sharedServiceContextForDeveloperDir:error:] returned nil (Error Domain=DVTCoreSimulatorAdditionsErrorDomain Code=3 "CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2)." UserInfo={NSLocalizedDescription=CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).}). Simulator device support disabled.
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project SimiGo.xcodeproj -scheme SimiGo -configuration Release -derivedDataPath /tmp/simigo_rel build
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  mlx-swift-lm: https://github.com/slamfinger/mlx-swift-lm.git @ bc64ee6
+  swift-certificates: https://github.com/apple/swift-certificates.git @ 1.21.0
+  swift-syntax: https://github.com/swiftlang/swift-syntax.git @ 603.0.2
+  swift-huggingface: https://github.com/huggingface/swift-huggingface.git @ 0.11.0
+  swift-asn1: https://github.com/apple/swift-asn1.git @ 1.7.3
+  mlx-swift: https://github.com/slamfinger/mlx-swift @ ef5f1b6
+  yyjson: https://github.com/ibireme/yyjson.git @ 0.12.0
+  EventSource: https://github.com/mattt/EventSource.git @ 1.5.1
+  swift-transformers: https://github.com/huggingface/swift-transformers.git @ 1.3.4
+  LOCALBCore: /Users/mr.simi/Documents/SimiGo/Packages/LOCALBCore @ local
+  SimiGoRuntime: /Users/mr.simi/Documents/SimiGo/Packages/SimiGoRuntime @ local
+  swift-collections: https://github.com/apple/swift-collections.git @ 1.7.1
+  swift-crypto: https://github.com/apple/swift-crypto.git @ 4.5.2
+  Jinja: https://github.com/huggingface/swift-jinja.git @ 2.5.1
+  swift-numerics: https://github.com/apple/swift-numerics @ 1.1.1
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008142-0000096E1E09401C, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00008142-0000096E1E09401C, name:My Mac }
+{ platform:macOS, name:Any Mac }
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (69 targets)
+    Target 'SimiGo' in project 'SimiGo'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXVLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Transformers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'LOCALBCore-product' in project 'LOCALBCore'
+    Target 'LOCALBCore-product' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'LOCALBCore' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'LOCALBCore' in project 'LOCALBCore'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'X509-product' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'X509' in project 'swift-certificates'
+        ➜ Explicit dependency on target '_CertificateInternals' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras-product' in project 'swift-crypto'
+    Target 'X509' in project 'swift-certificates'
+        ➜ Explicit dependency on target '_CertificateInternals' in project 'swift-certificates'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras-product' in project 'swift-crypto'
+    Target '_CryptoExtras-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target '_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target '_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CryptoExtras' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'SwiftASN1-product' in project 'swift-asn1'
+    Target 'swift-crypto_CryptoExtras' in project 'swift-crypto' (no dependencies)
+    Target 'CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CryptoBoringWrapper' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+    Target 'swift-crypto_CryptoBoringWrapper' in project 'swift-crypto' (no dependencies)
+    Target 'CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CCryptoBoringSSLShims' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'CCryptoBoringSSL' in project 'swift-crypto'
+    Target 'swift-crypto_CCryptoBoringSSLShims' in project 'swift-crypto' (no dependencies)
+    Target 'CCryptoBoringSSL' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_CCryptoBoringSSL' in project 'swift-crypto'
+    Target 'swift-crypto_CCryptoBoringSSL' in project 'swift-crypto' (no dependencies)
+    Target 'SwiftASN1-product' in project 'swift-asn1'
+        ➜ Explicit dependency on target 'SwiftASN1' in project 'swift-asn1'
+    Target 'SwiftASN1' in project 'swift-asn1' (no dependencies)
+    Target '_CertificateInternals' in project 'swift-certificates' (no dependencies)
+    Target 'SimiGoRuntimeContract-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+    Target 'SimiGo2Experimental-product' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGo2Experimental' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+    Target 'SimiGo2Experimental' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'SimiGoRuntimeContract' in project 'SimiGoRuntime'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+    Target 'SimiGoRuntimeContract' in project 'SimiGoRuntime' (no dependencies)
+    Target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXFoundationModels' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXGuidedGeneration' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXCXGrammar' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXCXGrammar' in project 'mlx-swift-lm' (no dependencies)
+    Target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm' (no dependencies)
+    Target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'Hub-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Transformers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Models' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Models' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Generation' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'yyjson-product' in project 'yyjson'
+        ➜ Explicit dependency on target 'yyjson' in project 'yyjson'
+    Target 'yyjson' in project 'yyjson' (no dependencies)
+    Target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'swift-crypto_Crypto' in project 'swift-crypto' (no dependencies)
+    Target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'EventSource' in project 'EventSource'
+    Target 'EventSource' in project 'EventSource' (no dependencies)
+    Target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'InternalCollectionsUtilities' in project 'swift-collections' (no dependencies)
+    Target 'swift-transformers_Hub' in project 'swift-transformers' (no dependencies)
+    Target 'MLXVLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXVLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXVLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXOptimizers-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'Numerics-product' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+    Target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+    Target '_NumericsShims' in project 'swift-numerics' (no dependencies)
+    Target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'mlx-swift_Cmlx' in project 'mlx-swift'
+    Target 'mlx-swift_Cmlx' in project 'mlx-swift' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk /tmp/simigo_rel/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+    cd /Users/mr.simi/Documents/SimiGo/SimiGo.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -o /tmp/simigo_rel/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+
+SwiftDriver SimiGo normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -O -whole-module-optimization @/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftFileList -Xcc -fmodule-map-file\=/tmp/simigo_rel/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /tmp/simigo_rel/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -swift-version 5 -I /tmp/simigo_rel/Build/Products/Release -F /tmp/simigo_rel/Build/Products/Release/PackageFrameworks -F /tmp/simigo_rel/Build/Products/Release -Xfrontend -load-plugin-executable -Xfrontend /tmp/simigo_rel/Build/Products/Release/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64 -c -num-threads 10 -Xcc -ivfsstatcache -Xcc /tmp/simigo_rel/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/simigo_rel/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/simigo_rel/ModuleCache.noindex -sdk-module-cache-path /tmp/simigo_rel/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /tmp/simigo_rel/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/yyjson/src -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/tmp/simigo_rel/Build/Products/Release/include -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources-normal/arm64 -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources/arm64 -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -no-emit-module-separately-wmo
+
+SwiftCompile normal arm64 Compiling\ CloudBackend.swift,\ Config.swift,\ ExecutionStateGraph.swift,\ FirstRunWizard.swift,\ MenuApp.swift,\ Settings.swift,\ SimiGoBootstrapRunner.swift,\ StatusBarCoordinator.swift,\ SimiGoEnvBootstrapEntry.swift,\ SimiGoG1G3Entry.swift,\ SimiGoLocalBManagementEntry.swift,\ BranchCheckpointRetention.swift,\ ExecutionControlling.swift,\ ExecutionLineage.swift,\ ExecutionPolicy.swift,\ ExecutionStateProjection.swift,\ LifecycleGates.swift,\ LOCALBHostRuntime.swift,\ LOCALBTransportPolicy.swift,\ NativeMLX.swift,\ NativeMLXObservation.swift,\ NativeMLXPrefixPool.swift,\ OversizedRuntime.swift,\ RemoteOpenAIRuntime.swift,\ StreamTokenFilter.swift,\ ToolGovernance.swift,\ RuntimeLifecycle.swift,\ RuntimeTuning.swift,\ InferenceNodeCfg.swift,\ ModelTypes.swift,\ SimiGoProducerIdentity.swift,\ TypesBridge.swift,\ TraceLogger.swift,\ ContinuationAdmission.swift,\ ContinuationSettlement.swift,\ HTTPServer.swift,\ HTTPServerChat.swift,\ HTTPServerCompletions.swift,\ HTTPServerMCP.swift,\ HTTPServerResponses.swift,\ InformationTurnProducer.swift,\ RemoteOpenAIBackend.swift,\ Detector.swift,\ EnvManager.swift,\ ProcessRunner.swift,\ Service.swift,\ GeneratedAssetSymbols.swift /Users/mr.simi/Documents/SimiGo/SimiGo/App/CloudBackend.swift /Users/mr.simi/Documents/SimiGo/SimiGo/App/Config.swift /Users/mr.simi/Documents/SimiGo/SimiGo/App/ExecutionStateGraph.swift /Users/mr.simi/Documents/SimiGo/SimiGo/App/FirstRunWizard.swift /Users/mr.simi/Documents/SimiGo/SimiGo/App/MenuApp.swift /Users/mr.simi/Documents/SimiGo/SimiGo/App/Settings.swift /Users/mr.simi/Documents/SimiGo/SimiGo/App/SimiGoBootstrapRunner.swift /Users/mr.simi/Documents/SimiGo/SimiGo/App/StatusBarCoordinator.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Headless/SimiGoEnvBootstrapEntry.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Headless/SimiGoG1G3Entry.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Headless/SimiGoLocalBManagementEntry.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/BranchCheckpointRetention.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/ExecutionControlling.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/ExecutionLineage.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/ExecutionPolicy.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/ExecutionStateProjection.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/LifecycleGates.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/LOCALBHostRuntime.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/LOCALBTransportPolicy.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXPrefixPool.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/OversizedRuntime.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/RemoteOpenAIRuntime.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/StreamTokenFilter.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Inference/ToolGovernance.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Lifecycle/RuntimeLifecycle.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Lifecycle/RuntimeTuning.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Model/InferenceNodeCfg.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Model/ModelTypes.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Model/SimiGoProducerIdentity.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Model/TypesBridge.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Observability/TraceLogger.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/ContinuationAdmission.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/ContinuationSettlement.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/HTTPServer.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/HTTPServerChat.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/HTTPServerCompletions.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/HTTPServerMCP.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/HTTPServerResponses.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/InformationTurnProducer.swift /Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/RemoteOpenAIBackend.swift /Users/mr.simi/Documents/SimiGo/SimiGo/System/Detector.swift /Users/mr.simi/Documents/SimiGo/SimiGo/System/EnvManager.swift /Users/mr.simi/Documents/SimiGo/SimiGo/System/ProcessRunner.swift /Users/mr.simi/Documents/SimiGo/SimiGo/System/Service.swift /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources/GeneratedAssetSymbols.swift /tmp/simigo_rel/Build/Products/Release/Numerics.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Accessibility.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CryptoKit.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLXLLM.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLXNN.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/ImageIO.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/EventSource.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/DataDetection.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLX.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreVideo.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/HuggingFace.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/Crypto.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/QuartzCore.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreMedia.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/Hub.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLXVLM.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreImage.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreGraphics.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/VideoToolbox.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/SimiGo2Experimental.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/SwiftUI-391VUPWJ61DZD.swiftmodule /tmp/simigo_rel/Build/Products/Release/SwiftASN1.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/_StringProcessing.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/_DarwinFoundation1.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/ObjectiveC.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/_Concurrency.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/LocalAuthentication.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/RegexBuilder.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/IOKit.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLXHuggingFace.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreTransferable.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Combine.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/AVFAudio-2FI71YX2FI4Y4.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/ColorSync.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/SwiftUICore-24MCD45I3K00B.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/os.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/_Builtin_float.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/RealModule.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/AudioToolbox-P7N26S15VD9W.swiftmodule /tmp/simigo_rel/Build/Products/Release/_CryptoExtras.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/Tokenizers.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Symbols.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Swift.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/FoundationModels-1J9BN3POMGP7O.swiftmodule /tmp/simigo_rel/Build/Products/Release/SimiGoRuntimeContract.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLXOptimizers.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreText.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/_DarwinFoundation3.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Metal.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreFoundation.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/OSLog.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/simd.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/OrderedCollections.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Foundation.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLXFoundationModels.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/X509.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreMIDI.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/ComplexModule.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/AuthenticationServices-3V55BBIVHTU4H.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/MediaToolbox-NC7W26ULFGP0.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Darwin.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/XPC.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Dispatch.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Observation.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/CryptoExtras.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/System.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreData.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/Jinja.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/AppKit-M05STY3EKEG4.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/DeveloperToolsSupport.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLXGuidedGeneration.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/LOCALBCore.swiftmodule/arm64-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/AVFoundation-24YKM9W121X0D.swiftmodule /tmp/simigo_rel/Build/Products/Release/InternalCollectionsUtilities.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/CoreAudio.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Spatial.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/CryptoBoringWrapper.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Network.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/MLXLMCommon.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/UniformTypeIdentifiers.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Distributed.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/Build/Products/Release/_CertificateInternals.swiftmodule/arm64-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/_DarwinFoundation2.swiftmodule/arm64e-apple-macos.swiftmodule /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/prebuilt-modules/27.0/Synchronization.swiftmodule/arm64e-apple-macos.swiftmodule /tmp/simigo_rel/SDKExplicitPrecompiledModules/libDER-3RJU29VTBY9V6MZAEOQQ3B13H.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_DarwinFoundation2-EKLNGYGZJEOGHKDAE6UGDB1HQ.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/DeveloperToolsSupport-BVGBE1LMNYDKBFJR8PTN3D51R.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CFNetwork-9OTPH3D23Q6IHN4DB73T9HRZF.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/AudioToolbox-1RBFK4UQCHWZ1HOTBTO4T6TQ6.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/SwiftUI-CIFKFL7EYXH5YFMKDYQ7YILMB.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreAudioTypes-77D03A68YUGDOZPG7JZC6NZTF.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_stdarg-4PF6B9VTKR5YXFXTG5U0CTA6G.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Accessibility-6IW8OA81U34IZQNOQTUEXJMV1.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/AVFoundation-6V2IFTDQKM13DI81ZVP67I771.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/OSLog-8TB1DH8PSIST1JVG66VQUD1SF.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Spatial-9CKPYW4ZDRQ18A6QCH7FCVDU6.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreData-87V3N6MD0F6HGU55NJ3V240CF.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_stdatomic-8D8SEXTNUO2FFGCO9AOZ8PDXY.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/os-3IHJSLB01KMXN9VSDUC88ZH8A.pcm /tmp/simigo_rel/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/yyjson-5H417TPLT34MRRNDR8G9UAWFV.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreMIDI-5664UOS9ZT3OG0L8PSM4ZUHWO.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_stdint-A5DTZ4TJN46DRGTT4JNA675FT.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/MediaToolbox-5TP8LFBT7OXFO56S8BF3UE13U.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/IOKit-4QD5GMMWSCD0MQ296PTWFQEJT.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/OpenGL-89TKFSOKSVV4D3BE1KDY8XSRH.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/os_object-BQB3SHUYNW3JZSG9J6GGI2SEA.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/LocalAuthentication-CQ5GH2I3K5EJMPKHFHDW41L1I.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/SwiftShims-CT9E5N38GQA2EG76L62HH6ELE.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/SwiftUICore-CMXE5XEPCR07HKDSICVXRIWVQ.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/os_workgroup-4LMJ9Y6X80O9DKKRRS1VIWW0B.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Symbols-6AJW0ZBWZUEC6NY1ONZGT7CNM.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Carbon-9GY7SOB8KAO4ZE1MGEKXX8JUT.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Foundation-3RYF34HQJ2ILTVI1D64A5X1LX.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_intrinsics-8G4UGPBBCRPXZJGXD35J5PH5P.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreGraphics-8VOX78Z4AERQE4MP1CN31TAMM.pcm /tmp/simigo_rel/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/Cmlx-B2X5W1PO0NK4A2GFN3YINPMGW.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Dispatch-BJX2B2EHREHYZC1EV9P0NZRGL.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/UniformTypeIdentifiers-KIAIHSHF66YILF1OUL4YO9B7.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/SQLite3-647ACVXCQQSIQDFHE8BY6HWW0.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreServices-ETJ64EO1OZ67M2AU618CKI0BI.pcm /tmp/simigo_rel/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/MLXCXGrammar-SU2GFYSDY7NS4QPZ0L4T0ABH.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/AVFAudio-2T7GZJQ73T1JWGILLOIJMRI7D.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreMedia-2JBC8ZKTA3SK7NMW6DKV9WPCY.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreAudio-C09XRC50H6B7XAS5O1FWDDXK4.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreImage-A0Z3W5A350E9IPC5CXL8FSBNK.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_AvailabilityInternal-EKZ9Q8XIQ1YQTR14FL00S2M6W.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/ColorSync-4ROSDL2VUMASTTA0CBUOO0MHM.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreText-7GFJMRMFLZ9V1VQY4G1UKLELA.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/string_h-F1ARWFSND1R8PAGY8T8RYSRHQ.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_DarwinFoundation1-2VDOK1ZGPSB0690SYKPGKLEVM.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/DataDetection-1RG61QYH9Q9CF3VIRO6FN8I0F.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CUPS-546WYEJQMM9SFA1DLZNQ4HZCT.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_inttypes-59YS9F9UV5NQXVDIT7YMK7CRH.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/ApplicationServices-4LWTCU08ABXS11QW6YX0BSO88.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/AppKit-EWNUCNY2J0TKVQFFADZY3PFJQ.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_SwiftConcurrencyShims-9MSKELA6VY154PWWLYNUJ7JJH.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/XPC-9JLPFFIZ9SCP2C4IQGDT38EKL.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/ImageIO-DP4OYRMVB9IYTOYASO2RAIMJ1.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Network-7LSAG2RZHZMI2N0EKILU3K7UR.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreFoundation-20XVU5NGG7VN8KE5UM9T50M0D.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Metal-5SZ8DSX8FKDUEU9XHNJEQPL06.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/dnssd-QLQP5PG87VAD438RE9OHLJO8.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/IOSurface-D25BI7AOR49PTPTFB1RJFRUT7.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/AuthenticationServices-E2SU7HHBSEA6AQS407VRCL7TJ.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/DiskArbitration-DJZBESVNLEPV2I0TYU2SDK0HM.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/ptrcheck-56DZ2YMDUZWLTYNCPLX5XTFT9.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/launch-7HPCW61877SL8R2D88QBBK8L3.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_DarwinFoundation3-6USYLOVP5ZAHK9UMC3USCJDE3.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/QuartzCore-9E2WPMQS1OYXN45L50X4WW6DH.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreTransferable-970OF4UW5IFXZ6SKM6X8ZGRNO.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_float-C4J5AYSCHP0PDFYAWU0IVR6X2.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/ptrauth-6YE3I53JHOFB2YT7VLATJVJ9P.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/ObjectiveC-6RUAH7AO3EIZHA04QUULEGVHU.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/MachO-AIH5V7HUH0LLBAQVD30FHH3FV.pcm /tmp/simigo_rel/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/_NumericsShims-CCBEGSJ5WKROA2Y0D6GBQ8E5N.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_stddef-C0HISR3P2DCPGD5X4YC07YMWP.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Security-628QID1GE30ZO8KW8N3UVL7AH.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/libkern-E194GKGRR34ZSYNHA29XCCRIM.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/sys_types-A03W61C4FSMSR4LV8D2UB69JU.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/VideoToolbox-2HGHQYDG6SKG1XWVQJ0H4N66Q.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_tgmath-9YM599E6A59DPFNACI5HCF0ZU.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_limits-6O0QCDLUPQA1UHB2RV12JA3R2.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/simd-B4DMDIDJQZCWUUZ7B0OI14CS3.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/Darwin-AFDIL5R91S2IGOPHPOEGELO3N.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/CoreVideo-9UV4SDTCR24P8YL4KNLGQU6KM.pcm /tmp/simigo_rel/SDKExplicitPrecompiledModules/_Builtin_stdbool-6JNN049FBF03QXZDW18131PID.pcm /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-dependencies-1.json (in target 'SimiGo' from project 'SimiGo')
+/Users/mr.simi/Documents/SimiGo/SimiGo/App/StatusBarCoordinator.swift:88:39: warning: main actor-isolated static method 'launchIfNeeded(storeURL:dbURL:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 86 |         // existing database is never reset (owner ruling 2026-10-26).
+ 87 |         Task.detached(priority: .utility) {
+ 88 |             _ = SimiGoBootstrapRunner.launchIfNeeded()
+    |                                       `- warning: main actor-isolated static method 'launchIfNeeded(storeURL:dbURL:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 89 |             _ = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
+ 90 |         }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Headless/SimiGoG1G3Entry.swift:646:13: warning: immutable value 'state' was never used; consider removing it [#NoUsage]
+644 |         ]
+645 |         let store = await MainActor.run { ExecutionStateGraphStore() }
+646 |         let state: ExecutionStateRecord
+    |             `- warning: immutable value 'state' was never used; consider removing it [#NoUsage]
+647 |         do {
+648 |             state = try await MainActor.run { () throws -> ExecutionStateRecord in
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:395:46: warning: capture of 'localbTransportIdentity' with non-Sendable type 'LOCALBTransportIdentityHandle?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 393 |                     info,
+ 394 |                     port: port,
+ 395 |                     localbTransportIdentity: localbTransportIdentity,
+     |                                              `- warning: capture of 'localbTransportIdentity' with non-Sendable type 'LOCALBTransportIdentityHandle?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 396 |                     localbRequestAuthorization: localbRequestAuthorization,
+ 397 |                     localbHostDirectory: localbHostDirectory,
+
+LOCALBCore.LOCALBTransportIdentityHandle:1:15: note: struct 'LOCALBTransportIdentityHandle' does not conform to the 'Sendable' protocol
+1 | public struct LOCALBTransportIdentityHandle {
+  |               `- note: struct 'LOCALBTransportIdentityHandle' does not conform to the 'Sendable' protocol
+2 |     public let certificateDER: [UInt8]
+3 |     public let spkiSHA256Hex: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'LOCALBCore' [#AddPreconcurrencyImport]
+   1 | import Foundation
+   2 | import CryptoKit
+   3 | import LOCALBCore
+     | `- warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'LOCALBCore' [#AddPreconcurrencyImport]
+   4 | import Synchronization
+   5 | import MLX
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:396:49: warning: capture of 'localbRequestAuthorization' with non-Sendable type '(coordinator: LOCALBPairingCoordinator, trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 394 |                     port: port,
+ 395 |                     localbTransportIdentity: localbTransportIdentity,
+ 396 |                     localbRequestAuthorization: localbRequestAuthorization,
+     |                                                 `- warning: capture of 'localbRequestAuthorization' with non-Sendable type '(coordinator: LOCALBPairingCoordinator, trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?' in a '@Sendable' closure [#SendableClosureCaptures]
+ 397 |                     localbHostDirectory: localbHostDirectory,
+ 398 |                     keychainStore: keychainStore,
+
+LOCALBCore.LOCALBPairingCoordinator:1:15: note: struct 'LOCALBPairingCoordinator' does not conform to the 'Sendable' protocol
+ 1 | public struct LOCALBPairingCoordinator {
+   |               `- note: struct 'LOCALBPairingCoordinator' does not conform to the 'Sendable' protocol
+ 2 |     public init(registryStore: LOCALBCore.LOCALBRegistryStore)
+ 3 |     public func issueCredential(scopeLabel: String, tlsSPKIHash: String, srsKeyID: String, mode: LOCALBCore.LOCALBPairingConfirmationMode = .interactive, expectedClientPublicKeyRaw: [UInt8]? = nil, checkpoint: LOCALBCore.LOCALBRegistryCheckpoint) throws -> LOCALBCore.LOCALBPairingCredentialPresentation
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:398:36: warning: capture of 'keychainStore' with non-Sendable type 'LOCALBKeychainSignerStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 396 |                     localbRequestAuthorization: localbRequestAuthorization,
+ 397 |                     localbHostDirectory: localbHostDirectory,
+ 398 |                     keychainStore: keychainStore,
+     |                                    `- warning: capture of 'keychainStore' with non-Sendable type 'LOCALBKeychainSignerStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 399 |                     transportIdentityStore: transportIdentityStore
+ 400 |                 )
+
+LOCALBCore.LOCALBKeychainSignerStore:1:15: note: struct 'LOCALBKeychainSignerStore' does not conform to the 'Sendable' protocol
+ 1 | public struct LOCALBKeychainSignerStore {
+   |               `- note: struct 'LOCALBKeychainSignerStore' does not conform to the 'Sendable' protocol
+ 2 |     public let service: String
+ 3 |     public let account: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:399:45: warning: capture of 'transportIdentityStore' with non-Sendable type 'LOCALBTransportIdentityStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 397 |                     localbHostDirectory: localbHostDirectory,
+ 398 |                     keychainStore: keychainStore,
+ 399 |                     transportIdentityStore: transportIdentityStore
+     |                                             `- warning: capture of 'transportIdentityStore' with non-Sendable type 'LOCALBTransportIdentityStore' in a '@Sendable' closure [#SendableClosureCaptures]
+ 400 |                 )
+ 401 |                 self.state.withLock { $0.oversized = oversized }
+
+LOCALBCore.LOCALBTransportIdentityStore:1:15: note: struct 'LOCALBTransportIdentityStore' does not conform to the 'Sendable' protocol
+ 1 | public struct LOCALBTransportIdentityStore {
+   |               `- note: struct 'LOCALBTransportIdentityStore' does not conform to the 'Sendable' protocol
+ 2 |     public let service: String
+ 3 |     public let account: String
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:425:39: warning: expression is 'async' but is not marked with 'await'; this is an error in the Swift 6 language mode
+ 423 |             // Resolved once at load time (not per request): the IS producer
+ 424 |             // identity is a pure re-derivation from the snapshot on disk.
+ 425 |             let informationProducer = InformationTurnProducer(
+     |                                       |- warning: expression is 'async' but is not marked with 'await'; this is an error in the Swift 6 language mode
+     |                                       `- note: calls to initializer 'init(modelIdentity:identity:)' from outside of its actor context are implicitly asynchronous
+ 426 |                 modelIdentity: SimiGoProducerIdentity.canonicalModelIdentity(
+     |                                `- note: calls to static method 'canonicalModelIdentity(fromPath:)' from outside of its actor context are implicitly asynchronous
+ 427 |                     fromPath: info.path),
+ 428 |                 identity: SimiGoProducerIdentity.identity(fromPath: info.path))
+     |                           `- note: calls to static method 'identity(fromPath:)' from outside of its actor context are implicitly asynchronous
+ 429 | 
+ 430 |             let server = await MainActor.run {
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:520:24: warning: main actor-isolated instance method 'configureLOCALBTransport(identity:plaintextCompatibilityPort:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 518 |                 // Explicit configuration — never a fallback and never a
+ 519 |                 // default open rule; the policy path stays the default.
+ 520 |                 server.configureLOCALBTransport(
+     |                        `- warning: main actor-isolated instance method 'configureLOCALBTransport(identity:plaintextCompatibilityPort:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 521 |                     identity: localbTransportIdentity
+ 522 |                 )
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:524:28: warning: main actor-isolated instance method 'configureLOCALBRequestAuthorization(coordinator:trustedCheckpoint:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 522 |                 )
+ 523 |                 if let localbRequestAuthorization {
+ 524 |                     server.configureLOCALBRequestAuthorization(
+     |                            `- warning: main actor-isolated instance method 'configureLOCALBRequestAuthorization(coordinator:trustedCheckpoint:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 525 |                         coordinator: localbRequestAuthorization.coordinator,
+ 526 |                         trustedCheckpoint: localbRequestAuthorization
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLX.swift:536:39: warning: main actor-isolated static method 'applyDefault(to:bindHost:hostDirectory:keychainStore:transportIdentityStore:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 534 |                 // transport-only and protected routes remain fail-closed.
+ 535 |                 // Verification failures propagate as typed start() errors.
+ 536 |                 try LOCALBHostRuntime.applyDefault(
+     |                                       `- warning: main actor-isolated static method 'applyDefault(to:bindHost:hostDirectory:keychainStore:transportIdentityStore:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 537 |                     to: server,
+ 538 |                     bindHost: nodeConfiguration.bindHost,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:54:9: warning: main actor-isolated property 'eventSeq' can not be mutated from a nonisolated context
+ 46 |     private var resourceReclaim = 0
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+ 48 |     private var eventSeq = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 49 |     private var eventLog: [[String: Any]] = []
+ 50 |     private let startedAt = Date()
+    :
+ 52 |     /// Caller must already hold `lock`.
+ 53 |     nonisolated private func appendEventLocked(_ name: String) {
+ 54 |         eventSeq += 1
+    |         `- warning: main actor-isolated property 'eventSeq' can not be mutated from a nonisolated context
+ 55 |         eventLog.append([
+ 56 |             "seq": eventSeq,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:55:9: warning: main actor-isolated property 'eventLog' can not be mutated from a nonisolated context
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+ 48 |     private var eventSeq = 0
+ 49 |     private var eventLog: [[String: Any]] = []
+    |                 `- note: mutation of this property is only permitted within the actor
+ 50 |     private let startedAt = Date()
+ 51 | 
+    :
+ 53 |     nonisolated private func appendEventLocked(_ name: String) {
+ 54 |         eventSeq += 1
+ 55 |         eventLog.append([
+    |         `- warning: main actor-isolated property 'eventLog' can not be mutated from a nonisolated context
+ 56 |             "seq": eventSeq,
+ 57 |             "event": name,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:56:20: warning: main actor-isolated property 'eventSeq' can not be referenced from a nonisolated context
+ 46 |     private var resourceReclaim = 0
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+ 48 |     private var eventSeq = 0
+    |                 `- note: property declared here
+ 49 |     private var eventLog: [[String: Any]] = []
+ 50 |     private let startedAt = Date()
+    :
+ 54 |         eventSeq += 1
+ 55 |         eventLog.append([
+ 56 |             "seq": eventSeq,
+    |                    `- warning: main actor-isolated property 'eventSeq' can not be referenced from a nonisolated context
+ 57 |             "event": name,
+ 58 |             "at_ms": Int(Date().timeIntervalSince(startedAt) * 1000),
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:64:71: warning: main actor-isolated property '_prefillTokensObserved' can not be mutated from a nonisolated context
+ 20 | 
+ 21 |     // Engine-runtime token observables for the most recent generate pass.
+ 22 |     private var _prefillTokensObserved: Int? = nil      // actual tokens prefilled (progress.total)
+    |                 `- note: mutation of this property is only permitted within the actor
+ 23 |     private var _promptTokens: Int? = nil               // engine-reported prompt tokens
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+    :
+ 62 |     nonisolated public init() {}
+ 63 | 
+ 64 |     nonisolated func notePrefillTotal(_ total: Int) { lock.withLock { _prefillTokensObserved = total } }
+    |                                                                       `- warning: main actor-isolated property '_prefillTokensObserved' can not be mutated from a nonisolated context
+ 65 |     nonisolated func noteEngineTokens(prompt: Int?, cacheHit: Int?, generation: Int?, mode: String?, reused: Bool) {
+ 66 |         lock.withLock {
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:67:29: warning: main actor-isolated property '_promptTokens' can not be mutated from a nonisolated context
+ 21 |     // Engine-runtime token observables for the most recent generate pass.
+ 22 |     private var _prefillTokensObserved: Int? = nil      // actual tokens prefilled (progress.total)
+ 23 |     private var _promptTokens: Int? = nil               // engine-reported prompt tokens
+    |                 `- note: mutation of this property is only permitted within the actor
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+    :
+ 65 |     nonisolated func noteEngineTokens(prompt: Int?, cacheHit: Int?, generation: Int?, mode: String?, reused: Bool) {
+ 66 |         lock.withLock {
+ 67 |             if let prompt { _promptTokens = prompt }
+    |                             `- warning: main actor-isolated property '_promptTokens' can not be mutated from a nonisolated context
+ 68 |             if let cacheHit { _cacheHitTokens = cacheHit }
+ 69 |             if let generation { _generationTokens = generation }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:68:31: warning: main actor-isolated property '_cacheHitTokens' can not be mutated from a nonisolated context
+ 22 |     private var _prefillTokensObserved: Int? = nil      // actual tokens prefilled (progress.total)
+ 23 |     private var _promptTokens: Int? = nil               // engine-reported prompt tokens
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+    |                 `- note: mutation of this property is only permitted within the actor
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+    :
+ 66 |         lock.withLock {
+ 67 |             if let prompt { _promptTokens = prompt }
+ 68 |             if let cacheHit { _cacheHitTokens = cacheHit }
+    |                               `- warning: main actor-isolated property '_cacheHitTokens' can not be mutated from a nonisolated context
+ 69 |             if let generation { _generationTokens = generation }
+ 70 |             _cacheReuseMode = mode ?? _cacheReuseMode
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:69:33: warning: main actor-isolated property '_generationTokens' can not be mutated from a nonisolated context
+ 23 |     private var _promptTokens: Int? = nil               // engine-reported prompt tokens
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+    |                 `- note: mutation of this property is only permitted within the actor
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+ 27 |     private var _reusedSession = false
+    :
+ 67 |             if let prompt { _promptTokens = prompt }
+ 68 |             if let cacheHit { _cacheHitTokens = cacheHit }
+ 69 |             if let generation { _generationTokens = generation }
+    |                                 `- warning: main actor-isolated property '_generationTokens' can not be mutated from a nonisolated context
+ 70 |             _cacheReuseMode = mode ?? _cacheReuseMode
+ 71 |             _reusedSession = reused
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:70:13: warning: main actor-isolated property '_cacheReuseMode' can not be mutated from a nonisolated context
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+    |                 `- note: mutation of this property is only permitted within the actor
+ 27 |     private var _reusedSession = false
+ 28 | 
+    :
+ 68 |             if let cacheHit { _cacheHitTokens = cacheHit }
+ 69 |             if let generation { _generationTokens = generation }
+ 70 |             _cacheReuseMode = mode ?? _cacheReuseMode
+    |             `- warning: main actor-isolated property '_cacheReuseMode' can not be mutated from a nonisolated context
+ 71 |             _reusedSession = reused
+ 72 |             generatePasses += 1
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:70:39: warning: main actor-isolated property '_cacheReuseMode' can not be referenced from a nonisolated autoclosure
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+    |                 `- note: property declared here
+ 27 |     private var _reusedSession = false
+ 28 | 
+    :
+ 68 |             if let cacheHit { _cacheHitTokens = cacheHit }
+ 69 |             if let generation { _generationTokens = generation }
+ 70 |             _cacheReuseMode = mode ?? _cacheReuseMode
+    |                                       `- warning: main actor-isolated property '_cacheReuseMode' can not be referenced from a nonisolated autoclosure
+ 71 |             _reusedSession = reused
+ 72 |             generatePasses += 1
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:71:13: warning: main actor-isolated property '_reusedSession' can not be mutated from a nonisolated context
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+ 27 |     private var _reusedSession = false
+    |                 `- note: mutation of this property is only permitted within the actor
+ 28 | 
+ 29 |     // Lifecycle event counters for this process/instance.
+    :
+ 69 |             if let generation { _generationTokens = generation }
+ 70 |             _cacheReuseMode = mode ?? _cacheReuseMode
+ 71 |             _reusedSession = reused
+    |             `- warning: main actor-isolated property '_reusedSession' can not be mutated from a nonisolated context
+ 72 |             generatePasses += 1
+ 73 |         }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:72:13: warning: main actor-isolated property 'generatePasses' can not be mutated from a nonisolated context
+ 37 |     private var lifecycleResume = 0
+ 38 |     private var lifecycleSuspend = 0
+ 39 |     private var generatePasses = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 40 |     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
+ 41 |     private var referenceRelease = 0
+    :
+ 70 |             _cacheReuseMode = mode ?? _cacheReuseMode
+ 71 |             _reusedSession = reused
+ 72 |             generatePasses += 1
+    |             `- warning: main actor-isolated property 'generatePasses' can not be mutated from a nonisolated context
+ 73 |         }
+ 74 |     }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:75:61: warning: main actor-isolated property 'reuseMiss' can not be mutated from a nonisolated context
+ 28 | 
+ 29 |     // Lifecycle event counters for this process/instance.
+ 30 |     private var reuseMiss = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 31 |     private var prefixMismatch = 0
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+    :
+ 73 |         }
+ 74 |     }
+ 75 |     nonisolated func noteReuseMiss()      { lock.withLock { reuseMiss += 1; appendEventLocked("reuse_miss") } }
+    |                                                             `- warning: main actor-isolated property 'reuseMiss' can not be mutated from a nonisolated context
+ 76 |     nonisolated func notePrefixMismatch() { lock.withLock { prefixMismatch += 1; appendEventLocked("prefix_mismatch") } }
+ 77 |     nonisolated func notePoolBindHit()    { lock.withLock { poolBindHit += 1; appendEventLocked("pool_bind_hit") } }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:76:61: warning: main actor-isolated property 'prefixMismatch' can not be mutated from a nonisolated context
+ 29 |     // Lifecycle event counters for this process/instance.
+ 30 |     private var reuseMiss = 0
+ 31 |     private var prefixMismatch = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+ 33 |     private var poolBindFailed = 0
+    :
+ 74 |     }
+ 75 |     nonisolated func noteReuseMiss()      { lock.withLock { reuseMiss += 1; appendEventLocked("reuse_miss") } }
+ 76 |     nonisolated func notePrefixMismatch() { lock.withLock { prefixMismatch += 1; appendEventLocked("prefix_mismatch") } }
+    |                                                             `- warning: main actor-isolated property 'prefixMismatch' can not be mutated from a nonisolated context
+ 77 |     nonisolated func notePoolBindHit()    { lock.withLock { poolBindHit += 1; appendEventLocked("pool_bind_hit") } }
+ 78 |     nonisolated func notePoolBindFailed() { lock.withLock { poolBindFailed += 1; appendEventLocked("pool_bind_failed") } }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:77:61: warning: main actor-isolated property 'poolBindHit' can not be mutated from a nonisolated context
+ 30 |     private var reuseMiss = 0
+ 31 |     private var prefixMismatch = 0
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+    |                 `- note: mutation of this property is only permitted within the actor
+ 33 |     private var poolBindFailed = 0
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+    :
+ 75 |     nonisolated func noteReuseMiss()      { lock.withLock { reuseMiss += 1; appendEventLocked("reuse_miss") } }
+ 76 |     nonisolated func notePrefixMismatch() { lock.withLock { prefixMismatch += 1; appendEventLocked("prefix_mismatch") } }
+ 77 |     nonisolated func notePoolBindHit()    { lock.withLock { poolBindHit += 1; appendEventLocked("pool_bind_hit") } }
+    |                                                             `- warning: main actor-isolated property 'poolBindHit' can not be mutated from a nonisolated context
+ 78 |     nonisolated func notePoolBindFailed() { lock.withLock { poolBindFailed += 1; appendEventLocked("pool_bind_failed") } }
+ 79 |     nonisolated func noteCacheSave()      { lock.withLock { cacheSave += 1; appendEventLocked("cache_save") } }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:78:61: warning: main actor-isolated property 'poolBindFailed' can not be mutated from a nonisolated context
+ 31 |     private var prefixMismatch = 0
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+ 33 |     private var poolBindFailed = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+ 35 |     private var checkpointFailed = 0
+    :
+ 76 |     nonisolated func notePrefixMismatch() { lock.withLock { prefixMismatch += 1; appendEventLocked("prefix_mismatch") } }
+ 77 |     nonisolated func notePoolBindHit()    { lock.withLock { poolBindHit += 1; appendEventLocked("pool_bind_hit") } }
+ 78 |     nonisolated func notePoolBindFailed() { lock.withLock { poolBindFailed += 1; appendEventLocked("pool_bind_failed") } }
+    |                                                             `- warning: main actor-isolated property 'poolBindFailed' can not be mutated from a nonisolated context
+ 79 |     nonisolated func noteCacheSave()      { lock.withLock { cacheSave += 1; appendEventLocked("cache_save") } }
+ 80 |     nonisolated func noteCheckpointFailed(){ lock.withLock { checkpointFailed += 1; appendEventLocked("checkpoint_failed") } }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:79:61: warning: main actor-isolated property 'cacheSave' can not be mutated from a nonisolated context
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+ 33 |     private var poolBindFailed = 0
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+    |                 `- note: mutation of this property is only permitted within the actor
+ 35 |     private var checkpointFailed = 0
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+    :
+ 77 |     nonisolated func notePoolBindHit()    { lock.withLock { poolBindHit += 1; appendEventLocked("pool_bind_hit") } }
+ 78 |     nonisolated func notePoolBindFailed() { lock.withLock { poolBindFailed += 1; appendEventLocked("pool_bind_failed") } }
+ 79 |     nonisolated func noteCacheSave()      { lock.withLock { cacheSave += 1; appendEventLocked("cache_save") } }
+    |                                                             `- warning: main actor-isolated property 'cacheSave' can not be mutated from a nonisolated context
+ 80 |     nonisolated func noteCheckpointFailed(){ lock.withLock { checkpointFailed += 1; appendEventLocked("checkpoint_failed") } }
+ 81 |     nonisolated func noteColdRebuild()    { lock.withLock { coldRebuild += 1; appendEventLocked("cold_rebuild") } }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:80:62: warning: main actor-isolated property 'checkpointFailed' can not be mutated from a nonisolated context
+ 33 |     private var poolBindFailed = 0
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+ 35 |     private var checkpointFailed = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+ 37 |     private var lifecycleResume = 0
+    :
+ 78 |     nonisolated func notePoolBindFailed() { lock.withLock { poolBindFailed += 1; appendEventLocked("pool_bind_failed") } }
+ 79 |     nonisolated func noteCacheSave()      { lock.withLock { cacheSave += 1; appendEventLocked("cache_save") } }
+ 80 |     nonisolated func noteCheckpointFailed(){ lock.withLock { checkpointFailed += 1; appendEventLocked("checkpoint_failed") } }
+    |                                                              `- warning: main actor-isolated property 'checkpointFailed' can not be mutated from a nonisolated context
+ 81 |     nonisolated func noteColdRebuild()    { lock.withLock { coldRebuild += 1; appendEventLocked("cold_rebuild") } }
+ 82 |     nonisolated func noteResume()         { lock.withLock { lifecycleResume += 1; appendEventLocked("lifecycle_resume") } }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:81:61: warning: main actor-isolated property 'coldRebuild' can not be mutated from a nonisolated context
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+ 35 |     private var checkpointFailed = 0
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+    |                 `- note: mutation of this property is only permitted within the actor
+ 37 |     private var lifecycleResume = 0
+ 38 |     private var lifecycleSuspend = 0
+    :
+ 79 |     nonisolated func noteCacheSave()      { lock.withLock { cacheSave += 1; appendEventLocked("cache_save") } }
+ 80 |     nonisolated func noteCheckpointFailed(){ lock.withLock { checkpointFailed += 1; appendEventLocked("checkpoint_failed") } }
+ 81 |     nonisolated func noteColdRebuild()    { lock.withLock { coldRebuild += 1; appendEventLocked("cold_rebuild") } }
+    |                                                             `- warning: main actor-isolated property 'coldRebuild' can not be mutated from a nonisolated context
+ 82 |     nonisolated func noteResume()         { lock.withLock { lifecycleResume += 1; appendEventLocked("lifecycle_resume") } }
+ 83 |     nonisolated func noteSuspend()        { lock.withLock { lifecycleSuspend += 1; appendEventLocked("lifecycle_suspend") } }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:82:61: warning: main actor-isolated property 'lifecycleResume' can not be mutated from a nonisolated context
+ 35 |     private var checkpointFailed = 0
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+ 37 |     private var lifecycleResume = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 38 |     private var lifecycleSuspend = 0
+ 39 |     private var generatePasses = 0
+    :
+ 80 |     nonisolated func noteCheckpointFailed(){ lock.withLock { checkpointFailed += 1; appendEventLocked("checkpoint_failed") } }
+ 81 |     nonisolated func noteColdRebuild()    { lock.withLock { coldRebuild += 1; appendEventLocked("cold_rebuild") } }
+ 82 |     nonisolated func noteResume()         { lock.withLock { lifecycleResume += 1; appendEventLocked("lifecycle_resume") } }
+    |                                                             `- warning: main actor-isolated property 'lifecycleResume' can not be mutated from a nonisolated context
+ 83 |     nonisolated func noteSuspend()        { lock.withLock { lifecycleSuspend += 1; appendEventLocked("lifecycle_suspend") } }
+ 84 |     /// Cache/model REFERENCE release at the suspend path. All four values are
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:83:61: warning: main actor-isolated property 'lifecycleSuspend' can not be mutated from a nonisolated context
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+ 37 |     private var lifecycleResume = 0
+ 38 |     private var lifecycleSuspend = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 39 |     private var generatePasses = 0
+ 40 |     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
+    :
+ 81 |     nonisolated func noteColdRebuild()    { lock.withLock { coldRebuild += 1; appendEventLocked("cold_rebuild") } }
+ 82 |     nonisolated func noteResume()         { lock.withLock { lifecycleResume += 1; appendEventLocked("lifecycle_resume") } }
+ 83 |     nonisolated func noteSuspend()        { lock.withLock { lifecycleSuspend += 1; appendEventLocked("lifecycle_suspend") } }
+    |                                                             `- warning: main actor-isolated property 'lifecycleSuspend' can not be mutated from a nonisolated context
+ 84 |     /// Cache/model REFERENCE release at the suspend path. All four values are
+ 85 |     /// READ FROM RUNTIME STATE by the caller before/after the mutation — this
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:90:13: warning: main actor-isolated property 'referenceRelease' can not be mutated from a nonisolated context
+ 39 |     private var generatePasses = 0
+ 40 |     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
+ 41 |     private var referenceRelease = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 42 |     private var sessionsReleasedAtRelease = 0
+ 43 |     private var sessionsAfterRelease = -1
+    :
+ 88 |                                           containerPresentBefore: Bool, containerAbsentAfter: Bool) {
+ 89 |         lock.withLock {
+ 90 |             referenceRelease += 1
+    |             `- warning: main actor-isolated property 'referenceRelease' can not be mutated from a nonisolated context
+ 91 |             sessionsReleasedAtRelease = sessionsReleased
+ 92 |             sessionsAfterRelease = sessionsAfter
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:91:13: warning: main actor-isolated property 'sessionsReleasedAtRelease' can not be mutated from a nonisolated context
+ 40 |     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
+ 41 |     private var referenceRelease = 0
+ 42 |     private var sessionsReleasedAtRelease = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 43 |     private var sessionsAfterRelease = -1
+ 44 |     private var containerPresentBefore = false
+    :
+ 89 |         lock.withLock {
+ 90 |             referenceRelease += 1
+ 91 |             sessionsReleasedAtRelease = sessionsReleased
+    |             `- warning: main actor-isolated property 'sessionsReleasedAtRelease' can not be mutated from a nonisolated context
+ 92 |             sessionsAfterRelease = sessionsAfter
+ 93 |             self.containerPresentBefore = containerPresentBefore
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:92:13: warning: main actor-isolated property 'sessionsAfterRelease' can not be mutated from a nonisolated context
+ 41 |     private var referenceRelease = 0
+ 42 |     private var sessionsReleasedAtRelease = 0
+ 43 |     private var sessionsAfterRelease = -1
+    |                 `- note: mutation of this property is only permitted within the actor
+ 44 |     private var containerPresentBefore = false
+ 45 |     private var containerAbsentAfter = false
+    :
+ 90 |             referenceRelease += 1
+ 91 |             sessionsReleasedAtRelease = sessionsReleased
+ 92 |             sessionsAfterRelease = sessionsAfter
+    |             `- warning: main actor-isolated property 'sessionsAfterRelease' can not be mutated from a nonisolated context
+ 93 |             self.containerPresentBefore = containerPresentBefore
+ 94 |             self.containerAbsentAfter = containerAbsentAfter
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:93:18: warning: main actor-isolated property 'containerPresentBefore' can not be mutated from a nonisolated context
+ 42 |     private var sessionsReleasedAtRelease = 0
+ 43 |     private var sessionsAfterRelease = -1
+ 44 |     private var containerPresentBefore = false
+    |                 `- note: mutation of this property is only permitted within the actor
+ 45 |     private var containerAbsentAfter = false
+ 46 |     private var resourceReclaim = 0
+    :
+ 91 |             sessionsReleasedAtRelease = sessionsReleased
+ 92 |             sessionsAfterRelease = sessionsAfter
+ 93 |             self.containerPresentBefore = containerPresentBefore
+    |                  `- warning: main actor-isolated property 'containerPresentBefore' can not be mutated from a nonisolated context
+ 94 |             self.containerAbsentAfter = containerAbsentAfter
+ 95 |             appendEventLocked("reference_release")
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:94:18: warning: main actor-isolated property 'containerAbsentAfter' can not be mutated from a nonisolated context
+ 43 |     private var sessionsAfterRelease = -1
+ 44 |     private var containerPresentBefore = false
+ 45 |     private var containerAbsentAfter = false
+    |                 `- note: mutation of this property is only permitted within the actor
+ 46 |     private var resourceReclaim = 0
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+    :
+ 92 |             sessionsAfterRelease = sessionsAfter
+ 93 |             self.containerPresentBefore = containerPresentBefore
+ 94 |             self.containerAbsentAfter = containerAbsentAfter
+    |                  `- warning: main actor-isolated property 'containerAbsentAfter' can not be mutated from a nonisolated context
+ 95 |             appendEventLocked("reference_release")
+ 96 |         }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:101:25: warning: main actor-isolated property 'resourceReclaim' can not be mutated from a nonisolated context
+ 44 |     private var containerPresentBefore = false
+ 45 |     private var containerAbsentAfter = false
+ 46 |     private var resourceReclaim = 0
+    |                 `- note: mutation of this property is only permitted within the actor
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+ 48 |     private var eventSeq = 0
+    :
+ 99 |     /// Records invocation only; reclaimed bytes are not observable here.
+100 |     nonisolated func noteResourceReclaim() {
+101 |         lock.withLock { resourceReclaim += 1; appendEventLocked("resource_reclaim") }
+    |                         `- warning: main actor-isolated property 'resourceReclaim' can not be mutated from a nonisolated context
+102 |     }
+103 | 
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:110:32: warning: main actor-isolated property 'generatePasses' can not be referenced from a nonisolated context
+ 37 |     private var lifecycleResume = 0
+ 38 |     private var lifecycleSuspend = 0
+ 39 |     private var generatePasses = 0
+    |                 `- note: property declared here
+ 40 |     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
+ 41 |     private var referenceRelease = 0
+    :
+108 |             "pid": ProcessInfo.processInfo.processIdentifier,
+109 |             "observed_at_epoch_ms": Int(Date().timeIntervalSince1970 * 1000),
+110 |             "generate_passes": generatePasses,
+    |                                `- warning: main actor-isolated property 'generatePasses' can not be referenced from a nonisolated context
+111 |             "prefill_tokens_observed": _prefillTokensObserved ?? NSNull(),
+112 |             "prompt_tokens_engine_reported": _promptTokens ?? NSNull(),
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:111:40: warning: main actor-isolated property '_prefillTokensObserved' can not be referenced from a nonisolated context
+ 20 | 
+ 21 |     // Engine-runtime token observables for the most recent generate pass.
+ 22 |     private var _prefillTokensObserved: Int? = nil      // actual tokens prefilled (progress.total)
+    |                 `- note: property declared here
+ 23 |     private var _promptTokens: Int? = nil               // engine-reported prompt tokens
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+    :
+109 |             "observed_at_epoch_ms": Int(Date().timeIntervalSince1970 * 1000),
+110 |             "generate_passes": generatePasses,
+111 |             "prefill_tokens_observed": _prefillTokensObserved ?? NSNull(),
+    |                                        `- warning: main actor-isolated property '_prefillTokensObserved' can not be referenced from a nonisolated context
+112 |             "prompt_tokens_engine_reported": _promptTokens ?? NSNull(),
+113 |             "cache_hit_tokens_engine_reported": _cacheHitTokens ?? NSNull(),
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:112:46: warning: main actor-isolated property '_promptTokens' can not be referenced from a nonisolated context
+ 21 |     // Engine-runtime token observables for the most recent generate pass.
+ 22 |     private var _prefillTokensObserved: Int? = nil      // actual tokens prefilled (progress.total)
+ 23 |     private var _promptTokens: Int? = nil               // engine-reported prompt tokens
+    |                 `- note: property declared here
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+    :
+110 |             "generate_passes": generatePasses,
+111 |             "prefill_tokens_observed": _prefillTokensObserved ?? NSNull(),
+112 |             "prompt_tokens_engine_reported": _promptTokens ?? NSNull(),
+    |                                              `- warning: main actor-isolated property '_promptTokens' can not be referenced from a nonisolated context
+113 |             "cache_hit_tokens_engine_reported": _cacheHitTokens ?? NSNull(),
+114 |             "generation_tokens_engine_reported": _generationTokens ?? NSNull(),
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:113:49: warning: main actor-isolated property '_cacheHitTokens' can not be referenced from a nonisolated context
+ 22 |     private var _prefillTokensObserved: Int? = nil      // actual tokens prefilled (progress.total)
+ 23 |     private var _promptTokens: Int? = nil               // engine-reported prompt tokens
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+    |                 `- note: property declared here
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+    :
+111 |             "prefill_tokens_observed": _prefillTokensObserved ?? NSNull(),
+112 |             "prompt_tokens_engine_reported": _promptTokens ?? NSNull(),
+113 |             "cache_hit_tokens_engine_reported": _cacheHitTokens ?? NSNull(),
+    |                                                 `- warning: main actor-isolated property '_cacheHitTokens' can not be referenced from a nonisolated context
+114 |             "generation_tokens_engine_reported": _generationTokens ?? NSNull(),
+115 |             "cache_reuse_mode_engine_reported": _cacheReuseMode ?? NSNull(),
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:114:50: warning: main actor-isolated property '_generationTokens' can not be referenced from a nonisolated context
+ 23 |     private var _promptTokens: Int? = nil               // engine-reported prompt tokens
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+    |                 `- note: property declared here
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+ 27 |     private var _reusedSession = false
+    :
+112 |             "prompt_tokens_engine_reported": _promptTokens ?? NSNull(),
+113 |             "cache_hit_tokens_engine_reported": _cacheHitTokens ?? NSNull(),
+114 |             "generation_tokens_engine_reported": _generationTokens ?? NSNull(),
+    |                                                  `- warning: main actor-isolated property '_generationTokens' can not be referenced from a nonisolated context
+115 |             "cache_reuse_mode_engine_reported": _cacheReuseMode ?? NSNull(),
+116 |             "reused_session": _reusedSession,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:115:49: warning: main actor-isolated property '_cacheReuseMode' can not be referenced from a nonisolated context
+ 24 |     private var _cacheHitTokens: Int? = nil             // engine-reported cached/reused tokens
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+    |                 `- note: property declared here
+ 27 |     private var _reusedSession = false
+ 28 | 
+    :
+113 |             "cache_hit_tokens_engine_reported": _cacheHitTokens ?? NSNull(),
+114 |             "generation_tokens_engine_reported": _generationTokens ?? NSNull(),
+115 |             "cache_reuse_mode_engine_reported": _cacheReuseMode ?? NSNull(),
+    |                                                 `- warning: main actor-isolated property '_cacheReuseMode' can not be referenced from a nonisolated context
+116 |             "reused_session": _reusedSession,
+117 |             "events": [
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:116:31: warning: main actor-isolated property '_reusedSession' can not be referenced from a nonisolated context
+ 25 |     private var _generationTokens: Int? = nil           // engine-reported decode tokens
+ 26 |     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
+ 27 |     private var _reusedSession = false
+    |                 `- note: property declared here
+ 28 | 
+ 29 |     // Lifecycle event counters for this process/instance.
+    :
+114 |             "generation_tokens_engine_reported": _generationTokens ?? NSNull(),
+115 |             "cache_reuse_mode_engine_reported": _cacheReuseMode ?? NSNull(),
+116 |             "reused_session": _reusedSession,
+    |                               `- warning: main actor-isolated property '_reusedSession' can not be referenced from a nonisolated context
+117 |             "events": [
+118 |                 "reuse_miss": reuseMiss,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:118:31: warning: main actor-isolated property 'reuseMiss' can not be referenced from a nonisolated context
+ 28 | 
+ 29 |     // Lifecycle event counters for this process/instance.
+ 30 |     private var reuseMiss = 0
+    |                 `- note: property declared here
+ 31 |     private var prefixMismatch = 0
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+    :
+116 |             "reused_session": _reusedSession,
+117 |             "events": [
+118 |                 "reuse_miss": reuseMiss,
+    |                               `- warning: main actor-isolated property 'reuseMiss' can not be referenced from a nonisolated context
+119 |                 "prefix_mismatch": prefixMismatch,
+120 |                 "pool_bind_hit_cacheLoad": poolBindHit,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:119:36: warning: main actor-isolated property 'prefixMismatch' can not be referenced from a nonisolated context
+ 29 |     // Lifecycle event counters for this process/instance.
+ 30 |     private var reuseMiss = 0
+ 31 |     private var prefixMismatch = 0
+    |                 `- note: property declared here
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+ 33 |     private var poolBindFailed = 0
+    :
+117 |             "events": [
+118 |                 "reuse_miss": reuseMiss,
+119 |                 "prefix_mismatch": prefixMismatch,
+    |                                    `- warning: main actor-isolated property 'prefixMismatch' can not be referenced from a nonisolated context
+120 |                 "pool_bind_hit_cacheLoad": poolBindHit,
+121 |                 "pool_bind_failed": poolBindFailed,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:120:44: warning: main actor-isolated property 'poolBindHit' can not be referenced from a nonisolated context
+ 30 |     private var reuseMiss = 0
+ 31 |     private var prefixMismatch = 0
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+    |                 `- note: property declared here
+ 33 |     private var poolBindFailed = 0
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+    :
+118 |                 "reuse_miss": reuseMiss,
+119 |                 "prefix_mismatch": prefixMismatch,
+120 |                 "pool_bind_hit_cacheLoad": poolBindHit,
+    |                                            `- warning: main actor-isolated property 'poolBindHit' can not be referenced from a nonisolated context
+121 |                 "pool_bind_failed": poolBindFailed,
+122 |                 "cache_save_checkpoint": cacheSave,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:121:37: warning: main actor-isolated property 'poolBindFailed' can not be referenced from a nonisolated context
+ 31 |     private var prefixMismatch = 0
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+ 33 |     private var poolBindFailed = 0
+    |                 `- note: property declared here
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+ 35 |     private var checkpointFailed = 0
+    :
+119 |                 "prefix_mismatch": prefixMismatch,
+120 |                 "pool_bind_hit_cacheLoad": poolBindHit,
+121 |                 "pool_bind_failed": poolBindFailed,
+    |                                     `- warning: main actor-isolated property 'poolBindFailed' can not be referenced from a nonisolated context
+122 |                 "cache_save_checkpoint": cacheSave,
+123 |                 "checkpoint_failed": checkpointFailed,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:122:42: warning: main actor-isolated property 'cacheSave' can not be referenced from a nonisolated context
+ 32 |     private var poolBindHit = 0        // prefix-pool snapshot load (cacheLoad)
+ 33 |     private var poolBindFailed = 0
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+    |                 `- note: property declared here
+ 35 |     private var checkpointFailed = 0
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+    :
+120 |                 "pool_bind_hit_cacheLoad": poolBindHit,
+121 |                 "pool_bind_failed": poolBindFailed,
+122 |                 "cache_save_checkpoint": cacheSave,
+    |                                          `- warning: main actor-isolated property 'cacheSave' can not be referenced from a nonisolated context
+123 |                 "checkpoint_failed": checkpointFailed,
+124 |                 "cold_rebuild": coldRebuild,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:123:38: warning: main actor-isolated property 'checkpointFailed' can not be referenced from a nonisolated context
+ 33 |     private var poolBindFailed = 0
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+ 35 |     private var checkpointFailed = 0
+    |                 `- note: property declared here
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+ 37 |     private var lifecycleResume = 0
+    :
+121 |                 "pool_bind_failed": poolBindFailed,
+122 |                 "cache_save_checkpoint": cacheSave,
+123 |                 "checkpoint_failed": checkpointFailed,
+    |                                      `- warning: main actor-isolated property 'checkpointFailed' can not be referenced from a nonisolated context
+124 |                 "cold_rebuild": coldRebuild,
+125 |                 "lifecycle_resume": lifecycleResume,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:124:33: warning: main actor-isolated property 'coldRebuild' can not be referenced from a nonisolated context
+ 34 |     private var cacheSave = 0          // branch-checkpoint save
+ 35 |     private var checkpointFailed = 0
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+    |                 `- note: property declared here
+ 37 |     private var lifecycleResume = 0
+ 38 |     private var lifecycleSuspend = 0
+    :
+122 |                 "cache_save_checkpoint": cacheSave,
+123 |                 "checkpoint_failed": checkpointFailed,
+124 |                 "cold_rebuild": coldRebuild,
+    |                                 `- warning: main actor-isolated property 'coldRebuild' can not be referenced from a nonisolated context
+125 |                 "lifecycle_resume": lifecycleResume,
+126 |                 "lifecycle_suspend": lifecycleSuspend,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:125:37: warning: main actor-isolated property 'lifecycleResume' can not be referenced from a nonisolated context
+ 35 |     private var checkpointFailed = 0
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+ 37 |     private var lifecycleResume = 0
+    |                 `- note: property declared here
+ 38 |     private var lifecycleSuspend = 0
+ 39 |     private var generatePasses = 0
+    :
+123 |                 "checkpoint_failed": checkpointFailed,
+124 |                 "cold_rebuild": coldRebuild,
+125 |                 "lifecycle_resume": lifecycleResume,
+    |                                     `- warning: main actor-isolated property 'lifecycleResume' can not be referenced from a nonisolated context
+126 |                 "lifecycle_suspend": lifecycleSuspend,
+127 |                 "reference_release": referenceRelease,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:126:38: warning: main actor-isolated property 'lifecycleSuspend' can not be referenced from a nonisolated context
+ 36 |     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+ 37 |     private var lifecycleResume = 0
+ 38 |     private var lifecycleSuspend = 0
+    |                 `- note: property declared here
+ 39 |     private var generatePasses = 0
+ 40 |     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
+    :
+124 |                 "cold_rebuild": coldRebuild,
+125 |                 "lifecycle_resume": lifecycleResume,
+126 |                 "lifecycle_suspend": lifecycleSuspend,
+    |                                      `- warning: main actor-isolated property 'lifecycleSuspend' can not be referenced from a nonisolated context
+127 |                 "reference_release": referenceRelease,
+128 |                 "sessions_released_at_release": sessionsReleasedAtRelease,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:127:38: warning: main actor-isolated property 'referenceRelease' can not be referenced from a nonisolated context
+ 39 |     private var generatePasses = 0
+ 40 |     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
+ 41 |     private var referenceRelease = 0
+    |                 `- note: property declared here
+ 42 |     private var sessionsReleasedAtRelease = 0
+ 43 |     private var sessionsAfterRelease = -1
+    :
+125 |                 "lifecycle_resume": lifecycleResume,
+126 |                 "lifecycle_suspend": lifecycleSuspend,
+127 |                 "reference_release": referenceRelease,
+    |                                      `- warning: main actor-isolated property 'referenceRelease' can not be referenced from a nonisolated context
+128 |                 "sessions_released_at_release": sessionsReleasedAtRelease,
+129 |                 "sessions_after_release": sessionsAfterRelease,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:128:49: warning: main actor-isolated property 'sessionsReleasedAtRelease' can not be referenced from a nonisolated context
+ 40 |     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
+ 41 |     private var referenceRelease = 0
+ 42 |     private var sessionsReleasedAtRelease = 0
+    |                 `- note: property declared here
+ 43 |     private var sessionsAfterRelease = -1
+ 44 |     private var containerPresentBefore = false
+    :
+126 |                 "lifecycle_suspend": lifecycleSuspend,
+127 |                 "reference_release": referenceRelease,
+128 |                 "sessions_released_at_release": sessionsReleasedAtRelease,
+    |                                                 `- warning: main actor-isolated property 'sessionsReleasedAtRelease' can not be referenced from a nonisolated context
+129 |                 "sessions_after_release": sessionsAfterRelease,
+130 |                 "model_container_present_before": containerPresentBefore,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:129:43: warning: main actor-isolated property 'sessionsAfterRelease' can not be referenced from a nonisolated context
+ 41 |     private var referenceRelease = 0
+ 42 |     private var sessionsReleasedAtRelease = 0
+ 43 |     private var sessionsAfterRelease = -1
+    |                 `- note: property declared here
+ 44 |     private var containerPresentBefore = false
+ 45 |     private var containerAbsentAfter = false
+    :
+127 |                 "reference_release": referenceRelease,
+128 |                 "sessions_released_at_release": sessionsReleasedAtRelease,
+129 |                 "sessions_after_release": sessionsAfterRelease,
+    |                                           `- warning: main actor-isolated property 'sessionsAfterRelease' can not be referenced from a nonisolated context
+130 |                 "model_container_present_before": containerPresentBefore,
+131 |                 "model_container_absent_after": containerAbsentAfter,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:130:51: warning: main actor-isolated property 'containerPresentBefore' can not be referenced from a nonisolated context
+ 42 |     private var sessionsReleasedAtRelease = 0
+ 43 |     private var sessionsAfterRelease = -1
+ 44 |     private var containerPresentBefore = false
+    |                 `- note: property declared here
+ 45 |     private var containerAbsentAfter = false
+ 46 |     private var resourceReclaim = 0
+    :
+128 |                 "sessions_released_at_release": sessionsReleasedAtRelease,
+129 |                 "sessions_after_release": sessionsAfterRelease,
+130 |                 "model_container_present_before": containerPresentBefore,
+    |                                                   `- warning: main actor-isolated property 'containerPresentBefore' can not be referenced from a nonisolated context
+131 |                 "model_container_absent_after": containerAbsentAfter,
+132 |                 "model_container_ref_dropped": (containerPresentBefore && containerAbsentAfter),
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:131:49: warning: main actor-isolated property 'containerAbsentAfter' can not be referenced from a nonisolated context
+ 43 |     private var sessionsAfterRelease = -1
+ 44 |     private var containerPresentBefore = false
+ 45 |     private var containerAbsentAfter = false
+    |                 `- note: property declared here
+ 46 |     private var resourceReclaim = 0
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+    :
+129 |                 "sessions_after_release": sessionsAfterRelease,
+130 |                 "model_container_present_before": containerPresentBefore,
+131 |                 "model_container_absent_after": containerAbsentAfter,
+    |                                                 `- warning: main actor-isolated property 'containerAbsentAfter' can not be referenced from a nonisolated context
+132 |                 "model_container_ref_dropped": (containerPresentBefore && containerAbsentAfter),
+133 |                 "resource_reclaim": resourceReclaim,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:132:49: warning: main actor-isolated property 'containerPresentBefore' can not be referenced from a nonisolated context
+ 42 |     private var sessionsReleasedAtRelease = 0
+ 43 |     private var sessionsAfterRelease = -1
+ 44 |     private var containerPresentBefore = false
+    |                 `- note: property declared here
+ 45 |     private var containerAbsentAfter = false
+ 46 |     private var resourceReclaim = 0
+    :
+130 |                 "model_container_present_before": containerPresentBefore,
+131 |                 "model_container_absent_after": containerAbsentAfter,
+132 |                 "model_container_ref_dropped": (containerPresentBefore && containerAbsentAfter),
+    |                                                 `- warning: main actor-isolated property 'containerPresentBefore' can not be referenced from a nonisolated context
+133 |                 "resource_reclaim": resourceReclaim,
+134 |             ],
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:132:75: warning: main actor-isolated property 'containerAbsentAfter' can not be referenced from a nonisolated autoclosure
+ 43 |     private var sessionsAfterRelease = -1
+ 44 |     private var containerPresentBefore = false
+ 45 |     private var containerAbsentAfter = false
+    |                 `- note: property declared here
+ 46 |     private var resourceReclaim = 0
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+    :
+130 |                 "model_container_present_before": containerPresentBefore,
+131 |                 "model_container_absent_after": containerAbsentAfter,
+132 |                 "model_container_ref_dropped": (containerPresentBefore && containerAbsentAfter),
+    |                                                                           `- warning: main actor-isolated property 'containerAbsentAfter' can not be referenced from a nonisolated autoclosure
+133 |                 "resource_reclaim": resourceReclaim,
+134 |             ],
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:133:37: warning: main actor-isolated property 'resourceReclaim' can not be referenced from a nonisolated context
+ 44 |     private var containerPresentBefore = false
+ 45 |     private var containerAbsentAfter = false
+ 46 |     private var resourceReclaim = 0
+    |                 `- note: property declared here
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+ 48 |     private var eventSeq = 0
+    :
+131 |                 "model_container_absent_after": containerAbsentAfter,
+132 |                 "model_container_ref_dropped": (containerPresentBefore && containerAbsentAfter),
+133 |                 "resource_reclaim": resourceReclaim,
+    |                                     `- warning: main actor-isolated property 'resourceReclaim' can not be referenced from a nonisolated context
+134 |             ],
+135 |             "events_ordered": eventLog,
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/NativeMLXObservation.swift:135:31: warning: main actor-isolated property 'eventLog' can not be referenced from a nonisolated context
+ 47 |     // Ordered lifecycle log: makes event ORDER auditable (counts alone cannot).
+ 48 |     private var eventSeq = 0
+ 49 |     private var eventLog: [[String: Any]] = []
+    |                 `- note: property declared here
+ 50 |     private let startedAt = Date()
+ 51 | 
+    :
+133 |                 "resource_reclaim": resourceReclaim,
+134 |             ],
+135 |             "events_ordered": eventLog,
+    |                               `- warning: main actor-isolated property 'eventLog' can not be referenced from a nonisolated context
+136 |             "definitions": [
+137 |                 "prefill_tokens_observed": "LEVEL=ENGINE_RUNTIME; SOURCE=NativeMLX prefill.progress(total); actual tokens the engine prefilled for the executed request (not requested tokens).",
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/OversizedRuntime.swift:92:35: warning: expression is 'async' but is not marked with 'await'; this is an error in the Swift 6 language mode
+ 90 |         // re-derivation from the snapshot, so an oversized turn settles under
+ 91 |         // the model revision that actually produced it.
+ 92 |         let informationProducer = InformationTurnProducer(
+    |                                   |- warning: expression is 'async' but is not marked with 'await'; this is an error in the Swift 6 language mode
+    |                                   `- note: calls to initializer 'init(modelIdentity:identity:)' from outside of its actor context are implicitly asynchronous
+ 93 |             modelIdentity: SimiGoProducerIdentity.canonicalModelIdentity(
+    |                            `- note: calls to static method 'canonicalModelIdentity(fromPath:)' from outside of its actor context are implicitly asynchronous
+ 94 |                 fromPath: modelDirectory.path),
+ 95 |             identity: SimiGoProducerIdentity.identity(fromPath: modelDirectory.path))
+    |                       `- note: calls to static method 'identity(fromPath:)' from outside of its actor context are implicitly asynchronous
+ 96 | 
+ 97 |         let server = HTTPServer(
+
+
+SwiftCompile normal arm64 (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/OversizedRuntime.swift:97:22: warning: main actor-isolated initializer 'init(port:modelId:bindHost:bonjourEnabled:generateHandler:forkBranchHandler:deleteBranchHandler:listBranchesHandler:checkHealthHandler:cancelGenerationHandler:capabilitiesProvider:remoteBackend:baseConfigProvider:continuationAdmission:continuationSettlement:informationTurnProducer:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 95 |             identity: SimiGoProducerIdentity.identity(fromPath: modelDirectory.path))
+ 96 | 
+ 97 |         let server = HTTPServer(
+    |                      `- warning: main actor-isolated initializer 'init(port:modelId:bindHost:bonjourEnabled:generateHandler:forkBranchHandler:deleteBranchHandler:listBranchesHandler:checkHealthHandler:cancelGenerationHandler:capabilitiesProvider:remoteBackend:baseConfigProvider:continuationAdmission:continuationSettlement:informationTurnProducer:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+ 98 |             port: port,
+ 99 |             modelId: modelDirectory.lastPathComponent
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/OversizedRuntime.swift:136:20: warning: main actor-isolated instance method 'configureLOCALBTransport(identity:plaintextCompatibilityPort:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+134 |             // explicit configuration — never a fallback and never a default
+135 |             // open rule; the policy path below stays the default.
+136 |             server.configureLOCALBTransport(identity: localbTransportIdentity)
+    |                    `- warning: main actor-isolated instance method 'configureLOCALBTransport(identity:plaintextCompatibilityPort:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+137 |             if let localbRequestAuthorization {
+138 |                 server.configureLOCALBRequestAuthorization(
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/OversizedRuntime.swift:138:24: warning: main actor-isolated instance method 'configureLOCALBRequestAuthorization(coordinator:trustedCheckpoint:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+136 |             server.configureLOCALBTransport(identity: localbTransportIdentity)
+137 |             if let localbRequestAuthorization {
+138 |                 server.configureLOCALBRequestAuthorization(
+    |                        `- warning: main actor-isolated instance method 'configureLOCALBRequestAuthorization(coordinator:trustedCheckpoint:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+139 |                     coordinator: localbRequestAuthorization.coordinator,
+140 |                     trustedCheckpoint: localbRequestAuthorization
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Inference/OversizedRuntime.swift:149:35: warning: main actor-isolated static method 'applyDefault(to:bindHost:hostDirectory:keychainStore:transportIdentityStore:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+147 |             // verified context; before activation this stays
+148 |             // transport-only and protected routes remain fail-closed.
+149 |             try LOCALBHostRuntime.applyDefault(
+    |                                   `- warning: main actor-isolated static method 'applyDefault(to:bindHost:hostDirectory:keychainStore:transportIdentityStore:)' cannot be called from outside of the actor; this is an error in the Swift 6 language mode
+150 |                 to: server,
+151 |                 bindHost: "127.0.0.1",
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Lifecycle/RuntimeLifecycle.swift:324:42: warning: call to main actor-isolated instance method 'isQuiet(requestID:)' in a synchronous actor-isolated context [#ActorIsolatedCall]
+133 | 
+134 |     /// LC trace 抑制查询：该请求是否为活跃风暴成员。
+135 |     public func isQuiet(requestID: String) -> Bool {
+    |                 `- note: calls to instance method 'isQuiet(requestID:)' from outside of its actor context are implicitly asynchronous
+136 |         lock.lock()
+137 |         defer { lock.unlock() }
+    :
+322 |                     || from == "CANCELLING"
+323 |                     || from == "DRAINING")) {
+324 |             if RejectBurstTracker.shared.isQuiet(requestID: requestID) {
+    |                                          `- warning: call to main actor-isolated instance method 'isQuiet(requestID:)' in a synchronous actor-isolated context [#ActorIsolatedCall]
+325 |                 return
+326 |             }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Lifecycle/RuntimeLifecycle.swift:324:35: warning: main actor-isolated static property 'shared' can not be referenced on a nonisolated actor instance
+ 72 | public final class RejectBurstTracker: @unchecked Sendable {
+ 73 | 
+ 74 |     public static let shared = RejectBurstTracker()
+    |                       `- note: static property declared here
+ 75 | 
+ 76 |     /// 窗口：相邻两笔拒绝间隔 < 10s 视为同一风暴（实测排枪间隔 ~370ms；
+    :
+322 |                     || from == "CANCELLING"
+323 |                     || from == "DRAINING")) {
+324 |             if RejectBurstTracker.shared.isQuiet(requestID: requestID) {
+    |                                   `- warning: main actor-isolated static property 'shared' can not be referenced on a nonisolated actor instance
+325 |                 return
+326 |             }
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/HTTPServer.swift:3152:54: warning: left side of nil coalescing operator '??' has non-optional type 'Any', so the right side is never used
+3150 |         if let errorKind {
+3151 |             error["error_kind"] = errorKind
+3152 |             error["reason_code"] = reasonCode as Any ?? NSNull()
+     |                                                      `- warning: left side of nil coalescing operator '??' has non-optional type 'Any', so the right side is never used
+3153 |         }
+3154 |         return ["error": error]
+
+/Users/mr.simi/Documents/SimiGo/SimiGo/System/EnvManager.swift:705:21: warning: reference to captured var 'self' in concurrently-executing code; this is an error in the Swift 6 language mode [#SendableClosureCaptures]
+ 703 |             let bytes = try await BinaryDownloader.download(from: url, to: tmp) { [weak self] written, expected in
+ 704 |                 Task { @MainActor in
+ 705 |                     self?.reportBinaryDownload(written: written, expected: expected, name: name)
+     |                     `- warning: reference to captured var 'self' in concurrently-executing code; this is an error in the Swift 6 language mode [#SendableClosureCaptures]
+ 706 |                 }
+ 707 |             }
+
+[#ActorIsolatedCall]: <https://docs.swift.org/compiler/documentation/diagnostics/actor-isolated-call>
+[#AddPreconcurrencyImport]: <https://docs.swift.org/compiler/documentation/diagnostics/add-preconcurrency-import>
+[#NoUsage]: <https://docs.swift.org/compiler/documentation/diagnostics/no-usage>
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+SwiftDriverJobDiscovery normal arm64 Compiling CloudBackend.swift, Config.swift, ExecutionStateGraph.swift, FirstRunWizard.swift, MenuApp.swift, Settings.swift, SimiGoBootstrapRunner.swift, StatusBarCoordinator.swift, SimiGoEnvBootstrapEntry.swift, SimiGoG1G3Entry.swift, SimiGoLocalBManagementEntry.swift, BranchCheckpointRetention.swift, ExecutionControlling.swift, ExecutionLineage.swift, ExecutionPolicy.swift, ExecutionStateProjection.swift, LifecycleGates.swift, LOCALBHostRuntime.swift, LOCALBTransportPolicy.swift, NativeMLX.swift, NativeMLXObservation.swift, NativeMLXPrefixPool.swift, OversizedRuntime.swift, RemoteOpenAIRuntime.swift, StreamTokenFilter.swift, ToolGovernance.swift, RuntimeLifecycle.swift, RuntimeTuning.swift, InferenceNodeCfg.swift, ModelTypes.swift, SimiGoProducerIdentity.swift, TypesBridge.swift, TraceLogger.swift, ContinuationAdmission.swift, ContinuationSettlement.swift, HTTPServer.swift, HTTPServerChat.swift, HTTPServerCompletions.swift, HTTPServerMCP.swift, HTTPServerResponses.swift, InformationTurnProducer.swift, RemoteOpenAIBackend.swift, Detector.swift, EnvManager.swift, ProcessRunner.swift, Service.swift, GeneratedAssetSymbols.swift (in target 'SimiGo' from project 'SimiGo')
+
+SwiftDriver\ Compilation\ Requirements SimiGo normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -O -whole-module-optimization @/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftFileList -Xcc -fmodule-map-file\=/tmp/simigo_rel/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /tmp/simigo_rel/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -swift-version 5 -I /tmp/simigo_rel/Build/Products/Release -F /tmp/simigo_rel/Build/Products/Release/PackageFrameworks -F /tmp/simigo_rel/Build/Products/Release -Xfrontend -load-plugin-executable -Xfrontend /tmp/simigo_rel/Build/Products/Release/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64 -c -num-threads 10 -Xcc -ivfsstatcache -Xcc /tmp/simigo_rel/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/simigo_rel/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/simigo_rel/ModuleCache.noindex -sdk-module-cache-path /tmp/simigo_rel/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /tmp/simigo_rel/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/yyjson/src -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/tmp/simigo_rel/Build/Products/Release/include -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources-normal/arm64 -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources/arm64 -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -no-emit-module-separately-wmo
+
+SwiftDriver\ Compilation SimiGo normal arm64 com.apple.xcode.tools.swift.compiler (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name SimiGo -O -whole-module-optimization @/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftFileList -Xcc -fmodule-map-file\=/tmp/simigo_rel/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file\=/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos26.4 -g -module-cache-path /tmp/simigo_rel/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -swift-version 5 -I /tmp/simigo_rel/Build/Products/Release -F /tmp/simigo_rel/Build/Products/Release/PackageFrameworks -F /tmp/simigo_rel/Build/Products/Release -Xfrontend -load-plugin-executable -Xfrontend /tmp/simigo_rel/Build/Products/Release/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -emit-localized-strings -emit-localized-strings-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64 -c -num-threads 10 -Xcc -ivfsstatcache -Xcc /tmp/simigo_rel/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/simigo_rel/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/simigo_rel/ModuleCache.noindex -sdk-module-cache-path /tmp/simigo_rel/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /tmp/simigo_rel/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-generated-files.hmap -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-own-target-headers.hmap -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo-6aa4bc77b6e9831ec906954158dd7dc2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo-project-headers.hmap -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/yyjson/src -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift-lm/Libraries/MLXCXGrammar/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include -Xcc -I/tmp/simigo_rel/SourcePackages/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include -Xcc -I/tmp/simigo_rel/Build/Products/Release/include -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources-normal/arm64 -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources/arm64 -Xcc -I/tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/DerivedSources -emit-objc-header -emit-objc-header-path /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo-Swift.h -working-directory /Users/mr.simi/Documents/SimiGo -no-emit-module-separately-wmo
+
+Copy /tmp/simigo_rel/Build/Products/Release/SimiGo.swiftmodule/arm64-apple-macos.abi.json /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.abi.json (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.abi.json /tmp/simigo_rel/Build/Products/Release/SimiGo.swiftmodule/arm64-apple-macos.abi.json
+
+Copy /tmp/simigo_rel/Build/Products/Release/SimiGo.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.swiftsourceinfo (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.swiftsourceinfo /tmp/simigo_rel/Build/Products/Release/SimiGo.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo
+
+Ld /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo normal (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos26.4 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/tmp/simigo_rel/Build/Intermediates.noindex/EagerLinkingTBDs/Release -L/tmp/simigo_rel/Build/Products/Release -F/tmp/simigo_rel/Build/Intermediates.noindex/EagerLinkingTBDs/Release -F/tmp/simigo_rel/Build/Products/Release/PackageFrameworks -F/tmp/simigo_rel/Build/Products/Release -filelist /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.LinkFileList -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo_lto.o -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.swiftmodule -lc++ -lc++ -lc++ -lsqlite3 -framework Foundation -framework Metal -framework Accelerate -lc++ -Xlinker -no_adhoc_codesign -o /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo
+
+GenerateDSYMFile /tmp/simigo_rel/Build/Products/Release/SimiGo.app.dSYM /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    export PATH\=/Applications/Xcode.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain/usr/bin:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain/usr/local/bin:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/local/bin:/Applications/Xcode.app/Contents/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/usr/local/bin:/Users/mr.simi/.qoder-cn/bin:/Users/mr.simi/.qoder-cn/plugins/cache/qoderapp-bundler/qoder-context/1.0.84.f756706/bin:/Users/mr.simi/bin:/Users/mr.simi/.antigravity-ide/antigravity-ide/bin:/Users/mr.simi/.mtplx/bin:/Users/mr.simi/.grok/bin:/Users/mr.simi/.local/bin:/Users/mr.simi/llama.cpp/build/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/mr.simi/.lmstudio/bin
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo -o /tmp/simigo_rel/Build/Products/Release/SimiGo.app.dSYM
+
+CopySwiftLibs /tmp/simigo_rel/Build/Products/Release/SimiGo.app (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo --scan-folder /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/Frameworks --scan-folder /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/PlugIns --scan-folder /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/Library/SystemExtensions --scan-folder /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/Extensions --platform macosx --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+ExtractAppIntentsMetadata (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.FvltVg/Metal.xctoolchain --module-name SimiGo --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk --xcode-version 27A9275 --platform-family macOS --deployment-target 26.4 --bundle-identifier SwiftUI.SimiGo --output /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/Resources --target-triple arm64-apple-macos26.4 --binary-file /tmp/simigo_rel/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo --dependency-file /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo_dependency_info.dat --stringsdata-file /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftFileList --metadata-file-list /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo.DependencyMetadataFileList --static-metadata-file-list /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/Objects-normal/arm64/SimiGo.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-10-26 20:26:59.400 appintentsmetadataprocessor[89464:8643771] Starting appintentsmetadataprocessor export
+2026-10-26 20:26:59.404 appintentsmetadataprocessor[89464:8643771] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+
+CodeSign /tmp/simigo_rel/Build/Products/Release/SimiGo.app (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - -o runtime --entitlements /tmp/simigo_rel/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo.app.xcent --timestamp\=none --generate-entitlement-der /tmp/simigo_rel/Build/Products/Release/SimiGo.app
+
+Validate /tmp/simigo_rel/Build/Products/Release/SimiGo.app (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-validationUtility /tmp/simigo_rel/Build/Products/Release/SimiGo.app -no-validate-extension -infoplist-subpath Contents/Info.plist
+
+RegisterWithLaunchServices /tmp/simigo_rel/Build/Products/Release/SimiGo.app (in target 'SimiGo' from project 'SimiGo')
+    cd /Users/mr.simi/Documents/SimiGo
+    builtin-lsregisterurl --record-path /tmp/simigo_rel/Build/Intermediates.noindex/XCBuildData/registered-launchservices.txt -- /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /tmp/simigo_rel/Build/Products/Release/SimiGo.app
+
+PruneExplicitPrecompiledModules /tmp/simigo_rel/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /tmp/simigo_rel/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /tmp/simigo_rel/SDKExplicitPrecompiledModules
+
+** BUILD SUCCEEDED **
+
+EXIT=0

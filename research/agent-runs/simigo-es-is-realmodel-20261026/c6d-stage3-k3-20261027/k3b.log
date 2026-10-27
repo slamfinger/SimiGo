@@ -1,0 +1,3 @@
+[K3 17:38:06] phase b pid=['74450'] (phase a pid=['72481'])
+[K3 17:38:29] rerun-from-anchor -> 200 22.523s gen=3 kv=2
+[K3 17:38:31] phase b checks 10/12 failures=['rerun_complete_sequence', 'partial_never_entered_new_input']

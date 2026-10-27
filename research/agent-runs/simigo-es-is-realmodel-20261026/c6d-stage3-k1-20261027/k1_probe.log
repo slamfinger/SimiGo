@@ -1,0 +1,13 @@
+[K1 15:46:42] service ready model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX pid=['65911']
+[K1 15:46:42] work root work-000000004154195b registered
+[K1 15:47:01] source-chat-generation -> 200 18.720s generation_lines=3 kv_lines=3
+[K1 15:47:03] source settlement CD4DD747-417A-438C-9090-F639065E6B75 value='K1-SETTLED-20261027-154642'
+[K1 15:47:03] contract declared digest=260ffc4df103de12
+[K1 15:47:03] blocked prefix-pool listdir=NotADirectoryError(20, 'Not a directory') makedirs=NotADirectoryError(20, 'Not a directory')
+[K1 15:47:03] blocked branch-checkpoints listdir=NotADirectoryError(20, 'Not a directory') makedirs=NotADirectoryError(20, 'Not a directory')
+[K1 15:47:04] consume-positive -> 200 0.037s generation_lines=0 kv_lines=0
+[K1 15:47:04] consume-second-request -> 200 0.035s generation_lines=0 kv_lines=0
+[K1 15:47:05] consume-refusal-control -> 422 0.028s generation_lines=0 kv_lines=0
+[K1 15:47:05] consumption done: new settlement rows=2
+[K1 15:47:07] control-generation-after-unblock -> 200 1.572s generation_lines=3 kv_lines=0
+[K1 15:47:12] K1 checks 17/17 failures=[]

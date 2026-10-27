@@ -1,0 +1,18 @@
+{
+ "nonce": "20261027-174605",
+ "session_id": "k3-source-20261027-174605",
+ "rerun_settlement": [
+  {
+   "settlement_id": "3B308189-8EB3-4018-A5D2-CCA5AE0CA3CB",
+   "state_id": "chat-09963382-182d-4c89-a99d-a732f1d38043",
+   "contract_version": "simigo.result-contract/v1",
+   "validation_status": "VALID",
+   "validity": "valid",
+   "settled_at": "814787308.88154197"
+  }
+ ],
+ "pids": [
+  "76140"
+ ],
+ "mode": "cold"
+}

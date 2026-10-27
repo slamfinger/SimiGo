@@ -1,0 +1,119 @@
+{
+ "blocked_at": "2026-10-27T15:59:10+0800",
+ "blocked_at_ns": 1793087950911366000,
+ "moved_to": "/tmp/simigo-stage3-20261027-150733/isolation-cache/K2-155910/cache",
+ "marker_sha256": "737f30a8725b344f1aabb234c12aadfb5f7986f9a923f3709ae5a8c4a0245989",
+ "enforced": true,
+ "probe": {
+  "prefix-pool": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache/prefix-pool",
+   "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+   "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+  },
+  "branch-checkpoints": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache/branch-checkpoints",
+   "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+   "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+  }
+ },
+ "restored_at": "2026-10-27T17:49:40+0800",
+ "restored_original": true,
+ "cache_after": {
+  "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+  "kind": "directory",
+  "size": null,
+  "sha256": null,
+  "children": {
+   "prefix-pool": {
+    "present": true,
+    "file_count": 6,
+    "total_bytes": 222580888,
+    "listing_sha256": "be88cdf62c68172d6ffe662ae5de0b909c94c44a0fc97fedaa8f3f838b9bb479",
+    "files": [
+     {
+      "rel": "44eaa202ce92e06d/9f7fc14debed5d1f-6.json",
+      "size": 175,
+      "mtime_ns": 1793087948378821203,
+      "inode": 114111405
+     },
+     {
+      "rel": "44eaa202ce92e06d/9f7fc14debed5d1f-6.safetensors",
+      "size": 77053825,
+      "mtime_ns": 1793087948378399911,
+      "inode": 114111404
+     },
+     {
+      "rel": "44eaa202ce92e06d/b72517eba938ed75-6.json",
+      "size": 176,
+      "mtime_ns": 1793087226572532842,
+      "inode": 114110333
+     },
+     {
+      "rel": "44eaa202ce92e06d/b72517eba938ed75-6.safetensors",
+      "size": 75784071,
+      "mtime_ns": 1793087226571298492,
+      "inode": 114110332
+     },
+     {
+      "rel": "44eaa202ce92e06d/f99c3491371a6184-6.json",
+      "size": 176,
+      "mtime_ns": 1793087221136119452,
+      "inode": 114110325
+     },
+     {
+      "rel": "44eaa202ce92e06d/f99c3491371a6184-6.safetensors",
+      "size": 69742465,
+      "mtime_ns": 1793087221131623774,
+      "inode": 114110324
+     }
+    ],
+    "kind": "directory"
+   },
+   "branch-checkpoints": {
+    "present": true,
+    "file_count": 6,
+    "total_bytes": 222583490,
+    "listing_sha256": "aa5d887c11b0a7e856d25bd4a47879f719f3d44b1bb67b9094fd376b2cadd0ac",
+    "files": [
+     {
+      "rel": "default_k1-control-20261027-154642_main.meta.json",
+      "size": 1190,
+      "mtime_ns": 1793087226614995061,
+      "inode": 114110335
+     },
+     {
+      "rel": "default_k1-control-20261027-154642_main.safetensors",
+      "size": 75784071,
+      "mtime_ns": 1793087226614408011,
+      "inode": 114110334
+     },
+     {
+      "rel": "default_k1-source-20261027-154642_main.meta.json",
+      "size": 669,
+      "mtime_ns": 1793087221179833368,
+      "inode": 114110327
+     },
+     {
+      "rel": "default_k1-source-20261027-154642_main.safetensors",
+      "size": 69742465,
+      "mtime_ns": 1793087221174082081,
+      "inode": 114110326
+     },
+     {
+      "rel": "default_k2-source-20261027-155850_main.meta.json",
+      "size": 1270,
+      "mtime_ns": 1793087948418026131,
+      "inode": 114111407
+     },
+     {
+      "rel": "default_k2-source-20261027-155850_main.safetensors",
+      "size": 77053825,
+      "mtime_ns": 1793087948417666089,
+      "inode": 114111406
+     }
+    ],
+    "kind": "directory"
+   }
+  }
+ }
+}

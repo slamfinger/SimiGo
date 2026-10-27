@@ -1,0 +1,64 @@
+{
+  "nonce": "20261026-201915",
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "sys_sha256": "864453410e8c8792882500f8e9c8ab20eaa22a47fa6160f83ba6e8d82fe80d98",
+  "probes": [
+    {
+      "probe": "Q1_cold_noinject",
+      "session": "pb-20261026-201915-X",
+      "http": 200,
+      "seconds": 25.46,
+      "prompt_tokens": null,
+      "content": "Item 007: segment alpha-49 beta-2 gamma-21 carries a fixed invariant payload digest",
+      "trace": [
+        "[2026-10-26 20:19:16.212] [PROTOCOL] arrive r=fd39aa endpoint=chat.completions stream=false agent=default s=pb-202 branch=main",
+        "[2026-10-26 20:19:21.288] [MLX] prefillStep=2048 est=7522 reuse=false",
+        "[2026-10-26 20:19:36.355] [MLX] prefill 5187/8646",
+        "[2026-10-26 20:19:40.246] [MLX] prefill 8646/8646",
+        "[2026-10-26 20:19:41.276] [MLX] poolExport messages=4 refHash=a34791c73ce7ed6f",
+        "[2026-10-26 20:19:41.423] [MLX] cacheSave session=X/main history=4",
+        "[2026-10-26 20:19:41.423] [MLX] session=X/main messages=3 exec=b6fe16 history=4 delta=1 reuse=false ttft=19081ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=8646 promptTime=19.0s tps=34.4 rawEv=24 rawB=83 emitB=83",
+        "[2026-10-26 20:19:41.433] [LC] RELEASED r=fd39aa s=pb-202 reason=completed"
+      ]
+    },
+    {
+      "probe": "Q2_crosssession_identical_noinject",
+      "session": "pb-20261026-201915-Y",
+      "http": 200,
+      "seconds": 10.2,
+      "prompt_tokens": null,
+      "content": "Item 007: segment alpha-49 beta-2 gamma-21 carries a fixed invariant payload digest",
+      "trace": [
+        "[2026-10-26 20:19:41.654] [PROTOCOL] arrive r=eba349 endpoint=chat.completions stream=false agent=default s=pb-202 branch=main",
+        "[2026-10-26 20:19:41.655] [MLX] prefillStep=2048 est=7557 reuse=false",
+        "[2026-10-26 20:19:46.758] [MLX] prefill 5226/8707",
+        "[2026-10-26 20:19:50.629] [MLX] prefill 8707/8707",
+        "[2026-10-26 20:19:51.485] [MLX] poolExport messages=4 refHash=9a90d216dd6ff0ca",
+        "[2026-10-26 20:19:51.628] [MLX] cacheSave session=Y/main history=4",
+        "[2026-10-26 20:19:51.628] [MLX] session=Y/main messages=3 exec=df4563 history=4 delta=1 reuse=false ttft=9013ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=8707 promptTime=9.0s tps=35.7 rawEv=24 rawB=83 emitB=83",
+        "[2026-10-26 20:19:51.629] [LC] RELEASED r=eba349 s=pb-202 reason=completed"
+      ]
+    },
+    {
+      "probe": "Q3_samesession_append_noinject",
+      "session": "pb-20261026-201915-X",
+      "http": 200,
+      "seconds": 11.53,
+      "prompt_tokens": null,
+      "content": "Item 011: segment alpha-77 beta-54 gamma-33 carries a fixed invariant payload",
+      "trace": [
+        "[2026-10-26 20:19:51.777] [PROTOCOL] arrive r=ac31cd endpoint=chat.completions stream=false agent=default s=pb-202 branch=main",
+        "[2026-10-26 20:19:51.778] [MLX] reuseMiss count=true fp=true prefix=false history=4 incoming=5 fpHistory=- fpIncoming=-",
+        "[2026-10-26 20:19:51.779] [MLX] prefixMismatch index=1 role=system historyTool=false incomingTool=false history=4 incoming=5",
+        "[2026-10-26 20:19:51.779] [MLX] prefixDiff index=1 stored(role=system,tool=0,len=1619,fp=8f3c087c) incoming(role=system,tool=0,len=3897,fp=fa432fe0) commonPrefix=87 stored='= 已结算结论）: - file:work-00' incoming='= 已结算结论）: - chat:pb-2026'",
+        "[2026-10-26 20:19:51.779] [MLX] prefillStep=2048 est=8326 reuse=false",
+        "[2026-10-26 20:19:57.564] [MLX] prefill 6048/10078",
+        "[2026-10-26 20:20:02.122] [MLX] prefill 10078/10078",
+        "[2026-10-26 20:20:03.007] [MLX] poolExport messages=6 refHash=e4890e3f1b45e353",
+        "[2026-10-26 20:20:03.158] [MLX] cacheSave session=X/main history=6",
+        "[2026-10-26 20:20:03.158] [MLX] session=X/main messages=5 exec=fd3bfb history=6 delta=1 reuse=false ttft=10379ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=10078 promptTime=10.3s tps=35.3 rawEv=24 rawB=77 emitB=77",
+        "[2026-10-26 20:20:03.160] [LC] RELEASED r=ac31cd s=pb-202 reason=completed"
+      ]
+    }
+  ]
+}

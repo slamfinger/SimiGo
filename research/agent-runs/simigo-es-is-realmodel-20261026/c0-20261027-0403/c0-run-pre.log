@@ -1,0 +1,5 @@
+[C0 04:04:46] service ready model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX exe=83635c736d7f913e
+[C0 04:04:46] db backup pre
+[C0 04:04:46] root registered work-00000000903bb636
+[C0 04:05:18] source-chat-generation -> 200 31.259s generation_lines=5
+[C0 04:05:18] FAIL SOURCE_SETTLEMENT_UNUSABLE {'settlement_id': '26966B8D-DF45-4AF3-BCE4-5509A3ACEF7E', 'state_id': 'chat-d0a49b06-6ea6-45eb-9dca-3c52afbfb74f', 'validation_status': 'VALID', 'validity': 'valid', 'settled_value': 'C0DEPMARK20261027040446', 'expected_value': 'C0-SETTLED-20261027-040446', 'payload_digest_ok': True, 'payload_digest': 'e148caff787049ec4a1a63d102a1d307210ec1e3c97c95259e32df2241ab9df1', 'bindings': {'producer.model_identity': '0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53', 'producer.tokenizer_identity': '1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71'}, 'usage': None} (evidence /Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/c0-20261027-0403/results-pre-20261027-040446.json)

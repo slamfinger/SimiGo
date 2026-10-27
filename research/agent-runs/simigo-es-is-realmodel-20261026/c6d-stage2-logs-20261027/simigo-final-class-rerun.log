@@ -1,0 +1,301 @@
+2026-10-27 14:51:19.244 xcodebuild[61386:9533555]  DVTErrorPresenter: Unable to load simulator devices.
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+Failure Reason: The version of the CoreSimulator framework installed on this Mac is out-of-date and not supported by this version of Xcode.
+Recovery Suggestion: Please ensure that you have installed all available updates to your Mac's software, and that you are running the most recent version of Xcode supported by macOS.
+--
+CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).
+Domain: DVTCoreSimulatorAdditionsErrorDomain
+Code: 3
+--
+
+2026-10-27 14:51:19.244 xcodebuild[61386:9533555]  iOSSimulator: [SimServiceContext sharedServiceContextForDeveloperDir:error:] returned nil (Error Domain=DVTCoreSimulatorAdditionsErrorDomain Code=3 "CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2)." UserInfo={NSLocalizedDescription=CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).}). Simulator device support disabled.
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/simigo-c4-build/Build/Products/xctestrun_final.xctestrun -destination platform=macOS,arch=arm64 "-only-testing:SimiGoTests/ResponsesContinuationHTTPIntegrationTests"
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008142-0000096E1E09401C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008142-0000096E1E09401C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008142-0000096E1E09401C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008142-0000096E1E09401C, name:My Mac }
+objc[61412]: Class _TtC10Tokenizers12BPETokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27530) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468c408). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers13BertTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f276d8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468c5b0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers14BasicTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f277d0) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468c6a8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers18WordpieceTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27878) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468c750). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers16WordPieceDecoder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f279d8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468c8b0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers15DecoderSequence is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27a98) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468c970). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers16ByteLevelDecoder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27b40) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468ca18). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers14ReplaceDecoder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27bf0) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468cac8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers19ByteFallbackDecoder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27c98) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468cb70). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers11FuseDecoder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27d38) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468cc10). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers12StripDecoder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27dd8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468ccb0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers16MetaspaceDecoder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27e90) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468cd68). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers18NormalizerSequence is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28030) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468cf08). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers17PrependNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f280d8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468cfb0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers17ReplaceNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28180) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d058). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers19LowercaseNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28228) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d100). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers13NFDNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f282c8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d1a0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers13NFCNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28368) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d240). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers14NFKDNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28408) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d2e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers14NFKCNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f284a8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d380). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers14BertNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28548) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d420). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers21PrecompiledNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28630) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d508). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers22StripAccentsNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f286d0) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d5a8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers15StripNormalizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28770) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d648). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers18TemplateProcessing is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28870) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d748). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers22ByteLevelPostProcessor is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28920) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d7f8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers17RobertaProcessing is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f289c0) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d898). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers14BertProcessing is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28a98) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468d970). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers18SequenceProcessing is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28b48) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468da20). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers16BertPreTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28c28) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468db00). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers20PreTokenizerSequence is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28cc8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468dba0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers22WhitespacePreTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28d70) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468dc48). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers21MetaspacePreTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28e10) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468dce8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers21ByteLevelPreTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28ed0) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468dda8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers23PunctuationPreTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f28f90) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468de68). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers18DigitsPreTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f29030) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468df08). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers17SplitPreTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f290d8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468dfb0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers16TokenLatticeNode is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f29278) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468e150). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers19PreTrainedTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f294d0) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468e3a8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers11T5Tokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f296c0) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468e598). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers24LlamaPreTrainedTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f297d8) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468e6b0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC10Tokenizers16UnigramTokenizer is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f29a68) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468e940). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC3HubP33_4E8177DE4B0CCDEC2313116019A1E23612BundleFinder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f29b88) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468efb8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC3Hub33LanguageModelConfigurationFromHub is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f29ff0) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468f420). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC3Hub22DownloadProgressBridge is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f2a330) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468f760). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtCV3Hub6HubApiP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C17NetworkStateActor is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f2a550) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468f980). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtCV3Hub6HubApiP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C14NetworkMonitor is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f2a660) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468fa90). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C16RedirectDelegate is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f27398) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x104663f80). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C20RedirectSessionActor is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f2a738) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468fb68). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC3HubP33_1F1EE76A3726FCBF33FBD9BCA0D7C76C19HubRepoIDCacheActor is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Tokenizers_-12F1B3B019A38CC8_PackageProduct.framework/Versions/A/Tokenizers_-12F1B3B019A38CC8_PackageProduct (0x102f2a800) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x10468fc30). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC21SimiGoRuntimeContract18SimiGoESISDatabase is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/SimiGo2Experimental_-B024901A205185_PackageProduct.framework/Versions/A/SimiGo2Experimental_-B024901A205185_PackageProduct (0x10b151558) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x1046908a8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[61412]: Class _TtC6CryptoP33_A42746B7D10D5535030B0E00E43C4C0312BundleFinder is implemented in both /private/tmp/simigo-c4-build/Build/Products/Debug/PackageFrameworks/Crypto_17A3B1FFC41E47_PackageProduct.framework/Versions/A/Crypto_17A3B1FFC41E47_PackageProduct (0x100e38370) and /private/tmp/simigo-c4-build/Build/Products/Debug/SimiGo.app/Contents/MacOS/SimiGo.debug.dylib (0x104696d08). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+2026-10-27 14:51:19.710806+0800 SimiGo[61412:9533635] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-27 14:51:19.711050+0800 SimiGo[61412:9533635] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-27 14:51:19.711367+0800 SimiGo[61412:9533633] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-27 14:51:19.711377+0800 SimiGo[61412:9533633] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-27 14:51:19.711922+0800 SimiGo[61412:9533634] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-27 14:51:19.711934+0800 SimiGo[61412:9533634] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-27 14:51:19.712451+0800 SimiGo[61412:9533634] [Connection] Will NOT re-try to establish the connection
+2026-10-27 14:51:19.712474+0800 SimiGo[61412:9533633] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-27 14:51:19.712485+0800 SimiGo[61412:9533633] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-10-27 14:51:19.778186+0800 SimiGo[61412:9533621] [Invalid Configuration] No symbol named 'shippingbox.and.arrow.down.fill' found in system symbol set
+2026-10-27 14:51:19.809128+0800 SimiGo[61412:9533621] [Invalid Configuration] No symbol named 'shippingbox.and.arrow.down.fill' found in system symbol set
+2026-10-27 14:51:20.014315+0800 SimiGo[61412:9533621] SimiGo bootstrap: issueCount=0 models=20 work=0 legacyMigrated=false
+🚀 开始准备 SimiGo 外部依赖：llama.cpp
+🔒 校验 llama.cpp 检出到锁定版本 0878f7c304cc13915c831ae17694534c94940176 …
+Test Suite 'Selected tests' started at 2026-10-27 14:51:20.034.
+Test Suite 'SimiGoTests.xctest' started at 2026-10-27 14:51:20.034.
+Test Suite 'ResponsesContinuationHTTPIntegrationTests' started at 2026-10-27 14:51:20.034.
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionEngineFaultMapsTo500]' started.
+2026-10-27 14:51:20.043473+0800 SimiGo[61412:9533621] [logging-persist] cannot open file at line 53009 of [8fa8248e30]
+2026-10-27 14:51:20.043485+0800 SimiGo[61412:9533621] [logging-persist] os_unix.c:53009: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:20.625647+0800 SimiGo[61412:9533709] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C2:1][0x79885dc7e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:20.691709+0800 SimiGo[61412:9533709] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C4:1][0x7988b16360] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:bc9d91d4-2497-4097-88f0-ed06ee36ecd8 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-74ba9886 clientRequest=- agent=default session=responses-request:bc9d91d4-2497-4097-88f0-ed06ee36ecd8 branch=main
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionEngineFaultMapsTo500]' passed (0.677 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionInternalFaultThroughRealClosureIs500]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:21.239705+0800 SimiGo[61412:9533709] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C6:1][0x79885df260] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:21.296774+0800 SimiGo[61412:9533633] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C8:1][0x79885dd460] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:fa5d3006-2884-4701-8a3f-1e1ea22bf199 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-6e6bacf7 clientRequest=- agent=default session=responses-request:fa5d3006-2884-4701-8a3f-1e1ea22bf199 branch=main
+2026-10-27 14:51:21.299421+0800 SimiGo[61412:9533621] [logging-persist] cannot open file at line 53009 of [8fa8248e30]
+2026-10-27 14:51:21.299444+0800 SimiGo[61412:9533621] [logging-persist] os_unix.c:53009: (21) open(/private/tmp/simigo-final-iso-20261027-143714/home/simigo.sqlite3) - Is a directory
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionInternalFaultThroughRealClosureIs500]' passed (0.609 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionRefusalIs422NotSilentFallback]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:21.866198+0800 SimiGo[61412:9533633] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C10:1][0x79885deae0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:21.921675+0800 SimiGo[61412:9533647] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C12:1][0x79885deae0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:d04b3d53-efa7-4736-ad75-8576617f8a2a branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-85d5f8da clientRequest=- agent=default session=responses-request:d04b3d53-efa7-4736-ad75-8576617f8a2a branch=main
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionRefusalIs422NotSilentFallback]' passed (0.635 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionWithoutSettleStaysOnTheClientBranch]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:22.561521+0800 SimiGo[61412:9533647] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C14:1][0x79885deae0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:22.635054+0800 SimiGo[61412:9533634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C16:1][0x79885deae0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:e081771c-a559-4bb0-bb90-cd7a6731c539 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-ad23dcf4 clientRequest=- agent=default session=responses-request:e081771c-a559-4bb0-bb90-cd7a6731c539 branch=main
+[SimiGo Protocol] [STORE] response=resp-a3be8eed-c122-49ee-9abf-469be4f6624a agent=default session=responses-request:e081771c-a559-4bb0-bb90-cd7a6731c539 branch=main history=2
+2026-10-27 14:51:22.657719+0800 SimiGo[61412:9533709] [connection] [C16 127.0.0.1:63092 tcp, local: 127.0.0.1:59357, tls, server, prohibit joining protocols, definite, attribution: developer] is already cancelled, ignoring cancel
+/Users/mr.simi/Documents/SimiGo/SimiGoTests/ResponsesContinuationHTTPIntegrationTests.swift:484: error: -[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionWithoutSettleStaysOnTheClientBranch] : XCTAssertEqual failed: ("2") is not equal to ("1") - admission alone must not create an ES row
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testAdmissionWithoutSettleStaysOnTheClientBranch]' failed (0.879 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testBlankAnchorFailsClosed422InvalidAnchor]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:23.438980+0800 SimiGo[61412:9533633] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C18:1][0x79885dc7e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:23.490420+0800 SimiGo[61412:9533633] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C20:1][0x79885dc7e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:17778b10-0ad3-4310-bef0-7a33cd04660a branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-025fac4e clientRequest=- agent=default session=responses-request:17778b10-0ad3-4310-bef0-7a33cd04660a branch=main
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testBlankAnchorFailsClosed422InvalidAnchor]' passed (0.664 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testContinuationBindsAdmittedValueNotMutatedESState]' started.
+From https://github.com/ggml-org/llama.cpp
+ * branch            0878f7c304cc13915c831ae17694534c94940176 -> FETCH_HEAD
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+HEAD is now at 0878f7c ggml: support non-contiguous SUM (CPU, CUDA, Vulkan, WebGPU) (#28851)
+⚡ 检测到已有构建缓存，执行增量构建…
+🛠️ 配置 Metal 构建...
+-- llama.cpp version: 0.7.0-dev
+CMAKE_BUILD_TYPE=Release
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- CMAKE_SYSTEM_PROCESSOR: arm64
+-- GGML_SYSTEM_ARCH: ARM
+-- Could NOT find OpenMP_C (missing: OpenMP_C_FLAGS OpenMP_C_LIB_NAMES)
+-- Could NOT find OpenMP_CXX (missing: OpenMP_CXX_FLAGS OpenMP_CXX_LIB_NAMES)
+-- Could NOT find OpenMP (missing: OpenMP_C_FOUND OpenMP_CXX_FOUND)
+CMake Warning at ggml/src/CMakeLists.txt:347 (message):
+  OpenMP not found
+-- Including CPU backend
+-- Accelerate framework found
+-- ARM detected
+CMake Warning at ggml/src/ggml-cpu/CMakeLists.txt:155 (message):
+  ARM -march/-mcpu not found, -mcpu=native will be used
+Call Stack (most recent call first):
+  ggml/src/CMakeLists.txt:596 (ggml_add_cpu_backend_variant_impl)
+-- Checking for ARM features using flags:
+--   -U__ARM_FEATURE_SVE
+--   -mcpu=native+dotprod+i8mm+nosve+sme
+-- Adding CPU backend variant ggml-cpu: -U__ARM_FEATURE_SVE;-mcpu=native+dotprod+i8mm+nosve+sme
+-- BLAS found, Libraries: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework
+-- BLAS found, Includes:
+-- Including BLAS backend
+-- Metal framework found
+-- Including METAL backend
+-- ggml version: 0.27.0
+-- ggml commit:  0878f7c
+-- OpenSSL found: 3.6.3
+2026-10-27 14:51:23.982214+0800 SimiGo[61412:9533634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C22:1][0x79886d2860] Unable to extract cached certificates from the SSL_SESSION object
+-- Generating embedded license file for target: llama-app
+-- Configuring done (0.3s)
+2026-10-27 14:51:24.032495+0800 SimiGo[61412:9533647] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C24:1][0x79886d3760] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:00c9e4c2-6509-49bd-aa1d-f67d8a1ee130 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-03e1242a clientRequest=- agent=default session=responses-request:00c9e4c2-6509-49bd-aa1d-f67d8a1ee130 branch=main
+[SimiGo Protocol] [STORE] response=resp-4077dcf8-b3f1-498e-87e0-ed636732e522 agent=default session=responses-request:00c9e4c2-6509-49bd-aa1d-f67d8a1ee130 branch=main history=2
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:24.307370+0800 SimiGo[61412:9533647] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C26:1][0x79886d2860] Unable to extract cached certificates from the SSL_SESSION object
+-- Generating done (0.3s)
+-- Build files have been written to: /tmp/simigo-final-iso-20261027-143714/home/build/llama.cpp
+🔨 编译 llama-server...
+2026-10-27 14:51:24.360096+0800 SimiGo[61412:9533634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C28:1][0x79886d3760] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:3e08510e-9c93-4194-868b-de7909ba8531 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-1ceb632d clientRequest=- agent=default session=responses-request:3e08510e-9c93-4194-868b-de7909ba8531 branch=main
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testContinuationBindsAdmittedValueNotMutatedESState]' passed (0.882 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testContinuationSurvivesUnforkableChildBranch]' started.
+[  0%] Provisioning UI assets
+-- UI: HF stamp matches 'ggml-org/llama-ui|b1', skipping HF fetch
+[  1%] Built target vendor-hash
+[  3%] Built target llama-common-base
+[  3%] Linking CXX static library libcpp-httplib.a
+[  7%] Built target ggml-base
+CMake Error: Unable to read from file:
+  ../../../../../../../private/tmp/simigo-final-iso-20261027-143714/home/build/llama.cpp/tools/ui/dist/_app/immutable/assets/bundle.B8MbgIB2.css
+because:
+  Can't lstat ../../../../../../../private/tmp/simigo-final-iso-20261027-143714/home/build/llama.cpp/tools/ui/dist/_app/immutable/assets/bundle.B8MbgIB2.css
+CMake Error at /tmp/simigo-final-iso-20261027-143714/home/sources/llama.cpp/scripts/ui-assets.cmake:218 (file):
+  file failed to compress:
+  /tmp/simigo-final-iso-20261027-143714/home/build/llama.cpp/tools/ui/ui-gzip/_gzip/_app/immutable/assets/bundle.B8MbgIB2.css
+Call Stack (most recent call first):
+  /tmp/simigo-final-iso-20261027-143714/home/sources/llama.cpp/scripts/ui-assets.cmake:592 (emit_files)
+make[3]: *** [tools/ui/CMakeFiles/llama-ui-assets] Error 1
+make[2]: *** [tools/ui/CMakeFiles/llama-ui-assets.dir/all] Error 2
+make[2]: *** Waiting for unfinished jobs....
+[  7%] Built target cpp-httplib
+[  9%] Built target ggml-blas
+[ 36%] Built target ggml-metal
+[ 36%] Linking CXX shared library ../../bin/libggml-cpu.dylib
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+[ 41%] Built target ggml-cpu
+make[1]: *** [tools/server/CMakeFiles/llama-server.dir/rule] Error 2
+make: *** [llama-server] Error 2
+❌ 构建中断：命令失败，退出码 2
+2026-10-27 14:51:24.921835+0800 SimiGo[61412:9533707] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C30:1][0x7988b156e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:24.925160+0800 SimiGo[61412:9533647] [] nw_path_necp_check_for_updates Failed to copy updated result (22)
+2026-10-27 14:51:24.984807+0800 SimiGo[61412:9533634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C32:1][0x79886d2860] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:24bdcb7d-da1c-4742-bff5-7c926b11d4dd branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-45ec253c clientRequest=- agent=default session=responses-request:24bdcb7d-da1c-4742-bff5-7c926b11d4dd branch=main
+[SimiGo Protocol] [STORE] response=resp-61b8ecfe-9936-4d8e-a6c7-6f5770c0f5d3 agent=default session=responses-request:24bdcb7d-da1c-4742-bff5-7c926b11d4dd branch=main history=2
+2026-10-27 14:51:25.009310+0800 SimiGo[61412:9533647] [connection] [C32 127.0.0.1:63100 tcp, local: 127.0.0.1:59357, tls, server, prohibit joining protocols, definite, attribution: developer] is already cancelled, ignoring cancel
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testContinuationSurvivesUnforkableChildBranch]' passed (0.641 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testLegacyRequestKeepsOriginalContract]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:25.591021+0800 SimiGo[61412:9533634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C34:1][0x79886d0560] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:25.664482+0800 SimiGo[61412:9533711] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C36:1][0x79886d2860] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:f4145e5f-7279-49d4-8b24-e3e26acbfdf5 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-e84b31fe clientRequest=- agent=default session=responses-request:f4145e5f-7279-49d4-8b24-e3e26acbfdf5 branch=main
+[SimiGo Protocol] [STORE] response=resp-ba505542-8cfa-43ef-8251-2fc582e31b01 agent=default session=responses-request:f4145e5f-7279-49d4-8b24-e3e26acbfdf5 branch=main history=2
+2026-10-27 14:51:25.683279+0800 SimiGo[61412:9533707] [connection] [C36 127.0.0.1:63102 tcp, local: 127.0.0.1:59357, tls, server, prohibit joining protocols, definite, attribution: developer] is already cancelled, ignoring cancel
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testLegacyRequestKeepsOriginalContract]' passed (0.676 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testMissingAdmissionAuthorityFailsClosed503]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:26.310070+0800 SimiGo[61412:9533707] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C38:1][0x7988b16360] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:26.385602+0800 SimiGo[61412:9533635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C40:1][0x79885dc7e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:bf54c763-851d-4d1e-87f1-f89c65f27360 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-a2eae223 clientRequest=- agent=default session=responses-request:bf54c763-851d-4d1e-87f1-f89c65f27360 branch=main
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testMissingAdmissionAuthorityFailsClosed503]' passed (0.703 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testMissingSettlementAuthorityFailsClosed503BeforeAdmission]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:26.996356+0800 SimiGo[61412:9533635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C42:1][0x7988b16360] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:27.074497+0800 SimiGo[61412:9533635] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C44:1][0x79885dc7e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:9f596091-6aec-44d0-96bc-c1882b139240 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-b4208baa clientRequest=- agent=default session=responses-request:9f596091-6aec-44d0-96bc-c1882b139240 branch=main
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testMissingSettlementAuthorityFailsClosed503BeforeAdmission]' passed (0.689 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testNativeContractRejectionIs422AndWritesNothing]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:27.704276+0800 SimiGo[61412:9533647] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C46:1][0x7988038060] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:27.774442+0800 SimiGo[61412:9533647] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C48:1][0x79880382e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:11ddb2c6-23bb-4dc8-b93b-65df1c724efc branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-3ad0cf2f clientRequest=- agent=default session=responses-request:11ddb2c6-23bb-4dc8-b93b-65df1c724efc branch=main
+2026-10-27 14:51:27.799802+0800 SimiGo[61412:9533647] [connection] [C48 127.0.0.1:63108 tcp, local: 127.0.0.1:59357, tls, server, prohibit joining protocols, definite, attribution: developer] is already cancelled, ignoring cancel
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testNativeContractRejectionIs422AndWritesNothing]' passed (0.726 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testSettlementWithoutAnchorFailsClosed400]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:28.393226+0800 SimiGo[61412:9533710] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C50:1][0x79880382e0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:28.458196+0800 SimiGo[61412:9533710] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C52:1][0x79880382e0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:64039dd7-0cb0-420e-b1c6-9eeab9eb310f branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-273945a5 clientRequest=- agent=default session=responses-request:64039dd7-0cb0-420e-b1c6-9eeab9eb310f branch=main
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testSettlementWithoutAnchorFailsClosed400]' passed (0.657 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testSettlementWriteFailureIs500WithNoPartialCommit]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:29.097831+0800 SimiGo[61412:9533634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C54:1][0x7988038560] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:29.101949+0800 SimiGo[61412:9533710] [] nw_path_necp_check_for_updates Failed to copy updated result (22)
+2026-10-27 14:51:29.159716+0800 SimiGo[61412:9533710] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C56:1][0x7988038560] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:79ca3f1d-685e-45c8-85e8-48371bec4c6b branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-27f92c3a clientRequest=- agent=default session=responses-request:79ca3f1d-685e-45c8-85e8-48371bec4c6b branch=main
+2026-10-27 14:51:29.186700+0800 SimiGo[61412:9533707] [connection] [C56 127.0.0.1:63112 tcp, local: 127.0.0.1:59357, tls, server, prohibit joining protocols, definite, attribution: developer] is already cancelled, ignoring cancel
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testSettlementWriteFailureIs500WithNoPartialCommit]' passed (0.732 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testStreamWithSettleIsRejected501BeforeSSEHeaders]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:29.784261+0800 SimiGo[61412:9533647] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C58:1][0x7988038a60] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:29.845444+0800 SimiGo[61412:9533707] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C60:1][0x7988038a60] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:2814c270-6c01-48bd-92eb-a817fa84cb3b branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-c92b8c1f clientRequest=- agent=default session=responses-request:2814c270-6c01-48bd-92eb-a817fa84cb3b branch=main
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testStreamWithSettleIsRejected501BeforeSSEHeaders]' passed (0.655 seconds).
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testValidContinuationSettlesAndReportsAuthoritativeID]' started.
+✅ [HTTPServer] 监听 127.0.0.1:59357 model=http-integration-test
+2026-10-27 14:51:30.421018+0800 SimiGo[61412:9533647] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C62:1][0x7988038ce0] Unable to extract cached certificates from the SSL_SESSION object
+2026-10-27 14:51:30.478781+0800 SimiGo[61412:9533634] [boringssl] boringssl_session_set_peer_verification_state_from_session(504) [C64:1][0x7988038ce0] Unable to extract cached certificates from the SSL_SESSION object
+[SimiGo Protocol] [SESSION] endpoint=responses agent=default session=responses-request:69322ed2-977c-4de4-b2fd-6f9720d4a722 branch=main source=generated_request_session previous=- input=1 parentHistory=0 canonical=1
+[SimiGo Protocol] [EXECUTION] endpoint=responses request=req-c526ee86 clientRequest=- agent=default session=responses-request:69322ed2-977c-4de4-b2fd-6f9720d4a722 branch=main
+[SimiGo Protocol] [STORE] response=resp-3c69b4c0-a310-437f-9347-dd1cd440c616 agent=default session=responses-request:69322ed2-977c-4de4-b2fd-6f9720d4a722 branch=main history=2
+2026-10-27 14:51:30.507975+0800 SimiGo[61412:9533634] [connection] [C64 127.0.0.1:63116 tcp, local: 127.0.0.1:59357, tls, server, prohibit joining protocols, definite, attribution: developer] is already cancelled, ignoring cancel
+Test Case '-[SimiGoTests.ResponsesContinuationHTTPIntegrationTests testValidContinuationSettlesAndReportsAuthoritativeID]' passed (0.666 seconds).
+Test Suite 'ResponsesContinuationHTTPIntegrationTests' failed at 2026-10-27 14:51:30.531.
+	 Executed 15 tests, with 1 failure (0 unexpected) in 10.491 (10.496) seconds
+Test Suite 'SimiGoTests.xctest' failed at 2026-10-27 14:51:30.531.
+	 Executed 15 tests, with 1 failure (0 unexpected) in 10.491 (10.497) seconds
+Test Suite 'Selected tests' failed at 2026-10-27 14:51:30.531.
+	 Executed 15 tests, with 1 failure (0 unexpected) in 10.491 (10.497) seconds
+2026-10-27 14:51:34.262 xcodebuild[61386:9533526] [MT] IDETestOperationsObserverDebug: 14.878 elapsed -- Testing started completed.
+2026-10-27 14:51:34.262 xcodebuild[61386:9533526] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-27 14:51:34.262 xcodebuild[61386:9533526] [MT] IDETestOperationsObserverDebug: 14.878 sec, +14.878 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/mr.simi/Library/Developer/Xcode/DerivedData/SimiGo-bvmyknwluewoxfdpslfgtqcqptkd/Logs/Test/Test-SimiGo-2026.10.27_14-51-19-+0800.xcresult
+
+Failing tests:
+	ResponsesContinuationHTTPIntegrationTests.testAdmissionWithoutSettleStaysOnTheClientBranch()
+
+** TEST EXECUTE FAILED **
+
+Testing started

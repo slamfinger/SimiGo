@@ -1,0 +1,89 @@
+{
+ "anchor_consumer_state": "es-21769771-346c-4570-af88-bcd25f8f7271",
+ "anchor_settled_value": "B7-SETTLED-20261027-034749",
+ "prompt": "只输出这一行，不要解释，不要引号：RESULT=B7-SETTLED-20261027-034749",
+ "status": 200,
+ "seconds": 5.055,
+ "output_text": "RESULT=B7-SETTLED-20261027-034749",
+ "continuation_settlement": {
+  "child_es_state_id": "es-0a3ab248-e7ca-4079-8b96-5521d9681e52",
+  "settlement_id": "636E187B-09CE-4386-B4D2-8430EABFC849",
+  "identity_binding_published": true
+ },
+ "body": {
+  "user": null,
+  "object": "response",
+  "status": "completed",
+  "error": null,
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "metadata": {},
+  "previous_response_id": null,
+  "tool_choice": "auto",
+  "top_p": 1,
+  "incomplete_details": null,
+  "completed_at": 1793044219,
+  "continuation_settlement": {
+   "child_es_state_id": "es-0a3ab248-e7ca-4079-8b96-5521d9681e52",
+   "settlement_id": "636E187B-09CE-4386-B4D2-8430EABFC849",
+   "identity_binding_published": true
+  },
+  "usage": {
+   "total_tokens": 2280,
+   "output_tokens": 23,
+   "output_tokens_details": {
+    "reasoning_tokens": 0
+   },
+   "input_tokens": 2257,
+   "input_tokens_details": {
+    "cached_tokens": 0
+   }
+  },
+  "parallel_tool_calls": true,
+  "created_at": 1793044219,
+  "instructions": null,
+  "output": [
+   {
+    "id": "msg-dc7b08e9-2c61-4da2-a1c3-a1859f69be4b",
+    "status": "completed",
+    "role": "assistant",
+    "content": [
+     {
+      "type": "output_text",
+      "text": "RESULT=B7-SETTLED-20261027-034749",
+      "annotations": []
+     }
+    ],
+    "type": "message"
+   }
+  ],
+  "store": true,
+  "temperature": 1,
+  "text": {
+   "format": {
+    "type": "text"
+   }
+  },
+  "id": "resp-3e47ad0f-f27b-4100-99c4-a1c4e650120d",
+  "tools": [],
+  "truncation": "disabled"
+ },
+ "trace_lines": [
+  "[2026-10-27 03:50:19.638] [PROTOCOL] arrive r=e02f52 endpoint=responses stream=false agent=default s=respon branch=main",
+  "[2026-10-27 03:50:19.683] [PROTOCOL] continuation_admitted r=req-e02f5270 parent=es-21769771-346c-4570-af88-bcd25f8f7271 child=es-0a3ab248-e7ca-4079-8b96-5521d9681e52 bindings=1 kvBindings=0",
+  "[2026-10-27 03:50:20.200] [LC] STATE_TRANSITION r=e02f52 s=respon from=QUEUED to=RUNNING",
+  "[2026-10-27 03:50:20.200] [MLX] prefillStep=2048 est=1197 reuse=false",
+  "[2026-10-27 03:50:23.876] [MLX] prefill 2257/2257",
+  "[2026-10-27 03:50:24.658] [MLX] poolExport messages=3 refHash=21fa3ec44b12a04a",
+  "[2026-10-27 03:50:24.658] [MLX] session=d079e6/es-0a3ab248-e7ca-4079-8b96-5521d9681e52 messages=2 exec=070bd1 history=3 delta=1 reuse=false ttft=3720ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2257 promptTime=3.7s tps=34.8 rawEv=23 rawB=33 emitB=33",
+  "[2026-10-27 03:50:24.687] [LC] RELEASED r=e02f52 s=respon reason=completed"
+ ],
+ "checks": {
+  "status_200": true,
+  "settlement_recorded": true,
+  "generation_ran": true,
+  "derived_settlement_was_anchor": true,
+  "ok": true
+ },
+ "run_at": "2026-10-27T03:50:25+0800",
+ "installed_exe_sha256": "83635c736d7f913ebc63ffacbed29edbeb98ccc02e699d1ab11a870f02e32b89"
+}

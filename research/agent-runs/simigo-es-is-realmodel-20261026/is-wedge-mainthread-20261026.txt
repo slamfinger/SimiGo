@@ -1,0 +1,33 @@
+# SimiGo IS availability defect: PUT /v1/simigo/roots blocks the main thread and wedges the HTTP service
+# captured: 2026-10-26 19:37 (sample of pid 63243, 1 run, 769 hits per frame = whole sample)
+# build: /Applications/SimiGo.app (main 97043902 + uncommitted worktree 90ca17817406e6f8), binary sha 4f82de1c588d79a9...
+# probe client: PUT /v1/simigo/roots {"path": ".../simigo-es-is-realmodel-20261026/dep-root"}
+# server state before restart: curl -m 12 GET /v1/simigo/is/status -> http=000 (every attempt, >=25 min)
+# ps -o pid,etime,pcpu,rss: 63243 02:58:13 0.0% 206864  (alive, zero CPU => blocked, not busy)
+
+## main-thread stack (verbatim from sample)
+    769 Thread_8505614   DispatchQueue_1: com.apple.main-thread  (serial)
+    + 769 completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)  (in libswift_Concurrency.dylib) + 1  [0x2c721ad41]
+    +   769 <deduplicated_symbol>  (in SimiGo) + 1  [0x102b976c5]
+    +     769 ???  (in SimiGo)  load address 0x102b60000 + 0x500d9  [0x102bb00d9]
+    +       769 <deduplicated_symbol>  (in SimiGo) + 1  [0x102b976c5]
+    +         769 closure #4 in HTTPServer.accept(_:transportSecurity:)  (in SimiGo) + 1  [0x102c6843d]  HTTPServer.swift:992
+    +           769 HTTPServer.route(_:context:)  (in SimiGo) + 1  [0x102c6cd3d]  HTTPServer.swift:2180
+    +             769 HTTPServer.handleSimigoRootsPutRequest(_:context:)  (in SimiGo) + 1660  [0x102c76cf8]  HTTPServer.swift:1990
+    +               769 SimiGoESISDatabase.settleWorkRootContents(rootID:rootURL:category:fileByteCap:maxDepth:carryText:)  (in SimiGo) + 3488  [0x104290854]  SimiGoESISDatabase.swift:1505
+    +                 769 -[NSURLDirectoryEnumerator nextObject]  (in Foundation) + 100  [0x19c128c30]
+    +                   769 _URLEnumeratorGetNextURL  (in CoreServicesInternal) + 132  [0x19ed8978c]
+    +                     769 _GetDirectoryURLs(_CFURLEnumerator*)  (in CoreServicesInternal) + 264  [0x19ed8ac38]
+    +                       769 DirEnumRead  (in CoreServicesInternal) + 188  [0x19ed8b138]
+    +                         769 open  (in libsystem_kernel.dylib) + 64  [0x19a8e4960]
+    +                           769 __open  (in libsystem_kernel.dylib) + 8  [0x19a8d9680]
+
+## source frames (product worktree line numbers)
+HTTPServer.swift:992   closure #4 in HTTPServer.accept(_:transportSecurity:)  <- request handled on main dispatch queue
+HTTPServer.swift:2180  HTTPServer.route(_:context:)
+HTTPServer.swift:1990  HTTPServer.handleSimigoRootsPutRequest  <- calls settleWorkRootContents synchronously
+SimiGoESISDatabase.swift:1505  settleWorkRootContents -> NSURLDirectoryEnumerator.nextObject -> _URLEnumeratorGetNextURL -> DirEnumRead -> open() blocked in syscall
+
+## residual state written by the probe (kept, no delete route exists)
+roots: work-000000008a721251 | .../simigo-es-is-realmodel-20261026/dep-root | present | external_files=2
+dep-root/marker_alpha_7Q.txt = baseline body only (injection step never executed)

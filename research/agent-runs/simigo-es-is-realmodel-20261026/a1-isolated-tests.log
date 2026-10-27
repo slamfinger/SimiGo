@@ -1,0 +1,2 @@
+make_isolated_xctestrun: cannot pick a base xctestrun (0 candidates in /private/tmp/simigo_rel/Build/Products); pass --base-xctestrun
+EXIT=4

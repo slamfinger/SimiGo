@@ -1,0 +1,5 @@
+[K3 17:23:40] phase a pid=['72481'] session=k3-source-20261027-172339
+[K3 17:23:42] source-chat-generation-k3 -> 200 2.290s gen=3 kv=2
+[K3 17:23:44] source settlement 3FD020EE-561B-4297-AAD2-7633AC60F98E value='k3-SETTLED-20261027-172339'
+[K3 17:23:46] interrupted after 8 chunks, 11 chars
+[K3 17:23:49] phase a done: partial='INT-A01-202' settled_rows_delta={'settlements': 3, 'execution_states': 1, 'settlement_bindings': 2, 'settlement_consumptions': 0, 'settlement_reuse_contracts': 0, 'checkpoints': 0, 'retrieval_settlements': 2, 'is_objects': 7, 'chat_messages': 3, 'chat_execution_links': 1, 'information_demands': 2, 'information_advancements': 1}

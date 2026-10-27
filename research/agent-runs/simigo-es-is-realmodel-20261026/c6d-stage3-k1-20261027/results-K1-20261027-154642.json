@@ -1,0 +1,852 @@
+{
+ "case": "K1",
+ "nonce": "20261027-154642",
+ "started_at": "2026-10-27T15:46:42+0800",
+ "base_url": "http://127.0.0.1:8000",
+ "run_root": "/tmp/simigo-stage3-20261027-150733",
+ "kv_cache_root": "/tmp/simigo-stage3-20261027-150733/run/cache",
+ "expected_root_id": "work-000000004154195b",
+ "steps": {
+  "root-registration": {
+   "status": 200,
+   "body": {
+    "root_id": "work-000000004154195b",
+    "content_settle": {
+     "invalidated_settlements": 0,
+     "reused": 2,
+     "changed": 0,
+     "scanned": 2,
+     "settled": 0,
+     "skipped": 0,
+     "removed": 0,
+     "objects_created": 0,
+     "deduplicated": 0
+    },
+    "path": "/tmp/simigo-stage3-20261027-150733/run/workroot",
+    "registered": true
+   },
+   "trace": []
+  },
+  "source-chat-generation": {
+   "label": "source-chat-generation",
+   "path": "/v1/chat/completions",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "session_id": "k1-source-20261027-154642",
+    "max_tokens": 96,
+    "messages": [
+     {
+      "role": "system",
+      "content": "你是精确的标记输出器，只输出用户要求的那一行。"
+     },
+     {
+      "role": "user",
+      "content": "只输出这一行，不要解释：K1-SETTLED-20261027-154642"
+     }
+    ]
+   },
+   "status": 200,
+   "seconds": 18.72,
+   "body": {
+    "object": "chat.completion",
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "created": 1793087221,
+    "choices": [
+     {
+      "index": 0,
+      "message": {
+       "content": "K1-SETTLED-20261027-154642",
+       "role": "assistant"
+      },
+      "finish_reason": "stop"
+     }
+    ],
+    "id": "chatcmpl-c10a157a-9c05-4607-99ec-77d51d80f057"
+   },
+   "generation_lines": [
+    "[2026-10-27 15:46:48.204] [MLX] prefillStep=2048 est=32 reuse=false",
+    "[2026-10-27 15:46:55.936] [MLX] prefill 238/238",
+    "[2026-10-27 15:47:01.185] [MLX] session=154642/main messages=2 exec=49ba30 history=3 delta=1 reuse=false ttft=12105ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=238 promptTime=12.0s tps=28.1 rawEv=22 rawB=26 emitB=26"
+   ],
+   "kv_lines": [
+    "[2026-10-27 15:46:42.506] [LIFECYCLE] resume_started",
+    "[2026-10-27 15:46:48.199] [LIFECYCLE] resume_done ms=5693",
+    "[2026-10-27 15:46:48.203] [MLX] poolRescan entries=0"
+   ],
+   "trace": [
+    "[2026-10-27 15:46:42.505] [PROTOCOL] arrive r=e4816e endpoint=chat.completions stream=false agent=default s=k1-sou branch=main",
+    "[2026-10-27 15:46:42.506] [LIFECYCLE] resume_started",
+    "[2026-10-27 15:46:48.199] [LIFECYCLE] resume_done ms=5693",
+    "[2026-10-27 15:46:48.203] [MLX] poolRescan entries=0",
+    "[2026-10-27 15:46:48.204] [MLX] prefillStep=2048 est=32 reuse=false",
+    "[2026-10-27 15:46:55.936] [MLX] prefill 238/238",
+    "[2026-10-27 15:47:01.185] [MLX] session=154642/main messages=2 exec=49ba30 history=3 delta=1 reuse=false ttft=12105ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=238 promptTime=12.0s tps=28.1 rawEv=22 rawB=26 emitB=26"
+   ],
+   "trace_raw": "[2026-10-27 15:46:42.505] [PROTOCOL] arrive r=e4816e endpoint=chat.completions stream=false agent=default s=k1-sou branch=main\n[2026-10-27 15:46:42.506] [LIFECYCLE] resume_started\n[2026-10-27 15:46:48.199] [LIFECYCLE] resume_done ms=5693\n[2026-10-27 15:46:48.200] [LC] STATE_TRANSITION r=e4816e s=k1-sou from=QUEUED to=RUNNING\n[2026-10-27 15:46:48.203] [MLX] poolRescan entries=0\n[2026-10-27 15:46:48.203] [MLX] sessionClientSplit key=154642/main#110aa5cc note=system-prompt client shard\n[2026-10-27 15:46:48.204] [MLX] prefillStep=2048 est=32 reuse=false\n[2026-10-27 15:46:55.936] [MLX] prefill 238/238\n[2026-10-27 15:47:01.140] [MLX] poolExport messages=3 refHash=f99c3491371a6184\n[2026-10-27 15:47:01.180] [MLX] cacheSave session=154642/main history=3\n[2026-10-27 15:47:01.185] [MLX] session=154642/main messages=2 exec=49ba30 history=3 delta=1 reuse=false ttft=12105ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=238 promptTime=12.0s tps=28.1 rawEv=22 rawB=26 emitB=26\n[2026-10-27 15:47:01.195] [LC] RELEASED r=e4816e s=k1-sou reason=completed\n"
+  },
+  "consume-positive": {
+   "label": "consume-positive",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "k1 exact repeat 20261027-154642",
+     "root_ids": [
+      "work-000000004154195b"
+     ]
+    }
+   },
+   "status": 200,
+   "seconds": 0.037,
+   "body": {
+    "store": false,
+    "status": "completed",
+    "text": {
+     "format": {
+      "type": "text"
+     }
+    },
+    "id": "resp-1addaaf3-3f13-4828-9264-dcc441c11e2e",
+    "instructions": null,
+    "temperature": 1,
+    "object": "response",
+    "usage": {
+     "input_tokens": 0,
+     "input_tokens_details": {
+      "cached_tokens": 0
+     },
+     "total_tokens": 0,
+     "output_tokens_details": {
+      "reasoning_tokens": 0
+     },
+     "output_tokens": 0
+    },
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "previous_response_id": null,
+    "output": [
+     {
+      "type": "message",
+      "content": [
+       {
+        "annotations": [],
+        "type": "output_text",
+        "text": "K1-SETTLED-20261027-154642"
+       }
+      ],
+      "status": "completed",
+      "role": "assistant",
+      "id": "msg-81b5dec9-4599-40ee-9808-e441c6631787"
+     }
+    ],
+    "tool_choice": "auto",
+    "created_at": 1793087223,
+    "tools": [],
+    "top_p": 1,
+    "completed_at": 1793087223,
+    "incomplete_details": null,
+    "truncation": "disabled",
+    "error": null,
+    "settlement_consumption": {
+     "consumer_es_state_id": "es-96f924aa-353c-4292-830f-ef40e3219b3f",
+     "consumer_settlement_id": "C49392D7-AA70-4B60-A6D6-8421595EEC2D",
+     "reused_existing": false,
+     "canonical_digest": "260ffc4df103de1291e2e3042aced1d8f823035419d7cbdfa5fadeb538ca64fc",
+     "derived_settlement": true,
+     "outcome": "consumed",
+     "source_settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+     "consumption_id": "94E09F40-8A7F-412D-84E2-9368AA259327",
+     "contract": {
+      "extract": "content",
+      "demand_class": "exact-repeat",
+      "id": "simigo.settlement-consumption",
+      "version": "v1"
+     },
+     "demand_id": "8b819d078c727e79a8874844deca010b58de92f6e194ca48438c7a872a6f6bc9",
+     "model_calls": 0
+    },
+    "user": null,
+    "parallel_tool_calls": true,
+    "metadata": {}
+   },
+   "generation_lines": [],
+   "kv_lines": [],
+   "trace": [
+    "[2026-10-27 15:47:03.704] [PROTOCOL] arrive r=9ed7dc endpoint=responses stream=false agent=default s=respon branch=main"
+   ],
+   "trace_raw": "[2026-10-27 15:47:03.704] [PROTOCOL] arrive r=9ed7dc endpoint=responses stream=false agent=default s=respon branch=main\n[2026-10-27 15:47:03.738] [LC] RELEASED r=9ed7dc s=respon reason=completed\n"
+  },
+  "consume-second-request": {
+   "label": "consume-second-request",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "k1 exact repeat 20261027-154642",
+     "root_ids": [
+      "work-000000004154195b"
+     ]
+    }
+   },
+   "status": 200,
+   "seconds": 0.035,
+   "body": {
+    "store": false,
+    "status": "completed",
+    "text": {
+     "format": {
+      "type": "text"
+     }
+    },
+    "id": "resp-e40b3ca1-79b2-4ff4-b4d5-57e290e7b9a7",
+    "instructions": null,
+    "temperature": 1,
+    "object": "response",
+    "usage": {
+     "output_tokens": 0,
+     "input_tokens": 0,
+     "output_tokens_details": {
+      "reasoning_tokens": 0
+     },
+     "total_tokens": 0,
+     "input_tokens_details": {
+      "cached_tokens": 0
+     }
+    },
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "previous_response_id": null,
+    "output": [
+     {
+      "type": "message",
+      "role": "assistant",
+      "content": [
+       {
+        "type": "output_text",
+        "text": "K1-SETTLED-20261027-154642",
+        "annotations": []
+       }
+      ],
+      "id": "msg-968340e3-d41e-4ec9-a56f-c717a160ac6e",
+      "status": "completed"
+     }
+    ],
+    "tool_choice": "auto",
+    "created_at": 1793087224,
+    "tools": [],
+    "top_p": 1,
+    "completed_at": 1793087224,
+    "incomplete_details": null,
+    "truncation": "disabled",
+    "error": null,
+    "settlement_consumption": {
+     "consumer_es_state_id": "es-8c24a6eb-8a07-46ab-bbe3-55a2ad6a4714",
+     "consumer_settlement_id": "A6335682-DD0E-4D85-AC01-31FB4D3C9F0C",
+     "reused_existing": false,
+     "canonical_digest": "260ffc4df103de1291e2e3042aced1d8f823035419d7cbdfa5fadeb538ca64fc",
+     "derived_settlement": true,
+     "outcome": "consumed",
+     "source_settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+     "consumption_id": "27F15696-2BB3-44E6-9272-C77934F4F768",
+     "contract": {
+      "extract": "content",
+      "demand_class": "exact-repeat",
+      "id": "simigo.settlement-consumption",
+      "version": "v1"
+     },
+     "demand_id": "8b819d078c727e79a8874844deca010b58de92f6e194ca48438c7a872a6f6bc9",
+     "model_calls": 0
+    },
+    "user": null,
+    "parallel_tool_calls": true,
+    "metadata": {}
+   },
+   "generation_lines": [],
+   "kv_lines": [],
+   "trace": [
+    "[2026-10-27 15:47:04.148] [PROTOCOL] arrive r=1430bd endpoint=responses stream=false agent=default s=respon branch=main"
+   ],
+   "trace_raw": "[2026-10-27 15:47:04.148] [PROTOCOL] arrive r=1430bd endpoint=responses stream=false agent=default s=respon branch=main\n[2026-10-27 15:47:04.180] [LC] RELEASED r=1430bd s=respon reason=completed\n"
+  },
+  "consume-refusal-control": {
+   "label": "consume-refusal-control",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "set-does-not-exist-20261027-154642",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "k1 exact repeat 20261027-154642",
+     "root_ids": [
+      "work-000000004154195b"
+     ]
+    }
+   },
+   "status": 422,
+   "seconds": 0.028,
+   "body": {
+    "error": {
+     "message": "Settlement consumption refused: settlement set-does-not-exist-20261027-154642 declared no reuse contract; it is not consumable",
+     "error_kind": "SETTLEMENT_CONSUMPTION_REFUSED",
+     "param": null,
+     "code": null,
+     "reason_code": "contract_undeclared",
+     "type": "server_error"
+    }
+   },
+   "generation_lines": [],
+   "kv_lines": [],
+   "trace": [
+    "[2026-10-27 15:47:04.590] [PROTOCOL] arrive r=a61bf2 endpoint=responses stream=false agent=default s=respon branch=main"
+   ],
+   "trace_raw": "[2026-10-27 15:47:04.590] [PROTOCOL] arrive r=a61bf2 endpoint=responses stream=false agent=default s=respon branch=main\n[2026-10-27 15:47:04.615] [LC] STATE_TRANSITION r=a61bf2 s=respon from=CREATED to=CANCELLING\n[2026-10-27 15:47:04.616] [LC] STATE_TRANSITION r=a61bf2 s=respon from=CANCELLING to=DRAINING\n[2026-10-27 15:47:04.616] [LC] STATE_TRANSITION r=a61bf2 s=respon from=DRAINING to=RELEASING\n[2026-10-27 15:47:04.616] [LC] RELEASED r=a61bf2 s=respon reason=settlement_consumption_refused\n"
+  },
+  "control-generation-after-unblock": {
+   "label": "control-generation-after-unblock",
+   "path": "/v1/chat/completions",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "session_id": "k1-control-20261027-154642",
+    "max_tokens": 48,
+    "messages": [
+     {
+      "role": "system",
+      "content": "你是精确的标记输出器，只输出用户要求的那一行。"
+     },
+     {
+      "role": "user",
+      "content": "只输出这一行，不要解释：K1-CONTROL-20261027-154642"
+     }
+    ]
+   },
+   "status": 200,
+   "seconds": 1.572,
+   "body": {
+    "object": "chat.completion",
+    "id": "chatcmpl-101d893a-e516-436c-807a-b1d6362a12f3",
+    "choices": [
+     {
+      "index": 0,
+      "message": {
+       "role": "assistant",
+       "content": "K1-CONTROL-20261027-154642"
+      },
+      "finish_reason": "stop"
+     }
+    ],
+    "created": 1793087226,
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"
+   },
+   "generation_lines": [
+    "[2026-10-27 15:47:05.058] [MLX] prefillStep=2048 est=161 reuse=false",
+    "[2026-10-27 15:47:05.848] [MLX] prefill 535/535",
+    "[2026-10-27 15:47:06.615] [MLX] session=154642/main messages=2 exec=86a88c history=3 delta=1 reuse=false ttft=856ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=535 promptTime=0.8s tps=34.4 rawEv=20 rawB=26 emitB=26"
+   ],
+   "kv_lines": [],
+   "trace": [
+    "[2026-10-27 15:47:05.057] [PROTOCOL] arrive r=70bfd0 endpoint=chat.completions stream=false agent=default s=k1-con branch=main",
+    "[2026-10-27 15:47:05.058] [MLX] prefillStep=2048 est=161 reuse=false",
+    "[2026-10-27 15:47:05.848] [MLX] prefill 535/535",
+    "[2026-10-27 15:47:06.615] [MLX] session=154642/main messages=2 exec=86a88c history=3 delta=1 reuse=false ttft=856ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=535 promptTime=0.8s tps=34.4 rawEv=20 rawB=26 emitB=26"
+   ],
+   "trace_raw": "[2026-10-27 15:47:05.057] [PROTOCOL] arrive r=70bfd0 endpoint=chat.completions stream=false agent=default s=k1-con branch=main\n[2026-10-27 15:47:05.057] [LC] STATE_TRANSITION r=70bfd0 s=k1-con from=QUEUED to=RUNNING\n[2026-10-27 15:47:05.058] [MLX] sessionClientSplit key=154642/main#110aa5cc note=system-prompt client shard\n[2026-10-27 15:47:05.058] [MLX] prefillStep=2048 est=161 reuse=false\n[2026-10-27 15:47:05.848] [MLX] prefill 535/535\n[2026-10-27 15:47:06.573] [MLX] poolExport messages=3 refHash=b72517eba938ed75\n[2026-10-27 15:47:06.615] [MLX] cacheSave session=154642/main history=3\n[2026-10-27 15:47:06.615] [MLX] session=154642/main messages=2 exec=86a88c history=3 delta=1 reuse=false ttft=856ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=535 promptTime=0.8s tps=34.4 rawEv=20 rawB=26 emitB=26\n[2026-10-27 15:47:06.616] [LC] RELEASED r=70bfd0 s=k1-con reason=completed\n"
+  }
+ },
+ "identity": {
+  "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "installed_exe_sha256": "9ba486976d56de2b8614c2cb8537e2253955084e438a18c428838913a53c1a30",
+  "app_pid": [
+   "65911"
+  ],
+  "app_env": {
+   "SIMIGO_HOME": "/tmp/simigo-stage3-20261027-150733/run/home",
+   "SIMIGO_CACHE_ROOT": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "SIMIGO_STATE_GRAPH_STORE": "/tmp/simigo-stage3-20261027-150733/run/state-graph/reference-graph-v1.json"
+  },
+  "head": "97043902075b67eb1693749fd6ed50421eccf3ba",
+  "trace_size": 1056,
+  "db_counters_start": {
+   "settlements": 0,
+   "execution_states": 0,
+   "settlement_bindings": 0,
+   "settlement_consumptions": 0,
+   "settlement_reuse_contracts": 0,
+   "checkpoints": 0,
+   "retrieval_settlements": 0,
+   "is_objects": 2
+  },
+  "cache_root_start": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "kind": "directory",
+   "size": null,
+   "sha256": null,
+   "children": {
+    "prefix-pool": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    },
+    "branch-checkpoints": {
+     "present": true,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "files": [],
+     "kind": "directory"
+    }
+   }
+  },
+  "real_home_start": {
+   "prefix-pool": {
+    "kind": "directory",
+    "mtime_ns": 1793012782633047735,
+    "mtime": "2026-10-26 19:06:22",
+    "entries": 1
+   },
+   "branch-checkpoints": {
+    "kind": "directory",
+    "mtime_ns": 1793045958320113695,
+    "mtime": "2026-10-27 04:19:18",
+    "entries": 44
+   },
+   "simigo.sqlite3": {
+    "kind": "regular-file",
+    "mtime_ns": 1793086002982206664,
+    "mtime": "2026-10-27 15:26:42"
+   }
+  }
+ },
+ "results_path": "/private/tmp/simigo-stage3-20261027-150733/results-K1-20261027-154642.json",
+ "source": {
+  "settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+  "state_id": "chat-184f3580-6ecf-4746-ac40-9d546d820a38",
+  "settled_at": "814780021.19156301",
+  "generated_text": "K1-SETTLED-20261027-154642",
+  "settled_value": "K1-SETTLED-20261027-154642",
+  "payload_digest_ok": true,
+  "payload_digest": "5326b241835c8216ae0c0d5fda8e57ed6153ec1845d1a92f19582efc7be290b4",
+  "bindings": {
+   "producer.model_identity": "0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53",
+   "producer.tokenizer_identity": "1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71"
+  },
+  "usage": null,
+  "generation_line_count": 3,
+  "kv_line_count": 3,
+  "marker_matched": true
+ },
+ "contract": {
+  "query": "k1 exact repeat 20261027-154642",
+  "root_id": "work-000000004154195b",
+  "canonical_entries": 2,
+  "canonical": "k1 exact repeat 20261027-154642|work-000000004154195b/a.txt=1bb850f07110efb7514c2c45cc8c9049fd0594face934172cb398f9bc63e1f71;work-000000004154195b/b.txt=60d7691533a658ffdbf55c7e0f62dbaf471082bf137570ec3c8c5036a1ae20a7",
+  "canonical_digest": "260ffc4df103de1291e2e3042aced1d8f823035419d7cbdfa5fadeb538ca64fc",
+  "declaration": {
+   "canonical": "k1 exact repeat 20261027-154642|work-000000004154195b/a.txt=1bb850f07110efb7514c2c45cc8c9049fd0594face934172cb398f9bc63e1f71;work-000000004154195b/b.txt=60d7691533a658ffdbf55c7e0f62dbaf471082bf137570ec3c8c5036a1ae20a7",
+   "canonical_digest": "260ffc4df103de1291e2e3042aced1d8f823035419d7cbdfa5fadeb538ca64fc",
+   "contract_id": "simigo.settlement-consumption",
+   "contract_version": "v1",
+   "declared": true,
+   "declared_at": "814780023.68189204",
+   "demand_class": "exact-repeat",
+   "extract_field": "content",
+   "query": "k1 exact repeat 20261027-154642",
+   "required_identity_json": "{\"kind\":\"producer\",\"model\":\"0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53\",\"tokenizer\":\"1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71\"}",
+   "roots": [
+    "work-000000004154195b"
+   ],
+   "settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75"
+  },
+  "stored": {
+   "canonical": "k1 exact repeat 20261027-154642|work-000000004154195b/a.txt=1bb850f07110efb7514c2c45cc8c9049fd0594face934172cb398f9bc63e1f71;work-000000004154195b/b.txt=60d7691533a658ffdbf55c7e0f62dbaf471082bf137570ec3c8c5036a1ae20a7",
+   "canonical_digest": "260ffc4df103de1291e2e3042aced1d8f823035419d7cbdfa5fadeb538ca64fc",
+   "contract_id": "simigo.settlement-consumption",
+   "contract_version": "v1",
+   "declared_at": "814780023.68189204",
+   "demand_class": "exact-repeat",
+   "extract_field": "content",
+   "found": true,
+   "query": "k1 exact repeat 20261027-154642",
+   "required_identity_json": "{\"kind\":\"producer\",\"model\":\"0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53\",\"tokenizer\":\"1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71\"}",
+   "roots": [
+    "work-000000004154195b"
+   ],
+   "settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75"
+  }
+ },
+ "block": {
+  "cache_before": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "kind": "directory",
+   "size": null,
+   "sha256": null,
+   "children": {
+    "prefix-pool": {
+     "present": true,
+     "file_count": 2,
+     "total_bytes": 69742641,
+     "listing_sha256": "60a7b0ed550be045720af75c242e6d1e013292b06826f607b1703f87d382b51d",
+     "files": [
+      {
+       "rel": "44eaa202ce92e06d/f99c3491371a6184-6.json",
+       "size": 176,
+       "mtime_ns": 1793087221136119452,
+       "inode": 114110325
+      },
+      {
+       "rel": "44eaa202ce92e06d/f99c3491371a6184-6.safetensors",
+       "size": 69742465,
+       "mtime_ns": 1793087221131623774,
+       "inode": 114110324
+      }
+     ],
+     "kind": "directory"
+    },
+    "branch-checkpoints": {
+     "present": true,
+     "file_count": 2,
+     "total_bytes": 69743134,
+     "listing_sha256": "2c6becbd16660720097e7a7146685bc469c6516e1ccb457d49a34159bef46789",
+     "files": [
+      {
+       "rel": "default_k1-source-20261027-154642_main.meta.json",
+       "size": 669,
+       "mtime_ns": 1793087221179833368,
+       "inode": 114110327
+      },
+      {
+       "rel": "default_k1-source-20261027-154642_main.safetensors",
+       "size": 69742465,
+       "mtime_ns": 1793087221174082081,
+       "inode": 114110326
+      }
+     ],
+     "kind": "directory"
+    }
+   }
+  },
+  "action": {
+   "moved_to": "/private/tmp/simigo-stage3-20261027-150733/isolation-cache/cache",
+   "blocker": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "FileExistsError(17, 'File exists')"
+   }
+  },
+  "cache_after": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "kind": "regular-file",
+   "size": 70,
+   "sha256": "737f30a8725b344f1aabb234c12aadfb5f7986f9a923f3709ae5a8c4a0245989",
+   "children": {
+    "prefix-pool": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    },
+    "branch-checkpoints": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    }
+   }
+  },
+  "probe_read_write": {
+   "prefix-pool": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/prefix-pool",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   },
+   "branch-checkpoints": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/branch-checkpoints",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   }
+  },
+  "db_counters_before": {
+   "settlements": 2,
+   "execution_states": 1,
+   "settlement_bindings": 2,
+   "settlement_consumptions": 0,
+   "settlement_reuse_contracts": 1,
+   "checkpoints": 0,
+   "retrieval_settlements": 1,
+   "is_objects": 7
+  },
+  "settlement_ids_before": [
+   "is-retrieval:57e69e85ff81b7f1318c1477303c2a17550b1398e483906db44ca77aa4e4e92b",
+   "CD4DD747-417A-438C-9090-F639065E6B75"
+  ]
+ },
+ "during_block": {
+  "cache_root": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "kind": "regular-file",
+   "size": 70,
+   "sha256": "737f30a8725b344f1aabb234c12aadfb5f7986f9a923f3709ae5a8c4a0245989",
+   "children": {
+    "prefix-pool": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    },
+    "branch-checkpoints": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    }
+   }
+  },
+  "probe_read_write_after": {
+   "prefix-pool": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/prefix-pool",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   },
+   "branch-checkpoints": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/branch-checkpoints",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   }
+  },
+  "db_counters_after": {
+   "settlements": 4,
+   "execution_states": 3,
+   "settlement_bindings": 6,
+   "settlement_consumptions": 2,
+   "settlement_reuse_contracts": 1,
+   "checkpoints": 0,
+   "retrieval_settlements": 1,
+   "is_objects": 9
+  },
+  "db_counter_delta": {
+   "settlements": 2,
+   "execution_states": 2,
+   "settlement_bindings": 4,
+   "settlement_consumptions": 2,
+   "settlement_reuse_contracts": 0,
+   "checkpoints": 0,
+   "retrieval_settlements": 0,
+   "is_objects": 2
+  },
+  "new_settlement_rows": [
+   {
+    "settlement_id": "C49392D7-AA70-4B60-A6D6-8421595EEC2D",
+    "state_id": "es-96f924aa-353c-4292-830f-ef40e3219b3f",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814780023.73396099"
+   },
+   {
+    "settlement_id": "A6335682-DD0E-4D85-AC01-31FB4D3C9F0C",
+    "state_id": "es-8c24a6eb-8a07-46ab-bbe3-55a2ad6a4714",
+    "contract_version": "simigo.result-contract/v1",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "settled_at": "814780024.17424095"
+   }
+  ],
+  "settlement_consumption_rows": [
+   {
+    "consumption_id": "94E09F40-8A7F-412D-84E2-9368AA259327",
+    "source_settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+    "consumer_settlement_id": "C49392D7-AA70-4B60-A6D6-8421595EEC2D",
+    "contract_id": "simigo.settlement-consumption",
+    "model_calls": 0,
+    "created_at": "814780023.73396099"
+   },
+   {
+    "consumption_id": "27F15696-2BB3-44E6-9272-C77934F4F768",
+    "source_settlement_id": "CD4DD747-417A-438C-9090-F639065E6B75",
+    "consumer_settlement_id": "A6335682-DD0E-4D85-AC01-31FB4D3C9F0C",
+    "contract_id": "simigo.settlement-consumption",
+    "model_calls": 0,
+    "created_at": "814780024.17424095"
+   }
+  ],
+  "sweep_for_redirected_kv": [
+   {
+    "path": "/Users/mr.simi/.simigo/branch-checkpoints",
+    "kind": "directory",
+    "in": "branch-checkpoints"
+   },
+   {
+    "path": "/Users/mr.simi/.simigo/prefix-pool",
+    "kind": "directory",
+    "in": "prefix-pool"
+   }
+  ],
+  "real_home_after": {
+   "prefix-pool": {
+    "kind": "directory",
+    "mtime_ns": 1793012782633047735,
+    "mtime": "2026-10-26 19:06:22",
+    "entries": 1
+   },
+   "branch-checkpoints": {
+    "kind": "directory",
+    "mtime_ns": 1793045958320113695,
+    "mtime": "2026-10-27 04:19:18",
+    "entries": 44
+   },
+   "simigo.sqlite3": {
+    "kind": "regular-file",
+    "mtime_ns": 1793086002982206664,
+    "mtime": "2026-10-27 15:26:42"
+   }
+  }
+ },
+ "unblock": {
+  "restore": {
+   "restored_original": true,
+   "kind_after": "directory"
+  },
+  "cache_after_unblock": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "kind": "directory",
+   "size": null,
+   "sha256": null,
+   "children": {
+    "prefix-pool": {
+     "present": true,
+     "file_count": 4,
+     "total_bytes": 145526888,
+     "listing_sha256": "5b643c2871d2e25ad391b681573ed5abf707d6e42ad480a61f30ce4086f75ea9",
+     "files": [
+      {
+       "rel": "44eaa202ce92e06d/b72517eba938ed75-6.json",
+       "size": 176,
+       "mtime_ns": 1793087226572532842,
+       "inode": 114110333
+      },
+      {
+       "rel": "44eaa202ce92e06d/b72517eba938ed75-6.safetensors",
+       "size": 75784071,
+       "mtime_ns": 1793087226571298492,
+       "inode": 114110332
+      },
+      {
+       "rel": "44eaa202ce92e06d/f99c3491371a6184-6.json",
+       "size": 176,
+       "mtime_ns": 1793087221136119452,
+       "inode": 114110325
+      },
+      {
+       "rel": "44eaa202ce92e06d/f99c3491371a6184-6.safetensors",
+       "size": 69742465,
+       "mtime_ns": 1793087221131623774,
+       "inode": 114110324
+      }
+     ],
+     "kind": "directory"
+    },
+    "branch-checkpoints": {
+     "present": true,
+     "file_count": 4,
+     "total_bytes": 145528395,
+     "listing_sha256": "6d64d6a7f9550efb4546231b1031dc23be806eb3671835ed26eb46f2a547adf1",
+     "files": [
+      {
+       "rel": "default_k1-control-20261027-154642_main.meta.json",
+       "size": 1190,
+       "mtime_ns": 1793087226614995061,
+       "inode": 114110335
+      },
+      {
+       "rel": "default_k1-control-20261027-154642_main.safetensors",
+       "size": 75784071,
+       "mtime_ns": 1793087226614408011,
+       "inode": 114110334
+      },
+      {
+       "rel": "default_k1-source-20261027-154642_main.meta.json",
+       "size": 669,
+       "mtime_ns": 1793087221179833368,
+       "inode": 114110327
+      },
+      {
+       "rel": "default_k1-source-20261027-154642_main.safetensors",
+       "size": 69742465,
+       "mtime_ns": 1793087221174082081,
+       "inode": 114110326
+      }
+     ],
+     "kind": "directory"
+    }
+   }
+  },
+  "control_generation_lines": 3,
+  "kv_activity_samples": [
+   {
+    "t": "15:47:12",
+    "prefix_pool_files": 4,
+    "branch_checkpoint_files": 4
+   }
+  ],
+  "control_kv_lines": []
+ },
+ "checks": {
+  "block_effective_read": true,
+  "block_effective_write": true,
+  "no_kv_files_created_during_block": true,
+  "no_kv_redirection": true,
+  "real_home_untouched": true,
+  "positive_status_200": true,
+  "model_calls_zero": true,
+  "derived_settlement_true": true,
+  "usage_zero": true,
+  "text_is_settled_value": true,
+  "no_generation_lines_positive": true,
+  "no_generation_lines_second": true,
+  "second_request_model_calls_zero": true,
+  "no_new_generation_settlement": true,
+  "probe_saw_generation_lines_in_source_window": true,
+  "refusal_control_not_200_ok": true,
+  "refusal_control_no_generation": true
+ },
+ "summary": {
+  "passed": 17,
+  "total": 17,
+  "failures": [],
+  "new_generation_settlements": [],
+  "model_calls_total_persisted": 0
+ }
+}

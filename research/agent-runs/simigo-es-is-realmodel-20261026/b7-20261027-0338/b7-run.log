@@ -1,0 +1,66 @@
+[B7 03:47:49] service ready model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX
+[B7 03:47:55] source-chat-generation -> 200 4.935s generation_lines=3
+[B7 03:47:57] source settlement EA1F6171-A54B-4094-9F68-EE0BCEC9D74F value='B7-SETTLED-20261027-034749'
+[B7 03:47:57] contract declared digest=be6fc3218f3590af
+[B7 03:47:57] consume-positive -> 200 0.064s generation_lines=0
+[B7 03:47:58] consume-second-request -> 200 0.061s generation_lines=0
+[B7 03:47:58] consumption checks: {"status_200": true, "model_calls_zero": true, "store_false": true, "text_is_settled_value": true, "no_generation_lines": true, "no_kv_files_created": true, "second_request_200": true, "second_request_zero_calls": true, "second_request_no_generation": true, "model_output_stats_unchanged": true}
+[B7 03:47:58] restored directories identical={'prefix_pool': True, 'branch_checkpoints': True}
+[B7 03:47:58] refuse-malformed-bad-contract -> 422 0.002s generation_lines=0
+[B7 03:47:59] refuse-unknown-source -> 422 0.058s generation_lines=0
+[B7 03:47:59] refuse-identity-mismatch -> 422 0.022s generation_lines=0
+[B7 03:48:00] refuse-changed-query -> 422 0.056s generation_lines=0
+[B7 03:48:00] refuse-streaming -> 501 0.002s generation_lines=0
+[B7 03:48:00] refuse-malformed-missing-contract -> 422 0.002s generation_lines=0
+[B7 03:48:00] refusals: {"refuse-malformed-bad-contract": true, "refuse-unknown-source": true, "refuse-identity-mismatch": true, "refuse-changed-query": true, "refuse-streaming": true, "refuse-malformed-missing-contract": true}
+[B7 03:48:04] absent-field-ordinary-generation -> 200 3.346s generation_lines=3
+[B7 03:48:06] allow-recompute-changed-query -> 200 0.934s generation_lines=3
+[B7 03:48:09] derived-anchor-continuation -> 422 3.441s generation_lines=3
+[B7 03:48:09] chain check failed (recorded): {'error': {'type': 'server_error', 'reason_code': None, 'error_kind': 'NATIVE_RESULT_CONTRACT_REJECTED', 'param': None, 'code': None, 'message': 'Generated output refused by the native result contract: generated output does not satisfy the declared result contract (PRODUCER_RESULT_FIELD_MISSING)'}}
+[B7 03:48:09] done ok=True -> /Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/b7-20261027-0338/results-20261027-034749.json
+{
+ "ok": true,
+ "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+ "settled_value": "B7-SETTLED-20261027-034749",
+ "consumer_state": "es-21769771-346c-4570-af88-bcd25f8f7271",
+ "consumer_settlement": "B30CF082-D398-4293-ADE0-DD07143780A6",
+ "consumption_checks": {
+  "status_200": true,
+  "model_calls_zero": true,
+  "store_false": true,
+  "text_is_settled_value": true,
+  "no_generation_lines": true,
+  "no_kv_files_created": true,
+  "second_request_200": true,
+  "second_request_zero_calls": true,
+  "second_request_no_generation": true,
+  "model_output_stats_unchanged": true
+ },
+ "refusal_checks": {
+  "refuse-malformed-bad-contract": true,
+  "refuse-unknown-source": true,
+  "refuse-identity-mismatch": true,
+  "refuse-changed-query": true,
+  "refuse-streaming": true,
+  "refuse-malformed-missing-contract": true
+ },
+ "absent_field": true,
+ "recompute": true,
+ "chain": false,
+ "db_audit": {
+  "all_consumptions_zero_calls": true,
+  "derived_row_present": true,
+  "consumer_bindings_present": true,
+  "no_producer_bindings": true,
+  "no_kv_bindings": true,
+  "source_still_valid": true,
+  "dependency_edge_written": true,
+  "summary_marks_derivation": true,
+  "consumer_state_active": true
+ },
+ "directory_delta": {
+  "prefix_pool": 6,
+  "branch_checkpoints": 0
+ },
+ "results_file": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/b7-20261027-0338/results-20261027-034749.json"
+}

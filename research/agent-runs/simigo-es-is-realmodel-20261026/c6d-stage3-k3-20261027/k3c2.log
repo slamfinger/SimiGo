@@ -1,0 +1,3 @@
+[K3 17:48:05] phase c2 pid=['76140'] (phase c pid=['74450'])
+[K3 17:48:29] rerun-after-restart-adequate-budget -> 200 23.251s gen=3 kv=2
+[K3 17:48:31] phase c2 checks 15/15 failures=[] out_items=30/30 mode=cold history=3

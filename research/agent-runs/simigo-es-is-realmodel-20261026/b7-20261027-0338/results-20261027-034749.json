@@ -1,0 +1,2696 @@
+{
+ "nonce": "20261027-034749",
+ "started_at": "2026-10-27T03:47:49+0800",
+ "base_url": "http://127.0.0.1:8000",
+ "root_id": "work-000000008a721251",
+ "steps": {
+  "source-chat-generation": {
+   "label": "source-chat-generation",
+   "path": "/v1/chat/completions",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "session_id": "b7-source-20261027-034749",
+    "max_tokens": 96,
+    "messages": [
+     {
+      "role": "system",
+      "content": "你是精确的标记输出器，只输出用户要求的那一行。"
+     },
+     {
+      "role": "user",
+      "content": "只输出这一行，不要解释：B7-SETTLED-20261027-034749"
+     }
+    ]
+   },
+   "status": 200,
+   "seconds": 4.935,
+   "body": {
+    "created": 1793044074,
+    "object": "chat.completion",
+    "id": "chatcmpl-416b5876-e0e7-4d0f-ba46-8e71f9588e8d",
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "content": "B7-SETTLED-20261027-034749",
+       "role": "assistant"
+      }
+     }
+    ]
+   },
+   "generation_lines": [
+    "[2026-10-27 03:47:50.352] [MLX] prefillStep=2048 est=1232 reuse=false",
+    "[2026-10-27 03:47:53.883] [MLX] prefill 2401/2401",
+    "[2026-10-27 03:47:54.808] [MLX] session=034749/main messages=2 exec=6c6066 history=3 delta=1 reuse=false ttft=3676ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2401 promptTime=3.7s tps=34.3 rawEv=22 rawB=26 emitB=26"
+   ],
+   "trace": [
+    "[2026-10-27 03:47:50.352] [PROTOCOL] arrive r=b398dc endpoint=chat.completions stream=false agent=default s=b7-sou branch=main",
+    "[2026-10-27 03:47:50.352] [MLX] prefillStep=2048 est=1232 reuse=false",
+    "[2026-10-27 03:47:53.883] [MLX] prefill 2401/2401",
+    "[2026-10-27 03:47:54.808] [MLX] session=034749/main messages=2 exec=6c6066 history=3 delta=1 reuse=false ttft=3676ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2401 promptTime=3.7s tps=34.3 rawEv=22 rawB=26 emitB=26"
+   ]
+  },
+  "consume-positive": {
+   "label": "consume-positive",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "b7 exact repeat 20261027-034749",
+     "root_ids": [
+      "work-000000008a721251"
+     ]
+    }
+   },
+   "status": 200,
+   "seconds": 0.064,
+   "body": {
+    "created_at": 1793044077,
+    "completed_at": 1793044077,
+    "settlement_consumption": {
+     "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "consumer_settlement_id": "B30CF082-D398-4293-ADE0-DD07143780A6",
+     "consumer_es_state_id": "es-21769771-346c-4570-af88-bcd25f8f7271",
+     "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+     "model_calls": 0,
+     "derived_settlement": true,
+     "reused_existing": false,
+     "outcome": "consumed",
+     "consumption_id": "79E372C2-05F1-4478-A699-50A5822E95D5",
+     "contract": {
+      "version": "v1",
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "extract": "content"
+     }
+    },
+    "incomplete_details": null,
+    "instructions": null,
+    "error": null,
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "store": false,
+    "tools": [],
+    "top_p": 1,
+    "user": null,
+    "previous_response_id": null,
+    "output": [
+     {
+      "type": "message",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+       {
+        "text": "B7-SETTLED-20261027-034749",
+        "type": "output_text",
+        "annotations": []
+       }
+      ],
+      "id": "msg-4c64a780-6b82-4d63-b3b7-805635788902"
+     }
+    ],
+    "metadata": {},
+    "text": {
+     "format": {
+      "type": "text"
+     }
+    },
+    "truncation": "disabled",
+    "parallel_tool_calls": true,
+    "temperature": 1,
+    "status": "completed",
+    "usage": {
+     "input_tokens": 0,
+     "total_tokens": 0,
+     "output_tokens_details": {
+      "reasoning_tokens": 0
+     },
+     "input_tokens_details": {
+      "cached_tokens": 0
+     },
+     "output_tokens": 0
+    },
+    "tool_choice": "auto",
+    "id": "resp-1c2951dd-e886-406e-8bc8-63bc55ad17e8",
+    "object": "response"
+   },
+   "generation_lines": [],
+   "trace": [
+    "[2026-10-27 03:47:57.367] [PROTOCOL] arrive r=aa13cb endpoint=responses stream=false agent=default s=respon branch=main"
+   ]
+  },
+  "consume-second-request": {
+   "label": "consume-second-request",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "b7 exact repeat 20261027-034749",
+     "root_ids": [
+      "work-000000008a721251"
+     ]
+    }
+   },
+   "status": 200,
+   "seconds": 0.061,
+   "body": {
+    "created_at": 1793044077,
+    "completed_at": 1793044077,
+    "settlement_consumption": {
+     "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "consumer_settlement_id": "28B99C64-3105-41AD-960D-44907289863E",
+     "consumer_es_state_id": "es-62b88dc8-02a2-4d96-aa1e-7f52cdd57cea",
+     "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+     "model_calls": 0,
+     "derived_settlement": true,
+     "reused_existing": false,
+     "outcome": "consumed",
+     "consumption_id": "7470CFDC-A1EE-43C9-9A16-B29202AA0C95",
+     "contract": {
+      "version": "v1",
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "extract": "content"
+     }
+    },
+    "incomplete_details": null,
+    "instructions": null,
+    "error": null,
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "store": false,
+    "tools": [],
+    "top_p": 1,
+    "user": null,
+    "previous_response_id": null,
+    "output": [
+     {
+      "content": [
+       {
+        "annotations": [],
+        "type": "output_text",
+        "text": "B7-SETTLED-20261027-034749"
+       }
+      ],
+      "type": "message",
+      "id": "msg-e661a061-25b5-4f59-9eb2-14ae9c359eb7",
+      "role": "assistant",
+      "status": "completed"
+     }
+    ],
+    "metadata": {},
+    "text": {
+     "format": {
+      "type": "text"
+     }
+    },
+    "truncation": "disabled",
+    "parallel_tool_calls": true,
+    "temperature": 1,
+    "status": "completed",
+    "usage": {
+     "total_tokens": 0,
+     "input_tokens": 0,
+     "input_tokens_details": {
+      "cached_tokens": 0
+     },
+     "output_tokens_details": {
+      "reasoning_tokens": 0
+     },
+     "output_tokens": 0
+    },
+    "tool_choice": "auto",
+    "id": "resp-a2edda7a-e70b-4216-a6f2-0bc7ead2dcf5",
+    "object": "response"
+   },
+   "generation_lines": [],
+   "trace": [
+    "[2026-10-27 03:47:57.839] [PROTOCOL] arrive r=a6db18 endpoint=responses stream=false agent=default s=respon branch=main"
+   ]
+  },
+  "refuse-malformed-bad-contract": {
+   "label": "refuse-malformed-bad-contract",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "settlement_consumption": {
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "query": "b7 exact repeat 20261027-034749",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content",
+      "bogus": "x"
+     }
+    }
+   },
+   "status": 422,
+   "seconds": 0.002,
+   "body": {
+    "error": {
+     "param": null,
+     "message": "Settlement consumption refused: invalid settlement_consumption field: contract.bogus (unknown term)",
+     "error_kind": "SETTLEMENT_CONSUMPTION_REFUSED",
+     "type": "server_error",
+     "code": null,
+     "reason_code": "invalid_entry"
+    }
+   },
+   "generation_lines": [],
+   "trace": [
+    "[2026-10-27 03:47:58.352] [PROTOCOL] arrive r=e4e48b endpoint=responses stream=false agent=default s=respon branch=main"
+   ]
+  },
+  "refuse-unknown-source": {
+   "label": "refuse-unknown-source",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "no-such-settlement",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "b7 exact repeat 20261027-034749",
+     "root_ids": [
+      "work-000000008a721251"
+     ]
+    }
+   },
+   "status": 422,
+   "seconds": 0.058,
+   "body": {
+    "error": {
+     "type": "server_error",
+     "error_kind": "SETTLEMENT_CONSUMPTION_REFUSED",
+     "param": null,
+     "code": null,
+     "message": "Settlement consumption refused: settlement no-such-settlement declared no reuse contract; it is not consumable",
+     "reason_code": "contract_undeclared"
+    }
+   },
+   "generation_lines": [],
+   "trace": [
+    "[2026-10-27 03:47:58.762] [PROTOCOL] arrive r=72e747 endpoint=responses stream=false agent=default s=respon branch=main"
+   ]
+  },
+  "refuse-identity-mismatch": {
+   "label": "refuse-identity-mismatch",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "b7 exact repeat 20261027-034749",
+     "root_ids": [
+      "work-000000008a721251"
+     ],
+     "identity": {
+      "model_identity": "b7-bogus-model",
+      "tokenizer_identity": "b7-bogus-tokenizer"
+     }
+    }
+   },
+   "status": 422,
+   "seconds": 0.022,
+   "body": {
+    "error": {
+     "type": "server_error",
+     "error_kind": "SETTLEMENT_CONSUMPTION_REFUSED",
+     "param": null,
+     "code": null,
+     "message": "Settlement consumption refused: consumer identity assertion does not match this runtime",
+     "reason_code": "identity_mismatch"
+    }
+   },
+   "generation_lines": [],
+   "trace": [
+    "[2026-10-27 03:47:59.229] [PROTOCOL] arrive r=29581e endpoint=responses stream=false agent=default s=respon branch=main"
+   ]
+  },
+  "refuse-changed-query": {
+   "label": "refuse-changed-query",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "b7 exact repeat 20261027-034749 (changed)",
+     "root_ids": [
+      "work-000000008a721251"
+     ]
+    }
+   },
+   "status": 422,
+   "seconds": 0.056,
+   "body": {
+    "error": {
+     "type": "server_error",
+     "error_kind": "SETTLEMENT_CONSUMPTION_REFUSED",
+     "param": null,
+     "code": null,
+     "message": "Settlement consumption refused: canonical input digest changed: declared be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561, current 23c7ce2993e8909f816d8e7068533550d1fa8e52c746b9785a8cfef7c0c80680",
+     "reason_code": "canonical_input_mismatch"
+    }
+   },
+   "generation_lines": [],
+   "trace": [
+    "[2026-10-27 03:47:59.658] [PROTOCOL] arrive r=f6104d endpoint=responses stream=false agent=default s=respon branch=main"
+   ]
+  },
+  "refuse-streaming": {
+   "label": "refuse-streaming",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "stream": true,
+    "settlement_consumption": {
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "b7 exact repeat 20261027-034749",
+     "root_ids": [
+      "work-000000008a721251"
+     ]
+    }
+   },
+   "status": 501,
+   "seconds": 0.002,
+   "body": {
+    "error": {
+     "type": "not_implemented",
+     "error_kind": "SETTLEMENT_CONSUMPTION_UNSUPPORTED_ON_STREAM",
+     "param": null,
+     "code": null,
+     "message": "settlement_consumption is not supported on the streaming Responses path",
+     "reason_code": null
+    }
+   },
+   "generation_lines": [],
+   "trace": [
+    "[2026-10-27 03:48:00.123] [PROTOCOL] arrive r=6da378 endpoint=responses stream=true agent=default s=respon branch=main"
+   ]
+  },
+  "refuse-malformed-missing-contract": {
+   "label": "refuse-malformed-missing-contract",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "settlement_consumption": {
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F"
+    }
+   },
+   "status": 422,
+   "seconds": 0.002,
+   "body": {
+    "error": {
+     "param": null,
+     "message": "Settlement consumption refused: invalid settlement_consumption field: query (must be a non-empty string)",
+     "error_kind": "SETTLEMENT_CONSUMPTION_REFUSED",
+     "type": "server_error",
+     "code": null,
+     "reason_code": "invalid_entry"
+    }
+   },
+   "generation_lines": [],
+   "trace": [
+    "[2026-10-27 03:48:00.534] [PROTOCOL] arrive r=69c6d4 endpoint=responses stream=false agent=default s=respon branch=main"
+   ]
+  },
+  "absent-field-ordinary-generation": {
+   "label": "absent-field-ordinary-generation",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "只输出：B7-CONTROL-20261027-034749",
+    "max_output_tokens": 64
+   },
+   "status": 200,
+   "seconds": 3.346,
+   "body": {
+    "created_at": 1793044080,
+    "completed_at": 1793044080,
+    "incomplete_details": null,
+    "instructions": null,
+    "error": null,
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "store": true,
+    "tools": [],
+    "top_p": 1,
+    "user": null,
+    "previous_response_id": null,
+    "output": [
+     {
+      "type": "message",
+      "id": "msg-89e9fee0-3a1e-4f18-ac23-bae77863c92b",
+      "status": "completed",
+      "content": [
+       {
+        "type": "output_text",
+        "annotations": [],
+        "text": "B7-CONTROL-20261027-034749"
+       }
+      ],
+      "role": "assistant"
+     }
+    ],
+    "metadata": {},
+    "text": {
+     "format": {
+      "type": "text"
+     }
+    },
+    "truncation": "disabled",
+    "parallel_tool_calls": true,
+    "temperature": 1,
+    "status": "completed",
+    "usage": {
+     "input_tokens": 2275,
+     "input_tokens_details": {
+      "cached_tokens": 0
+     },
+     "total_tokens": 2295,
+     "output_tokens": 20,
+     "output_tokens_details": {
+      "reasoning_tokens": 0
+     }
+    },
+    "tool_choice": "auto",
+    "id": "resp-3155f5e6-c1d3-48a4-9f0d-7b34c41cf678",
+    "object": "response"
+   },
+   "generation_lines": [
+    "[2026-10-27 03:48:01.216] [MLX] prefillStep=2048 est=1185 reuse=false",
+    "[2026-10-27 03:48:03.578] [MLX] prefill 2275/2275",
+    "[2026-10-27 03:48:04.290] [MLX] session=6d4886/main messages=1 exec=1cc836 history=2 delta=1 reuse=false ttft=2416ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2275 promptTime=2.4s tps=34.8 rawEv=20 rawB=26 emitB=26"
+   ],
+   "trace": [
+    "[2026-10-27 03:48:00.948] [PROTOCOL] arrive r=e13dd8 endpoint=responses stream=false agent=default s=respon branch=main",
+    "[2026-10-27 03:48:01.216] [MLX] prefillStep=2048 est=1185 reuse=false",
+    "[2026-10-27 03:48:03.578] [MLX] prefill 2275/2275",
+    "[2026-10-27 03:48:04.290] [MLX] session=6d4886/main messages=1 exec=1cc836 history=2 delta=1 reuse=false ttft=2416ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2275 promptTime=2.4s tps=34.8 rawEv=20 rawB=26 emitB=26"
+   ]
+  },
+  "allow-recompute-changed-query": {
+   "label": "allow-recompute-changed-query",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "consume",
+    "max_output_tokens": 64,
+    "settlement_consumption": {
+     "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+     "contract": {
+      "id": "simigo.settlement-consumption",
+      "demand_class": "exact-repeat",
+      "version": "v1",
+      "extract": "content"
+     },
+     "query": "b7 exact repeat 20261027-034749 (changed)",
+     "root_ids": [
+      "work-000000008a721251"
+     ],
+     "allow_recompute": true
+    }
+   },
+   "status": 200,
+   "seconds": 0.934,
+   "body": {
+    "output": [
+     {
+      "status": "completed",
+      "id": "msg-5f7782f7-7189-4e0a-b93d-22f1e8545e4e",
+      "role": "assistant",
+      "content": [
+       {
+        "type": "output_text",
+        "text": "I cannot consume, as I do not have a physical body.",
+        "annotations": []
+       }
+      ],
+      "type": "message"
+     }
+    ],
+    "store": true,
+    "completed_at": 1793044084,
+    "error": null,
+    "tools": [],
+    "created_at": 1793044084,
+    "user": null,
+    "settlement_consumption": {
+     "reason": "canonical input changed",
+     "outcome": "recompute"
+    },
+    "text": {
+     "format": {
+      "type": "text"
+     }
+    },
+    "object": "response",
+    "instructions": null,
+    "previous_response_id": null,
+    "parallel_tool_calls": true,
+    "tool_choice": "auto",
+    "truncation": "disabled",
+    "usage": {
+     "output_tokens_details": {
+      "reasoning_tokens": 0
+     },
+     "input_tokens_details": {
+      "cached_tokens": 0
+     },
+     "output_tokens": 13,
+     "total_tokens": 207,
+     "input_tokens": 194
+    },
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "top_p": 1,
+    "id": "resp-06e1b192-22ef-4bfd-843c-7c9faaa3f3ef",
+    "temperature": 1,
+    "metadata": {},
+    "status": "completed",
+    "incomplete_details": null
+   },
+   "generation_lines": [
+    "[2026-10-27 03:48:04.841] [MLX] prefillStep=2048 est=1 reuse=false",
+    "[2026-10-27 03:48:05.177] [MLX] prefill 194/194",
+    "[2026-10-27 03:48:05.637] [MLX] session=862b7b/main messages=1 exec=8114a4 history=2 delta=1 reuse=false ttft=388ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=194 promptTime=0.4s tps=35.7 rawEv=13 rawB=51 emitB=51"
+   ],
+   "trace": [
+    "[2026-10-27 03:48:04.706] [PROTOCOL] arrive r=abb51b endpoint=responses stream=false agent=default s=respon branch=main",
+    "[2026-10-27 03:48:04.841] [MLX] prefillStep=2048 est=1 reuse=false",
+    "[2026-10-27 03:48:05.177] [MLX] prefill 194/194",
+    "[2026-10-27 03:48:05.637] [MLX] session=862b7b/main messages=1 exec=8114a4 history=2 delta=1 reuse=false ttft=388ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=194 promptTime=0.4s tps=35.7 rawEv=13 rawB=51 emitB=51"
+   ]
+  },
+  "derived-anchor-continuation": {
+   "label": "derived-anchor-continuation",
+   "path": "/v1/responses",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "input": "复述上一轮已结算的标记。",
+    "max_output_tokens": 64,
+    "previous_es_state_id": "es-21769771-346c-4570-af88-bcd25f8f7271",
+    "continuation_settle": true
+   },
+   "status": 422,
+   "seconds": 3.441,
+   "body": {
+    "error": {
+     "type": "server_error",
+     "reason_code": null,
+     "error_kind": "NATIVE_RESULT_CONTRACT_REJECTED",
+     "param": null,
+     "code": null,
+     "message": "Generated output refused by the native result contract: generated output does not satisfy the declared result contract (PRODUCER_RESULT_FIELD_MISSING)"
+    }
+   },
+   "generation_lines": [
+    "[2026-10-27 03:48:06.554] [MLX] prefillStep=2048 est=1251 reuse=false",
+    "[2026-10-27 03:48:08.734] [MLX] prefill 2146/2146",
+    "[2026-10-27 03:48:09.468] [MLX] session=e88f34/es-0d09f6cb-56ba-4455-b11d-5484c5a16b9f messages=2 exec=33aa65 history=3 delta=1 reuse=false ttft=2219ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2146 promptTime=2.2s tps=34.8 rawEv=22 rawB=26 emitB=26"
+   ],
+   "trace": [
+    "[2026-10-27 03:48:06.049] [PROTOCOL] arrive r=d3f061 endpoint=responses stream=false agent=default s=respon branch=main",
+    "[2026-10-27 03:48:06.104] [PROTOCOL] continuation_admitted r=req-d3f061c1 parent=es-21769771-346c-4570-af88-bcd25f8f7271 child=es-0d09f6cb-56ba-4455-b11d-5484c5a16b9f bindings=1 kvBindings=0",
+    "[2026-10-27 03:48:06.553] [PROTOCOL] continuation_branch_cold child=es-0d09f6cb-56ba-4455-b11d-5484c5a16b9f from=main err=生成失败: no live source session for default/responses-request:d0f051a2-67ea-4cc3-9d08-363f55e88f34/main; cannot fork",
+    "[2026-10-27 03:48:06.553] [PROTOCOL] continuation_branch child=es-0d09f6cb-56ba-4455-b11d-5484c5a16b9f from=main",
+    "[2026-10-27 03:48:06.554] [MLX] prefillStep=2048 est=1251 reuse=false",
+    "[2026-10-27 03:48:08.734] [MLX] prefill 2146/2146",
+    "[2026-10-27 03:48:09.468] [MLX] session=e88f34/es-0d09f6cb-56ba-4455-b11d-5484c5a16b9f messages=2 exec=33aa65 history=3 delta=1 reuse=false ttft=2219ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2146 promptTime=2.2s tps=34.8 rawEv=22 rawB=26 emitB=26"
+   ]
+  }
+ },
+ "identity": {
+  "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "installed_exe_sha256": "83635c736d7f913ebc63ffacbed29edbeb98ccc02e699d1ab11a870f02e32b89",
+  "installed_exe_mtime": "2026-10-27 03:40:26",
+  "app_pid": [
+   "82529"
+  ],
+  "head": "97043902075b67eb1693749fd6ed50421eccf3ba",
+  "diff_sha256": "de1ae812faf56e18dd2c069fabb3acf7386020eca699238cdd950ae026f2f26e  -",
+  "trace_size": 111464,
+  "is_status_http": 200,
+  "is_status": {
+   "dependency_entries": 12675,
+   "unaddressed_chat_messages": 0,
+   "unaddressed_retrieval_results": 0,
+   "deep_verified": false,
+   "index_entries": 773,
+   "schema_version": 11,
+   "unaddressed_file_contents": 0,
+   "dangling_references": 0,
+   "settlement_summaries": 31,
+   "object_count": 573,
+   "unaddressed_settlements": 0,
+   "corrupt_objects": 0,
+   "object_bytes": 2144975,
+   "inline_legacy_payloads": 0
+  }
+ },
+ "source": {
+  "settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+  "state_id": "chat-6c7c7039-0520-4b61-b638-18b7331de28d",
+  "settled_at": "814736874.80824196",
+  "generated_text": "B7-SETTLED-20261027-034749",
+  "settled_value": "B7-SETTLED-20261027-034749",
+  "payload_digest_ok": true,
+  "payload_digest": "abfc86fa0937b0933d14f94908a9c1bbddebc563abac0b22759ac19b917ce8b7",
+  "bindings": {
+   "producer.model_identity": "0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53",
+   "producer.tokenizer_identity": "1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71"
+  },
+  "usage": null,
+  "marker_matched": true
+ },
+ "contract": {
+  "query": "b7 exact repeat 20261027-034749",
+  "root_id": "work-000000008a721251",
+  "canonical_entries": 2,
+  "canonical": "b7 exact repeat 20261027-034749|work-000000008a721251/marker_alpha_7Q.txt=e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394;work-000000008a721251/marker_beta_Z9.txt=18f2e41c39288a5f1af32dd20ce602b91a8d48b524d77000dd455784ab3fc65b",
+  "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+  "declaration": {
+   "canonical": "b7 exact repeat 20261027-034749|work-000000008a721251/marker_alpha_7Q.txt=e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394;work-000000008a721251/marker_beta_Z9.txt=18f2e41c39288a5f1af32dd20ce602b91a8d48b524d77000dd455784ab3fc65b",
+   "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+   "contract_id": "simigo.settlement-consumption",
+   "contract_version": "v1",
+   "declared": true,
+   "declared_at": "814736877.30940402",
+   "demand_class": "exact-repeat",
+   "extract_field": "content",
+   "query": "b7 exact repeat 20261027-034749",
+   "required_identity_json": "{\"kind\":\"producer\",\"model\":\"0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53\",\"tokenizer\":\"1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71\"}",
+   "roots": [
+    "work-000000008a721251"
+   ],
+   "settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F"
+  },
+  "stored": {
+   "canonical": "b7 exact repeat 20261027-034749|work-000000008a721251/marker_alpha_7Q.txt=e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394;work-000000008a721251/marker_beta_Z9.txt=18f2e41c39288a5f1af32dd20ce602b91a8d48b524d77000dd455784ab3fc65b",
+   "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+   "contract_id": "simigo.settlement-consumption",
+   "contract_version": "v1",
+   "declared_at": "814736877.30940402",
+   "demand_class": "exact-repeat",
+   "extract_field": "content",
+   "found": true,
+   "query": "b7 exact repeat 20261027-034749",
+   "required_identity_json": "{\"kind\":\"producer\",\"model\":\"0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53\",\"tokenizer\":\"1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71\"}",
+   "roots": [
+    "work-000000008a721251"
+   ],
+   "settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F"
+  }
+ },
+ "directories": {
+  "before": {
+   "prefix_pool": {
+    "present": true,
+    "file_count": 50,
+    "total_bytes": 4411395123,
+    "listing_sha256": "6a0fa566d75ad1ee057af2f3ed9845d03c2afbd51353ebb4523a6b646d02173f",
+    "files": [
+     {
+      "rel": "44eaa202ce92e06d/10b34e0fcc8f17e7-6.json",
+      "size": 175,
+      "mtime_ns": 1793012791272153127,
+      "inode": 113423862
+     },
+     {
+      "rel": "44eaa202ce92e06d/10b34e0fcc8f17e7-6.safetensors",
+      "size": 134254540,
+      "mtime_ns": 1793012791270582002,
+      "inode": 113423861
+     },
+     {
+      "rel": "44eaa202ce92e06d/1127226b50caa01f-12.json",
+      "size": 176,
+      "mtime_ns": 1793016414871943023,
+      "inode": 113428816
+     },
+     {
+      "rel": "44eaa202ce92e06d/1127226b50caa01f-12.safetensors",
+      "size": 266780646,
+      "mtime_ns": 1793016414868435207,
+      "inode": 113428815
+     },
+     {
+      "rel": "44eaa202ce92e06d/14851ea2796d8cfb-8.json",
+      "size": 175,
+      "mtime_ns": 1793016393069696834,
+      "inode": 113428769
+     },
+     {
+      "rel": "44eaa202ce92e06d/14851ea2796d8cfb-8.safetensors",
+      "size": 257708004,
+      "mtime_ns": 1793016393066270293,
+      "inode": 113428768
+     },
+     {
+      "rel": "44eaa202ce92e06d/25287094bc102997-10.json",
+      "size": 175,
+      "mtime_ns": 1793018209478870891,
+      "inode": 113433617
+     },
+     {
+      "rel": "44eaa202ce92e06d/25287094bc102997-10.safetensors",
+      "size": 264957964,
+      "mtime_ns": 1793018209478357516,
+      "inode": 113433616
+     },
+     {
+      "rel": "44eaa202ce92e06d/2a566a9bf35102ff-8.json",
+      "size": 175,
+      "mtime_ns": 1793012782732928352,
+      "inode": 113423854
+     },
+     {
+      "rel": "44eaa202ce92e06d/2a566a9bf35102ff-8.safetensors",
+      "size": 112811952,
+      "mtime_ns": 1793012782731589269,
+      "inode": 113423853
+     },
+     {
+      "rel": "44eaa202ce92e06d/2d5ee8a5a7735336-6.json",
+      "size": 175,
+      "mtime_ns": 1793017296443836701,
+      "inode": 113431764
+     },
+     {
+      "rel": "44eaa202ce92e06d/2d5ee8a5a7735336-6.safetensors",
+      "size": 224919522,
+      "mtime_ns": 1793017296442687991,
+      "inode": 113431763
+     },
+     {
+      "rel": "44eaa202ce92e06d/36cc7b1a27b5a460-6.json",
+      "size": 175,
+      "mtime_ns": 1793018198002607311,
+      "inode": 113433606
+     },
+     {
+      "rel": "44eaa202ce92e06d/36cc7b1a27b5a460-6.safetensors",
+      "size": 259059724,
+      "mtime_ns": 1793018198002064894,
+      "inode": 113433605
+     },
+     {
+      "rel": "44eaa202ce92e06d/51e28e219c58053f-6.json",
+      "size": 174,
+      "mtime_ns": 1793018186830496411,
+      "inode": 113433589
+     },
+     {
+      "rel": "44eaa202ce92e06d/51e28e219c58053f-6.safetensors",
+      "size": 259285004,
+      "mtime_ns": 1793018186829932661,
+      "inode": 113433588
+     },
+     {
+      "rel": "44eaa202ce92e06d/55a4d1b00d691eb0-8.json",
+      "size": 175,
+      "mtime_ns": 1793017305639891020,
+      "inode": 113431779
+     },
+     {
+      "rel": "44eaa202ce92e06d/55a4d1b00d691eb0-8.safetensors",
+      "size": 227028962,
+      "mtime_ns": 1793017305638789560,
+      "inode": 113431778
+     },
+     {
+      "rel": "44eaa202ce92e06d/7b1a2442a5517435-6.json",
+      "size": 175,
+      "mtime_ns": 1793044013170648653,
+      "inode": 113679359
+     },
+     {
+      "rel": "44eaa202ce92e06d/7b1a2442a5517435-6.safetensors",
+      "size": 112975790,
+      "mtime_ns": 1793044013164925982,
+      "inode": 113679358
+     },
+     {
+      "rel": "44eaa202ce92e06d/8f9d9754a338367a-4.json",
+      "size": 176,
+      "mtime_ns": 1793019185982490081,
+      "inode": 113436983
+     },
+     {
+      "rel": "44eaa202ce92e06d/8f9d9754a338367a-4.safetensors",
+      "size": 92946335,
+      "mtime_ns": 1793019185978056198,
+      "inode": 113436982
+     },
+     {
+      "rel": "44eaa202ce92e06d/9191bb342b9ed867-4.json",
+      "size": 176,
+      "mtime_ns": 1793019628668803800,
+      "inode": 113437936
+     },
+     {
+      "rel": "44eaa202ce92e06d/9191bb342b9ed867-4.safetensors",
+      "size": 99418015,
+      "mtime_ns": 1793019628664971459,
+      "inode": 113437935
+     },
+     {
+      "rel": "44eaa202ce92e06d/93a0dcbdfe26e473-4.json",
+      "size": 176,
+      "mtime_ns": 1793019624699393389,
+      "inode": 113437929
+     },
+     {
+      "rel": "44eaa202ce92e06d/93a0dcbdfe26e473-4.safetensors",
+      "size": 98168735,
+      "mtime_ns": 1793019624695498881,
+      "inode": 113437928
+     },
+     {
+      "rel": "44eaa202ce92e06d/9a90d216dd6ff0ca-8.json",
+      "size": 176,
+      "mtime_ns": 1793017191484753610,
+      "inode": 113431678
+     },
+     {
+      "rel": "44eaa202ce92e06d/9a90d216dd6ff0ca-8.safetensors",
+      "size": 243208164,
+      "mtime_ns": 1793017191482063106,
+      "inode": 113431677
+     },
+     {
+      "rel": "44eaa202ce92e06d/9b0596748111a969-8.json",
+      "size": 176,
+      "mtime_ns": 1793016403957562876,
+      "inode": 113428799
+     },
+     {
+      "rel": "44eaa202ce92e06d/9b0596748111a969-8.safetensors",
+      "size": 257380324,
+      "mtime_ns": 1793016403954152960,
+      "inode": 113428798
+     },
+     {
+      "rel": "44eaa202ce92e06d/a33aadd4948b4bec-4.json",
+      "size": 176,
+      "mtime_ns": 1793019632770397069,
+      "inode": 113437946
+     },
+     {
+      "rel": "44eaa202ce92e06d/a33aadd4948b4bec-4.safetensors",
+      "size": 103042990,
+      "mtime_ns": 1793019632769745735,
+      "inode": 113437945
+     },
+     {
+      "rel": "44eaa202ce92e06d/a34791c73ce7ed6f-8.json",
+      "size": 176,
+      "mtime_ns": 1793017181276117939,
+      "inode": 113431665
+     },
+     {
+      "rel": "44eaa202ce92e06d/a34791c73ce7ed6f-8.safetensors",
+      "size": 241958884,
+      "mtime_ns": 1793017181272010058,
+      "inode": 113431664
+     },
+     {
+      "rel": "44eaa202ce92e06d/b057e546e239b69c-4.json",
+      "size": 176,
+      "mtime_ns": 1793019636913197633,
+      "inode": 113437961
+     },
+     {
+      "rel": "44eaa202ce92e06d/b057e546e239b69c-4.safetensors",
+      "size": 103104430,
+      "mtime_ns": 1793019636912535423,
+      "inode": 113437960
+     },
+     {
+      "rel": "44eaa202ce92e06d/b984a213b05f6981-8.json",
+      "size": 176,
+      "mtime_ns": 1793012932923890620,
+      "inode": 113424353
+     },
+     {
+      "rel": "44eaa202ce92e06d/b984a213b05f6981-8.safetensors",
+      "size": 112443312,
+      "mtime_ns": 1793012932922240912,
+      "inode": 113424352
+     },
+     {
+      "rel": "44eaa202ce92e06d/bc0e086e4a38f235-4.json",
+      "size": 176,
+      "mtime_ns": 1793019190566272392,
+      "inode": 113437003
+     },
+     {
+      "rel": "44eaa202ce92e06d/bc0e086e4a38f235-4.safetensors",
+      "size": 115105724,
+      "mtime_ns": 1793019190565763974,
+      "inode": 113437002
+     },
+     {
+      "rel": "44eaa202ce92e06d/df8072048b340c1a-4.json",
+      "size": 176,
+      "mtime_ns": 1793019194015253738,
+      "inode": 113437015
+     },
+     {
+      "rel": "44eaa202ce92e06d/df8072048b340c1a-4.safetensors",
+      "size": 96898977,
+      "mtime_ns": 1793019194012461858,
+      "inode": 113437014
+     },
+     {
+      "rel": "44eaa202ce92e06d/e3d83a74aa53a31b-12.json",
+      "size": 177,
+      "mtime_ns": 1793012935815459250,
+      "inode": 113424359
+     },
+     {
+      "rel": "44eaa202ce92e06d/e3d83a74aa53a31b-12.safetensors",
+      "size": 112627632,
+      "mtime_ns": 1793012935811067709,
+      "inode": 113424358
+     },
+     {
+      "rel": "44eaa202ce92e06d/e4890e3f1b45e353-12.json",
+      "size": 177,
+      "mtime_ns": 1793017203006501706,
+      "inode": 113431694
+     },
+     {
+      "rel": "44eaa202ce92e06d/e4890e3f1b45e353-12.safetensors",
+      "size": 271286266,
+      "mtime_ns": 1793017203000890239,
+      "inode": 113431693
+     },
+     {
+      "rel": "44eaa202ce92e06d/fdc8da3b73405423-6.json",
+      "size": 176,
+      "mtime_ns": 1793044074739725477,
+      "inode": 113679487
+     },
+     {
+      "rel": "44eaa202ce92e06d/fdc8da3b73405423-6.safetensors",
+      "size": 114040750,
+      "mtime_ns": 1793044074736907016,
+      "inode": 113679486
+     },
+     {
+      "rel": "44eaa202ce92e06d/ffbe4f1833fcc65b-12.json",
+      "size": 177,
+      "mtime_ns": 1793017315081924500,
+      "inode": 113431796
+     },
+     {
+      "rel": "44eaa202ce92e06d/ffbe4f1833fcc65b-12.safetensors",
+      "size": 229978084,
+      "mtime_ns": 1793017315077773869,
+      "inode": 113431795
+     }
+    ]
+   },
+   "branch_checkpoints": {
+    "present": true,
+    "file_count": 36,
+    "total_bytes": 3068324429,
+    "listing_sha256": "53887526d2a8f8837f64de1f63afd011430f85f50970965a0e526ab21b186e35",
+    "files": [
+     {
+      "rel": "default_b7-source-20261027-034624_main.meta.json",
+      "size": 5816,
+      "mtime_ns": 1793044013241186204,
+      "inode": 113679363
+     },
+     {
+      "rel": "default_b7-source-20261027-034624_main.safetensors",
+      "size": 112975790,
+      "mtime_ns": 1793044013235870909,
+      "inode": 113679362
+     },
+     {
+      "rel": "default_b7-source-20261027-034749_main.meta.json",
+      "size": 5567,
+      "mtime_ns": 1793044074807250692,
+      "inode": 113679491
+     },
+     {
+      "rel": "default_b7-source-20261027-034749_main.safetensors",
+      "size": 114040750,
+      "mtime_ns": 1793044074804546524,
+      "inode": 113679490
+     },
+     {
+      "rel": "default_e4-cross-id-alpha_main.meta.json",
+      "size": 4451,
+      "mtime_ns": 1793019194083018186,
+      "inode": 113437017
+     },
+     {
+      "rel": "default_e4-cross-id-alpha_main.safetensors",
+      "size": 96898977,
+      "mtime_ns": 1793019194080025723,
+      "inode": 113437016
+     },
+     {
+      "rel": "default_e4-tamper-cache_main.meta.json",
+      "size": 3961,
+      "mtime_ns": 1793019186045402145,
+      "inode": 113436985
+     },
+     {
+      "rel": "default_e4-tamper-cache_main.safetensors",
+      "size": 92946335,
+      "mtime_ns": 1793019186040371012,
+      "inode": 113436984
+     },
+     {
+      "rel": "default_e4-tamper-fresh_main.meta.json",
+      "size": 9915,
+      "mtime_ns": 1793019190662798805,
+      "inode": 113437007
+     },
+     {
+      "rel": "default_e4-tamper-fresh_main.safetensors",
+      "size": 115105724,
+      "mtime_ns": 1793019190660753427,
+      "inode": 113437006
+     },
+     {
+      "rel": "default_e4b-205949-b_main.meta.json",
+      "size": 4724,
+      "mtime_ns": 1793019628740612366,
+      "inode": 113437939
+     },
+     {
+      "rel": "default_e4b-205949-b_main.safetensors",
+      "size": 99418015,
+      "mtime_ns": 1793019628740008407,
+      "inode": 113437937
+     },
+     {
+      "rel": "default_e4b-205949-c_main.meta.json",
+      "size": 5174,
+      "mtime_ns": 1793019632851835864,
+      "inode": 113437948
+     },
+     {
+      "rel": "default_e4b-205949-c_main.safetensors",
+      "size": 103042990,
+      "mtime_ns": 1793019632850841945,
+      "inode": 113437947
+     },
+     {
+      "rel": "default_e4b-205949-iso_main.meta.json",
+      "size": 5182,
+      "mtime_ns": 1793019636988482039,
+      "inode": 113437963
+     },
+     {
+      "rel": "default_e4b-205949-iso_main.safetensors",
+      "size": 103104430,
+      "mtime_ns": 1793019636987963621,
+      "inode": 113437962
+     },
+     {
+      "rel": "default_e4b-205949_main.meta.json",
+      "size": 4583,
+      "mtime_ns": 1793019624781963769,
+      "inode": 113437931
+     },
+     {
+      "rel": "default_e4b-205949_main.safetensors",
+      "size": 98168735,
+      "mtime_ns": 1793019624777940177,
+      "inode": 113437930
+     },
+     {
+      "rel": "default_exp-20261026-190528-es1_main.meta.json",
+      "size": 5492,
+      "mtime_ns": 1793012935886547745,
+      "inode": 113424363
+     },
+     {
+      "rel": "default_exp-20261026-190528-es1_main.safetensors",
+      "size": 112627632,
+      "mtime_ns": 1793012935882553121,
+      "inode": 113424362
+     },
+     {
+      "rel": "default_pb-20261026-201915-X_main.meta.json",
+      "size": 34508,
+      "mtime_ns": 1793017203157371265,
+      "inode": 113431701
+     },
+     {
+      "rel": "default_pb-20261026-201915-X_main.safetensors",
+      "size": 271286266,
+      "mtime_ns": 1793017203155995222,
+      "inode": 113431700
+     },
+     {
+      "rel": "default_pb-20261026-201915-Y_main.meta.json",
+      "size": 31180,
+      "mtime_ns": 1793017191627419698,
+      "inode": 113431685
+     },
+     {
+      "rel": "default_pb-20261026-201915-Y_main.safetensors",
+      "size": 243208164,
+      "mtime_ns": 1793017191624375111,
+      "inode": 113431684
+     },
+     {
+      "rel": "default_pc-20261026-200601-A_main.meta.json",
+      "size": 34143,
+      "mtime_ns": 1793016415021158942,
+      "inode": 113428824
+     },
+     {
+      "rel": "default_pc-20261026-200601-A_main.safetensors",
+      "size": 266780646,
+      "mtime_ns": 1793016415017391288,
+      "inode": 113428822
+     },
+     {
+      "rel": "default_pc-20261026-200601-B_main.meta.json",
+      "size": 33720,
+      "mtime_ns": 1793016404112249153,
+      "inode": 113428806
+     },
+     {
+      "rel": "default_pc-20261026-200601-B_main.safetensors",
+      "size": 257380324,
+      "mtime_ns": 1793016404108548726,
+      "inode": 113428805
+     },
+     {
+      "rel": "default_pc-20261026-202127-X_main.meta.json",
+      "size": 29783,
+      "mtime_ns": 1793017315206970480,
+      "inode": 113431802
+     },
+     {
+      "rel": "default_pc-20261026-202127-X_main.safetensors",
+      "size": 229978084,
+      "mtime_ns": 1793017315205625602,
+      "inode": 113431801
+     },
+     {
+      "rel": "default_pc-20261026-202127-Y_main.meta.json",
+      "size": 29360,
+      "mtime_ns": 1793017305785246863,
+      "inode": 113431785
+     },
+     {
+      "rel": "default_pc-20261026-202127-Y_main.safetensors",
+      "size": 227028962,
+      "mtime_ns": 1793017305783914361,
+      "inode": 113431784
+     },
+     {
+      "rel": "default_pc-20261026-203603-A_main.meta.json",
+      "size": 33827,
+      "mtime_ns": 1793018209634346297,
+      "inode": 113433624
+     },
+     {
+      "rel": "default_pc-20261026-203603-A_main.safetensors",
+      "size": 264957964,
+      "mtime_ns": 1793018209631400460,
+      "inode": 113433623
+     },
+     {
+      "rel": "default_pc-20261026-203603-B_main.meta.json",
+      "size": 33531,
+      "mtime_ns": 1793018198141407947,
+      "inode": 113433613
+     },
+     {
+      "rel": "default_pc-20261026-203603-B_main.safetensors",
+      "size": 259059724,
+      "mtime_ns": 1793018198140356821,
+      "inode": 113433612
+     }
+    ]
+   }
+  },
+  "moved_aside": {
+   "prefix-pool": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/b7-20261027-0338/isolation/prefix-pool",
+   "branch-checkpoints": "/Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/b7-20261027-0338/isolation/branch-checkpoints"
+  },
+  "during": {
+   "prefix_pool": {
+    "present": false,
+    "file_count": 0,
+    "total_bytes": 0,
+    "listing_sha256": null,
+    "files": []
+   },
+   "branch_checkpoints": {
+    "present": false,
+    "file_count": 0,
+    "total_bytes": 0,
+    "listing_sha256": null,
+    "files": []
+   }
+  },
+  "after_consumption": {
+   "prefix_pool": {
+    "present": false,
+    "file_count": 0,
+    "total_bytes": 0,
+    "listing_sha256": null,
+    "files": []
+   },
+   "branch_checkpoints": {
+    "present": false,
+    "file_count": 0,
+    "total_bytes": 0,
+    "listing_sha256": null,
+    "files": []
+   }
+  },
+  "restore_conflicts": {},
+  "after_restore": {
+   "prefix_pool": {
+    "present": true,
+    "file_count": 50,
+    "total_bytes": 4411395123,
+    "listing_sha256": "6a0fa566d75ad1ee057af2f3ed9845d03c2afbd51353ebb4523a6b646d02173f",
+    "files": [
+     {
+      "rel": "44eaa202ce92e06d/10b34e0fcc8f17e7-6.json",
+      "size": 175,
+      "mtime_ns": 1793012791272153127,
+      "inode": 113423862
+     },
+     {
+      "rel": "44eaa202ce92e06d/10b34e0fcc8f17e7-6.safetensors",
+      "size": 134254540,
+      "mtime_ns": 1793012791270582002,
+      "inode": 113423861
+     },
+     {
+      "rel": "44eaa202ce92e06d/1127226b50caa01f-12.json",
+      "size": 176,
+      "mtime_ns": 1793016414871943023,
+      "inode": 113428816
+     },
+     {
+      "rel": "44eaa202ce92e06d/1127226b50caa01f-12.safetensors",
+      "size": 266780646,
+      "mtime_ns": 1793016414868435207,
+      "inode": 113428815
+     },
+     {
+      "rel": "44eaa202ce92e06d/14851ea2796d8cfb-8.json",
+      "size": 175,
+      "mtime_ns": 1793016393069696834,
+      "inode": 113428769
+     },
+     {
+      "rel": "44eaa202ce92e06d/14851ea2796d8cfb-8.safetensors",
+      "size": 257708004,
+      "mtime_ns": 1793016393066270293,
+      "inode": 113428768
+     },
+     {
+      "rel": "44eaa202ce92e06d/25287094bc102997-10.json",
+      "size": 175,
+      "mtime_ns": 1793018209478870891,
+      "inode": 113433617
+     },
+     {
+      "rel": "44eaa202ce92e06d/25287094bc102997-10.safetensors",
+      "size": 264957964,
+      "mtime_ns": 1793018209478357516,
+      "inode": 113433616
+     },
+     {
+      "rel": "44eaa202ce92e06d/2a566a9bf35102ff-8.json",
+      "size": 175,
+      "mtime_ns": 1793012782732928352,
+      "inode": 113423854
+     },
+     {
+      "rel": "44eaa202ce92e06d/2a566a9bf35102ff-8.safetensors",
+      "size": 112811952,
+      "mtime_ns": 1793012782731589269,
+      "inode": 113423853
+     },
+     {
+      "rel": "44eaa202ce92e06d/2d5ee8a5a7735336-6.json",
+      "size": 175,
+      "mtime_ns": 1793017296443836701,
+      "inode": 113431764
+     },
+     {
+      "rel": "44eaa202ce92e06d/2d5ee8a5a7735336-6.safetensors",
+      "size": 224919522,
+      "mtime_ns": 1793017296442687991,
+      "inode": 113431763
+     },
+     {
+      "rel": "44eaa202ce92e06d/36cc7b1a27b5a460-6.json",
+      "size": 175,
+      "mtime_ns": 1793018198002607311,
+      "inode": 113433606
+     },
+     {
+      "rel": "44eaa202ce92e06d/36cc7b1a27b5a460-6.safetensors",
+      "size": 259059724,
+      "mtime_ns": 1793018198002064894,
+      "inode": 113433605
+     },
+     {
+      "rel": "44eaa202ce92e06d/51e28e219c58053f-6.json",
+      "size": 174,
+      "mtime_ns": 1793018186830496411,
+      "inode": 113433589
+     },
+     {
+      "rel": "44eaa202ce92e06d/51e28e219c58053f-6.safetensors",
+      "size": 259285004,
+      "mtime_ns": 1793018186829932661,
+      "inode": 113433588
+     },
+     {
+      "rel": "44eaa202ce92e06d/55a4d1b00d691eb0-8.json",
+      "size": 175,
+      "mtime_ns": 1793017305639891020,
+      "inode": 113431779
+     },
+     {
+      "rel": "44eaa202ce92e06d/55a4d1b00d691eb0-8.safetensors",
+      "size": 227028962,
+      "mtime_ns": 1793017305638789560,
+      "inode": 113431778
+     },
+     {
+      "rel": "44eaa202ce92e06d/7b1a2442a5517435-6.json",
+      "size": 175,
+      "mtime_ns": 1793044013170648653,
+      "inode": 113679359
+     },
+     {
+      "rel": "44eaa202ce92e06d/7b1a2442a5517435-6.safetensors",
+      "size": 112975790,
+      "mtime_ns": 1793044013164925982,
+      "inode": 113679358
+     },
+     {
+      "rel": "44eaa202ce92e06d/8f9d9754a338367a-4.json",
+      "size": 176,
+      "mtime_ns": 1793019185982490081,
+      "inode": 113436983
+     },
+     {
+      "rel": "44eaa202ce92e06d/8f9d9754a338367a-4.safetensors",
+      "size": 92946335,
+      "mtime_ns": 1793019185978056198,
+      "inode": 113436982
+     },
+     {
+      "rel": "44eaa202ce92e06d/9191bb342b9ed867-4.json",
+      "size": 176,
+      "mtime_ns": 1793019628668803800,
+      "inode": 113437936
+     },
+     {
+      "rel": "44eaa202ce92e06d/9191bb342b9ed867-4.safetensors",
+      "size": 99418015,
+      "mtime_ns": 1793019628664971459,
+      "inode": 113437935
+     },
+     {
+      "rel": "44eaa202ce92e06d/93a0dcbdfe26e473-4.json",
+      "size": 176,
+      "mtime_ns": 1793019624699393389,
+      "inode": 113437929
+     },
+     {
+      "rel": "44eaa202ce92e06d/93a0dcbdfe26e473-4.safetensors",
+      "size": 98168735,
+      "mtime_ns": 1793019624695498881,
+      "inode": 113437928
+     },
+     {
+      "rel": "44eaa202ce92e06d/9a90d216dd6ff0ca-8.json",
+      "size": 176,
+      "mtime_ns": 1793017191484753610,
+      "inode": 113431678
+     },
+     {
+      "rel": "44eaa202ce92e06d/9a90d216dd6ff0ca-8.safetensors",
+      "size": 243208164,
+      "mtime_ns": 1793017191482063106,
+      "inode": 113431677
+     },
+     {
+      "rel": "44eaa202ce92e06d/9b0596748111a969-8.json",
+      "size": 176,
+      "mtime_ns": 1793016403957562876,
+      "inode": 113428799
+     },
+     {
+      "rel": "44eaa202ce92e06d/9b0596748111a969-8.safetensors",
+      "size": 257380324,
+      "mtime_ns": 1793016403954152960,
+      "inode": 113428798
+     },
+     {
+      "rel": "44eaa202ce92e06d/a33aadd4948b4bec-4.json",
+      "size": 176,
+      "mtime_ns": 1793019632770397069,
+      "inode": 113437946
+     },
+     {
+      "rel": "44eaa202ce92e06d/a33aadd4948b4bec-4.safetensors",
+      "size": 103042990,
+      "mtime_ns": 1793019632769745735,
+      "inode": 113437945
+     },
+     {
+      "rel": "44eaa202ce92e06d/a34791c73ce7ed6f-8.json",
+      "size": 176,
+      "mtime_ns": 1793017181276117939,
+      "inode": 113431665
+     },
+     {
+      "rel": "44eaa202ce92e06d/a34791c73ce7ed6f-8.safetensors",
+      "size": 241958884,
+      "mtime_ns": 1793017181272010058,
+      "inode": 113431664
+     },
+     {
+      "rel": "44eaa202ce92e06d/b057e546e239b69c-4.json",
+      "size": 176,
+      "mtime_ns": 1793019636913197633,
+      "inode": 113437961
+     },
+     {
+      "rel": "44eaa202ce92e06d/b057e546e239b69c-4.safetensors",
+      "size": 103104430,
+      "mtime_ns": 1793019636912535423,
+      "inode": 113437960
+     },
+     {
+      "rel": "44eaa202ce92e06d/b984a213b05f6981-8.json",
+      "size": 176,
+      "mtime_ns": 1793012932923890620,
+      "inode": 113424353
+     },
+     {
+      "rel": "44eaa202ce92e06d/b984a213b05f6981-8.safetensors",
+      "size": 112443312,
+      "mtime_ns": 1793012932922240912,
+      "inode": 113424352
+     },
+     {
+      "rel": "44eaa202ce92e06d/bc0e086e4a38f235-4.json",
+      "size": 176,
+      "mtime_ns": 1793019190566272392,
+      "inode": 113437003
+     },
+     {
+      "rel": "44eaa202ce92e06d/bc0e086e4a38f235-4.safetensors",
+      "size": 115105724,
+      "mtime_ns": 1793019190565763974,
+      "inode": 113437002
+     },
+     {
+      "rel": "44eaa202ce92e06d/df8072048b340c1a-4.json",
+      "size": 176,
+      "mtime_ns": 1793019194015253738,
+      "inode": 113437015
+     },
+     {
+      "rel": "44eaa202ce92e06d/df8072048b340c1a-4.safetensors",
+      "size": 96898977,
+      "mtime_ns": 1793019194012461858,
+      "inode": 113437014
+     },
+     {
+      "rel": "44eaa202ce92e06d/e3d83a74aa53a31b-12.json",
+      "size": 177,
+      "mtime_ns": 1793012935815459250,
+      "inode": 113424359
+     },
+     {
+      "rel": "44eaa202ce92e06d/e3d83a74aa53a31b-12.safetensors",
+      "size": 112627632,
+      "mtime_ns": 1793012935811067709,
+      "inode": 113424358
+     },
+     {
+      "rel": "44eaa202ce92e06d/e4890e3f1b45e353-12.json",
+      "size": 177,
+      "mtime_ns": 1793017203006501706,
+      "inode": 113431694
+     },
+     {
+      "rel": "44eaa202ce92e06d/e4890e3f1b45e353-12.safetensors",
+      "size": 271286266,
+      "mtime_ns": 1793017203000890239,
+      "inode": 113431693
+     },
+     {
+      "rel": "44eaa202ce92e06d/fdc8da3b73405423-6.json",
+      "size": 176,
+      "mtime_ns": 1793044074739725477,
+      "inode": 113679487
+     },
+     {
+      "rel": "44eaa202ce92e06d/fdc8da3b73405423-6.safetensors",
+      "size": 114040750,
+      "mtime_ns": 1793044074736907016,
+      "inode": 113679486
+     },
+     {
+      "rel": "44eaa202ce92e06d/ffbe4f1833fcc65b-12.json",
+      "size": 177,
+      "mtime_ns": 1793017315081924500,
+      "inode": 113431796
+     },
+     {
+      "rel": "44eaa202ce92e06d/ffbe4f1833fcc65b-12.safetensors",
+      "size": 229978084,
+      "mtime_ns": 1793017315077773869,
+      "inode": 113431795
+     }
+    ]
+   },
+   "branch_checkpoints": {
+    "present": true,
+    "file_count": 36,
+    "total_bytes": 3068324429,
+    "listing_sha256": "53887526d2a8f8837f64de1f63afd011430f85f50970965a0e526ab21b186e35",
+    "files": [
+     {
+      "rel": "default_b7-source-20261027-034624_main.meta.json",
+      "size": 5816,
+      "mtime_ns": 1793044013241186204,
+      "inode": 113679363
+     },
+     {
+      "rel": "default_b7-source-20261027-034624_main.safetensors",
+      "size": 112975790,
+      "mtime_ns": 1793044013235870909,
+      "inode": 113679362
+     },
+     {
+      "rel": "default_b7-source-20261027-034749_main.meta.json",
+      "size": 5567,
+      "mtime_ns": 1793044074807250692,
+      "inode": 113679491
+     },
+     {
+      "rel": "default_b7-source-20261027-034749_main.safetensors",
+      "size": 114040750,
+      "mtime_ns": 1793044074804546524,
+      "inode": 113679490
+     },
+     {
+      "rel": "default_e4-cross-id-alpha_main.meta.json",
+      "size": 4451,
+      "mtime_ns": 1793019194083018186,
+      "inode": 113437017
+     },
+     {
+      "rel": "default_e4-cross-id-alpha_main.safetensors",
+      "size": 96898977,
+      "mtime_ns": 1793019194080025723,
+      "inode": 113437016
+     },
+     {
+      "rel": "default_e4-tamper-cache_main.meta.json",
+      "size": 3961,
+      "mtime_ns": 1793019186045402145,
+      "inode": 113436985
+     },
+     {
+      "rel": "default_e4-tamper-cache_main.safetensors",
+      "size": 92946335,
+      "mtime_ns": 1793019186040371012,
+      "inode": 113436984
+     },
+     {
+      "rel": "default_e4-tamper-fresh_main.meta.json",
+      "size": 9915,
+      "mtime_ns": 1793019190662798805,
+      "inode": 113437007
+     },
+     {
+      "rel": "default_e4-tamper-fresh_main.safetensors",
+      "size": 115105724,
+      "mtime_ns": 1793019190660753427,
+      "inode": 113437006
+     },
+     {
+      "rel": "default_e4b-205949-b_main.meta.json",
+      "size": 4724,
+      "mtime_ns": 1793019628740612366,
+      "inode": 113437939
+     },
+     {
+      "rel": "default_e4b-205949-b_main.safetensors",
+      "size": 99418015,
+      "mtime_ns": 1793019628740008407,
+      "inode": 113437937
+     },
+     {
+      "rel": "default_e4b-205949-c_main.meta.json",
+      "size": 5174,
+      "mtime_ns": 1793019632851835864,
+      "inode": 113437948
+     },
+     {
+      "rel": "default_e4b-205949-c_main.safetensors",
+      "size": 103042990,
+      "mtime_ns": 1793019632850841945,
+      "inode": 113437947
+     },
+     {
+      "rel": "default_e4b-205949-iso_main.meta.json",
+      "size": 5182,
+      "mtime_ns": 1793019636988482039,
+      "inode": 113437963
+     },
+     {
+      "rel": "default_e4b-205949-iso_main.safetensors",
+      "size": 103104430,
+      "mtime_ns": 1793019636987963621,
+      "inode": 113437962
+     },
+     {
+      "rel": "default_e4b-205949_main.meta.json",
+      "size": 4583,
+      "mtime_ns": 1793019624781963769,
+      "inode": 113437931
+     },
+     {
+      "rel": "default_e4b-205949_main.safetensors",
+      "size": 98168735,
+      "mtime_ns": 1793019624777940177,
+      "inode": 113437930
+     },
+     {
+      "rel": "default_exp-20261026-190528-es1_main.meta.json",
+      "size": 5492,
+      "mtime_ns": 1793012935886547745,
+      "inode": 113424363
+     },
+     {
+      "rel": "default_exp-20261026-190528-es1_main.safetensors",
+      "size": 112627632,
+      "mtime_ns": 1793012935882553121,
+      "inode": 113424362
+     },
+     {
+      "rel": "default_pb-20261026-201915-X_main.meta.json",
+      "size": 34508,
+      "mtime_ns": 1793017203157371265,
+      "inode": 113431701
+     },
+     {
+      "rel": "default_pb-20261026-201915-X_main.safetensors",
+      "size": 271286266,
+      "mtime_ns": 1793017203155995222,
+      "inode": 113431700
+     },
+     {
+      "rel": "default_pb-20261026-201915-Y_main.meta.json",
+      "size": 31180,
+      "mtime_ns": 1793017191627419698,
+      "inode": 113431685
+     },
+     {
+      "rel": "default_pb-20261026-201915-Y_main.safetensors",
+      "size": 243208164,
+      "mtime_ns": 1793017191624375111,
+      "inode": 113431684
+     },
+     {
+      "rel": "default_pc-20261026-200601-A_main.meta.json",
+      "size": 34143,
+      "mtime_ns": 1793016415021158942,
+      "inode": 113428824
+     },
+     {
+      "rel": "default_pc-20261026-200601-A_main.safetensors",
+      "size": 266780646,
+      "mtime_ns": 1793016415017391288,
+      "inode": 113428822
+     },
+     {
+      "rel": "default_pc-20261026-200601-B_main.meta.json",
+      "size": 33720,
+      "mtime_ns": 1793016404112249153,
+      "inode": 113428806
+     },
+     {
+      "rel": "default_pc-20261026-200601-B_main.safetensors",
+      "size": 257380324,
+      "mtime_ns": 1793016404108548726,
+      "inode": 113428805
+     },
+     {
+      "rel": "default_pc-20261026-202127-X_main.meta.json",
+      "size": 29783,
+      "mtime_ns": 1793017315206970480,
+      "inode": 113431802
+     },
+     {
+      "rel": "default_pc-20261026-202127-X_main.safetensors",
+      "size": 229978084,
+      "mtime_ns": 1793017315205625602,
+      "inode": 113431801
+     },
+     {
+      "rel": "default_pc-20261026-202127-Y_main.meta.json",
+      "size": 29360,
+      "mtime_ns": 1793017305785246863,
+      "inode": 113431785
+     },
+     {
+      "rel": "default_pc-20261026-202127-Y_main.safetensors",
+      "size": 227028962,
+      "mtime_ns": 1793017305783914361,
+      "inode": 113431784
+     },
+     {
+      "rel": "default_pc-20261026-203603-A_main.meta.json",
+      "size": 33827,
+      "mtime_ns": 1793018209634346297,
+      "inode": 113433624
+     },
+     {
+      "rel": "default_pc-20261026-203603-A_main.safetensors",
+      "size": 264957964,
+      "mtime_ns": 1793018209631400460,
+      "inode": 113433623
+     },
+     {
+      "rel": "default_pc-20261026-203603-B_main.meta.json",
+      "size": 33531,
+      "mtime_ns": 1793018198141407947,
+      "inode": 113433613
+     },
+     {
+      "rel": "default_pc-20261026-203603-B_main.safetensors",
+      "size": 259059724,
+      "mtime_ns": 1793018198140356821,
+      "inode": 113433612
+     }
+    ]
+   }
+  },
+  "restore_identical": {
+   "prefix_pool": true,
+   "branch_checkpoints": true
+  },
+  "after_all": {
+   "prefix_pool": {
+    "present": true,
+    "file_count": 56,
+    "total_bytes": 4700290245,
+    "listing_sha256": "2d2ac5329cd251d3e98b64fce91f973d72e6b0d555a88881d9f8aea40a033445",
+    "files": [
+     {
+      "rel": "44eaa202ce92e06d/10b34e0fcc8f17e7-6.json",
+      "size": 175,
+      "mtime_ns": 1793012791272153127,
+      "inode": 113423862
+     },
+     {
+      "rel": "44eaa202ce92e06d/10b34e0fcc8f17e7-6.safetensors",
+      "size": 134254540,
+      "mtime_ns": 1793012791270582002,
+      "inode": 113423861
+     },
+     {
+      "rel": "44eaa202ce92e06d/1127226b50caa01f-12.json",
+      "size": 176,
+      "mtime_ns": 1793016414871943023,
+      "inode": 113428816
+     },
+     {
+      "rel": "44eaa202ce92e06d/1127226b50caa01f-12.safetensors",
+      "size": 266780646,
+      "mtime_ns": 1793016414868435207,
+      "inode": 113428815
+     },
+     {
+      "rel": "44eaa202ce92e06d/14851ea2796d8cfb-8.json",
+      "size": 175,
+      "mtime_ns": 1793016393069696834,
+      "inode": 113428769
+     },
+     {
+      "rel": "44eaa202ce92e06d/14851ea2796d8cfb-8.safetensors",
+      "size": 257708004,
+      "mtime_ns": 1793016393066270293,
+      "inode": 113428768
+     },
+     {
+      "rel": "44eaa202ce92e06d/25287094bc102997-10.json",
+      "size": 175,
+      "mtime_ns": 1793018209478870891,
+      "inode": 113433617
+     },
+     {
+      "rel": "44eaa202ce92e06d/25287094bc102997-10.safetensors",
+      "size": 264957964,
+      "mtime_ns": 1793018209478357516,
+      "inode": 113433616
+     },
+     {
+      "rel": "44eaa202ce92e06d/2a566a9bf35102ff-8.json",
+      "size": 175,
+      "mtime_ns": 1793012782732928352,
+      "inode": 113423854
+     },
+     {
+      "rel": "44eaa202ce92e06d/2a566a9bf35102ff-8.safetensors",
+      "size": 112811952,
+      "mtime_ns": 1793012782731589269,
+      "inode": 113423853
+     },
+     {
+      "rel": "44eaa202ce92e06d/2d5ee8a5a7735336-6.json",
+      "size": 175,
+      "mtime_ns": 1793017296443836701,
+      "inode": 113431764
+     },
+     {
+      "rel": "44eaa202ce92e06d/2d5ee8a5a7735336-6.safetensors",
+      "size": 224919522,
+      "mtime_ns": 1793017296442687991,
+      "inode": 113431763
+     },
+     {
+      "rel": "44eaa202ce92e06d/36cc7b1a27b5a460-6.json",
+      "size": 175,
+      "mtime_ns": 1793018198002607311,
+      "inode": 113433606
+     },
+     {
+      "rel": "44eaa202ce92e06d/36cc7b1a27b5a460-6.safetensors",
+      "size": 259059724,
+      "mtime_ns": 1793018198002064894,
+      "inode": 113433605
+     },
+     {
+      "rel": "44eaa202ce92e06d/51e28e219c58053f-6.json",
+      "size": 174,
+      "mtime_ns": 1793018186830496411,
+      "inode": 113433589
+     },
+     {
+      "rel": "44eaa202ce92e06d/51e28e219c58053f-6.safetensors",
+      "size": 259285004,
+      "mtime_ns": 1793018186829932661,
+      "inode": 113433588
+     },
+     {
+      "rel": "44eaa202ce92e06d/55a4d1b00d691eb0-8.json",
+      "size": 175,
+      "mtime_ns": 1793017305639891020,
+      "inode": 113431779
+     },
+     {
+      "rel": "44eaa202ce92e06d/55a4d1b00d691eb0-8.safetensors",
+      "size": 227028962,
+      "mtime_ns": 1793017305638789560,
+      "inode": 113431778
+     },
+     {
+      "rel": "44eaa202ce92e06d/7b1a2442a5517435-6.json",
+      "size": 175,
+      "mtime_ns": 1793044013170648653,
+      "inode": 113679359
+     },
+     {
+      "rel": "44eaa202ce92e06d/7b1a2442a5517435-6.safetensors",
+      "size": 112975790,
+      "mtime_ns": 1793044013164925982,
+      "inode": 113679358
+     },
+     {
+      "rel": "44eaa202ce92e06d/8f0f3fd9f80e80b9-4.json",
+      "size": 176,
+      "mtime_ns": 1793044084289229102,
+      "inode": 113679503
+     },
+     {
+      "rel": "44eaa202ce92e06d/8f0f3fd9f80e80b9-4.safetensors",
+      "size": 111419276,
+      "mtime_ns": 1793044084284623682,
+      "inode": 113679502
+     },
+     {
+      "rel": "44eaa202ce92e06d/8f9d9754a338367a-4.json",
+      "size": 176,
+      "mtime_ns": 1793019185982490081,
+      "inode": 113436983
+     },
+     {
+      "rel": "44eaa202ce92e06d/8f9d9754a338367a-4.safetensors",
+      "size": 92946335,
+      "mtime_ns": 1793019185978056198,
+      "inode": 113436982
+     },
+     {
+      "rel": "44eaa202ce92e06d/9191bb342b9ed867-4.json",
+      "size": 176,
+      "mtime_ns": 1793019628668803800,
+      "inode": 113437936
+     },
+     {
+      "rel": "44eaa202ce92e06d/9191bb342b9ed867-4.safetensors",
+      "size": 99418015,
+      "mtime_ns": 1793019628664971459,
+      "inode": 113437935
+     },
+     {
+      "rel": "44eaa202ce92e06d/93a0dcbdfe26e473-4.json",
+      "size": 176,
+      "mtime_ns": 1793019624699393389,
+      "inode": 113437929
+     },
+     {
+      "rel": "44eaa202ce92e06d/93a0dcbdfe26e473-4.safetensors",
+      "size": 98168735,
+      "mtime_ns": 1793019624695498881,
+      "inode": 113437928
+     },
+     {
+      "rel": "44eaa202ce92e06d/9a90d216dd6ff0ca-8.json",
+      "size": 176,
+      "mtime_ns": 1793017191484753610,
+      "inode": 113431678
+     },
+     {
+      "rel": "44eaa202ce92e06d/9a90d216dd6ff0ca-8.safetensors",
+      "size": 243208164,
+      "mtime_ns": 1793017191482063106,
+      "inode": 113431677
+     },
+     {
+      "rel": "44eaa202ce92e06d/9b0596748111a969-8.json",
+      "size": 176,
+      "mtime_ns": 1793016403957562876,
+      "inode": 113428799
+     },
+     {
+      "rel": "44eaa202ce92e06d/9b0596748111a969-8.safetensors",
+      "size": 257380324,
+      "mtime_ns": 1793016403954152960,
+      "inode": 113428798
+     },
+     {
+      "rel": "44eaa202ce92e06d/a33aadd4948b4bec-4.json",
+      "size": 176,
+      "mtime_ns": 1793019632770397069,
+      "inode": 113437946
+     },
+     {
+      "rel": "44eaa202ce92e06d/a33aadd4948b4bec-4.safetensors",
+      "size": 103042990,
+      "mtime_ns": 1793019632769745735,
+      "inode": 113437945
+     },
+     {
+      "rel": "44eaa202ce92e06d/a34791c73ce7ed6f-8.json",
+      "size": 176,
+      "mtime_ns": 1793017181276117939,
+      "inode": 113431665
+     },
+     {
+      "rel": "44eaa202ce92e06d/a34791c73ce7ed6f-8.safetensors",
+      "size": 241958884,
+      "mtime_ns": 1793017181272010058,
+      "inode": 113431664
+     },
+     {
+      "rel": "44eaa202ce92e06d/b00d0cecd30ca710-6.json",
+      "size": 176,
+      "mtime_ns": 1793044089467152042,
+      "inode": 113679514
+     },
+     {
+      "rel": "44eaa202ce92e06d/b00d0cecd30ca710-6.safetensors",
+      "size": 108818314,
+      "mtime_ns": 1793044089463360080,
+      "inode": 113679513
+     },
+     {
+      "rel": "44eaa202ce92e06d/b057e546e239b69c-4.json",
+      "size": 176,
+      "mtime_ns": 1793019636913197633,
+      "inode": 113437961
+     },
+     {
+      "rel": "44eaa202ce92e06d/b057e546e239b69c-4.safetensors",
+      "size": 103104430,
+      "mtime_ns": 1793019636912535423,
+      "inode": 113437960
+     },
+     {
+      "rel": "44eaa202ce92e06d/b984a213b05f6981-8.json",
+      "size": 176,
+      "mtime_ns": 1793012932923890620,
+      "inode": 113424353
+     },
+     {
+      "rel": "44eaa202ce92e06d/b984a213b05f6981-8.safetensors",
+      "size": 112443312,
+      "mtime_ns": 1793012932922240912,
+      "inode": 113424352
+     },
+     {
+      "rel": "44eaa202ce92e06d/bc0e086e4a38f235-4.json",
+      "size": 176,
+      "mtime_ns": 1793019190566272392,
+      "inode": 113437003
+     },
+     {
+      "rel": "44eaa202ce92e06d/bc0e086e4a38f235-4.safetensors",
+      "size": 115105724,
+      "mtime_ns": 1793019190565763974,
+      "inode": 113437002
+     },
+     {
+      "rel": "44eaa202ce92e06d/df8072048b340c1a-4.json",
+      "size": 176,
+      "mtime_ns": 1793019194015253738,
+      "inode": 113437015
+     },
+     {
+      "rel": "44eaa202ce92e06d/df8072048b340c1a-4.safetensors",
+      "size": 96898977,
+      "mtime_ns": 1793019194012461858,
+      "inode": 113437014
+     },
+     {
+      "rel": "44eaa202ce92e06d/e3d83a74aa53a31b-12.json",
+      "size": 177,
+      "mtime_ns": 1793012935815459250,
+      "inode": 113424359
+     },
+     {
+      "rel": "44eaa202ce92e06d/e3d83a74aa53a31b-12.safetensors",
+      "size": 112627632,
+      "mtime_ns": 1793012935811067709,
+      "inode": 113424358
+     },
+     {
+      "rel": "44eaa202ce92e06d/e4890e3f1b45e353-12.json",
+      "size": 177,
+      "mtime_ns": 1793017203006501706,
+      "inode": 113431694
+     },
+     {
+      "rel": "44eaa202ce92e06d/e4890e3f1b45e353-12.safetensors",
+      "size": 271286266,
+      "mtime_ns": 1793017203000890239,
+      "inode": 113431693
+     },
+     {
+      "rel": "44eaa202ce92e06d/f543a6036277147-4.json",
+      "size": 175,
+      "mtime_ns": 1793044085636996167,
+      "inode": 113679508
+     },
+     {
+      "rel": "44eaa202ce92e06d/f543a6036277147-4.safetensors",
+      "size": 68657005,
+      "mtime_ns": 1793044085635992625,
+      "inode": 113679507
+     },
+     {
+      "rel": "44eaa202ce92e06d/fdc8da3b73405423-6.json",
+      "size": 176,
+      "mtime_ns": 1793044074739725477,
+      "inode": 113679487
+     },
+     {
+      "rel": "44eaa202ce92e06d/fdc8da3b73405423-6.safetensors",
+      "size": 114040750,
+      "mtime_ns": 1793044074736907016,
+      "inode": 113679486
+     },
+     {
+      "rel": "44eaa202ce92e06d/ffbe4f1833fcc65b-12.json",
+      "size": 177,
+      "mtime_ns": 1793017315081924500,
+      "inode": 113431796
+     },
+     {
+      "rel": "44eaa202ce92e06d/ffbe4f1833fcc65b-12.safetensors",
+      "size": 229978084,
+      "mtime_ns": 1793017315077773869,
+      "inode": 113431795
+     }
+    ]
+   },
+   "branch_checkpoints": {
+    "present": true,
+    "file_count": 36,
+    "total_bytes": 3068324429,
+    "listing_sha256": "53887526d2a8f8837f64de1f63afd011430f85f50970965a0e526ab21b186e35",
+    "files": [
+     {
+      "rel": "default_b7-source-20261027-034624_main.meta.json",
+      "size": 5816,
+      "mtime_ns": 1793044013241186204,
+      "inode": 113679363
+     },
+     {
+      "rel": "default_b7-source-20261027-034624_main.safetensors",
+      "size": 112975790,
+      "mtime_ns": 1793044013235870909,
+      "inode": 113679362
+     },
+     {
+      "rel": "default_b7-source-20261027-034749_main.meta.json",
+      "size": 5567,
+      "mtime_ns": 1793044074807250692,
+      "inode": 113679491
+     },
+     {
+      "rel": "default_b7-source-20261027-034749_main.safetensors",
+      "size": 114040750,
+      "mtime_ns": 1793044074804546524,
+      "inode": 113679490
+     },
+     {
+      "rel": "default_e4-cross-id-alpha_main.meta.json",
+      "size": 4451,
+      "mtime_ns": 1793019194083018186,
+      "inode": 113437017
+     },
+     {
+      "rel": "default_e4-cross-id-alpha_main.safetensors",
+      "size": 96898977,
+      "mtime_ns": 1793019194080025723,
+      "inode": 113437016
+     },
+     {
+      "rel": "default_e4-tamper-cache_main.meta.json",
+      "size": 3961,
+      "mtime_ns": 1793019186045402145,
+      "inode": 113436985
+     },
+     {
+      "rel": "default_e4-tamper-cache_main.safetensors",
+      "size": 92946335,
+      "mtime_ns": 1793019186040371012,
+      "inode": 113436984
+     },
+     {
+      "rel": "default_e4-tamper-fresh_main.meta.json",
+      "size": 9915,
+      "mtime_ns": 1793019190662798805,
+      "inode": 113437007
+     },
+     {
+      "rel": "default_e4-tamper-fresh_main.safetensors",
+      "size": 115105724,
+      "mtime_ns": 1793019190660753427,
+      "inode": 113437006
+     },
+     {
+      "rel": "default_e4b-205949-b_main.meta.json",
+      "size": 4724,
+      "mtime_ns": 1793019628740612366,
+      "inode": 113437939
+     },
+     {
+      "rel": "default_e4b-205949-b_main.safetensors",
+      "size": 99418015,
+      "mtime_ns": 1793019628740008407,
+      "inode": 113437937
+     },
+     {
+      "rel": "default_e4b-205949-c_main.meta.json",
+      "size": 5174,
+      "mtime_ns": 1793019632851835864,
+      "inode": 113437948
+     },
+     {
+      "rel": "default_e4b-205949-c_main.safetensors",
+      "size": 103042990,
+      "mtime_ns": 1793019632850841945,
+      "inode": 113437947
+     },
+     {
+      "rel": "default_e4b-205949-iso_main.meta.json",
+      "size": 5182,
+      "mtime_ns": 1793019636988482039,
+      "inode": 113437963
+     },
+     {
+      "rel": "default_e4b-205949-iso_main.safetensors",
+      "size": 103104430,
+      "mtime_ns": 1793019636987963621,
+      "inode": 113437962
+     },
+     {
+      "rel": "default_e4b-205949_main.meta.json",
+      "size": 4583,
+      "mtime_ns": 1793019624781963769,
+      "inode": 113437931
+     },
+     {
+      "rel": "default_e4b-205949_main.safetensors",
+      "size": 98168735,
+      "mtime_ns": 1793019624777940177,
+      "inode": 113437930
+     },
+     {
+      "rel": "default_exp-20261026-190528-es1_main.meta.json",
+      "size": 5492,
+      "mtime_ns": 1793012935886547745,
+      "inode": 113424363
+     },
+     {
+      "rel": "default_exp-20261026-190528-es1_main.safetensors",
+      "size": 112627632,
+      "mtime_ns": 1793012935882553121,
+      "inode": 113424362
+     },
+     {
+      "rel": "default_pb-20261026-201915-X_main.meta.json",
+      "size": 34508,
+      "mtime_ns": 1793017203157371265,
+      "inode": 113431701
+     },
+     {
+      "rel": "default_pb-20261026-201915-X_main.safetensors",
+      "size": 271286266,
+      "mtime_ns": 1793017203155995222,
+      "inode": 113431700
+     },
+     {
+      "rel": "default_pb-20261026-201915-Y_main.meta.json",
+      "size": 31180,
+      "mtime_ns": 1793017191627419698,
+      "inode": 113431685
+     },
+     {
+      "rel": "default_pb-20261026-201915-Y_main.safetensors",
+      "size": 243208164,
+      "mtime_ns": 1793017191624375111,
+      "inode": 113431684
+     },
+     {
+      "rel": "default_pc-20261026-200601-A_main.meta.json",
+      "size": 34143,
+      "mtime_ns": 1793016415021158942,
+      "inode": 113428824
+     },
+     {
+      "rel": "default_pc-20261026-200601-A_main.safetensors",
+      "size": 266780646,
+      "mtime_ns": 1793016415017391288,
+      "inode": 113428822
+     },
+     {
+      "rel": "default_pc-20261026-200601-B_main.meta.json",
+      "size": 33720,
+      "mtime_ns": 1793016404112249153,
+      "inode": 113428806
+     },
+     {
+      "rel": "default_pc-20261026-200601-B_main.safetensors",
+      "size": 257380324,
+      "mtime_ns": 1793016404108548726,
+      "inode": 113428805
+     },
+     {
+      "rel": "default_pc-20261026-202127-X_main.meta.json",
+      "size": 29783,
+      "mtime_ns": 1793017315206970480,
+      "inode": 113431802
+     },
+     {
+      "rel": "default_pc-20261026-202127-X_main.safetensors",
+      "size": 229978084,
+      "mtime_ns": 1793017315205625602,
+      "inode": 113431801
+     },
+     {
+      "rel": "default_pc-20261026-202127-Y_main.meta.json",
+      "size": 29360,
+      "mtime_ns": 1793017305785246863,
+      "inode": 113431785
+     },
+     {
+      "rel": "default_pc-20261026-202127-Y_main.safetensors",
+      "size": 227028962,
+      "mtime_ns": 1793017305783914361,
+      "inode": 113431784
+     },
+     {
+      "rel": "default_pc-20261026-203603-A_main.meta.json",
+      "size": 33827,
+      "mtime_ns": 1793018209634346297,
+      "inode": 113433624
+     },
+     {
+      "rel": "default_pc-20261026-203603-A_main.safetensors",
+      "size": 264957964,
+      "mtime_ns": 1793018209631400460,
+      "inode": 113433623
+     },
+     {
+      "rel": "default_pc-20261026-203603-B_main.meta.json",
+      "size": 33531,
+      "mtime_ns": 1793018198141407947,
+      "inode": 113433613
+     },
+     {
+      "rel": "default_pc-20261026-203603-B_main.safetensors",
+      "size": 259059724,
+      "mtime_ns": 1793018198140356821,
+      "inode": 113433612
+     }
+    ]
+   }
+  },
+  "delta_vs_before": {
+   "prefix_pool": 6,
+   "branch_checkpoints": 0
+  }
+ },
+ "statistics": {
+  "before": {
+   "receipts_total": 32,
+   "valid_model_output_settlements": 71
+  },
+  "after": {
+   "receipts_total": 34,
+   "valid_model_output_settlements": 71
+  }
+ },
+ "consumption_checks": {
+  "status_200": true,
+  "model_calls_zero": true,
+  "store_false": true,
+  "text_is_settled_value": true,
+  "no_generation_lines": true,
+  "no_kv_files_created": true,
+  "second_request_200": true,
+  "second_request_zero_calls": true,
+  "second_request_no_generation": true,
+  "model_output_stats_unchanged": true
+ },
+ "consumers": {
+  "first": {
+   "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+   "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+   "consumer_settlement_id": "B30CF082-D398-4293-ADE0-DD07143780A6",
+   "consumer_es_state_id": "es-21769771-346c-4570-af88-bcd25f8f7271",
+   "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+   "model_calls": 0,
+   "derived_settlement": true,
+   "reused_existing": false,
+   "outcome": "consumed",
+   "consumption_id": "79E372C2-05F1-4478-A699-50A5822E95D5",
+   "contract": {
+    "version": "v1",
+    "id": "simigo.settlement-consumption",
+    "demand_class": "exact-repeat",
+    "extract": "content"
+   }
+  },
+  "second": {
+   "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+   "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+   "consumer_settlement_id": "28B99C64-3105-41AD-960D-44907289863E",
+   "consumer_es_state_id": "es-62b88dc8-02a2-4d96-aa1e-7f52cdd57cea",
+   "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+   "model_calls": 0,
+   "derived_settlement": true,
+   "reused_existing": false,
+   "outcome": "consumed",
+   "consumption_id": "7470CFDC-A1EE-43C9-9A16-B29202AA0C95",
+   "contract": {
+    "version": "v1",
+    "id": "simigo.settlement-consumption",
+    "demand_class": "exact-repeat",
+    "extract": "content"
+   }
+  }
+ },
+ "refusal_checks": {
+  "refuse-malformed-bad-contract": {
+   "status": 422,
+   "expected_status": 422,
+   "reason": "invalid_entry",
+   "no_generation": true,
+   "ok": true
+  },
+  "refuse-unknown-source": {
+   "status": 422,
+   "expected_status": 422,
+   "reason": "contract_undeclared",
+   "no_generation": true,
+   "ok": true
+  },
+  "refuse-identity-mismatch": {
+   "status": 422,
+   "expected_status": 422,
+   "reason": "identity_mismatch",
+   "no_generation": true,
+   "ok": true
+  },
+  "refuse-changed-query": {
+   "status": 422,
+   "expected_status": 422,
+   "reason": "canonical_input_mismatch",
+   "no_generation": true,
+   "ok": true
+  },
+  "refuse-streaming": {
+   "status": 501,
+   "expected_status": 501,
+   "reason": "SETTLEMENT_CONSUMPTION_UNSUPPORTED_ON_STREAM",
+   "no_generation": true,
+   "ok": true
+  },
+  "refuse-malformed-missing-contract": {
+   "status": 422,
+   "expected_status": 422,
+   "reason": "invalid_entry",
+   "no_generation": true,
+   "ok": true
+  }
+ },
+ "absent_field_check": {
+  "status": 200,
+  "output": "B7-CONTROL-20261027-034749",
+  "generation_lines": 3,
+  "ok": true
+ },
+ "recompute_check": {
+  "status": 200,
+  "outcome": "recompute",
+  "reason": "canonical input changed",
+  "generation_lines": 3,
+  "consumptions_before": 4,
+  "consumptions_after": 4,
+  "ok": true
+ },
+ "chain_check": {
+  "status": 422,
+  "settlement": {},
+  "generation_lines": 3,
+  "ok": false
+ },
+ "db_audit": {
+  "consumptions": [
+   {
+    "consumption_id": "79E372C2-05F1-4478-A699-50A5822E95D5",
+    "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+    "consumer_state_id": "es-21769771-346c-4570-af88-bcd25f8f7271",
+    "consumer_settlement_id": "B30CF082-D398-4293-ADE0-DD07143780A6",
+    "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+    "contract_id": "simigo.settlement-consumption",
+    "demand_class": "exact-repeat",
+    "contract_version": "v1",
+    "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+    "model_calls": 0,
+    "created_at": "814736877.42306304"
+   },
+   {
+    "consumption_id": "7470CFDC-A1EE-43C9-9A16-B29202AA0C95",
+    "source_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+    "consumer_state_id": "es-62b88dc8-02a2-4d96-aa1e-7f52cdd57cea",
+    "consumer_settlement_id": "28B99C64-3105-41AD-960D-44907289863E",
+    "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+    "contract_id": "simigo.settlement-consumption",
+    "demand_class": "exact-repeat",
+    "contract_version": "v1",
+    "canonical_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561",
+    "model_calls": 0,
+    "created_at": "814736877.892295"
+   }
+  ],
+  "derived_settlement": [
+   {
+    "settlement_id": "B30CF082-D398-4293-ADE0-DD07143780A6",
+    "state_id": "es-21769771-346c-4570-af88-bcd25f8f7271",
+    "validation_status": "DERIVED_CONSUMPTION",
+    "validity": "valid",
+    "payload_digest": "abfc86fa0937b0933d14f94908a9c1bbddebc563abac0b22759ac19b917ce8b7"
+   }
+  ],
+  "derived_bindings": [
+   {
+    "name": "consumer.model_identity",
+    "value_digest": "0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53"
+   },
+   {
+    "name": "consumer.tokenizer_identity",
+    "value_digest": "1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71"
+   }
+  ],
+  "source": [
+   {
+    "settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+    "validity": "valid",
+    "validation_status": "VALID"
+   }
+  ],
+  "dependency_edges": [
+   {
+    "from_settlement": "B30CF082-D398-4293-ADE0-DD07143780A6",
+    "to_settlement": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F",
+    "kind": "settlement-consumption"
+   }
+  ],
+  "information_demands": [
+   {
+    "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+    "state_id": "es-62b88dc8-02a2-4d96-aa1e-7f52cdd57cea",
+    "session_id": null,
+    "retrieval_settlement_id": null,
+    "state": "ADVANCED",
+    "query": "b7 exact repeat 20261027-034749",
+    "input_digest": "be6fc3218f3590af3a4a04b7d93c510d517c22a08ac023aaabf39fa0ddd57561"
+   }
+  ],
+  "information_advancements": [
+   {
+    "advancement_id": "68510E6E-C12D-46B5-863C-C6F59D816483",
+    "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+    "state_id": "es-21769771-346c-4570-af88-bcd25f8f7271",
+    "settlement_id": "B30CF082-D398-4293-ADE0-DD07143780A6",
+    "retrieval_settlement_id": null,
+    "actions_json": "[\"consume-settlement\"]"
+   },
+   {
+    "advancement_id": "62CC7A38-C28E-462B-8CA6-35D8C63A93B8",
+    "demand_id": "0ae1144a4a363cc58fcc6b8321fc7e78fbef923ea384b1f3c63266a59c87033d",
+    "state_id": "es-62b88dc8-02a2-4d96-aa1e-7f52cdd57cea",
+    "settlement_id": "28B99C64-3105-41AD-960D-44907289863E",
+    "retrieval_settlement_id": null,
+    "actions_json": "[\"consume-settlement\"]"
+   }
+  ],
+  "summaries": [
+   {
+    "settlement_id": "B30CF082-D398-4293-ADE0-DD07143780A6",
+    "session_id": null,
+    "query": "b7 exact repeat 20261027-034749",
+    "summary": "B7-SETTLED-20261027-034749",
+    "summary_sha256": "64aeed5e146e64c07b0d4d353c386823439de5604f30d140440ec50c5375d716",
+    "summary_object_id": "278c6f2df5717c1a025fe353b0cc56028621fd22378d39771c80f96346c550d8",
+    "source_payload_digest": "abfc86fa0937b0933d14f94908a9c1bbddebc563abac0b22759ac19b917ce8b7",
+    "created_at": "814736877.42306304",
+    "derivation_type": "DERIVED_CONSUMPTION",
+    "provenance_settlement_id": "EA1F6171-A54B-4094-9F68-EE0BCEC9D74F"
+   }
+  ],
+  "consumer_state": [
+   {
+    "state_id": "es-21769771-346c-4570-af88-bcd25f8f7271",
+    "parent_id": null,
+    "model_identity": "ac1a9359054472adde28a43e9d4c203101f1548392b41e27d1a5bf5c18fea325",
+    "position": 1,
+    "lifecycle": "active",
+    "anchor": "abfc86fa0937b0933d14f94908a9c1bbddebc563abac0b22759ac19b917ce8b7",
+    "next_input": "B7-SETTLED-20261027-034749"
+   }
+  ],
+  "checks": {
+   "all_consumptions_zero_calls": true,
+   "derived_row_present": true,
+   "consumer_bindings_present": true,
+   "no_producer_bindings": true,
+   "no_kv_bindings": true,
+   "source_still_valid": true,
+   "dependency_edge_written": true,
+   "summary_marks_derivation": true,
+   "consumer_state_active": true
+  }
+ },
+ "finished_at": "2026-10-27T03:48:09+0800",
+ "ok": true
+}

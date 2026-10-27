@@ -1,0 +1,60 @@
+{
+ "nonce": "20261027-172339",
+ "session_id": "k3-source-20261027-172339",
+ "prompt": "请逐行输出编号序列 INT-A01-20261027-172339 到 INT-A30-20261027-172339，每行一个，不要解释。",
+ "anchor": {
+  "settlement_id": "3FD020EE-561B-4297-AAD2-7633AC60F98E",
+  "state_id": "chat-fd19d64a-bed5-4878-acf4-96dbbe3988a8",
+  "settled_at": "814785822.42913902",
+  "session_id": "k3-source-20261027-172339",
+  "marker": "k3-SETTLED-20261027-172339",
+  "generated_text": "k3-SETTLED-20261027-172339",
+  "settled_value": "k3-SETTLED-20261027-172339",
+  "payload_digest_ok": true,
+  "payload_digest": "de32305b2627c86183063f57bc10dfda8bf9430fae1513663617c8d81a097c91",
+  "generation_line_count": 3,
+  "marker_matched": true
+ },
+ "partial_text": "INT-A01-202",
+ "chunk_count": 8,
+ "interrupted_trace_raw": "[2026-10-27 17:23:44.880] [PROTOCOL] arrive r=7d89e4 endpoint=chat.completions stream=true agent=default s=k3-sou branch=main\n[2026-10-27 17:23:44.880] [LC] STATE_TRANSITION r=7d89e4 s=k3-sou from=QUEUED to=RUNNING\n[2026-10-27 17:23:44.880] [MLX] sessionClientSplit key=172339/main#33caca5f note=system-prompt client shard\n[2026-10-27 17:23:44.881] [MLX] prefillStep=2048 est=389 reuse=false\n[2026-10-27 17:23:46.057] [MLX] prefill 1182/1182\n[2026-10-27 17:23:46.323] [PROTOCOL] peerClosed r=7d89e4\n[2026-10-27 17:23:46.323] [CANCEL] r=req-7d89e426\n[2026-10-27 17:23:46.323] [MLX] cancelCommitSkip session=172339/main history=1 rawEv=8 rawB=11 emitB=11\n[2026-10-27 17:23:46.323] [LC] STATE_TRANSITION r=7d89e4 s=k3-sou from=RUNNING to=CANCELLING\n[2026-10-27 17:23:46.323] [LC] STATE_TRANSITION r=7d89e4 s=k3-sou from=CANCELLING to=DRAINING\n[2026-10-27 17:23:46.324] [LC] STATE_TRANSITION r=7d89e4 s=k3-sou from=DRAINING to=RELEASING\n[2026-10-27 17:23:46.324] [LC] RELEASED r=7d89e4 s=k3-sou reason=cancelled_by_client\n",
+ "phase_a_pids": [
+  "72481"
+ ],
+ "settlement_ids_after_a": [
+  "is-retrieval:57e69e85ff81b7f1318c1477303c2a17550b1398e483906db44ca77aa4e4e92b",
+  "CD4DD747-417A-438C-9090-F639065E6B75",
+  "C49392D7-AA70-4B60-A6D6-8421595EEC2D",
+  "A6335682-DD0E-4D85-AC01-31FB4D3C9F0C",
+  "is-retrieval:245cb2a593ceb4358d4ed17ced46a5e049c5e1b8b03dc637cdf7e79198518b75",
+  "5B2527A3-DAFB-4FCF-8B4C-3D51491CFBD2",
+  "is-retrieval:f33b1093aea8cd25e96f45618363c92a7ae8b77a3b6f544906c197114c5069ef",
+  "85D17085-C3C1-4C49-9882-759B60DE3C66",
+  "8EEAF578-DACB-417F-8A4A-89BDFDA0551D",
+  "is-retrieval:52370283a44b8cb91f74c003e3833e30688a004872dd3141bca8923653f2765e",
+  "873FA0F5-7864-412E-9E88-3BE021F3340E",
+  "109943C4-F3DB-4628-9BCB-BC654E94539B",
+  "is-retrieval:2ee9ffa1b41a35014274b7d6e61341f2e0624533758ff838254707ec7ef0a5c0",
+  "3C8852A8-7631-4F84-966F-8B6E940C37F2",
+  "is-retrieval:87ab95dbbc2f29859e408394e920e99cd0e5644be2812be3348dd52ef2654a98",
+  "F50752CB-AE67-4708-B997-82F9B38DB232",
+  "is-retrieval:b966a34c61a78b6d102fd6f99148dc386cdcd91db54ed8b875e70b20ccee4360",
+  "is-retrieval:9000e1901c947f0f9980524a3a99d24de4bb3ed1f0d9254f8cdb48eee3d1fcf6",
+  "3FD020EE-561B-4297-AAD2-7633AC60F98E",
+  "is-retrieval:6439520b1dbbe2bf72fbb88d754f44f7acc813c6b7b14076fbe6e175b49d4c47"
+ ],
+ "message_objects_after_a": [
+  {
+   "object_id": "57fd8503644c58aabe6143a56d799750c9877c6cbf94b8296265d393a6124928",
+   "content": "只输出这一行，不要解释：k3-SETTLED-20261027-172339"
+  },
+  {
+   "object_id": "22dcf9c0771e439ca72e7c6fe07db946f41efae3361f9f03da861e113b4c1a1a",
+   "content": "k3-SETTLED-20261027-172339"
+  },
+  {
+   "object_id": "24c952efe5995309457e6807171fb4e1f0aa48d593dea8ff0379bd41c9d5dda2",
+   "content": "请逐行输出编号序列 INT-A01-20261027-172339 到 INT-A30-20261027-172339，每行一个，不要解释。"
+  }
+ ]
+}

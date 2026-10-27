@@ -1,0 +1,70 @@
+{
+ "nonce": "20261027-174605",
+ "session_id": "k3-source-20261027-174605",
+ "prompt": "请逐行输出编号序列 INT-A01-20261027-174605 到 INT-A30-20261027-174605，每行一个，不要解释。",
+ "anchor": {
+  "settlement_id": "44D692B6-1846-468C-93E5-8E7542B16DF0",
+  "state_id": "chat-b476a073-7e21-4371-bdbe-5444891731d2",
+  "settled_at": "814787167.803496",
+  "session_id": "k3-source-20261027-174605",
+  "marker": "k3-SETTLED-20261027-174605",
+  "generated_text": "k3-SETTLED-20261027-174605",
+  "settled_value": "k3-SETTLED-20261027-174605",
+  "payload_digest_ok": true,
+  "payload_digest": "0d54150e0d6fa37e87a921f3ac47a7dc5c484eeb64b366444c1117cb0b3dfd57",
+  "generation_line_count": 3,
+  "marker_matched": true
+ },
+ "partial_text": "INT-A01-202",
+ "chunk_count": 8,
+ "interrupted_trace_raw": "[2026-10-27 17:46:10.256] [PROTOCOL] arrive r=89644e endpoint=chat.completions stream=true agent=default s=k3-sou branch=main\n[2026-10-27 17:46:10.257] [LC] STATE_TRANSITION r=89644e s=k3-sou from=QUEUED to=RUNNING\n[2026-10-27 17:46:10.257] [MLX] sessionClientSplit key=174605/main#33caca5f note=system-prompt client shard\n[2026-10-27 17:46:10.257] [MLX] prefillStep=2048 est=576 reuse=false\n[2026-10-27 17:46:11.957] [MLX] prefill 1800/1800\n[2026-10-27 17:46:12.257] [PROTOCOL] peerClosed r=89644e\n[2026-10-27 17:46:12.257] [CANCEL] r=req-89644e07\n[2026-10-27 17:46:12.257] [MLX] cancelCommitSkip session=174605/main history=1 rawEv=8 rawB=11 emitB=11\n[2026-10-27 17:46:12.257] [LC] STATE_TRANSITION r=89644e s=k3-sou from=RUNNING to=CANCELLING\n[2026-10-27 17:46:12.257] [LC] STATE_TRANSITION r=89644e s=k3-sou from=CANCELLING to=DRAINING\n[2026-10-27 17:46:12.257] [LC] STATE_TRANSITION r=89644e s=k3-sou from=DRAINING to=RELEASING\n[2026-10-27 17:46:12.257] [LC] RELEASED r=89644e s=k3-sou reason=cancelled_by_client\n",
+ "phase_c_pids": [
+  "74450"
+ ],
+ "settlement_ids_after_c": [
+  "is-retrieval:57e69e85ff81b7f1318c1477303c2a17550b1398e483906db44ca77aa4e4e92b",
+  "CD4DD747-417A-438C-9090-F639065E6B75",
+  "C49392D7-AA70-4B60-A6D6-8421595EEC2D",
+  "A6335682-DD0E-4D85-AC01-31FB4D3C9F0C",
+  "is-retrieval:245cb2a593ceb4358d4ed17ced46a5e049c5e1b8b03dc637cdf7e79198518b75",
+  "5B2527A3-DAFB-4FCF-8B4C-3D51491CFBD2",
+  "is-retrieval:f33b1093aea8cd25e96f45618363c92a7ae8b77a3b6f544906c197114c5069ef",
+  "85D17085-C3C1-4C49-9882-759B60DE3C66",
+  "8EEAF578-DACB-417F-8A4A-89BDFDA0551D",
+  "is-retrieval:52370283a44b8cb91f74c003e3833e30688a004872dd3141bca8923653f2765e",
+  "873FA0F5-7864-412E-9E88-3BE021F3340E",
+  "109943C4-F3DB-4628-9BCB-BC654E94539B",
+  "is-retrieval:2ee9ffa1b41a35014274b7d6e61341f2e0624533758ff838254707ec7ef0a5c0",
+  "3C8852A8-7631-4F84-966F-8B6E940C37F2",
+  "is-retrieval:87ab95dbbc2f29859e408394e920e99cd0e5644be2812be3348dd52ef2654a98",
+  "F50752CB-AE67-4708-B997-82F9B38DB232",
+  "is-retrieval:b966a34c61a78b6d102fd6f99148dc386cdcd91db54ed8b875e70b20ccee4360",
+  "is-retrieval:9000e1901c947f0f9980524a3a99d24de4bb3ed1f0d9254f8cdb48eee3d1fcf6",
+  "3FD020EE-561B-4297-AAD2-7633AC60F98E",
+  "is-retrieval:6439520b1dbbe2bf72fbb88d754f44f7acc813c6b7b14076fbe6e175b49d4c47",
+  "is-retrieval:f4ca7870ecfc47a2ecef3eb1644ffbea561cee10c2c71cad573949f0b44fcd07",
+  "29B566C3-F9F6-4AB5-8048-D407AE6443E8",
+  "is-retrieval:7befc8f6b1697346f5d69d05c67da50f34a89ea37c94131b4bbedb9252ba98ca",
+  "1A990589-82D6-4E26-ADCC-79B648D87212",
+  "is-retrieval:775e75e7d00bef11eb60a9d159c0a2e37ee359455585919f7d289046714ba3ad",
+  "is-retrieval:267eacd4ad5d9927af4eb54e23bfe13dbd072d0b847460e136d16f3155a408bc",
+  "DAB3D7F6-C812-462E-B9E7-165B5BCC9E5D",
+  "is-retrieval:ab53a0e6072b354b493158448f9cb008c76f787fce6824bf6b64b615775f10cd",
+  "44D692B6-1846-468C-93E5-8E7542B16DF0",
+  "is-retrieval:ccb1464885a6a1ee1e032facccb10ec8a678defd99a1aed37b189e781d31f606"
+ ],
+ "message_objects_after_c": [
+  {
+   "object_id": "ee7e871fa2e14f098593c01195d5cb4376d8ba8e3e28abe6f7b2e2d24231178a",
+   "content": "只输出这一行，不要解释：k3-SETTLED-20261027-174605"
+  },
+  {
+   "object_id": "33357c23d9187a492cbeda639ba65454e7da2aad420709e6a298e54239cf4b32",
+   "content": "k3-SETTLED-20261027-174605"
+  },
+  {
+   "object_id": "d5f0d771b0b65923daeca0e137d3f811c1ac2791e24ed4d4616f590666649f7e",
+   "content": "请逐行输出编号序列 INT-A01-20261027-174605 到 INT-A30-20261027-174605，每行一个，不要解释。"
+  }
+ ]
+}

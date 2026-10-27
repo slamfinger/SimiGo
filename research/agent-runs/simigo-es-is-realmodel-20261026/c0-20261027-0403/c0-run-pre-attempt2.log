@@ -1,0 +1,14 @@
+[C0 04:05:35] service ready model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX exe=83635c736d7f913e
+[C0 04:05:35] db backup pre
+[C0 04:05:35] root registered work-00000000903bb636
+[C0 04:05:43] source-chat-generation -> 200 7.477s generation_lines=5
+[C0 04:05:43] chain: A810B7DE -> is-retrieval:2e787df (13 bindings, 1 ours)
+[C0 04:05:44] consume-positive -> 200 0.063s generation_lines=0
+[C0 04:05:44] positive consumption BB9A2C15-9295-43C4-AAAC-AB4AF598D0DF value ok
+[C0 04:05:44] source invalidated at 814737944.12143397
+[C0 04:05:44] consume-after-change -> 500 0.036s generation_lines=0
+[C0 04:05:45] consume-after-change-recompute -> 500 0.059s generation_lines=0
+[C0 04:05:45] db backup post
+[C0 04:05:45] checks={"source_invalidated": true, "retrieval_invalidated_status": true, "consumer_settlement_cascaded": true, "refusal_ran_no_model": true, "refusal_left_no_consumption_row": true, "refusal_left_no_settlement": true, "refusal_left_no_state": true, "recompute_ran_no_model": true, "prefix_pool_untouched": false, "checkpoints_untouched": false}
+[C0 04:05:45] terminal=500/None contract_match=False
+[C0 04:05:45] evidence /Users/mr.simi/Documents/SimiGo/research/agent-runs/simigo-es-is-realmodel-20261026/c0-20261027-0403/results-pre-20261027-040535.json

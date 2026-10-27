@@ -1,0 +1,49 @@
+[2026-10-27 04:13:20.455] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX
+[2026-10-27 04:13:21.281] [PROTOCOL] arrive r=ad7f87 endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:21.299] [LC] FORCE_RELEASED r=ad7f87 s=respon from=QUEUED reason=unexpected table rejection
+[2026-10-27 04:13:21.299] [LC] RELEASED r=ad7f87 s=respon reason=completed
+[2026-10-27 04:13:22.002] [PROTOCOL] arrive r=cd7b83 endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:22.015] [LC] STATE_TRANSITION r=cd7b83 s=respon from=CREATED to=CANCELLING
+[2026-10-27 04:13:22.015] [LC] STATE_TRANSITION r=cd7b83 s=respon from=CANCELLING to=DRAINING
+[2026-10-27 04:13:22.015] [LC] STATE_TRANSITION r=cd7b83 s=respon from=DRAINING to=RELEASING
+[2026-10-27 04:13:22.015] [LC] RELEASED r=cd7b83 s=respon reason=settlement_consumption_refused
+[2026-10-27 04:13:22.694] [PROTOCOL] arrive r=d4d416 endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:22.712] [LC] RELEASED r=d4d416 s=respon reason=completed
+[2026-10-27 04:13:23.393] [PROTOCOL] arrive r=d02a40 endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:23.414] [LC] FORCE_RELEASED r=d02a40 s=respon from=QUEUED reason=unexpected table rejection
+[2026-10-27 04:13:23.414] [LC] RELEASED r=d02a40 s=respon reason=completed
+[2026-10-27 04:13:24.195] [PROTOCOL] arrive r=62466c endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:24.199] [LC] STATE_TRANSITION r=62466c s=respon from=CREATED to=CANCELLING
+[2026-10-27 04:13:24.199] [LC] STATE_TRANSITION r=62466c s=respon from=CANCELLING to=DRAINING
+[2026-10-27 04:13:24.199] [LC] STATE_TRANSITION r=62466c s=respon from=DRAINING to=RELEASING
+[2026-10-27 04:13:24.200] [LC] RELEASED r=62466c s=respon reason=settlement_consumption_refused
+[2026-10-27 04:13:24.901] [PROTOCOL] arrive r=989dac endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:24.910] [LC] STATE_TRANSITION r=989dac s=respon from=CREATED to=CANCELLING
+[2026-10-27 04:13:24.910] [LC] STATE_TRANSITION r=989dac s=respon from=CANCELLING to=DRAINING
+[2026-10-27 04:13:24.910] [LC] STATE_TRANSITION r=989dac s=respon from=DRAINING to=RELEASING
+[2026-10-27 04:13:24.910] [LC] RELEASED r=989dac s=respon reason=settlement_consumption_refused
+[2026-10-27 04:13:25.567] [PROTOCOL] arrive r=1e06ee endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:25.568] [LC] STATE_TRANSITION r=1e06ee s=respon from=CREATED to=CANCELLING
+[2026-10-27 04:13:25.568] [LC] STATE_TRANSITION r=1e06ee s=respon from=CANCELLING to=DRAINING
+[2026-10-27 04:13:25.568] [LC] STATE_TRANSITION r=1e06ee s=respon from=DRAINING to=RELEASING
+[2026-10-27 04:13:25.568] [LC] RELEASED r=1e06ee s=respon reason=settlement_consumption_refused
+[2026-10-27 04:13:25.917] [PROTOCOL] arrive r=803158 endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:25.930] [LC] STATE_TRANSITION r=803158 s=respon from=CREATED to=CANCELLING
+[2026-10-27 04:13:25.930] [LC] STATE_TRANSITION r=803158 s=respon from=CANCELLING to=DRAINING
+[2026-10-27 04:13:25.931] [LC] STATE_TRANSITION r=803158 s=respon from=DRAINING to=RELEASING
+[2026-10-27 04:13:25.931] [LC] RELEASED r=803158 s=respon reason=settlement_consumption_refused
+[2026-10-27 04:13:26.585] [PROTOCOL] arrive r=2d7388 endpoint=responses stream=true agent=default s=respon branch=main
+[2026-10-27 04:13:26.586] [LC] STATE_TRANSITION r=2d7388 s=respon from=CREATED to=CANCELLING
+[2026-10-27 04:13:26.586] [LC] STATE_TRANSITION r=2d7388 s=respon from=CANCELLING to=DRAINING
+[2026-10-27 04:13:26.586] [LC] STATE_TRANSITION r=2d7388 s=respon from=DRAINING to=RELEASING
+[2026-10-27 04:13:26.586] [LC] RELEASED r=2d7388 s=respon reason=cancelled_internally
+[2026-10-27 04:13:27.287] [PROTOCOL] arrive r=218156 endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:27.287] [LC] STATE_TRANSITION r=218156 s=respon from=CREATED to=CANCELLING
+[2026-10-27 04:13:27.287] [LC] STATE_TRANSITION r=218156 s=respon from=CANCELLING to=DRAINING
+[2026-10-27 04:13:27.287] [LC] STATE_TRANSITION r=218156 s=respon from=DRAINING to=RELEASING
+[2026-10-27 04:13:27.287] [LC] RELEASED r=218156 s=respon reason=settlement_consumption_refused
+[2026-10-27 04:13:27.998] [PROTOCOL] arrive r=b3a731 endpoint=responses stream=false agent=default s=respon branch=main
+[2026-10-27 04:13:28.010] [LC] STATE_TRANSITION r=b3a731 s=respon from=CREATED to=CANCELLING
+[2026-10-27 04:13:28.010] [LC] STATE_TRANSITION r=b3a731 s=respon from=CANCELLING to=DRAINING
+[2026-10-27 04:13:28.010] [LC] STATE_TRANSITION r=b3a731 s=respon from=DRAINING to=RELEASING
+[2026-10-27 04:13:28.010] [LC] RELEASED r=b3a731 s=respon reason=settlement_consumption_refused

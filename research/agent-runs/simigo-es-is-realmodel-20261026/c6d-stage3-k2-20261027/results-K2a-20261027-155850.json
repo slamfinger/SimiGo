@@ -1,0 +1,491 @@
+{
+ "case": "K2a",
+ "nonce": "20261027-155850",
+ "started_at": "2026-10-27T15:58:50+0800",
+ "run_root": "/tmp/simigo-stage3-20261027-150733",
+ "kv_cache_root": "/tmp/simigo-stage3-20261027-150733/run/cache",
+ "root_id": "work-000000004154195b",
+ "steps": {
+  "source-chat-generation-k2": {
+   "label": "source-chat-generation-k2",
+   "path": "/v1/chat/completions",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "session_id": "k2-source-20261027-155850",
+    "max_tokens": 96,
+    "messages": [
+     {
+      "role": "system",
+      "content": "你是精确的标记输出器，只输出用户要求的那一行。"
+     },
+     {
+      "role": "user",
+      "content": "只输出这一行，不要解释：k2-SETTLED-20261027-155850"
+     }
+    ]
+   },
+   "status": 200,
+   "seconds": 17.595,
+   "body": {
+    "id": "chatcmpl-a1a00f8a-d5ad-4352-bc6c-5370a399e4c9",
+    "choices": [
+     {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+       "role": "assistant",
+       "content": "k2-SETTLED-20261027-155850"
+      }
+     }
+    ],
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "object": "chat.completion",
+    "created": 1793087948
+   },
+   "generation_lines": [
+    "[2026-10-27 15:58:55.546] [MLX] prefillStep=2048 est=181 reuse=false",
+    "[2026-10-27 15:59:05.933] [MLX] prefill 595/595",
+    "[2026-10-27 15:59:08.418] [MLX] session=155850/main messages=2 exec=a60d3d history=3 delta=1 reuse=false ttft=12116ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=595 promptTime=12.0s tps=32.8 rawEv=22 rawB=26 emitB=26"
+   ],
+   "kv_lines": [
+    "[2026-10-27 15:58:50.850] [LIFECYCLE] resume_started",
+    "[2026-10-27 15:58:55.545] [LIFECYCLE] resume_done ms=4695",
+    "[2026-10-27 15:59:08.382] [MLX] poolExport messages=3 refHash=9f7fc14debed5d1f",
+    "[2026-10-27 15:59:08.418] [MLX] cacheSave session=155850/main history=3"
+   ],
+   "trace_raw": "[2026-10-27 15:58:50.849] [PROTOCOL] arrive r=9d2e34 endpoint=chat.completions stream=false agent=default s=k2-sou branch=main\n[2026-10-27 15:58:50.850] [LIFECYCLE] resume_started\n[2026-10-27 15:58:55.545] [LIFECYCLE] resume_done ms=4695\n[2026-10-27 15:58:55.546] [LC] STATE_TRANSITION r=9d2e34 s=k2-sou from=QUEUED to=RUNNING\n[2026-10-27 15:58:55.546] [MLX] sessionClientSplit key=155850/main#110aa5cc note=system-prompt client shard\n[2026-10-27 15:58:55.546] [MLX] prefillStep=2048 est=181 reuse=false\n[2026-10-27 15:59:05.933] [MLX] prefill 595/595\n[2026-10-27 15:59:08.382] [MLX] poolExport messages=3 refHash=9f7fc14debed5d1f\n[2026-10-27 15:59:08.418] [MLX] cacheSave session=155850/main history=3\n[2026-10-27 15:59:08.418] [MLX] session=155850/main messages=2 exec=a60d3d history=3 delta=1 reuse=false ttft=12116ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=595 promptTime=12.0s tps=32.8 rawEv=22 rawB=26 emitB=26\n[2026-10-27 15:59:08.428] [LC] RELEASED r=9d2e34 s=k2-sou reason=completed\n",
+   "at": "2026-10-27T15:59:08+0800"
+  }
+ },
+ "app_state_before": {
+  "pids": [
+   "65911"
+  ],
+  "env": {
+   "SIMIGO_HOME": "/tmp/simigo-stage3-20261027-150733/run/home",
+   "SIMIGO_CACHE_ROOT": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "SIMIGO_STATE_GRAPH_STORE": "/tmp/simigo-stage3-20261027-150733/run/state-graph/reference-graph-v1.json"
+  },
+  "exe_sha256": "9ba486976d56de2b8614c2cb8537e2253955084e438a18c428838913a53c1a30",
+  "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"
+ },
+ "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+ "counters_before": {
+  "settlements": 6,
+  "execution_states": 4,
+  "settlement_bindings": 8,
+  "settlement_consumptions": 2,
+  "settlement_reuse_contracts": 1,
+  "checkpoints": 0,
+  "retrieval_settlements": 2,
+  "is_objects": 14,
+  "chat_messages": 4,
+  "chat_execution_links": 2,
+  "information_demands": 3,
+  "information_advancements": 4
+ },
+ "cache_before": {
+  "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+  "kind": "directory",
+  "size": null,
+  "sha256": null,
+  "children": {
+   "prefix-pool": {
+    "present": true,
+    "file_count": 4,
+    "total_bytes": 145526888,
+    "listing_sha256": "5b643c2871d2e25ad391b681573ed5abf707d6e42ad480a61f30ce4086f75ea9",
+    "files": [
+     {
+      "rel": "44eaa202ce92e06d/b72517eba938ed75-6.json",
+      "size": 176,
+      "mtime_ns": 1793087226572532842,
+      "inode": 114110333
+     },
+     {
+      "rel": "44eaa202ce92e06d/b72517eba938ed75-6.safetensors",
+      "size": 75784071,
+      "mtime_ns": 1793087226571298492,
+      "inode": 114110332
+     },
+     {
+      "rel": "44eaa202ce92e06d/f99c3491371a6184-6.json",
+      "size": 176,
+      "mtime_ns": 1793087221136119452,
+      "inode": 114110325
+     },
+     {
+      "rel": "44eaa202ce92e06d/f99c3491371a6184-6.safetensors",
+      "size": 69742465,
+      "mtime_ns": 1793087221131623774,
+      "inode": 114110324
+     }
+    ],
+    "kind": "directory"
+   },
+   "branch-checkpoints": {
+    "present": true,
+    "file_count": 4,
+    "total_bytes": 145528395,
+    "listing_sha256": "6d64d6a7f9550efb4546231b1031dc23be806eb3671835ed26eb46f2a547adf1",
+    "files": [
+     {
+      "rel": "default_k1-control-20261027-154642_main.meta.json",
+      "size": 1190,
+      "mtime_ns": 1793087226614995061,
+      "inode": 114110335
+     },
+     {
+      "rel": "default_k1-control-20261027-154642_main.safetensors",
+      "size": 75784071,
+      "mtime_ns": 1793087226614408011,
+      "inode": 114110334
+     },
+     {
+      "rel": "default_k1-source-20261027-154642_main.meta.json",
+      "size": 669,
+      "mtime_ns": 1793087221179833368,
+      "inode": 114110327
+     },
+     {
+      "rel": "default_k1-source-20261027-154642_main.safetensors",
+      "size": 69742465,
+      "mtime_ns": 1793087221174082081,
+      "inode": 114110326
+     }
+    ],
+    "kind": "directory"
+   }
+  }
+ },
+ "real_home_before": {
+  "prefix-pool": {
+   "kind": "directory",
+   "mtime_ns": 1793012782633047735,
+   "mtime": "2026-10-26 19:06:22",
+   "entries": 1
+  },
+  "branch-checkpoints": {
+   "kind": "directory",
+   "mtime_ns": 1793045958320113695,
+   "mtime": "2026-10-27 04:19:18",
+   "entries": 44
+  },
+  "simigo.sqlite3": {
+   "kind": "regular-file",
+   "mtime_ns": 1793086002982206664,
+   "mtime": "2026-10-27 15:26:42"
+  }
+ },
+ "source": {
+  "settlement_id": "85D17085-C3C1-4C49-9882-759B60DE3C66",
+  "state_id": "chat-a47f7deb-a0e7-457b-a6ec-0975d312e3ac",
+  "settled_at": "814780748.42533898",
+  "session_id": "k2-source-20261027-155850",
+  "marker": "k2-SETTLED-20261027-155850",
+  "generated_text": "k2-SETTLED-20261027-155850",
+  "settled_value": "k2-SETTLED-20261027-155850",
+  "payload_digest_ok": true,
+  "payload_digest": "df468a3b2cc340d9cb850d2db5025eda14ff96d9c90bb9d6bd3ab9c63458f892",
+  "generation_line_count": 3,
+  "marker_matched": true
+ },
+ "contract": {
+  "query": "k2 exact repeat 20261027-155850",
+  "root_id": "work-000000004154195b",
+  "canonical": "k2 exact repeat 20261027-155850|work-000000004154195b/a.txt=1bb850f07110efb7514c2c45cc8c9049fd0594face934172cb398f9bc63e1f71;work-000000004154195b/b.txt=60d7691533a658ffdbf55c7e0f62dbaf471082bf137570ec3c8c5036a1ae20a7",
+  "canonical_digest": "40f19c4abf50ce54c554b5242652903e0268ece9c75f1c74e287ff99bf97f8c6",
+  "declaration": {
+   "canonical": "k2 exact repeat 20261027-155850|work-000000004154195b/a.txt=1bb850f07110efb7514c2c45cc8c9049fd0594face934172cb398f9bc63e1f71;work-000000004154195b/b.txt=60d7691533a658ffdbf55c7e0f62dbaf471082bf137570ec3c8c5036a1ae20a7",
+   "canonical_digest": "40f19c4abf50ce54c554b5242652903e0268ece9c75f1c74e287ff99bf97f8c6",
+   "contract_id": "simigo.settlement-consumption",
+   "contract_version": "v1",
+   "declared": true,
+   "declared_at": "814780750.89498198",
+   "demand_class": "exact-repeat",
+   "extract_field": "content",
+   "query": "k2 exact repeat 20261027-155850",
+   "required_identity_json": "{\"kind\":\"producer\",\"model\":\"0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53\",\"tokenizer\":\"1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71\"}",
+   "roots": [
+    "work-000000004154195b"
+   ],
+   "settlement_id": "85D17085-C3C1-4C49-9882-759B60DE3C66"
+  },
+  "stored": {
+   "canonical": "k2 exact repeat 20261027-155850|work-000000004154195b/a.txt=1bb850f07110efb7514c2c45cc8c9049fd0594face934172cb398f9bc63e1f71;work-000000004154195b/b.txt=60d7691533a658ffdbf55c7e0f62dbaf471082bf137570ec3c8c5036a1ae20a7",
+   "canonical_digest": "40f19c4abf50ce54c554b5242652903e0268ece9c75f1c74e287ff99bf97f8c6",
+   "contract_id": "simigo.settlement-consumption",
+   "contract_version": "v1",
+   "declared_at": "814780750.89498198",
+   "demand_class": "exact-repeat",
+   "extract_field": "content",
+   "found": true,
+   "query": "k2 exact repeat 20261027-155850",
+   "required_identity_json": "{\"kind\":\"producer\",\"model\":\"0fa3a42ffb4367486a21f9f288486c2f9d19379cf68cf19c4a9c47c01fb5be53\",\"tokenizer\":\"1af280b51986e0568faf63cd3e87526b8830a420db0519e1a02f9f9d1ec63e71\"}",
+   "roots": [
+    "work-000000004154195b"
+   ],
+   "settlement_id": "85D17085-C3C1-4C49-9882-759B60DE3C66"
+  }
+ },
+ "block": {
+  "blocked_at": "2026-10-27T15:59:10+0800",
+  "blocked_at_ns": 1793087950911366000,
+  "moved_to": "/tmp/simigo-stage3-20261027-150733/isolation-cache/K2-155910/cache",
+  "marker_sha256": "737f30a8725b344f1aabb234c12aadfb5f7986f9a923f3709ae5a8c4a0245989",
+  "enforced": true,
+  "probe": {
+   "prefix-pool": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/prefix-pool",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   },
+   "branch-checkpoints": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/branch-checkpoints",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   }
+  }
+ },
+ "suspend_samples": [
+  {
+   "t": "15:59:20",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "15:59:30",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "15:59:40",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "15:59:50",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:00:00",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:00:10",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:00:20",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:00:30",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:00:40",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:00:50",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:01:00",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:01:10",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:01:21",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:01:31",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:01:41",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:01:51",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:02:01",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:02:11",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:02:21",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:02:31",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:02:41",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:02:51",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:03:01",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:03:11",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:03:21",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:03:31",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": []
+  },
+  {
+   "t": "16:03:41",
+   "block_enforced": true,
+   "prefix_pool_present": false,
+   "branch_checkpoints_present": false,
+   "lifecycle_lines": [
+    "[2026-10-27 16:03:37.238] [LIFECYCLE] suspend_done"
+   ]
+  }
+ ],
+ "suspend_seen": {
+  "t": "16:03:41",
+  "block_enforced": true,
+  "prefix_pool_present": false,
+  "branch_checkpoints_present": false,
+  "lifecycle_lines": [
+   "[2026-10-27 16:03:37.238] [LIFECYCLE] suspend_done"
+  ]
+ },
+ "trace_since_block": "[2026-10-27 16:03:37.238] [LIFECYCLE] suspend_done\n",
+ "counters_after_watch": {
+  "settlements": 8,
+  "execution_states": 5,
+  "settlement_bindings": 10,
+  "settlement_consumptions": 2,
+  "settlement_reuse_contracts": 2,
+  "checkpoints": 0,
+  "retrieval_settlements": 3,
+  "is_objects": 19,
+  "chat_messages": 6,
+  "chat_execution_links": 3,
+  "information_demands": 4,
+  "information_advancements": 5
+ },
+ "cache_after_phase_a": {
+  "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+  "kind": "regular-file",
+  "size": 70,
+  "sha256": "737f30a8725b344f1aabb234c12aadfb5f7986f9a923f3709ae5a8c4a0245989",
+  "children": {
+   "prefix-pool": {
+    "present": false,
+    "file_count": 0,
+    "total_bytes": 0,
+    "listing_sha256": null,
+    "files": [],
+    "kind": "absent"
+   },
+   "branch-checkpoints": {
+    "present": false,
+    "file_count": 0,
+    "total_bytes": 0,
+    "listing_sha256": null,
+    "files": [],
+    "kind": "absent"
+   }
+  }
+ }
+}

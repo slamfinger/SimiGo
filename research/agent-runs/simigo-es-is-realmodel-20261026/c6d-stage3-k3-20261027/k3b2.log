@@ -1,0 +1,6 @@
+[K3 17:43:33] phase b2 pid=['74450'] (pre-restart pid=['72481']) session=k3-source-20261027-174333
+[K3 17:43:36] source-chat-generation-k3 -> 200 2.030s gen=3 kv=2
+[K3 17:43:38] source settlement 1A990589-82D6-4E26-ADCC-79B648D87212 value='k3-SETTLED-20261027-174333'
+[K3 17:43:40] interrupted after 8 chunks, partial='INT-A01-202'
+[K3 17:44:00] rerun-from-anchor-adequate-budget -> 200 19.282s gen=3 kv=2
+[K3 17:44:02] phase b2 checks 16/17 failures=['rerun_mode_cold'] out_items=30/30 history=3

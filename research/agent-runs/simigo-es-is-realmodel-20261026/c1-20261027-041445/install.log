@@ -1,0 +1,13 @@
+== install 2026-10-27 04:16:29 ==
+src=/tmp/simigo_rel/Build/Products/Release/SimiGo.app
+src_exe_sha256=fe0e3d6634c40757e9bbb219444f7e78e804cc6f69abfccc777c86d024ad76c3
+old_pid=82529 
+old_pid_after_quit=
+installed_exe_sha256=fe0e3d6634c40757e9bbb219444f7e78e804cc6f69abfccc777c86d024ad76c3
+installed_exe_mtime=2026-10-27 04:16:31
+codesign_verify=ok
+Identifier=SwiftUI.SimiGo
+Signature=adhoc
+TeamIdentifier=not set
+first_run_marker_kept=yes
+launched

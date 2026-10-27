@@ -1,0 +1,187 @@
+{
+ "case": "K3a",
+ "nonce": "20261027-172231",
+ "started_at": "2026-10-27T17:22:31+0800",
+ "run_root": "/tmp/simigo-stage3-20261027-150733",
+ "kv_cache_root": "/tmp/simigo-stage3-20261027-150733/run/cache",
+ "root_id": "work-000000004154195b",
+ "steps": {
+  "source-chat-generation-k3": {
+   "label": "source-chat-generation-k3",
+   "path": "/v1/chat/completions",
+   "request": {
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "session_id": "k3-source-20261027-172231",
+    "max_tokens": 96,
+    "messages": [
+     {
+      "role": "system",
+      "content": "你是精确的标记输出器，只输出用户要求的那一行。"
+     },
+     {
+      "role": "user",
+      "content": "只输出这一行，不要解释：k3-SETTLED-20261027-172231"
+     }
+    ]
+   },
+   "status": 200,
+   "seconds": 3.538,
+   "body": {
+    "created": 1793092955,
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "object": "chat.completion",
+    "choices": [
+     {
+      "message": {
+       "role": "assistant",
+       "content": "k3-SETTLED-20261027-172231"
+      },
+      "finish_reason": "stop",
+      "index": 0
+     }
+    ],
+    "id": "chatcmpl-e802b274-6c75-4524-86ff-d678ae3b6d23"
+   },
+   "generation_lines": [
+    "[2026-10-27 17:22:31.861] [MLX] prefillStep=2048 est=311 reuse=false",
+    "[2026-10-27 17:22:34.629] [MLX] prefill 984/984",
+    "[2026-10-27 17:22:35.382] [MLX] session=172231/main messages=2 exec=052d29 history=3 delta=1 reuse=false ttft=2910ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=984 promptTime=2.9s tps=36.1 rawEv=22 rawB=26 emitB=26"
+   ],
+   "kv_lines": [
+    "[2026-10-27 17:22:35.381] [MLX] poolExportFailed err=Error Domain=NSCocoaErrorDomain Code=512 \"The file “cache” couldn’t be saved in the folder “run”.\" UserInfo={NSFilePath=/tmp/simigo-stage3-20261027-150733/run/cache, NSURL=file:///tmp/simigo-stage3-20261027-150733/run/cache, NSUnderlyingError=0x75f7eb3b10 {Error Domain=NSPOSIXErrorDomain Code=20 \"Not a directory\"}}",
+    "[2026-10-27 17:22:35.382] [MLX] action=checkpointFailed key=172231/main err=The file “cache” couldn’t be saved in the folder “run”."
+   ],
+   "trace_raw": "[2026-10-27 17:22:31.860] [PROTOCOL] arrive r=7c2cc4 endpoint=chat.completions stream=false agent=default s=k3-sou branch=main\n[2026-10-27 17:22:31.860] [LC] STATE_TRANSITION r=7c2cc4 s=k3-sou from=QUEUED to=RUNNING\n[2026-10-27 17:22:31.861] [MLX] sessionClientSplit key=172231/main#110aa5cc note=system-prompt client shard\n[2026-10-27 17:22:31.861] [MLX] prefillStep=2048 est=311 reuse=false\n[2026-10-27 17:22:34.629] [MLX] prefill 984/984\n[2026-10-27 17:22:35.381] [MLX] poolExportFailed err=Error Domain=NSCocoaErrorDomain Code=512 \"The file “cache” couldn’t be saved in the folder “run”.\" UserInfo={NSFilePath=/tmp/simigo-stage3-20261027-150733/run/cache, NSURL=file:///tmp/simigo-stage3-20261027-150733/run/cache, NSUnderlyingError=0x75f7eb3b10 {Error Domain=NSPOSIXErrorDomain Code=20 \"Not a directory\"}}\n[2026-10-27 17:22:35.382] [MLX] action=checkpointFailed key=172231/main err=The file “cache” couldn’t be saved in the folder “run”.\n[2026-10-27 17:22:35.382] [MLX] session=172231/main messages=2 exec=052d29 history=3 delta=1 reuse=false ttft=2910ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=984 promptTime=2.9s tps=36.1 rawEv=22 rawB=26 emitB=26\n[2026-10-27 17:22:35.383] [LC] RELEASED r=7c2cc4 s=k3-sou reason=completed\n",
+   "at": "2026-10-27T17:22:35+0800"
+  }
+ },
+ "app_state": {
+  "pids": [
+   "72481"
+  ],
+  "env": {
+   "SIMIGO_HOME": "/tmp/simigo-stage3-20261027-150733/run/home",
+   "SIMIGO_CACHE_ROOT": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "SIMIGO_STATE_GRAPH_STORE": "/tmp/simigo-stage3-20261027-150733/run/state-graph/reference-graph-v1.json"
+  },
+  "exe_sha256": "9ba486976d56de2b8614c2cb8537e2253955084e438a18c428838913a53c1a30",
+  "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"
+ },
+ "model_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+ "block_check": {
+  "enforced_before_repair": true,
+  "probe": {
+   "prefix-pool": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/prefix-pool",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   },
+   "branch-checkpoints": {
+    "path": "/tmp/simigo-stage3-20261027-150733/run/cache/branch-checkpoints",
+    "listdir_error": "NotADirectoryError(20, 'Not a directory')",
+    "makedirs_error": "NotADirectoryError(20, 'Not a directory')"
+   }
+  },
+  "cache": {
+   "path": "/tmp/simigo-stage3-20261027-150733/run/cache",
+   "kind": "regular-file",
+   "size": 70,
+   "sha256": "737f30a8725b344f1aabb234c12aadfb5f7986f9a923f3709ae5a8c4a0245989",
+   "children": {
+    "prefix-pool": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    },
+    "branch-checkpoints": {
+     "present": false,
+     "file_count": 0,
+     "total_bytes": 0,
+     "listing_sha256": null,
+     "files": [],
+     "kind": "absent"
+    }
+   }
+  }
+ },
+ "counters_before": {
+  "settlements": 14,
+  "execution_states": 9,
+  "settlement_bindings": 18,
+  "settlement_consumptions": 4,
+  "settlement_reuse_contracts": 2,
+  "checkpoints": 0,
+  "retrieval_settlements": 5,
+  "is_objects": 28,
+  "chat_messages": 10,
+  "chat_execution_links": 3,
+  "information_demands": 7,
+  "information_advancements": 9
+ },
+ "session_id": "k3-source-20261027-172231",
+ "carried_from_k2": {
+  "nonce": "20261027-155850",
+  "source_settlement": "85D17085-C3C1-4C49-9882-759B60DE3C66"
+ },
+ "anchor": {
+  "settlement_id": "F50752CB-AE67-4708-B997-82F9B38DB232",
+  "state_id": "chat-8fc8914a-8422-412b-81cf-c7946bcc0b1a",
+  "settled_at": "814785755.38228595",
+  "session_id": "k3-source-20261027-172231",
+  "marker": "k3-SETTLED-20261027-172231",
+  "generated_text": "k3-SETTLED-20261027-172231",
+  "settled_value": "k3-SETTLED-20261027-172231",
+  "payload_digest_ok": true,
+  "payload_digest": "4d5297d39b449651cd4c3e82fe3295b378fd3a528c2ea9590edc48d7c975a67f",
+  "generation_line_count": 3,
+  "marker_matched": true
+ },
+ "interrupted_prompt": "请逐行输出编号序列 INT-A01-20261027-172231 到 INT-A30-20261027-172231，每行一个，不要解释。",
+ "interrupted": {
+  "partial_text": "INT-A01-202",
+  "chunk_count": 8,
+  "seconds": 1.799,
+  "trace_raw": "[2026-10-27 17:22:37.838] [PROTOCOL] arrive r=1850d9 endpoint=chat.completions stream=true agent=default s=k3-sou branch=main\n[2026-10-27 17:22:37.838] [LC] STATE_TRANSITION r=1850d9 s=k3-sou from=QUEUED to=RUNNING\n[2026-10-27 17:22:37.838] [MLX] sessionClientSplit key=172231/main#33caca5f note=system-prompt client shard\n[2026-10-27 17:22:37.839] [MLX] prefillStep=2048 est=369 reuse=false\n[2026-10-27 17:22:38.949] [MLX] prefill 1122/1122\n[2026-10-27 17:22:39.214] [PROTOCOL] peerClosed r=1850d9\n[2026-10-27 17:22:39.214] [CANCEL] r=req-1850d9a2\n[2026-10-27 17:22:39.215] [MLX] cancelCommitSkip session=172231/main history=1 rawEv=8 rawB=11 emitB=11\n[2026-10-27 17:22:39.215] [LC] STATE_TRANSITION r=1850d9 s=k3-sou from=RUNNING to=CANCELLING\n[2026-10-27 17:22:39.215] [LC] STATE_TRANSITION r=1850d9 s=k3-sou from=CANCELLING to=DRAINING\n[2026-10-27 17:22:39.215] [LC] STATE_TRANSITION r=1850d9 s=k3-sou from=DRAINING to=RELEASING\n[2026-10-27 17:22:39.215] [LC] RELEASED r=1850d9 s=k3-sou reason=cancelled_by_client\n",
+  "generation_lines": [
+   "[2026-10-27 17:22:37.839] [MLX] prefillStep=2048 est=369 reuse=false",
+   "[2026-10-27 17:22:38.949] [MLX] prefill 1122/1122"
+  ],
+  "kv_lines": []
+ },
+ "session_immediately_after_interrupt": {
+  "chat_messages": [
+   {
+    "id": 11,
+    "session_id": "k3-source-20261027-172231",
+    "role": "user",
+    "content_len": 0,
+    "content_sha256": "6a6867db4965da7e36bc832f0bb2ea26bb6fb3de40634a337082de0f2e300626",
+    "content_object_id": "6a6867db4965da7e36bc832f0bb2ea26bb6fb3de40634a337082de0f2e300626",
+    "created_at": "814785751.85914004"
+   },
+   {
+    "id": 12,
+    "session_id": "k3-source-20261027-172231",
+    "role": "assistant",
+    "content_len": 0,
+    "content_sha256": "594b50dc5849cbf9dbd815673de3b20f41ba75fde7a47cd4290e410dace3fb91",
+    "content_object_id": "594b50dc5849cbf9dbd815673de3b20f41ba75fde7a47cd4290e410dace3fb91",
+    "created_at": "814785755.38174903"
+   },
+   {
+    "id": 13,
+    "session_id": "k3-source-20261027-172231",
+    "role": "user",
+    "content_len": 0,
+    "content_sha256": "c886f44403f0957de92c5f92272e4ff68d5c6e3a31f716d87e96d45a623d7c34",
+    "content_object_id": "c886f44403f0957de92c5f92272e4ff68d5c6e3a31f716d87e96d45a623d7c34",
+    "created_at": "814785757.83726203"
+   }
+  ],
+  "message_object_contents": [
+   {
+    "object_id": "6a6867db4965da7e36bc832f0bb2ea26bb6fb3de40634a337082de0f2e300626",
+    "content": 

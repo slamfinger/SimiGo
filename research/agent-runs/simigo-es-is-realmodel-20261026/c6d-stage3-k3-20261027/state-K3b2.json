@@ -1,0 +1,32 @@
+{
+ "nonce": "20261027-174333",
+ "session_id": "k3-source-20261027-174333",
+ "prompt": "请逐行输出编号序列 INT-A01-20261027-174333 到 INT-A30-20261027-174333，每行一个，不要解释。",
+ "anchor": {
+  "settlement_id": "1A990589-82D6-4E26-ADCC-79B648D87212",
+  "state_id": "chat-5185c9c0-6181-4727-9173-5da146827ff2",
+  "settled_at": "814787015.76918399",
+  "session_id": "k3-source-20261027-174333",
+  "marker": "k3-SETTLED-20261027-174333",
+  "generated_text": "k3-SETTLED-20261027-174333",
+  "settled_value": "k3-SETTLED-20261027-174333",
+  "payload_digest_ok": true,
+  "payload_digest": "109dae183b06e42e5d813e204aebfc75368ba4d107f35620887738b1dbc2aa71",
+  "generation_line_count": 3,
+  "marker_matched": true
+ },
+ "partial_text": "INT-A01-202",
+ "rerun_settlement": [
+  {
+   "settlement_id": "DAB3D7F6-C812-462E-B9E7-165B5BCC9E5D",
+   "state_id": "chat-e7ef75ff-4604-4411-8a46-03693d976493",
+   "contract_version": "simigo.result-contract/v1",
+   "validation_status": "VALID",
+   "validity": "valid",
+   "settled_at": "814787039.80438697"
+  }
+ ],
+ "pids": [
+  "74450"
+ ]
+}

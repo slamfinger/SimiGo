@@ -1,0 +1,67 @@
+{
+  "nonce": "20261026-203603",
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "sha256_sys_long": "864453410e8c8792882500f8e9c8ab20eaa22a47fa6160f83ba6e8d82fe80d98",
+  "probes": [
+    {
+      "probe": "P1_cold",
+      "session": "pc-20261026-203603-A",
+      "http": 200,
+      "seconds": 23.0,
+      "prompt_tokens": null,
+      "content": "Item 007: segment alpha-49 beta-2 gamma-21 carries a fixed invariant payload digest",
+      "trace": [
+        "[2026-10-26 20:36:04.263] [PROTOCOL] arrive r=d0e704 endpoint=chat.completions stream=false agent=default s=pc-202 branch=main",
+        "[2026-10-26 20:36:04.267] [MLX] sessionClientSplit key=A/main#cea42a01 note=system-prompt client shard",
+        "[2026-10-26 20:36:04.267] [MLX] prefillStep=2048 est=8170 reuse=false",
+        "[2026-10-26 20:36:20.909] [MLX] prefill 5697/9492",
+        "[2026-10-26 20:36:25.189] [MLX] prefill 9492/9492",
+        "[2026-10-26 20:36:26.831] [MLX] poolExport messages=3 refHash=51e28e219c58053f",
+        "[2026-10-26 20:36:26.990] [MLX] cacheSave session=A/main history=3",
+        "[2026-10-26 20:36:26.990] [MLX] session=A/main messages=2 exec=f9d0d2 history=3 delta=1 reuse=false ttft=21712ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=9492 promptTime=21.6s tps=35.1 rawEv=24 rawB=83 emitB=83",
+        "[2026-10-26 20:36:26.998] [LC] RELEASED r=d0e704 s=pc-202 reason=completed"
+      ]
+    },
+    {
+      "probe": "P2_crosssession_identical",
+      "session": "pc-20261026-203603-B",
+      "http": 200,
+      "seconds": 11.14,
+      "prompt_tokens": null,
+      "content": "Item 007: segment alpha-49 beta-2 gamma-21 carries a fixed invariant payload digest",
+      "trace": [
+        "[2026-10-26 20:36:27.252] [PROTOCOL] arrive r=3bf2a0 endpoint=chat.completions stream=false agent=default s=pc-202 branch=main",
+        "[2026-10-26 20:36:27.253] [MLX] sessionClientSplit key=B/main#cea42a01 note=system-prompt client shard",
+        "[2026-10-26 20:36:27.253] [MLX] prefillStep=2048 est=8141 reuse=false",
+        "[2026-10-26 20:36:32.822] [MLX] prefill 5688/9481",
+        "[2026-10-26 20:36:37.096] [MLX] prefill 9481/9481",
+        "[2026-10-26 20:36:38.003] [MLX] poolExport messages=3 refHash=36cc7b1a27b5a460",
+        "[2026-10-26 20:36:38.141] [MLX] cacheSave session=B/main history=3",
+        "[2026-10-26 20:36:38.142] [MLX] session=B/main messages=2 exec=f74cf8 history=3 delta=1 reuse=false ttft=9894ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=9481 promptTime=9.8s tps=34.5 rawEv=24 rawB=83 emitB=83",
+        "[2026-10-26 20:36:38.143] [LC] RELEASED r=3bf2a0 s=pc-202 reason=completed"
+      ]
+    },
+    {
+      "probe": "P3_samesession_append",
+      "session": "pc-20261026-203603-A",
+      "http": 200,
+      "seconds": 11.49,
+      "prompt_tokens": null,
+      "content": "Item 011: segment alpha-77 beta-54 gamma-33 carries a fixed invariant payload",
+      "trace": [
+        "[2026-10-26 20:36:38.285] [PROTOCOL] arrive r=97cd16 endpoint=chat.completions stream=false agent=default s=pc-202 branch=main",
+        "[2026-10-26 20:36:38.287] [MLX] reuseMiss count=true fp=true prefix=false history=3 incoming=4 fpHistory=- fpIncoming=-",
+        "[2026-10-26 20:36:38.287] [MLX] prefixMismatch index=1 role=user historyTool=false incomingTool=false history=3 incoming=4",
+        "[2026-10-26 20:36:38.287] [MLX] prefixDiff index=1 stored(role=user,tool=0,len=3991,fp=65146c52) incoming(role=user,tool=0,len=70,fp=1aa2b72a) commonPrefix=70 stored='rt sentence.  [Informati' incoming='rt sentence.'",
+        "[2026-10-26 20:36:38.288] [MLX] sessionClientSplit key=A/main#cea42a01 note=system-prompt client shard",
+        "[2026-10-26 20:36:38.288] [MLX] prefillStep=2048 est=8195 reuse=false",
+        "[2026-10-26 20:36:44.078] [MLX] prefill 5862/9769",
+        "[2026-10-26 20:36:48.573] [MLX] prefill 9769/9769",
+        "[2026-10-26 20:36:49.479] [MLX] poolExport messages=5 refHash=25287094bc102997",
+        "[2026-10-26 20:36:49.634] [MLX] cacheSave session=A/main history=5",
+        "[2026-10-26 20:36:49.635] [MLX] session=A/main messages=4 exec=5ae79e history=5 delta=1 reuse=false ttft=10327ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=9769 promptTime=10.3s tps=33.8 rawEv=24 rawB=77 emitB=77",
+        "[2026-10-26 20:36:49.636] [LC] RELEASED r=97cd16 s=pc-202 reason=completed"
+      ]
+    }
+  ]
+}

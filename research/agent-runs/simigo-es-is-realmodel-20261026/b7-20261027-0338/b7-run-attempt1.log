@@ -1,0 +1,16 @@
+[B7 03:46:24] service ready model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX
+[B7 03:46:53] source-chat-generation -> 200 28.464s generation_lines=3
+[B7 03:46:55] source settlement DB9C52F7-6982-46F8-B760-55395F5FCA5F value='B7-SETTLED-20261027-034624'
+[B7 03:46:55] contract declared digest=598934a5651836c4
+[B7 03:46:56] consume-positive -> 200 0.069s generation_lines=0
+[B7 03:46:56] consume-second-request -> 200 0.048s generation_lines=0
+[B7 03:46:57] consumption checks: {"status_200": true, "model_calls_zero": true, "store_false": true, "text_is_settled_value": true, "no_generation_lines": true, "no_kv_files_created": true, "second_request_200": true, "second_request_zero_calls": true, "second_request_no_generation": true, "model_output_stats_unchanged": true}
+[B7 03:46:57] restored directories identical={'prefix_pool': True, 'branch_checkpoints': True}
+[B7 03:46:58] refuse-malformed-bad-contract -> 422 0.001s generation_lines=0
+[B7 03:46:58] refuse-unknown-source -> 422 0.053s generation_lines=0
+[B7 03:46:58] refuse-identity-mismatch -> 422 0.024s generation_lines=0
+[B7 03:46:59] refuse-changed-query -> 422 0.055s generation_lines=0
+[B7 03:46:59] refuse-streaming -> 501 0.003s generation_lines=0
+[B7 03:47:00] refuse-malformed-missing-contract -> 400 0.002s generation_lines=0
+[B7 03:47:00] refusals: {"refuse-malformed-bad-contract": true, "refuse-unknown-source": true, "refuse-identity-mismatch": true, "refuse-changed-query": true, "refuse-streaming": true, "refuse-malformed-missing-contract": false}
+REFUSAL_MATRIX_FAILED

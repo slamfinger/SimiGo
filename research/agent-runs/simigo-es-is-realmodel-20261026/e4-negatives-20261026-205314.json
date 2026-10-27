@@ -1,0 +1,268 @@
+{
+  "started_at": "2026-10-26T20:52:31+0800",
+  "build": {
+    "bundle_version": "26",
+    "exe_sha256_prefix": "fbe416775657454c",
+    "source_head": "97043902075b67eb1693749fd6ed50421eccf3ba"
+  },
+  "model": "simigo",
+  "steps": {
+    "preflight": {
+      "disk_sha": "e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394",
+      "is_file_http": 200,
+      "settled_sha": "e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394",
+      "object_id": null,
+      "settled_bytes_in_db": false,
+      "match": true
+    },
+    "N1_missing_settlement": {
+      "file_never_seen": [
+        404,
+        {
+          "error": "FILE_NOT_SETTLED",
+          "detail": "work-000000008a721251/marker_missing_ZZ.txt"
+        }
+      ],
+      "file_removed_from_root": [
+        404,
+        {
+          "detail": "work-000000008a721251/marker_gamma_4K_NEVER_SETTLED.txt",
+          "error": "FILE_NOT_SETTLED"
+        }
+      ],
+      "object_unknown_id": [
+        404,
+        {
+          "error": "OBJECT_NOT_FOUND",
+          "detail": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "object_digest_not_an_object": [
+        404,
+        {
+          "error": "OBJECT_NOT_FOUND",
+          "detail": "e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394"
+        }
+      ],
+      "dependency_unknown": [
+        404,
+        {
+          "error": "DEPENDENCY_NOT_FOUND",
+          "detail": "file:work-000000008a721251/marker_missing_ZZ.txt"
+        }
+      ]
+    },
+    "N2_tamper_applied": {
+      "tampered_sha": "4f0ee67468e378acdfc1dd69f748bd5427a279a2845fe48e8c8cbb58475ee3c8",
+      "size_before": 150,
+      "size_after": 238,
+      "is_file_after_tamper": [
+        404,
+        {
+          "error": "FILE_NOT_SETTLED",
+          "detail": "work-000000008a721251/marker_alpha_7Q.txt"
+        }
+      ],
+      "is_object_after_tamper": [
+        404,
+        {
+          "detail": "e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394",
+          "error": "OBJECT_NOT_FOUND"
+        }
+      ],
+      "dependency_after_tamper": [
+        200,
+        {
+          "dependency_id": "file:work-000000008a721251/marker_alpha_7Q.txt",
+          "current": {
+            "dependency_id": "file:work-000000008a721251/marker_alpha_7Q.txt",
+            "reason": "content-settle",
+            "append_order": 6718,
+            "content_address": "ad9c563851541d7f1886d70f7696f8b1147336b8f3f375299d5c62de516ec9a5",
+            "revision": 1,
+            "recorded_at": "814707947.73150003"
+          },
+          "history": [
+            {
+              "append_order": 6718,
+              "revision": 1,
+              "recorded_at": "814707947.73150003",
+              "reason": "content-settle",
+              "content_address": "ad9c563851541d7f1886d70f7696f8b1147336b8f3f375299d5c62de516ec9a5",
+              "dependency_id": "file:work-000000008a721251/marker_alpha_7Q.txt"
+            }
+          ]
+        }
+      ],
+      "deep_status_after_tamper": [
+        200,
+        {
+          "unaddressed_file_contents": 0,
+          "unaddressed_retrieval_results": 0,
+          "unaddressed_chat_messages": 0,
+          "object_bytes": 2047843,
+          "corrupt_objects": 0,
+          "inline_legacy_payloads": 0,
+          "dependency_entries": 10245,
+          "schema_version": 10,
+          "index_entries": 719,
+          "dangling_references": 0,
+          "deep_verified": true,
+          "unaddressed_settlements": 0,
+          "object_count": 534,
+          "settlement_summaries": 21
+        }
+      ]
+    },
+    "N4_es_retrieval_before_es_turn": [],
+    "N4_es_turn_settled_query": {
+      "http": 200,
+      "usage": null,
+      "answer": "提供的信息中未包含阿尔法-7Q记录或三种钻机适用地层的具体内容，无法回答。",
+      "error": null,
+      "trace": [
+        "[2026-10-26 20:52:31.894] [PROTOCOL] arrive r=f7f7fe endpoint=chat.completions stream=false agent=default s=e4-tam branch=main",
+        "[2026-10-26 20:52:39.070] [MLX] prefillStep=2048 est=840 reuse=false",
+        "[2026-10-26 20:52:57.889] [MLX] prefill 1371/1371",
+        "[2026-10-26 20:53:05.983] [MLX] poolExport messages=2 refHash=8f9d9754a338367a",
+        "[2026-10-26 20:53:06.046] [MLX] cacheSave session=cache/main history=2",
+        "[2026-10-26 20:53:06.046] [MLX] session=cache/main messages=1 exec=48bc20 history=2 delta=1 reuse=false ttft=25630ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=1371 promptTime=25.6s tps=18.1 rawEv=22 rawB=105 emitB=105",
+        "[2026-10-26 20:53:06.054] [LC] RELEASED r=f7f7fe s=e4-tam reason=completed"
+      ]
+    },
+    "N4_es_turn_fresh_query": {
+      "http": 200,
+      "usage": null,
+      "answer": "提供的信息中未包含阿尔法-7Q记录或实测砂层厚度的具体内容，无法回答。",
+      "error": null,
+      "trace": [
+        "[2026-10-26 20:53:06.629] [PROTOCOL] arrive r=135964 endpoint=chat.completions stream=false agent=default s=e4-tam branch=main",
+        "[2026-10-26 20:53:06.630] [MLX] prefillStep=2048 est=2320 reuse=false",
+        "[2026-10-26 20:53:09.660] [MLX] prefill 2453/2453",
+        "[2026-10-26 20:53:10.567] [MLX] poolExport messages=2 refHash=bc0e086e4a38f235",
+        "[2026-10-26 20:53:10.663] [MLX] cacheSave session=fresh/main history=2",
+        "[2026-10-26 20:53:10.663] [MLX] session=fresh/main messages=1 exec=1b696f history=2 delta=1 reuse=false ttft=3082ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2453 promptTime=3.0s tps=28.8 rawEv=22 rawB=99 emitB=99",
+        "[2026-10-26 20:53:10.665] [LC] RELEASED r=135964 s=e4-tam reason=completed"
+      ]
+    },
+    "N4_es_retrieval_after_es_turns": [
+      {
+        "demand_id": "8337a5d6a13777d02b388743cd0f456e62d550ca36e5ff338e3b547e62e8755c",
+        "hit_count": 30,
+        "status": "valid",
+        "result_object_id": "c7801c2d07b2a69b9271a92e00c655627a03ca8db1a755cac7ba71d867d2d3e6"
+      },
+      {
+        "demand_id": "01d5fb8d060deee9394ade36d35739cb628604237069f0f973252a12b0d3399a",
+        "hit_count": 13,
+        "status": "valid",
+        "result_object_id": "2645b15c8dba590633f23444e9089a1b31230b7ff9580e0efc58067c52abae56"
+      }
+    ],
+    "N4_trace_window": [
+      "[2026-10-26 20:52:31.894] [PROTOCOL] arrive r=f7f7fe endpoint=chat.completions stream=false agent=default s=e4-tam branch=main",
+      "[2026-10-26 20:52:39.070] [MLX] prefillStep=2048 est=840 reuse=false",
+      "[2026-10-26 20:52:57.889] [MLX] prefill 1371/1371",
+      "[2026-10-26 20:53:05.983] [MLX] poolExport messages=2 refHash=8f9d9754a338367a",
+      "[2026-10-26 20:53:06.046] [MLX] cacheSave session=cache/main history=2",
+      "[2026-10-26 20:53:06.046] [MLX] session=cache/main messages=1 exec=48bc20 history=2 delta=1 reuse=false ttft=25630ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=1371 promptTime=25.6s tps=18.1 rawEv=22 rawB=105 emitB=105",
+      "[2026-10-26 20:53:06.054] [LC] RELEASED r=f7f7fe s=e4-tam reason=completed",
+      "[2026-10-26 20:53:06.629] [PROTOCOL] arrive r=135964 endpoint=chat.completions stream=false agent=default s=e4-tam branch=main",
+      "[2026-10-26 20:53:06.630] [MLX] prefillStep=2048 est=2320 reuse=false",
+      "[2026-10-26 20:53:09.660] [MLX] prefill 2453/2453",
+      "[2026-10-26 20:53:10.567] [MLX] poolExport messages=2 refHash=bc0e086e4a38f235",
+      "[2026-10-26 20:53:10.663] [MLX] cacheSave session=fresh/main history=2",
+      "[2026-10-26 20:53:10.663] [MLX] session=fresh/main messages=1 exec=1b696f history=2 delta=1 reuse=false ttft=3082ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=2453 promptTime=3.0s tps=28.8 rawEv=22 rawB=99 emitB=99",
+      "[2026-10-26 20:53:10.665] [LC] RELEASED r=135964 s=e4-tam reason=completed"
+    ],
+    "N2_after_restore": {
+      "disk_sha_matches_settled": true,
+      "is_file_after_restore": [
+        200,
+        {
+          "path": "marker_alpha_7Q.txt",
+          "payload": "阿尔法-7Q 施工记录：旋挖钻机在砂层成孔需加厚泥浆，冲击钻适用硬岩，回旋钻适合黏土。结论编号 ALPHA-7Q-ONE。\n",
+          "object_id": null,
+          "encoding": "utf8",
+          "status": "present",
+          "settled_at": "814707947.73085797",
+          "root_id": "work-000000008a721251",
+          "payload_size": 150,
+          "content_sha256": "e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394"
+        }
+      ]
+    },
+    "N3_identity_mismatch": {
+      "correct_path_wrong_root": [
+        404,
+        {
+          "error": "FILE_NOT_SETTLED",
+          "detail": "work-00000000b2f5467d/marker_alpha_7Q.txt"
+        }
+      ],
+      "settled_digest_as_object_id": [
+        404,
+        {
+          "error": "OBJECT_NOT_FOUND",
+          "detail": "e1216e4a3a8fd57ed9386ace70ab351b182104f759758defa89b0ab57584e394"
+        }
+      ],
+      "foreign_root_dependency": [
+        404,
+        {
+          "error": "DEPENDENCY_NOT_FOUND",
+          "detail": "file:work-00000000ffffffff/marker_alpha_7Q.txt"
+        }
+      ],
+      "path_traversal_rejected": [
+        404,
+        {
+          "detail": "work-000000008a721251/../../../../etc/hosts",
+          "error": "FILE_NOT_SETTLED"
+        }
+      ],
+      "es_cross_namespace_bind": {
+        "http": 200,
+        "usage": null,
+        "answer": "旋挖钻机适用砂层，冲击钻适用硬岩，回旋钻适合黏土。",
+        "error": null,
+        "trace": [
+          "[2026-10-26 20:53:11.258] [PROTOCOL] arrive r=426250 endpoint=chat.completions stream=false agent=default s=e4-cro branch=main",
+          "[2026-10-26 20:53:11.259] [MLX] prefillStep=2048 est=968 reuse=false",
+          "[2026-10-26 20:53:13.090] [MLX] prefill 1567/1567",
+          "[2026-10-26 20:53:14.015] [MLX] poolExport messages=2 refHash=df8072048b340c1a",
+          "[2026-10-26 20:53:14.083] [MLX] cacheSave session=alpha/main history=2",
+          "[2026-10-26 20:53:14.084] [MLX] session=alpha/main messages=1 exec=6befaf history=2 delta=1 reuse=false ttft=2024ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=1567 promptTime=2.0s tps=28.8 rawEv=19 rawB=75 emitB=75",
+          "[2026-10-26 20:53:14.085] [LC] RELEASED r=426250 s=e4-cro reason=completed"
+        ]
+      }
+    },
+    "N3_pool_namespace_rows": {
+      "namespaces": [
+        "44eaa202ce92e06d"
+      ],
+      "entries": [
+        "44eaa202ce92e06d/df8072048b340c1a-4.json",
+        "44eaa202ce92e06d/e3d83a74aa53a31b-12.json",
+        "44eaa202ce92e06d/2d5ee8a5a7735336-6.json",
+        "44eaa202ce92e06d/51e28e219c58053f-6.json",
+        "44eaa202ce92e06d/25287094bc102997-10.json",
+        "44eaa202ce92e06d/36cc7b1a27b5a460-6.json",
+        "44eaa202ce92e06d/a34791c73ce7ed6f-8.json",
+        "44eaa202ce92e06d/ffbe4f1833fcc65b-12.json",
+        "44eaa202ce92e06d/bc0e086e4a38f235-4.json",
+        "44eaa202ce92e06d/b984a213b05f6981-8.json",
+        "44eaa202ce92e06d/9b0596748111a969-8.json",
+        "44eaa202ce92e06d/e4890e3f1b45e353-12.json",
+        "44eaa202ce92e06d/8f9d9754a338367a-4.json",
+        "44eaa202ce92e06d/1127226b50caa01f-12.json",
+        "44eaa202ce92e06d/10b34e0fcc8f17e7-6.json",
+        "44eaa202ce92e06d/2a566a9bf35102ff-8.json",
+        "44eaa202ce92e06d/14851ea2796d8cfb-8.json",
+        "44eaa202ce92e06d/9a90d216dd6ff0ca-8.json",
+        "44eaa202ce92e06d/55a4d1b00d691eb0-8.json"
+      ]
+    }
+  },
+  "finished_at": "2026-10-26T20:53:14+0800"
+}

@@ -1,0 +1,10 @@
+== install 2026-10-27 03:40:24 ==
+old_pid=29564 
+hdiutil: WARNING: 'hdiutil detach ...' is deprecated. Please use 'diskutil eject ...' instead.
+installed_exe_sha256=83635c736d7f913ebc63ffacbed29edbeb98ccc02e699d1ab11a870f02e32b89
+codesign_verify=ok
+Identifier=SwiftUI.SimiGo
+Signature=adhoc
+TeamIdentifier=not set
+first_run_marker_kept=yes
+launched

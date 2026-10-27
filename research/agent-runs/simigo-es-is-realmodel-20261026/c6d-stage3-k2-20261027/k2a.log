@@ -1,0 +1,12 @@
+[K2 15:58:50] phase a pid=['65911'] model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX cache=directory
+[K2 15:59:08] source-chat-generation-k2 -> 200 17.595s gen=3 kv=4
+[K2 15:59:10] source settlement 85D17085-C3C1-4C49-9882-759B60DE3C66 value='k2-SETTLED-20261027-155850'
+[K2 15:59:10] contract declared digest=40f19c4abf50ce54
+[K2 15:59:10] KV blocked enforced=True
+[K2 15:59:20] waiting for idle suspend: 10s enforced=True
+[K2 16:00:20] waiting for idle suspend: 70s enforced=True
+[K2 16:01:21] waiting for idle suspend: 130s enforced=True
+[K2 16:02:21] waiting for idle suspend: 190s enforced=True
+[K2 16:03:21] waiting for idle suspend: 250s enforced=True
+[K2 16:03:41] idle suspend observed at 16:03:41
+[K2 16:03:41] phase a done suspend_seen=True block left in place
