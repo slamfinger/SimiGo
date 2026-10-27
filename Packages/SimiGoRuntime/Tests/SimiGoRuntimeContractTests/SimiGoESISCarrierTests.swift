@@ -118,7 +118,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(row?.createdOrder, 1)
 
         let report = try db.carrierReport(deepVerify: true)
-        XCTAssertEqual(report.schemaVersion, 8)
+        XCTAssertEqual(report.schemaVersion, 13)
         XCTAssertEqual(report.objectCount, 1)
         XCTAssertEqual(report.objectBytes, Int64(data.count))
         XCTAssertEqual(report.corruptObjects, 0)
@@ -324,7 +324,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(try db.schemaVersion(), 7)
 
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 8)
+        XCTAssertEqual(try db.schemaVersion(), 13)
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedFileContents, 0)
@@ -334,7 +334,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(report.inlineLegacyPayloads, 0)
         XCTAssertEqual(report.danglingReferences, 0)
         XCTAssertEqual(report.corruptObjects, 0)
-        XCTAssertEqual(report.objectCount, 4)
+        XCTAssertEqual(report.objectCount, 5)  // payload + backed-up summary object
         XCTAssertEqual(report.dependencyEntries, 1, "file backfill appends a provenance revision")
 
         XCTAssertEqual(try db.searchSettledContent(query: "legacy").first?.relativePath, "a.md")
@@ -446,6 +446,33 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(forced.scanned, 1)
     }
 
+    func testReconcileConvertsCarriedRowsToIndexOnly() throws {
+        let (url, db) = try open("reconcile-index-only")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("needle bytes", to: root, name: "a.md")
+        try db.upsertRoot(rootID: "work", category: "work",
+                          displayName: root.path, locatorType: "path", status: "present")
+        let carried = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: true)
+        XCTAssertGreaterThan(carried.bytesAddressed, 0)
+
+        let report = try db.reconcileRegisteredRoots()
+        XCTAssertEqual(report.settledRoots, 1)
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM file_contents WHERE object_id IS NOT NULL;"), "0",
+            "reconcile settles index-only by default and drops the copied bytes")
+
+        // The locator still answers: the digest is re-verified on every read.
+        let hits = try db.searchSettledContent(query: "needle", rootID: "work")
+        XCTAssertEqual(hits.map { $0.relativePath }, ["a.md"])
+        XCTAssertEqual(try db.carrierReport().unaddressedFileContents, 0,
+                       "index-only rows are addressed by their metadata record")
+    }
+
     func testReconcileMarksMissingRootWithoutClearingContent() throws {
         let (url, db) = try open("missing-root")
         let root = try makeWorkRoot()
@@ -537,5 +564,110 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(content.status, "present")
         XCTAssertTrue(db.verifyObject(try XCTUnwrap(content.objectID)))
         XCTAssertNil(try db.carriedFileContent(rootID: "work", relativePath: "missing.md"))
+    }
+
+    // MARK: - Goal step 4 / injection (a): dependency change is a LOCAL closure
+
+    /// Append bytes to file A, re-settle, and prove the invalidation closure is
+    /// exactly A's dependents: A's dependency revision for `file:<root>/A`
+    /// increments (append-only history), only A-linked settlements flip to
+    /// invalid, and the unchanged sibling B keeps revision 1, the same content
+    /// address and the same verified settled bytes. The changed settlement is
+    /// then refused (not reused) by the IS read paths.
+    func testAppendToDependencyFileIncrementsRevisionAndLeavesUnchangedSiblingIntact() throws {
+        let (url, db) = try open("append-sibling")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("A-v1", to: root, name: "A")
+        try write("B-stable", to: root, name: "B")
+        try db.upsertRoot(rootID: "workA", category: "work",
+                          displayName: root.path, locatorType: "path", status: "present")
+        _ = try db.settleWorkRootContents(rootID: "workA", rootURL: root)
+
+        let sA = try mkSettlement(db, stateID: "S-APP-A", value: "a")
+        let sB = try mkSettlement(db, stateID: "S-APP-B", value: "b")
+        try db.linkSettlementToExternalFile(settlementID: sA, binding: "content",
+                                            rootID: "workA", relativePath: "A")
+        try db.linkSettlementToExternalFile(settlementID: sB, binding: "content",
+                                            rootID: "workA", relativePath: "B")
+
+        let depA = "file:workA/A", depB = "file:workA/B"
+        XCTAssertEqual(try db.dependencyHistory(depA).map { $0.revision }, [1])
+        XCTAssertEqual(try db.dependencyHistory(depA).first?.reason, "content-settle")
+        let bHistoryBefore = try db.dependencyHistory(depB)
+        XCTAssertEqual(bHistoryBefore.map { $0.revision }, [1])
+        let bObjectBefore = try XCTUnwrap(db.resolveIndexIdentity(depB)).objectID
+        let oldAAddress = try XCTUnwrap(db.resolveIndexIdentity(depA)).objectID
+
+        // Dependency change: append bytes to A only.
+        let aURL = root.appendingPathComponent("A")
+        var appended = try Data(contentsOf: aURL)
+        appended.append(Data("-appended".utf8))
+        try appended.write(to: aURL)
+
+        let update = try db.settleWorkRootContents(rootID: "workA", rootURL: root)
+        XCTAssertEqual(update.changed, 1, "only A re-settled")
+        XCTAssertEqual(update.reused, 1, "unchanged B is reused, never re-settled")
+        XCTAssertEqual(update.invalidatedSettlements, 1,
+                       "invalidation closure reports exactly the affected settlement")
+        XCTAssertEqual(try db.settlementValidity(sA), "invalid")
+        XCTAssertEqual(try db.settlementValidity(sB), "valid",
+                       "B's settlement survives: the closure does not leak")
+
+        // A: append-only history, revision incremented.
+        let aHistory = try db.dependencyHistory(depA)
+        XCTAssertEqual(aHistory.map { $0.revision }, [1, 2])
+        XCTAssertEqual(aHistory.map { $0.reason }, ["content-settle", "content-update"])
+        let newAAddress = try XCTUnwrap(db.resolveIndexIdentity(depA)).objectID
+        XCTAssertNotEqual(newAAddress, oldAAddress)
+
+        // B: untouched dependency revision AND untouched settled content.
+        XCTAssertEqual(try db.dependencyHistory(depB), bHistoryBefore,
+                       "B's ledger row is byte-for-byte unchanged")
+        XCTAssertEqual(try XCTUnwrap(db.resolveIndexIdentity(depB)).objectID, bObjectBefore)
+        let carriedB = try XCTUnwrap(
+            db.carriedFileContent(rootID: "workA", relativePath: "B"))
+        XCTAssertEqual(carriedB.content, Data("B-stable".utf8))
+        XCTAssertEqual(carriedB.contentSHA256, NativeSHA256.hexDigest(carriedB.content))
+        XCTAssertTrue(db.verifyObject(bObjectBefore))
+
+        // The stale result is refused, not reused: the retrieval settlement
+        // citing the old A revision is invalidated and the demand re-executes.
+        XCTAssertEqual(try rawText(url, """
+        SELECT status FROM retrieval_settlements;
+        """), "", "no retrieval settlement exists before any demand")
+        let demand1 = try db.executeInformationDemand(query: "A-v1", rootID: "workA")
+        XCTAssertEqual(demand1.hits.count, 1)
+        XCTAssertEqual(try rawText(url, """
+        SELECT status FROM retrieval_settlements WHERE demand_id='\(demand1.demandID)';
+        """), "valid")
+
+        // Re-settle with A unchanged again: no new revision, nothing invalidated;
+        // the settled demand result is still reusable (valid revision).
+        let repeat1 = try db.settleWorkRootContents(rootID: "workA", rootURL: root)
+        XCTAssertEqual(repeat1.changed, 0)
+        XCTAssertEqual(repeat1.invalidatedSettlements, 0)
+        let demand2 = try db.executeInformationDemand(query: "A-v1", rootID: "workA")
+        XCTAssertTrue(demand2.reused,
+                      "a current-revision settlement is reused exactly once more")
+
+        // Now change A again: the demand's dependency revision goes stale and
+        // the retrieval settlement is invalidated, so the old result must NOT
+        // be served as valid.
+        try write("A-v3", to: root, name: "A")
+        _ = try db.settleWorkRootContents(rootID: "workA", rootURL: root)
+        XCTAssertEqual(try rawText(url, """
+        SELECT status FROM retrieval_settlements WHERE demand_id='\(demand1.demandID)';
+        """), "invalidated")
+        let demand3 = try db.executeInformationDemand(query: "A-v1", rootID: "workA")
+        XCTAssertFalse(demand3.reused,
+                       "a stale-settlement result is never reused as valid")
+        XCTAssertTrue(demand3.hits.isEmpty,
+                      "the stale bytes are not cited as a valid settlement")
+
+        XCTAssertTrue(try db.integrityCheck())
     }
 }

@@ -19,6 +19,11 @@ public enum SimiGoSettlementIdentityBinding {
     /// them disjoint from contract constraint bindings written by the native gate.
     public static let modelKey = "producer.model_identity"
     public static let tokenizerKey = "producer.tokenizer_identity"
+    /// A derived consumption is not model output: it binds the engine that
+    /// consumed the value, under a namespace that can never be read as a
+    /// producer claim.
+    public static let consumerModelKey = "consumer.model_identity"
+    public static let consumerTokenizerKey = "consumer.tokenizer_identity"
 
     /// The identity a producer publishes and a consumer must match. Both members
     /// are the product's own identity strings (`modelIdentity(fromPath:)` /
@@ -75,6 +80,13 @@ public enum SimiGoSettlementIdentityBinding {
         [modelKey: digest(identity.model), tokenizerKey: digest(identity.tokenizer)]
     }
 
+    /// The binding rows a DERIVED_CONSUMPTION row carries: the consuming
+    /// engine's identity, never a producer claim.
+    public static func consumerBindings(for identity: Identity) -> [String: String] {
+        [consumerModelKey: digest(identity.model),
+         consumerTokenizerKey: digest(identity.tokenizer)]
+    }
+
     /// Compare what the Information Space recorded against the consumer's own
     /// identity. Fail-closed: an absent binding is a refusal, not a pass, so a
     /// settlement written by an older producer can never be consumed silently.
@@ -101,6 +113,37 @@ public enum SimiGoSettlementIdentityBinding {
         }
         return Verdict(status: .ok, code: nil,
                        detail: "settlement bound to this model and tokenizer",
+                       boundModel: true, boundTokenizer: true)
+    }
+
+    /// Compare the CONSUMER identity a derived consumption recorded against the
+    /// engine that wants to continue from it. Same fail-closed rule: an absent
+    /// binding is a refusal, not a pass.
+    public static func evaluateConsumer(
+        recorded: [String: String], consumer: Identity
+    ) -> Verdict {
+        guard let model = recorded[consumerModelKey], !model.isEmpty else {
+            return Verdict(status: .blocked, code: Refusal.modelAbsent.rawValue,
+                           detail: "derived settlement carries no \(consumerModelKey) binding",
+                           boundModel: false, boundTokenizer: false)
+        }
+        guard model == digest(consumer.model) else {
+            return Verdict(status: .blocked, code: Refusal.modelMismatch.rawValue,
+                           detail: "derived settlement was consumed by a different model identity",
+                           boundModel: false, boundTokenizer: false)
+        }
+        guard let tokenizer = recorded[consumerTokenizerKey], !tokenizer.isEmpty else {
+            return Verdict(status: .blocked, code: Refusal.tokenizerAbsent.rawValue,
+                           detail: "derived settlement carries no \(consumerTokenizerKey) binding",
+                           boundModel: true, boundTokenizer: false)
+        }
+        guard tokenizer == digest(consumer.tokenizer) else {
+            return Verdict(status: .blocked, code: Refusal.tokenizerMismatch.rawValue,
+                           detail: "derived settlement was consumed by a different tokenizer identity",
+                           boundModel: true, boundTokenizer: false)
+        }
+        return Verdict(status: .ok, code: nil,
+                       detail: "derived settlement bound to this consumer model and tokenizer",
                        boundModel: true, boundTokenizer: true)
     }
 }

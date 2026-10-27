@@ -28,12 +28,36 @@ public enum SimiGoISAdmission {
         public let recoveredValue: String
         /// Values the native result-contract gate may bind against for the new ES.
         public let verifiedBindings: [String: NativeContractValue]
+        /// The prefix-representation binding rows (`kv.*`) the producer settled
+        /// alongside this record, as name -> digest. Empty when the settlement
+        /// claimed no KV representation — the safe default: a KV restore then has
+        /// no authority to act on and must fall back to a cold prefill.
+        ///
+        /// This is the read half of A-2: the KV boundary a continuation is allowed
+        /// to reuse is the one IS already verified (digest, validity, dependency
+        /// closure, producer identity), never one the engine infers on its own.
+        public let kvBindings: [String: String]
+
+        public init(
+            settlementID: String,
+            payloadDigest: String,
+            recoveredValue: String,
+            verifiedBindings: [String: NativeContractValue],
+            kvBindings: [String: String] = [:]
+        ) {
+            self.settlementID = settlementID
+            self.payloadDigest = payloadDigest
+            self.recoveredValue = recoveredValue
+            self.verifiedBindings = verifiedBindings
+            self.kvBindings = kvBindings
+        }
     }
 
     /// Stable, fail-closed refusal reasons. Each carries enough identity to
     /// audit which settlement/state was refused and why.
     public enum Refusal: Error, Equatable, CustomStringConvertible {
         case noSettlement(stateID: String)
+        case unknownSettlement(settlementID: String)
         case digestMismatch(settlementID: String)
         case invalidated(settlementID: String)
         case dependencyMissing(settlementID: String, dependency: String)
@@ -45,6 +69,8 @@ public enum SimiGoISAdmission {
             switch self {
             case .noSettlement(let s):
                 return "no settled IS record for state \(s)"
+            case .unknownSettlement(let s):
+                return "no settled IS record with id \(s)"
             case .digestMismatch(let s):
                 return "settlement \(s) payload/digest verification failed (tamper)"
             case .invalidated(let s):
@@ -88,17 +114,36 @@ public enum SimiGoISAdmission {
         guard let settlementID = try db.latestSettlementID(forStateID: stateID) else {
             throw Refusal.noSettlement(stateID: stateID)
         }
-        // 2. its receipt row (payload + recorded digest).
-        let rows = try db.readSettlementReceipts()
-        guard let row = rows.first(where: { $0.id.uuidString == settlementID }) else {
-            throw Refusal.noSettlement(stateID: stateID)
+        return try admit(
+            db: db, settlementID: settlementID, consumer: consumer,
+            bindingName: bindingName, valueField: valueField)
+    }
+
+    /// Verify an EXPLICITLY NAMED settlement. A consumer that reuses a settled
+    /// unit must name it: "the newest settlement for that state" is a different
+    /// (and possibly ambiguous) lookup. The checks are the same ones the
+    /// state-based entry runs, so there is exactly one admission authority.
+    public static func admit(
+        db: SimiGoESISDatabase,
+        settlementID: String,
+        consumer: SimiGoSettlementIdentityBinding.Identity,
+        bindingName: String = "next_input",
+        valueField: String = "content"
+    ) throws -> Admitted {
+        // 2. its receipt row (payload + recorded digest + producer/derivation status).
+        guard let row = try db.settlementAdmissionRow(settlementID: settlementID),
+            row.validationStatus != "MIGRATED_LEGACY"
+        else {
+            throw Refusal.unknownSettlement(settlementID: settlementID)
         }
         // 3. digest integrity — the same hashing that sealed it at settle time.
-        guard SimiGoSettlementAuthority.payloadDigestMatches(row.payload, recordedDigest: row.payloadDigest) else {
+        guard SimiGoSettlementAuthority.payloadDigestMatches(
+            row.payload, recordedDigest: row.recordedPayloadDigest)
+        else {
             throw Refusal.digestMismatch(settlementID: settlementID)
         }
         // 4. dynamic validity of the settlement itself.
-        if try db.settlementValidity(settlementID) != "valid" {
+        if row.validity != "valid" {
             throw Refusal.invalidated(settlementID: settlementID)
         }
         // 5. full upstream dependency closure: each member present and valid.
@@ -113,21 +158,39 @@ public enum SimiGoISAdmission {
                 throw Refusal.dependencyInvalid(settlementID: settlementID, dependency: dependency)
             }
         }
-        // 6. producer identity binding (fail-closed on absent or mismatch).
+        // 6. identity binding, by row kind. A DERIVED_CONSUMPTION row binds the
+        // consumer that produced its derived value; verifying a producer binding
+        // on it would attribute generation to an engine that generated nothing.
         let recorded = try db.settlementBindings(settlementID: settlementID)
-        let verdict = SimiGoSettlementIdentityBinding.evaluate(recorded: recorded, consumer: consumer)
+        let derived = row.validationStatus == "DERIVED_CONSUMPTION"
+        let verdict = derived
+            ? SimiGoSettlementIdentityBinding.evaluateConsumer(
+                recorded: recorded, consumer: consumer)
+            : SimiGoSettlementIdentityBinding.evaluate(
+                recorded: recorded, consumer: consumer)
         if verdict.status != .ok {
             throw Refusal.producerBinding(verdict)
         }
+        // 6b. carry the settled prefix representation binding forward. No check
+        // runs here: the KV binding is a claim about a model representation, and
+        // only the engine (which can recompute the boundary hash) can verify it.
+        // Verification is the engine's own fail-closed gate; handing it the
+        // already-validated rows keeps ONE authority (this admission) deciding
+        // which settlement the KV path may act on. A derived consumption never
+        // records a representation, so it can never authorize one.
+        let kvBindings = derived
+            ? [:]
+            : SimiGoSettlementKVBinding.recordedBindings(from: recorded)
         // 7. recover the settled semantic value; mint verifiedBindings for the new ES.
         guard let value = recoveredValue(from: row.payload, field: valueField), !value.isEmpty else {
             throw Refusal.emptyValue(settlementID: settlementID)
         }
         return Admitted(
             settlementID: settlementID,
-            payloadDigest: row.payloadDigest,
+            payloadDigest: row.recordedPayloadDigest,
             recoveredValue: value,
-            verifiedBindings: [bindingName: .string(value)]
+            verifiedBindings: [bindingName: .string(value)],
+            kvBindings: kvBindings
         )
     }
 

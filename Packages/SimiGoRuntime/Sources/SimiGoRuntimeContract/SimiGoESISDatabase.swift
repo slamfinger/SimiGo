@@ -294,6 +294,168 @@ public final class SimiGoESISDatabase {
     CREATE INDEX IF NOT EXISTS idx_settlements_object ON settlements(payload_object_id);
     """
 
+    /// v9 is the Execution/Information loop itself: an Execution State defines a
+    /// demand, the Information Space settles what that demand resolves to, and an
+    /// advancement records the child ES that consumed it. The tables are additive;
+    /// `retrieval_settlements` gains only the two columns the bridge needs (whether
+    /// chat was part of the input, and the bridged settlement id).
+    private static let v9 = """
+    CREATE TABLE IF NOT EXISTS information_demands(
+        demand_id TEXT PRIMARY KEY,
+        state_id TEXT,
+        session_id TEXT,
+        continuation_point TEXT NOT NULL,
+        query TEXT NOT NULL,
+        required_item_ids_json TEXT NOT NULL,
+        pending_obligations_json TEXT NOT NULL,
+        continuation_conditions_json TEXT NOT NULL,
+        input_digest TEXT NOT NULL,
+        retrieval_demand_id TEXT,
+        retrieval_settlement_id TEXT,
+        state TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS information_advancements(
+        advancement_id TEXT PRIMARY KEY,
+        demand_id TEXT NOT NULL,
+        state_id TEXT NOT NULL,
+        settlement_id TEXT NOT NULL,
+        retrieval_settlement_id TEXT,
+        actions_json TEXT NOT NULL,
+        result_json TEXT NOT NULL,
+        advanced_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS information_items(
+        item_id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,
+        locator TEXT NOT NULL,
+        source_version TEXT NOT NULL,
+        source_payload_sha256 TEXT NOT NULL,
+        state TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS chat_execution_links(
+        session_id TEXT PRIMARY KEY,
+        current_state_id TEXT NOT NULL,
+        model_identity TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_information_demands_state
+        ON information_demands(state_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_information_advancements_demand
+        ON information_advancements(demand_id);
+    CREATE INDEX IF NOT EXISTS idx_information_items_kind
+        ON information_items(kind, state);
+    """
+
+    private static let v9Columns: [(table: String, column: String, sql: String)] = [
+        ("retrieval_settlements", "include_chat",
+         "ALTER TABLE retrieval_settlements ADD COLUMN include_chat INTEGER NOT NULL DEFAULT 0;"),
+        ("retrieval_settlements", "bridged_settlement_id",
+         "ALTER TABLE retrieval_settlements ADD COLUMN bridged_settlement_id TEXT;"),
+    ]
+
+    /// v10 is the post-settlement distillation: every model-produced settlement
+    /// gains a bounded, deterministic summary stored as a content-addressed
+    /// object, so a later demand can cite a settled conclusion as information
+    /// instead of re-reading the files and turns it was derived from. The row is
+    /// keyed by settlement and keeps the source payload digest it distilled, so
+    /// a summary can never be read as belonging to a different settlement.
+    private static let v10 = """
+    CREATE TABLE IF NOT EXISTS settlement_summaries(
+        settlement_id TEXT PRIMARY KEY,
+        session_id TEXT,
+        query TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        summary_sha256 TEXT NOT NULL,
+        summary_object_id TEXT NOT NULL,
+        source_payload_digest TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_settlement_summaries_created
+        ON settlement_summaries(created_at, settlement_id);
+    """
+
+    /// v11 is STAGE B: a settled unit may declare that it can be consumed
+    /// verbatim by a later execution state, and every consumption is recorded as
+    /// its own row linked to the source it consumed. A settlement without a
+    /// declaration is not consumable; a consumption never records KV bindings and
+    /// carries `model_calls` as data, not as log text. Derived settlements are
+    /// `DERIVED_CONSUMPTION` rows: chainable as a continuation anchor, never
+    /// counted as model output.
+    private static let v11 = """
+    CREATE TABLE IF NOT EXISTS settlement_reuse_contracts(
+        settlement_id TEXT PRIMARY KEY,
+        contract_id TEXT NOT NULL,
+        demand_class TEXT NOT NULL,
+        contract_version TEXT NOT NULL,
+        query TEXT NOT NULL,
+        root_ids_json TEXT NOT NULL,
+        canonical_text TEXT NOT NULL,
+        canonical_digest TEXT NOT NULL,
+        required_identity_json TEXT NOT NULL,
+        extract_field TEXT NOT NULL,
+        declared_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS settlement_consumptions(
+        consumption_id TEXT PRIMARY KEY,
+        source_settlement_id TEXT NOT NULL,
+        consumer_state_id TEXT NOT NULL,
+        consumer_settlement_id TEXT NOT NULL,
+        demand_id TEXT NOT NULL,
+        contract_id TEXT NOT NULL,
+        demand_class TEXT NOT NULL,
+        contract_version TEXT NOT NULL,
+        canonical_digest TEXT NOT NULL,
+        basis_json TEXT NOT NULL,
+        model_calls INTEGER NOT NULL CHECK(model_calls=0),
+        created_at TEXT NOT NULL,
+        UNIQUE(source_settlement_id, consumer_state_id, demand_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_settlement_consumptions_source
+        ON settlement_consumptions(source_settlement_id);
+    CREATE INDEX IF NOT EXISTS idx_settlement_consumptions_consumer
+        ON settlement_consumptions(consumer_settlement_id);
+    """
+
+    private static let v11SummaryColumns: [(table: String, column: String, sql: String)] = [
+        ("settlement_summaries", "derivation_type",
+         "ALTER TABLE settlement_summaries ADD COLUMN derivation_type TEXT;"),
+        ("settlement_summaries", "provenance_settlement_id",
+         "ALTER TABLE settlement_summaries ADD COLUMN provenance_settlement_id TEXT;"),
+    ]
+
+    /// v12 is STAGE C's settlement reference to its as-of snapshot: a settlement
+    /// may point at the immutable `final` snapshot object written in the same
+    /// commit. The column is nullable and never backfilled — NULL means the row
+    /// predates snapshot capture and carries no such evidence, which must not be
+    /// fabricated. Declared snapshots that never reached P2 stay as orphans by
+    /// design: v1 has no TTL and no GC, and a zero reference count is not
+    /// deletion authorization.
+    private static let v12Columns: [(table: String, column: String, sql: String)] = [
+        ("settlements", "input_snapshot_object_id",
+         "ALTER TABLE settlements ADD COLUMN input_snapshot_object_id TEXT REFERENCES is_objects(object_id);"),
+    ]
+
+    private static let v12Indexes = """
+    CREATE INDEX IF NOT EXISTS idx_settlements_input_snapshot
+        ON settlements(input_snapshot_object_id);
+    """
+
+    /// v13: the managed-continuation idempotency key. Nullable (ordinary and
+    /// B-path states carry none) and never backfilled; the partial unique index
+    /// makes "one execution per fingerprint" a storage guarantee as well as a
+    /// checked precondition, while leaving NULL keys unconstrained.
+    private static let v13Columns: [(table: String, column: String, sql: String)] = [
+        ("execution_states", "idempotency_key",
+         "ALTER TABLE execution_states ADD COLUMN idempotency_key TEXT;"),
+    ]
+
+    private static let v13Indexes = """
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_execution_states_idempotency
+        ON execution_states(idempotency_key) WHERE idempotency_key IS NOT NULL;
+    """
+
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
@@ -417,6 +579,53 @@ public final class SimiGoESISDatabase {
                 try recordMigrationRow(8, "simigo-is-carrier-v8")
             }
         }
+        if try schemaVersion() < 9 {
+            try transaction {
+                try Self.rawExec(handle, SimiGoESISDatabase.v9)
+                for column in SimiGoESISDatabase.v9Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try recordMigrationRow(9, "simigo-es-is-loop-v9")
+            }
+        }
+        if try schemaVersion() < 10 {
+            try transaction {
+                try Self.rawExec(handle, SimiGoESISDatabase.v10)
+                _ = try backfillSettlementSummariesInTransaction()
+                try recordMigrationRow(10, "simigo-settlement-summaries-v10")
+            }
+        }
+        if try schemaVersion() < 11 {
+            try transaction {
+                try Self.rawExec(handle, SimiGoESISDatabase.v11)
+                for column in SimiGoESISDatabase.v11SummaryColumns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try recordMigrationRow(11, "simigo-settlement-consumption-v11")
+            }
+        }
+        if try schemaVersion() < 12 {
+            try transaction {
+                for column in SimiGoESISDatabase.v12Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try Self.rawExec(handle, SimiGoESISDatabase.v12Indexes)
+                try recordMigrationRow(12, "simigo-snapshot-reference-v12")
+            }
+        }
+        if try schemaVersion() < 13 {
+            try transaction {
+                for column in SimiGoESISDatabase.v13Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try Self.rawExec(handle, SimiGoESISDatabase.v13Indexes)
+                try recordMigrationRow(13, "simigo-managed-idempotency-v13")
+            }
+        }
     }
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
@@ -452,6 +661,7 @@ public final class SimiGoESISDatabase {
         public let unaddressedChatMessages: Int
         public let unaddressedRetrievalResults: Int
         public let unaddressedSettlements: Int
+        public let settlementSummaries: Int
         public let danglingReferences: Int
         public let corruptObjects: Int
         public let inlineLegacyPayloads: Int
@@ -573,6 +783,68 @@ public final class SimiGoESISDatabase {
             recordedAt: sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? "")
     }
 
+    // MARK: - C-stage failure audit (append-only)
+
+    /// Best-effort terminal audit write for one execution attempt.
+    ///
+    /// Never throws and never overwrites: if an entry already exists for
+    /// `c-failure-audit:<execution_id>`, nothing is written and
+    /// `auditPersisted` is `false`. A storage failure is reported the same way,
+    /// so the caller's terminal result is unchanged either way.
+    public func recordFailureAudit(_ event: SimiGoFailureAudit.Event) -> SimiGoFailureAudit.WriteResult {
+        let data: Data
+        do {
+            data = try SimiGoFailureAudit.encoded(event)
+        } catch {
+            return SimiGoFailureAudit.WriteResult(
+                auditPersisted: false, objectID: nil, failureClass: "unrepresentable_event")
+        }
+        let identity = SimiGoFailureAudit.identity(executionID: event.executionID)
+        do {
+            return try transactionResult {
+                if try resolveIndexIdentity(identity, policy: .first) != nil {
+                    return SimiGoFailureAudit.WriteResult(
+                        auditPersisted: false, objectID: nil, failureClass: "duplicate_execution_id")
+                }
+                let objectID = try ensureObject(data)
+                _ = try appendIndexEntryInTransaction(identity: identity, objectID: objectID)
+                return SimiGoFailureAudit.WriteResult(
+                    auditPersisted: true, objectID: objectID, failureClass: nil)
+            }
+        } catch {
+            return SimiGoFailureAudit.WriteResult(
+                auditPersisted: false, objectID: nil, failureClass: "storage_failure")
+        }
+    }
+
+    /// Read back the audit record for an execution attempt, verifying both the
+    /// stored bytes and the record's own schema.
+    public func failureAudit(executionID: String) -> SimiGoFailureAudit.Event? {
+        guard let entry = try? resolveIndexIdentity(
+            SimiGoFailureAudit.identity(executionID: executionID), policy: .first),
+            let data = try? readObject(entry.objectID) else { return nil }
+        return try? SimiGoFailureAudit.decode(data)
+    }
+
+    /// Every audit entry ever appended for this execution id, oldest first.
+    public func failureAuditHistory(executionID: String) throws -> [IndexEntry] {
+        let stmt = try prepare("""
+        SELECT append_order, srs_identity, record_object, recorded_at
+        FROM is_index_entries WHERE srs_identity=? ORDER BY append_order;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, SimiGoFailureAudit.identity(executionID: executionID))
+        var out: [IndexEntry] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(IndexEntry(
+                appendOrder: Int(sqlite3_column_int64(stmt, 0)),
+                identity: sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
+                objectID: sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "",
+                recordedAt: sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? ""))
+        }
+        return out
+    }
+
     /// Append the next explicit revision for a dependency identity.
     @discardableResult
     public func appendDependency(
@@ -650,14 +922,22 @@ public final class SimiGoESISDatabase {
             objectBytes: objectBytes,
             indexEntries: try scalar("SELECT COUNT(*) FROM is_index_entries;"),
             dependencyEntries: try scalar("SELECT COUNT(*) FROM is_dependency_entries;"),
-            unaddressedFileContents: try scalar(
-                "SELECT COUNT(*) FROM file_contents WHERE object_id IS NULL;"),
+            unaddressedFileContents: try scalar("""
+                SELECT COUNT(*) FROM file_contents f
+                WHERE f.object_id IS NULL
+                  AND NOT EXISTS (
+                    SELECT 1 FROM is_index_entries e
+                    WHERE e.srs_identity =
+                      'file:' || f.root_id || '/' || f.relative_path);
+                """),
             unaddressedChatMessages: try scalar(
                 "SELECT COUNT(*) FROM chat_messages WHERE content_object_id IS NULL;"),
             unaddressedRetrievalResults: try scalar(
                 "SELECT COUNT(*) FROM retrieval_settlements WHERE result_object_id IS NULL;"),
             unaddressedSettlements: try scalar(
                 "SELECT COUNT(*) FROM settlements WHERE payload_object_id IS NULL;"),
+            settlementSummaries: try scalar(
+                "SELECT COUNT(*) FROM settlement_summaries;"),
             danglingReferences: try scalar("""
                 SELECT
                   (SELECT COUNT(*) FROM file_contents f LEFT JOIN is_objects o
@@ -919,6 +1199,20 @@ public final class SimiGoESISDatabase {
         catch { rollback(); throw error }
     }
 
+    /// Value-returning variant. The value is only produced after COMMIT
+    /// succeeds, so callers cannot observe a result whose writes rolled back.
+    public func transactionResult<T>(_ body: () throws -> T) throws -> T {
+        try begin("IMMEDIATE")
+        do {
+            let value = try body()
+            try commit()
+            return value
+        } catch {
+            rollback()
+            throw error
+        }
+    }
+
     public func count(_ table: String) throws -> Int {
         var stmt: OpaquePointer?
         // table name is internal constant only, never user input.
@@ -982,16 +1276,22 @@ public final class SimiGoESISDatabase {
     /// its settlement (continuation path). Fields mirror `recordExecutionState`.
     public struct ChildExecutionState: Sendable {
         public let id: String
-        public let parentID: String
+        public let parentID: String?
         public let modelIdentity: String
         public let position: Int
         public let continuationID: String
         public let anchor: String
         public let createdAt: Date
+        /// Durable continuation payload. A child state that survives a restart
+        /// must carry the input its successor will resume from, otherwise the
+        /// graph round-trips without the settlement it was created for.
+        public let nextInput: String?
+        public let prefixJSON: String?
 
-        public init(id: String, parentID: String, modelIdentity: String,
+        public init(id: String, parentID: String?, modelIdentity: String,
                     position: Int, continuationID: String, anchor: String,
-                    createdAt: Date) {
+                    createdAt: Date, nextInput: String? = nil,
+                    prefixJSON: String? = nil) {
             self.id = id
             self.parentID = parentID
             self.modelIdentity = modelIdentity
@@ -999,6 +1299,8 @@ public final class SimiGoESISDatabase {
             self.continuationID = continuationID
             self.anchor = anchor
             self.createdAt = createdAt
+            self.nextInput = nextInput
+            self.prefixJSON = prefixJSON
         }
     }
 
@@ -1018,14 +1320,20 @@ public final class SimiGoESISDatabase {
     /// child ES and settle it as one authoritative unit.
     private func insertExecutionStateRow(id: String, parentID: String?, modelIdentity: String,
                                          position: Int, continuationID: String, anchor: String,
-                                         lifecycle: String, createdAt: Date) throws {
+                                         lifecycle: String, createdAt: Date,
+                                         nextInput: String? = nil,
+                                         prefixJSON: String? = nil,
+                                         idempotencyKey: String? = nil) throws {
         try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at)
-        VALUES(?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, idempotency_key)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
-            created_at=excluded.created_at;
+            created_at=excluded.created_at,
+            next_input=COALESCE(excluded.next_input, next_input),
+            prefix_json=COALESCE(excluded.prefix_json, prefix_json),
+            idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key);
         """) { stmt in
             bind(stmt, 1, id)
             bind(stmt, 2, parentID)
@@ -1035,6 +1343,9 @@ public final class SimiGoESISDatabase {
             bind(stmt, 6, anchor)
             bind(stmt, 7, lifecycle)
             bind(stmt, 8, Self.stamp( createdAt))
+            bind(stmt, 9, nextInput)
+            bind(stmt, 10, prefixJSON)
+            bind(stmt, 11, idempotencyKey)
         }
     }
 
@@ -1064,29 +1375,95 @@ public final class SimiGoESISDatabase {
     /// `childState`, when present, is inserted INSIDE the same transaction: a
     /// continuation therefore cannot commit a settlement without its child ES,
     /// and cannot leave a child ES behind when the settlement fails.
+    public struct InformationAdvancementPlan: Sendable {
+        public let demandID: String
+        public let stateID: String
+        public let retrievalSettlementID: String
+        public let actions: [String]
+        public let result: Data
+
+        public init(demandID: String, stateID: String,
+                    retrievalSettlementID: String, actions: [String],
+                    result: Data) {
+            self.demandID = demandID
+            self.stateID = stateID
+            self.retrievalSettlementID = retrievalSettlementID
+            self.actions = actions
+            self.result = result
+        }
+    }
+
+    public struct SettlementWithAdvancement: Sendable {
+        public let settlementID: UUID
+        public let advancementID: String?
+    }
+
     @discardableResult
     public func recordNativeSettlementWithIdentity(
         _ settled: SimiGoSettlementAuthority.SettledResult,
         stateID: String,
         identity: SimiGoSettlementIdentityBinding.Identity,
-        childState: ChildExecutionState? = nil
+        childState: ChildExecutionState? = nil,
+        kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil,
+        inputSnapshotObjectID: String? = nil
     ) throws -> UUID {
+        try recordNativeSettlementWithIdentityAndAdvancement(
+            settled, stateID: stateID, identity: identity,
+            childState: childState, advancement: nil,
+            kvRepresentation: kvRepresentation,
+            inputSnapshotObjectID: inputSnapshotObjectID
+        ).settlementID
+    }
+
+    /// Atomic settlement + child state + identity bindings + advancement. The
+    /// advancement is linked to the settlement row created in this transaction,
+    /// so a downstream result can never claim an advancement it does not have.
+    ///
+    /// `kvRepresentation`, when present, is bound in the SAME transaction: a
+    /// settlement can therefore never commit while claiming a prefix
+    /// representation it did not also record. Only digests are stored.
+    @discardableResult
+    public func recordNativeSettlementWithIdentityAndAdvancement(
+        _ settled: SimiGoSettlementAuthority.SettledResult,
+        stateID: String,
+        identity: SimiGoSettlementIdentityBinding.Identity,
+        childState: ChildExecutionState? = nil,
+        advancement: InformationAdvancementPlan?,
+        kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil,
+        inputSnapshotObjectID: String? = nil
+    ) throws -> SettlementWithAdvancement {
         let settlementUUID = UUID()
         let settlementID = settlementUUID.uuidString
+        var advancementID: String?
         try transaction {
             if let childState {
                 try insertExecutionStateRow(
                     id: childState.id, parentID: childState.parentID,
                     modelIdentity: childState.modelIdentity, position: childState.position,
                     continuationID: childState.continuationID, anchor: childState.anchor,
-                    lifecycle: "active", createdAt: childState.createdAt)
+                    lifecycle: "active", createdAt: childState.createdAt,
+                    nextInput: childState.nextInput, prefixJSON: childState.prefixJSON)
             }
             try insertNativeSettlementRows(
-                settled, settlementID: settlementID, stateID: stateID)
+                settled, settlementID: settlementID, stateID: stateID,
+                inputSnapshotObjectID: inputSnapshotObjectID)
             try insertIdentityBindingRows(
                 settlementID: settlementID, identity: identity)
+            if let kvRepresentation {
+                try insertDerivedBindingRows(
+                    settlementID: settlementID,
+                    rows: SimiGoSettlementKVBinding.bindings(for: kvRepresentation))
+            }
+            if let advancement {
+                advancementID = try insertInformationAdvancementRows(.init(
+                    demandID: advancement.demandID, stateID: advancement.stateID,
+                    settlementID: settlementID,
+                    retrievalSettlementID: advancement.retrievalSettlementID,
+                    actions: advancement.actions, result: advancement.result))
+            }
         }
-        return settlementUUID
+        return SettlementWithAdvancement(
+            settlementID: settlementUUID, advancementID: advancementID)
     }
 
     /// Insert the settlement row and the native gate's constraint-binding rows.
@@ -1095,12 +1472,22 @@ public final class SimiGoESISDatabase {
     private func insertNativeSettlementRows(
         _ settled: SimiGoSettlementAuthority.SettledResult,
         settlementID: String,
-        stateID: String?
+        stateID: String?,
+        validationStatusOverride: String? = nil,
+        inputSnapshotObjectID: String? = nil
     ) throws {
         let payloadObject = try ensureObject(settled.validatedPayload)
+        if let inputSnapshotObjectID {
+            // The referenced object must already exist in this transaction
+            // (the FK enforces it); a settlement never references a snapshot it
+            // did not also write before commit.
+            guard try objectRow(inputSnapshotObjectID) != nil else {
+                throw DatabaseError.sql("input snapshot object missing: \(inputSnapshotObjectID)")
+            }
+        }
         try execBinding("""
-        INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status, payload_object_id)
-        VALUES(?,?,?,?,?,?,?,?,?,?);
+        INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status, payload_object_id, input_snapshot_object_id)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?);
         """) { stmt in
             bind(stmt, 1, settlementID)
             bind(stmt, 2, stateID)
@@ -1110,8 +1497,9 @@ public final class SimiGoESISDatabase {
             bind(stmt, 6, String?.none)
             bind(stmt, 7, NativeResultContract.supportedVersion)
             bind(stmt, 8, Self.stamp(settled.settledAt))
-            bind(stmt, 9, settled.trace.validationStatus)
+            bind(stmt, 9, validationStatusOverride ?? settled.trace.validationStatus)
             bind(stmt, 10, payloadObject)
+            bind(stmt, 11, inputSnapshotObjectID)
         }
         _ = try appendIndexEntryInTransaction(
             identity: "settlement:\(settlementID)", objectID: payloadObject)
@@ -1134,10 +1522,16 @@ public final class SimiGoESISDatabase {
     /// a binding written by the producer itself; it is not an attestation.
     public func recordIdentityBindings(
         settlementID: String,
-        identity: SimiGoSettlementIdentityBinding.Identity
+        identity: SimiGoSettlementIdentityBinding.Identity,
+        kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil
     ) throws {
         try transaction {
             try insertIdentityBindingRows(settlementID: settlementID, identity: identity)
+            if let kvRepresentation {
+                try insertDerivedBindingRows(
+                    settlementID: settlementID,
+                    rows: SimiGoSettlementKVBinding.bindings(for: kvRepresentation))
+            }
         }
     }
 
@@ -1147,7 +1541,23 @@ public final class SimiGoESISDatabase {
         settlementID: String,
         identity: SimiGoSettlementIdentityBinding.Identity
     ) throws {
-        let rows = SimiGoSettlementIdentityBinding.bindings(for: identity)
+        try insertDerivedBindingRows(
+            settlementID: settlementID,
+            rows: SimiGoSettlementIdentityBinding.bindings(for: identity))
+    }
+
+    /// Persist derived (producer-written) binding digests for one settlement,
+    /// replacing any previous row with the same name. Shared by the producer
+    /// identity binding and the prefix-representation binding so both use the
+    /// same idempotent replace and the same digest-only storage rule.
+    ///
+    /// Names are the producer's own namespace keys (`producer.*`, `kv.*`); a
+    /// name collision with a native gate constraint row would replace it, which
+    /// is the same pre-existing tradeoff the identity binding already makes.
+    private func insertDerivedBindingRows(
+        settlementID: String,
+        rows: [String: String]
+    ) throws {
         for name in rows.keys.sorted() {
             guard let digest = rows[name] else { continue }
             try execBinding("DELETE FROM settlement_bindings WHERE settlement_id=? AND name=?;") { stmt in
@@ -1167,11 +1577,136 @@ public final class SimiGoESISDatabase {
         }
     }
 
+    // MARK: - As-of snapshot reference (v12)
+
+    /// The immutable `final` snapshot object this settlement committed with, or
+    /// nil when the row predates snapshot capture. The value is never backfilled,
+    /// so an absent reference is reported as absent rather than synthesized.
+    public func settlementInputSnapshotObjectID(settlementID: String) throws -> String? {
+        let stmt = try prepare("SELECT input_snapshot_object_id FROM settlements WHERE settlement_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, settlementID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    // MARK: - Managed continuation (v13)
+
+    /// Payload digest of a settlement row, or nil when the row does not exist.
+    public func settlementPayloadDigest(_ settlementID: String) throws -> String? {
+        let stmt = try prepare("SELECT payload_digest FROM settlements WHERE settlement_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, settlementID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    /// The idempotency key an execution state was committed under, if any.
+    public func executionStateIdempotencyKey(_ stateID: String) throws -> String? {
+        let stmt = try prepare("SELECT idempotency_key FROM execution_states WHERE state_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, stateID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    /// The execution state that already committed this idempotency key.
+    public func executionStateID(idempotencyKey: String) throws -> String? {
+        let stmt = try prepare("SELECT state_id FROM execution_states WHERE idempotency_key=?;")
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, idempotencyKey)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    /// Everything P2 writes for one managed continuation, committed as a single
+    /// unit: the `final` snapshot object, the child execution state carrying the
+    /// idempotency key, the settlement that references that snapshot, and the
+    /// producer identity bindings.
+    ///
+    /// `preCommit` runs FIRST, while the write lock is held, and is where the
+    /// caller re-verifies the pinned anchor, the dependency closure and the
+    /// captured inputs. Throwing from it rolls everything back, so a recheck
+    /// failure can never leave a partial settlement behind.
+    public struct ManagedContinuationPlan {
+        public let executionID: String
+        public let attempt: Int
+        public let idempotencyKey: String
+        public let fingerprint: String
+        public let finalSnapshot: Data
+        public let settled: SimiGoSettlementAuthority.SettledResult
+        public let identity: SimiGoSettlementIdentityBinding.Identity
+        public let childState: ChildExecutionState
+        public let preCommit: () throws -> Void
+
+        public init(
+            executionID: String, attempt: Int, idempotencyKey: String,
+            fingerprint: String, finalSnapshot: Data,
+            settled: SimiGoSettlementAuthority.SettledResult,
+            identity: SimiGoSettlementIdentityBinding.Identity,
+            childState: ChildExecutionState,
+            preCommit: @escaping () throws -> Void
+        ) {
+            self.executionID = executionID
+            self.attempt = attempt
+            self.idempotencyKey = idempotencyKey
+            self.fingerprint = fingerprint
+            self.finalSnapshot = finalSnapshot
+            self.settled = settled
+            self.identity = identity
+            self.childState = childState
+            self.preCommit = preCommit
+        }
+    }
+
+    public struct ManagedContinuationCommit {
+        public let finalSnapshotObjectID: String
+        public let settlementID: String
+        public let executionID: String
+    }
+
+    public func commitManagedContinuation(
+        _ plan: ManagedContinuationPlan
+    ) throws -> ManagedContinuationCommit {
+        try transactionResult {
+            try plan.preCommit()
+            if let owner = try executionStateID(idempotencyKey: plan.idempotencyKey),
+               owner != plan.childState.id {
+                throw SimiGoManagedRefusal.Refusal(
+                    cause: .idempotencyConflict, origin: .idempotency, phase: .p2,
+                    evidence: [
+                        "execution_id": plan.executionID,
+                        "fingerprint": plan.fingerprint,
+                        "existing_state_id": owner,
+                    ])
+            }
+            let finalObjectID = try ensureObject(plan.finalSnapshot)
+            try insertExecutionStateRow(
+                id: plan.childState.id, parentID: plan.childState.parentID,
+                modelIdentity: plan.childState.modelIdentity,
+                position: plan.childState.position,
+                continuationID: plan.childState.continuationID,
+                anchor: plan.childState.anchor, lifecycle: "active",
+                createdAt: plan.childState.createdAt,
+                nextInput: plan.childState.nextInput,
+                prefixJSON: plan.childState.prefixJSON,
+                idempotencyKey: plan.idempotencyKey)
+            let settlementID = UUID().uuidString
+            try insertNativeSettlementRows(
+                plan.settled, settlementID: settlementID, stateID: plan.childState.id,
+                inputSnapshotObjectID: finalObjectID)
+            try insertIdentityBindingRows(settlementID: settlementID, identity: plan.identity)
+            return ManagedContinuationCommit(
+                finalSnapshotObjectID: finalObjectID,
+                settlementID: settlementID,
+                executionID: plan.executionID)
+        }
+    }
+
     /// Binding rows recorded for one settlement, as name -> digest. Constraint
     /// bindings from the native gate live in the same table, so callers must look
     /// up the `producer.` keys rather than assume the dictionary is exhaustive.
-    public func settlementBindings(settlementID: String) throws -> [String: String] {
-        let stmt = try prepare("""
+    public func settlementBindings(settlementID: String) throws -> [String: String] {        let stmt = try prepare("""
         SELECT name, value_digest FROM settlement_bindings WHERE settlement_id=?;
         """)
         defer { sqlite3_finalize(stmt) }
@@ -1252,6 +1787,12 @@ public final class SimiGoESISDatabase {
         public let objectsCreated: Int
         public let deduplicated: Int
         public let bytesAddressed: Int
+        /// True when the pass built only a physical index (locator/digest/size)
+        /// and did not copy entity bytes into the object store.
+        public let indexOnly: Bool
+        /// Bytes read from the filesystem to compute digests / validate text.
+        /// These are read-only; `bytesAddressed` stays the copy measure.
+        public let entityBytesRead: Int
     }
 
     private struct FileContentState {
@@ -1264,6 +1805,8 @@ public final class SimiGoESISDatabase {
         let url: URL
         let data: Data
         let digest: String
+        let size: Int64
+        let modified: String?
         let previous: FileContentState?
     }
 
@@ -1274,7 +1817,8 @@ public final class SimiGoESISDatabase {
     @discardableResult
     public func settleWorkRootContents(
         rootID: String, rootURL: URL, category: String = "work",
-        fileByteCap: Int = 1 << 20, maxDepth: Int = 4
+        fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
+        carryText: Bool = true
     ) throws -> ContentSettleReport {
         let fm = FileManager.default
         // file_contents references roots, so the root must exist before any
@@ -1300,6 +1844,7 @@ public final class SimiGoESISDatabase {
         sqlite3_finalize(prevStmt)
 
         var scanned = 0, reused = 0, skipped = 0
+        var entityBytesRead = 0
         var seen = Set<String>()
         var pending: [PendingSettlement] = []
         var cleared: [(relativePath: String, previous: FileContentState, missing: Bool)] = []
@@ -1352,6 +1897,7 @@ public final class SimiGoESISDatabase {
                 continue
             }
             let digest = NativeSHA256.hexDigest(data)
+            entityBytesRead += data.count
             indexedFiles.append((rel, file, size, modified, digest))
             guard String(data: data, encoding: .utf8) != nil else {
                 skipped += 1
@@ -1360,13 +1906,18 @@ public final class SimiGoESISDatabase {
                 }
                 continue
             }
-            if let old = previous[rel], old.digest == digest, old.objectID != nil {
+            // Reuse only when the settled digest still matches AND the row is in
+            // the mode being settled now. An index-only pass over a text-carrying
+            // row must re-settle once to drop the copied bytes.
+            if let old = previous[rel], old.digest == digest,
+                carryText ? old.objectID != nil : old.objectID == nil
+            {
                 reused += 1
                 continue
             }
             pending.append(PendingSettlement(
                 relativePath: rel, url: file, data: data, digest: digest,
-                previous: previous[rel]))
+                size: size, modified: modified, previous: previous[rel]))
         }
 
         // Indexed rows whose file disappeared from the latest scan.
@@ -1393,6 +1944,13 @@ public final class SimiGoESISDatabase {
                     bind(stmt, 1, rootID)
                     bind(stmt, 2, item.relativePath)
                 }
+                try execBinding("""
+                UPDATE information_items SET state='STALE', updated_at=?
+                WHERE item_id=?;
+                """) { stmt in
+                    bind(stmt, 1, now)
+                    bind(stmt, 2, "file:\(rootID)/\(item.relativePath)")
+                }
                 if item.missing {
                     try execBinding("""
                     UPDATE external_files SET status='missing'
@@ -1412,10 +1970,28 @@ public final class SimiGoESISDatabase {
                         rootID: rootID, relativePath: item.relativePath,
                         oldDigest: old.digest)
                 }
-                let object = try ensureObjectWithStatus(item.data)
-                if object.created { created += 1 } else { deduplicated += 1 }
-                bytesAddressed += item.data.count
+                // Index-only mode stores a locator/digest/size record, never the
+                // entity bytes. The object appended to the carrier ledger is that
+                // metadata record, so the physical file stays the single copy of
+                // its own content. carryText keeps the explicit carrier mode.
                 let identity = "file:\(rootID)/\(item.relativePath)"
+                let indexObject: (id: String, created: Bool)
+                if carryText {
+                    indexObject = try ensureObjectWithStatus(item.data)
+                    bytesAddressed += item.data.count
+                } else {
+                    var metadata: [String: Any] = [
+                        "locator": identity,
+                        "sha256": item.digest,
+                        "size": item.size,
+                    ]
+                    if let modified = item.modified { metadata["modified"] = modified }
+                    let encoded = try JSONSerialization.data(
+                        withJSONObject: metadata,
+                        options: [.sortedKeys, .withoutEscapingSlashes])
+                    indexObject = try ensureObjectWithStatus(encoded)
+                }
+                if indexObject.created { created += 1 } else { deduplicated += 1 }
                 try execBinding("""
                 INSERT INTO file_contents(
                     root_id, relative_path, content_sha256, content, settled_at, object_id)
@@ -1428,12 +2004,32 @@ public final class SimiGoESISDatabase {
                     bind(stmt, 2, item.relativePath)
                     bind(stmt, 3, item.digest)
                     bind(stmt, 4, now)
-                    bind(stmt, 5, object.id)
+                    if carryText {
+                        bind(stmt, 5, indexObject.id)
+                    } else {
+                        sqlite3_bind_null(stmt, 5)
+                    }
+                }
+                try execBinding("""
+                INSERT INTO information_items(
+                    item_id, kind, locator, source_version, source_payload_sha256, state, updated_at)
+                VALUES(?,?,?,?,?,'AVAILABLE',?)
+                ON CONFLICT(item_id) DO UPDATE SET
+                    source_version=excluded.source_version,
+                    source_payload_sha256=excluded.source_payload_sha256,
+                    state='AVAILABLE', updated_at=excluded.updated_at;
+                """) { stmt in
+                    bind(stmt, 1, identity)
+                    bind(stmt, 2, "file")
+                    bind(stmt, 3, item.url.path)
+                    bind(stmt, 4, item.modified ?? item.digest)
+                    bind(stmt, 5, item.digest)
+                    bind(stmt, 6, now)
                 }
                 _ = try appendIndexEntryInTransaction(
-                    identity: identity, objectID: object.id)
+                    identity: identity, objectID: indexObject.id)
                 _ = try appendDependencyInTransaction(
-                    dependencyID: identity, contentAddress: object.id,
+                    dependencyID: identity, contentAddress: indexObject.id,
                     reason: item.previous == nil ? "content-settle" : "content-update")
             }
 
@@ -1455,7 +2051,8 @@ public final class SimiGoESISDatabase {
             changed: pending.filter { $0.previous != nil }.count,
             removed: removed, invalidatedSettlements: invalidated.count,
             objectsCreated: created, deduplicated: deduplicated,
-            bytesAddressed: bytesAddressed)
+            bytesAddressed: bytesAddressed,
+            indexOnly: !carryText, entityBytesRead: entityBytesRead)
     }
 
     /// Component-aligned relative path. The enumerator can hand back a
@@ -1495,9 +2092,13 @@ public final class SimiGoESISDatabase {
     /// is absent is marked `missing` and its content is NOT cleared; an
     /// unreadable root is counted as failed. `minAgeSeconds` skips roots that
     /// were scanned recently, which bounds launch-time work.
+    ///
+    /// `carryText` defaults to index-only: the product keeps a locator + digest
+    /// per file and never copies entity bytes into the store.
     @discardableResult
     public func reconcileRegisteredRoots(
-        category: String = "work", minAgeSeconds: TimeInterval = 0
+        category: String = "work", minAgeSeconds: TimeInterval = 0,
+        carryText: Bool = false
     ) throws -> RootReconcileReport {
         let fm = FileManager.default
         let stmt = try prepare("""
@@ -1540,7 +2141,7 @@ public final class SimiGoESISDatabase {
             do {
                 let result = try settleWorkRootContents(
                     rootID: row.id, rootURL: URL(fileURLWithPath: path),
-                    category: category)
+                    category: category, carryText: carryText)
                 settledRoots += 1
                 scanned += result.scanned
                 reused += result.reused
@@ -1571,6 +2172,86 @@ public final class SimiGoESISDatabase {
         public let status: String
     }
 
+    /// The canonical input basis of a demand: the query plus every settled
+    /// file-content digest under the requested roots, in `root/path=sha` form,
+    /// ordered by `(root_id, relative_path)`. One helper serves both the
+    /// retrieval demand (`executeInformationDemand`) and settlement consumption,
+    /// so both compare the SAME input basis. Passing nil or an empty root list
+    /// means every registered root.
+    public struct CanonicalDemandInput: Equatable, Sendable {
+        public struct Entry: Equatable, Sendable {
+            public let rootID: String
+            public let relativePath: String
+            public let contentSHA256: String
+            public let objectID: String?
+
+            public init(rootID: String, relativePath: String,
+                        contentSHA256: String, objectID: String?) {
+                self.rootID = rootID
+                self.relativePath = relativePath
+                self.contentSHA256 = contentSHA256
+                self.objectID = objectID
+            }
+        }
+
+        public let query: String
+        public let rootIDs: [String]
+        public let entries: [Entry]
+        public let canonical: String
+        public let digest: String
+
+        public init(query: String, rootIDs: [String], entries: [Entry],
+                    canonical: String, digest: String) {
+            self.query = query
+            self.rootIDs = rootIDs
+            self.entries = entries
+            self.canonical = canonical
+            self.digest = digest
+        }
+    }
+
+    /// Caller owns any transaction; the query reads the current settled content
+    /// index, so a consumption computing this inside `BEGIN IMMEDIATE` cannot
+    /// race a content settlement (which also opens a write transaction).
+    public func canonicalDemandInput(
+        query: String, rootIDs: [String]? = nil
+    ) throws -> CanonicalDemandInput {
+        var sql = "SELECT root_id, relative_path, content_sha256, object_id FROM file_contents"
+        var bound: [String] = []
+        if let rootIDs, !rootIDs.isEmpty {
+            bound = Array(Set(rootIDs)).sorted()
+            sql += " WHERE root_id IN ("
+                + Array(repeating: "?", count: bound.count).joined(separator: ",") + ")"
+        }
+        sql += " ORDER BY root_id, relative_path;"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (index, root) in bound.enumerated() {
+            bind(stmt, Int32(index + 1), root)
+        }
+        var digests: [String] = []
+        var roots: [String] = []
+        var entries: [CanonicalDemandInput.Entry] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func col(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            let root = col(0)
+            let path = col(1)
+            let sha = col(2)
+            digests.append("\(root)/\(path)=\(sha)")
+            if !roots.contains(root) { roots.append(root) }
+            let objectID = sqlite3_column_type(stmt, 3) == SQLITE_NULL ? nil : col(3)
+            entries.append(.init(rootID: root, relativePath: path,
+                                 contentSHA256: sha, objectID: objectID))
+        }
+        let canonical = query + "|" + digests.joined(separator: ";")
+        return CanonicalDemandInput(
+            query: query, rootIDs: roots, entries: entries,
+            canonical: canonical,
+            digest: NativeSHA256.hexDigest(Data(canonical.utf8)))
+    }
+
     /// 执行一次信息需求（demand）：
     ///   demand_id = SHA256(query + 注册根集合 + 全部已结算内容摘要的规范串联)
     /// 同一 demand 且结算有效 → 直接返回已结算结果（**不再重复计算**，即
@@ -1581,29 +2262,29 @@ public final class SimiGoESISDatabase {
         query: String, rootID: String? = nil, limit: Int = 200
     ) throws -> DemandRetrieval {
         // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
-        var digests: [String] = []
-        var roots: [String] = []
+        let canonicalInput = try canonicalDemandInput(
+            query: query, rootIDs: rootID.map { [$0] })
         var inputs: [(root: String, path: String, objectID: String)] = []
-        let digestSQL = rootID == nil
-            ? "SELECT root_id, relative_path, content_sha256, object_id FROM file_contents ORDER BY root_id, relative_path;"
-            : "SELECT root_id, relative_path, content_sha256, object_id FROM file_contents WHERE root_id='"
-                + rootID!.replacingOccurrences(of: "'", with: "''")
-                + "' ORDER BY root_id, relative_path;"
-        let dstmt = try prepare(digestSQL)
-        while sqlite3_step(dstmt) == SQLITE_ROW {
-            func col(_ i: Int32) -> String {
-                guard let c = sqlite3_column_text(dstmt, i) else { return "" }
-                return String(cString: c)
-            }
-            digests.append("\(col(0))/\(col(1))=\(col(2))")
-            if !roots.contains(col(0)) { roots.append(col(0)) }
-            if sqlite3_column_type(dstmt, 3) != SQLITE_NULL {
-                inputs.append((col(0), col(1), col(3)))
+        var unresolvedInputs: [(root: String, path: String)] = []
+        for entry in canonicalInput.entries {
+            if let objectID = entry.objectID {
+                inputs.append((entry.rootID, entry.relativePath, objectID))
+            } else {
+                // Index-only settlement: the address is the identity record's
+                // metadata object, not a copy of the entity bytes.
+                unresolvedInputs.append((entry.rootID, entry.relativePath))
             }
         }
-        sqlite3_finalize(dstmt)
-        let canonical = query + "|" + digests.joined(separator: ";")
-        let demandID = NativeSHA256.hexDigest(Data(canonical.utf8))
+        for input in unresolvedInputs {
+            if let address = try latestIndexObjectID(
+                identity: "file:\(input.root)/\(input.path)")
+            {
+                inputs.append((input.root, input.path, address))
+            }
+        }
+        let canonical = canonicalInput.canonical
+        let demandID = canonicalInput.digest
+        let roots = canonicalInput.rootIDs
 
         // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
         let settled = try prepare("""
@@ -1717,39 +2398,98 @@ public final class SimiGoESISDatabase {
         public let lineText: String
     }
 
-    /// 信息拓扑检索：在已结算的内容索引上按关键词命中（文件名 + 行级），
-    /// 不重扫文件系统——结算过的结果直接使用。
+    /// 信息拓扑检索：在已结算的文件索引上按关键词命中（行级）。索引可以
+    /// 只保存定位符 + 摘要（不拷贝实体），因此文本从注册根的定位符读取，
+    /// 并**逐次校验结算摘要**：磁盘内容已变而尚未重新结算 → 该行不是命中，
+    /// 由 ES 侧触发再结算（IS 只存/验，不判断语义）。
     public func searchSettledContent(query: String, rootID: String? = nil, limit: Int = 200)
         throws -> [ContentHit]
     {
-        guard !query.isEmpty else { return [] }
+        guard !query.isEmpty, limit > 0 else { return [] }
+        let rows = try settledFileRows(rootID: rootID)
         var hits: [ContentHit] = []
-        var sql = """
-        SELECT f.root_id, f.relative_path, CAST(o.content AS TEXT)
-        FROM file_contents f JOIN is_objects o ON o.object_id=f.object_id
-        WHERE CAST(o.content AS TEXT) LIKE ?
-        """
-        if rootID != nil { sql += " AND f.root_id='" + rootID!.replacingOccurrences(of: "'", with: "''") + "'" }
-        sql += ";"
-        let pattern = "%" + query.replacingOccurrences(of: "'", with: "''") + "%"
-        let stmt = try prepare(sql)
-        defer { sqlite3_finalize(stmt) }
-        bind(stmt, 1, pattern)
-        while sqlite3_step(stmt) == SQLITE_ROW, hits.count < limit {
-            func col(_ i: Int32) -> String {
-                guard let c = sqlite3_column_text(stmt, i) else { return "" }
-                return String(cString: c)
-            }
-            let rootIDv = col(0), rel = col(1), content = col(2)
-            for (idx, line) in content.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
+        for row in rows {
+            guard let body = try searchableFileText(row) else { continue }
+            for (idx, line) in body.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
             where line.localizedCaseInsensitiveContains(query) {
                 hits.append(ContentHit(
-                    rootID: rootIDv, relativePath: rel, lineNo: idx + 1,
-                    lineText: String(line.prefix(200))))
-                if hits.count >= limit { break }
+                    rootID: row.rootID, relativePath: row.relativePath,
+                    lineNo: idx + 1, lineText: String(line.prefix(200))))
+                if hits.count >= limit { return hits }
             }
         }
         return hits
+    }
+
+    struct SettledFileRow {
+        let rootID: String
+        let relativePath: String
+        let digest: String
+        let objectID: String?
+        let legacy: Data
+    }
+
+    func settledFileRows(rootID: String?) throws -> [SettledFileRow] {
+        var sql = """
+        SELECT root_id, relative_path, content_sha256, object_id, content
+        FROM file_contents
+        """
+        if let rootID {
+            sql += " WHERE root_id='" + rootID.replacingOccurrences(of: "'", with: "''") + "'"
+        }
+        sql += " ORDER BY root_id, relative_path;"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [SettledFileRow] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            let bytes = Int(sqlite3_column_bytes(stmt, 4))
+            let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
+            rows.append(SettledFileRow(
+                rootID: text(0) ?? "", relativePath: text(1) ?? "",
+                digest: text(2) ?? "", objectID: text(3), legacy: legacy))
+        }
+        return rows
+    }
+
+    /// Settled text for a row, or nil when no source produces bytes matching
+    /// the settled digest. Object store first (legacy/carrier rows), then the
+    /// registered root locator (index-only rows).
+    func searchableFileText(_ row: SettledFileRow) throws -> String? {
+        if let objectID = row.objectID, !objectID.isEmpty,
+            let data = try? readObject(objectID),
+            NativeSHA256.hexDigest(data) == row.digest
+        {
+            return String(decoding: data, as: UTF8.self)
+        }
+        if !row.legacy.isEmpty, NativeSHA256.hexDigest(row.legacy) == row.digest {
+            return String(decoding: row.legacy, as: UTF8.self)
+        }
+        guard let locator = try rootLocatorPath(row.rootID) else { return nil }
+        let relative = row.relativePath
+        guard !relative.isEmpty,
+            !relative.split(separator: "/").contains("..")
+        else { return nil }
+        let url = URL(fileURLWithPath: locator).appendingPathComponent(relative)
+        guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]),
+            NativeSHA256.hexDigest(data) == row.digest
+        else { return nil }
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    private func rootLocatorPath(_ rootID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT display_name FROM roots
+        WHERE root_id=? AND locator_type='path';
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, rootID)
+        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        else { return nil }
+        let path = String(cString: c)
+        return path.isEmpty ? nil : path
     }
 
     // MARK: - 对话落库（Information Space：会话即信息）
@@ -1776,6 +2516,24 @@ public final class SimiGoESISDatabase {
             let rowID = sqlite3_last_insert_rowid(handle)
             _ = try appendIndexEntryInTransaction(
                 identity: "chat:\(sessionID)/\(rowID)", objectID: objectID)
+            // Chat is information in the same space as files: one item registry,
+            // one content-addressed payload, no second copy.
+            try execBinding("""
+            INSERT INTO information_items(
+                item_id, kind, locator, source_version, source_payload_sha256, state, updated_at)
+            VALUES(?,?,?,?,?,'AVAILABLE',?)
+            ON CONFLICT(item_id) DO UPDATE SET
+                source_version=excluded.source_version,
+                source_payload_sha256=excluded.source_payload_sha256,
+                state='AVAILABLE', updated_at=excluded.updated_at;
+            """) { stmt in
+                bind(stmt, 1, "chat:\(sessionID)/\(rowID)")
+                bind(stmt, 2, "chat")
+                bind(stmt, 3, "session:\(sessionID)#\(rowID)")
+                bind(stmt, 4, Self.stamp(createdAt))
+                bind(stmt, 5, digest)
+                bind(stmt, 6, Self.stamp(createdAt))
+            }
         }
     }
 
@@ -1815,6 +2573,837 @@ public final class SimiGoESISDatabase {
                 contentSHA256: col(4), createdAt: col(5)))
         }
         return rows
+    }
+
+    public struct ChatHit: Equatable, Sendable, Codable {
+        public let sessionID: String
+        public let messageID: Int64
+        public let role: String
+        public let lineNo: Int
+        public let lineText: String
+        public let contentSHA256: String
+        public let createdAt: String
+    }
+
+    /// 对话检索：聊天信息一经落库即属信息空间，可按关键词作为 demand 的
+    /// 一项输入被检索、结算与复用。只读已落库消息，不回放模型。
+    public func searchChatMessages(
+        query: String, sessionID: String? = nil, limit: Int = 200
+    ) throws -> [ChatHit] {
+        guard !query.isEmpty, limit > 0 else { return [] }
+        var sql = """
+        SELECT c.session_id, c.id, c.role,
+               COALESCE(CAST(o.content AS TEXT), c.content),
+               c.content_sha256, c.created_at
+        FROM chat_messages c
+        LEFT JOIN is_objects o ON o.object_id=c.content_object_id
+        """
+        if let sessionID {
+            sql += " WHERE c.session_id='" + sessionID.replacingOccurrences(of: "'", with: "''") + "'"
+        }
+        sql += " ORDER BY c.session_id, c.id;"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var hits: [ChatHit] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            let session = text(0) ?? ""
+            let messageID = sqlite3_column_int64(stmt, 1)
+            let role = text(2) ?? ""
+            guard let body = text(3),
+                NativeSHA256.hexDigest(Data(body.utf8)) == (text(4) ?? "")
+            else { continue }
+            for (idx, line) in body.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
+            where line.localizedCaseInsensitiveContains(query) {
+                hits.append(ChatHit(
+                    sessionID: session, messageID: messageID, role: role,
+                    lineNo: idx + 1, lineText: String(line.prefix(200)),
+                    contentSHA256: text(4) ?? "", createdAt: text(5) ?? ""))
+                if hits.count >= limit { return hits }
+            }
+        }
+        return hits
+    }
+
+    public struct ChatIndexRow: Equatable, Sendable {
+        public let sessionID: String
+        public let messageID: Int64
+        public let role: String
+        public let content: String
+        public let contentSHA256: String
+        public let createdAt: String
+        public var itemID: String { "chat:\(sessionID)/\(messageID)" }
+    }
+
+    /// Every stored chat message as a demand input, with its settled digest.
+    func chatIndexRows(sessionIDs: [String]?) throws -> [ChatIndexRow] {
+        var sql = """
+        SELECT c.session_id, c.id, c.role,
+               COALESCE(CAST(o.content AS TEXT), c.content),
+               c.content_sha256, c.created_at
+        FROM chat_messages c
+        LEFT JOIN is_objects o ON o.object_id=c.content_object_id
+        """
+        if let sessionIDs, !sessionIDs.isEmpty {
+            let quoted = sessionIDs.map {
+                "'" + $0.replacingOccurrences(of: "'", with: "''") + "'"
+            }
+            sql += " WHERE c.session_id IN (\(quoted.joined(separator: ",")))"
+        }
+        sql += " ORDER BY c.session_id, c.id;"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [ChatIndexRow] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            rows.append(ChatIndexRow(
+                sessionID: text(0) ?? "", messageID: sqlite3_column_int64(stmt, 1),
+                role: text(2) ?? "", content: text(3) ?? "",
+                contentSHA256: text(4) ?? "", createdAt: text(5) ?? ""))
+        }
+        return rows
+    }
+
+    /// The carrier object currently addressed by an index identity. Index-only
+    /// file rows point here at their metadata record, not at file bytes.
+    public func latestIndexObjectID(identity: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT record_object FROM is_index_entries
+        WHERE srs_identity=? ORDER BY append_order DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, identity)
+        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        else { return nil }
+        return String(cString: c)
+    }
+
+    // MARK: - ES demand / IS settlement seam
+
+    public struct InformationDemandRow: Equatable, Sendable {
+        public let demandID: String
+        public let stateID: String?
+        public let sessionID: String?
+        public let query: String
+        public let inputDigest: String
+        public let retrievalSettlementID: String?
+        public let state: String
+    }
+
+    public func informationDemand(demandID: String) throws -> InformationDemandRow? {
+        let stmt = try prepare("""
+        SELECT demand_id, state_id, session_id, query, input_digest,
+               retrieval_settlement_id, state
+        FROM information_demands WHERE demand_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, demandID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        func text(_ i: Int32) -> String? {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        }
+        return InformationDemandRow(
+            demandID: text(0) ?? "", stateID: text(1), sessionID: text(2),
+            query: text(3) ?? "", inputDigest: text(4) ?? "",
+            retrievalSettlementID: text(5), state: text(6) ?? "")
+    }
+
+    public struct InformationInput: Sendable {
+        public let itemID: String
+        public let contentAddress: String
+        public init(itemID: String, contentAddress: String) {
+            self.itemID = itemID
+            self.contentAddress = contentAddress
+        }
+    }
+
+    public struct InformationRetrievalWrite: Sendable {
+        public let demandID: String
+        public let stateID: String?
+        public let sessionID: String?
+        public let query: String
+        public let rootIDs: [String]
+        public let includeChat: Bool
+        public let inputDigest: String
+        public let payload: Data
+        public let hitCount: Int
+        public let itemIDs: [String]
+        public let inputs: [InformationInput]
+        public let evaluatedAt: Date
+
+        public init(demandID: String, stateID: String?, sessionID: String?,
+                    query: String, rootIDs: [String], includeChat: Bool,
+                    inputDigest: String, payload: Data, hitCount: Int,
+                    itemIDs: [String], inputs: [InformationInput],
+                    evaluatedAt: Date = Date()) {
+            self.demandID = demandID; self.stateID = stateID
+            self.sessionID = sessionID; self.query = query
+            self.rootIDs = rootIDs; self.includeChat = includeChat
+            self.inputDigest = inputDigest; self.payload = payload
+            self.hitCount = hitCount; self.itemIDs = itemIDs
+            self.inputs = inputs; self.evaluatedAt = evaluatedAt
+        }
+    }
+
+    public struct InformationRetrievalCommit: Equatable, Sendable {
+        public let retrievalSettlementID: String
+        public let resultSHA256: String
+        public let resultObjectID: String
+    }
+
+    /// Record one demand resolution as BOTH the IS retrieval settlement and the
+    /// ES-visible settlement row, in a single transaction. The settlement row is
+    /// `IS_RETRIEVAL` and carries no state: it is an IS-produced fact referenced
+    /// by downstream model settlements through `dependency_edges`, never admitted
+    /// as if a model had produced it.
+    @discardableResult
+    public func recordInformationRetrieval(
+        _ write: InformationRetrievalWrite
+    ) throws -> InformationRetrievalCommit {
+        let resultSHA = NativeSHA256.hexDigest(write.payload)
+        let settlementID = "is-retrieval:\(write.demandID)"
+        var resultObjectID = ""
+        let now = Self.stamp(write.evaluatedAt)
+        try transaction {
+            resultObjectID = try ensureObject(write.payload)
+            try execBinding("""
+            INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status, payload_object_id)
+            VALUES(?,NULL,?,?,?,NULL,?,?,?,?)
+            ON CONFLICT(settlement_id) DO UPDATE SET
+                schema_version=excluded.schema_version, payload_digest=excluded.payload_digest,
+                settled_at=excluded.settled_at, validation_status=excluded.validation_status,
+                payload_object_id=excluded.payload_object_id;
+            """) { stmt in
+                bind(stmt, 1, settlementID)
+                bind(stmt, 2, "simigo.information-demand/v1")
+                bind(stmt, 3, Data())
+                bind(stmt, 4, resultSHA)
+                bind(stmt, 5, "simigo.is-retrieval/v1")
+                bind(stmt, 6, now)
+                bind(stmt, 7, "IS_RETRIEVAL")
+                bind(stmt, 8, resultObjectID)
+            }
+            _ = try appendIndexEntryInTransaction(
+                identity: "settlement:\(settlementID)", objectID: resultObjectID)
+            _ = try appendIndexEntryInTransaction(
+                identity: "demand:\(write.demandID)", objectID: resultObjectID)
+
+            try execBinding("""
+            INSERT INTO retrieval_settlements(
+                demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
+                hit_count, status, settled_at, result_object_id, include_chat, bridged_settlement_id)
+            VALUES(?,?,?,?,?,'',?, 'valid',?,?,?,?)
+            ON CONFLICT(demand_id) DO UPDATE SET
+                query=excluded.query, root_ids=excluded.root_ids,
+                inputs_digest=excluded.inputs_digest, result_sha256=excluded.result_sha256,
+                result_json='', hit_count=excluded.hit_count, status='valid',
+                settled_at=excluded.settled_at, result_object_id=excluded.result_object_id,
+                include_chat=excluded.include_chat,
+                bridged_settlement_id=excluded.bridged_settlement_id;
+            """) { stmt in
+                bind(stmt, 1, write.demandID)
+                bind(stmt, 2, write.query)
+                bind(stmt, 3, write.rootIDs.joined(separator: ","))
+                bind(stmt, 4, write.inputDigest)
+                bind(stmt, 5, resultSHA)
+                bind(stmt, 6, Int64(write.hitCount))
+                bind(stmt, 7, now)
+                bind(stmt, 8, resultObjectID)
+                bind(stmt, 9, Int64(write.includeChat ? 1 : 0))
+                bind(stmt, 10, settlementID)
+            }
+
+            let itemsJSON = (try? JSONSerialization.data(
+                withJSONObject: write.itemIDs, options: [.sortedKeys, .withoutEscapingSlashes]))
+                .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+            try execBinding("""
+            INSERT INTO information_demands(
+                demand_id, state_id, session_id, continuation_point, query,
+                required_item_ids_json, pending_obligations_json,
+                continuation_conditions_json, input_digest, retrieval_demand_id,
+                retrieval_settlement_id, state, created_at)
+            VALUES(?,?,?,'information-retrieval',?,?,'[]','[]',?,?,?,'RESOLVED',?)
+            ON CONFLICT(demand_id) DO UPDATE SET
+                state_id=excluded.state_id, session_id=excluded.session_id,
+                query=excluded.query,
+                required_item_ids_json=excluded.required_item_ids_json,
+                input_digest=excluded.input_digest,
+                retrieval_demand_id=excluded.retrieval_demand_id,
+                retrieval_settlement_id=excluded.retrieval_settlement_id,
+                state='RESOLVED';
+            """) { stmt in
+                bind(stmt, 1, write.demandID)
+                bind(stmt, 2, write.stateID)
+                bind(stmt, 3, write.sessionID)
+                bind(stmt, 4, write.query)
+                bind(stmt, 5, itemsJSON)
+                bind(stmt, 6, write.inputDigest)
+                bind(stmt, 7, write.demandID)
+                bind(stmt, 8, settlementID)
+                bind(stmt, 9, now)
+            }
+            // A newer demand for the same ES state/query supersedes the old one,
+            // but an already-advanced demand keeps its receipt.
+            try execBinding("""
+            UPDATE information_demands SET state='SUPERSEDED'
+            WHERE state_id IS ? AND query=? AND demand_id<>? AND state='RESOLVED';
+            """) { stmt in
+                bind(stmt, 1, write.stateID)
+                bind(stmt, 2, write.query)
+                bind(stmt, 3, write.demandID)
+            }
+            for input in write.inputs {
+                _ = try appendDependencyInTransaction(
+                    dependencyID: "demand:\(write.demandID) -> \(input.itemID)",
+                    contentAddress: input.contentAddress,
+                    reason: "demand-input")
+            }
+        }
+        return InformationRetrievalCommit(
+            retrievalSettlementID: settlementID,
+            resultSHA256: resultSHA, resultObjectID: resultObjectID)
+    }
+
+    /// The verified result payload of a recorded demand, or nil when the demand
+    /// or its payload object is missing. Digest is re-checked against the row.
+    /// A settlement invalidated by an upstream source change is never returned:
+    /// the reader must re-execute against the new content revision.
+    public func informationRetrievalPayload(demandID: String) throws -> Data? {
+        let stmt = try prepare("""
+        SELECT s.payload_digest, s.payload_object_id
+        FROM retrieval_settlements r
+        JOIN settlements s ON s.settlement_id=r.bridged_settlement_id
+        WHERE r.demand_id=? AND r.status='valid'
+          AND s.validity='valid' AND s.invalidated_at IS NULL;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, demandID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        let digest = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+        guard let objectText = sqlite3_column_text(stmt, 1) else { return nil }
+        let objectID = String(cString: objectText)
+        guard let data = try? readObject(objectID),
+            NativeSHA256.hexDigest(data) == digest
+        else { return nil }
+        return data
+    }
+
+    public struct InformationAdvancementWrite: Sendable {
+        public let demandID: String
+        public let stateID: String
+        public let settlementID: String
+        public let retrievalSettlementID: String
+        public let actions: [String]
+        public let result: Data
+        public let advancedAt: Date
+
+        public init(demandID: String, stateID: String, settlementID: String,
+                    retrievalSettlementID: String, actions: [String],
+                    result: Data, advancedAt: Date = Date()) {
+            self.demandID = demandID; self.stateID = stateID
+            self.settlementID = settlementID
+            self.retrievalSettlementID = retrievalSettlementID
+            self.actions = actions; self.result = result
+            self.advancedAt = advancedAt
+        }
+    }
+
+    /// Mark a demand advanced by a settled model result: links the settlement to
+    /// the retrieval settlement it depends on, so invalidating retrieved inputs
+    /// cascades into every result derived from them.
+    @discardableResult
+    public func recordInformationAdvancement(
+        _ write: InformationAdvancementWrite
+    ) throws -> String {
+        let advancementID = UUID().uuidString
+        try transaction {
+            try insertInformationAdvancementRows(write, advancementID: advancementID)
+        }
+        return advancementID
+    }
+
+    /// Caller owns the transaction so advancement can commit atomically with the
+    /// settlement and child state that produced it.
+    @discardableResult
+    func insertInformationAdvancementRows(
+        _ write: InformationAdvancementWrite,
+        advancementID: String = UUID().uuidString
+    ) throws -> String {
+        let actionsJSON = (try? JSONSerialization.data(
+            withJSONObject: write.actions, options: [.sortedKeys, .withoutEscapingSlashes]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+        let resultJSON = String(decoding: write.result, as: UTF8.self)
+        let now = Self.stamp(write.advancedAt)
+        try execBinding("""
+        INSERT INTO information_advancements(
+            advancement_id, demand_id, state_id, settlement_id,
+            retrieval_settlement_id, actions_json, result_json, advanced_at)
+        VALUES(?,?,?,?,?,?,?,?);
+        """) { stmt in
+            bind(stmt, 1, advancementID)
+            bind(stmt, 2, write.demandID)
+            bind(stmt, 3, write.stateID)
+            bind(stmt, 4, write.settlementID)
+            bind(stmt, 5, write.retrievalSettlementID)
+            bind(stmt, 6, actionsJSON)
+            bind(stmt, 7, resultJSON)
+            bind(stmt, 8, now)
+        }
+        try execBinding("""
+        UPDATE information_demands SET state='ADVANCED' WHERE demand_id=?;
+        """) { stmt in bind(stmt, 1, write.demandID) }
+        try execBinding("""
+        INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
+        SELECT ?,?,?
+        WHERE NOT EXISTS (
+            SELECT 1 FROM dependency_edges
+            WHERE from_settlement=? AND to_settlement=? AND kind='information-demand');
+        """) { stmt in
+            bind(stmt, 1, write.settlementID)
+            bind(stmt, 2, write.retrievalSettlementID)
+            bind(stmt, 3, "information-demand")
+            bind(stmt, 4, write.settlementID)
+            bind(stmt, 5, write.retrievalSettlementID)
+        }
+        if let address = try settlementPayloadObject(write.retrievalSettlementID) {
+            _ = try appendDependencyInTransaction(
+                dependencyID: "settlement:\(write.settlementID) -> settlement:\(write.retrievalSettlementID)",
+                contentAddress: address,
+                reason: "information-demand")
+        }
+        return advancementID
+    }
+
+    // MARK: - Settlement consumption (Stage B)
+
+    /// Everything the write half of a consumption needs. The caller (see
+    /// `SimiGoSettlementConsumption`) has already re-admitted the named source
+    /// and re-checked the contract/canonical basis INSIDE the same transaction;
+    /// this plan is only the set of rows to commit.
+    struct SettlementConsumptionPlan {
+        let consumptionID: String
+        let sourceSettlementID: String
+        let sourcePayloadDigest: String
+        let consumerState: ChildExecutionState
+        let consumerIdentity: SimiGoSettlementIdentityBinding.Identity
+        let consumerResultContractJSON: Data
+        let consumedValue: String
+        let demandID: String
+        let query: String
+        let rootIDs: [String]
+        let canonicalText: String
+        let canonicalDigest: String
+        let contractID: String
+        let demandClass: String
+        let contractVersion: String
+        let requiredIdentityJSON: String
+        let extractField: String
+        let basisJSON: Data
+        let consumedAt: Date
+    }
+
+    struct SettlementConsumptionCommit: Equatable, Sendable {
+        let consumptionID: String
+        let consumerSettlementID: String
+        let advancementID: String
+        let demandID: String
+    }
+
+    /// Write one consumption as a single authoritative unit. Caller owns the
+    /// transaction, so the source re-admission and every row below either commit
+    /// together or roll back together.
+    ///
+    /// The consumer settlement is `DERIVED_CONSUMPTION`: it carries the consumed
+    /// value sealed under the consumer's result contract, binds the CONSUMER's
+    /// identity (never the producer's), records no KV representation, and is
+    /// linked to the source through both `dependency_edges` and the append-only
+    /// dependency ledger. It is therefore chainable but never mistakable for a
+    /// model generation.
+    func recordSettlementConsumption(
+        _ plan: SettlementConsumptionPlan
+    ) throws -> SettlementConsumptionCommit {
+        let settled = try SimiGoSettlementAuthority.authorize(
+            generatedText: plan.consumedValue,
+            contractJSON: plan.consumerResultContractJSON,
+            verifiedBindings: [:],
+            settledAt: plan.consumedAt)
+        let consumerSettlementID = UUID().uuidString
+        let advancementID = UUID().uuidString
+
+        try insertExecutionStateRow(
+            id: plan.consumerState.id, parentID: plan.consumerState.parentID,
+            modelIdentity: plan.consumerState.modelIdentity,
+            position: plan.consumerState.position,
+            continuationID: plan.consumerState.continuationID,
+            anchor: plan.consumerState.anchor,
+            lifecycle: "active", createdAt: plan.consumerState.createdAt,
+            nextInput: plan.consumerState.nextInput,
+            prefixJSON: plan.consumerState.prefixJSON)
+
+        try insertNativeSettlementRows(
+            settled, settlementID: consumerSettlementID,
+            stateID: plan.consumerState.id,
+            validationStatusOverride: "DERIVED_CONSUMPTION")
+        try insertDerivedBindingRows(
+            settlementID: consumerSettlementID,
+            rows: SimiGoSettlementIdentityBinding.consumerBindings(
+                for: plan.consumerIdentity))
+
+        try execBinding("""
+        INSERT INTO settlement_consumptions(
+            consumption_id, source_settlement_id, consumer_state_id,
+            consumer_settlement_id, demand_id, contract_id, demand_class,
+            contract_version, canonical_digest, basis_json, model_calls, created_at)
+        VALUES(?,?,?,?,?,?,?,?,?,?,0,?);
+        """) { stmt in
+            bind(stmt, 1, plan.consumptionID)
+            bind(stmt, 2, plan.sourceSettlementID)
+            bind(stmt, 3, plan.consumerState.id)
+            bind(stmt, 4, consumerSettlementID)
+            bind(stmt, 5, plan.demandID)
+            bind(stmt, 6, plan.contractID)
+            bind(stmt, 7, plan.demandClass)
+            bind(stmt, 8, plan.contractVersion)
+            bind(stmt, 9, plan.canonicalDigest)
+            bind(stmt, 10, plan.basisJSON)
+            bind(stmt, 11, Self.stamp(plan.consumedAt))
+        }
+
+        try execBinding("""
+        INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
+        SELECT ?,?,?
+        WHERE NOT EXISTS (
+            SELECT 1 FROM dependency_edges
+            WHERE from_settlement=? AND to_settlement=? AND kind='settlement-consumption');
+        """) { stmt in
+            bind(stmt, 1, consumerSettlementID)
+            bind(stmt, 2, plan.sourceSettlementID)
+            bind(stmt, 3, "settlement-consumption")
+            bind(stmt, 4, consumerSettlementID)
+            bind(stmt, 5, plan.sourceSettlementID)
+        }
+        if let address = try settlementPayloadObject(plan.sourceSettlementID) {
+            _ = try appendDependencyInTransaction(
+                dependencyID: "settlement:\(consumerSettlementID) -> settlement:\(plan.sourceSettlementID)",
+                contentAddress: address,
+                reason: "settlement-consumption")
+        }
+
+        let itemsJSON = "[]"
+        try execBinding("""
+        INSERT INTO information_demands(
+            demand_id, state_id, session_id, continuation_point, query,
+            required_item_ids_json, pending_obligations_json,
+            continuation_conditions_json, input_digest, retrieval_demand_id,
+            retrieval_settlement_id, state, created_at)
+        VALUES(?,?,NULL,'settlement-consumption',?,?,'[]','[]',?,NULL,NULL,'ADVANCED',?)
+        ON CONFLICT(demand_id) DO UPDATE SET
+            state_id=excluded.state_id, query=excluded.query,
+            input_digest=excluded.input_digest, state='ADVANCED';
+        """) { stmt in
+            bind(stmt, 1, plan.demandID)
+            bind(stmt, 2, plan.consumerState.id)
+            bind(stmt, 3, plan.query)
+            bind(stmt, 4, itemsJSON)
+            bind(stmt, 5, plan.canonicalDigest)
+            bind(stmt, 6, Self.stamp(plan.consumedAt))
+        }
+        try execBinding("""
+        INSERT INTO information_advancements(
+            advancement_id, demand_id, state_id, settlement_id,
+            retrieval_settlement_id, actions_json, result_json, advanced_at)
+        VALUES(?,?,?,?,NULL,?,?,?);
+        """) { stmt in
+            bind(stmt, 1, advancementID)
+            bind(stmt, 2, plan.demandID)
+            bind(stmt, 3, plan.consumerState.id)
+            bind(stmt, 4, consumerSettlementID)
+            bind(stmt, 5, "[\"consume-settlement\"]")
+            bind(stmt, 6, String(decoding: settled.validatedPayload, as: UTF8.self))
+            bind(stmt, 7, Self.stamp(plan.consumedAt))
+        }
+
+        // A derived result is citable downstream, but only with its provenance.
+        // The summary reads the consumption row written above.
+        _ = try recordSettlementSummaryInTransaction(
+            settlementID: consumerSettlementID, sessionID: nil,
+            query: plan.query, settledAt: plan.consumedAt)
+
+        return SettlementConsumptionCommit(
+            consumptionID: plan.consumptionID,
+            consumerSettlementID: consumerSettlementID,
+            advancementID: advancementID,
+            demandID: plan.demandID)
+    }
+
+    // MARK: - Settlement reuse declaration (Stage B)
+
+    /// The reuse terms a settlement publishes at settlement time. A settlement
+    /// without this row is NOT consumable: reusability is a declared property of
+    /// the settled unit, never inferred from text similarity.
+    public struct SettlementReuseDeclaration: Equatable, Sendable {
+        public let settlementID: String
+        public let contractID: String
+        public let demandClass: String
+        public let contractVersion: String
+        public let query: String
+        public let rootIDs: [String]
+        public let canonicalText: String
+        public let canonicalDigest: String
+        public let requiredIdentityJSON: String
+        public let extractField: String
+        public let declaredAt: String
+    }
+
+    /// Declare that `settlementID` may be consumed verbatim for exactly the
+    /// canonical input basis computed here. Runs in its own write transaction,
+    /// so the recorded basis is the basis at declaration time. Re-declaring the
+    /// same terms is idempotent; changing them is refused rather than silently
+    /// rewriting terms a consumer may already have relied on.
+    @discardableResult
+    public func declareSettlementReuseContract(
+        settlementID: String,
+        contractID: String,
+        demandClass: String,
+        contractVersion: String,
+        query: String,
+        rootIDs: [String]? = nil,
+        extractField: String = "content",
+        declaredAt: Date = Date()
+    ) throws -> SettlementReuseDeclaration {
+        try transactionResult {
+            guard let row = try settlementAdmissionRow(settlementID: settlementID) else {
+                throw SimiGoSettlementConsumption.Refusal.unknownSource(settlementID)
+            }
+            guard row.validationStatus != "MIGRATED_LEGACY" else {
+                throw SimiGoSettlementConsumption.Refusal.unknownSource(settlementID)
+            }
+            guard row.validity == "valid" else {
+                throw SimiGoSettlementConsumption.Refusal.sourceNotValid(settlementID)
+            }
+            guard SimiGoSettlementAuthority.payloadDigestMatches(
+                row.payload, recordedDigest: row.recordedPayloadDigest)
+            else {
+                throw SimiGoSettlementConsumption.Refusal.sourceTampered(settlementID)
+            }
+            let canonical = try canonicalDemandInput(query: query, rootIDs: rootIDs)
+            // The declared root set is what the demand NAMED, not only the roots
+            // that currently carry files: an extra empty root must still count as
+            // a different demand.
+            let requestedRoots = (rootIDs?.isEmpty == false)
+                ? Array(Set(rootIDs!)).sorted()
+                : canonical.rootIDs
+            let bindings = try settlementBindings(settlementID: settlementID)
+            let derived = row.validationStatus == "DERIVED_CONSUMPTION"
+            let modelKey = derived
+                ? SimiGoSettlementIdentityBinding.consumerModelKey
+                : SimiGoSettlementIdentityBinding.modelKey
+            let tokenizerKey = derived
+                ? SimiGoSettlementIdentityBinding.consumerTokenizerKey
+                : SimiGoSettlementIdentityBinding.tokenizerKey
+            guard let model = bindings[modelKey], !model.isEmpty,
+                let tokenizer = bindings[tokenizerKey], !tokenizer.isEmpty
+            else {
+                throw SimiGoSettlementConsumption.Refusal.identityUndeclared(settlementID)
+            }
+            let identityJSON = try Self.canonicalJSON([
+                "kind": derived ? "consumer" : "producer",
+                "model": model,
+                "tokenizer": tokenizer,
+            ])
+            let rootsJSON = try Self.canonicalJSON(requestedRoots)
+
+            if let existing = try settlementReuseContract(settlementID: settlementID) {
+                let same = existing.contractID == contractID
+                    && existing.demandClass == demandClass
+                    && existing.contractVersion == contractVersion
+                    && existing.query == query
+                    && existing.rootIDs == requestedRoots
+                    && existing.canonicalDigest == canonical.digest
+                    && existing.requiredIdentityJSON == identityJSON
+                    && existing.extractField == extractField
+                guard same else {
+                    throw SimiGoSettlementConsumption.Refusal.contractMismatch(
+                        field: "declaration", expected: existing.contractID,
+                        actual: contractID)
+                }
+                return existing
+            }
+
+            let stamp = Self.stamp(declaredAt)
+            try execBinding("""
+            INSERT INTO settlement_reuse_contracts(
+                settlement_id, contract_id, demand_class, contract_version,
+                query, root_ids_json, canonical_text, canonical_digest,
+                required_identity_json, extract_field, declared_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?);
+            """) { stmt in
+                bind(stmt, 1, settlementID)
+                bind(stmt, 2, contractID)
+                bind(stmt, 3, demandClass)
+                bind(stmt, 4, contractVersion)
+                bind(stmt, 5, query)
+                bind(stmt, 6, rootsJSON)
+                bind(stmt, 7, canonical.canonical)
+                bind(stmt, 8, canonical.digest)
+                bind(stmt, 9, identityJSON)
+                bind(stmt, 10, extractField)
+                bind(stmt, 11, stamp)
+            }
+            return SettlementReuseDeclaration(
+                settlementID: settlementID, contractID: contractID,
+                demandClass: demandClass, contractVersion: contractVersion,
+                query: query, rootIDs: requestedRoots,
+                canonicalText: canonical.canonical,
+                canonicalDigest: canonical.digest,
+                requiredIdentityJSON: identityJSON,
+                extractField: extractField, declaredAt: stamp)
+        }
+    }
+
+    public func settlementReuseContract(
+        settlementID: String
+    ) throws -> SettlementReuseDeclaration? {
+        let stmt = try prepare("""
+        SELECT settlement_id, contract_id, demand_class, contract_version, query,
+               root_ids_json, canonical_text, canonical_digest,
+               required_identity_json, extract_field, declared_at
+        FROM settlement_reuse_contracts WHERE settlement_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, settlementID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        func text(_ i: Int32) -> String {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        }
+        let roots = (try? JSONDecoder().decode([String].self, from: Data(text(5).utf8))) ?? []
+        return SettlementReuseDeclaration(
+            settlementID: text(0), contractID: text(1), demandClass: text(2),
+            contractVersion: text(3), query: text(4), rootIDs: roots,
+            canonicalText: text(6), canonicalDigest: text(7),
+            requiredIdentityJSON: text(8), extractField: text(9),
+            declaredAt: text(10))
+    }
+
+    public struct SettlementConsumptionRow: Equatable, Sendable {
+        public let consumptionID: String
+        public let sourceSettlementID: String
+        public let consumerStateID: String
+        public let consumerSettlementID: String
+        public let demandID: String
+        public let contractID: String
+        public let demandClass: String
+        public let contractVersion: String
+        public let canonicalDigest: String
+        public let basisJSON: Data
+        public let modelCalls: Int
+        public let createdAt: String
+    }
+
+    public func settlementConsumption(
+        sourceSettlementID: String, consumerStateID: String, demandID: String
+    ) throws -> SettlementConsumptionRow? {
+        let stmt = try prepare("""
+        SELECT consumption_id, source_settlement_id, consumer_state_id,
+               consumer_settlement_id, demand_id, contract_id, demand_class,
+               contract_version, canonical_digest, basis_json, model_calls, created_at
+        FROM settlement_consumptions
+        WHERE source_settlement_id=? AND consumer_state_id=? AND demand_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sourceSettlementID)
+        bind(stmt, 2, consumerStateID)
+        bind(stmt, 3, demandID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return Self.consumptionRow(stmt)
+    }
+
+    public func settlementConsumptions(
+        consumerStateID: String
+    ) throws -> [SettlementConsumptionRow] {
+        let stmt = try prepare("""
+        SELECT consumption_id, source_settlement_id, consumer_state_id,
+               consumer_settlement_id, demand_id, contract_id, demand_class,
+               contract_version, canonical_digest, basis_json, model_calls, created_at
+        FROM settlement_consumptions WHERE consumer_state_id=?
+        ORDER BY created_at, consumption_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, consumerStateID)
+        var out: [SettlementConsumptionRow] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(Self.consumptionRow(stmt))
+        }
+        return out
+    }
+
+    private static func consumptionRow(
+        _ stmt: OpaquePointer
+    ) -> SettlementConsumptionRow {
+        func text(_ i: Int32) -> String {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        }
+        let bytes = Int(sqlite3_column_bytes(stmt, 9))
+        let basis = sqlite3_column_blob(stmt, 9).map {
+            Data(bytes: $0, count: bytes)
+        } ?? Data()
+        return SettlementConsumptionRow(
+            consumptionID: text(0), sourceSettlementID: text(1),
+            consumerStateID: text(2), consumerSettlementID: text(3),
+            demandID: text(4), contractID: text(5), demandClass: text(6),
+            contractVersion: text(7), canonicalDigest: text(8),
+            basisJSON: basis, modelCalls: Int(sqlite3_column_int64(stmt, 10)),
+            createdAt: text(11))
+    }
+
+    private static func canonicalJSON(_ object: Any) throws -> String {
+        let data = try JSONSerialization.data(
+            withJSONObject: object, options: [.sortedKeys, .withoutEscapingSlashes])
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    // MARK: - Chat session ↔ ES link
+
+    public func linkChatSession(sessionID: String, stateID: String,
+                                modelIdentity: String) throws {
+        try execBinding("""
+        INSERT INTO chat_execution_links(session_id, current_state_id, model_identity, updated_at)
+        VALUES(?,?,?,?)
+        ON CONFLICT(session_id) DO UPDATE SET
+            current_state_id=excluded.current_state_id,
+            model_identity=excluded.model_identity,
+            updated_at=excluded.updated_at;
+        """) { stmt in
+            bind(stmt, 1, sessionID)
+            bind(stmt, 2, stateID)
+            bind(stmt, 3, modelIdentity)
+            bind(stmt, 4, Self.stamp(Date()))
+        }
+    }
+
+    public func currentChatStateID(sessionID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT current_state_id FROM chat_execution_links WHERE session_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID)
+        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        else { return nil }
+        return String(cString: c)
+    }
+
+    public func executionStatePosition(_ stateID: String) throws -> Int? {
+        let stmt = try prepare("""
+        SELECT position FROM execution_states WHERE state_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, stateID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return Int(sqlite3_column_int64(stmt, 0))
     }
 
     /// Register or refresh an external root. Idempotent upsert keyed on root_id.
@@ -2091,8 +3680,6 @@ public final class SimiGoESISDatabase {
         guard !ids.isEmpty else { return [] }
         try transaction {
             try markSettlementsInvalidInTransaction(ids)
-            try invalidateRetrievalSettlementsInTransaction(
-                rootID: rootID, relativePath: relativePath, oldDigest: "")
         }
         return ids
     }
@@ -2109,6 +3696,15 @@ public final class SimiGoESISDatabase {
             """) { stmt in
                 bind(stmt, 1, now)
                 bind(stmt, 2, id)
+            }
+            // A bridged retrieval row is the demand-side view of the same
+            // settlement. Leaving it 'valid' would advertise reuse to every
+            // reader that keys on status alone.
+            try execBinding("""
+            UPDATE retrieval_settlements SET status='invalidated'
+            WHERE bridged_settlement_id=? AND status='valid';
+            """) { stmt in
+                bind(stmt, 1, id)
             }
         }
     }
@@ -2240,12 +3836,63 @@ public final class SimiGoESISDatabase {
         throw DatabaseError.sql("settlementValidity: unknown settlement \(settlementID)")
     }
 
-    /// Number of settlements currently marked valid (unaffected by invalidation).
+    /// Number of MODEL-PRODUCED settlements currently valid. Derived
+    /// consumption rows are valid and chainable, but counting them as model
+    /// output would overstate how much work the engine actually did.
     public func validSettlementCount() throws -> Int {
-        let stmt = try prepare("SELECT COUNT(*) FROM settlements WHERE validity='valid';")
+        let stmt = try prepare("""
+        SELECT COUNT(*) FROM settlements
+        WHERE validity='valid' AND ifnull(validation_status,'')<>'DERIVED_CONSUMPTION';
+        """)
         defer { sqlite3_finalize(stmt) }
         if sqlite3_step(stmt) == SQLITE_ROW { return Int(sqlite3_column_int64(stmt, 0)) }
         return 0
+    }
+
+    /// The minimal row admission-by-id needs: sealed payload, recorded digest,
+    /// validity and producer/derivation status. Targeted so an admission inside
+    /// a consumption transaction does not read every settlement payload.
+    public struct SettlementAdmissionRow: Equatable, Sendable {
+        public let settlementID: String
+        public let stateID: String?
+        public let payload: Data
+        public let recordedPayloadDigest: String
+        public let validationStatus: String?
+        public let validity: String
+    }
+
+    public func settlementAdmissionRow(
+        settlementID: String
+    ) throws -> SettlementAdmissionRow? {
+        let stmt = try prepare("""
+        SELECT state_id, payload, payload_digest, validation_status, validity, payload_object_id
+        FROM settlements WHERE settlement_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, settlementID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        func text(_ i: Int32) -> String? {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        }
+        let objectID = text(5) ?? ""
+        let payload: Data
+        if !objectID.isEmpty {
+            payload = try readObject(objectID)
+        } else {
+            let bytes = Int(sqlite3_column_bytes(stmt, 1))
+            if let base = sqlite3_column_blob(stmt, 1), bytes > 0 {
+                payload = Data(bytes: base, count: bytes)
+            } else {
+                payload = Data()
+            }
+        }
+        return SettlementAdmissionRow(
+            settlementID: settlementID,
+            stateID: text(0),
+            payload: payload,
+            recordedPayloadDigest: text(2) ?? "",
+            validationStatus: text(3),
+            validity: text(4) ?? "valid")
     }
 
     /// A settlement read back from Information Space: the verified payload
@@ -2266,6 +3913,8 @@ public final class SimiGoESISDatabase {
         public let invalidatedAt: String?
         public let bindings: [String: String]
         public let dependencies: [DependencyEntry]
+        /// Distilled, reusable projection of this settlement, when one exists.
+        public let summary: SettlementSummaryRecord?
     }
 
     public func settlementReceipt(_ settlementID: String) throws -> SettlementReceiptRecord? {
@@ -2329,7 +3978,295 @@ public final class SimiGoESISDatabase {
             validity: validity,
             invalidatedAt: invalidatedAt,
             bindings: try settlementBindings(settlementID: settlementID),
-            dependencies: try settlementDependencies(settlementID: settlementID))
+            dependencies: try settlementDependencies(settlementID: settlementID),
+            summary: try settlementSummary(settlementID: settlementID))
+    }
+
+    // MARK: - Settlement summaries (post-settlement distillation)
+
+    /// One distilled settlement. `summarySHA256` is the digest of `summary`
+    /// itself, and `summaryObjectID` carries the sealed `Summary` JSON. Reads
+    /// re-verify object bytes against that address, so a summary is only ever
+    /// handed out with the bytes it was sealed with.
+    public struct SettlementSummaryRecord: Equatable, Sendable {
+        public let settlementID: String
+        public let sessionID: String?
+        public let query: String
+        public let summary: String
+        public let summarySHA256: String
+        public let summaryObjectID: String
+        public let sourcePayloadDigest: String
+        public let createdAt: String
+        /// `DERIVED_CONSUMPTION` when the summary describes a consumed value
+        /// rather than model output; nil for a model-produced settlement.
+        public let derivationType: String?
+        /// The settlement this derived summary ultimately came from.
+        public let sourceSettlementID: String?
+    }
+
+    /// Distill the settlement's own sealed payload and record the result. The
+    /// caller passes only the settlement identity plus the query it answered;
+    /// text always comes from the stored payload, never from a second copy.
+    /// Returns nil when the settlement is unknown or has nothing to distill.
+    @discardableResult
+    public func recordSettlementSummary(
+        settlementID: String,
+        sessionID: String?,
+        query: String,
+        settledAt: Date = Date()
+    ) throws -> SettlementSummaryRecord? {
+        var record: SettlementSummaryRecord?
+        try transaction {
+            record = try recordSettlementSummaryInTransaction(
+                settlementID: settlementID, sessionID: sessionID,
+                query: query, settledAt: settledAt)
+        }
+        return record
+    }
+
+    /// Caller owns the transaction.
+    private func recordSettlementSummaryInTransaction(
+        settlementID: String,
+        sessionID: String?,
+        query: String,
+        settledAt: Date
+    ) throws -> SettlementSummaryRecord? {
+        var payloadDigest = ""
+        var payload = Data()
+        var validationStatus: String?
+        let stmt = try prepare("""
+        SELECT payload_digest, payload, payload_object_id, validation_status
+        FROM settlements WHERE settlement_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, settlementID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        if let c = sqlite3_column_text(stmt, 0) { payloadDigest = String(cString: c) }
+        if let object = sqlite3_column_text(stmt, 2).map({ String(cString: $0) }),
+            !object.isEmpty {
+            payload = try readObject(object)
+        } else {
+            let bytes = Int(sqlite3_column_bytes(stmt, 1))
+            if let base = sqlite3_column_blob(stmt, 1), bytes > 0 {
+                payload = Data(bytes: base, count: bytes)
+            }
+        }
+        validationStatus = sqlite3_column_text(stmt, 3).map { String(cString: $0) }
+        guard !payloadDigest.isEmpty else { return nil }
+
+        let text = SettlementSummaryPolicy.distill(
+            SettlementSummaryPolicy.text(fromPayload: payload))
+        guard !text.isEmpty else { return nil }
+
+        let derived = validationStatus == "DERIVED_CONSUMPTION"
+        let provenance = derived ? try consumptionSource(
+            consumerSettlementID: settlementID) : nil
+        let sealed = SettlementSummaryPolicy.Summary(
+            settlementID: settlementID, sessionID: sessionID,
+            query: query, text: text, sourcePayloadDigest: payloadDigest,
+            derivationType: derived ? "DERIVED_CONSUMPTION" : nil,
+            sourceSettlementID: provenance)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        let bytes = try encoder.encode(sealed)
+        let objectID = try ensureObject(bytes)
+        let summarySHA = NativeSHA256.hexDigest(Data(text.utf8))
+        let stamp = Self.stamp(settledAt)
+
+        try execBinding("""
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at,
+            derivation_type, provenance_settlement_id)
+        VALUES(?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(settlement_id) DO UPDATE SET
+            session_id=excluded.session_id, query=excluded.query,
+            summary=excluded.summary, summary_sha256=excluded.summary_sha256,
+            summary_object_id=excluded.summary_object_id,
+            source_payload_digest=excluded.source_payload_digest,
+            created_at=excluded.created_at,
+            derivation_type=excluded.derivation_type,
+            provenance_settlement_id=excluded.provenance_settlement_id;
+        """) { stmt in
+            bind(stmt, 1, settlementID)
+            bind(stmt, 2, sessionID)
+            bind(stmt, 3, query)
+            bind(stmt, 4, text)
+            bind(stmt, 5, summarySHA)
+            bind(stmt, 6, objectID)
+            bind(stmt, 7, payloadDigest)
+            bind(stmt, 8, stamp)
+            bind(stmt, 9, derived ? "DERIVED_CONSUMPTION" : nil)
+            bind(stmt, 10, provenance)
+        }
+        _ = try appendIndexEntryInTransaction(
+            identity: "settlement-summary:\(settlementID)", objectID: objectID)
+
+        return SettlementSummaryRecord(
+            settlementID: settlementID, sessionID: sessionID, query: query,
+            summary: text, summarySHA256: summarySHA,
+            summaryObjectID: objectID, sourcePayloadDigest: payloadDigest,
+            createdAt: stamp,
+            derivationType: derived ? "DERIVED_CONSUMPTION" : nil,
+            sourceSettlementID: provenance)
+    }
+
+    /// Read one summary back with its object bytes verified against the address.
+    public func settlementSummary(settlementID: String) throws -> SettlementSummaryRecord? {
+        let stmt = try prepare("""
+        SELECT settlement_id, session_id, query, summary, summary_sha256,
+               summary_object_id, source_payload_digest, created_at,
+               derivation_type, provenance_settlement_id
+        FROM settlement_summaries WHERE settlement_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, settlementID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        func text(_ i: Int32) -> String {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        }
+        let record = SettlementSummaryRecord(
+            settlementID: text(0),
+            sessionID: sqlite3_column_text(stmt, 1).map { String(cString: $0) },
+            query: text(2), summary: text(3), summarySHA256: text(4),
+            summaryObjectID: text(5), sourcePayloadDigest: text(6),
+            createdAt: text(7),
+            derivationType: sqlite3_column_text(stmt, 8).map { String(cString: $0) },
+            sourceSettlementID: sqlite3_column_text(stmt, 9).map { String(cString: $0) })
+        return try verified(record)
+    }
+
+    /// Summaries a later demand may cite: still valid, never a retrieval result
+    /// or a migrated legacy row, and not the demand's own conversation. A
+    /// `DERIVED_CONSUMPTION` summary IS citable, but it carries its derivation
+    /// type and source settlement so a consumer cannot present it as independent
+    /// generation evidence. Newest first.
+    public func citableSettlementSummaries(
+        sessionID: String?, limit: Int = 200
+    ) throws -> [SettlementSummaryRecord] {
+        let stmt = try prepare("""
+        SELECT m.settlement_id, m.session_id, m.query, m.summary, m.summary_sha256,
+               m.summary_object_id, m.source_payload_digest, m.created_at,
+               m.derivation_type, m.provenance_settlement_id
+        FROM settlement_summaries m
+        JOIN settlements s ON s.settlement_id=m.settlement_id
+        WHERE s.validity='valid' AND s.invalidated_at IS NULL
+          AND ifnull(s.validation_status,'') NOT IN ('IS_RETRIEVAL','MIGRATED_LEGACY')
+          AND (m.session_id IS NULL OR m.session_id<>?)
+        ORDER BY m.created_at DESC, m.settlement_id
+        LIMIT ?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID ?? "")
+        bind(stmt, 2, Int64(max(1, min(limit, 2000))))
+        var out: [SettlementSummaryRecord] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            let record = SettlementSummaryRecord(
+                settlementID: text(0),
+                sessionID: sqlite3_column_text(stmt, 1).map { String(cString: $0) },
+                query: text(2), summary: text(3), summarySHA256: text(4),
+                summaryObjectID: text(5), sourcePayloadDigest: text(6),
+                createdAt: text(7),
+                derivationType: sqlite3_column_text(stmt, 8).map { String(cString: $0) },
+                sourceSettlementID: sqlite3_column_text(stmt, 9).map { String(cString: $0) })
+            if let verified = try? verified(record) { out.append(verified) }
+        }
+        return out
+    }
+
+    /// A summary is usable only when its text still hashes to the recorded
+    /// digest, its object decodes, and it names the settlement it is filed
+    /// under. Any drift disqualifies it instead of being cited.
+    private func verified(
+        _ record: SettlementSummaryRecord
+    ) throws -> SettlementSummaryRecord? {
+        guard NativeSHA256.hexDigest(Data(record.summary.utf8)) == record.summarySHA256
+        else { return nil }
+        let data = try readObject(record.summaryObjectID)
+        guard let sealed = try? JSONDecoder().decode(
+            SettlementSummaryPolicy.Summary.self, from: data)
+        else { return nil }
+        guard sealed.settlementID == record.settlementID,
+            sealed.text == record.summary,
+            sealed.sourcePayloadDigest == record.sourcePayloadDigest,
+            sealed.derivationType == record.derivationType,
+            sealed.sourceSettlementID == record.sourceSettlementID
+        else { return nil }
+        return record
+    }
+
+    /// The settlement a derived consumption record consumed. Used to stamp the
+    /// summary's provenance chain in the SAME transaction as the consumption.
+    private func consumptionSource(consumerSettlementID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT source_settlement_id FROM settlement_consumptions
+        WHERE consumer_settlement_id=? ORDER BY created_at LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, consumerSettlementID)
+        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        else { return nil }
+        return String(cString: c)
+    }
+
+    /// Summarize model-produced settlements that predate v10 (or that were
+    /// written by a path which had no query to record). Idempotent.
+    @discardableResult
+    public func backfillSettlementSummaries() throws -> Int {
+        var count = 0
+        try transaction {
+            count = try backfillSettlementSummariesInTransaction()
+        }
+        return count
+    }
+
+    /// Caller owns the transaction.
+    private func backfillSettlementSummariesInTransaction() throws -> Int {
+        let stmt = try prepare("""
+        SELECT s.settlement_id, s.settled_at, s.validation_status
+        FROM settlements s
+        LEFT JOIN settlement_summaries m ON m.settlement_id=s.settlement_id
+        WHERE m.settlement_id IS NULL
+          AND ifnull(s.validation_status,'') NOT IN ('IS_RETRIEVAL','MIGRATED_LEGACY')
+        ORDER BY s.settled_at, s.settlement_id;
+        """)
+        var pending: [(id: String, settledAt: String, status: String?)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            let settledAt = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+            let status = sqlite3_column_text(stmt, 2).map { String(cString: $0) }
+            if !id.isEmpty { pending.append((id, settledAt, status)) }
+        }
+        sqlite3_finalize(stmt)
+
+        var written = 0
+        for row in pending {
+            var query = ""
+            var sessionID: String?
+            let ctx = try prepare("""
+            SELECT d.query, d.session_id
+            FROM information_advancements a
+            JOIN information_demands d ON d.demand_id=a.demand_id
+            WHERE a.settlement_id=?
+            ORDER BY a.advanced_at DESC LIMIT 1;
+            """)
+            bind(ctx, 1, row.id)
+            if sqlite3_step(ctx) == SQLITE_ROW {
+                query = sqlite3_column_text(ctx, 0).map { String(cString: $0) } ?? ""
+                sessionID = sqlite3_column_text(ctx, 1).map { String(cString: $0) }
+            }
+            sqlite3_finalize(ctx)
+            if let record = try recordSettlementSummaryInTransaction(
+                settlementID: row.id, sessionID: sessionID, query: query,
+                settledAt: parseISO8601(row.settledAt) ?? Date()),
+                record.summary.isEmpty == false {
+                written += 1
+            }
+        }
+        return written
     }
 
     /// Every dependency revision whose identity starts with
@@ -2412,8 +4349,19 @@ public final class SimiGoESISDatabase {
         let content: Data
         if let objectID, !objectID.isEmpty {
             content = try readObject(objectID)
-        } else {
+        } else if !legacy.isEmpty {
             content = legacy
+        } else {
+            // Index-only row: the entity bytes never left the locator, so read
+            // them there and verify against the settled digest (fail closed).
+            guard let locator = try rootLocatorPath(rootID),
+                !relativePath.split(separator: "/").contains("..")
+            else { return nil }
+            let url = URL(fileURLWithPath: locator).appendingPathComponent(relativePath)
+            guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]),
+                NativeSHA256.hexDigest(data) == digest
+            else { return nil }
+            content = data
         }
         return CarriedFileContent(
             rootID: rootID, relativePath: relativePath,
