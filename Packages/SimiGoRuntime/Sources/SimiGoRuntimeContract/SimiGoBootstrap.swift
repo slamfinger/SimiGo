@@ -96,19 +96,19 @@ public enum SimiGoBootstrap {
             return (.ok, "discovered \(found.count) model file(s)")
         }
 
-        // 5. Settle declared external work roots: index by (root_id,
-        //    relative_path) AND carry textual content in the content-addressed
-        //    object store so later execution can reuse it. No second physical
-        //    copy lands on disk.
+        // 5. Settle declared external work roots as a PHYSICAL INDEX: locator +
+        //    digest + size per file, no entity bytes copied into the store, so a
+        //    later execution period verifies and reuses the on-disk file itself.
         step("index-work") {
             for entry in workRoots {
                 let settled = try db.settleWorkRootContents(
                     rootID: entry.rootID, rootURL: entry.url,
-                    category: entry.category, maxDepth: maxIndexDepth)
+                    category: entry.category, maxDepth: maxIndexDepth,
+                    carryText: false)
                 workIndexed += settled.scanned
             }
             return (workRoots.isEmpty ? .skipped : .ok,
-                    "settled \(workIndexed) work file(s)")
+                    "indexed \(workIndexed) work file(s)")
         }
 
         // 6. Re-derive validity for roots registered in earlier runs, so content

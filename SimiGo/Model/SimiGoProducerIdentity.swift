@@ -80,6 +80,14 @@ enum SimiGoProducerIdentity {
             tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: path)))
     }
 
+    /// A single durable identity string for an execution state: the model
+    /// binding fingerprint, never the snapshot path. Two states of the same
+    /// model revision carry the same value; a different model or revision does
+    /// not.
+    static func canonicalModelIdentity(fromPath path: String) -> String {
+        modelBindingFingerprint(modelIdentity(fromPath: path))
+    }
+
     /// Drive the authoritative store's IS admission for a live continuation:
     /// recover the verified settled value for `stateID` under the consumer
     /// identity of the model resolved at `modelPath`, or throw a typed,
@@ -113,5 +121,100 @@ enum SimiGoProducerIdentity {
             // instead of silently downgrading it to 422 INPUT_ADMISSION_REFUSED.
             throw error
         }
+    }
+
+    /// Drive the product's single zero-call consumption transaction for an
+    /// explicitly named settled unit. The consumer identity is re-derived from
+    /// THIS runtime's model snapshot (a request assertion is only compared, never
+    /// trusted), the consumer Execution State is fresh, and every refusal is a
+    /// typed failure — nothing falls back to generation here.
+    @MainActor
+    static func consumeSettlement(
+        entry: SettlementConsumptionEntry,
+        modelPath: String
+    ) throws -> SettlementConsumptionOutcome {
+        let identity = identity(fromPath: modelPath)
+        if let asserted = entry.identityAssertion, asserted != identity {
+            throw SettlementConsumptionFailure.identityMismatch
+        }
+        let store = ExecutionStateGraphStore()
+        let request = SimiGoSettlementConsumption.Request(
+            sourceSettlementID: entry.sourceSettlementID,
+            consumerStateID: "es-" + UUID().uuidString.lowercased(),
+            consumerParentStateID: nil,
+            consumerPosition: 1,
+            consumerModelIdentity: identity.model,
+            consumerIdentity: identity,
+            contractID: entry.contractID,
+            demandClass: entry.demandClass,
+            contractVersion: entry.contractVersion,
+            extractField: entry.extractField,
+            query: entry.query,
+            rootIDs: entry.rootIDs,
+            allowRecompute: entry.allowRecompute,
+            resultContractJSON: SimiGoInformationLoop.chatResultContractJSON,
+            consumedAt: Date())
+        do {
+            switch try store.consumeSettlement(request) {
+            case .consumed(let consumed):
+                return .consumed(SettlementConsumptionReceipt(
+                    consumptionID: consumed.consumptionID,
+                    sourceSettlementID: consumed.sourceSettlementID,
+                    consumerESStateID: consumed.consumerStateID,
+                    consumerSettlementID: consumed.consumerSettlementID,
+                    demandID: consumed.demandID,
+                    canonicalDigest: consumed.canonicalDigest,
+                    value: consumed.value,
+                    modelCalls: consumed.modelCalls,
+                    reusedExisting: consumed.reusedExisting,
+                    contractID: entry.contractID,
+                    demandClass: entry.demandClass,
+                    contractVersion: entry.contractVersion,
+                    extractField: entry.extractField))
+            case .recompute(let reason):
+                return .recompute(reason: reason)
+            }
+        } catch let refusal as SimiGoSettlementConsumption.Refusal {
+            throw SettlementConsumptionFailure.refused(
+                code: refusal.reasonCode, detail: String(describing: refusal))
+        } catch let refusal as SimiGoISAdmission.Refusal {
+            // Known, typed IS admission verdict -> business refusal (422). Only
+            // the enumerated denial reasons are classified here; store and IO
+            // faults do not surface as this type and stay 500 below.
+            throw Self.consumptionRefusal(refusal)
+        } catch ExecutionGraphError.storeUnavailable {
+            throw SettlementConsumptionFailure.unavailable
+        } catch let failure as SettlementConsumptionFailure {
+            throw failure
+        } catch {
+            throw SettlementConsumptionFailure.engine(
+                "authoritative settlement consumption unavailable")
+        }
+    }
+
+    /// Stable HTTP reason codes for native admission denials. Each case names
+    /// WHICH precondition failed, so a consumer can distinguish a tampered
+    /// source from an invalidated one or a broken dependency.
+    private static func consumptionRefusal(
+        _ refusal: SimiGoISAdmission.Refusal
+    ) -> SettlementConsumptionFailure {
+        let code: String
+        switch refusal {
+        case .noSettlement, .unknownSettlement:
+            code = "unknown_source"
+        case .digestMismatch:
+            code = "source_tampered"
+        case .invalidated:
+            code = "source_not_valid"
+        case .dependencyMissing:
+            code = "dependency_missing"
+        case .dependencyInvalid:
+            code = "dependency_invalid"
+        case .producerBinding(let verdict):
+            code = verdict.code ?? "identity_binding_refused"
+        case .emptyValue:
+            code = "empty_value"
+        }
+        return .refused(code: code, detail: String(describing: refusal))
     }
 }

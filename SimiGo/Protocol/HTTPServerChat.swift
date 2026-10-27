@@ -56,6 +56,134 @@ import Network
 /// tool fingerprint / runtime lineage 决定。
 
 extension HTTPServer {
+
+    // MARK: - Information turn (ES demand → IS → settlement)
+
+    struct InformationTurn {
+        let db: SimiGoESISDatabase
+        let loop: SimiGoInformationLoop
+        let sessionID: String
+        let query: String
+        let resolution: SimiGoInformationLoop.Resolution
+        let modelIdentity: String
+        let identity: SimiGoSettlementIdentityBinding.Identity
+        let parentStateID: String?
+        let position: Int
+    }
+
+    /// Resolve the turn's information demand BEFORE generation and persist the
+    /// user message. The returned messages may carry a bounded, digest-verified
+    /// Information-Space context block. A stable information scope is used when
+    /// the client supplies no session: it groups stored chat only and never
+    /// changes the protocol execution session feeding the model runtime.
+    func prepareInformationTurn(
+        json: [String: Any],
+        headers: [String: String],
+        agentId: String?,
+        messages: [JSONValue],
+        sessionID: String? = nil,
+        queryOverride: String? = nil
+    ) -> (messages: [JSONValue], turn: InformationTurn?) {
+        let lastUser = messages.reversed().first {
+            $0.object?["role"]?.string == "user"
+        }?.object?["content"]?.string
+        let querySource = queryOverride ?? lastUser
+        guard let query = querySource?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !query.isEmpty
+        else { return (messages, nil) }
+        guard let db = try? SimiGoESISDatabase(
+            url: SimiGoPaths.databaseURL, createIfNeeded: true)
+        else { return (messages, nil) }
+        try? db.runMigrations()
+
+        let infoSession = sessionID
+            ?? resolveExplicitSession(from: json, headers: headers)
+            ?? Self.informationScope(agentId: agentId, messages: messages)
+        let loop = SimiGoInformationLoop(database: db)
+        let resolution = try? loop.resolve(.init(
+            sessionID: infoSession, query: query, includeChat: true,
+            chatSessionIDs: [infoSession], limit: 30))
+        let context = resolution.map { loop.contextBlock($0) } ?? ""
+
+        // Persist only this turn's user text, not the whole request envelope:
+        // re-storing the accumulated history would make every later retrieval
+        // return the same duplicated block.
+        try? db.appendChatMessage(
+            sessionID: infoSession, role: "user", content: query,
+            model: modelId, createdAt: Date())
+
+        let producer = informationTurnProducer?()
+        let parent = (try? db.currentChatStateID(sessionID: infoSession)) ?? nil
+        let position = parent
+            .flatMap { (try? db.executionStatePosition($0)) ?? nil }
+            .map { $0 + 1 } ?? 0
+        let turn = InformationTurn(
+            db: db, loop: loop, sessionID: infoSession, query: query,
+            resolution: resolution ?? SimiGoInformationLoop.Resolution(
+                demandID: "", stateID: nil, reused: false, hits: [],
+                inputDigest: "", resultSHA256: "", retrievalSettlementID: "",
+                itemIDs: [], staleItemIDs: []),
+            modelIdentity: producer?.modelIdentity ?? modelId,
+            identity: producer?.identity
+                ?? .init(model: "unspecified", tokenizer: "unspecified"),
+            parentStateID: parent, position: position)
+        guard !context.isEmpty else { return (messages, turn) }
+        var augmented = messages
+        // The block must not enter the reusable prefix: the prefix pool keys on the
+        // token chain of the message list, and this block changes on every turn
+        // because this turn's own user text is already settled into the IS. Leading
+        // system insertion therefore destroyed every cross-ES KV bind (measured
+        // 2026-10-26: identical request bodies → mode=cold, cacheHitTokens=0).
+        // Appending to the trailing user turn keeps the leading prefix byte-stable.
+        if let lastUser = augmented.lastIndex(where: {
+            $0.object?["role"]?.string == "user"
+        }), var obj = augmented[lastUser].object, obj["content"]?.string != nil {
+            obj["content"] = .string(obj["content"]!.string! + "\n\n" + context)
+            augmented[lastUser] = .object(obj)
+        } else {
+            augmented.append(
+                .object(["role": .string("user"), "content": .string(context)]))
+        }
+        return (augmented, turn)
+    }
+
+    /// Settle the produced turn: chat text into the IS, then one authoritative
+    /// transaction for ES state + settlement + producer identity + advancement.
+    func settleInformationTurn(_ turn: InformationTurn, assistantText: String) {
+        let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        try? turn.db.appendChatMessage(
+            sessionID: turn.sessionID, role: "assistant", content: text,
+            model: modelId, createdAt: Date())
+        _ = try? turn.loop.settleTurn(
+            generatedText: text,
+            resolution: turn.resolution,
+            stateID: "chat-\(UUID().uuidString.lowercased())",
+            parentStateID: turn.parentStateID,
+            position: turn.position,
+            modelIdentity: turn.modelIdentity,
+            identity: turn.identity,
+            sessionID: turn.sessionID,
+            summaryQuery: turn.query,
+            actions: ["chat.completion"])
+    }
+
+    /// Chat grouping key when the client supplies no session. Derived from the
+    /// conversation's opening messages, which clients resend on every turn.
+    static func informationScope(agentId: String?, messages: [JSONValue]) -> String {
+        var seed = agentId ?? ""
+        for message in messages {
+            guard let object = message.object,
+                let role = object["role"]?.string,
+                role == "system" || role == "user"
+            else { continue }
+            seed += "|\(role):\(object["content"]?.string ?? "")"
+            if role == "user" { break }
+        }
+        let digest = SimiGoSettlementAuthority.payloadDigest(Data(seed.utf8))
+        return "info-" + digest.prefix(32)
+    }
+
     // MARK: - Chat Completions / Streaming
 
     func handleStreaming(
@@ -86,6 +214,10 @@ extension HTTPServer {
             tools,
             config
         ) = parsed
+
+        let information = prepareInformationTurn(
+            json: json, headers: headers, agentId: agentId, messages: messages)
+        let turnMessages = information.messages
 
         if let forkFrom =
             normalizeIdentifier(
@@ -151,6 +283,9 @@ extension HTTPServer {
 
         let hasToolCalls =
             Locked(false)
+
+        let streamedContent =
+            Locked("")
 
         let toolCallIndexCounter =
             Locked(0)
@@ -231,7 +366,7 @@ extension HTTPServer {
                 agentId,
                 sessionId,
                 logicalBranchId,
-                messages,
+                turnMessages,
                 tools,
                 config,
 
@@ -244,6 +379,8 @@ extension HTTPServer {
                     else {
                         return
                     }
+
+                    streamedContent.mutate { $0.append(text) }
 
                     self.sendImmediateSSEChunk(
                         [
@@ -318,6 +455,11 @@ extension HTTPServer {
                 !Task.isCancelled
             else {
                 return
+            }
+
+            if let turn = information.turn {
+                settleInformationTurn(
+                    turn, assistantText: streamedContent.value)
             }
 
             sendImmediateSSEChunk(
@@ -550,6 +692,10 @@ extension HTTPServer {
             config
         ) = parsed
 
+        let information = prepareInformationTurn(
+            json: json, headers: headers, agentId: agentId, messages: messages)
+        let turnMessages = information.messages
+
         if let forkFrom =
             normalizeIdentifier(
                 json["fork_from_branch"] as? String
@@ -634,7 +780,7 @@ extension HTTPServer {
                 agentId,
                 sessionId,
                 logicalBranchId,
-                messages,
+                turnMessages,
                 tools,
                 config,
 
@@ -668,21 +814,8 @@ extension HTTPServer {
 
             let message: [String: Any]
 
-            // 对话落库（Information Space）：assistant 回复 + 原始请求体（含 user 轮）写入权威库
-            if let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true) {
-                try? db.runMigrations()
-                let model = (json["model"] as? String) ?? "unknown"
-                if let requestData = try? JSONSerialization.data(
-                    withJSONObject: json, options: [.sortedKeys])
-                {
-                    try? db.appendChatMessage(
-                        sessionID: sessionId, role: "user",
-                        content: String(data: requestData, encoding: .utf8) ?? "",
-                        model: model, createdAt: Date())
-                }
-                try? db.appendChatMessage(
-                    sessionID: sessionId, role: "assistant",
-                    content: content, model: model, createdAt: Date())
+            if let turn = information.turn {
+                settleInformationTurn(turn, assistantText: content)
             }
             if calls.isEmpty {
                 message = [

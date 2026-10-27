@@ -514,7 +514,9 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - HTTP Request
 
-    private struct HTTPRequest {
+    /// Internal (not file-private) so handler extensions in this module can
+    /// share the single parsed-request type without re-parsing targets.
+    struct HTTPRequest {
         let method: String
 
         /// Route path derived exactly once at parse time from the validated
@@ -549,6 +551,17 @@ public final class HTTPServer: @unchecked Sendable {
     /// contract. Absent (nil) means any request that explicitly asks to
     /// settle is refused fail-closed BEFORE generation.
     let continuationSettlement: ContinuationSettlementHandler?
+    /// Zero-call settlement consumption authority for the typed
+    /// `settlement_consumption` opt-in. Absent (nil) means such a request is
+    /// refused fail-closed BEFORE any generation.
+    let settlementConsumption: SettlementConsumptionHandler?
+    /// Managed-continuation authority (`previous_es_state_id` +
+    /// `recompute_policy`). Absent (nil) means such a request is refused
+    /// fail-closed; the legacy continuation path is unaffected.
+    let managedContinuation: ManagedContinuationHandler?
+    /// Producer identity for information-turn settlements. Absent only when the
+    /// runtime has no resolved model snapshot (headless/library callers).
+    let informationTurnProducer: InformationTurnProducerProvider?
     private let deleteBranchHandler: DeleteBranchHandler
     private let listBranchesHandler: ListBranchesHandler
     private let checkHealthHandler: CheckHealthHandler
@@ -677,7 +690,10 @@ public final class HTTPServer: @unchecked Sendable {
         remoteBackend: RemoteOpenAIBackend? = nil,
         baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() },
         continuationAdmission: ContinuationAdmissionHandler? = nil,
-        continuationSettlement: ContinuationSettlementHandler? = nil
+        continuationSettlement: ContinuationSettlementHandler? = nil,
+        settlementConsumption: SettlementConsumptionHandler? = nil,
+        managedContinuation: ManagedContinuationHandler? = nil,
+        informationTurnProducer: InformationTurnProducerProvider? = nil
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -710,6 +726,9 @@ public final class HTTPServer: @unchecked Sendable {
         self.baseConfigProvider = baseConfigProvider
         self.continuationAdmission = continuationAdmission
         self.continuationSettlement = continuationSettlement
+        self.settlementConsumption = settlementConsumption
+        self.managedContinuation = managedContinuation
+        self.informationTurnProducer = informationTurnProducer
     }
 
     // MARK: - Lifecycle
@@ -1225,6 +1244,11 @@ public final class HTTPServer: @unchecked Sendable {
             // Re-derives carried validity; it writes only derived IS state, so
             // it needs the SRS-write permission rather than inference or admin.
             return .protected(permission: .srsWrite)
+        case ("POST", "/mcp"), ("GET", "/mcp"):
+            // Agent-facing IS surface: the tools read the settled index and may
+            // register roots / re-derive validity, so the whole endpoint needs
+            // the SRS-write permission (never inference only).
+            return .protected(permission: .srsWrite)
         case ("POST", "/v1/chat/completions"),
              ("POST", "/chat/completions"),
              ("POST", "/v1/completions"),
@@ -1497,16 +1521,48 @@ public final class HTTPServer: @unchecked Sendable {
         do {
             let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
-            let retrieval = try db.executeInformationDemand(query: q, rootID: rootID)
+            var includeChat = true
+            var sessionID: String?
+            if !request.body.isEmpty,
+                let obj = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any]
+            {
+                if let flag = obj["include_chat"] as? Bool { includeChat = flag }
+                sessionID = obj["session_id"] as? String
+            }
+            if let target = URL(string: "http://x" + request.requestTarget),
+                let comps = URLComponents(url: target, resolvingAgainstBaseURL: false)?.queryItems
+            {
+                if let flag = comps.first(where: { $0.name == "include_chat" })?.value {
+                    includeChat = (flag as NSString).boolValue
+                }
+                sessionID = sessionID
+                    ?? comps.first(where: { $0.name == "session_id" })?.value
+            }
+            let loop = SimiGoInformationLoop(database: db)
+            let resolution = try loop.resolve(.init(
+                sessionID: sessionID, query: q,
+                rootIDs: rootID.map { [$0] } ?? [],
+                includeChat: includeChat,
+                chatSessionIDs: sessionID.map { [$0] } ?? []))
             sendJSON(
                 [
-                    "demand_id": retrieval.demandID,
-                    "reused": retrieval.reused,
-                    "status": retrieval.status,
-                    "result_sha256": retrieval.resultSHA256,
-                    "hits": retrieval.hits.map { [
-                        "root_id": $0.rootID,
-                        "path": $0.relativePath,
+                    "demand_id": resolution.demandID,
+                    "reused": resolution.reused,
+                    "status": resolution.reused ? "reused" : "settled",
+                    "result_sha256": resolution.resultSHA256,
+                    "retrieval_settlement_id": resolution.retrievalSettlementID,
+                    "stale_items": resolution.staleItemIDs,
+                    "items": resolution.hits.map { [
+                        "item_id": $0.itemID,
+                        "kind": $0.kind,
+                        "locator": $0.locator,
+                        "line": $0.lineNo,
+                        "text": $0.lineText,
+                        "source_sha256": $0.sourceSHA256,
+                    ] },
+                    "hits": resolution.hits.filter { $0.kind == "file" }.map { [
+                        "root_id": $0.rootID ?? "",
+                        "path": $0.relativePath ?? "",
                         "line": $0.lineNo,
                         "text": $0.lineText,
                     ] },
@@ -1625,6 +1681,7 @@ public final class HTTPServer: @unchecked Sendable {
                     "unaddressed_chat_messages": report.unaddressedChatMessages,
                     "unaddressed_retrieval_results": report.unaddressedRetrievalResults,
                     "unaddressed_settlements": report.unaddressedSettlements,
+                    "settlement_summaries": report.settlementSummaries,
                     "dangling_references": report.danglingReferences,
                     "corrupt_objects": report.corruptObjects,
                     "inline_legacy_payloads": report.inlineLegacyPayloads,
@@ -1943,7 +2000,8 @@ public final class HTTPServer: @unchecked Sendable {
                 rootID: rootID, category: "work", displayName: standardized,
                 locatorType: "path", status: "registered")
             let settle = try db.settleWorkRootContents(
-                rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
+                rootID: rootID, rootURL: URL(fileURLWithPath: standardized),
+                carryText: false)
             sendJSON(
                 [
                     "root_id": rootID, "path": standardized, "registered": true,
@@ -2126,6 +2184,9 @@ public final class HTTPServer: @unchecked Sendable {
 
         case ("POST", "/v1/simigo/is/reconcile"):
             try await handleSimigoReconcileRequest(request, context: context)
+
+        case ("POST", "/mcp"), ("GET", "/mcp"):
+            await handleMCPRequest(request, context: context)
 
         case ("PUT", "/v1/simigo/roots"), ("POST", "/v1/simigo/roots"):
             try await handleSimigoRootsPutRequest(request, context: context)

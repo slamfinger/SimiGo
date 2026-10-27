@@ -14,14 +14,20 @@ public struct ContinuationAdmissionOutcome: Sendable {
     public let esStateID: String
     public let recoveredValue: String
     public let verifiedBindings: [String: NativeContractValue]
+    /// The `kv.*` binding digests the admitted settlement recorded, if any.
+    /// Empty means the settlement claimed no prefix representation, so the
+    /// continuation has no authority to reuse KV state.
+    public let kvBindings: [String: String]
     public init(
         esStateID: String,
         recoveredValue: String,
-        verifiedBindings: [String: NativeContractValue]
+        verifiedBindings: [String: NativeContractValue],
+        kvBindings: [String: String] = [:]
     ) {
         self.esStateID = esStateID
         self.recoveredValue = recoveredValue
         self.verifiedBindings = verifiedBindings
+        self.kvBindings = kvBindings
     }
 }
 

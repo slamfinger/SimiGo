@@ -524,7 +524,8 @@ final class ExecutionStateGraphStore: ObservableObject {
         parentStateID: String,
         childStateID: String,
         verifiedBindings: [String: NativeContractValue],
-        producerIdentity: SimiGoSettlementIdentityBinding.Identity
+        producerIdentity: SimiGoSettlementIdentityBinding.Identity,
+        kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil
     ) throws -> ContinuationSettlementCommit {
         guard let parent = document.states.first(where: { $0.id == parentStateID }) else {
             throw ExecutionGraphError.invalidTransition("continuation parent state not found")
@@ -557,12 +558,15 @@ final class ExecutionStateGraphStore: ObservableObject {
             createdAt: createdAt
         )
         // One transaction: child ES + settlement + constraint rows + producer
-        // identity bindings. The method returns only after all of it committed.
+        // identity bindings + (when the engine exported one) the derived KV
+        // prefix-representation bindings. The method returns only after all of it
+        // committed.
         let settlementUUID = try db.recordNativeSettlementWithIdentity(
             settled,
             stateID: childStateID,
             identity: producerIdentity,
-            childState: child
+            childState: child,
+            kvRepresentation: kvRepresentation
         )
 
         // Update ONLY the in-memory projection, and only after the whole
@@ -622,6 +626,19 @@ final class ExecutionStateGraphStore: ObservableObject {
             throw ExecutionGraphError.storeUnavailable(persistError ?? "ES/IS authority unavailable")
         }
         return try SimiGoISAdmission.admit(db: db, stateID: stateID, consumer: consumer)
+    }
+
+    /// Stage B consumption edge: one authoritative transaction consumes an
+    /// explicitly named settlement into a fresh Execution State. Validity,
+    /// dependency closure, identity, contract terms and the canonical input are
+    /// all re-verified inside that transaction; no model is invoked.
+    func consumeSettlement(
+        _ request: SimiGoSettlementConsumption.Request
+    ) throws -> SimiGoSettlementConsumption.Outcome {
+        guard let db = ensureESIS() else {
+            throw ExecutionGraphError.storeUnavailable(persistError ?? "ES/IS authority unavailable")
+        }
+        return try SimiGoSettlementConsumption.consume(db: db, request: request)
     }
 
     // MARK: - Authoritative SQLite commit + legacy migration

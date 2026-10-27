@@ -252,11 +252,20 @@ func makeNativeMLXContinuationSettlementHandler(
     modelPath: String
 ) -> ContinuationSettlementHandler {
     return { request in
-        try await MainActor.run {
+        // A-2 write side: the engine exported this branch's prefix representation
+        // at the end of the turn that generated THIS text (the export is awaited
+        // before generation returns), and it is looked up by THIS request's child
+        // ES id — never taken from the request body or from another execution.
+        // `nil` means the turn produced no KV boundary claim, so the settlement
+        // records none and the next admission has no KV authority to grant.
+        let kvRepresentation = NativeMLXPrefixPool.shared.representation(
+            forBranch: request.childESStateID)
+        return try await MainActor.run {
             try settleForNativeMLXContinuation(
                 store: ExecutionStateGraphStore(),
                 request: request,
-                modelPath: modelPath
+                modelPath: modelPath,
+                kvRepresentation: kvRepresentation
             )
         }
     }
@@ -269,7 +278,8 @@ func makeNativeMLXContinuationSettlementHandler(
 func settleForNativeMLXContinuation(
     store: ExecutionStateGraphStore,
     request: ContinuationSettlementRequest,
-    modelPath: String
+    modelPath: String,
+    kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil
 ) throws -> ContinuationSettlementOutcome {
     // The anchor must name a live state in the authoritative graph; an
     // unknown anchor is an authority/infrastructure fault, never a
@@ -286,7 +296,8 @@ func settleForNativeMLXContinuation(
         parentStateID: request.parentESStateID,
         childStateID: request.childESStateID,
         verifiedBindings: request.verifiedBindings,
-        producerIdentity: producer
+        producerIdentity: producer,
+        kvRepresentation: kvRepresentation
     )
     // The atomic database method returns only after the child state row, the
     // settlement rows and both producer identity rows commit as one unit.

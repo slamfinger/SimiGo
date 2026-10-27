@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import Network
+import SimiGoRuntimeContract
 
 /// SimiGo 本机 / 局域网共享 OpenAI-compatible HTTP Server
 ///
@@ -444,6 +445,17 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     /// Explicit post-generation settlement opt-in (`continuation_settle`).
     /// Absent/false leaves the dispatch path unchanged.
     let continuationSettle: Bool
+
+    /// Raw `settlement_consumption` payload when the key is present. Presence is
+    /// recorded separately from presence-of-nil so a malformed payload is a
+    /// typed refusal, never a silent fallback to ordinary generation.
+    let settlementConsumptionPresent: Bool
+    let settlementConsumptionRaw: Any?
+
+    /// C-scope managed-continuation fields (`recompute_policy`,
+    /// `idempotency_key`, `consumer_es_state_id`, `root_ids`). Parsed on every
+    /// request; `isInert` means the dispatch must stay on the pre-C path.
+    let managed: ManagedContinuationFields
 }
 
 
@@ -512,10 +524,23 @@ extension HTTPServer {
                     parentESStateID: anchor,
                     childESStateID: childESStateID,
                     verifiedBindings: outcome.verifiedBindings))
+            // A-2: the IS settlement is the PRE-AUTHORITY for KV reuse on this
+            // continuation. The digests verified by admission travel to the child
+            // ES; the pool bind site re-checks them against the representation it
+            // is about to consume. No KV binding in the settlement therefore means
+            // NO authority to reuse KV state — the bind is refused and the turn
+            // prefills cold. Requests without an ES anchor register nothing, so the
+            // everyday path stays byte-identical to before A-2.
+            ISKVBindAuthority.shared.register(
+                esStateID: childESStateID,
+                verdict: outcome.kvBindings.isEmpty
+                    ? .unauthorized(reason: "no_settled_kv_binding")
+                    : .authorized(outcome.kvBindings))
             RuntimeTraceLogger.shared.trace(
                 "[PROTOCOL] continuation_admitted r=\(context.requestId)"
                 + " parent=\(anchor) child=\(childESStateID)"
-                + " bindings=\(outcome.verifiedBindings.count)")
+                + " bindings=\(outcome.verifiedBindings.count)"
+                + " kvBindings=\(outcome.kvBindings.count)")
             return parsed.canonicalMessages + [
                 JSONValue.object([
                     "role": .string("user"),
@@ -581,6 +606,293 @@ extension HTTPServer {
         }
     }
 
+    // MARK: - Settlement consumption step (zero model calls)
+
+    enum SettlementConsumptionDispatch {
+        /// A typed terminal was already written; return without generating.
+        case refused
+        case consumed(SettlementConsumptionReceipt)
+        case recompute(reason: String)
+    }
+
+    /// Parse the typed payload strictly, then drive the injected consumption
+    /// authority. Nothing here calls the model; a refusal writes its terminal
+    /// and the dispatch must return.
+    func settlementConsumptionStep(
+        parsed: ResponsesParsedRequest,
+        context: ConnectionContext
+    ) async -> SettlementConsumptionDispatch {
+        let entry: SettlementConsumptionEntry
+        do {
+            guard let raw = parsed.settlementConsumptionRaw else {
+                throw SettlementConsumptionEntry.ParseError.invalidField(
+                    "settlement_consumption (must be an object)")
+            }
+            entry = try SettlementConsumptionEntry.parse(raw)
+        } catch {
+            sendTerminal(settlementConsumptionTerminal(for: error), context: context)
+            return .refused
+        }
+        guard let handler = settlementConsumption else {
+            sendTerminal(.consumptionAuthorityUnavailable, context: context)
+            return .refused
+        }
+        do {
+            switch try await handler(entry) {
+            case .consumed(let receipt):
+                return .consumed(receipt)
+            case .recompute(let reason):
+                return .recompute(reason: reason)
+            }
+        } catch {
+            sendTerminal(settlementConsumptionTerminal(for: error), context: context)
+            return .refused
+        }
+    }
+
+    /// Build the completed Responses body for a zero-call consumption. The
+    /// served text is the re-admitted settled value; `store` is false because
+    /// this is NOT a generated turn and must not enter response history as if
+    /// the model had produced it.
+    func sendSettlementConsumptionResponse(
+        _ receipt: SettlementConsumptionReceipt,
+        parsed: ResponsesParsedRequest,
+        json: [String: Any],
+        context: ConnectionContext
+    ) {
+        let created = Int(Date().timeIntervalSince1970)
+        var response = makeCompletedResponse(
+            responseId: parsed.responseId,
+            created: created,
+            json: json,
+            output: buildResponsesOutput(content: receipt.value, calls: []),
+            usage: nil)
+        response["store"] = false
+        response["settlement_consumption"] = [
+            "outcome": "consumed",
+            "consumption_id": receipt.consumptionID,
+            "source_settlement_id": receipt.sourceSettlementID,
+            "consumer_es_state_id": receipt.consumerESStateID,
+            "consumer_settlement_id": receipt.consumerSettlementID,
+            "demand_id": receipt.demandID,
+            "canonical_digest": receipt.canonicalDigest,
+            "model_calls": receipt.modelCalls,
+            "reused_existing": receipt.reusedExisting,
+            "derived_settlement": true,
+            "contract": [
+                "id": receipt.contractID,
+                "demand_class": receipt.demandClass,
+                "version": receipt.contractVersion,
+                "extract": receipt.extractField,
+            ],
+        ]
+        sendJSON(
+            response,
+            status: 200,
+            on: context.connection,
+            context: context)
+    }
+
+    // MARK: - Managed continuation step (C)
+
+    enum ManagedContinuationPreflight {
+        /// No C-scope field: the dispatch stays on the pre-C path.
+        case inert
+        /// A typed terminal was already written; return without generating.
+        case refused
+        case managed(policy: SimiGoRecomputePolicy, anchor: String)
+    }
+
+    enum ManagedContinuationDispatch {
+        /// A typed terminal was already written; return without a body.
+        case refused
+        case completed(ManagedContinuationResult)
+    }
+
+    /// Request-shape and policy gate for the managed-continuation entry. It runs
+    /// BEFORE any generation tracking or authority work, so a refused request
+    /// never calls the model, never creates a snapshot and never settles.
+    ///
+    /// Validation order is fixed (interface design §D2): shape, then value
+    /// legality, then mutual exclusion, then other request semantics.
+    ///
+    /// * no C-scope field                  -> `.inert`, pre-C path unchanged
+    /// * unusable C-scope field            -> 422 INPUT_ADMISSION_REFUSED
+    /// * unsupported / anchorless policy   -> 400 INVALID_REQUEST_ENTRY
+    /// * policy + settlement_consumption   -> 400 recompute_policy_conflict
+    /// * policy + continuation_settle      -> 422 (the managed commit settles)
+    /// * policy + no usable anchor         -> 422 INPUT_ADMISSION_REFUSED
+    func managedContinuationPreflight(
+        parsed: ResponsesParsedRequest,
+        context: ConnectionContext
+    ) -> ManagedContinuationPreflight {
+        // Shape first: a C-scope field that cannot be used is refused even when
+        // no policy arrived, so a typo never hides behind an inert request.
+        if let shapeError = parsed.managed.shapeError {
+            sendTerminal(
+                ManagedContinuationFailure.invalidRequest(shapeError).terminal,
+                context: context)
+            return .refused
+        }
+        guard parsed.managed.policyPresent else {
+            guard parsed.managed.hasCScopeFields else { return .inert }
+            sendTerminal(
+                ManagedContinuationFailure.invalidRequest(
+                    "\(SimiGoRecomputePolicy.requestKey) (required with idempotency_key, consumer_es_state_id or root_ids)"
+                ).terminal,
+                context: context)
+            return .refused
+        }
+        let policy: SimiGoRecomputePolicy
+        do {
+            policy = try SimiGoRecomputePolicy.resolve(
+                managedAnchorPresent: parsed.esStateIDPresent,
+                settlementConsumptionPresent: parsed.settlementConsumptionPresent,
+                raw: parsed.managed.policyRaw)
+        } catch {
+            sendTerminal(managedContinuationTerminal(for: error), context: context)
+            return .refused
+        }
+        // The managed commit owns its settlement; a second legacy settle request
+        // would double-settle the same turn.
+        if parsed.continuationSettle {
+            sendTerminal(
+                ManagedContinuationFailure.invalidRequest(
+                    "continuation_settle (managed continuation settles its own commit)"
+                ).terminal,
+                context: context)
+            return .refused
+        }
+        guard let anchor = parsed.esStateID, !anchor.isEmpty else {
+            sendTerminal(
+                ManagedContinuationFailure.refused(
+                    SimiGoManagedRefusal.Refusal(
+                        cause: .invalidAnchor, origin: .request, phase: .pre)
+                ).terminal,
+                context: context)
+            return .refused
+        }
+        return .managed(policy: policy, anchor: anchor)
+    }
+
+    /// Drive the injected managed pipeline (P1 → S → G → P2) for one request.
+    /// The handler owns the DB and the model; this layer only reports.
+    func managedContinuationStep(
+        parsed: ResponsesParsedRequest,
+        policy: SimiGoRecomputePolicy,
+        anchor: String,
+        context: ConnectionContext
+    ) async -> ManagedContinuationDispatch {
+        guard let handler = managedContinuation else {
+            sendTerminal(
+                ManagedContinuationFailure.unavailable.terminal,
+                context: context)
+            return .refused
+        }
+        do {
+            let result = try await handler(
+                ManagedContinuationRequest(
+                    requestId: context.requestId,
+                    agentId: parsed.agentId,
+                    sessionId: parsed.sessionId,
+                    logicalBranchId: parsed.logicalBranchId,
+                    anchorESStateID: anchor,
+                    policy: policy,
+                    idempotencyKey: parsed.managed.idempotencyKey,
+                    consumerESStateID: parsed.managed.consumerESStateID,
+                    rootIDs: parsed.managed.rootIDs,
+                    messages: parsed.canonicalMessages,
+                    tools: parsed.tools,
+                    config: parsed.config))
+            return .completed(result)
+        } catch {
+            sendTerminal(managedContinuationTerminal(for: error), context: context)
+            return .refused
+        }
+    }
+
+    /// Emit the completed Responses body for a committed or replayed managed
+    /// execution. `replayable` stays JSON null unless the commit attested it.
+    func sendManagedContinuationResponse(
+        _ result: ManagedContinuationResult,
+        policy: SimiGoRecomputePolicy,
+        anchor: String,
+        parsed: ResponsesParsedRequest,
+        json: [String: Any],
+        keepalive: NonStreamingKeepalive,
+        context: ConnectionContext
+    ) {
+        let created = Int(Date().timeIntervalSince1970)
+        let output = buildResponsesOutput(
+            content: result.content,
+            calls: result.toolCalls)
+        var response = makeCompletedResponse(
+            responseId: parsed.responseId,
+            created: created,
+            json: json,
+            output: output,
+            usage: result.usage)
+        response["managed_continuation"] = managedContinuationPayload(
+            result, policy: policy, anchor: anchor)
+        // A replay produced no new turn, so it must not enter response history
+        // as if the model had generated it again.
+        let shouldStore = shouldStoreResponse(json) && !result.reusedExecution
+        response["store"] = shouldStore
+        if shouldStore {
+            storeResponse(
+                responseId: parsed.responseId,
+                agentId: parsed.agentId,
+                sessionId: parsed.sessionId,
+                logicalBranchId: parsed.logicalBranchId,
+                preambleMessages: parsed.preambleMessages,
+                historyMessages: appendParentHistory(
+                    parent: parsed.parent,
+                    currentHistory: appendResponsesAssistantOutput(
+                        historyMessages: parsed.currentHistoryMessages,
+                        content: result.content,
+                        calls: result.toolCalls)),
+                output: output,
+                response: response)
+        }
+        if keepalive.committed {
+            sendDeferredJSONTerminal(
+                response,
+                context: context
+            )
+        } else {
+            sendJSON(
+                response,
+                status: 200,
+                on: context.connection,
+                context: context)
+        }
+    }
+
+    func managedContinuationPayload(
+        _ result: ManagedContinuationResult,
+        policy: SimiGoRecomputePolicy,
+        anchor: String
+    ) -> [String: Any] {
+        [
+            "outcome": result.reusedExecution
+                ? "replayed"
+                : (result.recomputed ? "recomputed" : "committed"),
+            "execution_id": result.executionID,
+            "es_state_id": result.childESStateID,
+            "parent_es_state_id": anchor,
+            "settlement_id": result.settlementID,
+            "declared_snapshot_id": result.declaredSnapshotID,
+            "final_snapshot_id": result.finalSnapshotID,
+            "idempotency_fingerprint": result.fingerprint,
+            "model_calls": result.modelCalls,
+            "settlements_written": result.settlementsWritten,
+            "replayable": result.replayable.map { $0 as Any } ?? NSNull(),
+            "recomputed": result.recomputed,
+            "reused_execution": result.reusedExecution,
+            "recompute_policy": policy.rawValue,
+        ]
+    }
+
     /// Slice 8 Part 2: make the admitted child ES the EXECUTION/CACHE identity of
     /// THIS generation. The runtime keys its session (and therefore its KV cache
     /// and checkpoints) by (agent, session, branch), so the child ES becomes that
@@ -633,6 +945,90 @@ extension HTTPServer {
         ]
     }
 
+    // MARK: - Responses information turn (ES demand → IS → settlement)
+
+    static func lastUserText(_ messages: [JSONValue]) -> String? {
+        messages.reversed().first {
+            $0.object?["role"]?.string == "user"
+        }?.object?["content"]?.string
+    }
+
+    /// IS grouping key for a Responses conversation. An explicit session or a
+    /// Codex thread is the client's declared conversation; without one the
+    /// execution session is request-scoped (a new id every turn), so the key is
+    /// derived from the opening messages instead. This never changes the
+    /// execution session feeding the runtime.
+    func responsesInformationScope(
+        parsed: ResponsesParsedRequest,
+        json: [String: Any],
+        headers: [String: String]
+    ) -> String {
+        if let explicit = resolveExplicitSession(from: json, headers: headers) {
+            return explicit
+        }
+        if let thread = resolveThreadId(from: json, headers: headers) {
+            return "codex-thread:\(thread)"
+        }
+        return Self.informationScope(
+            agentId: parsed.agentId, messages: parsed.canonicalMessages)
+    }
+
+    /// Settle a Responses turn into ES/IS. When the continuation path already
+    /// committed the authoritative settlement for this turn, only the demand
+    /// advancement is still missing: it is linked to that exact settlement row
+    /// instead of creating a second one.
+    func settleResponsesInformationTurn(
+        _ turn: InformationTurn,
+        assistantText: String,
+        settlementID: String?,
+        stateID: String?
+    ) {
+        let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        try? turn.db.appendChatMessage(
+            sessionID: turn.sessionID, role: "assistant", content: text,
+            model: modelId, createdAt: Date())
+
+        if let settlementID {
+            guard !turn.resolution.demandID.isEmpty,
+                !turn.resolution.retrievalSettlementID.isEmpty
+            else { return }
+            let result = (try? turn.db.settlementReceipt(settlementID))?.payload
+                ?? Data(text.utf8)
+            _ = try? turn.db.recordInformationAdvancement(.init(
+                demandID: turn.resolution.demandID,
+                stateID: stateID ?? turn.resolution.stateID ?? "",
+                settlementID: settlementID,
+                retrievalSettlementID: turn.resolution.retrievalSettlementID,
+                actions: ["responses.completion"],
+                result: result))
+            if let stateID {
+                try? turn.db.linkChatSession(
+                    sessionID: turn.sessionID, stateID: stateID,
+                    modelIdentity: turn.modelIdentity)
+            }
+            // The continuation settlement is authoritative but was produced
+            // before this handler could name its demand: distill it now so a
+            // later demand can reuse the conclusion.
+            _ = try? turn.db.recordSettlementSummary(
+                settlementID: settlementID, sessionID: turn.sessionID,
+                query: turn.query)
+            return
+        }
+
+        _ = try? turn.loop.settleTurn(
+            generatedText: text,
+            resolution: turn.resolution,
+            stateID: "chat-\(UUID().uuidString.lowercased())",
+            parentStateID: turn.parentStateID,
+            position: turn.position,
+            modelIdentity: turn.modelIdentity,
+            identity: turn.identity,
+            sessionID: turn.sessionID,
+            summaryQuery: turn.query,
+            actions: ["responses.completion"])
+    }
+
     // MARK: - Responses / Non-Streaming
 
     func handleResponsesNonStreaming(
@@ -653,6 +1049,21 @@ extension HTTPServer {
                 context: context
             )
             return
+        }
+
+        // C-scope managed continuation. Inert (no C-scope field) leaves this
+        // path byte-identical; a refused request writes its typed terminal and
+        // never generates, stores or settles anything.
+        var managedPolicy: SimiGoRecomputePolicy?
+        var managedAnchor: String?
+        switch managedContinuationPreflight(parsed: parsed, context: context) {
+        case .refused:
+            return
+        case .inert:
+            break
+        case .managed(let policy, let anchor):
+            managedPolicy = policy
+            managedAnchor = anchor
         }
 
         guard context.markGenerationStarted() else {
@@ -688,12 +1099,65 @@ extension HTTPServer {
 
         await context.registerLifecycle()
 
+        // Explicit zero-call consumption opt-in. Absent leaves this path
+        // byte-identical; a refusal returns with the typed terminal already
+        // written and NOTHING generated.
+        var consumptionNote: [String: Any]?
+        if parsed.settlementConsumptionPresent {
+            switch await settlementConsumptionStep(parsed: parsed, context: context) {
+            case .refused:
+                failureReason = "settlement_consumption_refused"
+                return
+            case .consumed(let receipt):
+                sendSettlementConsumptionResponse(
+                    receipt,
+                    parsed: parsed,
+                    json: json,
+                    context: context
+                )
+                isSuccess = true
+                return
+            case .recompute(let reason):
+                consumptionNote = [
+                    "outcome": "recompute",
+                    "reason": reason,
+                ]
+            }
+        }
+
         // 非流式长静默窗口保活（2026-10-16；机制与实测档案见
         // startNonStreamingKeepalive，三个非流式 handler 共用）。
         let keepalive = startNonStreamingKeepalive(
             context: context
         )
         defer { keepalive.settle() }
+
+        // The managed pipeline owns P1 → S → G → P2 for this request, including
+        // the model call and the commit. It returns before the ordinary
+        // generation path, which stays unreachable for C-scope requests.
+        if let managedPolicy, let managedAnchor {
+            switch await managedContinuationStep(
+                parsed: parsed,
+                policy: managedPolicy,
+                anchor: managedAnchor,
+                context: context
+            ) {
+            case .refused:
+                failureReason = "managed_continuation_refused"
+                return
+            case .completed(let result):
+                sendManagedContinuationResponse(
+                    result,
+                    policy: managedPolicy,
+                    anchor: managedAnchor,
+                    parsed: parsed,
+                    json: json,
+                    keepalive: keepalive,
+                    context: context)
+                isSuccess = true
+                return
+            }
+        }
 
         let created =
             Int(Date().timeIntervalSince1970)
@@ -721,6 +1185,21 @@ extension HTTPServer {
                 return
             }
 
+            // ES demand before generation: the demand is resolved against the
+            // settled IS (physical index + stored chat) and the verified
+            // context fragment is prepended; the SAME turn object later
+            // settles the produced result and advances that demand.
+            let information = prepareInformationTurn(
+                json: json,
+                headers: headers,
+                agentId: parsed.agentId,
+                messages: continuationMessages,
+                sessionID: responsesInformationScope(
+                    parsed: parsed, json: json, headers: headers),
+                queryOverride: Self.lastUserText(parsed.currentInputMessages)
+                    ?? Self.lastUserText(parsed.canonicalMessages))
+            let turnMessages = information.messages
+
             // A verified continuation executes under its child ES identity.
             let executionBranchID = await continuationExecutionBranch(
                 parsed: parsed,
@@ -732,7 +1211,7 @@ extension HTTPServer {
                 parsed.agentId,
                 parsed.sessionId,
                 executionBranchID,
-                continuationMessages,
+                turnMessages,
                 parsed.tools,
                 parsed.config,
 
@@ -778,6 +1257,14 @@ extension HTTPServer {
                 settlementOutcome = settled
             }
 
+            if let turn = information.turn {
+                settleResponsesInformationTurn(
+                    turn,
+                    assistantText: content,
+                    settlementID: settlementOutcome?.settlementID,
+                    stateID: settlementOutcome?.childESStateID)
+            }
+
             let calls =
                 toolCalls.value
 
@@ -798,6 +1285,11 @@ extension HTTPServer {
 
             if let settlementOutcome {
                 response["continuation_settlement"] = settlementPayload(settlementOutcome)
+            }
+            if let consumptionNote {
+                // No reuse happened; the explicit recompute and its reason are
+                // reported so a refusal can never be disguised as a hit.
+                response["settlement_consumption"] = consumptionNote
             }
 
             let currentHistory =
@@ -949,6 +1441,22 @@ extension HTTPServer {
 
         await context.registerLifecycle()
 
+        // C-scope managed continuation is not available on the streaming path
+        // in v1. Shape/policy refusals keep their precise terminal; a
+        // well-formed C request is refused BEFORE the SSE 200 head, so a real
+        // client never sees a 200 that carries a mid-stream refusal.
+        switch managedContinuationPreflight(parsed: parsed, context: context) {
+        case .refused:
+            return
+        case .inert:
+            break
+        case .managed:
+            sendTerminal(
+                ManagedContinuationFailure.unsupportedOnStream.terminal,
+                context: context)
+            return
+        }
+
         // Contract fix A: `continuation_settle` is an unsupported combination on
         // the streaming Responses path. Reject it at the TRANSPORT level BEFORE
         // committing the SSE `200 text/event-stream` header, so a real client
@@ -956,6 +1464,12 @@ extension HTTPServer {
         // refuses before any generation and before any settlement authority runs.
         if parsed.continuationSettle {
             sendTerminal(.settlementUnsupportedOnStream, context: context)
+            return
+        }
+        // Consumption is a zero-call, completed-response operation; the SSE
+        // contract has no semantics for it. Refuse BEFORE the 200 stream head.
+        if parsed.settlementConsumptionPresent {
+            sendTerminal(.consumptionUnsupportedOnStream, context: context)
             return
         }
 
@@ -1082,6 +1596,18 @@ extension HTTPServer {
                 return
             }
 
+            // ES demand before generation (see the non-streaming path).
+            let information = prepareInformationTurn(
+                json: json,
+                headers: headers,
+                agentId: parsed.agentId,
+                messages: continuationMessages,
+                sessionID: responsesInformationScope(
+                    parsed: parsed, json: json, headers: headers),
+                queryOverride: Self.lastUserText(parsed.currentInputMessages)
+                    ?? Self.lastUserText(parsed.canonicalMessages))
+            let turnMessages = information.messages
+
             // A verified continuation executes under its child ES identity.
             let executionBranchID = await continuationExecutionBranch(
                 parsed: parsed,
@@ -1093,7 +1619,7 @@ extension HTTPServer {
                 parsed.agentId,
                 parsed.sessionId,
                 executionBranchID,
-                continuationMessages,
+                turnMessages,
                 parsed.tools,
                 parsed.config,
 
@@ -1161,6 +1687,14 @@ extension HTTPServer {
 
             let finalContent =
                 extractAssistantText(from: finalOutput)
+
+            if let turn = information.turn {
+                settleResponsesInformationTurn(
+                    turn,
+                    assistantText: finalContent,
+                    settlementID: nil,
+                    stateID: nil)
+            }
 
             let finalCalls =
                 toolCalls.value
@@ -1567,7 +2101,10 @@ extension HTTPServer {
             parent: parent,
             esStateIDPresent: esAnchorPresent,
             esStateID: esAnchorValue,
-            continuationSettle: esSettleRequested
+            continuationSettle: esSettleRequested,
+            settlementConsumptionPresent: json.keys.contains("settlement_consumption"),
+            settlementConsumptionRaw: json["settlement_consumption"],
+            managed: ManagedContinuationFields.parse(json)
         )
     }
 
