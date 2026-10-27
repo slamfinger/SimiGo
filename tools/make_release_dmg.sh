@@ -25,7 +25,15 @@ display dialog "安装 SimiGo 2.2.0" & return & return & "将把 SimiGo 安装�
 set userName to short user name of (system info)
 do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app && rm -f /Users/" & userName & "/.simigo/manifests/first-run-done.json" with administrator privileges
 display dialog "✅ 安装完成" & return & "正在启动 SimiGo（首次启动将进入安装向导）" buttons {"好"} default button "好" giving up after 4
-do shell script "open /Applications/SimiGo.app"
+-- `open` merely activates an already running copy, so the new bundle (and the wizard
+-- triggered by the removed marker) never appeared. Stop the old instance first, and
+-- identify it exactly: argv[0] compared against the installed bundle path, so launch
+-- arguments cannot hide it and a development copy (build/, DerivedData, /tmp bundles),
+-- an in-bundle helper or an unrelated process can never match. `comm` is not usable --
+-- macOS truncates it at 64 characters, which is shorter than a DerivedData path.
+-- SIGTERM, then wait up to 15 s for a graceful exit; bounded SIGKILL for survivors.
+set stopCmd to "ids=$(ps -axo pid=,command= | awk '$2==\"/Applications/SimiGo.app/Contents/MacOS/SimiGo\"{print $1}'); if [ -n \"$ids\" ]; then kill -TERM $ids 2>/dev/null; fi; i=0; while [ $i -lt 15 ]; do i=$((i+1)); sleep 1; ids=$(ps -axo pid=,command= | awk '$2==\"/Applications/SimiGo.app/Contents/MacOS/SimiGo\"{print $1}'); if [ -z \"$ids\" ]; then break; fi; done; ids=$(ps -axo pid=,command= | awk '$2==\"/Applications/SimiGo.app/Contents/MacOS/SimiGo\"{print $1}'); if [ -n \"$ids\" ]; then kill -KILL $ids 2>/dev/null; fi; sleep 1; open /Applications/SimiGo.app"
+do shell script stopCmd
 OSA
 osacompile -o "$STAGE/安装SimiGo.app" "$TMPAPPLES"
 hdiutil create -volname "SimiGo 安装" -srcfolder "$STAGE" -ov -format UDZO "$OUT" >/dev/null 2>&1
