@@ -1,0 +1,23 @@
+[2026-10-30 19:11:06.648] [IS] contextInject scope=info-2da222330200d23072a8979ae0cbe5ee index=0 bytes=4424 candidateBytes=4424 replay=0
+[2026-10-30 19:11:06.648] [BUDGET] r=req-baa3861a gate=inactive reason=handler_unavailable
+[2026-10-30 19:11:06.648] [ADMIT] grant r=req-baa3861a endpoint=chat.completions level=1 active=1 waiting=0 waited=0ms
+[2026-10-30 19:11:06.648] [PROTOCOL] arrive r=baa386 endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-30 19:11:28.740] [ADMIT] release r=req-baa3861a endpoint=chat.completions level=1 active=0 waiting=0
+[2026-10-30 19:11:28.740] [LC] FORCE_RELEASED r=baa386 s=openai from=QUEUED reason=unexpected table rejection
+[2026-10-30 19:11:28.740] [LC] RELEASED r=baa386 s=openai reason=completed
+[2026-10-30 19:11:29.898] [IS] contextInject scope=info-2da222330200d23072a8979ae0cbe5ee index=0 bytes=4424 candidateBytes=4424 replay=1
+[2026-10-30 19:11:29.898] [BUDGET] r=req-c2c3d15b gate=inactive reason=handler_unavailable
+[2026-10-30 19:11:29.898] [ADMIT] grant r=req-c2c3d15b endpoint=chat.completions level=1 active=1 waiting=0 waited=0ms
+[2026-10-30 19:11:29.898] [PROTOCOL] arrive r=c2c3d1 endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-30 19:11:50.194] [ADMIT] release r=req-c2c3d15b endpoint=chat.completions level=1 active=0 waiting=0
+[2026-10-30 19:11:50.194] [LC] FORCE_RELEASED r=c2c3d1 s=openai from=QUEUED reason=unexpected table rejection
+[2026-10-30 19:11:50.194] [LC] RELEASED r=c2c3d1 s=openai reason=completed
+[2026-10-30 19:15:45.827] [IS] contextInject scope=info-15263e73b8439dadf856c07704c7966d index=0 bytes=4424 candidateBytes=4424 replay=0
+[2026-10-30 19:15:45.827] [BUDGET] r=req-27d33670 gate=inactive reason=handler_unavailable
+[2026-10-30 19:15:45.827] [ADMIT] grant r=req-27d33670 endpoint=chat.completions level=1 active=1 waiting=0 waited=0ms
+[2026-10-30 19:15:45.827] [PROTOCOL] arrive r=27d336 endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-30 19:16:30.508] [ADMIT] release r=req-27d33670 endpoint=chat.completions level=1 active=0 waiting=0
+[2026-10-30 19:16:30.508] [LC] FORCE_RELEASED r=27d336 s=openai from=QUEUED reason=unexpected table rejection
+[2026-10-30 19:16:30.508] [LC] RELEASED r=27d336 s=openai reason=completed
+[2026-10-30 19:16:31.779] [IS] contextInject scope=info-15263e73b8439dadf856c07704c7966d index=0 bytes=4424 candidateBytes=4347 replay=1 frozenStale=1
+[2026-10-30 19:16:31.802] [IS_REUSE] settlement=02553A9D-C3EB-47AB-BC5A-769CE0B0637C demand=75ab8a285053bb766622203fe927e224748cc8d7d81e6bb4d6529951368973e8 state=chat-09ea14eb-cacb-40f0-ac90-c8bd45dadae4 model_calls=0

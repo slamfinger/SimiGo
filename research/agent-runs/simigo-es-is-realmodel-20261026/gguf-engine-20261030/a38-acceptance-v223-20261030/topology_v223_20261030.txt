@@ -1,0 +1,30 @@
+# v2.2.3 managed-entry topology snapshot (2026-10-30T19:19:10+0800)
+product_pid: 86926 
+  PID  PPID STARTED                      COMMAND
+86926     1 Fri Oct 30 19:04:47 2026     /Applications/SimiGo.app/Contents/MacOS/SimiGo
+
+  PID  PPID ELAPSED    RSS COMMAND
+86946 86926   14:12 19827712 /Users/mr.simi/.simigo/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/models--LiquidAI--LFM2.5-24B-A2B-GGUF/snapshots/0912d33141f77e10705345a6732bfd83f0252fdc/LFM2.5-24B-A2B-Q6_K.gguf --port 52376 --host 127.0.0.1 --alias LiquidAI/LFM2.5-24B-A2B-GGUF --parallel 1 --cache-prompt --slots --cache-type-k q4_0 --cache-type-v q4_0 -ngl 99 -b 1024 -ub 512 --ctx-size 131072 --flash-attn on --temp 1.0 --top-p 0.9 --top-k 20 --min-p 0.05 --repeat-penalty 1.05 --presence-penalty 0.0
+
+listeners:
+COMMAND   PID    USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+SimiGo  86926 mr.simi   25u  IPv6 0x3026efad11d28c67      0t0  TCP *:8000 (LISTEN)
+COMMAND     PID    USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+llama-ser 86946 mr.simi    3u  IPv4 0xe5f15265239e87d8      0t0  TCP 127.0.0.1:52376 (LISTEN)
+
+installed: 2.2.3 build 33
+740484b5bba69b260751844b47ca5b1f168135df67b913bfb9d48e9fa1a3803a  /Applications/SimiGo.app/Contents/MacOS/SimiGo
+Identifier=SwiftUI.SimiGo
+Signature size=4789
+TeamIdentifier=YPXU8M53F9
+
+dmg: f34b74d784e040297224479ca2ba0aa1c8390a4cfbbadd97111325fb212ec322  /Users/mr.simi/Documents/SimiGo/SimiGo-v2.2.3-33-740484b5.dmg
+-rw-r--r--@ 1 mr.simi  staff  33609771 Oct 30 18:45 /Users/mr.simi/Documents/SimiGo/SimiGo-v2.2.3-33-740484b5.dmg
+
+models:
+{"object":"list","data":[{"owned_by":"simigo","id":"LiquidAI\/LFM2.5-24B-A2B-GGUF","created":1793359151,"object":"model"}]}
+slots:
+[{"id": 0, "n_ctx": 131072, "is_processing": false}]
+
+health:
+{"status":"ok"}

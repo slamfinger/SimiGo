@@ -20,21 +20,22 @@ SimiGo 是一个以 **Execution State（执行状态）** 为核心抽象的本�
 - 支持官方 Tool Calling，并将 Tool Call 转交外部 Agent
 - 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
 - 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
+- 支持 GGUF（llama.cpp）受管入口：引擎以子进程运行在随机回环口，由产品入口统一承接 ES/IS、结算与复用
 
-## Download — v2.2.2
+## Download — v2.2.3
 
 当前公开 DMG：
 
 ```text
-https://github.com/slamfinger/SimiGo/releases/tag/v2.2.2
+https://github.com/slamfinger/SimiGo/releases/tag/v2.2.3
 ```
 
-| Asset | Requirement | Checksum |
+| Asset | Requirement | Checksum (SHA-256) |
 |---|---|---|
-| `SimiGo-v2.2.2-32-2261b1d7.dmg` | Apple Silicon macOS 26.4+ | 见 Release 页面 |
+| `SimiGo-v2.2.3-33-740484b5.dmg` | Apple Silicon macOS 26.4+ | `f34b74d784e040297224479ca2ba0aa1c8390a4cfbbadd97111325fb212ec322` |
 
-该 DMG 使用 **ad-hoc signature**，未做 notarization。首次打开若被 Gatekeeper
-拦截，请先校验 Release 页面 SHA-256，再移除 quarantine 属性：
+该 DMG 使用 **Apple Development signature**（Team ID `YPXU8M53F9`），未做 notarization。
+首次打开若被 Gatekeeper 拦截，请先按上表校验 SHA-256，再移除 quarantine 属性：
 
 ```bash
 xattr -dr com.apple.quarantine SimiGo.app
@@ -46,9 +47,9 @@ xattr -dr com.apple.quarantine SimiGo.app
 
 ### 下载运行
 
-1. 从 [v2.2.2 Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.2)
-   下载 `SimiGo-v2.2.2-32-2261b1d7.dmg`。
-2. 校验 Release 页面的 SHA-256。
+1. 从 [v2.2.3 Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.3)
+   下载 `SimiGo-v2.2.3-33-740484b5.dmg`。
+2. 校验上表的 SHA-256。
 3. 拖入 `/Applications`，打开菜单栏 SimiGo。
 4. State Graph 入口：菜单栏 → **Execution State Graph...**。
 
@@ -190,7 +191,7 @@ Execution Continuity  ≠ Computation Semantics
 SimiGo Runtime        ≠ Backend
 ```
 
-**当前阶段：v2.2.2（build 32）Reference App / Research Preview，不是 GA。**
+**当前阶段：v2.2.3（build 33）Reference App / Research Preview，不是 GA。**
 
 已经完成真实设备、真实模型和 Runtime 故障矩阵验证，但目前不宣称为生产级通用推理 Runtime，也不宣称已经完成 Backend-independent Runtime。
 
@@ -198,9 +199,9 @@ SimiGo Runtime        ≠ Backend
 
 | 项目 | 当前状态 |
 |---|---|
-| Version | `v2.2.2` (build 32, tag `v2.2.2`) |
-| 源码构建 | `build 32`（与 tag `v2.2.2` 同一构建） |
-| 运行时验证 | 安装版已取 3 客户端真机冒烟（两路隔离、零交叉）；流式/工具调用/取消/GGUF 后端未覆盖，见 `research/agent-runs/simigo-es-is-realmodel-20261026/gguf-engine-20261030/ACCEPTANCE_v222_installed_smoke_20261030.md` |
+| Version | `v2.2.3` (build 33, tag `v2.2.3`) |
+| 源码构建 | `build 33`（与 tag `v2.2.3` 同一构建） |
+| 运行时验证 | 安装版已取 3 客户端真机冒烟（两路隔离、零交叉）；GGUF 受管入口已在安装版上取到聊天结算、IS 检索与零模型调用复用（§3.36），流式/工具调用/取消未覆盖；见 `research/agent-runs/simigo-es-is-realmodel-20261026/ACCEPTANCE-20261026-BUILD-97043902.md` |
 | Stage | Execution State Reference App / Research Preview |
 | Platform | Apple Silicon macOS |
 | Minimum macOS | 26.4 |

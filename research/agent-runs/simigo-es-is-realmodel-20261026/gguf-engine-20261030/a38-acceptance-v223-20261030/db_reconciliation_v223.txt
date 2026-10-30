@@ -1,0 +1,61 @@
+# v2.2.3 (build 33, exe 740484b5) 受管入口验收：DB 增量对账
+
+库：~/.simigo/simigo.sqlite3（复制三件套后以 mode=ro 打开副本；未触碰真库）
+窗口：2026-10-30 19:10:xx（基线）→ 19:16:32（两轮验收结束）
+
+## 1. 总数
+
+| 表 | 前 (19:10) | 后 (19:16) | 增量 |
+| --- | ---: | ---: | ---: |
+| chat_messages | 303 | 307 | +4 |
+| settlements | 323 | 329 | +6 |
+| information_demands | 209 | 214 | +5 |
+| information_reuse_events | 4 | 5 | +1 |
+| retrieval_settlements | 206 | 211 | +5 |
+
+## 2. 按时间戳归因（两轮）
+
+### 2.1 第一轮：max_tokens=1024（19:11:05–19:11:51，两次 chat + 一次检索）
+
+- chat 两次均 `finish_reason=length`、正文空、`simigo.completion=capped`、`settlement_written=false`。
+- 聊天侧零结算；未产生聊天 demand。
+- `information_demands`：
+  - 210 `b2926e15…` created_at 815051466.64（19:11:06，准入门内自动 IS 检索），RESOLVED
+  - 211 `dbad2f4b…` created_at 815051511.44（19:11:51，显式 /v1/simigo/search，query 以 `+` 连接），RESOLVED
+- `settlements`：`is-retrieval:b2926e15…`、`is-retrieval:dbad2f4b…`（均 IS_RETRIEVAL）。
+- `chat_messages`：304（session `info-2da222…`，role=user，turn_state=pending，content 存于对象 `2faff90d…`）。
+  两次相同 body 的 capped 轮只留下这一行 pending 用户轮；未提交 assistant 轮。
+
+### 2.2 第二轮：max_tokens=4096（19:15:44–19:16:32，首次生成 + 字节相同重放 + 检索）
+
+- 首次：200 / 46.002 s / `finish_reason=stop` / 正文 `MARK[A38-20261030T191544]`。
+- 重放：200 / 1.294 s / `simigo.answer_reuse=true`、`model_calls=0`、
+  settlement `02553A9D-C3EB-47AB-BC5A-769CE0B0637C`、source state `chat-09ea14eb-cacb-40f0-ac90-c8bd45dadae4`。
+- `information_demands`：
+  - 212 `75ab8a28…` created_at 815051745.82（19:15:45，聊天 demand，ADVANCED）
+  - 213 `05b7d764…` created_at 815051791.77（19:16:31，重放前的 IS 检索），RESOLVED
+  - 214 `e484daaf…` created_at 815051792.98（19:16:32，显式检索），RESOLVED
+- `settlements`：
+  - `is-retrieval:75ab8a28…`（19:15:45）、`is-retrieval:05b7d764…`（19:16:31）、`is-retrieval:e484daaf…`（19:16:32）
+  - 聊天结算 `02553A9D-…`：state `chat-09ea14eb…`，validation_status=VALID，validity=valid，
+    payload_digest `0a2d27ba4981cfc1d06061c4051574ff487e1867598c049fd12f697ee3033118`，
+    payload object `0a2d27ba…`（39 B）：`{"content":"MARK[A38-20261030T191544]"}`
+- `settlement_summaries`：query 为本轮原始提示，summary `MARK[A38-20261030T191544]`。
+- `information_reuse_events`：`8EBEA1D8-3C5…`，source settlement `02553A9D-…`，source state `chat-09ea14eb…`，
+  demand `75ab8a28…`，session `info-15263e73…`，model_calls=0。
+- `chat_messages`：305（user，committed）、306、307（assistant，committed，均指向对象 `81eaf7a0…`）。
+  即首轮生成与复用重放各写一条 assistant 行；本表不做重复结算/重复写入判定。
+
+## 3. 检索读数（显式 /v1/simigo/search）
+
+- demand `e484daaf…`，status=settled，result_sha256 `a3be4b8d…c04f`，
+  retrieval_settlement `is-retrieval:e484daaf…`，items=40。
+- 首项：`settlement:02553A9D-…`，summary 文本 `MARK[A38-20261030T191544]`，source_sha256 `81eaf7a0…`。
+- 其余 39 项为既有 file 语料命中（与 §3.35 同一语料），本轮不下相关性结论。
+
+## 4. 边界
+
+- 增量是两轮窗口的聚合对账；按时间戳归因到轮，但不按单请求逐一归因。
+- 第一轮 capped 轮的聊天侧无结算、无 demand；只留下 1 条 pending user 行，未做清理。
+- 不据此判断 assistant 行数语义（首轮+重放两行是否符合预期），见既有行类计数口径的未决项。
+- 只对可执行文件 `740484b5…a3803a`、DMG `f34b74d7…ec322`、引擎 shim `e15e01c0…9ffe` 有效。
