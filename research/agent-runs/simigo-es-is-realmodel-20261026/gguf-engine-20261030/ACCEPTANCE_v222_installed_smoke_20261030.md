@@ -48,7 +48,24 @@
 - 未覆盖：流式、`/v1/responses`、工具调用、取消/断连、GGUF 后端、真实第三方 Agent 客户端。
 - 本次读数只对可执行文件 `2261b1d7…0e1d` 有效。
 
-## 5. 复现
+## 5. 追加：owner「已启动 llama」后的实际拓扑（2026-10-30 15:42）
+
+owner 启动后复核监听者，**不是产品受管后端**：
+
+| 项 | 值 |
+| --- | --- |
+| `*:8000` 监听者 | `llama-server` pid 34819（`~/.simigo/bin/llama-server` 直接启动） |
+| 启动参数 | `--model …Cyber-Tiel-Coder-35B-A3B-GGUF-MTP… --port 8000 --host 127.0.0.1 --parallel 1 --cache-prompt --slots --ctx-size 131072 …` |
+| `/slots` | **1 个**（`total_slots: 1`） |
+| `/health` | `{"status":"ok"}`（引擎形状，无 `model` 字段） |
+| `SimiGo.app` | pid 33868 **仍在运行**，但已不再持有 :8000 |
+
+后果（不是推断，是拓扑）：产品 HTTP 入口此刻不可达，请求直接打到 llama.cpp；`--parallel 1`
+意味着即使发 4 路也只会有 1 个槽。**这一窗口不能产出「产品 GGUF 4 槽」读数，也不能产出
+level-4 读数。** 要取该类读数，需要二者之一：停掉这个独立引擎后在菜单栏用产品启动 GGUF
+后端（产品按 `--parallel` 配置传参），或把独立引擎换到非 8000 端口再启动产品监听。
+
+## 6. 复现
 
 ```bash
 # 前提：安装版已启动并持有 :8000
