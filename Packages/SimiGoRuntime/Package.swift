@@ -20,7 +20,7 @@ let package = Package(
         .package(url: "https://github.com/slamfinger/mlx-swift", revision: "ef5f1b6bb24e27922189316362f3057c64261704"),
         .package(
             url: "https://github.com/slamfinger/mlx-swift-lm.git",
-            revision: "bc64ee696de102ad43fd76dd6ac01dc37f6427d3"
+            revision: "6f88129b19684849a19d9d1c1ed6e0021491906b"
         ),
         .package(url: "https://github.com/huggingface/swift-transformers.git", from: "1.3.3"),
     ],

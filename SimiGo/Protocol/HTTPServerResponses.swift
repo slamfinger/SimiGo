@@ -661,12 +661,13 @@ extension HTTPServer {
         context: ConnectionContext
     ) {
         let created = Int(Date().timeIntervalSince1970)
-        var response = makeCompletedResponse(
+        var response = makeResponseObject(
             responseId: parsed.responseId,
             created: created,
             json: json,
             output: buildResponsesOutput(content: receipt.value, calls: []),
-            usage: nil)
+            usage: nil,
+            completion: .complete)
         response["store"] = false
         response["settlement_consumption"] = [
             "outcome": "consumed",
@@ -826,12 +827,13 @@ extension HTTPServer {
         let output = buildResponsesOutput(
             content: result.content,
             calls: result.toolCalls)
-        var response = makeCompletedResponse(
+        var response = makeResponseObject(
             responseId: parsed.responseId,
             created: created,
             json: json,
             output: output,
-            usage: result.usage)
+            usage: result.usage,
+            completion: .complete)
         response["managed_continuation"] = managedContinuationPayload(
             result, policy: policy, anchor: anchor)
         // A replay produced no new turn, so it must not enter response history
@@ -950,7 +952,24 @@ extension HTTPServer {
     static func lastUserText(_ messages: [JSONValue]) -> String? {
         messages.reversed().first {
             $0.object?["role"]?.string == "user"
-        }?.object?["content"]?.string
+        }?.object?["content"]?.messageText
+    }
+
+    /// A tool-continuation turn must not be short-circuited by an answer settled
+    /// for the user message that led into it. `currentInputMessages` is in chat
+    /// form, where a Responses `function_call_output` item arrives as `role:
+    /// "tool"`; only the tail after the last user message counts, so a long
+    /// session that used tools earlier still reuses ordinary repeats.
+    static func isToolContinuation(_ parsed: ResponsesParsedRequest) -> Bool {
+        let items = parsed.currentInputMessages
+        let lastUser = items.lastIndex { $0.object?["role"]?.string == "user" }
+        let tail = lastUser.map { items[($0 + 1)...] } ?? items[...]
+        if tail.contains(where: { $0.object?["role"]?.string == "tool" }) {
+            return true
+        }
+        return (parsed.parent?.output ?? []).contains {
+            ($0["type"] as? String) == "function_call"
+        }
     }
 
     /// IS grouping key for a Responses conversation. An explicit session or a
@@ -977,17 +996,35 @@ extension HTTPServer {
     /// committed the authoritative settlement for this turn, only the demand
     /// advancement is still missing: it is linked to that exact settlement row
     /// instead of creating a second one.
+    ///
+    /// `completion` is the engine's verdict for THIS turn. A turn that did not
+    /// finish stays in the conversation but is never registered as a settled
+    /// result, so an unfinished answer can never be consumed or reused later.
     func settleResponsesInformationTurn(
         _ turn: InformationTurn,
         assistantText: String,
         settlementID: String?,
-        stateID: String?
+        stateID: String?,
+        completion: GenerationCompletion
     ) {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        try? turn.db.appendChatMessage(
-            sessionID: turn.sessionID, role: "assistant", content: text,
-            model: modelId, createdAt: Date())
+        try? turn.db.commitChatTurn(
+            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+            assistantText: text, model: modelId, createdAt: Date(),
+            eligibility: turn.eligibility)
+        guard turn.eligibility == .ordinary else {
+            RuntimeTraceLogger.shared.trace(
+                "[SETTLE_SKIP] wire=responses reason=internal_operation "
+                    + "session=\(turn.sessionID) settlement_written=0")
+            return
+        }
+        guard completion.isSettleable else {
+            RuntimeTraceLogger.shared.trace(
+                "[SETTLE_SKIP] wire=responses completion=\(completion.wireName) "
+                    + "session=\(turn.sessionID) settlement_written=0")
+            return
+        }
 
         if let settlementID {
             guard !turn.resolution.demandID.isEmpty,
@@ -1029,6 +1066,49 @@ extension HTTPServer {
             actions: ["responses.completion"])
     }
 
+    // MARK: - Automatic IS answer reuse (zero model call)
+
+    /// The wire block for a served answer that was READ from a settled result
+    /// rather than generated. `model_calls: 0` describes this turn; the source
+    /// settlement stays the only authoritative record of that text, so a reuse
+    /// writes no settlement of its own.
+    func answerReuseBlock(_ reuse: ReusableAnswer) -> [String: Any] {
+        [
+            "answer_reuse": true,
+            "model_calls": 0,
+            "settlement_id": reuse.settlementID,
+            "demand_id": reuse.demandID,
+            "source_state_id": reuse.sourceStateID,
+        ]
+    }
+
+    /// A reused answer is protocol history for this conversation, so it is
+    /// stored when the client asked for storage — a `previous_response_id`
+    /// chain that continues from it would otherwise 400. The stored body keeps
+    /// the `simigo` block, so the reuse is never presented as a generation.
+    func storeReusedResponsesAnswer(
+        _ reuse: ReusableAnswer,
+        parsed: ResponsesParsedRequest,
+        json: [String: Any],
+        output: [[String: Any]],
+        response: [String: Any]
+    ) {
+        guard shouldStoreResponse(json) else { return }
+        storeResponse(
+            responseId: parsed.responseId,
+            agentId: parsed.agentId,
+            sessionId: parsed.sessionId,
+            logicalBranchId: parsed.logicalBranchId,
+            preambleMessages: parsed.preambleMessages,
+            historyMessages: appendParentHistory(
+                parent: parsed.parent,
+                currentHistory: appendResponsesAssistantOutput(
+                    historyMessages: parsed.currentHistoryMessages,
+                    content: reuse.text, calls: [])),
+            output: output,
+            response: response)
+    }
+
     // MARK: - Responses / Non-Streaming
 
     func handleResponsesNonStreaming(
@@ -1066,10 +1146,6 @@ extension HTTPServer {
             managedAnchor = anchor
         }
 
-        guard context.markGenerationStarted() else {
-            return
-        }
-
         var isSuccess = false
         var failureReason: String?
         defer {
@@ -1078,6 +1154,23 @@ extension HTTPServer {
                 success: isSuccess,
                 failureReason: failureReason
             )
+        }
+
+        guard let admissionTicket = await acquireGenerationAdmission(
+            for: context,
+            endpoint: "responses"
+        ) else {
+            failureReason = "concurrency_rejected"
+            return
+        }
+        defer {
+            releaseGenerationAdmission(
+                admissionTicket,
+                endpoint: "responses")
+        }
+
+        guard context.markGenerationStarted() else {
+            return
         }
 
         context.setIdentity(
@@ -1200,6 +1293,46 @@ extension HTTPServer {
                     ?? Self.lastUserText(parsed.canonicalMessages))
             let turnMessages = information.messages
 
+            // 「可以复用就不调用模型」: an exact repeat of an already-answered
+            // question in this scope is served from the settled result. Explicit
+            // consumption is a different opt-in contract and always wins — a
+            // requested recompute is never silently turned into a reuse.
+            if consumptionNote == nil, !Self.isToolContinuation(parsed),
+                let turn = information.turn, let reuse = reusableAnswer(for: turn) {
+                recordReusedAnswer(reuse, turn: turn)
+                let output = buildResponsesOutput(content: reuse.text, calls: [])
+                var response = makeResponseObject(
+                    responseId: parsed.responseId,
+                    created: created,
+                    json: json,
+                    output: output,
+                    usage: nil,
+                    completion: .complete)
+                response["simigo"] = answerReuseBlock(reuse)
+                storeReusedResponsesAnswer(
+                    reuse, parsed: parsed, json: json,
+                    output: output, response: response)
+                sendJSON(
+                    response, status: 200, on: context.connection, context: context)
+                isSuccess = true
+                return
+            }
+
+            // W4/A: verdict after IS injection, before any model work.
+            if await rejectOnRequestBudget(
+                messages: turnMessages,
+                tools: parsed.tools,
+                config: parsed.config,
+                agentId: parsed.agentId,
+                sessionId: parsed.sessionId,
+                logicalBranchId: parsed.logicalBranchId,
+                headers: headers,
+                context: context
+            ) {
+                failureReason = "prefill_budget_exceeded"
+                return
+            }
+
             // A verified continuation executes under its child ES identity.
             let executionBranchID = await continuationExecutionBranch(
                 parsed: parsed,
@@ -1215,7 +1348,11 @@ extension HTTPServer {
                 parsed.tools,
                 parsed.config,
 
-                { text in
+                { [weak self, weak context] text in
+                    if let self, let context {
+                        self.stopDetachedOrphanIfContended(context)
+                    }
+
                     fullContent.mutate {
                         $0.append(text)
                     }
@@ -1240,21 +1377,29 @@ extension HTTPServer {
             let content =
                 fullContent.value
 
-            // Settlement runs over the actual generated text BEFORE the
-            // completed response is assembled. A refusal here produces an
-            // error terminal and no completed response, no partial settle.
+            // T-1: a turn that did not finish registers no settlement of any
+            // kind — neither the requested continuation settlement nor the
+            // Information-Space answer — so a half answer can never come back
+            // later as a settled, reusable conclusion.
             let settlementOutcome: ContinuationSettlementOutcome?
-            switch await settlementStep(
-                parsed: parsed,
-                generatedText: content,
-                context: context
-            ) {
-            case .notRequested:
+            if !result.completion.isSettleable {
                 settlementOutcome = nil
-            case .refused:
-                return
-            case .settled(let settled):
-                settlementOutcome = settled
+            } else {
+                // Settlement runs over the actual generated text BEFORE the
+                // completed response is assembled. A refusal here produces an
+                // error terminal and no completed response, no partial settle.
+                switch await settlementStep(
+                    parsed: parsed,
+                    generatedText: content,
+                    context: context
+                ) {
+                case .notRequested:
+                    settlementOutcome = nil
+                case .refused:
+                    return
+                case .settled(let settled):
+                    settlementOutcome = settled
+                }
             }
 
             if let turn = information.turn {
@@ -1262,7 +1407,8 @@ extension HTTPServer {
                     turn,
                     assistantText: content,
                     settlementID: settlementOutcome?.settlementID,
-                    stateID: settlementOutcome?.childESStateID)
+                    stateID: settlementOutcome?.childESStateID,
+                    completion: result.completion)
             }
 
             let calls =
@@ -1275,12 +1421,13 @@ extension HTTPServer {
                 )
 
             var response =
-                makeCompletedResponse(
+                makeResponseObject(
                     responseId: parsed.responseId,
                     created: created,
                     json: json,
                     output: output,
-                    usage: result.usage
+                    usage: result.usage,
+                    completion: result.completion
                 )
 
             if let settlementOutcome {
@@ -1407,10 +1554,6 @@ extension HTTPServer {
             return
         }
 
-        guard context.markGenerationStarted() else {
-            return
-        }
-
         // 2. Use defer to ensure lifecycle completion (success or failure)
         var isSuccess = false
         var failureReason: String?
@@ -1420,6 +1563,23 @@ extension HTTPServer {
                 success: isSuccess,
                 failureReason: failureReason
             )
+        }
+
+        guard let admissionTicket = await acquireGenerationAdmission(
+            for: context,
+            endpoint: "responses"
+        ) else {
+            failureReason = "concurrency_rejected"
+            return
+        }
+        defer {
+            releaseGenerationAdmission(
+                admissionTicket,
+                endpoint: "responses")
+        }
+
+        guard context.markGenerationStarted() else {
+            return
         }
 
         context.setIdentity(
@@ -1471,6 +1631,56 @@ extension HTTPServer {
         if parsed.settlementConsumptionPresent {
             sendTerminal(.consumptionUnsupportedOnStream, context: context)
             return
+        }
+
+        // W4/A Q2: on the ordinary path the budget verdict must exist BEFORE
+        // the SSE 200 head, so the continuation gate, the IS-injected messages
+        // and the verdict are all taken here; the do-block reuses them instead
+        // of repeating the work. An ES-anchored continuation keeps its
+        // byte-identical order (its admission terminal contract depends on it)
+        // and the gate records that it stayed inactive there.
+        var hoistedContinuationMessages: [JSONValue]?
+        var hoistedInformation: (messages: [JSONValue], turn: InformationTurn?)?
+        if !parsed.esStateIDPresent {
+            guard let gatedMessages = await continuationGate(
+                parsed: parsed,
+                context: context
+            ) else {
+                return
+            }
+            let information = prepareInformationTurn(
+                json: json,
+                headers: headers,
+                agentId: parsed.agentId,
+                messages: gatedMessages,
+                sessionID: responsesInformationScope(
+                    parsed: parsed, json: json, headers: headers),
+                queryOverride: Self.lastUserText(parsed.currentInputMessages)
+                    ?? Self.lastUserText(parsed.canonicalMessages))
+            hoistedContinuationMessages = gatedMessages
+            hoistedInformation = (information.messages, information.turn)
+            // A settled answer never reaches the model, so it is never refused
+            // by a prefill budget (「可以复用就不调用模型」 wins).
+            let reuseWouldServe =
+                !Self.isToolContinuation(parsed)
+                && information.turn.flatMap { reusableAnswer(for: $0) } != nil
+            if !reuseWouldServe,
+                await rejectOnRequestBudget(
+                    messages: information.messages,
+                    tools: parsed.tools,
+                    config: parsed.config,
+                    agentId: parsed.agentId,
+                    sessionId: parsed.sessionId,
+                    logicalBranchId: parsed.logicalBranchId,
+                    headers: headers,
+                    context: context
+                )
+            {
+                failureReason = "prefill_budget_exceeded"
+                return
+            }
+        } else {
+            noteBudgetGateInactive(reason: "es_anchored_stream", context: context)
         }
 
         let created =
@@ -1581,11 +1791,17 @@ extension HTTPServer {
                 return
             }
 
-            guard let continuationMessages = await continuationGate(
-                parsed: parsed,
-                context: context
-            ) else {
-                return
+            let continuationMessages: [JSONValue]
+            if let hoistedContinuationMessages {
+                continuationMessages = hoistedContinuationMessages
+            } else {
+                guard let gatedMessages = await continuationGate(
+                    parsed: parsed,
+                    context: context
+                ) else {
+                    return
+                }
+                continuationMessages = gatedMessages
             }
 
             // Streaming cannot hold a completed response back until settlement
@@ -1596,17 +1812,59 @@ extension HTTPServer {
                 return
             }
 
-            // ES demand before generation (see the non-streaming path).
-            let information = prepareInformationTurn(
-                json: json,
-                headers: headers,
-                agentId: parsed.agentId,
-                messages: continuationMessages,
-                sessionID: responsesInformationScope(
-                    parsed: parsed, json: json, headers: headers),
-                queryOverride: Self.lastUserText(parsed.currentInputMessages)
-                    ?? Self.lastUserText(parsed.canonicalMessages))
+            // ES demand before generation (see the non-streaming path). The
+            // ordinary path already prepared it above, before the SSE head.
+            let information: (messages: [JSONValue], turn: InformationTurn?)
+            if let hoistedInformation {
+                information = hoistedInformation
+            } else {
+                information = prepareInformationTurn(
+                    json: json,
+                    headers: headers,
+                    agentId: parsed.agentId,
+                    messages: continuationMessages,
+                    sessionID: responsesInformationScope(
+                        parsed: parsed, json: json, headers: headers),
+                    queryOverride: Self.lastUserText(parsed.currentInputMessages)
+                        ?? Self.lastUserText(parsed.canonicalMessages))
+            }
             let turnMessages = information.messages
+
+            // Most Agents stream by default, so the zero-call reuse has to exist
+            // on this wire too: the client receives the same event sequence a
+            // generated turn produces, carrying the settled text and a `simigo`
+            // block that names the source settlement (see the non-streaming path
+            // for the gate's contract).
+            if !Self.isToolContinuation(parsed),
+                let turn = information.turn, let reuse = reusableAnswer(for: turn) {
+                recordReusedAnswer(reuse, turn: turn)
+                var events = streamState.appendAssistantText(reuse.text)
+                events.append(contentsOf: streamState.closeAssistantMessage())
+                let output = streamState.snapshotOutputItems()
+                var response = makeResponseObject(
+                    responseId: parsed.responseId,
+                    created: created,
+                    json: json,
+                    output: output,
+                    usage: nil,
+                    completion: .complete)
+                response["simigo"] = answerReuseBlock(reuse)
+                storeReusedResponsesAnswer(
+                    reuse, parsed: parsed, json: json,
+                    output: output, response: response)
+                events.append([
+                    "type": "response.completed",
+                    "sequence_number": streamState.nextSequence(),
+                    "response": response
+                ])
+                enqueueResponsesEvents(
+                    context: context,
+                    events: events,
+                    close: true
+                )
+                isSuccess = true
+                return
+            }
 
             // A verified continuation executes under its child ES identity.
             let executionBranchID = await continuationExecutionBranch(
@@ -1624,6 +1882,10 @@ extension HTTPServer {
                 parsed.config,
 
                 { [weak self, weak context] text in
+                    if let self, let context {
+                        self.stopDetachedOrphanIfContended(context)
+                    }
+
                     guard
                         let self,
                         let context,
@@ -1693,7 +1955,8 @@ extension HTTPServer {
                     turn,
                     assistantText: finalContent,
                     settlementID: nil,
-                    stateID: nil)
+                    stateID: nil,
+                    completion: result.completion)
             }
 
             let finalCalls =
@@ -1724,26 +1987,31 @@ extension HTTPServer {
                     historyMessages:
                         finalHistory,
                     output: finalOutput,
-                    response: makeCompletedResponse(
+                    response: makeResponseObject(
                         responseId: parsed.responseId,
                         created: created,
                         json: json,
                         output: finalOutput,
-                        usage: result.usage
+                        usage: result.usage,
+                        completion: result.completion
                     )
                 )
             }
 
+            // An unfinished turn ends the event chain with the incomplete
+            // terminal, so a stream client cannot read it as a finished answer.
             completionEvents.append([
-                "type": "response.completed",
+                "type": result.completion == .complete
+                    ? "response.completed" : "response.incomplete",
                 "sequence_number":
                     streamState.nextSequence(),
-                "response": makeCompletedResponse(
+                "response": makeResponseObject(
                     responseId: parsed.responseId,
                     created: created,
                     json: json,
                     output: finalOutput,
-                    usage: result.usage
+                    usage: result.usage,
+                    completion: result.completion
                 )
             ])
 
@@ -2967,12 +3235,19 @@ extension HTTPServer {
         ]
     }
 
-    func makeCompletedResponse(
+    /// Build the Responses body for a finished turn. `completion` is the
+    /// engine's own termination verdict and decides the reported status: a
+    /// turn that did not finish is `incomplete` with its reason, never
+    /// `completed`. Text that was READ from a settlement (answer reuse,
+    /// consumption, managed replay) carries `.complete` because the gate that
+    /// served it only ever admits settled, complete conclusions.
+    func makeResponseObject(
         responseId: String,
         created: Int,
         json: [String: Any],
         output: [[String: Any]],
-        usage: GenerationUsageReport? = nil
+        usage: GenerationUsageReport? = nil,
+        completion: GenerationCompletion
     ) -> [String: Any] {
         // P1-2：usage 来自真实 token ledger（GenerateCompletionInfo 透传）；
         // 无报告时回退全 0（向后兼容）。
@@ -2987,15 +3262,17 @@ extension HTTPServer {
             ],
             "total_tokens": usage.map { $0.totalTokens } ?? 0
         ]
+        let incompleteDetails: Any = completion.incompleteReason
+            .map { ["reason": $0] } ?? NSNull()
 
         return [
             "id": responseId,
             "object": "response",
             "created_at": created,
-            "status": "completed",
+            "status": completion == .complete ? "completed" : "incomplete",
             "completed_at": created,
             "error": NSNull(),
-            "incomplete_details": NSNull(),
+            "incomplete_details": incompleteDetails,
             "instructions":
                 json["instructions"] ?? NSNull(),
             "model": modelId,
@@ -3135,9 +3412,8 @@ extension HTTPServer {
 
                             if error != nil {
 
-                                self.terminate(
-                                    context,
-                                    cancelGeneration: true
+                                self.terminateForClientGone(
+                                    context
                                 )
 
                             } else if isLast {

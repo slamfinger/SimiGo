@@ -14,6 +14,18 @@ nonisolated enum RuntimeTuning {
     static let responsesStoreMaxCount = 64
     static let responsesStoreTTLSeconds: TimeInterval = 1800
 
+    /// 路线 04：同时进入生成窗口的在途请求上限（并发等级 1/2/4）。
+    /// 等级只限制「有多少请求被允许在途」，不改变模型运行时的并发边界：
+    /// 生成仍受下面的 `serializeGeneration` 全局单飞约束。等级 1 与既有
+    /// 单飞行为等价；2/4 让第二个/第三、四个请求可以完成 IS/预算/身份
+    /// 准备并排队，而不是在 HTTP 层互相阻塞。
+    static let requestConcurrencyLevel: Int = {
+        guard let raw = ProcessInfo.processInfo.environment["SIMIGO_CONCURRENCY_LEVEL"],
+              let level = Int(raw),
+              [1, 2, 4].contains(level) else { return 1 }
+        return level
+    }()
+
     /// 生成全局串行化（P0-3 强化，2026-09-11）。
     ///
     /// qwen3_5_moe 等动态编译架构（GatedDeltaNet/SparseMoeBlock/decode 段
@@ -38,6 +50,14 @@ nonisolated enum RuntimeTuning {
     /// 随 [MLX] admission 观测行调整。
     static let warmTokenBudget = 100_000
 
+    /// #90 B：活会话驻留字节上限的显式覆盖。缺省 nil ⇒ 上限由
+    /// `LiveSessionResidency.byteBudget` 从模型 config.json 几何 + 上面两条
+    /// 既有预算（`sessionLimit`、`warmTokenBudget`）推出，不引入新常数。
+    /// 仅在需要把天花板钉成具体字节时设置（测试/研究对照）。
+    static let liveSessionByteBudgetOverrideBytes: Int? =
+        ProcessInfo.processInfo.environment["SIMIGO_LIVE_SESSION_MAX_BYTES"]
+            .flatMap(Int.init)
+
     /// Route B 前缀池（SIMIGO17_PREFIX_POOL 门，2026-09-27）：跨会话内容寻址
     /// KV 共享——新会话在冷重建前先查共享池，命中则只付 delta。默认开启；
     /// 默认关闭（owner 裁定 U2，2026-10-27）：持久化 KV 不得成为产品运行的
@@ -48,6 +68,30 @@ nonisolated enum RuntimeTuning {
     /// 前缀池 token 预算（池内 LRU 逐出的记账单位；tokenCount 以消息流
     /// 元素计——每消息 2 元素）。
     static let prefixPoolTokenBudget = 200_000
+
+    /// #136 内存前缀池（SIMIGO17）：被取消轮次「引擎可证明前缀边界」的
+    /// 运行时续接载体——`ChatSession.interruptedPrefixBoundary()` 产出的
+    /// 独立 cache 表示，按 (模型身份, KV 指纹, token 边界哈希) 登记，
+    /// 供同一 ES 续接请求在冷 prefill 前采纳。
+    ///
+    /// **默认开启**：内存表示随进程/模型卸载一起消失，不进磁盘、不进
+    /// ES/IS 恢复前提——核心不变量「KV Cache 可舍弃」在内存域自动成立，
+    /// 与 U2 对「持久化 KV 默认关闭」的裁定不冲突。`SIMIGO_PREFIX_MEMORY_POOL=0`
+    /// 显式关闭（A/B 对照）。
+    static let prefixMemoryPoolEnabled =
+        ProcessInfo.processInfo.environment["SIMIGO_PREFIX_MEMORY_POOL"] != "0"
+
+    /// 内存池 token 预算（超出按 LRU 逐出；逐出只影响下一次冷 prefill 的
+    /// 时长，不影响任何语义正确性）。
+    static let prefixMemoryPoolTokenBudget = Int(
+        ProcessInfo.processInfo.environment["SIMIGO_PREFIX_MEMORY_POOL_MAX_TOKENS"]
+            .flatMap(Int.init) ?? 200_000)
+
+    /// 内存池物理字节预算：条目按快照实际 `nbytes` 计，不用 token 估算
+    /// （GDN 递推状态与 KV 行的比例随模型几何变化，估算会撒谎）。
+    static let prefixMemoryPoolByteBudget = Int(
+        ProcessInfo.processInfo.environment["SIMIGO_PREFIX_MEMORY_POOL_MAX_BYTES"]
+            .flatMap(Int.init) ?? 8 * gibibyte)
 
     /// branch-checkpoints 是可选缓存（2026-10-27 裁定：ES/IS 是语义连续性的
     /// 唯一权威，持久化 KV 不得成为恢复前提）。`SIMIGO_BRANCH_CHECKPOINTS=0`
@@ -66,6 +110,14 @@ nonisolated enum RuntimeTuning {
     static let expHedgeSkipThreshold: Double =
         ProcessInfo.processInfo.environment["SIMIGO_EXP_HEDGE_SKIP_THRESHOLD"]
             .flatMap(Double.init) ?? 0.95
+
+    /// W4/A：请求预算（owner 2026-10-29 裁定 Q1=(a) 默认开启 60,000 ms）。
+    /// 请求头缺失不得关闭预算治理；`0` 只是本地显式关闭（运维/测试）。
+    /// 这是「整笔请求的墙钟预算」，不是 prefill 预算——生成预留由
+    /// `RequestBudgetController.prefillBudgetMs` 扣除。
+    static let requestBudgetMs: Int =
+        ProcessInfo.processInfo.environment["SIMIGO_REQUEST_BUDGET_MS"]
+            .flatMap(Int.init) ?? 60_000
 
     /// BETA-STORAGE-1: physical cost cannot be derived from token/message
     /// counts. Bound persisted prefix snapshots by bytes as well as logic

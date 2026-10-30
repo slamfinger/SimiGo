@@ -176,11 +176,15 @@ extension HTTPServer {
                 "description":
                     "Resolve an information demand against the settled physical index "
                     + "and stored chat. Returns digest-verified citable fragments; a "
-                    + "repeated identical demand reuses its settled result.",
+                    + "repeated identical demand reuses its settled result. `session_id` "
+                    + "is the session this retrieval belongs to and only sets the "
+                    + "demand's ownership; `session_ids` selects which stored chat "
+                    + "sessions are searched.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
                         "query": ["type": "string"],
+                        "session_id": ["type": "string"],
                         "root_ids": ["type": "array", "items": ["type": "string"]],
                         "include_chat": ["type": "boolean"],
                         "session_ids": ["type": "array", "items": ["type": "string"]],
@@ -236,6 +240,92 @@ extension HTTPServer {
                     "required": ["settlement_id"],
                 ],
             ],
+            [
+                "name": "simigo_es_begin",
+                "description":
+                    "Start (or resume an unsettled) execution for an agent whose model "
+                    + "runs outside SimiGo. Creates an ES but records NO result: an "
+                    + "external call that never settles leaves a begun, unsettled state. "
+                    + "When query + session_id are supplied, the answer already settled "
+                    + "for that same question in that same session is returned as "
+                    + "`reusable_answer` — a read, so the agent may skip its own model "
+                    + "call when the producer identity also matches.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "model": ["type": "string"],
+                        "tokenizer": ["type": "string"],
+                        "state_id": ["type": "string"],
+                        "parent_state_id": ["type": "string"],
+                        "position": ["type": "integer"],
+                        "session_id": ["type": "string"],
+                        "query": ["type": "string"],
+                    ],
+                    "required": ["model", "tokenizer"],
+                ],
+            ],
+            [
+                "name": "simigo_es_settle",
+                "description":
+                    "Submit an externally generated result as an authoritative "
+                    + "settlement. The output passes the same result contract the local "
+                    + "chat path uses, is sealed by payload digest, and is bound to the "
+                    + "declared model + tokenizer identity. Supplying demand_id + "
+                    + "retrieval_settlement_id declares the sources this result drew on; "
+                    + "`dependencies` declares further sources and commits with the "
+                    + "settlement — each content_address must be an object id already "
+                    + "sealed in the carrier (for example a prior settlement's "
+                    + "payload_sha256), and an unsealed address refuses the whole settle.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "state_id": ["type": "string"],
+                        "model": ["type": "string"],
+                        "tokenizer": ["type": "string"],
+                        "output": ["type": "string"],
+                        "session_id": ["type": "string"],
+                        "query": ["type": "string"],
+                        "demand_id": ["type": "string"],
+                        "retrieval_settlement_id": ["type": "string"],
+                        "parent_state_id": ["type": "string"],
+                        "actions": ["type": "array", "items": ["type": "string"]],
+                        "dependencies": [
+                            "type": "array",
+                            "items": [
+                                "type": "object",
+                                "properties": [
+                                    "dependency_id": ["type": "string"],
+                                    "content_address": ["type": "string"],
+                                    "reason": ["type": "string"],
+                                ],
+                                "required": ["dependency_id"],
+                            ],
+                        ],
+                    ],
+                    "required": ["state_id", "model", "tokenizer", "output"],
+                ],
+            ],
+            [
+                "name": "simigo_es_fail",
+                "description":
+                    "Record the terminal failure of an execution attempt in the "
+                    + "append-only audit. A failure never creates a settlement: the "
+                    + "execution stays visible as begun-but-unsettled.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "state_id": ["type": "string"],
+                        "detail": ["type": "string"],
+                        "execution_id": ["type": "string"],
+                        "attempt": ["type": "integer"],
+                        "phase": ["type": "string"],
+                        "evidence": ["type": "object"],
+                        "model_calls": ["type": "integer"],
+                        "settlements_written": ["type": "integer"],
+                    ],
+                    "required": ["state_id", "detail"],
+                ],
+            ],
         ]
     }
 
@@ -253,6 +343,7 @@ extension HTTPServer {
             let db = try openESISDatabase(databaseURL)
             let loop = SimiGoInformationLoop(database: db)
             let resolution = try loop.resolve(.init(
+                sessionID: optionalString(arguments, "session_id"),
                 query: query,
                 rootIDs: arguments["root_ids"] as? [String] ?? [],
                 includeChat: (arguments["include_chat"] as? Bool) ?? true,
@@ -397,9 +488,261 @@ extension HTTPServer {
                 },
             ]
 
+        case "simigo_es_begin":
+            let model = try requiredString(arguments, "model")
+            let tokenizer = try requiredString(arguments, "tokenizer")
+            let db = try openESISDatabase(databaseURL)
+            let stateID = optionalString(arguments, "state_id") ?? UUID().uuidString
+            let sessionID = optionalString(arguments, "session_id")
+
+            // Resuming a state is not a rewrite: an existing execution keeps the
+            // model and position it was begun under, and a settled one is closed.
+            let resumedPosition: Int?
+            if let existing = try db.executionStatePosition(stateID) {
+                if let settled = try db.latestSettlementID(forStateID: stateID) {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) already settled as \(settled); begin a new state")
+                }
+                let begunModel = try db.executionStateModelIdentity(stateID) ?? ""
+                guard begunModel == model else {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) was begun by \(begunModel); a different model needs a new state")
+                }
+                resumedPosition = existing
+            } else {
+                let parentStateID = optionalString(arguments, "parent_state_id")
+                let position: Int
+                if let explicit = arguments["position"] as? Int, explicit >= 0 {
+                    position = explicit
+                } else if let parentStateID,
+                    let parentPosition = try db.executionStatePosition(parentStateID)
+                {
+                    position = parentPosition + 1
+                } else {
+                    position = 0
+                }
+                try db.recordExecutionState(
+                    id: stateID, parentID: parentStateID, modelIdentity: model,
+                    position: position, continuationID: "mcp-" + UUID().uuidString,
+                    anchor: "", lifecycle: "active", createdAt: Date())
+                resumedPosition = nil
+            }
+
+            // Reuse is reported here as a READ of the settled answer; the caller
+            // still owns the decision, and nothing is written for asking.
+            var reusable: [String: Any] = [:]
+            if let sessionID, let query = optionalString(arguments, "query") {
+                let loop = SimiGoInformationLoop(database: db)
+                if let answer = loop.reusableAnswer(
+                    sessionID: sessionID, query: query,
+                    identity: .init(model: model, tokenizer: tokenizer))
+                {
+                    reusable = [
+                        "text": answer.text,
+                        "settlement_id": answer.settlementID,
+                        "demand_id": answer.demandID,
+                        "source_state_id": answer.sourceStateID,
+                        "model_calls": 0,
+                    ]
+                }
+            }
+            return [
+                "state_id": stateID,
+                "parent_state_id": try db.executionStateParentID(stateID) ?? "",
+                "position": try db.executionStatePosition(stateID) ?? 0,
+                "resumed": resumedPosition != nil,
+                "settled": false,
+                "reusable_answer": reusable.isEmpty ? NSNull() : reusable,
+            ]
+
+        case "simigo_es_settle":
+            let stateID = try requiredString(arguments, "state_id")
+            let model = try requiredString(arguments, "model")
+            let tokenizer = try requiredString(arguments, "tokenizer")
+            let output = try requiredString(arguments, "output")
+            let db = try openESISDatabase(databaseURL)
+
+            guard let position = try db.executionStatePosition(stateID) else {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) was never begun; call simigo_es_begin first")
+            }
+            if let begunModel = try db.executionStateModelIdentity(stateID),
+                begunModel != model
+            {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) was begun by \(begunModel); a settlement cannot be recorded under a different model identity")
+            }
+            if let settled = try db.latestSettlementID(forStateID: stateID) {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) already settled as \(settled); a state settles once")
+            }
+
+            let demandID = optionalString(arguments, "demand_id") ?? ""
+            let retrievalID = optionalString(arguments, "retrieval_settlement_id") ?? ""
+            guard demandID.isEmpty == retrievalID.isEmpty else {
+                throw MCPToolError.invalidArguments(
+                    "demand_id and retrieval_settlement_id must be supplied together")
+            }
+            if !retrievalID.isEmpty {
+                guard let receipt = try db.settlementReceipt(retrievalID) else {
+                    throw MCPToolError.invalidArguments(
+                        "no such retrieval settlement: \(retrievalID)")
+                }
+                guard receipt.validity == "valid" else {
+                    throw MCPToolError.invalidArguments(
+                        "retrieval settlement \(retrievalID) is \(receipt.validity); a new result cannot cite it")
+                }
+            }
+            let resolution = demandID.isEmpty
+                ? nil
+                : SimiGoInformationLoop.Resolution(
+                    demandID: demandID, stateID: stateID, reused: false,
+                    hits: [], inputDigest: "", resultSHA256: "",
+                    retrievalSettlementID: retrievalID, itemIDs: [],
+                    staleItemIDs: [])
+
+            // Declared sources are part of the settlement contract, so they are
+            // validated before anything is written and committed in the same
+            // transaction as the result: a settle never succeeds while dropping
+            // a source it claims. An address must already be a sealed object —
+            // the FK enforces it, and this turns that into a clear refusal.
+            var declaredDependencies: [SimiGoESISDatabase.DeclaredDependency] = []
+            for entry in arguments["dependencies"] as? [[String: Any]] ?? [] {
+                guard let dependencyID = entry["dependency_id"] as? String,
+                    !dependencyID.isEmpty
+                else {
+                    throw MCPToolError.invalidArguments(
+                        "every dependency needs a non-empty dependency_id")
+                }
+                let address = (entry["content_address"] as? String) ?? ""
+                guard !address.isEmpty else {
+                    throw MCPToolError.invalidArguments(
+                        "dependency \(dependencyID) has no content_address; cite the sealed object it relies on")
+                }
+                guard try db.objectRow(address) != nil else {
+                    throw MCPToolError.invalidArguments(
+                        "dependency \(dependencyID) cites \(address), which is not a sealed object; cite an existing object id such as a prior settlement's payload_sha256")
+                }
+                declaredDependencies.append(.init(
+                    dependencyID: dependencyID, contentAddress: address,
+                    reason: entry["reason"] as? String ?? "declared"))
+            }
+
+            let turn = try SimiGoInformationLoop(database: db).settleTurn(
+                generatedText: output,
+                resolution: resolution,
+                stateID: stateID,
+                parentStateID: optionalString(arguments, "parent_state_id")
+                    ?? (try db.executionStateParentID(stateID)),
+                position: position,
+                modelIdentity: model,
+                identity: .init(model: model, tokenizer: tokenizer),
+                sessionID: optionalString(arguments, "session_id"),
+                summaryQuery: optionalString(arguments, "query"),
+                actions: arguments["actions"] as? [String]
+                    ?? ["external.mcp.settle"],
+                declaredDependencies: declaredDependencies)
+
+            // Publish the demand this result answers, so an exact repeat of the
+            // same question in the same session can be served from the
+            // settlement. Additive like the summary: the settlement above is
+            // already authoritative, so a publish failure is reported instead
+            // of turned into a false "settle failed". A settle that already
+            // advanced a retrieval demand needs no publish.
+            var publishedDemandID = ""
+            var demandError = ""
+            if turn.advancementID.isEmpty,
+                let sessionID = optionalString(arguments, "session_id"),
+                let query = optionalString(arguments, "query")
+            {
+                do {
+                    publishedDemandID = try db.recordAnsweredDemand(
+                        stateID: turn.childStateID, sessionID: sessionID, query: query,
+                        settlementID: turn.settlementID,
+                        actions: arguments["actions"] as? [String]
+                            ?? ["external.mcp.settle"])
+                } catch {
+                    demandError = String(describing: error)
+                }
+            }
+
+            // Read the dependencies back from the store: the reply reports what
+            // was committed with the settlement, not what the caller asked for.
+            let dependencyRows = try db.settlementDependencies(
+                settlementID: turn.settlementID)
+            return [
+                "settlement_id": turn.settlementID,
+                "state_id": turn.childStateID,
+                "advancement_id": turn.advancementID,
+                "demand_id": publishedDemandID,
+                "demand_error": demandError,
+                "payload_sha256": try db.settlementPayloadDigest(turn.settlementID) ?? "",
+                "validity": try db.settlementValidity(turn.settlementID),
+                "summary_recorded": try db.settlementSummary(
+                    settlementID: turn.settlementID) != nil,
+                "dependencies": dependencyRows.map { entry -> [String: Any] in
+                    [
+                        "dependency_id": entry.dependencyID,
+                        "revision": entry.revision,
+                        "content_address": entry.contentAddress,
+                    ]
+                },
+            ]
+
+        case "simigo_es_fail":
+            let stateID = try requiredString(arguments, "state_id")
+            let detail = try requiredString(arguments, "detail")
+            let db = try openESISDatabase(databaseURL)
+            var evidence: [String: String] = [:]
+            for (key, value) in arguments["evidence"] as? [String: Any] ?? [:] {
+                guard let text = value as? String else {
+                    throw MCPToolError.invalidArguments(
+                        "evidence values must be strings: \(key)")
+                }
+                evidence[key] = text
+            }
+            let phase = (arguments["phase"] as? String)
+                .flatMap(SimiGoManagedRefusal.Phase.init(rawValue:)) ?? .g
+            let executionID = optionalString(arguments, "execution_id") ?? stateID
+            let audit = db.recordFailureAudit(.init(
+                executionID: executionID,
+                attempt: arguments["attempt"] as? Int ?? 1,
+                phase: phase,
+                cause: nil,
+                origin: .request,
+                evidence: evidence,
+                modelCalls: arguments["model_calls"] as? Int ?? 0,
+                settlementsWritten: arguments["settlements_written"] as? Int ?? 0,
+                detail: detail))
+            return [
+                "execution_id": executionID,
+                "audit_persisted": audit.auditPersisted,
+                "object_id": audit.objectID ?? "",
+                "failure_class": audit.failureClass ?? "",
+                "settlement_id": try db.latestSettlementID(forStateID: stateID) ?? "",
+            ]
+
         default:
             throw MCPToolError.unknownTool(name)
         }
+    }
+
+    private static func requiredString(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> String {
+        guard let value = arguments[key] as? String,
+            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            throw MCPToolError.invalidArguments("\(key) is required")
+        }
+        return value
+    }
+
+    private static func optionalString(
+        _ arguments: [String: Any], _ key: String
+    ) -> String? {
+        guard let value = arguments[key] as? String, !value.isEmpty else { return nil }
+        return value
     }
 
     private static func openESISDatabase(_ url: URL) throws -> SimiGoESISDatabase {

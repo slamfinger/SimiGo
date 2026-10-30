@@ -34,6 +34,10 @@ public enum SimiGoManagedRefusal {
         case idempotencyConflict = "idempotency_conflict"
         case recomputePolicyInvalid = "recompute_policy_invalid"
         case recomputePolicyConflict = "recompute_policy_conflict"
+        /// The generator did not attest a natural end, so its output cannot
+        /// become a settled record. Internal only: no public code is assigned,
+        /// which keeps the closed allowlist in `external(...)` unchanged.
+        case generationIncomplete = "generation_incomplete"
     }
 
     /// Where the refusal was decided. Used by P2 to distinguish "we refused an

@@ -533,7 +533,7 @@
 			repositoryURL = "https://github.com/slamfinger/mlx-swift-lm.git";
 			requirement = {
 				kind = revision;
-				revision = "bc64ee696de102ad43fd76dd6ac01dc37f6427d3";
+				revision = "6f88129b19684849a19d9d1c1ed6e0021491906b";
 			};
 		};
 		C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */ = {

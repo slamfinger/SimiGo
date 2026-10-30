@@ -243,7 +243,13 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
             ttftSeconds: ttftSeconds,
             tokensPerSecond: turn.meanTokenMs > 0 ? 1000 / turn.meanTokenMs : nil
         )
-        return GenerationResult(text: turn.text, usage: usage)
+        return GenerationResult(
+            text: turn.text, usage: usage,
+            // The segmented engine runs the whole budget with no stop set and
+            // reports no termination reason, so it cannot attest that the
+            // answer finished: T-1 makes that an explicit `unconfirmed` rather
+            // than an inherited "stop".
+            completion: .unconfirmed)
     }
 
     static func sanitized(_ messages: [JSONValue]) -> [EngineChatMessage] {
@@ -251,17 +257,7 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         for message in messages {
             guard case .object(let obj) = message else { continue }
             guard case .string(let role) = obj["role"] else { continue }
-            let content: String
-            switch obj["content"] {
-            case .string(let s): content = s
-            case .array(let parts):
-                content = parts.compactMap { part in
-                    if case .object(let o) = part, case .string(let t) = o["text"] { return t }
-                    if case .string(let s) = part { return s }
-                    return nil
-                }.joined()
-            default: content = ""
-            }
+            let content = obj["content"]?.messageText ?? ""
             guard role == "user" || role == "assistant" || role == "system" else { continue }
             out.append(EngineChatMessage(role: role, content: content))
         }

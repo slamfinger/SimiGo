@@ -115,7 +115,8 @@ public struct BackendConfig: Sendable {
             let endpoint = InferenceNodeConfiguration.shared.snapshot()
             let environment = ProcessInfo.processInfo.environment
             let configuredParallel = Int(environment["SIMIGO_LLAMA_PARALLEL"] ?? "1") ?? 1
-            let parallelSlots = max(1, min(2, configuredParallel))
+            // 上限 4 由 owner 2026-10-30 放开（此前为 2）；默认仍为 1。
+            let parallelSlots = max(1, min(4, configuredParallel))
             let configuredNGL = Int(environment["SIMIGO_LLAMA_NGL"] ?? "\(config.gpuLayers)") ?? config.gpuLayers
             let gpuLayers = max(0, min(999, configuredNGL))
             var args: [String] = [
@@ -991,7 +992,7 @@ public final class Service: ObservableObject {
             if info.kind == .gguf {
                 let environment = ProcessInfo.processInfo.environment
                 let configuredSlots = Int(environment["SIMIGO_LLAMA_PARALLEL"] ?? "1") ?? 1
-                let slots = max(1, min(2, configuredSlots))
+                let slots = max(1, min(4, configuredSlots))
                 let ngl = environment["SIMIGO_LLAMA_NGL"] ?? "\(resolvedConfig.gpuLayers)"
                 let flashAttn = environment["SIMIGO_LLAMA_FLASH_ATTN"] ?? "on"
                 let specNMax = environment["SIMIGO_LLAMA_SPEC_NMAX"] ?? "\(max(1, resolvedConfig.specDraftNMax))"

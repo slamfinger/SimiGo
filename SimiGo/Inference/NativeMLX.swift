@@ -49,19 +49,28 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// 重启后为 nil → 对冲保守开启（未知状态不跳过 restore）。
         var lastCompletionMode: String?
         var lastCompletionCacheEff: Double?
+        /// #90 A：本表示创建时的 thinking 配置。`nil` = 未记录 ⇒ 跨请求采纳
+        /// 时必须拒绝（未知不等于相容）。同键复用沿用既有 kvFingerprint 门，
+        /// 此字段只为「不同请求级 sessionId 采纳陌生分片」增加判据。
+        let thinkingDisabled: Bool?
+        /// #90 B：正在本分片上执行的请求 id。逐出器据此把淘汰对象与在途
+        /// 请求隔离——非 nil 的分片永远不是逐出候选。
+        var inFlightRequestId: String?
 
         init(
             session: ChatSession,
             history: [Chat.Message],
             historyJSON: [JSONValue] = [],
             kvFingerprint: String? = nil,
-            isRestoredSnapshot: Bool = false
+            isRestoredSnapshot: Bool = false,
+            thinkingDisabled: Bool? = nil
         ) {
             self.session = session
             self.history = history
             self.historyJSON = historyJSON
             self.kvFingerprint = kvFingerprint
             self.isRestoredSnapshot = isRestoredSnapshot
+            self.thinkingDisabled = thinkingDisabled
             self.checkpointDirty = false
         }
     }
@@ -72,6 +81,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var evictedTokens = 0
         var warmSessions = 0
         var warmTokens = 0
+        /// #90 B：驻留字节维度的读数（residency 未知时全为 0，维度不触发）。
+        var warmBytes = 0
+        var evictedBytes = 0
+        var byteBudget = 0
     }
 
     private struct State {
@@ -89,6 +102,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// Request intent survives the async ensureLoaded → task-registration
         /// gap. Suspend must not unload the runtime while this is non-empty.
         var pendingRequestIds: Set<String> = []
+        /// W4/#138：加载后的第一笔完成预填含 kernel 首次编译/权重驻留代价，
+        /// 只能消费一次，不能充当吞吐证据（加载/恢复完成时复位）。
+        var postLoadWarmup = PostLoadWarmupTracker()
     }
 
     private enum Lifecycle {
@@ -102,6 +118,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private let state = Mutex(State())
     private let modelPath: String
     private let baseConfig: ModelConfig
+    /// #90 B：活会话驻留字节的口径（模型 config.json 几何推出）。
+    /// `nil` = 读不到几何 ⇒ 字节维度不启用：宁可不逐出，也不用猜的常数
+    /// 打掉暖会话。
+    private let residency: LiveSessionResidency?
     private let lifecycleGate = RuntimeLifecycleGate()
     private let gateHolder = Mutex(SessionGenerationGate())
     /// V1.6 S5：执行血统日志（有界 128 条；只记录查询，不参与决策）。
@@ -114,6 +134,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private let toolGovernance = ToolGovernance { line in
         RuntimeTraceLogger.shared.trace(line)
     }
+    /// W4/A：预算身份（model + tokenizer 内容指纹 + 模板口径）按模型路径
+    /// 缓存一次。tokenizer 指纹要对 tokenizer 文件做内容哈希，逐请求重算
+    /// 会把门本身变成新的开销来源。
+    private let budgetIdentityCache =
+        Locked<(path: String, model: String, tokenizer: String)?>(nil)
 
     public var isInProcess: Bool { true }
     public var isGenerating: Bool {
@@ -124,6 +149,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     public init(info: ModelInfo, config: ModelConfig) {
         self.modelPath = info.path
         self.baseConfig = config
+        self.residency = LiveSessionResidency.resolve(modelPath: info.path)
         state.withLock {
             $0.modelCapabilityContract = Self.buildCapabilityContract(
                 modelPath: info.path
@@ -523,7 +549,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             )
                         }
                     ),
-                    informationTurnProducer: { informationProducer }
+                    informationTurnProducer: { informationProducer },
+                    requestBudget: { [weak self] requestId, agentId, sessionId,
+                        branchId, messages, tools, config, budgetHeaderMs in
+                        guard let self else {
+                            return RequestBudgetVerdict.unavailable()
+                        }
+                        return await self.requestBudgetVerdict(
+                            requestId: requestId,
+                            agentId: agentId,
+                            sessionId: sessionId,
+                            logicalBranchId: branchId,
+                            messages: messages,
+                            tools: tools,
+                            config: config,
+                            budgetHeaderMs: budgetHeaderMs)
+                    }
                 )
             }
 
@@ -571,6 +612,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 $0.lifecycle = .running
                 $0.lastActivity = Date()
                 $0.sessions.removeAll()
+                $0.postLoadWarmup.modelLoaded()
             }
 
             // B-6：跨会话 token 前缀池钩子（基配置命名空间）。
@@ -604,6 +646,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 state.pendingRequestIds.removeAll()
                 return (server, tasks, gate)
             }
+
+            // #136：整池随停机归零——内存表示活不过它所属的模型驻留期。
+            _ = PrefixMemoryPool.shared.purge(reason: "shutdown")
 
             if let server {
                 await MainActor.run { server.stop() }
@@ -664,6 +709,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     $0.modelContainer = container
                     $0.lifecycle = .running
                     $0.lastActivity = Date()
+                    $0.postLoadWarmup.modelLoaded()
                 }
                 let elapsedMs = Int(Date().timeIntervalSince(resumeBegan) * 1000)
                 traceLogger.trace("[LIFECYCLE] resume_done ms=\(elapsedMs)")
@@ -817,6 +863,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     sessionsAfter: sessionsAfter,
                     containerPresentBefore: containerPresentBefore,
                     containerAbsentAfter: containerAbsentAfter)
+                // #136：内存前缀池随模型卸载归零。表示只在权重驻留期间
+                // 有意义，容器一放手就必须作废——连续性由 ES/IS 的已结算
+                // 锚点承担，不靠这些字节。memPoolPurge 行是 §IV.4 的取证点。
+                _ = PrefixMemoryPool.shared.purge(reason: "suspend")
                 Memory.clearCache()
                 // §8 G3 tier 2: explicit resource-reclaim OPERATION invoked (MLX cache).
                 self.observation.noteResourceReclaim()
@@ -846,6 +896,367 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             sessionId: "__global_generation__",
             logicalBranchId: executionKey.logicalBranchId
         )
+    }
+
+    // MARK: - W4/A request budget (P2)
+
+    /// 渲染后计数：与引擎 `ChatSession` 同一条 `processor.prepare` 与同一组
+    /// tools/additionalContext，得到的就是本轮会被预填的 token 序列。
+    private static func budgetRenderedTokens(
+        chat: [Chat.Message],
+        tools: [ToolSpec]?,
+        additionalContext: [String: any Sendable]?,
+        container: ModelContainer
+    ) async -> [Int]? {
+        do {
+            let input = try await container.prepare(
+                input: UserInput(
+                    chat: chat,
+                    tools: tools,
+                    additionalContext: additionalContext))
+            return input.text.tokens.asArray(Int.self)
+        } catch {
+            return nil
+        }
+    }
+
+    private func budgetIdentity(thinkingDisabled: Bool) -> RequestBudgetIdentity? {
+        let path = modelPath
+        var cached = budgetIdentityCache.value
+        if cached?.path != path {
+            let identity = SimiGoProducerIdentity.identity(fromPath: path)
+            let entry = (
+                path: path,
+                model: identity.model,
+                tokenizer: identity.tokenizer
+            )
+            budgetIdentityCache.set(entry)
+            cached = entry
+        }
+        guard let cached else { return nil }
+        // 模板身份：tokenizer 内容指纹已覆盖 tokenizer_config.json（含
+        // chat_template 原文）与 vocab 文件；逐请求唯一会改写模板行为的
+        // 开关是 thinking，单独进身份——禁用模板的样本不得喂给启用请求。
+        return RequestBudgetIdentity(
+            model: cached.model,
+            tokenizer: cached.tokenizer,
+            template: "thinking=\(thinkingDisabled ? "disabled" : "enabled")")
+    }
+
+    private static func budgetInactiveVerdict(
+        _ kind: RequestBudgetVerdictKind,
+        bucket: String,
+        budgetMs: Int,
+        maxTokens: Int,
+        tokens: Int = 0,
+        digest: String = ""
+    ) -> RequestBudgetVerdict {
+        RequestBudgetVerdict(
+            kind: kind,
+            promptTokens: tokens,
+            estimatedPrefillMs: 0,
+            budgetMs: budgetMs,
+            prefillBudgetMs: RequestBudgetController.prefillBudgetMs(
+                budgetMs: budgetMs, maxTokens: maxTokens),
+            samples: 0,
+            bucket: bucket,
+            promptDigest: digest,
+            rateTokPerSecond: nil,
+            priorProcessed: nil,
+            priorTotal: nil,
+            priorElapsedMs: nil,
+            priorRequestID: nil,
+            cached: false,
+            memoryMatchedTokens: 0)
+    }
+
+    /// W4/A：协议层在 IS 注入准备完成后、任何 SSE 流头与生成启动之前调用。
+    ///
+    /// 判定输入必须是渲染后的 prompt token（模板 + tools + thinking 上下文
+    /// 全部生效），不是字节数估算或内容下界。冷轮按全量渲染计数，已有同键
+    /// 会话且前缀匹配时只计 delta（热桶）。门不参与 KV 复用决策，只在
+    /// 估算/观测表明预算内做不完时拒绝，避免把同一份输入反复预填。
+    public func requestBudgetVerdict(
+        requestId: String,
+        agentId: String?,
+        sessionId: String,
+        logicalBranchId: String,
+        messages: [JSONValue],
+        tools: [JSONValue]?,
+        config: ModelConfig,
+        budgetHeaderMs: Int? = nil
+    ) async -> RequestBudgetVerdict {
+        let budgetMs =
+            budgetHeaderMs.flatMap { $0 > 0 ? $0 : nil } ?? RuntimeTuning.requestBudgetMs
+        let maxTokens = config.maxTokens > 0 ? config.maxTokens : baseConfig.maxTokens
+        RequestBudgetController.shared.prepare()
+
+        // 研究态：前缀池命中会提供门无法建模的暖表示（池内 token 边界命中
+        // 时本轮根本不做全量预填）。产品默认关闭，开启即实验模式：门如实
+        // 声明未生效，不得把放行报作拦截。
+        let restorePolicy = ExecutionPolicy.ConditionalRestoreConfiguration.current()
+        if RuntimeTuning.prefixPoolEnabled {
+            let verdict = Self.budgetInactiveVerdict(
+                .poolActive, bucket: "unknown", budgetMs: budgetMs, maxTokens: maxTokens)
+            traceLogger.trace(
+                "[BUDGET] r=\(requestId) verdict=pool_active gate=inactive reason=prefix_pool_enabled")
+            return verdict
+        }
+        guard budgetMs > 0 else {
+            let verdict = Self.budgetInactiveVerdict(
+                .disabled, bucket: "unknown", budgetMs: budgetMs, maxTokens: maxTokens)
+            traceLogger.trace("[BUDGET] r=\(requestId) verdict=disabled gate=inactive")
+            return verdict
+        }
+        guard let container = state.withLock({ $0.modelContainer }) else {
+            let verdict = Self.budgetInactiveVerdict(
+                .estimateUnavailable, bucket: "unknown",
+                budgetMs: budgetMs, maxTokens: maxTokens)
+            traceLogger.trace(
+                "[BUDGET] r=\(requestId) verdict=estimate_unavailable gate=inactive reason=model_not_loaded")
+            return verdict
+        }
+        guard
+            let executionKey = try? AgentExecutionKey.resolve(
+                agentId: agentId,
+                sessionId: sessionId,
+                logicalBranchId: logicalBranchId)
+        else {
+            let verdict = Self.budgetInactiveVerdict(
+                .estimateUnavailable, bucket: "unknown",
+                budgetMs: budgetMs, maxTokens: maxTokens)
+            traceLogger.trace(
+                "[BUDGET] r=\(requestId) verdict=estimate_unavailable gate=inactive reason=identity_unresolved")
+            return verdict
+        }
+
+        let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
+        let kvSettings = config.kvCache ?? baseConfig.kvCache
+        let kvFingerprint = kvSettings.map { String(describing: $0) }
+        let toolSpecs = Self.makeToolSpecs(tools)
+        let additionalContext: [String: any Sendable]? =
+            thinkingDisabled ? ["enable_thinking": false] : nil
+
+        var incoming = Self.makeChatMessages(messages)
+        if incoming.isEmpty {
+            let verdict = Self.budgetInactiveVerdict(
+                .emptyTranscript, bucket: "unknown",
+                budgetMs: budgetMs, maxTokens: maxTokens)
+            traceLogger.trace(
+                "[BUDGET] r=\(requestId) verdict=empty_transcript gate=inactive")
+            return verdict
+        }
+
+        guard let identity = budgetIdentity(thinkingDisabled: thinkingDisabled)
+        else {
+            let verdict = Self.budgetInactiveVerdict(
+                .estimateUnavailable, bucket: "unknown",
+                budgetMs: budgetMs, maxTokens: maxTokens)
+            traceLogger.trace(
+                "[BUDGET] r=\(requestId) verdict=estimate_unavailable gate=inactive reason=identity_unavailable")
+            return verdict
+        }
+
+        // 热/冷判定与生成路径同一判据（mapKey + KV 指纹 + 消息前缀），
+        // 差异只在用途：这里不做任何会话移动，只决定计数口径。
+        let mapKey = Self.sessionMapKey(
+            storageKey: executionKey.storageKey,
+            firstMessage: incoming.first.map { (role: $0.role.rawValue, content: $0.content) }
+        )
+        let existing = state.withLock { $0.sessions[mapKey] }
+        var bucket = "cold"
+        var cachedPrefixTokens = 0
+        var gateMessages = messages
+        if let existing,
+            incoming.count > existing.history.count,
+            existing.kvFingerprint == kvFingerprint {
+            let echoNormalization = Self.normalizeToolEcho(
+                messages, against: existing.historyJSON)
+            let candidate = echoNormalization.changed
+                ? Self.makeChatMessages(echoNormalization.messages) : incoming
+            if Self.isPrefix(existing.history, of: candidate) {
+                bucket = "hot"
+                incoming = candidate
+                if echoNormalization.changed {
+                    gateMessages = echoNormalization.messages
+                }
+                if let historyTokens = await Self.budgetRenderedTokens(
+                    chat: existing.history,
+                    tools: toolSpecs,
+                    additionalContext: additionalContext,
+                    container: container
+                ) {
+                    cachedPrefixTokens = historyTokens.count
+                }
+            }
+        }
+
+        // Conditional Restore 只有真会接管本轮时才跳过全量预填，才轮到门
+        // 让位。它需要全部条件同时成立：checkpoint 落盘开启（U2 默认关）、
+        // 命中活会话、账本尾 assistant 带 tool_calls、delta 规模门放行。
+        // conditionalRestoreEnabled 默认是 true——只看这个 flag 会把默认
+        // 产品态的门永远判成不活跃，等于 W4 没有接通。
+        if bucket == "hot", let existing,
+            RuntimeTuning.branchCheckpointsEnabled,
+            ExecutionPolicy.rollforwardRisk(lastJSON: existing.historyJSON.last),
+            ExecutionPolicy.conditionalRestoreGate(
+                configuration: restorePolicy,
+                incoming: gateMessages,
+                ledgerCount: existing.historyJSON.count) == .allowed {
+            let verdict = Self.budgetInactiveVerdict(
+                .restoreActive, bucket: bucket,
+                budgetMs: budgetMs, maxTokens: maxTokens)
+            traceLogger.trace(
+                "[BUDGET] r=\(requestId) verdict=restore_active gate=inactive reason=conditional_restore_would_take_over")
+            return verdict
+        }
+
+        guard
+            let fullTokens = await Self.budgetRenderedTokens(
+                chat: incoming,
+                tools: toolSpecs,
+                additionalContext: additionalContext,
+                container: container)
+        else {
+            let verdict = Self.budgetInactiveVerdict(
+                .estimateUnavailable, bucket: bucket,
+                budgetMs: budgetMs, maxTokens: maxTokens)
+            traceLogger.trace(
+                "[BUDGET] r=\(requestId) verdict=estimate_unavailable gate=inactive reason=render_failed bucket=\(bucket)")
+            return verdict
+        }
+
+        // #136/W4：冷重建轮先问内存池——只有走完采纳那道门（同命名空间、ES
+        // 身份逐字相等、链哈希对账、bind 权威）的边界才算数。命中多少就少
+        // 预填多少；探不到就是 0，按完整冷 prefill 估算。热桶不叠加：那段
+        // 前缀已由活会话付过，再扣一次等于双重抵扣。
+        let memoryMatched = bucket == "hot" ? 0 : memoryPoolCreditTokens(
+            promptTokens: fullTokens,
+            kvFingerprint: kvFingerprint,
+            thinkingDisabled: thinkingDisabled,
+            logicalBranchId: executionKey.logicalBranchId)
+        // 计数口径：冷＝全量渲染 token，热＝活会话没覆盖的 delta。内存池抵扣
+        // 由判定自己减（`decide` 里唯一的减法），这里只报基数，否则一处估算
+        // 用扣后的、另一处用扣前的。
+        let tokens = bucket == "hot"
+            ? max(1, fullTokens.count - cachedPrefixTokens)
+            : fullTokens.count
+        let digest = RequestBudgetDigest.of(
+            tokens: fullTokens.map { Int32(truncatingIfNeeded: $0) },
+            model: identity.model)
+        let controller = RequestBudgetController.shared
+        controller.rememberPromptDigest(requestID: requestId, digest: digest)
+        let verdict = controller.decide(
+            identity: identity,
+            bucket: bucket,
+            promptDigest: digest,
+            tokens: tokens,
+            budgetMs: budgetMs,
+            maxTokens: maxTokens,
+            memoryMatchedTokens: memoryMatched)
+        traceLogger.trace(budgetLogLine(
+            requestId: requestId, verdict: verdict, fullTokens: fullTokens.count,
+            deltaTokens: tokens))
+        if verdict.isReject, RequestBudgetController.admissionEnforcementEnabled {
+            // 独立一行、每笔拒绝都留痕：RejectBurstTracker 只服务 CONTEXT
+            // SAFETY 的 L1 压缩风暴（10s 窗口内成员笔被抑制），预算拒绝不入
+            // 该聚合——否则「请求被拒」会被读成「请求消失」。
+            // ADR 2026-10-30：准入拒绝已下线，本行只在（当前恒为假的）
+            // 强制开关打开时才写，避免把「本应被拒但已准入」记成 503。
+            traceLogger.trace(budgetRejectLogLine(
+                requestId: requestId, verdict: verdict))
+        }
+        return verdict
+    }
+
+    /// #136/W4：内存前缀池的**只读**预探测。走的是采纳那一道门的同一个实现
+    /// （`PrefixMemoryPool.provenMatchTokenCount`）：命名空间、ES 身份逐字
+    /// 相等、链哈希对账、`bindVerdict` 权威全过才算数。不克隆、不刷新
+    /// `lastUsedAt`、不注销授权——权威用 `peekBindAuthority` 只读取，bind
+    /// 站点的 consume 时机与改动前逐字节一致。探不到返回 0，门按完整冷
+    /// prefill 估算，绝不因为「池里有个像的条目」就把注定超时的尝试放行。
+    private func memoryPoolCreditTokens(
+        promptTokens: [Int],
+        kvFingerprint: String?,
+        thinkingDisabled: Bool,
+        logicalBranchId: String?
+    ) -> Int {
+        guard RuntimeTuning.prefixMemoryPoolEnabled, promptTokens.count > 1 else { return 0 }
+        let namespace = NativeMLXPrefixPool.namespace(
+            modelID: modelName(from: modelPath),
+            kvFingerprint: kvFingerprint,
+            thinkingDisabled: thinkingDisabled)
+        let authority: ISKVBindAuthority.Lookup
+        if let logicalBranchId {
+            authority = NativeMLXPrefixPool.shared.peekBindAuthority(esStateID: logicalBranchId)
+        } else {
+            authority = .notGoverned
+        }
+        return PrefixMemoryPool.shared.provenMatchTokenCount(
+            promptTokenIds: promptTokens,
+            namespace: namespace,
+            esStateID: logicalBranchId,
+            authority: authority
+        ) ?? 0
+    }
+
+    private func budgetLogLine(
+        requestId: String,
+        verdict: RequestBudgetVerdict,
+        fullTokens: Int,
+        deltaTokens: Int
+    ) -> String {
+        var line =
+            "[BUDGET] r=\(requestId) verdict=\(verdict.kind.wireName)" +
+            " gate=\(verdict.gateWasActive ? "active" : "inactive")" +
+            " bucket=\(verdict.bucket)" +
+            " promptTokens=\(verdict.promptTokens)" +
+            " renderedTokens=\(fullTokens) deltaTokens=\(deltaTokens)" +
+            " budget=\(verdict.budgetMs)" +
+            " prefillBudget=\(verdict.prefillBudgetMs)" +
+            " estMs=\(verdict.estimatedPrefillMs)" +
+            " samples=\(verdict.samples)"
+        if let rate = verdict.rateTokPerSecond {
+            line += String(format: " rate=%.1f", rate)
+        }
+        if !verdict.promptDigest.isEmpty {
+            line += " digest=\(verdict.promptDigest.prefix(12))"
+        }
+        if verdict.cached {
+            line += " cached=1"
+        }
+        if verdict.memoryMatchedTokens > 0 {
+            line += " memMatched=\(verdict.memoryMatchedTokens)"
+        }
+        if let processed = verdict.priorProcessed, let total = verdict.priorTotal,
+            let elapsed = verdict.priorElapsedMs {
+            line += " priorAttempt=\(processed)/\(total)@\(elapsed)ms"
+        }
+        if verdict.isReject, !RequestBudgetController.admissionEnforcementEnabled {
+            line += " enforced=0"
+        }
+        return line
+    }
+
+    private func budgetRejectLogLine(
+        requestId: String,
+        verdict: RequestBudgetVerdict
+    ) -> String {
+        var line =
+            "[BUDGET_REJECT] r=\(requestId) verdict=\(verdict.kind.wireName)" +
+            " bucket=\(verdict.bucket) tokens=\(verdict.promptTokens)" +
+            " estMs=\(verdict.estimatedPrefillMs)" +
+            " prefillBudget=\(verdict.prefillBudgetMs)" +
+            " samples=\(verdict.samples)"
+        if verdict.cached {
+            line += " cached=1"
+        }
+        if let processed = verdict.priorProcessed, let total = verdict.priorTotal,
+            let elapsed = verdict.priorElapsedMs, let prior = verdict.priorRequestID {
+            line += " priorAttempt=\(processed)/\(total)@\(elapsed)ms prior=\(prior.prefix(8))"
+        }
+        line += " action=prefill_budget_exceeded status=503"
+        return line
     }
 
     public func generate(
@@ -1003,12 +1414,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // S3：配置面一次性快照（外审七轮 P1 关注点——单请求单快照，
         // 门判定与 checkpoint save 门全程只消费快照，防跨时刻拼凑）。
         let restorePolicy = ExecutionPolicy.ConditionalRestoreConfiguration.current()
+        // §II.3：本轮 ES 权威在函数作用域一次性只读取值。磁盘准入在 bind
+        // 站点注销它，内存采纳（引擎 prefill 期间发生）必须消费同一份快照，
+        // 否则第二次查询只会拿到 `.notGoverned`＝自己给自己放行。日常轮次
+        // 无登记＝`.notGoverned`，两池行为与本改动之前逐字节一致。
+        let bindLookup = NativeMLXPrefixPool.shared.peekBindAuthority(
+            esStateID: executionKey.logicalBranchId)
 
         // 入站转录归一化（2026-10-15）可能改写回传形态，自此后以 var 流转。
         var messages = messages
         var incoming = Self.makeChatMessages(messages)
         guard !incoming.isEmpty else {
-            return GenerationResult(text: "", usage: nil)
+            // Nothing was generated, so nothing can be attested as finished.
+            return GenerationResult(text: "", usage: nil, completion: .unconfirmed)
         }
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
@@ -1028,7 +1446,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 预填进度可见化：每 ≥16k token 一行 trace（引擎按 asyncEval 流水，
         // 数值略超前于 GPU 完成）。
         let prefillLogged = Locked(0)
+        // W4/A：取消轮的实际预填进度——同 payload 重试据此判断「这份输入
+        // 在本机已经跑不完一次」，而不是每次当全新请求再付一遍。
+        // startedAt 记录第一次进度回调的时刻：预填耗时不能把排队/加载时间
+        // 算进来，否则未完成轮的投影会把等队列的秒数当成预填速度。
+        let prefillProgress =
+            Locked((processed: 0, total: 0, startedAt: Date?.none))
             params.prefill.progress = { processed, total in
+                let startedAt = prefillProgress.value.startedAt ?? Date()
+                prefillProgress.set((processed, total, startedAt))
                 // 4096（原 16384）：roll-forward delta ~12k 时中途零心跳被
                 // 误读为挂起（2026-09-18 真机），阈值须低于单轮 delta 量级。
                 if processed == total || processed - prefillLogged.value >= 4096 {
@@ -1080,6 +1506,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             key: executionKey.storageKey
         )
 
+        // #90 A：所有权转移在 adoptLiveSession 的临界区内完成，本键不随后改写。
         let mapKey = Self.sessionMapKey(
             storageKey: executionKey.storageKey,
             firstMessage: incoming.first.map { (role: $0.role.rawValue, content: $0.content) }
@@ -1090,6 +1517,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // Route B 前缀池命中轮：本会话的表示来自共享池快照（已对账），
         // roll-forward 无需再对其做 conditional restore。
         var poolRestoredTurn = false
+        /// #90 A：本轮从另一个请求级身份键上接手了活分片（所有权转移，
+        /// 不是共享别名）。取消时按「本轮分片 + 同源别名」整体逐出。
+        var adoptedForeignShard = false
 
         let kvFingerprint = kvSettings.map { String(describing: $0) }
 
@@ -1199,7 +1629,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         history: Array(incoming.prefix(coveredMessages)),
                         historyJSON: Array(messages.prefix(coveredMessages)),
                         kvFingerprint: kvFingerprint,
-                        isRestoredSnapshot: true
+                        isRestoredSnapshot: true,
+                        thinkingDisabled: thinkingDisabled
                     )
                     state.withLock { $0.sessions[mapKey] = restored }
                     poolRestored = restored
@@ -1235,6 +1666,43 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 managed = restored
                 reusedSession = true
                 poolRestoredTurn = true
+            } else if existing == nil,
+                      AgentExecutionKey.isRequestScopedSession(executionKey.storageKey),
+                      let adopted = adoptLiveSession(
+                        incoming: incoming,
+                        kvFingerprint: kvFingerprint,
+                        thinkingDisabled: thinkingDisabled,
+                        owner: executionKey,
+                        ownerKey: mapKey,
+                        requestId: requestId) {
+                // #90 A 跨请求活会话续接：客户端每轮携带新的请求级
+                // sessionId、转录逐条追加时，命中同进程内另一请求留下的
+                // 兼容分片——本轮只付 delta，不再逐轮冷 prefill。兼容判据
+                // 全部在 SessionAdoption（同 agent 作用域 + 严格前缀 + kv 指纹
+                // + thinking 配置 + 不在途 + 仅请求级分片），任一不成立即落到
+                // 下面的冷路径。放在池查询之后：默认关闭的池不参与产品结论，
+                // 开启态（研究对照）保持既有池优先语义不被本次改动遮蔽。
+                //
+                // 认领即所有权转移（adoptLiveSession 锁内完成）：分片已从
+                // 原请求键摘下、登记到本轮 mapKey 下，执行身份同时重绑到
+                // 本轮请求。此后成功写回、在途标记与取消逐出都只命中本键。
+                // 原请求若重放自己的旧转录（比手中历史更短），长度判据
+                // `historyCount < incomingCount` 不成立 ⇒ 不采纳、走冷路径，
+                // 于是本轮推进的分支不会反向写进原请求的映射。
+                managed = adopted.session
+                reusedSession = true
+                adoptedForeignShard = true
+                let fromTail = adopted.fromKey.split(separator: "#").first?
+                    .split(separator: "-").last.map { String($0.suffix(6)) }
+                    ?? String(adopted.fromKey.suffix(6))
+                traceLogger.trace(
+                    "[MLX] sessionAdopt key=\(executionKey.traceKey)" +
+                    " from=\(fromTail) own=transfer" +
+                    " history=\(adopted.session.history.count)" +
+                    " incoming=\(incoming.count)" +
+                    " delta=\(incoming.count - adopted.session.history.count)"
+                )
+                observation.noteSessionAdopt()
             } else {
                 let history = Array(incoming.dropLast())
                 let session = ChatSession(
@@ -1248,7 +1716,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     session: session,
                     history: history,
                     historyJSON: Array(messages.dropLast()),
-                    kvFingerprint: kvFingerprint
+                    kvFingerprint: kvFingerprint,
+                    thinkingDisabled: thinkingDisabled
                 )
                 reusedSession = false
                 observation.noteColdRebuild()
@@ -1387,9 +1856,29 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             delta = incoming.last.map { [$0] } ?? []
         }
 
-        guard !delta.isEmpty else { return GenerationResult(text: "", usage: nil) }
+        guard !delta.isEmpty else {
+            return GenerationResult(text: "", usage: nil, completion: .unconfirmed)
+        }
 
+        // #90 A：采纳轮的身份已在 adoptLiveSession 的转移临界区内重绑；
+        // 这里补上新建/池恢复轮的绑定。lineage 与 durable 落盘按每个 HTTP
+        // 请求各自的 executionId 记账——分片归属不合并请求身份。
         managed.executionKey = executionKey
+        // #90 B：在途标记。字节上限逐出只允许选中没有请求在跑的分片；
+        // 本轮无论成功、抛错还是取消都必须清除（defer 覆盖全部退出路径）。
+        state.withLock {
+            if let current = $0.sessions[mapKey], current === managed {
+                current.inFlightRequestId = requestId
+            }
+        }
+        defer {
+            state.withLock {
+                if let current = $0.sessions[mapKey],
+                   current.inFlightRequestId == requestId {
+                    current.inFlightRequestId = nil
+                }
+            }
+        }
 
         // P1-3 ③：function_call_output ingestion——只观测本轮新增的 tool 消息。
         // 历史结果在各自轮次首次到达时已观测过，全量重放只会刷 unknown_tc 噪音
@@ -1411,7 +1900,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var deltaBytes = 0
         for value in messages.dropFirst(newMessageStart) {
             guard case .object(let obj) = value else { continue }
-            deltaBytes += obj["content"]?.string?.utf8.count ?? 0
+            deltaBytes += obj["content"]?.messageText.utf8.count ?? 0
         }
         let contextEstimate: Int
         if reusedSession {
@@ -1420,7 +1909,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             var incomingBytes = 0
             for value in messages {
                 guard case .object(let obj) = value else { continue }
-                incomingBytes += obj["content"]?.string?.utf8.count ?? 0
+                incomingBytes += obj["content"]?.messageText.utf8.count ?? 0
             }
             contextEstimate = incomingBytes / 4
         }
@@ -1441,7 +1930,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             guard case .object(let obj) = value,
                   (obj["role"]?.string ?? "").lowercased() == "tool",
                   let toolCallId = obj["tool_call_id"]?.string else { continue }
-            let size = obj["content"]?.string?.utf8.count
+            let size = obj["content"]?.messageText.utf8.count
             toolGovernance.resultObserved(
                 requestId: requestId,
                 generationId: requestId,
@@ -1476,6 +1965,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var rawEventCount = 0
         var rawChunkBytes = 0
         var emittedChunkBytes = 0
+        // T-1：引擎唯一的终止见证。vendor 只在信息事件里给出，缺事件即缺证据，
+        // 不得当作自然结束（否则预算触顶的半句答案会被宣称为完整回答）。
+        var stopReason: GenerateStopReason?
+
+        // #136 ES 续接授权上下文：本轮采纳内存前缀表示时的身份。钩子在
+        // 引擎的 `.prefillAll` 策略边界内读取它，条目只有 ES 身份逐字相等
+        // 才可采纳——不借内存池绕过权限检查。`bindLookup` 是本轮在函数入口
+        // 只读取到的同一份 IS 权威（磁盘 bind 站点会注销它，这里不能再查）：
+        // 受管续接下内存采纳与磁盘准入过同一个 digest 比较（§II.3）。
+        PrefixMemoryPool.shared.setAdoptionContext(
+            executionKey.logicalBranchId, authority: bindLookup)
 
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
@@ -1581,6 +2081,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 cacheReuseMode = info.cacheReuseMode
                 cacheForkCommon = info.cacheForkCommonTokens
                 cacheForkLedger = info.cacheForkLedgerTokens
+                stopReason = info.stopReason
             }
         }
 
@@ -1600,27 +2101,101 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 " history=\(managed.history.count)" +
                 " rawEv=\(rawEventCount) rawB=\(rawChunkBytes) emitB=\(emittedChunkBytes)"
             )
+            // W4/A：取消轮的预算观测——记下真实的预填进度与耗时，供同一
+            // payload 的下一次重试判定（本轮没有完成预填，不产出速度样本）。
+            // #138：加载后的第一笔预填同样不是稳态证据；预填完成过则消费
+            // 预热标记，未完成则保持待消费，让下一轮仍按预热豁免。
+            let prefill = prefillProgress.value
+            let postLoadWarmupTurn = state.withLock { state -> Bool in
+                if prefill.total > 0, prefill.processed >= prefill.total {
+                    return state.postLoadWarmup.consumeCompletedPrefill()
+                }
+                return state.postLoadWarmup.isWarmupTurn
+            }
+            if prefill.total > 0, prefill.processed > 0,
+                let startedAt = prefill.startedAt,
+                !postLoadWarmupTurn,
+                let digest = RequestBudgetController.shared.promptDigest(requestID: requestId),
+                let identity = budgetIdentity(thinkingDisabled: thinkingDisabled)
+            {
+                RequestBudgetController.shared.recordObservedAttempt(
+                    identity: identity,
+                    bucket: reusedSession ? "hot" : "cold",
+                    promptDigest: digest,
+                    processed: prefill.processed,
+                    total: prefill.total,
+                    elapsed: Date().timeIntervalSince(startedAt),
+                    requestID: requestId,
+                    completed: prefill.processed >= prefill.total)
+            } else if postLoadWarmupTurn, prefill.processed > 0 {
+                traceLogger.trace(
+                    "[BUDGET] skip_record reason=model_warmup cancelled=1" +
+                    " processed=\(prefill.processed)/\(prefill.total)")
+            }
             // 取消清理第二不变量（2026-09-17 毒 session 事故，lessons 同名文档）：
-            // 本轮新建、未产出任何流事件即被取消的 session，内部执行状态已被
-            // cancel 打断；留在池中时，后续 prefix 命中它的请求将零输出挂死
+            // 被打断的分片留在表里，后续 prefix 命中它的请求将零输出挂死
             // （真机实证连续 10 次无自愈）。逐出后下一请求新建 session 走健康
-            // 路径。rawEv=0 是当前版本的诊断辅助判据；显式 readiness 状态
-            // 留待 session 生命周期协议，复用路径中途取消是否同毒未观测到。
-            if !reusedSession, rawEventCount == 0 {
-                let poisoned: ChatSession? = state.withLock { state in
-                    guard state.sessions[mapKey] === managed else {
-                        return nil
-                    }
-                    state.sessions.removeValue(forKey: mapKey)
-                    return managed.session
-                }
-                if let poisoned {
-                    await poisoned.clear()
-                    traceLogger.trace(
-                        "[MLX] poisonedSessionEvict session=\(executionKey.traceKey)" +
-                        " history=\(managed.history.count)"
-                    )
-                }
+            // 路径。判据本身在 `CancelEviction`（纯函数，测试层可证伪）：
+            // 新建分片看「零事件 + 非复用」，#90 C 采纳来的分片不看事件数。
+            // #134：零事件这一支先取上游的保留证据（账本 vs 物理 cache），
+            // 只有证明一致的可用前缀才免逐出。显式 readiness 状态留待
+            // session 生命周期协议。
+            // #136：取消轮的内存前缀捕获——必须在驱逐（session.clear()）之前
+            // 做，且只接受引擎自己的证明（`interruptedPrefixBoundary()`：
+            // 边界取自各注意力层 offset 的一致值，逐项核验行数、token 前缀
+            // 与 GDN 递推状态）。证明不了就只留一行拒绝原因。
+            // 快照是与本会话独立的表示，因此下面的 `poisonedSessionEvict`
+            // 语义不变：毒分片照样逐出，可证明的前缀照样留在池里，重试
+            // 不再重复支付同一段 prefill。
+            let capturedPrefixTokens = await NativeMLXPrefixPool.shared.captureInterruptedPrefix(
+                managed.session,
+                modelID: modelName(from: modelPath),
+                kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled,
+                esStateID: executionKey.logicalBranchId,
+                traceKey: executionKey.traceKey
+            )
+            let retention = await cancelledPrefixRetention(managed.session)
+            switch CancelEviction.decide(
+                rawEventCount: rawEventCount,
+                reusedSameSession: reusedSession,
+                adoptedForeignShard: adoptedForeignShard,
+                retainedLedgerTokens: retention.ledgerTokens,
+                cacheProcessedTokens: retention.processedTokens
+            ) {
+            case .keepResident:
+                break
+            case .retainProvenPrefix:
+                // 观测独立成行：保留不是驱逐，不复用驱逐那两个标记。
+                traceLogger.trace(
+                    "[MLX] cancelPrefixRetain session=\(executionKey.traceKey)" +
+                    " retainedTokens=\(retention.ledgerTokens)" +
+                    " captured=\(capturedPrefixTokens)" +
+                    " rawEv=\(rawEventCount)"
+                )
+            case .evictFreshShard:
+                // 拒绝理由单独成行：真机取证要能区分「账本为空」与「账本
+                // 非空但和物理 cache 不一致」，二者都是逐出但证据不同。
+                // `captured>`0` 时逐出仍然发生（毒分片不留存），但引擎证明
+                // 过的那段前缀已作为独立表示进内存池，重试不必重付。
+                traceLogger.trace(
+                    "[MLX] cancelPrefixUnproven session=\(executionKey.traceKey)" +
+                    " ledgerTokens=\(retention.ledgerTokens)" +
+                    " processedTokens=\(retention.processedTokens)" +
+                    " captured=\(capturedPrefixTokens)" +
+                    " rawEv=\(rawEventCount)"
+                )
+                await evictInterruptedExecution(
+                    managed: managed,
+                    marker: CancelEviction.freshShardMarker,
+                    sessionLabel: executionKey.traceKey
+                )
+            case .evictAdoptedShard:
+                await evictInterruptedExecution(
+                    managed: managed,
+                    marker: CancelEviction.adoptedShardMarker,
+                    sessionLabel: executionKey.traceKey
+                )
             }
             throw CancellationError()
         }
@@ -1734,6 +2309,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         managed.lastCompletionMode = reportedMode
         managed.lastCompletionCacheEff = reportedCacheEff
 
+        // T-1：终止原因只由 vendor 的信息事件给出。没有信息事件就没有证据，
+        // 本轮按 `unconfirmed` 处理——协议层与结算门共用这一个判定，缺失信号
+        // 永远不等于自然结束。
+        let completion: GenerationCompletion
+        switch stopReason {
+        case .some(.stop): completion = .complete
+        case .some(.length): completion = .capped
+        case .some(.cancelled): completion = .cancelled
+        case .none: completion = .unconfirmed
+        }
+
         // 轮末完成行（build 4 恢复，211aa59 trim 曾删）：V1.7-0 矩阵
         // 位置法捕获的唯一认证级来源——mode/reuse/cacheEff/ttft 逐轮
         // 真值。纯遥测，零行为变更；逐轮一行，量级与 v1.5/v1.6 相同。
@@ -1774,7 +2360,58 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if !toolCalls.isEmpty {
             log += " toolCalls=\(toolCalls.count)"
         }
+        if adoptedForeignShard {
+            // #90 A：采纳即所有权转移。session= 始终是本轮自己的请求级
+            // 身份；adopt=1 声明本轮从另一请求键接手了这份活分片
+            // （own=transfer），不是与对方共享别名。
+            log += " adopt=1"
+        }
         log += " rawEv=\(rawEventCount) rawB=\(rawChunkBytes) emitB=\(emittedChunkBytes)"
+        // 行尾追加，不动既有位置法捕获（mode/reuse/cacheEff/ttft 在其之前）。
+        // genTokens/maxTokens 让「触顶」在读日志时可直接判定，不必反推 tps。
+        log += " stop=\(completion.wireName)" +
+            " genTokens=\(generationTokens.map(String.init) ?? "nil")" +
+            " maxTokens=\(params.maxTokens)"
+
+        // W4/A：真实预填样本（冷/热分桶）+ 同 payload 完成观测。
+        // 计数口径：info.promptTokenCount 是本轮实际预填的 delta（restore
+        // 归因里 N=cacheHitTokens 另计），promptTime 是引擎预填耗时；恢复
+        // 快照轮的账本由 restore 语义决定，不属于本轮渲染口径，不采样本。
+        //
+        // #138：加载后的第一笔完成轮承担 kernel 首次编译/权重驻留代价，其
+        // 计时不是稳态吞吐。它只消费预热标记：既不入 P10 速率窗口（否则
+        // 冷启动下限会长期压住所有估算），也不给同 payload 留「已完成」
+        // 观测（否则重试会被这笔被低估的速率直接拒绝）。
+        // 只有真正跑过预填的可记录轮才消费预热标记：restore/池恢复轮没付
+        // 编译与驻留代价，若让它消费，下一笔真正的冷预填仍会被当成稳态采样。
+        let prefillRecordable = !managed.isRestoredSnapshot && !poolRestoredTurn
+            && (promptTokens ?? 0) > 0 && (promptSeconds ?? 0) > 0
+        let postLoadWarmupTurn = prefillRecordable
+            ? state.withLock { $0.postLoadWarmup.consumeCompletedPrefill() }
+            : false
+        if prefillRecordable,
+            let prefillTokens = promptTokens,
+            let prefillSeconds = promptSeconds,
+            let identity = budgetIdentity(thinkingDisabled: thinkingDisabled)
+        {
+            let bucket = reusedSession ? "hot" : "cold"
+            if postLoadWarmupTurn {
+                traceLogger.trace(
+                    "[BUDGET] skip_record reason=model_warmup bucket=\(bucket)" +
+                    " tokens=\(prefillTokens)" +
+                    String(format: " seconds=%.1f", prefillSeconds))
+            } else {
+                RequestBudgetController.shared.recordPrefillSample(
+                    identity: identity, bucket: bucket,
+                    tokens: prefillTokens, seconds: prefillSeconds, source: "engine")
+                if let digest = RequestBudgetController.shared.promptDigest(requestID: requestId) {
+                    RequestBudgetController.shared.recordObservedAttempt(
+                        identity: identity, bucket: bucket, promptDigest: digest,
+                        processed: prefillTokens, total: prefillTokens,
+                        elapsed: prefillSeconds, requestID: requestId, completed: true)
+                }
+            }
+        }
         traceLogger.trace(log)
 
         // usage 保持 vendor 原值透传（含 restore 路径的归因缺口）：P1-2 契约
@@ -1789,7 +2426,154 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 tokensPerSecond: tokensPerSecond
             )
             : nil
-        return GenerationResult(text: completedText, usage: usage)
+        return GenerationResult(
+            text: completedText, usage: usage, completion: completion)
+    }
+
+    /// #90 A：跨请求采纳活会话分片。判据本身是纯函数（`SessionAdoption`，
+    /// 测试层可证伪）；本函数只做表快照、锁外前缀对账与锁内原子转移。
+    ///
+    /// 采纳即**所有权转移**，不是共享别名：认领的同一临界区内把分片从原
+    /// 请求键摘下、登记到 `ownerKey` 下并重绑执行身份。因此任一时刻只有
+    /// 本轮请求持有这份可变会话，后续推进只写本轮映射；原请求键不再指向
+    /// 它，其重放（历史更短）不满足长度判据，只会走冷路径。
+    ///
+    /// 采纳域：同一 agent 作用域内的请求级（`*-request:`）身份之间。两类边界
+    /// 都不许越：①不同 agent 的请求不得互相借用（隔离裁定优先于复用收益）；
+    /// ②有稳定 sessionId 的真实会话不得互相借用——那属于 #92/W2′ 的跨会话
+    /// 共享语义，本窗口未获开启（owner 裁定 D）。
+    private func adoptLiveSession(
+        incoming: [Chat.Message],
+        kvFingerprint: String?,
+        thinkingDisabled: Bool,
+        owner: AgentExecutionKey,
+        ownerKey: String,
+        requestId: String
+    ) -> (session: ManagedSession, fromKey: String)? {
+        let table: [(key: String, entry: ManagedSession)] = state.withLock { state in
+            state.sessions.compactMap { key, entry in
+                guard key != ownerKey else { return nil }
+                guard AgentExecutionKey.isRequestScopedSession(
+                    entry.executionKey?.storageKey ?? key
+                ) else { return nil }
+                return (key, entry)
+            }
+        }
+        guard !table.isEmpty else { return nil }
+        // 前缀对账在锁外执行（与 evictSessionsIfNeeded 同一口径：锁内不跑
+        // O(历史) 比较）；认领时在锁内做对象身份 + 在途 + 长度复核。
+        // serializeGeneration = true 时本轮不存在并发写者，复核是防御性收口。
+        let candidates = table.map { item in
+            SessionAdoption.Candidate(
+                key: item.key,
+                historyCount: item.entry.history.count,
+                historyIsStrictPrefixOfIncoming:
+                    Self.isPrefix(item.entry.history, of: incoming),
+                kvFingerprint: item.entry.kvFingerprint,
+                thinkingDisabled: item.entry.thinkingDisabled,
+                inFlightRequestId: item.entry.inFlightRequestId,
+                agentId: item.entry.executionKey?.agentId,
+                lastActivity: item.entry.lastActivity
+            )
+        }
+        let request = SessionAdoption.Request(
+            incomingCount: incoming.count,
+            kvFingerprint: kvFingerprint,
+            thinkingDisabled: thinkingDisabled,
+            agentId: owner.agentId
+        )
+        // 诊断用短名：候选拒绝理由要能对上 trace 里的 session= 标签。
+        let candidateLabels = Dictionary(
+            uniqueKeysWithValues: table.map {
+                ($0.key,
+                 $0.entry.executionKey?.traceKey ?? "shard-" + String($0.key.suffix(6)))
+            })
+        guard let chosen = SessionAdoption.choose(candidates, for: request),
+              let record = table.first(where: { $0.key == chosen.key })
+        else {
+            // 验收要能区分「没看」与「看了但没有合格候选」：候选数与逐条
+            // 拒绝理由都写出来（只写短标签与理由码，不写内容）。
+            let eligible = SessionAdoption.eligibleCandidates(candidates, for: request).count
+            let reasons = candidates.map { candidate in
+                "\(candidateLabels[candidate.key] ?? "?"):"
+                    + (SessionAdoption.eligibility(candidate, for: request).reason ?? "eligible")
+            }.joined(separator: ",")
+            traceLogger.trace(
+                "[MLX] sessionAdoptMiss key=\(owner.traceKey)"
+                    + " candidates=\(candidates.count) eligible=\(eligible)"
+                    + " reasons=\(reasons)"
+            )
+            return nil
+        }
+        let claimed: ManagedSession? = state.withLock { state in
+            guard let entry = state.sessions[chosen.key],
+                  entry === record.entry,
+                  entry.inFlightRequestId == nil,
+                  entry.history.count < incoming.count,
+                  // 属主键必须空闲：本轮走的是「该键无活会话」分支，
+                  // 这里是锁内复核（表快照之后可能有别的写者先占了同键）。
+                  state.sessions[ownerKey] == nil else { return nil }
+            // #90 A 所有权转移：摘下原键 → 重绑执行身份 → 登记本键，
+            // 三步同一临界区。之后本轮是这份可变会话唯一的属主与写者，
+            // 且它在本轮的键下接受在途标记与取消逐出。
+            state.sessions.removeValue(forKey: chosen.key)
+            entry.inFlightRequestId = requestId
+            entry.executionKey = owner
+            entry.lastActivity = Date()
+            state.sessions[ownerKey] = entry
+            return entry
+        }
+        guard let claimed else {
+            traceLogger.trace(
+                "[MLX] sessionAdoptClaimLost key=\(owner.traceKey)"
+                    + " from=\(candidateLabels[chosen.key] ?? "?") note=state-changed"
+            )
+            return nil
+        }
+        return (claimed, chosen.key)
+    }
+
+    /// #134 取消轮的前缀保留证据探针——只读取，不做任何推断。
+    ///
+    /// `cachedTokenIds()` 是会话账本：上游 `ChatSession.record()` 只有在
+    /// 「取消 + 物理 cache 进度可证 + 该 cache 逐层可 trim + trim 后计数恰为
+    /// retainedTokenCount」全部成立时，才把它重基为这一段前缀；任一条件不满足
+    /// 它就为空。`cacheStatus().processedTokenCount` 是物理 cache 的真实进度。
+    /// 两者非空且相等 ⇒ 这份表示是上游已经证明过的，本层无权再用 `clear()`
+    /// 把它抹掉。读失败记 -1（不可能与账本相等）⇒ 无证据，走既有驱逐。
+    /// 生产模型（30× GDN 递归层）上 `isTrimmable` 为 false，账本已被上游清空
+    /// ⇒ 这里返回 0，行为与本次改动前逐字相同。
+    private func cancelledPrefixRetention(
+        _ session: ChatSession
+    ) async -> (ledgerTokens: Int, processedTokens: Int) {
+        let ledgerTokens = await session.cachedTokenIds().count
+        let processedTokens = (try? await session.cacheStatus())?.processedTokenCount ?? -1
+        return (ledgerTokens, processedTokens)
+    }
+
+    /// #90 B/C：逐出一个被打断的活执行——移除池中指向同一 ManagedSession
+    /// 或同一 ChatSession 的全部条目（别名），再用官方 `clear()` 释放 KV。
+    /// 移除在锁内做身份确认，只有真正摘掉的才进入 clear 阶段。
+    private func evictInterruptedExecution(
+        managed: ManagedSession,
+        marker: String,
+        sessionLabel: String
+    ) async {
+        let removedKeys: [String] = state.withLock { state in
+            let matches = state.sessions.filter { _, entry in
+                entry === managed || entry.session === managed.session
+            }.map { $0.key }
+            for key in matches { state.sessions.removeValue(forKey: key) }
+            return matches
+        }
+        guard !removedKeys.isEmpty else { return }
+        await managed.session.clear()
+        traceLogger.trace(
+            "[MLX] \(marker) session=\(sessionLabel)" +
+            " history=\(managed.history.count)" +
+            " aliases=\(removedKeys.count)" +
+            " keys=" + removedKeys.map { String($0.suffix(6)) }.joined(separator: ",")
+        )
     }
 
     /// P1 会话 LRU（数量维度）+ P2 Admission（内存维度，2026-09-18）：
@@ -1803,11 +2587,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 锁内只做快照；token 统计锁外执行。快照与移除之间字典可能被
         // deleteSessionBranch（不走 gate）/loadSessionCache 变更，故最终
         // 移除在锁内做身份确认（见下方原子移除段）。
-        let snapshot: [(key: String, session: ChatSession)] = state.withLock { state in
+        let snapshot: [(key: String, session: ChatSession, inFlight: Bool)] = state.withLock { state in
             state.sessions
                 .filter { $0.key != currentKey }
                 .sorted { $0.value.lastActivity < $1.value.lastActivity }
-                .map { (key: $0.key, session: $0.value.session) }
+                .map {
+                    (key: $0.key, session: $0.value.session,
+                     inFlight: $0.value.inFlightRequestId != nil)
+                }
         }
         let totalCount = state.withLock { $0.sessions.count }
         let currentSession = state.withLock { $0.sessions[currentKey]?.session }
@@ -1815,34 +2602,90 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let swapPressure = (swap ?? 0) > RuntimeTuning.swapPressureThresholdBytes
 
         let currentTokens = await sessionTokens(currentSession)
-        var lru: [(key: String, session: ChatSession, tokens: Int)] = []
+        var lru: [(key: String, session: ChatSession, tokens: Int, inFlight: Bool)] = []
         lru.reserveCapacity(snapshot.count)
         for candidate in snapshot {
-            lru.append((candidate.key, candidate.session, await sessionTokens(candidate.session)))
+            lru.append((
+                candidate.key, candidate.session,
+                await sessionTokens(candidate.session), candidate.inFlight
+            ))
         }
         var warmTokens = currentTokens + lru.reduce(0) { $0 + $1.tokens }
 
         var victims: [(key: String, session: ChatSession, tokens: Int)] = []
         // 数量维度（P1 原语义）：总数超 sessionLimit 的溢出部分。
         var overflow = max(0, totalCount - RuntimeTuning.sessionLimit)
-        while overflow > 0, let victim = lru.first {
+        while overflow > 0, let candidate = lru.first {
             lru.removeFirst()
             overflow -= 1
-            warmTokens -= victim.tokens
-            victims.append(victim)
+            warmTokens -= candidate.tokens
+            victims.append((candidate.key, candidate.session, candidate.tokens))
         }
         // 内存维度（P2 新增）：swap 压力下把暖 token 总和压回预算。
         if swapPressure {
-            while warmTokens > RuntimeTuning.warmTokenBudget, let victim = lru.first {
+            while warmTokens > RuntimeTuning.warmTokenBudget, let candidate = lru.first {
                 lru.removeFirst()
-                warmTokens -= victim.tokens
-                victims.append(victim)
+                warmTokens -= candidate.tokens
+                victims.append((candidate.key, candidate.session, candidate.tokens))
+            }
+        }
+        // #90 B 驻留字节维度（不受 swap 门控）：跨请求采纳把活会话复用变成
+        // 常态后，暖会话必须有物理上界。上限 = 模型几何 × 既有两条预算
+        // （sessionLimit 份固定状态 + warmTokenBudget token），不引入新常数。
+        // 选择在途隔离 + LRU 由 ResidencyGovernor 判定（测试层已证伪）；
+        // 本轮分片由 keeping 保护，不在 residents 输入里。
+        // residency 为 nil（读不到几何）时整个维度不启用：未知不冒充压力。
+        var warmBytes = 0
+        var ceilingBytes = 0
+        var residencyFired = false
+        if let residency {
+            ceilingBytes = LiveSessionResidency.byteBudget(residency: residency)
+            let residents = lru.map {
+                ResidencyGovernor.Resident(
+                    key: $0.key,
+                    bytes: residency.estimatedBytes(processedTokens: $0.tokens),
+                    isInFlight: $0.inFlight
+                )
+            }
+            let plan = ResidencyGovernor.evictionPlan(
+                residents,
+                protectedBytes: residency.estimatedBytes(processedTokens: currentTokens),
+                ceiling: ceilingBytes
+            )
+            warmBytes = plan.warmBytesAfter
+            residencyFired = plan.fired
+            if plan.fired {
+                let victimKeys = Set(plan.victims)
+                var kept: [(key: String, session: ChatSession, tokens: Int, inFlight: Bool)] = []
+                kept.reserveCapacity(lru.count)
+                for candidate in lru {
+                    if victimKeys.contains(candidate.key) {
+                        warmTokens -= candidate.tokens
+                        victims.append((candidate.key, candidate.session, candidate.tokens))
+                    } else {
+                        kept.append(candidate)
+                    }
+                }
+                lru = kept
             }
         }
 
         var report = SessionEvictionReport()
         report.warmSessions = 1 + lru.count
         report.warmTokens = warmTokens
+        report.warmBytes = warmBytes
+        report.byteBudget = ceilingBytes
+        // #90 B 驻留曲线：逐轮一行纯遥测（零行为）。账本口径 = 几何估算字节，
+        // 物理足迹不在这里（[MEM] 行与测试侧 footprint 采样）——预算估算精确
+        // 不等于 RSS/MLX 实际内存被同等字节数硬限。几何不可解析时记 -1
+        // （NOT_INSTRUMENTED），不拿 0 冒充计量。
+        traceLogger.trace(
+            "[MLX] residencyLedger sessions=\(report.warmSessions)"
+                + " warmTokens=\(report.warmTokens)"
+                + " ledgerBytes=\(residency == nil ? -1 : report.warmBytes)"
+                + " ceilingBytes=\(residency == nil ? -1 : report.byteBudget)"
+                + " plannedEvictions=\(victims.count)"
+        )
         guard !victims.isEmpty else { return report }
 
         // 原子移除：锁内逐个身份确认（?.session === victim.session）后从池中
@@ -1881,12 +2724,37 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // token 总和为治理估算：身份确认失败（已被替换）的会话不再计入，
         // 其替身的 token 未进快照，严格上限语义不成立（审核边界 三.2）。
         report.warmTokens = warmTokens - freedTokens
+        if let residency {
+            // 身份确认失败的 victim 仍在池中，其字节要加回驻留总和。
+            let removedKeys = Set(removed.map { $0.key })
+            let stillResident = victims
+                .filter { !removedKeys.contains($0.key) }
+                .reduce(0) { $0 + residency.estimatedBytes(processedTokens: $1.tokens) }
+            report.warmBytes = warmBytes + stillResident
+            report.evictedBytes = removed.reduce(0) {
+                $0 + residency.estimatedBytes(processedTokens: $1.tokens)
+            }
+        }
+        if residencyFired, let residency {
+            traceLogger.trace(
+                "[MLX] residencyCeiling evicted=\(removed.count)" +
+                " freedBytes=\(report.evictedBytes)" +
+                " warmBytesNow=\(report.warmBytes)" +
+                " ceilingBytes=\(report.byteBudget)" +
+                " overCeiling=\(max(0, report.warmBytes - report.byteBudget))" +
+                " bytesPerToken=\(residency.bytesPerToken)" +
+                " fixedPerSession=\(residency.fixedBytesPerSession)"
+            )
+            observation.noteResidencyEviction(removed.count)
+        }
         traceLogger.trace(
             "[MEM] session LRU evicted=\(removed.count)" +
             " keys=" + removed.map { String($0.key.suffix(6)) }.joined(separator: ",") +
             " limit=\(RuntimeTuning.sessionLimit) budget=\(RuntimeTuning.warmTokenBudget)" +
             " freedTokens=\(freedTokens) warmTokensNow=\(report.warmTokens)" +
             " overBudget=\(max(0, report.warmTokens - RuntimeTuning.warmTokenBudget))" +
+            " warmBytesNow=\(report.warmBytes) ceilingBytes=\(report.byteBudget)" +
+            " freedBytes=\(report.evictedBytes)" +
             " swap=" + (swap.map { String(format: "%.1fGB", Double($0) / Double(RuntimeTuning.gibibyte)) } ?? "n/a")
         )
         logMemory("afterEvict")
@@ -2158,7 +3026,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             history: restoredHistory,
             historyJSON: metadata.history,
             kvFingerprint: metadata.kvFingerprint,
-            isRestoredSnapshot: true
+            isRestoredSnapshot: true,
+            thinkingDisabled: thinkingDisabled
         )
         traceLogger.trace(
             "[MLX] cacheLoad session=\(traceKey) history=\(metadata.history.count)"
@@ -2353,7 +3222,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 history: sourceManaged.history,
                 historyJSON: sourceManaged.historyJSON,
                 kvFingerprint: sourceManaged.kvFingerprint,
-                isRestoredSnapshot: false)
+                isRestoredSnapshot: false,
+                thinkingDisabled: sourceManaged.thinkingDisabled)
             child.pendingForkPoint = BranchForkPoint(
                 sourceStorageKey: sourceKey.storageKey,
                 atMessage: sourceManaged.history.count,
@@ -2443,6 +3313,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // The row is retained (append-only history); only the active state
             // clears, so currentBinding/activeBindings stop resolving it.
             _ = NativeMLXPrefixPool.shared.bindings.detach(executionID: key.storageKey)
+            // #136: branch deletion is a TRUE logical session end, so the memory
+            // pool must release every representation this branch authorized.
+            let memPoolReleased = PrefixMemoryPool.shared.purge(esStateID: logicalBranchId)
             let baseName = Self.cacheFileName(for: key.storageKey)
             if RuntimeTuning.branchCheckpointsEnabled {
                 for suffix in [".safetensors", ".meta.json"] {
@@ -2450,7 +3323,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         at: store.appendingPathComponent(baseName + suffix))
                 }
             }
-            traceLogger.trace("[MLX] branchDelete session=\(key.traceKey)")
+            traceLogger.trace(
+                "[MLX] branchDelete session=\(key.traceKey) memPoolReleased=\(memPoolReleased)")
         }
     }
 
@@ -2484,7 +3358,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         messages.compactMap { value in
             guard case .object(let object) = value else { return nil }
             let role = (object["role"]?.string ?? "user").lowercased()
-            let content = coerceContent(object["content"] ?? .null)
+            let content = object["content"]?.messageText ?? ""
 
             switch role {
             case "system", "developer":
@@ -2580,8 +3454,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     == (incomingMessage["role"]?.string ?? "").lowercased()
             else { break }
 
-            let ledgerContent = coerceContent(ledgerMessage["content"] ?? .null)
-            let incomingContent = coerceContent(incomingMessage["content"] ?? .null)
+            let ledgerContent = ledgerMessage["content"]?.messageText ?? ""
+            let incomingContent = incomingMessage["content"]?.messageText ?? ""
             let ledgerCalls = toolCallItems(ledgerMessage["tool_calls"])
             let incomingCalls = toolCallItems(incomingMessage["tool_calls"])
 
@@ -2630,7 +3504,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 guard
                     case .object(let next) = output[index + 1 + absorbed],
                     (next["role"]?.string ?? "").lowercased() == "assistant",
-                    coerceContent(next["content"] ?? .null).isEmpty,
+                    (next["content"]?.messageText ?? "").isEmpty,
                     !toolCallItems(next["tool_calls"]).isEmpty
                 else { break }
                 absorbedIDs.append(
@@ -2736,13 +3610,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// Returns the first index where the histories diverge, or nil when
     /// `prefix` is a true prefix of `full`. An out-of-range index means
     /// `prefix` itself is longer than `full`.
+    ///
+    /// This is diagnostics only, so it must apply exactly the tolerance the gate
+    /// applies: a tool-echo loss is skipped here too. Reporting it as the
+    /// mismatch made `prefixDiff` blame a shape that never caused a miss
+    /// (measured 2026-10-26: 15 tolerated echo losses alongside real misses).
     private static nonisolated func firstPrefixMismatch(
         _ prefix: [Chat.Message],
         of full: [Chat.Message]
     ) -> Int? {
         guard prefix.count <= full.count else { return prefix.count }
         for (index, pair) in zip(prefix, full).enumerated()
-        where signature(pair.0) != signature(pair.1) {
+        where signature(pair.0) != signature(pair.1)
+            && !isAssistantToolEchoLoss(pair.0, pair.1) {
             return index
         }
         return nil
@@ -2810,7 +3690,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // .null 而非 .string("")——客户端回显形态是 content:null，渲染对账
         // 两侧必须同形，否则条件恢复在每个工具轮必然 checkpointStale
         // （beta.4 生产日志实证，历史固有自 757082c）。渲染路径零变化：
-        // makeChatMessages 的 coerceContent(.null) == ""。
+        // makeChatMessages 的 messageText 对 .null 读出 ""。
         var object: [String: JSONValue] = [
             "role": .string("assistant"),
             "content": content.isEmpty ? .null : .string(content)
@@ -2879,22 +3759,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             " commonPrefix=\(common)" +
             " stored='\(ExecutionPolicy.excerpt(a, at: common))'" +
             " incoming='\(ExecutionPolicy.excerpt(b, at: common))'"
-    }
-
-    private static nonisolated func coerceContent(_ value: JSONValue) -> String {
-        switch value {
-        case .string(let value): return value
-        case .number(let value): return String(value)
-        case .bool(let value): return String(value)
-        case .null: return ""
-        case .array(let values):
-            return values.compactMap { item in
-                if case .object(let object) = item { return object["text"]?.string }
-                return item.string
-            }.joined()
-        case .object(let object):
-            return object["text"]?.string ?? object.description
-        }
     }
 }
 

@@ -274,14 +274,79 @@ nonisolated public extension ModelCapabilityContract {
 
 /// 真实 token ledger 报告——NativeMLX 从官方 GenerateCompletionInfo 透出，
 /// Responses/Chat 的 usage 字段消费此结构，不做估算。
-/// 生成结果：文本 + 真实 usage（GenerateCompletionInfo 透传）。
+/// Why a generation stopped. Only the engine can know this, so the value
+/// travels with the text: engine → `GenerationResult` → protocol wire →
+/// settlement gate.
+///
+/// Fail-closed: `.complete` is the only value that attests the served text is
+/// the whole answer, so it is the only one whose turn may become a settled,
+/// reusable conclusion. An engine that reported no termination signal yields
+/// `.unconfirmed` — absence of the signal is never read as success.
+nonisolated public enum GenerationCompletion: Equatable, Sendable {
+    /// An EOS/stop token ended the stream: the answer is finished.
+    case complete
+    /// The generation budget ran out while the answer was still going.
+    case capped
+    /// The turn was cancelled mid-generation.
+    case cancelled
+    /// No termination signal was reported, so completeness cannot be proven.
+    case unconfirmed
+
+    /// The single rule every entry point uses to decide whether this turn's
+    /// text may be registered as a settled, reusable result.
+    public var isSettleable: Bool { self == .complete }
+
+    /// The name carried on the wire beside a `finish_reason` that is only
+    /// "not finished" without saying why.
+    public var wireName: String {
+        switch self {
+        case .complete: return "complete"
+        case .capped: return "capped"
+        case .cancelled: return "cancelled"
+        case .unconfirmed: return "unconfirmed"
+        }
+    }
+
+    /// OpenAI-compatible `finish_reason` for Chat/Completions. Only `.complete`
+    /// may claim `stop`; every other case says the answer did not finish, and
+    /// the exact cause rides in the `simigo` block.
+    public var finishReason: String {
+        switch self {
+        case .complete: return "stop"
+        case .capped, .cancelled, .unconfirmed: return "length"
+        }
+    }
+
+    /// Responses `incomplete_details.reason`. `max_output_tokens` is the wire's
+    /// own code for a budget-capped answer; the cases with no standard code
+    /// name themselves instead of borrowing one.
+    public var incompleteReason: String? {
+        switch self {
+        case .complete: return nil
+        case .capped: return "max_output_tokens"
+        case .cancelled: return "generation_cancelled"
+        case .unconfirmed: return "generation_unconfirmed"
+        }
+    }
+}
+
+/// 生成结果：文本 + 真实 usage（GenerateCompletionInfo 透传）+ 终止原因。
+/// `completion` has no default: a producer that cannot say how generation
+/// ended must say so, which is what keeps a budget-capped answer from ever
+/// being reported—or settled—as a finished one.
 nonisolated public struct GenerationResult: Sendable {
     public var text: String
     public var usage: GenerationUsageReport?
+    public var completion: GenerationCompletion
 
-    public init(text: String, usage: GenerationUsageReport?) {
+    public init(
+        text: String,
+        usage: GenerationUsageReport?,
+        completion: GenerationCompletion
+    ) {
         self.text = text
         self.usage = usage
+        self.completion = completion
     }
 }
 

@@ -61,6 +61,33 @@ nonisolated public enum JSONValue: Codable, Equatable, Sendable, CustomStringCon
         return s
     }
 
+    /// Chat message `content` 的**规范文本形态**，全仓唯一一份。
+    ///
+    /// OpenAI wire 允许同一语义两种表示（`"text"` 与 `[{"type":"text",…}]`）。
+    /// 引擎侧一直按本形态展平（`makeChatMessages`），但 pre-engine 的取值点
+    /// 曾各自写 `["content"]?.string`，multipart 请求在那里读出 nil/0，导致
+    /// 整轮绕过 IS 治理且 `prefillStep` 规模估读空（2026-10-28 真实模型
+    /// 窗口实证：26K multipart 「你好」 est=0、IS 早退）。任何读 content
+    /// 文本的新代码走这里，不要再加形态分支。
+    ///
+    /// 非文本 part（`image_url` 一类）今日无消费方，其 `text` 缺失即跳过——
+    /// 与展平进引擎后的可见性一致；对这类 part 的显式拒绝是另一次裁定。
+    public var messageText: String {
+        switch self {
+        case .string(let value): return value
+        case .number(let value): return String(value)
+        case .bool(let value): return String(value)
+        case .null: return ""
+        case .array(let values):
+            return values.compactMap { item in
+                if case .object(let object) = item { return object["text"]?.string }
+                return item.string
+            }.joined()
+        case .object(let object):
+            return object["text"]?.string ?? object.description
+        }
+    }
+
     /// 将 Foundation Any（来自 JSON 反序列化）规整为 JSONValue
     public static func any(_ value: Any?) -> JSONValue {
         guard let value else { return .null }

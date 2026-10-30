@@ -35,6 +35,8 @@ public final class NativeMLXObservation: @unchecked Sendable {
     private var cacheSave = 0          // branch-checkpoint save
     private var checkpointFailed = 0
     private var coldRebuild = 0        // new-session cold prefill (no existing session)
+    private var sessionAdopt = 0       // #90 A: reused a live shard left by another request-scoped identity
+    private var residencyEvicted = 0   // #90 B: sessions released by the live-residency byte ceiling
     private var lifecycleResume = 0
     private var lifecycleSuspend = 0
     private var generatePasses = 0
@@ -85,6 +87,19 @@ public final class NativeMLXObservation: @unchecked Sendable {
     nonisolated func noteCacheSave()      { lock.withLock { cacheSave += 1; appendEventLocked("cache_save") } }
     nonisolated func noteCheckpointFailed(){ lock.withLock { checkpointFailed += 1; appendEventLocked("checkpoint_failed") } }
     nonisolated func noteColdRebuild()    { lock.withLock { coldRebuild += 1; appendEventLocked("cold_rebuild") } }
+    /// #90 A: this turn adopted an in-process live session shard left behind by a
+    /// DIFFERENT request-scoped identity (strict-prefix transcript, compatible
+    /// execution config, not in flight). Counts adoptions, not decisions to refuse.
+    nonisolated func noteSessionAdopt()   { lock.withLock { sessionAdopt += 1; appendEventLocked("session_adopt") } }
+    /// #90 B: sessions released because the byte ceiling on live-session
+    /// residency was exceeded. Records the LOGICAL release count only — actual
+    /// page return is not observable here (see resource_reclaim).
+    nonisolated func noteResidencyEviction(_ count: Int) {
+        lock.withLock {
+            residencyEvicted += count
+            appendEventLocked("residency_eviction")
+        }
+    }
     nonisolated func noteResume()         { lock.withLock { lifecycleResume += 1; appendEventLocked("lifecycle_resume") } }
     nonisolated func noteSuspend()        { lock.withLock { lifecycleSuspend += 1; appendEventLocked("lifecycle_suspend") } }
     /// Cache/model REFERENCE release at the suspend path. All four values are
@@ -129,6 +144,8 @@ public final class NativeMLXObservation: @unchecked Sendable {
                 "cache_save_checkpoint": cacheSave,
                 "checkpoint_failed": checkpointFailed,
                 "cold_rebuild": coldRebuild,
+                "session_adopt": sessionAdopt,
+                "residency_eviction": residencyEvicted,
                 "lifecycle_resume": lifecycleResume,
                 "lifecycle_suspend": lifecycleSuspend,
                 "reference_release": referenceRelease,
@@ -145,6 +162,8 @@ public final class NativeMLXObservation: @unchecked Sendable {
                 "cache_hit_tokens_engine_reported": "LEVEL=ENGINE_RUNTIME; SOURCE=info.cachedPromptTokenCount/reportedCacheHit; tokens reused from KV, engine measured.",
                 "generation_tokens_engine_reported": "LEVEL=ENGINE_RUNTIME; SOURCE=info.generationTokenCount; decode tokens ≈ forward passes at token granularity (approximate; per-layer forward NOT_INSTRUMENTED).",
                 "cache_reuse_mode_engine_reported": "LEVEL=ENGINE_RUNTIME; SOURCE=info.cacheReuseMode; cold => prior compute re-prefilled.",
+                "session_adopt": "LEVEL=LIFECYCLE_EVENT; SOURCE=NativeMLX reuse branch (#90 A); count of turns that continued an in-process live session shard left by a DIFFERENT request-scoped session id (strict-prefix transcript + matching kv fingerprint + matching thinking config + not in flight). Request-level identity is NOT merged: lineage/trace still register the adopting request's own id.",
+                "residency_eviction": "LEVEL=LIFECYCLE_EVENT; SOURCE=evictSessionsIfNeeded byte ceiling (#90 B); count of live sessions logically released because estimated residency bytes exceeded the ceiling derived from model cache geometry x existing budgets. Sessions with a request in flight are never selected. Records release INVOCATION only — not physical page return.",
                 "reference_release": "LEVEL=LIFECYCLE_EVENT; SOURCE=suspend path state mutation; sessions_before/after and container_present_before/absent_after are READ FROM RUNTIME STATE by the caller (not asserted by the recorder). model_container_ref_dropped is derived as present_before && absent_after. Proves in-process logical REFERENCE release only — NOT that ARC/MLX freed memory back to the OS.",
                 "resource_reclaim": "LEVEL=LIFECYCLE_EVENT; SOURCE=Memory.clearCache() returned; count of explicit MLX cache-reclaim OPERATIONS INVOKED on the production suspend path. Records invocation only — reclaimed bytes are not observable here, and this is NOT physical page return.",
                 "physical_page_return": "NOT_INSTRUMENTED/BLOCKED — malloc_zone_pressure_relief is only an allocator HINT; no independent evidence the OS reclaimed physical pages (footprint/RSS diffs are explicitly excluded by the gate definition).",

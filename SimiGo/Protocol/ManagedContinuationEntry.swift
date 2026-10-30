@@ -392,9 +392,9 @@ enum ManagedSourceCapture {
         if let lastUser = augmented.lastIndex(where: {
             $0.object?["role"]?.string == "user"
         }), var object = augmented[lastUser].object,
-            let content = object["content"]?.string
+            let content = object["content"]
         {
-            object["content"] = .string(content + "\n\n" + context)
+            object["content"] = .string(content.messageText + "\n\n" + context)
             augmented[lastUser] = .object(object)
         } else {
             augmented.append(
@@ -483,21 +483,36 @@ func runNativeManagedContinuation(
 
     let produced = ManagedProduced()
 
-    let outcome = try await SimiGoManagedContinuation.run(
-        db: db,
-        config: config,
-        capture: { try ManagedSourceCapture.capture($0, database: db) },
-        generate: { declared in
-            let injection = ManagedSourceCapture.inject(
-                declared: declared, messages: request.messages)
-            let result = try await generate(request, injection.messages)
-            produced.value = (result.text, result.usage)
-            let settled = try SimiGoSettlementAuthority.authorize(
-                generatedText: result.text, contractJSON: contract,
-                verifiedBindings: [:])
-            return SimiGoManagedContinuation.Generated(
-                used: injection.used, settled: settled, nextInput: result.text)
-        })
+    let outcome: SimiGoManagedContinuation.Outcome
+    do {
+        outcome = try await SimiGoManagedContinuation.run(
+            db: db,
+            config: config,
+            capture: { try ManagedSourceCapture.capture($0, database: db) },
+            generate: { declared in
+                let injection = ManagedSourceCapture.inject(
+                    declared: declared, messages: request.messages)
+                let result = try await generate(request, injection.messages)
+                // T-1: an output the generator cannot attest as complete is not a
+                // settled record. Throwing here is the only safe place — G runs
+                // before P2, so nothing has been written and nothing can be reused.
+                guard result.completion.isSettleable else {
+                    throw SimiGoManagedRefusal.Refusal(
+                        cause: .generationIncomplete, origin: .admission, phase: .g,
+                        evidence: ["completion": result.completion.wireName])
+                }
+                produced.value = (result.text, result.usage)
+                let settled = try SimiGoSettlementAuthority.authorize(
+                    generatedText: result.text, contractJSON: contract,
+                    verifiedBindings: [:])
+                return SimiGoManagedContinuation.Generated(
+                    used: injection.used, settled: settled, nextInput: result.text)
+            })
+    } catch let refusal as SimiGoManagedRefusal.Refusal {
+        // A refusal raised inside G reaches the entry as its own typed failure;
+        // the core only returns refusals it decided itself.
+        throw ManagedContinuationFailure.refused(refusal)
+    }
 
     switch outcome {
     case .refused(let refusal, _):

@@ -93,6 +93,20 @@ public final class HTTPServer: @unchecked Sendable {
         _ sessionId: String
     ) -> (live: [String], checkpoints: [String])
 
+    /// W4/A pre-generation budget gate. Called AFTER the information turn is
+    /// prepared (IS injection applied) and BEFORE any SSE head or model work.
+    /// Returns the rendered-prompt verdict; the runtime owns the counting.
+    public typealias RequestBudgetHandler = @Sendable (
+        _ requestId: String,
+        _ agentId: String?,
+        _ sessionId: String,
+        _ logicalBranchId: String,
+        _ messages: [JSONValue],
+        _ tools: [JSONValue]?,
+        _ config: ModelConfig,
+        _ budgetHeaderMs: Int?
+    ) async -> RequestBudgetVerdict
+
     // MARK: - Limits
 
     private static let maxHeaderBytes = 64 * 1024
@@ -229,6 +243,16 @@ public final class HTTPServer: @unchecked Sendable {
         private var _closed = false
         private var _cancelledByRuntime = false
 
+        /// ADR 2026-10-30：客户端断连不再取消正在进行的生成。这一位置位
+        /// 表示本轮在断连后仍会跑完（detached）；它只影响生命周期归类与
+        /// 孤儿调度计数，不改变「关闭后不再出站、不再结算」的既有语义。
+        private var _detachedByClient = false
+
+        /// 孤儿轮让位用：detach 时被取出的请求任务另行留存一份，供
+        /// 「另一个生成已在等引擎」时在 token 边界停止本轮（ADR 补充）。
+        /// 一次性取走，避免重复取消。
+        private var _detachedRequestTask: Task<Void, Never>?
+
         /// Slice 8: this request's continuation admission result. Set by the
         /// pre-generation gate, read by the post-generation settlement of the
         /// SAME request — never looked up again from mutable ES state.
@@ -348,6 +372,24 @@ public final class HTTPServer: @unchecked Sendable {
             return outcome.started
         }
 
+        /// 路线 04：排队等准入期间也要感知对端断连。此阶段生成尚未开始
+        /// （`_generationStarted=false`），断连必须取消请求并从队列摘除，
+        /// 而不是走 detach 让无人消费的轮次占住引擎窗口。
+        func armPeerCloseWatchWhileWaiting() {
+            let armed: Bool = stateLock.withLock {
+                guard !_closed, !_peerCloseWatcherArmed else {
+                    return false
+                }
+
+                _peerCloseWatcherArmed = true
+                return true
+            }
+
+            if armed {
+                armPeerCloseWatch()
+            }
+        }
+
         func markGenerationFinished() {
             stateLock.withLock {
                 _generationStarted = false
@@ -373,8 +415,9 @@ public final class HTTPServer: @unchecked Sendable {
                     || (isComplete && (data?.isEmpty ?? true))
 
                 let active: Bool = stateLock.withLock {
+                    // 监听存活即可判定。排队期（尚未开始生成）同样需要
+                    // 在 EOF 时取消请求并退出队列；收尾路径会清掉该标志。
                     guard
-                        self._generationStarted,
                         !self._closed,
                         self._peerCloseWatcherArmed
                     else {
@@ -427,12 +470,48 @@ public final class HTTPServer: @unchecked Sendable {
             }
         }
 
-        /// P0-1 失败分类：runtime shutdown > 客户端断连 > 引擎内部取消。
+        /// P0-1 失败分类：runtime shutdown > 客户端断连（detached 单列） >
+        /// 关闭但未 detach > 引擎内部取消。
         func cancellationFailureReason() -> String {
             stateLock.withLock {
                 if _cancelledByRuntime { return "cancelled_by_runtime" }
+                if _detachedByClient { return "detached_by_client" }
                 if _closed { return "cancelled_by_client" }
                 return "cancelled_internally"
+            }
+        }
+
+        /// 是否还有一件可以在断连后继续跑完的生成。读取即判断；真正的
+        /// 落地由 `closeAndTakeRequestTask(detach:…)` 在同一把锁内完成。
+        var canDetachGeneration: Bool {
+            stateLock.withLock {
+                _generationStarted && !_cancellationSignalled && !_closed
+            }
+        }
+
+        var detachedByClient: Bool {
+            stateLock.withLock {
+                _detachedByClient
+            }
+        }
+
+        /// 另一个请求是否已在生成窗口内（含排队等引擎）。孤儿轮让位判据
+        /// 只读它：有别的生成在等引擎，孤儿的答案已无人消费。
+        var generationStarted: Bool {
+            stateLock.withLock {
+                _generationStarted && !_closed
+            }
+        }
+
+        /// 一次性取走 detach 时留存的请求任务；取走后再次调用返回 nil。
+        func takeDetachedRequestTask() -> Task<Void, Never>? {
+            stateLock.withLock {
+                guard _detachedByClient, let task = _detachedRequestTask else {
+                    return nil
+                }
+
+                _detachedRequestTask = nil
+                return task
             }
         }
 
@@ -455,20 +534,41 @@ public final class HTTPServer: @unchecked Sendable {
             }
         }
 
+        /// ADR 2026-10-30：客户端断连时本轮生成可以继续跑完（detached）。
+        /// `detach` 只在「生成已开始、未被任何取消征用、连接尚未关闭、且
+        /// 调用方拿到孤儿名额」时成立。名额在同一把锁内判定，避免两个断连
+        /// 同时读到「还有空位」而各留下一个孤儿。
         func closeAndTakeRequestTask(
-            cancelGeneration: Bool
+            cancelGeneration: Bool,
+            detach: Bool = false,
+            claimDetachSlot: () -> Bool = { false }
         ) -> (
             shouldCancelGeneration: Bool,
-            requestTask: Task<Void, Never>?
+            requestTask: Task<Void, Never>?,
+            detached: Bool
         ) {
             stateLock.withLock {
+                let detachable =
+                    detach &&
+                    _generationStarted &&
+                    !_cancellationSignalled &&
+                    !_closed
+                let detached = detachable && claimDetachSlot()
+
                 let shouldCancel =
                     cancelGeneration &&
                     _generationStarted &&
-                    !_cancellationSignalled
+                    !_cancellationSignalled &&
+                    !_closed &&
+                    !detached
 
                 if shouldCancel {
                     _cancellationSignalled = true
+                }
+
+                if detached {
+                    _detachedByClient = true
+                    _detachedRequestTask = _requestTask
                 }
 
                 _closed = true
@@ -479,7 +579,8 @@ public final class HTTPServer: @unchecked Sendable {
 
                 return (
                     shouldCancel,
-                    task
+                    task,
+                    detached
                 )
             }
         }
@@ -562,6 +663,14 @@ public final class HTTPServer: @unchecked Sendable {
     /// Producer identity for information-turn settlements. Absent only when the
     /// runtime has no resolved model snapshot (headless/library callers).
     let informationTurnProducer: InformationTurnProducerProvider?
+    /// W4/A pre-generation budget gate. Absent (nil) means this server cannot
+    /// evaluate a prefill estimate: the turn runs ungoverned and the trace says
+    /// the gate was inactive — it is never reported as a refusal.
+    let requestBudget: RequestBudgetHandler?
+    /// Route 04 bounded request admission. At most `capacity` turns may be in
+    /// flight; additional turns wait in a bounded FIFO. Model generation is
+    /// still ordered by the runtime gate — this never widens MLX concurrency.
+    let requestAdmission: RequestAdmissionScheduler
     private let deleteBranchHandler: DeleteBranchHandler
     private let listBranchesHandler: ListBranchesHandler
     private let checkHealthHandler: CheckHealthHandler
@@ -693,7 +802,9 @@ public final class HTTPServer: @unchecked Sendable {
         continuationSettlement: ContinuationSettlementHandler? = nil,
         settlementConsumption: SettlementConsumptionHandler? = nil,
         managedContinuation: ManagedContinuationHandler? = nil,
-        informationTurnProducer: InformationTurnProducerProvider? = nil
+        informationTurnProducer: InformationTurnProducerProvider? = nil,
+        requestBudget: RequestBudgetHandler? = nil,
+        requestAdmission: RequestAdmissionScheduler? = nil
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -729,6 +840,9 @@ public final class HTTPServer: @unchecked Sendable {
         self.settlementConsumption = settlementConsumption
         self.managedContinuation = managedContinuation
         self.informationTurnProducer = informationTurnProducer
+        self.requestBudget = requestBudget
+        self.requestAdmission = requestAdmission
+            ?? RequestAdmissionScheduler(limit: RuntimeTuning.requestConcurrencyLevel)
     }
 
     // MARK: - Lifecycle
@@ -896,6 +1010,9 @@ public final class HTTPServer: @unchecked Sendable {
         plaintextCompatListener?.cancel()
         plaintextCompatListener = nil
 
+        // Queued turns must not wait for a slot that stop() will never release.
+        requestAdmission.beginShutdown()
+
         let contexts: [ConnectionContext] = connectionLock.withLock {
             let values = Array(connections.values)
             connections.removeAll()
@@ -937,10 +1054,7 @@ public final class HTTPServer: @unchecked Sendable {
 
             switch state {
             case .failed, .cancelled:
-                self.terminate(
-                    context,
-                    cancelGeneration: true
-                )
+                self.terminateForClientGone(context)
 
             default:
                 break
@@ -965,10 +1079,7 @@ public final class HTTPServer: @unchecked Sendable {
                     return
                 }
 
-                self.terminate(
-                    context,
-                    cancelGeneration: true
-                )
+                self.terminateForClientGone(context)
             }
         }
 
@@ -1055,13 +1166,24 @@ public final class HTTPServer: @unchecked Sendable {
     // terminate 为模块默认 MainActor 隔离（勿显式标注：隐性隔离下既有
     // 连接队列调用点无警告，显式化会翻成硬警告）。本方法由连接队列
     // 回调进入时须跳主演员执行（见 onPeerClosed 注释）。
+    //
+    // ADR 2026-10-30：`detach` 是客户端断连专用。本地离线模型的冷 prefill
+    // 是硬件事实，客户端 60 s 超时先到，不应把已经付出的 prefill 取消掉。
+    // detach 之后本轮不取消、不结算、不提交（recorded only）：生成继续，
+    // 协议层在出站与结算前按 `context.closed` fail-closed。手动取消
+    // （菜单栏停止 / Runtime stop）不走这条路径，语义不变。
     func terminate(
         _ context: ConnectionContext,
-        cancelGeneration: Bool
+        cancelGeneration: Bool,
+        detach: Bool = false
     ) {
         let result =
             context.closeAndTakeRequestTask(
-                cancelGeneration: cancelGeneration
+                cancelGeneration: cancelGeneration,
+                detach: detach,
+                claimDetachSlot: { [weak self] in
+                    self?.beginDetachedRequest() ?? false
+                }
             )
 
         connectionLock.withLock {
@@ -1072,15 +1194,164 @@ public final class HTTPServer: @unchecked Sendable {
             }
         }
 
-        result.requestTask?.cancel()
+        if result.detached {
+            // 名额随任务结束归还；任务在取出前已结束（或不存在）时立即归还。
+            if let task = result.requestTask {
+                Task { [weak self] in
+                    _ = await task.value
+                    self?.endDetachedRequest()
+                }
+            } else {
+                endDetachedRequest()
+            }
 
-        if result.shouldCancelGeneration {
-            cancelGenerationHandler?(
-                context.requestId
+            RuntimeTraceLogger.shared.trace(
+                "[DETACH] r=\(context.requestId) slots=\(Self.maxDetachedRequests)"
             )
+        } else {
+            result.requestTask?.cancel()
+
+            if result.shouldCancelGeneration {
+                cancelGenerationHandler?(
+                    context.requestId
+                )
+            }
         }
 
         context.connection.cancel()
+    }
+
+    /// 客户端已经消失（断连 / 发送失败 / 心跳失败）：本轮 detach 继续跑完。
+    /// 手动取消与 Runtime 停止不经过这里，仍走 `terminate(cancelGeneration:)`。
+    func terminateForClientGone(_ context: ConnectionContext) {
+        terminate(
+            context,
+            cancelGeneration: true,
+            detach: true
+        )
+    }
+
+    /// 断连后允许继续跑完的生成上限（ADR 2026-10-30）。本机是单模型串行
+    /// 生成，孤儿不是并发，而是「前台已走、后台仍在付冷 prefill」。上限 1
+    /// 保证断连风暴不会把全局 generation gate 排成一串无人消费的 prefill；
+    /// 超过上限的断连按旧语义取消。
+    ///
+    /// 路线 04 裁定：请求并发等级不改变这个上限。等级放宽的是「在途请求
+    /// 数」，而孤儿占的是唯一的引擎执行窗口；把上限跟着等级放大只会让
+    /// 无人消费的 prefill 排在真实请求前面。
+    private static let maxDetachedRequests = 1
+
+    private let detachedLock = NSLock()
+    private var detachedInFlight = 0
+
+    private func beginDetachedRequest() -> Bool {
+        detachedLock.lock()
+        defer { detachedLock.unlock() }
+        guard detachedInFlight < Self.maxDetachedRequests else { return false }
+        detachedInFlight += 1
+        return true
+    }
+
+    private func endDetachedRequest() {
+        detachedLock.lock()
+        if detachedInFlight > 0 {
+            detachedInFlight -= 1
+        }
+        detachedLock.unlock()
+    }
+
+    /// 孤儿轮让位（ADR 2026-10-30 补充裁定）：断连后本轮默认跑完；但若
+    /// 此刻已有另一个请求进入生成窗口（等待或正在用引擎），孤儿的答案已
+    /// 无人消费，继续解码只是占住引擎。在下一个 token 边界停止它：走标准
+    /// 取消接线，引擎按 #134/#136 的判据决定可证明前缀的保留，协议层仍然
+    /// fail-closed（不结算、不提交）。没人在等时语义不变——照常跑完。
+    nonisolated func stopDetachedOrphanIfContended(_ context: ConnectionContext) {
+        guard context.detachedByClient else { return }
+        guard otherGenerationInFlight() else { return }
+        guard let task = context.takeDetachedRequestTask() else { return }
+
+        task.cancel()
+        RuntimeTraceLogger.shared.trace(
+            "[DETACH] stop=1 r=\(context.requestId) reason=generation_contended"
+        )
+    }
+
+    /// 除本连接外是否已有请求进入生成窗口。detach 后本连接已移出
+    /// `connections`，因此这里看到的就是「别人」。
+    nonisolated private func otherGenerationInFlight() -> Bool {
+        connectionLock.withLock {
+            connections.values.contains { $0.generationStarted }
+        }
+    }
+
+    // MARK: - Route 04 request admission
+
+    /// Take a bounded in-flight slot for one generation window. The slot is
+    /// taken after the IS/reuse/budget gates and before any SSE head or model
+    /// work, so a saturated queue is refused as a real HTTP 503 instead of a
+    /// terminal event on an already-accepted stream.
+    ///
+    /// The slot is taken before `markGenerationStarted()`: a queued turn has
+    /// not begun generating, so a peer close must cancel it and leave the
+    /// queue instead of qualifying for the detached-orphan window.
+    func acquireGenerationAdmission(
+        for context: ConnectionContext,
+        endpoint: String
+    ) async -> RequestAdmissionScheduler.Ticket? {
+        context.armPeerCloseWatchWhileWaiting()
+        let started = Date()
+        let result = await requestAdmission.acquire(requestId: context.requestId)
+        let waitedMs = Int(Date().timeIntervalSince(started) * 1000)
+        let snapshot = requestAdmission.debugSnapshot()
+
+        switch result {
+        case .admitted(let ticket):
+            RuntimeTraceLogger.shared.trace(
+                "[ADMIT] grant r=\(context.requestId) endpoint=\(endpoint)"
+                    + " level=\(snapshot.capacity) active=\(snapshot.active)"
+                    + " waiting=\(snapshot.waiting) waited=\(waitedMs)ms")
+            return ticket
+
+        case .queueFull:
+            RuntimeTraceLogger.shared.trace(
+                "[ADMIT] reject r=\(context.requestId) endpoint=\(endpoint)"
+                    + " reason=queue_full level=\(snapshot.capacity)"
+                    + " active=\(snapshot.active) waiting=\(snapshot.waiting)")
+            sendError(
+                "Server concurrency queue is full; retry shortly",
+                status: 503,
+                on: context.connection,
+                context: context)
+            return nil
+
+        case .cancelled:
+            RuntimeTraceLogger.shared.trace(
+                "[ADMIT] cancel r=\(context.requestId) endpoint=\(endpoint)")
+            return nil
+
+        case .shuttingDown:
+            RuntimeTraceLogger.shared.trace(
+                "[ADMIT] reject r=\(context.requestId) endpoint=\(endpoint)"
+                    + " reason=shutting_down")
+            sendError(
+                "Server is shutting down",
+                status: 503,
+                on: context.connection,
+                context: context)
+            return nil
+        }
+    }
+
+    func releaseGenerationAdmission(
+        _ ticket: RequestAdmissionScheduler.Ticket,
+        endpoint: String
+    ) {
+        requestAdmission.release(ticket)
+        let snapshot = requestAdmission.debugSnapshot()
+        RuntimeTraceLogger.shared.trace(
+            "[ADMIT] release r=\(ticket.requestId) endpoint=\(endpoint)"
+                + " level=\(snapshot.capacity) active=\(snapshot.active)"
+                + " waiting=\(snapshot.waiting)")
     }
 
     // MARK: - SSE Heartbeat
@@ -1158,9 +1429,8 @@ public final class HTTPServer: @unchecked Sendable {
                                 }
 
                                 if error != nil {
-                                    self.terminate(
-                                        context,
-                                        cancelGeneration: true
+                                    self.terminateForClientGone(
+                                        context
                                     )
                                 }
                             }
@@ -1180,9 +1450,8 @@ public final class HTTPServer: @unchecked Sendable {
                                 }
 
                                 if error != nil {
-                                    self.terminate(
-                                        context,
-                                        cancelGeneration: true
+                                    self.terminateForClientGone(
+                                        context
                                     )
                                 }
                             }
@@ -2924,7 +3193,8 @@ public final class HTTPServer: @unchecked Sendable {
         _ object: [String: Any],
         status: Int,
         on connection: NWConnection,
-        context: ConnectionContext
+        context: ConnectionContext,
+        extraHeaders: [String: String] = [:]
     ) {
 
         guard
@@ -2939,6 +3209,10 @@ public final class HTTPServer: @unchecked Sendable {
 
         var headers =
             corsHeaders()
+
+        for (name, value) in extraHeaders {
+            headers[name] = value
+        }
 
         headers["Content-Type"] =
             "application/json; charset=utf-8"
@@ -3100,9 +3374,8 @@ public final class HTTPServer: @unchecked Sendable {
 
                         if error != nil {
 
-                            self.terminate(
-                                context,
-                                cancelGeneration: true
+                            self.terminateForClientGone(
+                                context
                             )
 
                         } else if close {
@@ -3188,6 +3461,150 @@ public final class HTTPServer: @unchecked Sendable {
         )
     }
 
+    // MARK: - W4/A request budget gate
+
+    /// `X-Simigo-Deadline-Ms`: a positive value overrides this request's
+    /// budget. Absent, malformed or ≤ 0 falls back to the local setting — a
+    /// header can tighten the budget but never switch governance off.
+    ///
+    /// Note this only has an effect on routes that carry the client's header
+    /// map through. LOCALB-authorized routes rebuild headers from the signed
+    /// request (`localbDispatchHeaders`), so an unsigned header never arrives
+    /// there and the local setting governs — which is exactly why the product
+    /// path must not depend on this header.
+    nonisolated static func requestBudgetDeadlineMS(
+        headers: [String: String]
+    ) -> Int? {
+        guard
+            let raw = headers["x-simigo-deadline-ms"]?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+            let value = Int(raw),
+            value > 0
+        else {
+            return nil
+        }
+        return value
+    }
+
+    /// Runs the pre-generation budget gate. Returns true when the turn was
+    /// REFUSED and its 503 terminal has been written — the caller must return
+    /// WITHOUT any SSE head, lifecycle start or generation. Gate-inactive
+    /// verdicts (no matched samples, estimate unavailable, disabled, …) allow
+    /// the turn; they are traced by the runtime and are never a refusal.
+    ///
+    /// ADR 2026-10-30: the verdict is still taken here (same place, same
+    /// inputs) purely as observation. `admissionEnforcementEnabled` is false,
+    /// so a reject verdict no longer writes a 503 — the turn proceeds and the
+    /// estimate stays in the trace. This is a withdrawn route, not a fix.
+    func rejectOnRequestBudget(
+        messages: [JSONValue],
+        tools: [JSONValue]?,
+        config: ModelConfig,
+        agentId: String?,
+        sessionId: String,
+        logicalBranchId: String,
+        headers: [String: String],
+        context: ConnectionContext
+    ) async -> Bool {
+        guard let requestBudget else {
+            noteBudgetGateInactive(reason: "handler_unavailable", context: context)
+            return false
+        }
+        let verdict = await requestBudget(
+            context.requestId,
+            agentId,
+            sessionId,
+            logicalBranchId,
+            messages,
+            tools,
+            config,
+            Self.requestBudgetDeadlineMS(headers: headers)
+        )
+        guard verdict.isReject else { return false }
+        guard RequestBudgetController.admissionEnforcementEnabled else {
+            noteBudgetGateWithdrawn(verdict, context: context)
+            return false
+        }
+        sendBudgetReject(verdict, context: context)
+        return true
+    }
+
+    /// 观测化后的拒绝：判定仍在，准入不再受它约束。`[BUDGET]` 行已带
+    /// verdict/estMs；这里补一行 `gate=withdrawn`，真实窗口里能区分
+    /// 「本应被拒但准入」与「本来就没超预算」。
+    func noteBudgetGateWithdrawn(
+        _ verdict: RequestBudgetVerdict,
+        context: ConnectionContext
+    ) {
+        RuntimeTraceLogger.shared.trace(
+            "[BUDGET] r=\(context.requestId) gate=withdrawn"
+                + " verdict=\(verdict.kind.wireName)"
+                + " estMs=\(verdict.estimatedPrefillMs)"
+                + " prefillBudget=\(verdict.prefillBudgetMs)"
+                + " tokens=\(verdict.promptTokens)"
+                + " action=admit")
+    }
+
+    /// A wire this gate cannot honour before its transport commits (e.g. an
+    /// ES-anchored streaming continuation) records that explicitly instead of
+    /// running a verdict it cannot enforce in time.
+    func noteBudgetGateInactive(reason: String, context: ConnectionContext) {
+        RuntimeTraceLogger.shared.trace(
+            "[BUDGET] r=\(context.requestId) gate=inactive reason=\(reason)")
+    }
+
+    /// W4/A: the single terminal for a refused turn. HTTP 503 with a
+    /// structured `prefill_budget_exceeded`; deliberately NO `Retry-After` —
+    /// a status code cannot guarantee a client stops retrying, so client
+    /// behaviour is measured in §6 rather than asserted by a header.
+    func sendBudgetReject(
+        _ verdict: RequestBudgetVerdict,
+        context: ConnectionContext
+    ) {
+        var error: [String: Any] = [
+            "message":
+                "Prefill estimated at \(verdict.estimatedPrefillMs) ms exceeds"
+                + " the \(verdict.prefillBudgetMs) ms prefill budget for"
+                + " \(verdict.promptTokens) rendered tokens.",
+            "type": "server_error",
+            "param": NSNull(),
+            "code": "prefill_budget_exceeded",
+            "error_kind": "prefill_budget_exceeded",
+            "reason_code": verdict.kind.wireName,
+            "prompt_tokens": verdict.promptTokens,
+            "estimated_prefill_ms": verdict.estimatedPrefillMs,
+            "budget_ms": verdict.budgetMs,
+            "prefill_budget_ms": verdict.prefillBudgetMs,
+            "bucket": verdict.bucket,
+            "samples": verdict.samples,
+            "cached": verdict.cached,
+        ]
+        if let rate = verdict.rateTokPerSecond {
+            error["rate_tok_per_second"] = rate
+        }
+        if let processed = verdict.priorProcessed,
+            let total = verdict.priorTotal,
+            let elapsed = verdict.priorElapsedMs
+        {
+            error["prior_attempt"] = [
+                "processed_tokens": processed,
+                "total_tokens": total,
+                "elapsed_ms": elapsed,
+                "request_id":
+                    verdict.priorRequestID.map { $0 as Any } ?? NSNull(),
+            ]
+        }
+        sendJSON(
+            ["error": error],
+            status: 503,
+            on: context.connection,
+            context: context,
+            extraHeaders: [
+                "X-Simigo-Retry-Policy": "on-input-or-budget-change"
+            ]
+        )
+    }
+
     func reasonPhrase(
         _ status: Int
     ) -> String {
@@ -3258,6 +3675,12 @@ public final class HTTPServer: @unchecked Sendable {
             return
         }
 
+        // The forwarded turn enters the Information Space before it leaves:
+        // recorded (not retrievable) while in flight, verified only once this
+        // request produced a complete answer.
+        let capture = beginExternalTurn(request: request, context: context)
+        let wire = Self.externalWire(forPath: request.path)
+
         let upstreamRequest: URLRequest
         do {
             // Reviewed remote-forward allowlist: only signed content
@@ -3314,10 +3737,18 @@ public final class HTTPServer: @unchecked Sendable {
                 var responseBytes = 0
                 var pending = Data()
                 let separator = Data("\n\n".utf8)
+                var capturedRaw = Data()
+                let captureLimit = 8 << 20
+                var captureOverflowed = false
 
                 for try await byte in bytes {
                     guard !context.closed else { break }
                     pending.append(byte)
+                    if capturedRaw.count < captureLimit {
+                        capturedRaw.append(byte)
+                    } else {
+                        captureOverflowed = true
+                    }
 
                     if pending.count >= separator.count, pending.suffix(separator.count) == separator {
                         responseBytes += pending.count
@@ -3331,6 +3762,14 @@ public final class HTTPServer: @unchecked Sendable {
                     sendRaw(pending, context: context, close: false)
                 }
                 sendRaw(Data(), context: context, close: true)
+
+                if !captureOverflowed, let wire {
+                    let extracted = Self.externalStreamExtract(wire: wire, raw: capturedRaw)
+                    finishExternalTurn(
+                        capture, text: extracted.text,
+                        completed: extracted.complete
+                            && (200..<300).contains(httpResponse.statusCode))
+                }
 
                 print(
                     "[SimiGo Remote] [STREAM_COMPLETE] endpoint=\(request.path) " +
@@ -3376,6 +3815,14 @@ public final class HTTPServer: @unchecked Sendable {
             sendRaw(data, context: context, close: false)
             let responseBytes = data.count
             sendRaw(Data(), context: context, close: true)
+
+            if let wire, (200..<300).contains(httpResponse.statusCode),
+                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            {
+                let extracted = Self.externalResponseExtract(wire: wire, json: json)
+                finishExternalTurn(
+                    capture, text: extracted.text, completed: extracted.complete)
+            }
 
             print(
                 "[SimiGo Remote] [COMPLETE] endpoint=\(request.path) " +

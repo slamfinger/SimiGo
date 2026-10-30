@@ -118,17 +118,34 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         try await makeStore().load(admission)
     }
 
-    /// B-6：安装 fork 级跨会话 token 前缀查询钩子（模型加载时一次）。
-    /// 同步闭包：池对账（token 链）→ sidecar 对账 → 快照装载，任一失败
-    /// 自愈 + nil（会话回退全量 prefill）。命名空间绑定**基配置**指纹；
-    /// 非基 kvSettings 的会话不导出 token 边界（登记的 beta 边界：仅基
-    /// 配置会话进 token 池，跨 plan 类的静默误装不可能发生）。
+    /// B-6/#136：安装 token 级前缀查找钩子（模型加载时一次）。
+    ///
+    /// 组合顺序＝**内存池优先、磁盘池兜底**，两池各答各的问题：
+    ///   内存池（#136）＝同一未完成执行的续接——被取消轮次由引擎证明出的
+    ///     前缀边界，采纳要求 ES 身份逐字相等（见 `PrefixMemoryPool`）；
+    ///   磁盘池（B-6）＝已结算的跨执行复用——同步闭包内池对账（token 链）
+    ///     → sidecar 对账 → 快照装载，任一失败自愈 + nil；其 ES 门禁
+    ///     （`checkBindAuthority` + 结算摘要对账）原样保留，不因内存池存在
+    ///     而绕过。
+    /// 两池都关闭时不安装：钩子为 nil ⇒ 上游 `.prefillAll` 全量 prefill，
+    /// 与迁移前逐字节一致。
+    ///
+    /// 命名空间绑定**基配置**指纹；非基 kvSettings 的会话既不导出也不捕获
+    /// （登记的 beta 边界：跨 plan 类的静默误装不可能发生）。
     func installHook(modelID: String, kvFingerprint: String?, thinkingDisabled: Bool) {
-        guard RuntimeTuning.prefixPoolEnabled else { return }
+        let diskEnabled = RuntimeTuning.prefixPoolEnabled
+        guard diskEnabled || RuntimeTuning.prefixMemoryPoolEnabled else { return }
         let namespace = Self.namespace(
             modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        lock.withLock { installedNamespace = namespace }
         ChatSession.crossSessionPrefixLookup = { [weak self] promptTokenIds in
-            guard let self,
+            guard let self else { return nil }
+            if let hit = PrefixMemoryPool.shared.adopt(
+                promptTokenIds: promptTokenIds, namespace: namespace)
+            {
+                return (hit.snapshot, hit.matchedTokenCount)
+            }
+            guard diskEnabled,
                 let admission = self.makeStore().pool.admit(
                     namespace: namespace, promptTokens: promptTokenIds)
             else { return nil }
@@ -142,6 +159,56 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                     "[MLX] poolTokenHitRejected err=\(String(describing: error))")
                 return nil
             }
+        }
+    }
+
+    /// 安装时的基配置命名空间；捕获只接受与它相等的会话。
+    private var installedNamespace: PrefixPoolNamespace?
+
+    /// #136：取消点的边界捕获——唯一入口是引擎自己的证明。
+    ///
+    /// 必须在驱逐（`session.clear()`）之前调用；`interruptedPrefixBoundary()`
+    /// 证明不了边界就抛类型化错误，这里只把原因记成一行
+    /// `memPoolCaptureRefused`——「物理 cache 里还有对象」从来不是恢复证据。
+    /// 返回实际入账的 token 数（0 = 未入账），供调用方观测。
+    func captureInterruptedPrefix(
+        _ session: ChatSession,
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        esStateID: String?, traceKey: String
+    ) async -> Int {
+        guard RuntimeTuning.prefixMemoryPoolEnabled else { return 0 }
+        let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        guard namespace == installedNamespace else {
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] memPoolCaptureSkip session=\(traceKey) reason=notBaseNamespace")
+            return 0
+        }
+        do {
+            let boundary = try await session.interruptedPrefixBoundary()
+            guard let entry = PrefixMemoryPool.shared.capture(
+                boundary, namespace: namespace, esStateID: esStateID)
+            else {
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] memPoolCaptureRejected session=\(traceKey)"
+                        + " tokens=\(boundary.tokenCount) bytes=\(boundary.bytes)")
+                return 0
+            }
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] memPoolCapture session=\(traceKey) tokens=\(boundary.tokenCount)"
+                    + " bytes=\(boundary.bytes)"
+                    + " layers=\(boundary.attentionLayerCount)a/\(boundary.recurrentLayerCount)r"
+                    + " es=\(esStateID.map { String($0.suffix(12)) } ?? "-")")
+            return entry.tokenCount
+        } catch let error as ChatSession.InterruptedPrefixBoundaryError {
+            // 不能恢复——按原因记录，不伪造 PASS，也不动既有驱逐。
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] memPoolCaptureRefused session=\(traceKey) reason=\(error.description)")
+            return 0
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] memPoolCaptureFailed session=\(traceKey) err=\(String(describing: error))")
+            return 0
         }
     }
 
@@ -348,6 +415,15 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             }
             return .allowed
         }
+    }
+
+    /// #136/§II.3：本轮 ES 权威的一次**只读**取值。在 generate 函数作用域取
+    /// 一次，同时喂磁盘准入与内存采纳。bind 站点用的是注销式 `consume`，
+    /// 在它之后再查第二次必然拿到 `.notGoverned`＝自造放行；所以内存侧只能
+    /// 消费这同一个快照，不许自己再查。只读不注销也保证磁盘路径的注销时机
+    /// 与本改动之前逐字节一致。
+    func peekBindAuthority(esStateID: String) -> ISKVBindAuthority.Lookup {
+        ISKVBindAuthority.shared.peek(esStateID: esStateID)
     }
 
     func checkBindAuthority(

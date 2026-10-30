@@ -55,6 +55,32 @@ import Network
 /// tool fingerprint / runtime lineage 决定。
 
 extension HTTPServer {
+    /// `/v1/completions` is a declared compatibility passthrough, not a managed
+    /// turn: its prompt is continuation text rather than an Information-Space
+    /// demand, so it runs no ES preparation, no IS reuse check and no
+    /// settlement. The wire marker keeps that boundary checkable from outside,
+    /// so a completion can never be read as an information-continuity result.
+    /// The managed entries are `/v1/chat/completions` and `/v1/responses`.
+    static var unmanagedCompletionsBlock: [String: Any] {
+        ["managed": false, "reason": "legacy_text_completions"]
+    }
+
+    /// The text-completions marker, extended with the engine's verdict whenever
+    /// the turn did not finish. A completed turn keeps the block byte-identical
+    /// to `unmanagedCompletionsBlock`; only an unfinished one carries the cause,
+    /// because `finish_reason` alone cannot distinguish cap from cancellation.
+    static func completionsBlock(
+        _ completion: GenerationCompletion
+    ) -> [String: Any] {
+        var block = unmanagedCompletionsBlock
+        guard !completion.isSettleable else { return block }
+        block["completion"] = completion.wireName
+        if let reason = completion.incompleteReason {
+            block["incomplete_reason"] = reason
+        }
+        return block
+    }
+
     // MARK: - Text Completions / Streaming
 
     func handleTextCompletionsStreaming(
@@ -85,7 +111,18 @@ extension HTTPServer {
             config
         ) = parsed
 
-        guard context.markGenerationStarted() else {
+        // W4/A: text completions carry no information turn, so the verdict runs
+        // straight after parsing and before any SSE head or model work.
+        if await rejectOnRequestBudget(
+            messages: messages,
+            tools: nil,
+            config: config,
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId,
+            headers: headers,
+            context: context
+        ) {
             return
         }
 
@@ -97,6 +134,23 @@ extension HTTPServer {
                 success: isSuccess,
                 failureReason: failureReason
             )
+        }
+
+        guard let admissionTicket = await acquireGenerationAdmission(
+            for: context,
+            endpoint: "completions"
+        ) else {
+            failureReason = "concurrency_rejected"
+            return
+        }
+        defer {
+            releaseGenerationAdmission(
+                admissionTicket,
+                endpoint: "completions")
+        }
+
+        guard context.markGenerationStarted() else {
+            return
         }
 
         context.setIdentity(
@@ -189,7 +243,7 @@ extension HTTPServer {
                 return
             }
 
-            _ = try await generateHandler(
+            let result = try await generateHandler(
                 context.requestId,
                 agentId,
                 sessionId,
@@ -199,6 +253,10 @@ extension HTTPServer {
                 config,
 
                 { [weak self, weak context] text in
+                    if let self, let context {
+                        self.stopDetachedOrphanIfContended(context)
+                    }
+
                     guard
                         let self,
                         let context,
@@ -245,8 +303,9 @@ extension HTTPServer {
                         "text": "",
                         "index": 0,
                         "logprobs": NSNull(),
-                        "finish_reason": "stop"
-                    ]]
+                        "finish_reason": result.completion.finishReason
+                    ]],
+                    "simigo": Self.completionsBlock(result.completion)
                 ],
                 context: context
             )
@@ -359,7 +418,7 @@ extension HTTPServer {
             isComplete: false,
             completion: .contentProcessed { [weak self, weak context] error in
                 guard let self, let context, error != nil else { return }
-                self.terminate(context, cancelGeneration: true)
+                self.terminateForClientGone(context)
             }
         )
 
@@ -394,7 +453,7 @@ extension HTTPServer {
             isComplete: false,
             completion: .contentProcessed { [weak self, weak context] error in
                 guard let self, let context, error != nil else { return }
-                self.terminate(context, cancelGeneration: true)
+                self.terminateForClientGone(context)
             }
         )
 
@@ -419,7 +478,7 @@ extension HTTPServer {
                 guard let self, let context else { return }
 
                 if error != nil {
-                    self.terminate(context, cancelGeneration: true)
+                    self.terminateForClientGone(context)
                 } else if close {
                     self.finish(context)
                     context.connection.cancel()
@@ -458,7 +517,17 @@ extension HTTPServer {
             config
         ) = parsed
 
-        guard context.markGenerationStarted() else {
+        // W4/A: same gate as the streaming path, before lifecycle/generation.
+        if await rejectOnRequestBudget(
+            messages: messages,
+            tools: nil,
+            config: config,
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId,
+            headers: headers,
+            context: context
+        ) {
             return
         }
 
@@ -470,6 +539,23 @@ extension HTTPServer {
                 success: isSuccess,
                 failureReason: failureReason
             )
+        }
+
+        guard let admissionTicket = await acquireGenerationAdmission(
+            for: context,
+            endpoint: "completions"
+        ) else {
+            failureReason = "concurrency_rejected"
+            return
+        }
+        defer {
+            releaseGenerationAdmission(
+                admissionTicket,
+                endpoint: "completions")
+        }
+
+        guard context.markGenerationStarted() else {
+            return
         }
 
         context.setIdentity(
@@ -511,7 +597,7 @@ extension HTTPServer {
                 return
             }
 
-            _ = try await generateHandler(
+            let result = try await generateHandler(
                 context.requestId,
                 agentId,
                 sessionId,
@@ -520,7 +606,11 @@ extension HTTPServer {
                 nil,
                 config,
 
-                { text in
+                { [weak self, weak context] text in
+                    if let self, let context {
+                        self.stopDetachedOrphanIfContended(context)
+                    }
+
                     fullContent.mutate {
                         $0.append(text)
                     }
@@ -549,11 +639,12 @@ extension HTTPServer {
                             .timeIntervalSince1970
                     ),
                 "model": modelId,
+                "simigo": Self.completionsBlock(result.completion),
                 "choices": [[
                     "text": fullContent.value,
                     "index": 0,
                     "logprobs": NSNull(),
-                    "finish_reason": "stop"
+                    "finish_reason": result.completion.finishReason
                 ]],
                 "usage": [
                     "prompt_tokens": 0,

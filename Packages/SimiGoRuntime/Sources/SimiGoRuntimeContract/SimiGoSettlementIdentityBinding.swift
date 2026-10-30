@@ -36,6 +36,15 @@ public enum SimiGoSettlementIdentityBinding {
             self.model = model
             self.tokenizer = tokenizer
         }
+
+        /// The identity of an engine that could not be named. It is deliberately
+        /// NOT a wildcard: two unidentified engines are not the same engine, so an
+        /// absent identity can never authorize inheriting another one's result.
+        public static let absent = Identity(model: "", tokenizer: "")
+
+        public var isSpecified: Bool {
+            !model.isEmpty && !tokenizer.isEmpty
+        }
     }
 
     public enum Status: String, Sendable {
@@ -63,6 +72,7 @@ public enum SimiGoSettlementIdentityBinding {
     }
 
     public enum Refusal: String, Sendable {
+        case consumerAbsent = "SETTLEMENT_BINDING_CONSUMER_ABSENT"
         case modelAbsent = "SETTLEMENT_BINDING_MODEL_ABSENT"
         case tokenizerAbsent = "SETTLEMENT_BINDING_TOKENIZER_ABSENT"
         case modelMismatch = "SETTLEMENT_BINDING_MODEL_MISMATCH"
@@ -91,7 +101,15 @@ public enum SimiGoSettlementIdentityBinding {
     /// identity. Fail-closed: an absent binding is a refusal, not a pass, so a
     /// settlement written by an older producer can never be consumed silently.
     public static func evaluate(recorded: [String: String], consumer: Identity) -> Verdict {
-        guard let recordedModel = recorded[modelKey], !recordedModel.isEmpty else {
+        guard consumer.isSpecified else {
+            return Verdict(status: .blocked, code: Refusal.consumerAbsent.rawValue,
+                           detail: "consumer identity is not resolved; an unnamed engine cannot inherit a settled result",
+                           boundModel: false, boundTokenizer: false)
+        }
+        let absentDigest = digest(Identity.absent.model)
+        guard let recordedModel = recorded[modelKey], !recordedModel.isEmpty,
+            recordedModel != absentDigest
+        else {
             return Verdict(status: .blocked, code: Refusal.modelAbsent.rawValue,
                            detail: "settlement carries no \(modelKey) binding",
                            boundModel: false, boundTokenizer: false)
@@ -101,7 +119,9 @@ public enum SimiGoSettlementIdentityBinding {
                            detail: "settlement was produced by a different model identity",
                            boundModel: false, boundTokenizer: false)
         }
-        guard let recordedTokenizer = recorded[tokenizerKey], !recordedTokenizer.isEmpty else {
+        guard let recordedTokenizer = recorded[tokenizerKey], !recordedTokenizer.isEmpty,
+            recordedTokenizer != absentDigest
+        else {
             return Verdict(status: .blocked, code: Refusal.tokenizerAbsent.rawValue,
                            detail: "settlement carries no \(tokenizerKey) binding",
                            boundModel: true, boundTokenizer: false)
@@ -122,7 +142,15 @@ public enum SimiGoSettlementIdentityBinding {
     public static func evaluateConsumer(
         recorded: [String: String], consumer: Identity
     ) -> Verdict {
-        guard let model = recorded[consumerModelKey], !model.isEmpty else {
+        guard consumer.isSpecified else {
+            return Verdict(status: .blocked, code: Refusal.consumerAbsent.rawValue,
+                           detail: "consumer identity is not resolved; an unnamed engine cannot continue a derived result",
+                           boundModel: false, boundTokenizer: false)
+        }
+        let absentDigest = digest(Identity.absent.model)
+        guard let model = recorded[consumerModelKey], !model.isEmpty,
+            model != absentDigest
+        else {
             return Verdict(status: .blocked, code: Refusal.modelAbsent.rawValue,
                            detail: "derived settlement carries no \(consumerModelKey) binding",
                            boundModel: false, boundTokenizer: false)
@@ -132,7 +160,9 @@ public enum SimiGoSettlementIdentityBinding {
                            detail: "derived settlement was consumed by a different model identity",
                            boundModel: false, boundTokenizer: false)
         }
-        guard let tokenizer = recorded[consumerTokenizerKey], !tokenizer.isEmpty else {
+        guard let tokenizer = recorded[consumerTokenizerKey], !tokenizer.isEmpty,
+            tokenizer != absentDigest
+        else {
             return Verdict(status: .blocked, code: Refusal.tokenizerAbsent.rawValue,
                            detail: "derived settlement carries no \(consumerTokenizerKey) binding",
                            boundModel: true, boundTokenizer: false)

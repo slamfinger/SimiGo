@@ -156,13 +156,13 @@ public struct SimiGoInformationLoop {
             }
             for (idx, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
             where !line.isEmpty {
-                let score = Self.matchScore(line: line, keywords: keywords)
-                guard score > 0 else { continue }
+                guard let snippet = Self.citationSnippet(in: line, keywords: keywords)
+                else { continue }
                 scored.append((Item(
                     itemID: identity, kind: "file", locator: identity,
-                    lineNo: idx + 1, lineText: String(line.prefix(240)),
+                    lineNo: idx + 1, lineText: snippet.text,
                     sourceSHA256: row.digest,
-                    rootID: row.rootID, relativePath: row.relativePath), score))
+                    rootID: row.rootID, relativePath: row.relativePath), snippet.score))
             }
         }
 
@@ -180,13 +180,13 @@ public struct SimiGoInformationLoop {
                 for (idx, line) in row.content
                     .split(separator: "\n", omittingEmptySubsequences: false).enumerated()
                 where !line.isEmpty {
-                    let score = Self.matchScore(line: line, keywords: keywords)
-                    guard score > 0 else { continue }
+                    guard let snippet = Self.citationSnippet(in: line, keywords: keywords)
+                    else { continue }
                     scored.append((Item(
                         itemID: row.itemID, kind: "chat",
                         locator: "session:\(row.sessionID)#\(row.messageID)",
-                        lineNo: idx + 1, lineText: String(line.prefix(240)),
-                        sourceSHA256: row.contentSHA256), score))
+                        lineNo: idx + 1, lineText: snippet.text,
+                        sourceSHA256: row.contentSHA256), snippet.score))
                 }
             }
         }
@@ -205,16 +205,18 @@ public struct SimiGoInformationLoop {
             {
                 addresses.append(.init(itemID: identity, contentAddress: address))
             }
-            let haystack = row.query.isEmpty ? row.summary : "\(row.query)\n\(row.summary)"
-            let score = Self.matchScore(line: haystack, keywords: keywords)
-            guard score > 0 else { continue }
+            // Match and cite the settled summary itself: the demand's query is
+            // metadata about what was asked, not part of the settled payload,
+            // so a query-only term must not pull in an unrelated summary.
+            guard let snippet = Self.citationSnippet(in: row.summary, keywords: keywords)
+            else { continue }
             scored.append((Item(
                 itemID: identity, kind: "settlement",
                 locator: "settlement:\(row.settlementID)#summary",
-                lineNo: 1, lineText: String(row.summary.prefix(240)),
+                lineNo: 1, lineText: snippet.text,
                 sourceSHA256: row.summarySHA256,
                 derivationType: row.derivationType,
-                sourceSettlementID: row.sourceSettlementID), score))
+                sourceSettlementID: row.sourceSettlementID), snippet.score))
         }
 
         // Deterministic ranking: more distinct keywords first, then stable
@@ -304,12 +306,110 @@ public struct SimiGoInformationLoop {
         return lines.count > 2 ? lines.joined(separator: "\n") : ""
     }
 
+    // MARK: - Answer reuse gate
+
+    public struct ReusableAnswer: Equatable, Sendable {
+        public let text: String
+        public let settlementID: String
+        public let demandID: String
+        public let sourceStateID: String
+        public let sessionID: String
+        public let query: String
+    }
+
+    /// Fail-closed gate for serving a turn without a model call. Every condition
+    /// is required; any miss returns nil, which means "generate", never a
+    /// best-effort answer:
+    /// 1. this exact question was already ANSWERED in this information scope;
+    /// 2. the answering settlement is still `valid`;
+    /// 3. the retrieval settlement behind that demand is still `valid` — the
+    ///    answer row carries no file edges of its own, so this dependency check
+    ///    is what catches a source that moved since the answer was settled;
+    /// 4. the producer model and tokenizer bindings match the engine serving
+    ///    this turn, so a different model never inherits another engine's
+    ///    settled value (an absent binding refuses too, which is why a turn
+    ///    without a resolved producer identity can never reuse).
+    public func reusableAnswer(
+        sessionID: String,
+        query: String,
+        identity: SimiGoSettlementIdentityBinding.Identity
+    ) -> ReusableAnswer? {
+        guard let answered = try? database.answeredDemand(
+            sessionID: sessionID, query: query)
+        else { return nil }
+        guard let receipt = try? database.settlementReceipt(answered.answerSettlementID),
+            receipt.validity == "valid" else { return nil }
+        if let retrievalID = answered.retrievalSettlementID, !retrievalID.isEmpty {
+            guard let retrieval = try? database.settlementReceipt(retrievalID),
+                retrieval.validity == "valid" else { return nil }
+        }
+        let verdict = SimiGoSettlementIdentityBinding.evaluate(
+            recorded: receipt.bindings, consumer: identity)
+        guard verdict.status == .ok else { return nil }
+        guard let object = try? JSONSerialization.jsonObject(with: receipt.payload)
+            as? [String: Any],
+            let content = object["content"] as? String,
+            !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else { return nil }
+        return ReusableAnswer(
+            text: content, settlementID: answered.answerSettlementID,
+            demandID: answered.demandID, sourceStateID: answered.stateID,
+            sessionID: sessionID, query: query)
+    }
+
     // MARK: - Query terms
+
+    /// The question carried inside an agent request.
+    ///
+    /// Agent clients prepend their own envelope to the user turn — skills list,
+    /// memory index, date — inside tagged blocks. Measured 2026-10-29 on a real
+    /// managed request: the trailing user message was 16,276 bytes, the actual
+    /// question was its last line, and term extraction read the envelope's first
+    /// 12 tokens ("system", "reminder", "following", "skills", …). The top-30
+    /// hits were greeting settlements and LUA sources; the question's own
+    /// subject never contributed a term. The envelope is not information: it
+    /// repeats on every turn of every session.
+    ///
+    /// Removal is by block, not by position, so a client that appends its
+    /// envelope after the question is handled the same way. An unclosed block
+    /// drops its tail, which is what the observed envelope does when truncated.
+    public static func retrievalQuery(from text: String) -> String {
+        var out = text
+        for tag in ["system-reminder", "user_info", "environment_context"] {
+            out = removingBlock(tag: tag, from: out)
+        }
+        let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty
+            ? text.trimmingCharacters(in: .whitespacesAndNewlines) : trimmed
+    }
+
+    private static func removingBlock(tag: String, from text: String) -> String {
+        var out = text
+        while let open = out.range(of: "<\(tag)", options: .caseInsensitive) {
+            guard
+                let close = out.range(
+                    of: "</\(tag)>", options: .caseInsensitive,
+                    range: open.lowerBound..<out.endIndex)
+            else {
+                out.removeSubrange(open.lowerBound..<out.endIndex)
+                break
+            }
+            out.removeSubrange(open.lowerBound..<close.upperBound)
+        }
+        return out
+    }
 
     /// Terms used for line matching. A whole user question rarely appears
     /// verbatim in a document, so ASCII tokens are kept and CJK runs are
     /// expanded into overlapping bigrams. Ranking uses the number of distinct
     /// terms a line contains, which stays deterministic for settlement.
+    ///
+    /// The question sits at the END of a client envelope (measured 2026-10-29:
+    /// a 16,276-byte user turn, the question on its last line), so terms are
+    /// taken from the tail first. A wrapper that survives `retrievalQuery` then
+    /// cannot own the term list. Ordering only decides which terms survive the
+    /// limit — the canonical demand string sorts them, so settlement stays
+    /// deterministic.
     static func keywords(in query: String, limit: Int = 12) -> [String] {
         let stop: Set<String> = [
             "什么", "是什", "怎么", "如何", "为什", "哪些", "多少", "是否",
@@ -321,7 +421,9 @@ public struct SimiGoInformationLoop {
             guard !value.isEmpty, !stop.contains(value), !out.contains(value) else { return }
             out.append(value)
         }
-        for part in query.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted)
+        for part in query.lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .reversed()
         where !part.isEmpty {
             let chars = Array(part)
             if part.unicodeScalars.allSatisfy({ $0.isASCII }) || chars.count <= 2 {
@@ -342,15 +444,37 @@ public struct SimiGoInformationLoop {
         return Array(out.prefix(limit))
     }
 
-    private static func matchScore<S: StringProtocol>(
-        line: S, keywords: [String]
-    ) -> Int {
-        guard !keywords.isEmpty else { return 0 }
-        var score = 0
-        for keyword in keywords where line.localizedCaseInsensitiveContains(keyword) {
-            score += 1
+    /// A citation must contain the match that justified it, so scoring and the
+    /// quoted text come from the same bounded window: the snippet is centred on
+    /// the first keyword occurrence and every counted keyword is visible in it.
+    /// Measured 2026-10-30: matching the whole 2,447-character rollout line and
+    /// quoting its 240-character prefix injected text that never contained the
+    /// query term at all.
+    private static func citationSnippet<S: StringProtocol>(
+        in line: S, keywords: [String], maxLength: Int = 240
+    ) -> (text: String, score: Int)? {
+        let text = String(line)
+        var first: Range<String.Index>?
+        for keyword in keywords {
+            guard let range = text.range(of: keyword, options: .caseInsensitive)
+            else { continue }
+            if first == nil || range.lowerBound < first!.lowerBound { first = range }
         }
-        return score
+        guard let hit = first else { return nil }
+        let total = text.count
+        let hitOffset = text.distance(from: text.startIndex, to: hit.lowerBound)
+        // Context before the match, clamped so the window never runs past the end.
+        let startOffset = max(0, min(hitOffset - 80, max(0, total - maxLength)))
+        let endOffset = min(total, startOffset + maxLength)
+        var snippet = String(text[
+            text.index(text.startIndex, offsetBy: startOffset)
+                ..< text.index(text.startIndex, offsetBy: endOffset)])
+        if startOffset > 0 { snippet = "…" + snippet }
+        if endOffset < total { snippet += "…" }
+        let score = keywords.reduce(0) {
+            $0 + (snippet.localizedCaseInsensitiveContains($1) ? 1 : 0)
+        }
+        return (snippet, score)
     }
 
     // MARK: - Advancement
@@ -389,6 +513,7 @@ public struct SimiGoInformationLoop {
         summaryQuery: String? = nil,
         actions: [String] = ["generate"],
         contractJSON: Data? = nil,
+        declaredDependencies: [SimiGoESISDatabase.DeclaredDependency] = [],
         settledAt: Date = Date()
     ) throws -> TurnSettlement {
         let settled = try SimiGoSettlementAuthority.authorize(
@@ -414,7 +539,8 @@ public struct SimiGoInformationLoop {
                 position: position, continuationID: UUID().uuidString,
                 anchor: settled.payloadDigest, createdAt: settledAt,
                 nextInput: content),
-            advancement: advanced)
+            advancement: advanced,
+            declaredDependencies: declaredDependencies)
         if let sessionID {
             try database.linkChatSession(
                 sessionID: sessionID, stateID: stateID, modelIdentity: modelIdentity)

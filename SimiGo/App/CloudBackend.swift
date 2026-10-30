@@ -23,32 +23,81 @@ public enum BackendSelection: String, CaseIterable, Sendable {
     }
 }
 
+/// Upstream access style SimiGo adopts as its model provider.
+///
+/// All three speak the OpenAI-compatible `POST /v1/chat/completions` body, so the
+/// chat/completions path itself needs no per-provider code. What differs is the
+/// model-listing probe and whether a credential exists at all: Ollama and
+/// LM Studio bind loopback and accept requests without any API key, so a
+/// provider-blind key requirement made them unreachable even though
+/// `validated(apiKey:)` already accepted a keyless loopback base URL.
+public enum UpstreamProvider: String, CaseIterable, Sendable {
+    case openai
+    case ollama
+    case lmstudio
+
+    public var displayName: String {
+        switch self {
+        case .openai: return "OpenAI-compatible"
+        case .ollama: return "Ollama"
+        case .lmstudio: return "LM Studio"
+        }
+    }
+
+    /// Native model-enumeration path. Ollama serves `/api/tags` at its origin
+    /// root; the OpenAI-compatible servers answer under `/v1/models`.
+    public var modelsPath: String {
+        switch self {
+        case .openai, .lmstudio: return "/v1/models"
+        case .ollama: return "/api/tags"
+        }
+    }
+
+    public var defaultPort: Int {
+        switch self {
+        case .openai: return 443
+        case .ollama: return 11434
+        case .lmstudio: return 1234
+        }
+    }
+}
+
 public struct CloudBackendConfiguration: Sendable {
     nonisolated public static let defaultBaseURL = "https://open.bigmodel.cn/api/coding/paas/v4"
     nonisolated public static let defaultModel = "glm-5.3-flash"
 
     public var baseURLString: String
     public var model: String
+    public var provider: UpstreamProvider
 
     public init(
         baseURLString: String = CloudBackendConfiguration.defaultBaseURL,
-        model: String = CloudBackendConfiguration.defaultModel
+        model: String = CloudBackendConfiguration.defaultModel,
+        provider: UpstreamProvider = .openai
     ) {
         self.baseURLString = baseURLString
         self.model = model
+        self.provider = provider
     }
 
     public var baseURL: URL? {
         URL(string: baseURLString.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
+    public var isLoopbackUpstream: Bool {
+        guard let host = baseURL?.host?.lowercased() else { return false }
+        return ["127.0.0.1", "localhost", "::1", "::ffff:127.0.0.1"].contains(host)
+            || host.hasPrefix("127.")
+    }
+
+    public var requiresAPIKey: Bool { !isLoopbackUpstream }
+
     public func validated(apiKey: String) throws {
         guard let baseURL, let host = baseURL.host?.lowercased(), !host.isEmpty else {
             throw ServiceError.backendNotAvailable("云端 Base URL 无效")
         }
 
-        let isLoopback = ["127.0.0.1", "localhost", "::1"].contains(host)
-        guard isLoopback || !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard isLoopbackUpstream || !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw ServiceError.backendNotAvailable("云端 API 需要配置 API Key")
         }
     }
@@ -90,6 +139,21 @@ public struct CloudBackendConfiguration: Sendable {
             return withQuery
         }
         return baseURL
+    }
+
+    /// Provider-aware model enumeration. OpenAI-compatible bases are versioned,
+    /// so `/models` resolves through `upstreamURL`; Ollama serves its native
+    /// `/api/tags` at the origin root, which no path-joining rule can produce
+    /// from a `…/v1` base.
+    public func modelsProbeURL() -> URL? {
+        if provider == .openai { return upstreamURL(path: "/models") }
+        guard let baseURL, let scheme = baseURL.scheme, let host = baseURL.host else { return nil }
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = host
+        components.port = baseURL.port ?? provider.defaultPort
+        components.path = provider.modelsPath
+        return components.url
     }
 
     nonisolated private static func isVersionSegment(_ segment: Substring) -> Bool {

@@ -456,6 +456,70 @@ public final class SimiGoESISDatabase {
         ON execution_states(idempotency_key) WHERE idempotency_key IS NOT NULL;
     """
 
+    /// v14 is the Stage-1 answer-reuse record: a turn served from an
+    /// already-settled answer instead of a model call leaves its own row. The
+    /// source settlement is NOT rewritten and no consumer execution state is
+    /// invented (a reuse creates none), so `consumer_state_id` stays NULL.
+    /// `model_calls=0` is a column, not log text, and `canonical_digest` seals
+    /// the exact (scope, user text) key the reuse was decided on.
+    private static let v14 = """
+    CREATE TABLE IF NOT EXISTS information_reuse_events(
+        reuse_id TEXT PRIMARY KEY,
+        source_settlement_id TEXT NOT NULL,
+        source_state_id TEXT NOT NULL,
+        demand_id TEXT NOT NULL,
+        session_id TEXT NOT NULL,
+        consumer_state_id TEXT,
+        canonical_digest TEXT NOT NULL,
+        model_calls INTEGER NOT NULL CHECK(model_calls=0),
+        reused_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_information_reuse_demand
+        ON information_reuse_events(demand_id);
+    CREATE INDEX IF NOT EXISTS idx_information_reuse_source
+        ON information_reuse_events(source_settlement_id);
+    """
+
+    /// v15 is turn eligibility for chat retrieval. A user row is written when
+    /// the request starts, but it only becomes ordinary semantic memory when
+    /// that same turn produces its reply. Rows written before this migration
+    /// keep the default 'committed': their turns already happened and this
+    /// migration must not rewrite history.
+    private static let v15Columns: [(table: String, column: String, sql: String)] = [
+        ("chat_messages", "turn_state",
+         "ALTER TABLE chat_messages ADD COLUMN turn_state TEXT NOT NULL DEFAULT 'committed';"),
+    ]
+
+    private static let v15Indexes = """
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_eligible
+        ON chat_messages(session_id, turn_state, id);
+    """
+
+    /// v16 is external-source provenance. Information that passed through an
+    /// upstream API is kept in the same space as conversation, but its arrival
+    /// is not its standing: rows are written `recorded` with the provider and
+    /// the request that produced them, and only `verifyExternalTurn` — which
+    /// requires that request's own question and answer to both be present —
+    /// promotes them to `committed`. Rows written before this migration are
+    /// local conversation and keep the defaults; history is not rewritten.
+    private static let v16Columns: [(table: String, column: String, sql: String)] = [
+        ("chat_messages", "source_kind",
+         "ALTER TABLE chat_messages ADD COLUMN source_kind TEXT NOT NULL DEFAULT 'local';"),
+        ("chat_messages", "source_provider",
+         "ALTER TABLE chat_messages ADD COLUMN source_provider TEXT;"),
+        ("chat_messages", "request_id",
+         "ALTER TABLE chat_messages ADD COLUMN request_id TEXT;"),
+        ("chat_messages", "verified_at",
+         "ALTER TABLE chat_messages ADD COLUMN verified_at TEXT;"),
+    ]
+
+    private static let v16Indexes = """
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_request
+        ON chat_messages(session_id, request_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_source
+        ON chat_messages(source_kind, turn_state, id);
+    """
+
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
@@ -624,6 +688,32 @@ public final class SimiGoESISDatabase {
                 }
                 try Self.rawExec(handle, SimiGoESISDatabase.v13Indexes)
                 try recordMigrationRow(13, "simigo-managed-idempotency-v13")
+            }
+        }
+        if try schemaVersion() < 14 {
+            try transaction {
+                try Self.rawExec(handle, SimiGoESISDatabase.v14)
+                try recordMigrationRow(14, "simigo-information-reuse-v14")
+            }
+        }
+        if try schemaVersion() < 15 {
+            try transaction {
+                for column in SimiGoESISDatabase.v15Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try Self.rawExec(handle, SimiGoESISDatabase.v15Indexes)
+                try recordMigrationRow(15, "simigo-chat-turn-eligibility-v15")
+            }
+        }
+        if try schemaVersion() < 16 {
+            try transaction {
+                for column in SimiGoESISDatabase.v16Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try Self.rawExec(handle, SimiGoESISDatabase.v16Indexes)
+                try recordMigrationRow(16, "simigo-external-turn-provenance-v16")
             }
         }
     }
@@ -1398,6 +1488,21 @@ public final class SimiGoESISDatabase {
         public let advancementID: String?
     }
 
+    /// A source the producer declares this result drew on. The address must
+    /// already be a sealed carrier object, so a dependency can only cite content
+    /// the carrier holds — never an arbitrary string.
+    public struct DeclaredDependency: Sendable {
+        public let dependencyID: String
+        public let contentAddress: String
+        public let reason: String
+
+        public init(dependencyID: String, contentAddress: String, reason: String) {
+            self.dependencyID = dependencyID
+            self.contentAddress = contentAddress
+            self.reason = reason
+        }
+    }
+
     @discardableResult
     public func recordNativeSettlementWithIdentity(
         _ settled: SimiGoSettlementAuthority.SettledResult,
@@ -1430,7 +1535,8 @@ public final class SimiGoESISDatabase {
         childState: ChildExecutionState? = nil,
         advancement: InformationAdvancementPlan?,
         kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil,
-        inputSnapshotObjectID: String? = nil
+        inputSnapshotObjectID: String? = nil,
+        declaredDependencies: [DeclaredDependency] = []
     ) throws -> SettlementWithAdvancement {
         let settlementUUID = UUID()
         let settlementID = settlementUUID.uuidString
@@ -1454,6 +1560,16 @@ public final class SimiGoESISDatabase {
                     settlementID: settlementID,
                     rows: SimiGoSettlementKVBinding.bindings(for: kvRepresentation))
             }
+            // Declared sources commit with the result: a settlement can never
+            // become authoritative while silently dropping a source it claims,
+            // and a dependency that cannot be recorded rolls the settle back.
+            for dependency in declaredDependencies {
+                try appendDependencyInTransaction(
+                    dependencyID: Self.settlementDependencyID(
+                        settlementID: settlementID, dependencyID: dependency.dependencyID),
+                    contentAddress: dependency.contentAddress,
+                    reason: dependency.reason)
+            }
             if let advancement {
                 advancementID = try insertInformationAdvancementRows(.init(
                     demandID: advancement.demandID, stateID: advancement.stateID,
@@ -1464,6 +1580,12 @@ public final class SimiGoESISDatabase {
         }
         return SettlementWithAdvancement(
             settlementID: settlementUUID, advancementID: advancementID)
+    }
+
+    static func settlementDependencyID(
+        settlementID: String, dependencyID: String
+    ) -> String {
+        "settlement:\(settlementID) -> \(dependencyID)"
     }
 
     /// Insert the settlement row and the native gate's constraint-binding rows.
@@ -2494,47 +2616,350 @@ public final class SimiGoESISDatabase {
 
     // MARK: - 对话落库（Information Space：会话即信息）
 
+    /// Semantic standing of a chat turn. `ordinary` is the user's conversation;
+    /// `internalOperation` is client bookkeeping (rollout analysis, title
+    /// generation, memory extraction) that is kept as a record but never
+    /// becomes a retrieval source or a settled result. Arriving on a wire is
+    /// not what grants ordinary standing — the request declares it.
+    public enum ChatTurnEligibility: String, Sendable {
+        case ordinary
+        case internalOperation = "internal"
+    }
+
+    /// Who produced a chat line. Local turns are the app's own conversation;
+    /// external turns arrived through an upstream provider and keep that
+    /// provenance for as long as the row exists.
+    public enum ChatTurnSource: String, Sendable {
+        case local
+        case external
+    }
+
+    /// The standings a line can hold, as stored in `turn_state`. They are
+    /// distinct questions: persisted (`pending`/`recorded`/`internal`),
+    /// verified (`committed`), and retrievable (ordinary retrieval reads
+    /// `committed` rows only, further narrowed by request scope).
+    public enum ChatTurnState: String, Sendable {
+        /// Local input whose own request is still in flight.
+        case pending
+        /// Persisted with provenance, not yet verified: recorded only.
+        case recorded
+        /// Verified/settled; eligible for ordinary retrieval.
+        case committed
+        /// Client bookkeeping kept as a record, never ordinary memory.
+        case internalOperation = "internal"
+    }
+
+    /// Append one conversation line. A user row starts `pending` and only the
+    /// turn that produced it can promote it (`commitChatTurn`): ordinary
+    /// retrieval must never treat another request's in-flight input as memory.
+    /// Other roles are written at completion, so they are eligible at once.
+    /// Internal-operation rows are written `internal` and stay there.
+    ///
+    /// Returns the row id. A repeated trailing user message (tool-loop retry or
+    /// retry of a cancelled turn) reuses its existing row instead of appending
+    /// a duplicate, and the caller can still commit exactly that row.
+    @discardableResult
     public func appendChatMessage(
-        sessionID: String, role: String, content: String, model: String?, createdAt: Date
-    ) throws {
+        sessionID: String, role: String, content: String, model: String?, createdAt: Date,
+        eligibility: ChatTurnEligibility = .ordinary
+    ) throws -> Int64 {
         let data = Data(content.utf8)
         let digest = NativeSHA256.hexDigest(data)
-        try transaction {
-            let objectID = try ensureObject(data)
-            try execBinding("""
-            INSERT INTO chat_messages(session_id, role, content, model, content_sha256, created_at, content_object_id)
-            VALUES(?,?,?,?,?,?,?);
-            """) { stmt in
-                bind(stmt, 1, sessionID)
-                bind(stmt, 2, role)
-                bind(stmt, 3, "")
-                if let model { bind(stmt, 4, model) } else { sqlite3_bind_null(stmt, 4) }
-                bind(stmt, 5, digest)
-                bind(stmt, 6, Self.stamp(createdAt))
-                bind(stmt, 7, objectID)
+        let state = role == "user"
+            ? Self.pendingState(for: eligibility) : Self.completedState(for: eligibility)
+        if role == "user", let existing = try lastUserMessage(sessionID: sessionID),
+            existing.digest == digest,
+            Self.sameEligibilityClass(existing.state, state) {
+            return existing.messageID
+        }
+        return try transactionResult {
+            try insertChatMessage(
+                sessionID: sessionID, role: role, data: data, digest: digest,
+                model: model, createdAt: createdAt, state: state)
+        }
+    }
+
+    private static func pendingState(for eligibility: ChatTurnEligibility) -> String {
+        eligibility == .internalOperation
+            ? eligibility.rawValue : ChatTurnState.pending.rawValue
+    }
+
+    private static func completedState(for eligibility: ChatTurnEligibility) -> String {
+        eligibility == .internalOperation
+            ? eligibility.rawValue : ChatTurnState.committed.rawValue
+    }
+
+    /// A retry may reuse a row only of the same standing: an ordinary turn must
+    /// never adopt an internal-operation row (that would promote client
+    /// bookkeeping into ordinary memory), and an internal operation must never
+    /// adopt a conversation row.
+    private static func sameEligibilityClass(_ existing: String, _ target: String) -> Bool {
+        let internalState = ChatTurnEligibility.internalOperation.rawValue
+        if target == internalState { return existing == internalState }
+        return existing != internalState
+    }
+
+    /// Commit this turn: store the reply and promote the user row that started
+    /// the turn in one transaction, so a reader never sees the answer without
+    /// the question it answers, nor the question before the turn is done.
+    @discardableResult
+    public func commitChatTurn(
+        sessionID: String, userMessageID: Int64, assistantText: String,
+        model: String?, createdAt: Date,
+        eligibility: ChatTurnEligibility = .ordinary
+    ) throws -> Int64 {
+        let data = Data(assistantText.utf8)
+        let digest = NativeSHA256.hexDigest(data)
+        return try transactionResult {
+            let assistantID = try insertChatMessage(
+                sessionID: sessionID, role: "assistant", data: data, digest: digest,
+                model: model, createdAt: createdAt,
+                state: Self.completedState(for: eligibility))
+            if userMessageID > 0, eligibility == .ordinary {
+                try execBinding("""
+                UPDATE chat_messages SET turn_state='committed'
+                WHERE id=? AND session_id=? AND role='user' AND turn_state='pending';
+                """) { stmt in
+                    sqlite3_bind_int64(stmt, 1, userMessageID)
+                    bind(stmt, 2, sessionID)
+                }
             }
-            let rowID = sqlite3_last_insert_rowid(handle)
-            _ = try appendIndexEntryInTransaction(
-                identity: "chat:\(sessionID)/\(rowID)", objectID: objectID)
-            // Chat is information in the same space as files: one item registry,
-            // one content-addressed payload, no second copy.
-            try execBinding("""
-            INSERT INTO information_items(
-                item_id, kind, locator, source_version, source_payload_sha256, state, updated_at)
-            VALUES(?,?,?,?,?,'AVAILABLE',?)
-            ON CONFLICT(item_id) DO UPDATE SET
-                source_version=excluded.source_version,
-                source_payload_sha256=excluded.source_payload_sha256,
-                state='AVAILABLE', updated_at=excluded.updated_at;
+            return assistantID
+        }
+    }
+
+    private func insertChatMessage(
+        sessionID: String, role: String, data: Data, digest: String,
+        model: String?, createdAt: Date, state: String,
+        sourceKind: ChatTurnSource = .local, sourceProvider: String? = nil,
+        requestID: String? = nil
+    ) throws -> Int64 {
+        let objectID = try ensureObject(data)
+        try execBinding("""
+        INSERT INTO chat_messages(
+            session_id, role, content, model, content_sha256, created_at,
+            content_object_id, turn_state, source_kind, source_provider, request_id)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?);
+        """) { stmt in
+            bind(stmt, 1, sessionID)
+            bind(stmt, 2, role)
+            bind(stmt, 3, "")
+            if let model { bind(stmt, 4, model) } else { sqlite3_bind_null(stmt, 4) }
+            bind(stmt, 5, digest)
+            bind(stmt, 6, Self.stamp(createdAt))
+            bind(stmt, 7, objectID)
+            bind(stmt, 8, state)
+            bind(stmt, 9, sourceKind.rawValue)
+            bind(stmt, 10, sourceProvider)
+            bind(stmt, 11, requestID)
+        }
+        let rowID = sqlite3_last_insert_rowid(handle)
+        _ = try appendIndexEntryInTransaction(
+            identity: "chat:\(sessionID)/\(rowID)", objectID: objectID)
+        // Chat is information in the same space as files: one item registry,
+        // one content-addressed payload, no second copy.
+        try execBinding("""
+        INSERT INTO information_items(
+            item_id, kind, locator, source_version, source_payload_sha256, state, updated_at)
+        VALUES(?,?,?,?,?,'AVAILABLE',?)
+        ON CONFLICT(item_id) DO UPDATE SET
+            source_version=excluded.source_version,
+            source_payload_sha256=excluded.source_payload_sha256,
+            state='AVAILABLE', updated_at=excluded.updated_at;
+        """) { stmt in
+            bind(stmt, 1, "chat:\(sessionID)/\(rowID)")
+            bind(stmt, 2, "chat")
+            bind(stmt, 3, "session:\(sessionID)#\(rowID)")
+            bind(stmt, 4, Self.stamp(createdAt))
+            bind(stmt, 5, digest)
+            bind(stmt, 6, Self.stamp(createdAt))
+        }
+        return rowID
+    }
+
+    // MARK: - External-provider turns (recorded → verified → retrievable)
+
+    /// Record an upstream-API turn's question as soon as its request arrives.
+    /// The row keeps its provenance but stays `recorded`: an in-flight external
+    /// request is information the space holds, not history another request may
+    /// retrieve. Repeating the same request id returns the row already written
+    /// instead of appending a duplicate.
+    @discardableResult
+    public func recordExternalTurn(
+        sessionID: String, provider: String, requestID: String,
+        userText: String, model: String?, createdAt: Date,
+        eligibility: ChatTurnEligibility = .ordinary
+    ) throws -> Int64 {
+        let data = Data(userText.utf8)
+        let digest = NativeSHA256.hexDigest(data)
+        return try transactionResult {
+            if let existing = try externalRowID(
+                sessionID: sessionID, requestID: requestID, role: "user")
+            {
+                return existing
+            }
+            return try insertChatMessage(
+                sessionID: sessionID, role: "user", data: data, digest: digest,
+                model: model, createdAt: createdAt,
+                state: Self.externalState(for: eligibility),
+                sourceKind: .external, sourceProvider: provider, requestID: requestID)
+        }
+    }
+
+    /// Record the upstream reply under the same provenance. Still `recorded`:
+    /// a complete-looking body is evidence about the turn, not yet standing.
+    @discardableResult
+    public func recordExternalResponse(
+        sessionID: String, provider: String, requestID: String,
+        assistantText: String, model: String?, createdAt: Date,
+        eligibility: ChatTurnEligibility = .ordinary
+    ) throws -> Int64 {
+        let data = Data(assistantText.utf8)
+        let digest = NativeSHA256.hexDigest(data)
+        return try transactionResult {
+            if let existing = try externalRowID(
+                sessionID: sessionID, requestID: requestID, role: "assistant")
+            {
+                return existing
+            }
+            return try insertChatMessage(
+                sessionID: sessionID, role: "assistant", data: data, digest: digest,
+                model: model, createdAt: createdAt,
+                state: Self.externalState(for: eligibility),
+                sourceKind: .external, sourceProvider: provider, requestID: requestID)
+        }
+    }
+
+    /// A client that declares its call an internal operation keeps that status
+    /// across the external path too: the turn is recorded for audit and no
+    /// later verification can promote it.
+    private static func externalState(for eligibility: ChatTurnEligibility) -> String {
+        eligibility == .internalOperation
+            ? eligibility.rawValue : ChatTurnState.recorded.rawValue
+    }
+
+    /// Promote one external turn from `recorded` to `committed`. Verification is
+    /// keyed by (session, request id) and requires both sides of that request to
+    /// be present, so an answer never becomes memory without the question it
+    /// answers (nor the reverse). Rows of every other request are untouched.
+    /// Returns the number of rows promoted; 0 means the turn is incomplete or
+    /// already verified.
+    @discardableResult
+    public func verifyExternalTurn(
+        sessionID: String, requestID: String, verifiedAt: Date
+    ) throws -> Int {
+        try transactionResult {
+            guard try externalRowID(
+                sessionID: sessionID, requestID: requestID, role: "user") != nil,
+                try externalRowID(
+                    sessionID: sessionID, requestID: requestID, role: "assistant") != nil
+            else { return 0 }
+            return try execBinding("""
+            UPDATE chat_messages SET turn_state='committed', verified_at=?
+            WHERE session_id=? AND request_id=? AND source_kind='external'
+              AND turn_state='recorded';
             """) { stmt in
-                bind(stmt, 1, "chat:\(sessionID)/\(rowID)")
-                bind(stmt, 2, "chat")
-                bind(stmt, 3, "session:\(sessionID)#\(rowID)")
-                bind(stmt, 4, Self.stamp(createdAt))
-                bind(stmt, 5, digest)
-                bind(stmt, 6, Self.stamp(createdAt))
+                bind(stmt, 1, Self.stamp(verifiedAt))
+                bind(stmt, 2, sessionID)
+                bind(stmt, 3, requestID)
             }
         }
+    }
+
+    private func externalRowID(
+        sessionID: String, requestID: String, role: String
+    ) throws -> Int64? {
+        let stmt = try prepare("""
+        SELECT id FROM chat_messages
+        WHERE session_id=? AND request_id=? AND source_kind='external' AND role=?
+        ORDER BY id DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID)
+        bind(stmt, 2, requestID)
+        bind(stmt, 3, role)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return sqlite3_column_int64(stmt, 0)
+    }
+
+    public struct ChatTurnProvenance: Equatable, Sendable {
+        public let messageID: Int64
+        public let sessionID: String
+        public let role: String
+        public let turnState: String
+        public let sourceKind: String
+        public let sourceProvider: String?
+        public let requestID: String?
+        public let verifiedAt: String?
+        public let contentSHA256: String
+        /// Ordinary standing is this row's own fact; whether a given request
+        /// may consume it also depends on that request's scope.
+        public var isEligible: Bool { turnState == "committed" }
+    }
+
+    /// Read back every line a request produced, with provenance and standing.
+    /// Recorded rows are readable here without being eligible anywhere else.
+    public func chatTurnProvenance(
+        sessionID: String, requestID: String
+    ) throws -> [ChatTurnProvenance] {
+        try provenanceRows(
+            where: "session_id=? AND request_id=?", sessionID, requestID)
+    }
+
+    /// Every line of a session in arrival order. Audit surfaces use this when
+    /// the request id is not known in advance.
+    public func chatTurnProvenance(
+        sessionID: String
+    ) throws -> [ChatTurnProvenance] {
+        try provenanceRows(where: "session_id=?", sessionID)
+    }
+
+    private func provenanceRows(
+        where clause: String, _ arguments: String...
+    ) throws -> [ChatTurnProvenance] {
+        let stmt = try prepare("""
+        SELECT id, session_id, role, turn_state, source_kind, source_provider,
+               request_id, verified_at, content_sha256
+        FROM chat_messages
+        WHERE \(clause) ORDER BY id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        for (offset, argument) in arguments.enumerated() {
+            bind(stmt, Int32(offset + 1), argument)
+        }
+        var rows: [ChatTurnProvenance] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            rows.append(ChatTurnProvenance(
+                messageID: sqlite3_column_int64(stmt, 0),
+                sessionID: text(1) ?? "", role: text(2) ?? "",
+                turnState: text(3) ?? "", sourceKind: text(4) ?? "",
+                sourceProvider: text(5), requestID: text(6),
+                verifiedAt: text(7), contentSHA256: text(8) ?? ""))
+        }
+        return rows
+    }
+
+    /// Most recent user row of a session, if it has one. Only local rows take
+    /// part in retry reuse: an external row belongs to another producer's
+    /// request and must never be adopted (or promoted) by a local turn.
+    private func lastUserMessage(
+        sessionID: String
+    ) throws -> (messageID: Int64, digest: String, state: String)? {
+        let stmt = try prepare("""
+        SELECT id, content_sha256, turn_state FROM chat_messages
+        WHERE session_id=? AND role='user' AND source_kind='local'
+        ORDER BY id DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID)
+        guard sqlite3_step(stmt) == SQLITE_ROW,
+            let text = sqlite3_column_text(stmt, 1)
+        else { return nil }
+        let state = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""
+        return (sqlite3_column_int64(stmt, 0), String(cString: text), state)
     }
 
     public struct ChatMessageRow: Equatable, Sendable {
@@ -2637,7 +3062,10 @@ public final class SimiGoESISDatabase {
         public var itemID: String { "chat:\(sessionID)/\(messageID)" }
     }
 
-    /// Every stored chat message as a demand input, with its settled digest.
+    /// Eligible chat messages as demand inputs, with their settled digest.
+    /// Eligibility is the turn's own completion (`commitChatTurn`), not mere
+    /// presence in the live table: another request's in-flight user text and a
+    /// cancelled turn's input are conversation lines without semantic standing.
     func chatIndexRows(sessionIDs: [String]?) throws -> [ChatIndexRow] {
         var sql = """
         SELECT c.session_id, c.id, c.role,
@@ -2645,12 +3073,13 @@ public final class SimiGoESISDatabase {
                c.content_sha256, c.created_at
         FROM chat_messages c
         LEFT JOIN is_objects o ON o.object_id=c.content_object_id
+        WHERE c.turn_state='committed'
         """
         if let sessionIDs, !sessionIDs.isEmpty {
             let quoted = sessionIDs.map {
                 "'" + $0.replacingOccurrences(of: "'", with: "''") + "'"
             }
-            sql += " WHERE c.session_id IN (\(quoted.joined(separator: ",")))"
+            sql += " AND c.session_id IN (\(quoted.joined(separator: ",")))"
         }
         sql += " ORDER BY c.session_id, c.id;"
         let stmt = try prepare(sql)
@@ -2692,6 +3121,211 @@ public final class SimiGoESISDatabase {
         public let inputDigest: String
         public let retrievalSettlementID: String?
         public let state: String
+    }
+
+    /// The settlement that most recently answered this exact question in this
+    /// information scope, together with the retrieval settlement the demand was
+    /// resolved against. Read-only: the protocol-layer gate decides whether the
+    /// answer may be served without a model call.
+    public struct AnsweredDemand: Equatable, Sendable {
+        public let demandID: String
+        public let answerSettlementID: String
+        public let retrievalSettlementID: String?
+        public let stateID: String
+        public let advancedAt: String
+    }
+
+    public func answeredDemand(sessionID: String, query: String) throws -> AnsweredDemand? {
+        let stmt = try prepare("""
+        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
+               a.state_id, a.advanced_at
+        FROM information_demands d
+        JOIN information_advancements a ON a.demand_id=d.demand_id
+        WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
+        ORDER BY a.advanced_at DESC, a.advancement_id DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID)
+        bind(stmt, 2, query)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        func text(_ i: Int32) -> String? {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        }
+        let settlementID = text(1) ?? ""
+        guard !settlementID.isEmpty else { return nil }
+        return AnsweredDemand(
+            demandID: text(0) ?? "", answerSettlementID: settlementID,
+            retrievalSettlementID: text(2), stateID: text(3) ?? "",
+            advancedAt: text(4) ?? "")
+    }
+
+    /// Publish the demand a settlement answers, so an exact repeat of the same
+    /// question in the same session is serveable from the settlement without a
+    /// model call. The advancement names the answer settlement and no retrieval
+    /// settlement: a result produced without retrieval has no retrieval row, and
+    /// the answer's own validity is then the whole dependency check.
+    ///
+    /// An invalid settlement is never published — a demand row must not outlive
+    /// the validity of the result it points at.
+    @discardableResult
+    public func recordAnsweredDemand(
+        stateID: String,
+        sessionID: String,
+        query: String,
+        settlementID: String,
+        actions: [String],
+        advancedAt: Date = Date()
+    ) throws -> String {
+        guard let receipt = try settlementReceipt(settlementID),
+            receipt.validity == "valid"
+        else {
+            throw DatabaseError.sql(
+                "settlement \(settlementID) is not valid; a demand cannot be published for it")
+        }
+        let demandID = UUID().uuidString
+        let advancementID = UUID().uuidString
+        let inputDigest = NativeSHA256.hexDigest(
+            Data((try Self.canonicalJSON(["query": query, "session": sessionID])).utf8))
+        let actionsJSON = (try? JSONSerialization.data(
+            withJSONObject: actions, options: [.sortedKeys, .withoutEscapingSlashes]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+        let resultJSON = String(decoding: receipt.payload, as: UTF8.self)
+        let now = Self.stamp(advancedAt)
+        try transaction {
+            try execBinding("""
+            INSERT INTO information_demands(
+                demand_id, state_id, session_id, continuation_point, query,
+                required_item_ids_json, pending_obligations_json,
+                continuation_conditions_json, input_digest, retrieval_demand_id,
+                retrieval_settlement_id, state, created_at)
+            VALUES(?,?,?,'settled-answer',?,'[]','[]','[]',?,NULL,NULL,'ADVANCED',?);
+            """) { stmt in
+                bind(stmt, 1, demandID)
+                bind(stmt, 2, stateID)
+                bind(stmt, 3, sessionID)
+                bind(stmt, 4, query)
+                bind(stmt, 5, inputDigest)
+                bind(stmt, 6, now)
+            }
+            try execBinding("""
+            INSERT INTO information_advancements(
+                advancement_id, demand_id, state_id, settlement_id,
+                retrieval_settlement_id, actions_json, result_json, advanced_at)
+            VALUES(?,?,?,?,NULL,?,?,?);
+            """) { stmt in
+                bind(stmt, 1, advancementID)
+                bind(stmt, 2, demandID)
+                bind(stmt, 3, stateID)
+                bind(stmt, 4, settlementID)
+                bind(stmt, 5, actionsJSON)
+                bind(stmt, 6, resultJSON)
+                bind(stmt, 7, now)
+            }
+        }
+        return demandID
+    }
+
+    // MARK: - Answer reuse record (zero-model-call turn)
+
+    public struct InformationReuseEvent: Equatable, Sendable {
+        public let reuseID: String
+        public let sourceSettlementID: String
+        public let sourceStateID: String
+        public let demandID: String
+        public let sessionID: String
+        public let consumerStateID: String?
+        public let canonicalDigest: String
+        public let modelCalls: Int
+        public let reusedAt: String
+    }
+
+    public enum InformationReuseError: Error, Equatable {
+        case emptyField(String)
+        case sourceNotValid(String)
+    }
+
+    /// Record that `demandID` was answered by an ALREADY-SETTLED result with zero
+    /// model calls. The lookup gate ran before generation; validity is re-read
+    /// inside this write, so a settlement invalidated in between can never be
+    /// recorded as reused. `(sessionID, query)` is the exact key the lookup used;
+    /// only its digest is stored because the demand row already carries the text.
+    /// Re-recording the same demand returns the existing row unchanged.
+    @discardableResult
+    public func recordInformationReuse(
+        sourceSettlementID: String,
+        sourceStateID: String,
+        demandID: String,
+        sessionID: String,
+        query: String,
+        consumerStateID: String? = nil,
+        reusedAt: Date = Date()
+    ) throws -> InformationReuseEvent {
+        guard !demandID.isEmpty else {
+            throw InformationReuseError.emptyField("demand_id")
+        }
+        guard !sourceSettlementID.isEmpty else {
+            throw InformationReuseError.emptyField("source_settlement_id")
+        }
+        let digest = NativeSHA256.hexDigest(Data("\(sessionID)|\(query)".utf8))
+        return try transactionResult {
+            if let existing = try informationReuseEvent(demandID: demandID) {
+                return existing
+            }
+            guard let receipt = try settlementReceipt(sourceSettlementID),
+                receipt.validity == "valid"
+            else {
+                throw InformationReuseError.sourceNotValid(sourceSettlementID)
+            }
+            let reuseID = UUID().uuidString
+            let stamp = Self.stamp(reusedAt)
+            try execBinding("""
+            INSERT INTO information_reuse_events(
+                reuse_id, source_settlement_id, source_state_id, demand_id,
+                session_id, consumer_state_id, canonical_digest, model_calls,
+                reused_at)
+            VALUES(?,?,?,?,?,?,?,0,?);
+            """) { stmt in
+                bind(stmt, 1, reuseID)
+                bind(stmt, 2, sourceSettlementID)
+                bind(stmt, 3, sourceStateID)
+                bind(stmt, 4, demandID)
+                bind(stmt, 5, sessionID)
+                if let consumerStateID {
+                    bind(stmt, 6, consumerStateID)
+                } else {
+                    sqlite3_bind_null(stmt, 6)
+                }
+                bind(stmt, 7, digest)
+                bind(stmt, 8, stamp)
+            }
+            return InformationReuseEvent(
+                reuseID: reuseID, sourceSettlementID: sourceSettlementID,
+                sourceStateID: sourceStateID, demandID: demandID,
+                sessionID: sessionID, consumerStateID: consumerStateID,
+                canonicalDigest: digest, modelCalls: 0, reusedAt: stamp)
+        }
+    }
+
+    public func informationReuseEvent(demandID: String) throws -> InformationReuseEvent? {
+        let stmt = try prepare("""
+        SELECT reuse_id, source_settlement_id, source_state_id, demand_id,
+               session_id, consumer_state_id, canonical_digest, model_calls,
+               reused_at
+        FROM information_reuse_events WHERE demand_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, demandID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        func text(_ i: Int32) -> String {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        }
+        return InformationReuseEvent(
+            reuseID: text(0), sourceSettlementID: text(1), sourceStateID: text(2),
+            demandID: text(3), sessionID: text(4),
+            consumerStateID: sqlite3_column_type(stmt, 5) == SQLITE_NULL ? nil : text(5),
+            canonicalDigest: text(6),
+            modelCalls: Int(sqlite3_column_int64(stmt, 7)),
+            reusedAt: text(8))
     }
 
     public func informationDemand(demandID: String) throws -> InformationDemandRow? {
@@ -3394,6 +4028,32 @@ public final class SimiGoESISDatabase {
         guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
+    }
+
+    /// The engine an execution state was begun under, or nil when no such state
+    /// exists. A settle submitted later can only match it: replacing the engine
+    /// mid-execution is a new state, not an identity swap on the same one.
+    public func executionStateModelIdentity(_ stateID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT model_identity FROM execution_states WHERE state_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, stateID)
+        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        else { return nil }
+        return String(cString: c)
+    }
+
+    /// The parent edge a state was begun with, or nil for a root state / an
+    /// unknown state. Read back so a settle cannot silently drop the edge.
+    public func executionStateParentID(_ stateID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT parent_id FROM execution_states WHERE state_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, stateID)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
     public func executionStatePosition(_ stateID: String) throws -> Int? {

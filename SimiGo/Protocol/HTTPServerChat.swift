@@ -64,11 +64,64 @@ extension HTTPServer {
         let loop: SimiGoInformationLoop
         let sessionID: String
         let query: String
+        let userMessageID: Int64
         let resolution: SimiGoInformationLoop.Resolution
         let modelIdentity: String
         let identity: SimiGoSettlementIdentityBinding.Identity
         let parentStateID: String?
         let position: Int
+        let eligibility: SimiGoESISDatabase.ChatTurnEligibility
+    }
+
+    /// Semantic eligibility is declared by the client, never inferred from the
+    /// wire, the session, or the content. `metadata.simigo_request_scope` (or
+    /// the `X-SimiGo-Request-Scope` header) set to `internal` marks a client
+    /// bookkeeping call — rollout analysis, title generation, memory extraction
+    /// — which is recorded for audit but never becomes ordinary conversation
+    /// memory or a settled result. Anything else stays an ordinary turn.
+    static func turnEligibility(
+        from json: [String: Any], headers: [String: String]
+    ) -> SimiGoESISDatabase.ChatTurnEligibility {
+        let declared = [
+            (json["metadata"] as? [String: Any])?["simigo_request_scope"] as? String,
+            (json["client_metadata"] as? [String: Any])?["simigo_request_scope"] as? String,
+            headers["x-simigo-request-scope"],
+        ]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+            .first { !$0.isEmpty }
+        switch declared {
+        case "internal", "internal_operation", "internal-op":
+            return .internalOperation
+        default:
+            return .ordinary
+        }
+    }
+
+    /// Env-gated provenance capture used to find a real client's per-request
+    /// declaration channel. Default off. Header names are safe to record;
+    /// values are limited to a non-sensitive allowlist and never include
+    /// credentials, cookies, or arbitrary client metadata.
+    static func traceClientProvenance(headers: [String: String]) {
+        guard ProcessInfo.processInfo.environment["SIMIGO_TRACE_CLIENT_HEADERS"] == "1"
+        else { return }
+        func clean(_ raw: String) -> String {
+            let flattened = raw
+                .replacingOccurrences(of: "\r", with: " ")
+                .replacingOccurrences(of: "\n", with: " ")
+                .replacingOccurrences(of: "\"", with: "'")
+            return flattened.count <= 160
+                ? flattened : String(flattened.prefix(160)) + "…"
+        }
+        let names = headers.keys.sorted().joined(separator: ",")
+        let picked = ["originator", "user-agent", "x-codex-turn-metadata",
+                      "x-simigo-request-scope"]
+            .compactMap { name -> String? in
+                guard let value = headers[name] else { return nil }
+                return "\(name)=\"\(clean(value))\""
+            }
+            .joined(separator: " ")
+        RuntimeTraceLogger.shared.trace(
+            "[CLIENT] headers=\(names)" + (picked.isEmpty ? "" : " " + picked))
     }
 
     /// Resolve the turn's information demand BEFORE generation and persist the
@@ -86,11 +139,16 @@ extension HTTPServer {
     ) -> (messages: [JSONValue], turn: InformationTurn?) {
         let lastUser = messages.reversed().first {
             $0.object?["role"]?.string == "user"
-        }?.object?["content"]?.string
+        }?.object?["content"]?.messageText
         let querySource = queryOverride ?? lastUser
-        guard let query = querySource?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !query.isEmpty
+        guard let rawQuery = querySource?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !rawQuery.isEmpty
         else { return (messages, nil) }
+        // Retrieval, the demand row and the reuse key all see the question, not
+        // the client's per-turn envelope. Measured 2026-10-29: the envelope owned
+        // every extracted term, so 30 hits were greetings and LUA sources and the
+        // answer never used the information space it had just searched.
+        let query = SimiGoInformationLoop.retrievalQuery(from: rawQuery)
         guard let db = try? SimiGoESISDatabase(
             url: SimiGoPaths.databaseURL, createIfNeeded: true)
         else { return (messages, nil) }
@@ -99,18 +157,51 @@ extension HTTPServer {
         let infoSession = sessionID
             ?? resolveExplicitSession(from: json, headers: headers)
             ?? Self.informationScope(agentId: agentId, messages: messages)
+        let eligibility = Self.turnEligibility(from: json, headers: headers)
+        Self.traceClientProvenance(headers: headers)
         let loop = SimiGoInformationLoop(database: db)
         let resolution = try? loop.resolve(.init(
             sessionID: infoSession, query: query, includeChat: true,
             chatSessionIDs: [infoSession], limit: 30))
-        let context = resolution.map { loop.contextBlock($0) } ?? ""
+        let retrieval = resolution ?? SimiGoInformationLoop.Resolution(
+            demandID: "", stateID: nil, reused: false, hits: [], inputDigest: "",
+            resultSHA256: "", retrievalSettlementID: "", itemIDs: [], staleItemIDs: [])
+        let candidate = resolution.map { loop.contextBlock($0) } ?? ""
+        // The turn this block is attached to. Inside a tool loop the client
+        // repeats the same trailing user message every request, so this is a
+        // mid-chain position the engine has already committed.
+        let target = messages.lastIndex(where: {
+            $0.object?["role"]?.string == "user"
+        })
+        let turnText = target.flatMap { messages[$0].object?["content"]?.messageText } ?? query
+        let snapshot = Self.contextFreezingEnabled
+            ? SimiGoISContextLedger.shared.stabilize(
+                scope: infoSession, userText: turnText,
+                block: candidate, resolution: retrieval)
+            : SimiGoISContextLedger.Snapshot(
+                block: candidate, resolution: retrieval,
+                isReplay: false, candidateChanged: false)
+        let context = snapshot.block
+        // One readable line per turn: the landed index is the fact that decides
+        // whether the committed prefix drifts — a mid-chain index sits inside
+        // what the engine already rendered, `tail` does not.
+        RuntimeTraceLogger.shared.trace(
+            "[IS] contextInject scope=\(infoSession)"
+                + " index=\(target.map { String($0) } ?? "tail")"
+                + " bytes=\(context.utf8.count) candidateBytes=\(candidate.utf8.count)"
+                + " replay=\(snapshot.isReplay ? 1 : 0)"
+                + (snapshot.candidateChanged ? " frozenStale=1" : "")
+                + (eligibility == .internalOperation ? " eligibility=internal" : "")
+        )
 
         // Persist only this turn's user text, not the whole request envelope:
         // re-storing the accumulated history would make every later retrieval
-        // return the same duplicated block.
-        try? db.appendChatMessage(
+        // return the same duplicated block. The row starts ineligible and is
+        // promoted only when this turn's reply is committed; a declared
+        // internal operation never becomes eligible at all.
+        let userMessageID = (try? db.appendChatMessage(
             sessionID: infoSession, role: "user", content: query,
-            model: modelId, createdAt: Date())
+            model: modelId, createdAt: Date(), eligibility: eligibility)) ?? -1
 
         let producer = informationTurnProducer?()
         let parent = (try? db.currentChatStateID(sessionID: infoSession)) ?? nil
@@ -119,28 +210,42 @@ extension HTTPServer {
             .map { $0 + 1 } ?? 0
         let turn = InformationTurn(
             db: db, loop: loop, sessionID: infoSession, query: query,
-            resolution: resolution ?? SimiGoInformationLoop.Resolution(
-                demandID: "", stateID: nil, reused: false, hits: [],
-                inputDigest: "", resultSHA256: "", retrievalSettlementID: "",
-                itemIDs: [], staleItemIDs: []),
+            userMessageID: userMessageID,
+            resolution: snapshot.resolution,
             modelIdentity: producer?.modelIdentity ?? modelId,
-            identity: producer?.identity
-                ?? .init(model: "unspecified", tokenizer: "unspecified"),
-            parentStateID: parent, position: position)
-        guard !context.isEmpty else { return (messages, turn) }
+            identity: producer?.identity ?? .absent,
+            parentStateID: parent, position: position,
+            eligibility: eligibility)
         var augmented = messages
-        // The block must not enter the reusable prefix: the prefix pool keys on the
-        // token chain of the message list, and this block changes on every turn
-        // because this turn's own user text is already settled into the IS. Leading
-        // system insertion therefore destroyed every cross-ES KV bind (measured
-        // 2026-10-26: identical request bodies → mode=cold, cacheHitTokens=0).
-        // Appending to the trailing user turn keeps the leading prefix byte-stable.
-        if let lastUser = augmented.lastIndex(where: {
-            $0.object?["role"]?.string == "user"
-        }), var obj = augmented[lastUser].object, obj["content"]?.string != nil {
-            obj["content"] = .string(obj["content"]!.string! + "\n\n" + context)
-            augmented[lastUser] = .object(obj)
-        } else {
+        func attach(_ block: String, at index: Int) {
+            guard !block.isEmpty, var object = augmented[index].object,
+                let content = object["content"]
+            else { return }
+            // 写回规范 .string 形态：注入点两侧（IS 冻结键 / 引擎前缀对账）
+            // 必须看到同一表示，multipart 原形在此收敛。
+            object["content"] = .string(content.messageText + "\n\n" + block)
+            augmented[index] = .object(object)
+        }
+        // The block must not be re-retrieved per turn into a committed message:
+        // the engine reuses its prefix only while every previously rendered
+        // message stays byte-identical, and a fresh block here cost a full cold
+        // prefill every turn (measured 2026-10-26/27: mode=cold, cacheHitTokens=0).
+        // Older user turns already carry their frozen block in the engine's
+        // ledger, so replay exactly what was committed for them.
+        if Self.contextFreezingEnabled {
+            let ledger = SimiGoISContextLedger.shared
+            for index in augmented.indices {
+                guard index != target,
+                    augmented[index].object?["role"]?.string == "user",
+                    let text = augmented[index].object?["content"]?.messageText,
+                    let replay = ledger.frozenBlock(scope: infoSession, userText: text)
+                else { continue }
+                attach(replay, at: index)
+            }
+        }
+        if let target {
+            attach(context, at: target)
+        } else if !context.isEmpty {
             augmented.append(
                 .object(["role": .string("user"), "content": .string(context)]))
         }
@@ -149,12 +254,47 @@ extension HTTPServer {
 
     /// Settle the produced turn: chat text into the IS, then one authoritative
     /// transaction for ES state + settlement + producer identity + advancement.
-    func settleInformationTurn(_ turn: InformationTurn, assistantText: String) {
+    ///
+    /// `completion` is the engine's verdict for THIS turn: a turn that did not
+    /// finish stays in the conversation but registers no settlement, so it can
+    /// never be served later as a settled, reusable answer.
+    ///
+    /// `producedToolCalls` marks an intermediate turn of a tool loop — narration
+    /// the client is about to continue, not an answer. Measured 2026-10-29: three
+    /// such lines ("工作区里没有直接包含…", 71–150 B) were settled `valid` with full
+    /// producer bindings, which makes a progress note a candidate reusable
+    /// answer. The conversation line is still stored; only the claim that this
+    /// text answers the demand is withheld.
+    func settleInformationTurn(
+        _ turn: InformationTurn,
+        assistantText: String,
+        completion: GenerationCompletion,
+        producedToolCalls: Bool = false
+    ) {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        try? turn.db.appendChatMessage(
-            sessionID: turn.sessionID, role: "assistant", content: text,
-            model: modelId, createdAt: Date())
+        try? turn.db.commitChatTurn(
+            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+            assistantText: text, model: modelId, createdAt: Date(),
+            eligibility: turn.eligibility)
+        guard turn.eligibility == .ordinary else {
+            RuntimeTraceLogger.shared.trace(
+                "[SETTLE_SKIP] wire=chat reason=internal_operation "
+                    + "session=\(turn.sessionID) settlement_written=0")
+            return
+        }
+        guard completion.isSettleable else {
+            RuntimeTraceLogger.shared.trace(
+                "[SETTLE_SKIP] wire=chat completion=\(completion.wireName) "
+                    + "session=\(turn.sessionID) settlement_written=0")
+            return
+        }
+        guard !producedToolCalls else {
+            RuntimeTraceLogger.shared.trace(
+                "[SETTLE_SKIP] wire=chat reason=tool_calls "
+                    + "session=\(turn.sessionID) settlement_written=0")
+            return
+        }
         _ = try? turn.loop.settleTurn(
             generatedText: text,
             resolution: turn.resolution,
@@ -168,6 +308,148 @@ extension HTTPServer {
             actions: ["chat.completion"])
     }
 
+    /// The chat wire has no incomplete status, so `finish_reason: length` is all
+    /// a client can be told there. This block carries what the wire cannot: the
+    /// exact termination cause and the fact that nothing was settled. It appears
+    /// only on a turn that did not finish, so a normal turn is unchanged.
+    private func chatCompletionBlock(
+        _ completion: GenerationCompletion
+    ) -> [String: Any]? {
+        guard !completion.isSettleable else { return nil }
+        return [
+            "completion": completion.wireName,
+            "settlement_written": false,
+        ]
+    }
+
+    // MARK: - Automatic Information-Space answer reuse (zero model call)
+
+    /// A settled answer the Information Space can serve for this turn.
+    struct ReusableAnswer {
+        let text: String
+        let settlementID: String
+        let demandID: String
+        let sourceStateID: String
+    }
+
+    /// On by default: 「可以复用就不调用模型」 is the product behaviour, and
+    /// `SIMIGO_IS_ANSWER_REUSE=0` is the diagnostic off-switch used to prove a
+    /// reading came from the model rather than from the Information Space.
+    static var isAnswerReuseEnabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_IS_ANSWER_REUSE"] != "0"
+    }
+
+    /// Prefix-stable Information-Space injection is on by default.
+    /// `SIMIGO_IS_CONTEXT_FREEZE=0` restores the per-turn fresh block, which is
+    /// the diagnostic channel used to prove a `mode=cold` reading came from the
+    /// drifting block rather than from something else.
+    static var contextFreezingEnabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"] != "0"
+    }
+
+    /// The gate itself lives in the loop so every entry point shares one
+    /// fail-closed rule set and the rejection cases are testable without HTTP.
+    /// This only adds the diagnostic off-switch and the handler's own shape.
+    func reusableAnswer(for turn: InformationTurn) -> ReusableAnswer? {
+        guard Self.isAnswerReuseEnabled,
+            let reuse = turn.loop.reusableAnswer(
+                sessionID: turn.sessionID, query: turn.query,
+                identity: turn.identity)
+        else { return nil }
+        return ReusableAnswer(
+            text: reuse.text, settlementID: reuse.settlementID,
+            demandID: reuse.demandID, sourceStateID: reuse.sourceStateID)
+    }
+
+    /// Serving a reused answer is a read, not a new generation: no settlement is
+    /// written (the original stays the single authoritative record of that text),
+    /// and only the conversation line is stored so the next turn sees the same
+    /// history the client sees. The reuse itself is a row, not just a trace line,
+    /// so a later reader can verify the zero-model-call path from the database
+    /// alone.
+    func recordReusedAnswer(_ reuse: ReusableAnswer, turn: InformationTurn) {
+        try? turn.db.commitChatTurn(
+            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+            assistantText: reuse.text, model: modelId, createdAt: Date(),
+            eligibility: turn.eligibility)
+        let demandID = turn.resolution.demandID.isEmpty
+            ? reuse.demandID : turn.resolution.demandID
+        _ = try? turn.db.recordInformationReuse(
+            sourceSettlementID: reuse.settlementID,
+            sourceStateID: reuse.sourceStateID,
+            demandID: demandID,
+            sessionID: turn.sessionID,
+            query: turn.query)
+        RuntimeTraceLogger.shared.trace(
+            "[IS_REUSE] settlement=\(reuse.settlementID) demand=\(demandID) "
+                + "state=\(reuse.sourceStateID) model_calls=0")
+    }
+
+    /// The wire shape a stream client expects for a reused answer: one content
+    /// chunk, one stop chunk, `[DONE]`. Most OpenAI-compatible agents stream by
+    /// default, so a short-circuit that only existed on the non-streaming path
+    /// would leave the zero-model-call behaviour invisible to them.
+    private func serveReusedAnswerStream(
+        _ reuse: ReusableAnswer,
+        context: ConnectionContext
+    ) -> Bool {
+        var headers = corsHeaders()
+        headers["Content-Type"] = "text/event-stream; charset=utf-8"
+        headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        headers["X-Accel-Buffering"] = "no"
+        headers["Connection"] = "keep-alive"
+        headers["X-Request-Id"] = context.requestId
+        if let clientRequestId = context.clientRequestId {
+            headers["X-Client-Request-Id"] = clientRequestId
+        }
+        guard
+            sendImmediateStreamingHeaders(
+                status: 200, headers: headers, context: context)
+        else { return false }
+
+        let responseId = "chatcmpl-\(UUID().uuidString.lowercased())"
+        let created = Int(Date().timeIntervalSince1970)
+
+        sendImmediateSSEChunk(
+            [
+                "id": responseId,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": modelId,
+                "choices": [[
+                    "index": 0,
+                    "delta": ["role": "assistant", "content": reuse.text],
+                    "finish_reason": NSNull(),
+                ]],
+                "simigo": [
+                    "answer_reuse": true,
+                    "model_calls": 0,
+                    "settlement_id": reuse.settlementID,
+                    "demand_id": reuse.demandID,
+                    "source_state_id": reuse.sourceStateID,
+                ],
+            ],
+            context: context)
+
+        sendImmediateSSEChunk(
+            [
+                "id": responseId,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": modelId,
+                "choices": [[
+                    "index": 0,
+                    "delta": [String: Any](),
+                    "finish_reason": "stop",
+                ]],
+            ],
+            context: context)
+
+        sendImmediateSSERaw(
+            Data("data: [DONE]\n\n".utf8), context: context, close: true)
+        return true
+    }
+
     /// Chat grouping key when the client supplies no session. Derived from the
     /// conversation's opening messages, which clients resend on every turn.
     static func informationScope(agentId: String?, messages: [JSONValue]) -> String {
@@ -177,7 +459,7 @@ extension HTTPServer {
                 let role = object["role"]?.string,
                 role == "system" || role == "user"
             else { continue }
-            seed += "|\(role):\(object["content"]?.string ?? "")"
+            seed += "|\(role):\(object["content"]?.messageText ?? "")"
             if role == "user" { break }
         }
         let digest = SimiGoSettlementAuthority.payloadDigest(Data(seed.utf8))
@@ -242,7 +524,29 @@ extension HTTPServer {
             }
         }
 
-        guard context.markGenerationStarted() else {
+        // Same governance rule as the non-streaming path; only the wire form
+        // differs. The row is written after the stream is accepted so a failed
+        // header write cannot leave a reuse recorded for an answer nobody saw.
+        if (tools ?? []).isEmpty, let turn = information.turn,
+            let reuse = reusableAnswer(for: turn),
+            serveReusedAnswerStream(reuse, context: context)
+        {
+            recordReusedAnswer(reuse, turn: turn)
+            return
+        }
+
+        // W4/A: the verdict is taken AFTER IS injection and BEFORE the SSE head
+        // or any model work. A refusal writes its 503 here and nothing else.
+        if await rejectOnRequestBudget(
+            messages: turnMessages,
+            tools: tools,
+            config: config,
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId,
+            headers: headers,
+            context: context
+        ) {
             return
         }
 
@@ -254,6 +558,23 @@ extension HTTPServer {
                 success: isSuccess,
                 failureReason: failureReason
             )
+        }
+
+        guard let admissionTicket = await acquireGenerationAdmission(
+            for: context,
+            endpoint: "chat.completions"
+        ) else {
+            failureReason = "concurrency_rejected"
+            return
+        }
+        defer {
+            releaseGenerationAdmission(
+                admissionTicket,
+                endpoint: "chat.completions")
+        }
+
+        guard context.markGenerationStarted() else {
+            return
         }
 
         context.setIdentity(
@@ -361,7 +682,7 @@ extension HTTPServer {
                 return
             }
 
-            _ = try await generateHandler(
+            let result = try await generateHandler(
                 context.requestId,
                 agentId,
                 sessionId,
@@ -371,6 +692,10 @@ extension HTTPServer {
                 config,
 
                 { [weak self, weak context] text in
+                    if let self, let context {
+                        self.stopDetachedOrphanIfContended(context)
+                    }
+
                     guard
                         let self,
                         let context,
@@ -459,25 +784,33 @@ extension HTTPServer {
 
             if let turn = information.turn {
                 settleInformationTurn(
-                    turn, assistantText: streamedContent.value)
+                    turn,
+                    assistantText: streamedContent.value,
+                    completion: result.completion,
+                    producedToolCalls: hasToolCalls.value)
+            }
+
+            var terminalChunk: [String: Any] = [
+                "id": responseId,
+                "object":
+                    "chat.completion.chunk",
+                "created": created,
+                "model": modelId,
+                "choices": [[
+                    "index": 0,
+                    "delta": [String: Any](),
+                    "finish_reason":
+                        hasToolCalls.value
+                        ? "tool_calls"
+                        : result.completion.finishReason
+                ]]
+            ]
+            if let completionBlock = chatCompletionBlock(result.completion) {
+                terminalChunk["simigo"] = completionBlock
             }
 
             sendImmediateSSEChunk(
-                [
-                    "id": responseId,
-                    "object":
-                        "chat.completion.chunk",
-                    "created": created,
-                    "model": modelId,
-                    "choices": [[
-                        "index": 0,
-                        "delta": [String: Any](),
-                        "finish_reason":
-                            hasToolCalls.value
-                            ? "tool_calls"
-                            : "stop"
-                    ]]
-                ],
+                terminalChunk,
                 context: context
             )
 
@@ -589,7 +922,7 @@ extension HTTPServer {
             isComplete: false,
             completion: .contentProcessed { [weak self, weak context] error in
                 guard let self, let context, let error else { return }
-                self.terminate(context, cancelGeneration: true)
+                self.terminateForClientGone(context)
                 _ = error
             }
         )
@@ -626,7 +959,7 @@ extension HTTPServer {
             completion: .contentProcessed { [weak self, weak context] error in
                 guard let self, let context else { return }
                 if error != nil {
-                    self.terminate(context, cancelGeneration: true)
+                    self.terminateForClientGone(context)
                 }
             }
         )
@@ -652,7 +985,7 @@ extension HTTPServer {
                 guard let self, let context else { return }
 
                 if error != nil {
-                    self.terminate(context, cancelGeneration: true)
+                    self.terminateForClientGone(context)
                 } else if close {
                     self.finish(context)
                     context.connection.cancel()
@@ -719,7 +1052,53 @@ extension HTTPServer {
             }
         }
 
-        guard context.markGenerationStarted() else {
+        // Automatic governance, before any model work: a turn whose question was
+        // already answered in this information scope is served from the
+        // Information Space. Tool-calling turns never reuse — a settled text
+        // cannot satisfy a tool-call contract. Placed after the fork so an
+        // explicit branch request still takes effect on a reused turn.
+        if (tools ?? []).isEmpty, let turn = information.turn,
+            let reuse = reusableAnswer(for: turn)
+        {
+            recordReusedAnswer(reuse, turn: turn)
+            sendJSON(
+                [
+                    "id": "chatcmpl-\(UUID().uuidString.lowercased())",
+                    "object": "chat.completion",
+                    "created": Int(Date().timeIntervalSince1970),
+                    "model": modelId,
+                    "choices": [[
+                        "index": 0,
+                        "message": ["role": "assistant", "content": reuse.text],
+                        "finish_reason": "stop",
+                    ]],
+                    "simigo": [
+                        "answer_reuse": true,
+                        "model_calls": 0,
+                        "settlement_id": reuse.settlementID,
+                        "demand_id": reuse.demandID,
+                        "source_state_id": reuse.sourceStateID,
+                    ],
+                ],
+                status: 200,
+                on: context.connection,
+                context: context
+            )
+            return
+        }
+
+        // W4/A: same gate as the streaming path; a reused/tool turn already
+        // returned above and never reaches it.
+        if await rejectOnRequestBudget(
+            messages: turnMessages,
+            tools: tools,
+            config: config,
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId,
+            headers: headers,
+            context: context
+        ) {
             return
         }
 
@@ -731,6 +1110,23 @@ extension HTTPServer {
                 success: isSuccess,
                 failureReason: failureReason
             )
+        }
+
+        guard let admissionTicket = await acquireGenerationAdmission(
+            for: context,
+            endpoint: "chat.completions"
+        ) else {
+            failureReason = "concurrency_rejected"
+            return
+        }
+        defer {
+            releaseGenerationAdmission(
+                admissionTicket,
+                endpoint: "chat.completions")
+        }
+
+        guard context.markGenerationStarted() else {
+            return
         }
 
         context.setIdentity(
@@ -775,7 +1171,7 @@ extension HTTPServer {
                 return
             }
 
-            _ = try await generateHandler(
+            let result = try await generateHandler(
                 context.requestId,
                 agentId,
                 sessionId,
@@ -784,7 +1180,11 @@ extension HTTPServer {
                 tools,
                 config,
 
-                { text in
+                { [weak self, weak context] text in
+                    if let self, let context {
+                        self.stopDetachedOrphanIfContended(context)
+                    }
+
                     fullContent.mutate {
                         $0.append(text)
                     }
@@ -815,7 +1215,11 @@ extension HTTPServer {
             let message: [String: Any]
 
             if let turn = information.turn {
-                settleInformationTurn(turn, assistantText: content)
+                settleInformationTurn(
+                    turn,
+                    assistantText: content,
+                    completion: result.completion,
+                    producedToolCalls: !calls.isEmpty)
             }
             if calls.isEmpty {
                 message = [
@@ -840,7 +1244,7 @@ extension HTTPServer {
                 ]
             }
 
-            let responseBody: [String: Any] = [
+            var responseBody: [String: Any] = [
                 "id":
                     "chatcmpl-\(UUID().uuidString.lowercased())",
                 "object":
@@ -856,10 +1260,13 @@ extension HTTPServer {
                     "message": message,
                     "finish_reason":
                         calls.isEmpty
-                            ? "stop"
+                            ? result.completion.finishReason
                             : "tool_calls"
                 ]]
             ]
+            if let completionBlock = chatCompletionBlock(result.completion) {
+                responseBody["simigo"] = completionBlock
+            }
 
             if keepalive.committed {
                 sendDeferredJSONTerminal(
@@ -1091,7 +1498,7 @@ extension HTTPServer {
             isComplete: false,
             completion: .contentProcessed { [weak self, weak context] error in
                 guard let self, let context, let error else { return }
-                self.terminate(context, cancelGeneration: true)
+                self.terminateForClientGone(context)
                 _ = error
             }
         )

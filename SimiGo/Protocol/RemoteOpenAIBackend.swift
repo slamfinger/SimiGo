@@ -59,10 +59,12 @@ public struct RemoteOpenAIBackend: @unchecked Sendable {
         }
 
         let authorization = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !authorization.isEmpty else {
+        guard !authorization.isEmpty || !configuration.requiresAPIKey else {
             throw ServiceError.backendNotAvailable("云端 API 需要配置 API Key")
         }
-        request.setValue("Bearer \(authorization)", forHTTPHeaderField: "Authorization")
+        if !authorization.isEmpty {
+            request.setValue("Bearer \(authorization)", forHTTPHeaderField: "Authorization")
+        }
 
         if body.isEmpty {
             request.httpBody = nil
