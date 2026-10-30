@@ -67,4 +67,60 @@ final class TypesBridgeTests: XCTestCase {
             [String: JSONValue].self, from: Data(call.argumentsJSON.utf8))
         XCTAssertEqual(decoded, call.arguments)
     }
+
+    // MARK: - messageText（W1：message content 的唯一规范文本形态）
+
+    /// 核心不变量：同一语义的两种 wire 表示（string / parts 数组）必须收敛为
+    /// 同一串字节。IS 取值、prefill 规模估算、KV 前缀对账三处若读到不同形态，
+    /// multipart 接入就进不了治理（2026-10-28 真实模型窗口实证 est=0 + IS 早退）。
+    func testMessageTextCollapsesBothWireShapes() {
+        let plain = JSONValue.string("你好，世界")
+        let multipart = JSONValue.array([
+            .object(["type": .string("text"), "text": .string("你好，")]),
+            .object(["type": .string("text"), "text": .string("世界")]),
+        ])
+        XCTAssertEqual(plain.messageText, multipart.messageText)
+        XCTAssertEqual(multipart.messageText, "你好，世界")
+    }
+
+    func testMessageTextSkipsPartsWithoutTextField() {
+        let value = JSONValue.array([
+            .object(["type": .string("text"), "text": .string("a")]),
+            .object([
+                "type": .string("image_url"),
+                "image_url": .object(["url": .string("https://example.test/x.png")]),
+            ]),
+            .object(["type": .string("text"), "text": .string("b")]),
+            .string("c"),
+        ])
+        XCTAssertEqual(value.messageText, "abc")
+    }
+
+    func testMessageTextScalarAndEmptyForms() {
+        XCTAssertEqual(JSONValue.null.messageText, "")
+        XCTAssertEqual(JSONValue.string("").messageText, "")
+        XCTAssertEqual(JSONValue.bool(true).messageText, "true")
+        XCTAssertEqual(JSONValue.number(5).messageText, String(5.0))
+        XCTAssertEqual(
+            JSONValue.object(["type": .string("text"), "text": .string("t")]).messageText, "t")
+    }
+
+    /// 分组键两侧同形，否则同一会话换一种 content 表示就裂成两个 IS scope。
+    func testInformationScopeIsRepresentationInvariant() {
+        let system: JSONValue = .object([
+            "role": .string("system"), "content": .string("你是助手")
+        ])
+        let userPlain = JSONValue.object([
+            "role": .string("user"), "content": .string("你好")
+        ])
+        let userMultipart = JSONValue.object([
+            "role": .string("user"),
+            "content": .array([
+                .object(["type": .string("text"), "text": .string("你好")])
+            ]),
+        ])
+        let plain = HTTPServer.informationScope(agentId: "a1", messages: [system, userPlain])
+        let multipart = HTTPServer.informationScope(agentId: "a1", messages: [system, userMultipart])
+        XCTAssertEqual(plain, multipart)
+    }
 }

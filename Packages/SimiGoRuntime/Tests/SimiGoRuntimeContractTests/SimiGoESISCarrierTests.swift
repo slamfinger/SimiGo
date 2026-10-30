@@ -118,7 +118,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(row?.createdOrder, 1)
 
         let report = try db.carrierReport(deepVerify: true)
-        XCTAssertEqual(report.schemaVersion, 13)
+        XCTAssertEqual(report.schemaVersion, 15)
         XCTAssertEqual(report.objectCount, 1)
         XCTAssertEqual(report.objectBytes, Int64(data.count))
         XCTAssertEqual(report.corruptObjects, 0)
@@ -324,7 +324,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(try db.schemaVersion(), 7)
 
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 13)
+        XCTAssertEqual(try db.schemaVersion(), 15)
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedFileContents, 0)

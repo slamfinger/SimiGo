@@ -56,7 +56,7 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
             port: 59_218,
             modelId: "settlement-contract-test",
             generateHandler: { _, _, _, _, _, _, _, _, _ in
-                GenerationResult(text: "", usage: nil)
+                GenerationResult(text: "", usage: nil, completion: .complete)
             },
             forkBranchHandler: { _, _, _, _ in
                 SessionCacheMetadata(

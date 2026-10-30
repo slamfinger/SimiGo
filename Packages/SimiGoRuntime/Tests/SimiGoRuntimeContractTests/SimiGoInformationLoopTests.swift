@@ -97,9 +97,12 @@ final class SimiGoInformationLoopTests: XCTestCase {
         }
         try write("needle in file", to: root, name: "a.md")
         try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
-        try db.appendChatMessage(
+        let chatUserID = try db.appendChatMessage(
             sessionID: "s1", role: "user", content: "needle in chat",
             model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: "s1", userMessageID: chatUserID,
+            assistantText: "记下了", model: nil, createdAt: Date())
 
         let loop = SimiGoInformationLoop(database: db)
         let first = try loop.resolve(.init(
@@ -128,6 +131,170 @@ final class SimiGoInformationLoopTests: XCTestCase {
         let payload = try XCTUnwrap(
             try db.informationRetrievalPayload(demandID: first.demandID))
         XCTAssertEqual(NativeSHA256.hexDigest(payload), first.resultSHA256)
+    }
+
+    // MARK: - P1/P2: retrieval boundary (measured 2026-10-30)
+
+    /// A cited fragment must contain the match that produced it. Measured
+    /// 2026-10-30: a 2,447-character rollout line matched on a term at
+    /// character 566 while the injected citation was that line's first 240
+    /// characters — text that never contained the query at all.
+    func testCitationWindowContainsTheMatchThatSelectedIt() throws {
+        let (url, db) = try open("snippet")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let preamble = String(repeating: "background line ", count: 70)
+        try write(preamble + " needle-tail", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+
+        let loop = SimiGoInformationLoop(database: db)
+        let resolution = try loop.resolve(.init(query: "needle-tail", includeChat: false))
+        let hit = try XCTUnwrap(resolution.hits.first { $0.itemID == "file:work/a.md" })
+        XCTAssertTrue(hit.lineText.contains("needle-tail"))
+        XCTAssertLessThanOrEqual(hit.lineText.count, 242)
+        XCTAssertTrue(
+            hit.lineText.hasPrefix("…"),
+            "the window starts near the match, not at the line's beginning")
+    }
+
+    /// A user line whose own request has not completed is not history. Measured
+    /// 2026-10-30: four Codex requests shared one session and the greeting
+    /// retrieved a background rollout prompt that was still in flight.
+    func testInFlightUserTextIsNotRetrievable() throws {
+        let (url, db) = try open("in-flight")
+        defer { db.close(); cleanup(url) }
+        let loop = SimiGoInformationLoop(database: db)
+
+        let inFlight = try db.appendChatMessage(
+            sessionID: "s", role: "user",
+            content: "Analyze this rollout and produce rollout_summary",
+            model: nil, createdAt: Date())
+        let greeting = try loop.resolve(.init(
+            sessionID: "s", query: "你好", includeChat: true, chatSessionIDs: ["s"]))
+        XCTAssertTrue(greeting.hits.isEmpty)
+        XCTAssertEqual(loop.contextBlock(greeting), "")
+
+        // Completion — not arrival order — is what makes the line history.
+        try db.commitChatTurn(
+            sessionID: "s", userMessageID: inFlight,
+            assistantText: "已完成后台分析", model: nil, createdAt: Date())
+        let later = try loop.resolve(.init(
+            sessionID: "s", query: "rollout", includeChat: true, chatSessionIDs: ["s"]))
+        XCTAssertEqual(later.hits.map(\.itemID), ["chat:s/\(inFlight)"])
+        XCTAssertTrue(try XCTUnwrap(later.hits.first).lineText.contains("rollout_summary"))
+    }
+
+    /// Four concurrent requests on one session, the Codex shape: the visible
+    /// turn plus background rollout analysis, title generation and memory
+    /// extraction. None of them may read another's in-flight input, and a
+    /// request that never commits never becomes ordinary memory.
+    func testFourConcurrentTurnsNeverSeeEachOthersInFlightInput() throws {
+        let (url, db) = try open("concurrent")
+        defer { db.close(); cleanup(url) }
+        let loop = SimiGoInformationLoop(database: db)
+
+        let greetingID = try db.appendChatMessage(
+            sessionID: "s", role: "user", content: "你好",
+            model: nil, createdAt: Date())
+        let rolloutID = try db.appendChatMessage(
+            sessionID: "s", role: "user",
+            content: "Analyze this rollout and produce JSON with rollout_summary",
+            model: nil, createdAt: Date(), eligibility: .internalOperation)
+        let titleID = try db.appendChatMessage(
+            sessionID: "s", role: "user",
+            content: "Generate a concise title for this conversation",
+            model: nil, createdAt: Date(), eligibility: .internalOperation)
+        let memoryID = try db.appendChatMessage(
+            sessionID: "s", role: "user",
+            content: "raw_memory extraction for the previous rollout",
+            model: nil, createdAt: Date(), eligibility: .internalOperation)
+
+        // Every request resolves while all four turns are still in flight.
+        for query in ["你好", "rollout", "title", "raw_memory"] {
+            let resolution = try loop.resolve(.init(
+                sessionID: "s", query: query, includeChat: true,
+                chatSessionIDs: ["s"]))
+            XCTAssertTrue(
+                resolution.hits.isEmpty,
+                "query \(query) retrieved another request's in-flight line")
+            XCTAssertEqual(loop.contextBlock(resolution), "")
+        }
+
+        // Only the greeting completes. Its turn becomes history; the three
+        // background requests stay pending and stay invisible.
+        try db.commitChatTurn(
+            sessionID: "s", userMessageID: greetingID,
+            assistantText: "你好！有什么可以帮你？", model: nil, createdAt: Date())
+        let afterGreeting = try loop.resolve(.init(
+            sessionID: "s", query: "rollout", includeChat: true,
+            chatSessionIDs: ["s"]))
+        XCTAssertTrue(afterGreeting.hits.isEmpty)
+
+        // A background request that completes is still not ordinary memory:
+        // provenance decides eligibility, not completion.
+        try db.commitChatTurn(
+            sessionID: "s", userMessageID: rolloutID,
+            assistantText: "{\"rollout_summary\":\"background analysis\"}",
+            model: nil, createdAt: Date(), eligibility: .internalOperation)
+        let afterInternal = try loop.resolve(.init(
+            sessionID: "s", query: "rollout", includeChat: true,
+            chatSessionIDs: ["s"]))
+        XCTAssertTrue(afterInternal.hits.isEmpty)
+
+        let visible = try db.chatIndexRows(sessionIDs: ["s"])
+        XCTAssertEqual(visible.map(\.role), ["user", "assistant"])
+        XCTAssertEqual(visible.map(\.content), ["你好", "你好！有什么可以帮你？"])
+        XCTAssertFalse(visible.contains { $0.messageID == rolloutID })
+        XCTAssertFalse(visible.contains { $0.messageID == titleID })
+        XCTAssertFalse(visible.contains { $0.messageID == memoryID })
+    }
+
+    /// A request that declares itself an internal operation is kept as a record
+    /// but never gains ordinary semantic standing, even after it completes:
+    /// passing through the API is not what makes text conversation memory.
+    func testInternalOperationIsRecordedButNeverRetrievable() throws {
+        let (url, db) = try open("internal-op")
+        defer { db.close(); cleanup(url) }
+        let loop = SimiGoInformationLoop(database: db)
+
+        let rollout = try db.appendChatMessage(
+            sessionID: "s-op", role: "user",
+            content: "Analyze this rollout and produce rollout_summary for 关键线路",
+            model: nil, createdAt: Date(), eligibility: .internalOperation)
+        try db.commitChatTurn(
+            sessionID: "s-op", userMessageID: rollout,
+            assistantText: "{\"rollout_summary\":\"关键线路 节点工期\"}",
+            model: nil, createdAt: Date(), eligibility: .internalOperation)
+
+        // Kept for audit ...
+        XCTAssertEqual(try db.listChatMessages(sessionID: "s-op").count, 2)
+        // ... with no ordinary standing.
+        XCTAssertTrue(try db.chatIndexRows(sessionIDs: ["s-op"]).isEmpty)
+        let resolution = try loop.resolve(.init(
+            sessionID: "s-op", query: "关键线路 节点工期", includeChat: true,
+            chatSessionIDs: ["s-op"]))
+        XCTAssertTrue(resolution.hits.isEmpty)
+        XCTAssertEqual(loop.contextBlock(resolution), "")
+
+        // An ordinary turn with the same text must not adopt the internal row:
+        // that would promote client bookkeeping into conversation memory.
+        let ordinary = try db.appendChatMessage(
+            sessionID: "s-op", role: "user",
+            content: "Analyze this rollout and produce rollout_summary for 关键线路",
+            model: nil, createdAt: Date())
+        XCTAssertNotEqual(ordinary, rollout)
+        try db.commitChatTurn(
+            sessionID: "s-op", userMessageID: ordinary,
+            assistantText: "已收到", model: nil, createdAt: Date())
+
+        let later = try loop.resolve(.init(
+            sessionID: "s-op", query: "关键线路 节点工期", includeChat: true,
+            chatSessionIDs: ["s-op"]))
+        XCTAssertEqual(later.hits.map(\.itemID), ["chat:s-op/\(ordinary)"])
+        XCTAssertTrue(try XCTUnwrap(later.hits.first).lineText.contains("关键线路"))
     }
 
     // MARK: - Goal step 4: a settled demand's file dependency is real
@@ -490,5 +657,107 @@ final class SimiGoInformationLoopTests: XCTestCase {
         XCTAssertTrue(itemID.hasPrefix("chat:s9/"))
         XCTAssertTrue(itemID.hasSuffix("|chat|AVAILABLE"))
         XCTAssertEqual(try db.searchChatMessages(query: "remember").count, 1)
+    }
+
+    /// A re-sent trailing user turn is one turn. Measured 2026-10-29: a real
+    /// session had accumulated twelve byte-identical user rows because every
+    /// retry of a cancelled turn appended another copy, and those copies came
+    /// back as competing retrieval hits.
+    func testRepeatedUserTurnIsRecordedOnce() throws {
+        let (url, db) = try open("chat-dedupe")
+        defer { db.close(); cleanup(url) }
+        let question = "查找跟“分包”相关的文件"
+        try db.appendChatMessage(
+            sessionID: "s10", role: "user", content: question, model: "m", createdAt: Date())
+        try db.appendChatMessage(
+            sessionID: "s10", role: "assistant", content: "…", model: "m", createdAt: Date())
+        try db.appendChatMessage(
+            sessionID: "s10", role: "user", content: question, model: "m", createdAt: Date())
+        XCTAssertEqual(try db.listChatMessages(sessionID: "s10").filter { $0.role == "user" }.count, 1)
+
+        // After a different question, the same words are a new turn again.
+        try db.appendChatMessage(
+            sessionID: "s10", role: "user", content: "另一个问题", model: "m", createdAt: Date())
+        try db.appendChatMessage(
+            sessionID: "s10", role: "user", content: question, model: "m", createdAt: Date())
+        XCTAssertEqual(try db.listChatMessages(sessionID: "s10").filter { $0.role == "user" }.count, 3)
+    }
+
+    // MARK: - The client envelope is not information (measured 2026-10-29)    /// The observed managed-request shape: a skills list, the memory index, the
+    /// date, then the question on the last line. The envelope is client-side
+    /// boilerplate that repeats on every turn; only the question is information.
+    private static let clientEnvelope = """
+        <system-reminder>
+        The following skills are available with the Skill tool:
+
+        - skill-creator: Guide for creating effective skills.
+        - qoder-canvas:canvas: Create interactive visuals in conversation.
+
+        # autoMemory
+        - [代码修改须先获明确授权](user-behavior-4a1ca91f.md) — 准备修改实验脚本时
+
+        # currentDate
+        Today's date is 2026-10-29.
+
+        IMPORTANT: this context may or may not be relevant to your tasks.
+        </system-reminder>
+
+        """
+
+    func testRetrievalQueryDropsClientEnvelope() {
+        let question = "查找跟“分包”相关的文件"
+        XCTAssertEqual(
+            SimiGoInformationLoop.retrievalQuery(from: Self.clientEnvelope + question),
+            question)
+        XCTAssertEqual(
+            SimiGoInformationLoop.retrievalQuery(from: question + "\n" + Self.clientEnvelope),
+            question,
+            "removal is by block, not by position")
+    }
+
+    func testRetrievalQueryKeepsPlainQuestionAndDropsUnclosedTail() {
+        XCTAssertEqual(
+            SimiGoInformationLoop.retrievalQuery(from: "  查看跟分包管理相关的资料 \n"),
+            "查看跟分包管理相关的资料")
+        XCTAssertEqual(
+            SimiGoInformationLoop.retrievalQuery(
+                from: "查看分包资料\n<system-reminder>\nskills…"),
+            "查看分包资料")
+    }
+
+    /// A wrapper the sanitizer does not know still must not own the term list:
+    /// terms are read from the tail, where the question is.
+    func testKeywordsComeFromTheQuestionNotTheEnvelope() {
+        let noise = String(
+            repeating: "system reminder following skills available ", count: 40)
+        let keywords = SimiGoInformationLoop.keywords(
+            in: noise + "查找跟“分包”相关的文件")
+        XCTAssertTrue(
+            keywords.contains("分包"), "question term must survive: \(keywords)")
+        XCTAssertTrue(keywords.contains("文件"))
+    }
+
+    /// Two turns whose envelopes differ but whose question is the same are one
+    /// demand. That is what makes an exact repeat serveable from the IS instead
+    /// of paying a model call.
+    func testSameQuestionInDifferentEnvelopesIsOneDemand() throws {
+        let (url, db) = try open("envelope-demand")
+        defer { db.close(); cleanup(url) }
+        let loop = SimiGoInformationLoop(database: db)
+        let question = "查找跟“分包”相关的文件"
+        let first = try loop.resolve(.init(
+            sessionID: "s-env",
+            query: SimiGoInformationLoop.retrievalQuery(
+                from: Self.clientEnvelope + question),
+            includeChat: true, chatSessionIDs: ["s-env"], limit: 30))
+        let second = try loop.resolve(.init(
+            sessionID: "s-env",
+            query: SimiGoInformationLoop.retrievalQuery(
+                from: "<system-reminder>\ndate 2026-10-30\n</system-reminder>\n"
+                    + question),
+            includeChat: true, chatSessionIDs: ["s-env"], limit: 30))
+        XCTAssertFalse(first.demandID.isEmpty)
+        XCTAssertEqual(first.demandID, second.demandID)
+        XCTAssertTrue(second.reused)
     }
 }

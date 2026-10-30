@@ -137,8 +137,12 @@ final class LifecycleRaceTests: XCTestCase {
             // 预热：建立会话
             _ = try await gen(runtime, "warm", "只回复:OK")
 
-            // 打开测试缝隙：任务空即可挂起（生产默认 nil 不受影响）
+            // 打开测试缝隙：任务空即可挂起（生产默认 nil 不受影响）。
+            // Release 构建无该符号（RuntimeTuning 以 #if DEBUG 隔离），
+            // 此时保持生产超时，结论按 PROTECTION_PASS_NO_HIT 登记。
+            #if DEBUG
             RuntimeTuning.suspendIdleTimeoutOverrideSeconds = 0
+            #endif
 
             var suspendWins = 0
             for round in 1...3 {

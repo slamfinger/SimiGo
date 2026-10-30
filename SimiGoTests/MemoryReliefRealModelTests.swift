@@ -170,7 +170,9 @@ final class MemoryReliefRealModelTests: XCTestCase {
             XCTAssertLessThan(
                 afterStop, loaded,
                 "stop 后 footprint 必须低于驻留峰值")
+            #if DEBUG
             RuntimeTuning.suspendIdleTimeoutOverrideSeconds = nil
+            #endif
             await restoreConfig()
         } catch {
             await cleanup()

@@ -33,8 +33,11 @@ else
 end if
 display dialog titleLine & return & return & "将把 SimiGo 安装到 /Applications（覆盖旧版本）。" & return & "安装完成后自动启动，进入安装向导。" buttons {"取消", "安装"} default button "安装" with icon note
 -- 覆盖安装 = 重新进入安装向导：重置首启标记（不动数据库与已装二进制）
-set userName to short user name of (system info)
-do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app && rm -f /Users/" & userName & "/.simigo/manifests/first-run-done.json" with administrator privileges
+-- 主目录由系统解析（与产品 SimiGoPaths 用的 homeDirectoryForCurrentUser 同一权威），
+-- 不拼接固定的家目录前缀与用户名；求值发生在提权之前，
+-- 故拿到的是当前用户的主目录，而不是提权后 root 的。
+set markerPath to (POSIX path of (path to home folder)) & ".simigo/manifests/first-run-done.json"
+do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app && rm -f " & quoted form of markerPath with administrator privileges
 display dialog "✅ 安装完成" & return & "正在启动 SimiGo（首次启动将进入安装向导）" buttons {"好"} default button "好" giving up after 4
 -- `open` merely activates an already running copy, so the new bundle (and the wizard
 -- triggered by the removed marker) never appeared. Stop the old instance first, and

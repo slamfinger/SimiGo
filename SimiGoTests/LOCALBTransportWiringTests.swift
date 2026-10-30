@@ -19,7 +19,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
             port: Int(port),
             modelId: "localb-wiring-test",
             generateHandler: { _, _, _, _, _, _, _, _, _ in
-                GenerationResult(text: "", usage: nil)
+                GenerationResult(text: "", usage: nil, completion: .complete)
             },
             forkBranchHandler: { _, _, _, _ in
                 SessionCacheMetadata(
@@ -349,7 +349,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
             modelId: "localb-wiring-test",
             bindHost: "0.0.0.0",
             generateHandler: { _, _, _, _, _, _, _, _, _ in
-                GenerationResult(text: "", usage: nil)
+                GenerationResult(text: "", usage: nil, completion: .complete)
             },
             forkBranchHandler: { _, _, _, _ in
                 SessionCacheMetadata(

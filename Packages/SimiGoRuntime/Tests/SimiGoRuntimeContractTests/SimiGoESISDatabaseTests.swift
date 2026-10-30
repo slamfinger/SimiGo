@@ -42,14 +42,14 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.schemaVersion(), 0)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 13)   // v13 idempotency key is the head
+        XCTAssertEqual(try db.schemaVersion(), 14)   // v14 answer-reuse record is the head
         XCTAssertTrue(try db.integrityCheck())
         XCTAssertEqual(try db.count("chat_messages"), 0)
         XCTAssertEqual(try db.count("file_contents"), 0)
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
         // Idempotent: re-running does not error or double-apply.
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 13)
+        XCTAssertEqual(try db.schemaVersion(), 14)
     }
 
     /// A database stamped v6 by the old out-of-order gates reports the head
@@ -60,7 +60,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 13)
+        XCTAssertEqual(try db.schemaVersion(), 14)
         db.close()
 
         try rawExec(url, """
@@ -76,12 +76,12 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { repaired.close() }
         XCTAssertEqual(try repaired.schemaVersion(), 6)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 13)
+        XCTAssertEqual(try repaired.schemaVersion(), 14)
         XCTAssertEqual(try repaired.count("chat_messages"), 0)
         XCTAssertEqual(try repaired.count("file_contents"), 0)
         XCTAssertEqual(try repaired.count("retrieval_settlements"), 0)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 13)
+        XCTAssertEqual(try repaired.schemaVersion(), 14)
     }
 
     private func rawExec(_ url: URL, _ sql: String) throws {
@@ -319,5 +319,97 @@ extension SimiGoESISDatabaseTests {
         try db.writeGraph(states: [st("A")], checkpoints: [])   // drop B from live graph
         XCTAssertEqual(try db.count("settlements"), 1)          // settlement survives
         XCTAssertTrue(try db.readGraph().states.contains { $0.id == "B" })  // B kept (referenced)
+    }
+}
+
+extension SimiGoESISDatabaseTests {
+
+    private func settleSource(_ db: SimiGoESISDatabase, stateID: String) throws -> String {
+        try db.recordExecutionState(
+            id: stateID, parentID: nil, modelIdentity: "reference-model",
+            position: 1, continuationID: "C-1", anchor: "a1",
+            lifecycle: "saved", createdAt: Date())
+        let route = #"{"schema_version":"simigo.result-contract/v1","fields":{"secret":{"pattern":"^SECRET=(.+)$","type":"string"}},"constraints":[{"kind":"digest_equals_binding","field":"secret","binding":"secret_commitment"}]}"#
+        let settled = try SimiGoSettlementAuthority.authorize(
+            generatedText: "SECRET=NORTH>EAST", contractJSON: Data(route.utf8),
+            verifiedBindings: ["secret_commitment": .string("2b1a5d9f0a1183c966ce8325a252424579a625c1b2314654dd6aaebaf9c334a8")])
+        return try db.recordNativeSettlement(settled, stateID: stateID)
+    }
+
+    /// Serving an already-settled answer must be verifiable from the database
+    /// alone, not from trace text: the reuse row carries `model_calls=0`, the
+    /// source settlement it consumed, and the digest of the exact lookup key.
+    func testAnswerReuseIsRecordedAsZeroModelCallRow() throws {
+        let url = tempURL("reuse-row")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        let source = try settleSource(db, stateID: "S-SRC")
+
+        let stamped = try db.recordInformationReuse(
+            sourceSettlementID: source, sourceStateID: "S-SRC",
+            demandID: "D-1", sessionID: "info-a", query: "where is the exit",
+            reusedAt: Date(timeIntervalSince1970: 700000010))
+
+        let back = try XCTUnwrap(try db.informationReuseEvent(demandID: "D-1"))
+        XCTAssertEqual(back, stamped)
+        XCTAssertEqual(back.sourceSettlementID, source)
+        XCTAssertEqual(back.sourceStateID, "S-SRC")
+        XCTAssertEqual(back.sessionID, "info-a")
+        XCTAssertEqual(back.modelCalls, 0)
+        XCTAssertNil(back.consumerStateID, "a reuse creates no consumer ES state")
+        XCTAssertEqual(
+            back.canonicalDigest,
+            NativeSHA256.hexDigest(Data("info-a|where is the exit".utf8)))
+        XCTAssertEqual(try db.count("information_reuse_events"), 1)
+        XCTAssertEqual(try db.count("settlements"), 1, "reuse reads the source, never rewrites it")
+    }
+
+    /// The demand id is content-addressed, so a repeated identical question is
+    /// one consumption edge, not one row per request.
+    func testAnswerReuseIsIdempotentPerDemand() throws {
+        let url = tempURL("reuse-idem")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        let source = try settleSource(db, stateID: "S-SRC")
+
+        let first = try db.recordInformationReuse(
+            sourceSettlementID: source, sourceStateID: "S-SRC",
+            demandID: "D-1", sessionID: "info-a", query: "q")
+        let second = try db.recordInformationReuse(
+            sourceSettlementID: source, sourceStateID: "S-SRC",
+            demandID: "D-1", sessionID: "info-a", query: "q")
+
+        XCTAssertEqual(second, first)
+        XCTAssertEqual(try db.count("information_reuse_events"), 1)
+    }
+
+    /// Fail-closed: a settlement invalidated after the lookup gate ran can never
+    /// be recorded as reused, and a refusal writes nothing.
+    func testAnswerReuseRefusesInvalidSource() throws {
+        let url = tempURL("reuse-invalid")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        let source = try settleSource(db, stateID: "S-SRC")
+        _ = try db.invalidateSettlement(source)
+
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: source, sourceStateID: "S-SRC",
+            demandID: "D-1", sessionID: "info-a", query: "q"
+        )) { e in
+            XCTAssertEqual(
+                e as? SimiGoESISDatabase.InformationReuseError, .sourceNotValid(source))
+        }
+        XCTAssertEqual(try db.count("information_reuse_events"), 0)
+
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: source, sourceStateID: "S-SRC",
+            demandID: "", sessionID: "info-a", query: "q"
+        )) { e in
+            XCTAssertEqual(
+                e as? SimiGoESISDatabase.InformationReuseError, .emptyField("demand_id"))
+        }
     }
 }

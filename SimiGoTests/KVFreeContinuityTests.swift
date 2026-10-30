@@ -284,7 +284,7 @@ final class KVFreeContinuityTests: XCTestCase {
 
     private func generator(_ stub: Stub) -> ManagedContinuationGenerate {
         { _, messages in
-            GenerationResult(text: try stub.record(messages), usage: nil)
+            GenerationResult(text: try stub.record(messages), usage: nil, completion: .complete)
         }
     }
 

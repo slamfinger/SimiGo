@@ -73,7 +73,7 @@ final class ResponsesManagedContinuationHTTPTests: XCTestCase {
             generateHandler: { _, _, _, _, _, _, _, onChunk, _ in
                 stub.bump()
                 onChunk(text)
-                return GenerationResult(text: text, usage: nil)
+                return GenerationResult(text: text, usage: nil, completion: .complete)
             },
             forkBranchHandler: { _, _, _, target in
                 SessionCacheMetadata(

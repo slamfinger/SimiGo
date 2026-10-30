@@ -146,7 +146,17 @@ final class ManagedContinuationAdapterTests: XCTestCase {
 
     private func generator(_ stub: Stub) -> ManagedContinuationGenerate {
         { _, messages in
-            GenerationResult(text: stub.record(messages), usage: nil)
+            GenerationResult(text: stub.record(messages), usage: nil, completion: .complete)
+        }
+    }
+
+    /// The same stand-in with a declared verdict, which is how a budget-capped or
+    /// cancelled managed generation is reproduced without a model.
+    private func generator(
+        _ stub: Stub, completion: GenerationCompletion
+    ) -> ManagedContinuationGenerate {
+        { _, messages in
+            GenerationResult(text: stub.record(messages), usage: nil, completion: completion)
         }
     }
 
@@ -160,9 +170,18 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         file: StaticString = #filePath,
         line: UInt = #line
     ) async -> SimiGoManagedRefusal.Refusal? {
+        await refusal(from: request, generate: generator(stub), file: file, line: line)
+    }
+
+    private func refusal(
+        from request: ManagedContinuationRequest,
+        generate: @escaping ManagedContinuationGenerate,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async -> SimiGoManagedRefusal.Refusal? {
         do {
             _ = try await runNativeManagedContinuation(
-                request: request, modelPath: modelPath, generate: generator(stub))
+                request: request, modelPath: modelPath, generate: generate)
             XCTFail("expected a typed refusal", file: file, line: line)
             return nil
         } catch let failure as ManagedContinuationFailure {
@@ -416,7 +435,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
             let text = stub.record(messages)
             await rendezvous.arrive()
             await rendezvous.waitForRelease()
-            return GenerationResult(text: text, usage: nil)
+            return GenerationResult(text: text, usage: nil, completion: .complete)
         })
 
         let before = try ledger(db)
@@ -471,5 +490,46 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         XCTAssertEqual(refused.phase, .p1)
         XCTAssertEqual(stub.calls, 0)
         XCTAssertEqual(try ledger(db), before)
+    }
+
+    // MARK: - 8) T-1: an unfinished generation cannot become a settlement
+
+    /// The managed entry owns the only model call the pipeline makes, and it runs
+    /// inside G — after the snapshot was declared, before P2 writes. So a capped,
+    /// cancelled or unattested output has to be refused exactly there: the model
+    /// cost is real and already spent, while the settlement that would have made
+    /// it reusable never exists.
+    func testUnfinishedGenerationIsRefusedBeforeAnyWrite() async throws {
+        for verdict in [
+            GenerationCompletion.capped, .cancelled, .unconfirmed,
+        ] {
+            let db = try openDatabase()
+            let anchor = try stageAnchor(db)
+            let stub = Stub()
+            stub.configure(text: "MANAGED-PARTIAL")
+            let before = try ledger(db)
+
+            let attempt = await refusal(
+                from: makeRequest(anchor: anchor, key: "t1-\(verdict.wireName)"),
+                generate: generator(stub, completion: verdict))
+            let refused = try XCTUnwrap(attempt, "\(verdict) produced no typed refusal")
+
+            XCTAssertEqual(refused.cause, .generationIncomplete)
+            XCTAssertEqual(refused.phase, .g, "the verdict is only knowable after the model ran")
+            XCTAssertEqual(refused.evidence["completion"], verdict.wireName)
+            XCTAssertEqual(stub.calls, 1)
+            XCTAssertEqual(
+                try ledger(db), before,
+                "\(verdict) commits no state and no settlement, so it cannot be reused")
+
+            // The refusal is not a cacheable terminal either: a second attempt with
+            // a finished generation is an ordinary fresh run, not a replay of the
+            // unfinished one.
+            let fresh = try await runNativeManagedContinuation(
+                request: makeRequest(anchor: anchor, key: "t1-\(verdict.wireName)-retry"),
+                modelPath: modelPath, generate: generator(stub))
+            XCTAssertFalse(fresh.reusedExecution)
+            XCTAssertEqual(fresh.settlementsWritten, 1)
+        }
     }
 }

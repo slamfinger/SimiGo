@@ -179,7 +179,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
             generateHandler: { _, _, _, _, _, _, _, onChunk, _ in
                 stub.bump()
                 onChunk(stub.text)
-                return GenerationResult(text: stub.text, usage: nil)
+                return GenerationResult(text: stub.text, usage: nil, completion: .complete)
             },
             forkBranchHandler: { _, _, _, target in
                 SessionCacheMetadata(

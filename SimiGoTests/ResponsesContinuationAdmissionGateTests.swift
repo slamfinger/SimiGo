@@ -45,7 +45,7 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
             port: 59_217,
             modelId: "admission-gate-test",
             generateHandler: { _, _, _, _, _, _, _, _, _ in
-                GenerationResult(text: "", usage: nil)
+                GenerationResult(text: "", usage: nil, completion: .complete)
             },
             forkBranchHandler: { _, _, _, _ in
                 SessionCacheMetadata(

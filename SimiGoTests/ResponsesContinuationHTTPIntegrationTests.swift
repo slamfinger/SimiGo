@@ -164,17 +164,162 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         try XCTUnwrap(freshStore().esis).readSettlementReceipts().count
     }
 
-    @MainActor
-    private func totalBindings() throws -> Int {
-        try XCTUnwrap(freshStore().esis).count("settlement_bindings")
+    // MARK: - Binding instruments, scoped to the object they belong to
+
+    /// `settlement_bindings` holds two disjoint classes, and only one of them is
+    /// this contract's subject:
+    ///
+    /// * a UUID-keyed **answer settlement** carries its identity/constraint
+    ///   bindings (`producer.model_identity`, `producer.tokenizer_identity`,
+    ///   `next_input`, …). A refusal or a failed commit must add none of these.
+    /// * an **IS retrieval settlement** (`is-retrieval:<demand>`) carries one
+    ///   `content` row per source file a resolved demand hit — written by the
+    ///   existing `linkSettlementToExternalFile` path, once per resolve. It is an
+    ///   ordinary read-side side effect of information retrieval, not a
+    ///   continuation settlement.
+    ///
+    /// Counting the table as one number substitutes a global row count for the
+    /// criterion, so a refusal that wrote nothing about *its own* answer still
+    /// reads as a write. The three readers below name the classes; the
+    /// unattributed reader is what keeps this a narrower measurement rather than
+    /// a weaker one — a binding row outside both classes is a finding, not noise.
+    private func answerBindings() throws -> Int {
+        try countIsolatedSQLite("""
+        SELECT COUNT(*) FROM settlement_bindings
+        WHERE settlement_id NOT LIKE 'is-retrieval:%'
+          AND length(settlement_id) = 36;
+        """)
     }
 
-    /// The child ES is inserted inside the SAME transaction as its settlement, so
-    /// a refusal or a failed commit must leave this count untouched: no orphan
-    /// child state may outlive a continuation that was never reported as settled.
-    @MainActor
-    private func totalExecutionStates() throws -> Int {
-        try XCTUnwrap(freshStore().esis).count("execution_states")
+    private func retrievalBindings() throws -> Int {
+        try countIsolatedSQLite("""
+        SELECT COUNT(*) FROM settlement_bindings
+        WHERE settlement_id LIKE 'is-retrieval:%';
+        """)
+    }
+
+    private func unattributedBindings() throws -> Int {
+        try countIsolatedSQLite("""
+        SELECT COUNT(*) FROM settlement_bindings
+        WHERE settlement_id NOT LIKE 'is-retrieval:%'
+          AND length(settlement_id) <> 36;
+        """)
+    }
+
+    /// Read-only scalar over the same isolated database the trigger injection
+    /// already opens. The IS class is excluded from the pass/fail criterion but
+    /// reported in the failure message, so its before/after difference survives
+    /// as evidence instead of being reclassified as harmless.
+    private func countIsolatedSQLite(_ sql: String) throws -> Int {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open(SimiGoPaths.databaseURL.path, &handle)
+        guard openRC == SQLITE_OK, let handle else {
+            if let handle { sqlite3_close(handle) }
+            throw NSError(
+                domain: "ResponsesContinuationHTTPIntegrationTests.SQLite",
+                code: Int(openRC),
+                userInfo: [NSLocalizedDescriptionKey: "could not open isolated test database"])
+        }
+        defer { sqlite3_close(handle) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK, let stmt else {
+            sqlite3_finalize(stmt)
+            throw NSError(
+                domain: "ResponsesContinuationHTTPIntegrationTests.SQLite",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "count prepare failed"])
+        }
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return -1 }
+        return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    /// Read-only rows over the same isolated database the binding instruments
+    /// already open. `NULL` is returned as the literal text so a parentless row is
+    /// distinguishable from a missing one.
+    private func rowsIsolatedSQLite(_ sql: String, columns: Int) throws -> [[String]] {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open(SimiGoPaths.databaseURL.path, &handle)
+        guard openRC == SQLITE_OK, let handle else {
+            if let handle { sqlite3_close(handle) }
+            throw NSError(
+                domain: "ResponsesContinuationHTTPIntegrationTests.SQLite",
+                code: Int(openRC),
+                userInfo: [NSLocalizedDescriptionKey: "could not open isolated test database"])
+        }
+        defer { sqlite3_close(handle) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK, let stmt else {
+            sqlite3_finalize(stmt)
+            throw NSError(
+                domain: "ResponsesContinuationHTTPIntegrationTests.SQLite",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "row query prepare failed"])
+        }
+        defer { sqlite3_finalize(stmt) }
+        var rows: [[String]] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            var row: [String] = []
+            for column in 0..<Int32(columns) {
+                guard let text = sqlite3_column_text(stmt, column) else {
+                    row.append("NULL")
+                    continue
+                }
+                let length = Int(sqlite3_column_bytes(stmt, column))
+                row.append(String(decoding: UnsafeBufferPointer(start: text, count: length),
+                                  as: UTF8.self))
+            }
+            rows.append(row)
+        }
+        return rows
+    }
+
+    // MARK: - Execution-state instrument, scoped to the lineage a row belongs to
+
+    /// `execution_states` holds two disjoint lineages and only one is this
+    /// contract's subject:
+    ///
+    /// * the **continuation lineage** — the anchor the client named as
+    ///   `previous_es_state_id`, plus the child ES a managed settle mints for its
+    ///   settlement. An admission-only request must not extend it.
+    /// * the **information lineage** — every completed turn settles its own answer
+    ///   into a parentless `chat-<uuid>` root state so a later identical demand can
+    ///   be served with zero model calls (`settleResponsesInformationTurn` →
+    ///   `settleTurn`; committed in `c68b64ba` 2026-10-27, two days after these
+    ///   continuation tests were written, and written whether or not reuse reads
+    ///   are enabled). It is another feature's durable record, not a continuation
+    ///   child.
+    ///
+    /// `count("execution_states")` substitutes a global row count for the
+    /// criterion, so the information lineage's own write reads as an admission
+    /// write. Attributing each new row keeps this a narrower measurement rather
+    /// than a weaker one: a new row outside the information lineage still fails.
+    private func executionStatesByParent() throws -> [String: String] {
+        var parents: [String: String] = [:]
+        for row in try rowsIsolatedSQLite(
+            "SELECT state_id, parent_id FROM execution_states;", columns: 2) {
+            parents[row[0]] = row[1]
+        }
+        return parents
+    }
+
+    /// The information lineage's own rows: the parentless `chat-*` ES roots a
+    /// settled turn writes for its answer. `parent_id IS NULL` is part of the
+    /// definition, not the `chat-` prefix alone — this same table also holds
+    /// `chat-*` rows that name an ES parent, so a prefix by itself does not
+    /// identify the lineage. A path that never reaches the settle must not grow
+    /// this class either: ③-A gives a completed round its own root row, and a
+    /// refusal has no completed round to borrow that semantics from.
+    private func informationLineageRows() throws -> Set<String> {
+        try Set(rowsIsolatedSQLite(
+            "SELECT state_id FROM execution_states WHERE state_id LIKE 'chat-%' AND parent_id IS NULL;",
+            columns: 1).map { $0[0] })
+    }
+
+    /// Renders ES rows with their parent, so a failure names the class that grew
+    /// instead of leaving a row count to be argued about.
+    private func describe(_ ids: Set<String>, in states: [String: String]) -> String {
+        ids.sorted().map { "\($0) parent=\(states[$0] ?? "?")" }.joined(separator: ", ")
     }
 
     @MainActor
@@ -264,7 +409,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                 // The ONLY substituted component: a text stand-in, no model.
                 stub.bumpGenerate(branch: branch)
                 onChunk(stub.text)
-                return GenerationResult(text: stub.text, usage: nil)
+                return GenerationResult(text: stub.text, usage: nil, completion: .complete)
             },
             forkBranchHandler: { _, _, _, target in
                 stub.bumpFork(target: target)
@@ -460,12 +605,15 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     /// An anchor WITHOUT a settle request is admission-only: the recovered value
     /// is still injected (unchanged product semantics) but no child ES is
     /// created, so generation must stay on the client's branch instead of
-    /// inventing an identity that no ES row will ever carry.
+    /// inventing an identity that no ES row will ever carry. The turn's own
+    /// completed answer is still settled into the information lineage, which is a
+    /// different feature's row and is attributed as such below rather than counted
+    /// as a continuation write.
     @MainActor
     func testAdmissionWithoutSettleStaysOnTheClientBranch() async throws {
         let value = "HTTP-ADMITONLY-7103"
         let anchor = try stageSettledAnchor(value: value)
-        let statesBefore = try totalExecutionStates()
+        let statesBefore = try executionStatesByParent()
 
         let o = try await dispatch(
             body: baseJSON([
@@ -481,8 +629,17 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                        "an admission-only continuation keeps the client's branch")
         XCTAssertTrue(o.forkTargets.isEmpty,
                       "no child identity exists, so no branch may be forked")
-        XCTAssertEqual(try totalExecutionStates(), statesBefore,
-                       "admission alone must not create an ES row")
+        let statesAfter = try executionStatesByParent()
+        let newStates = Set(statesAfter.keys).subtracting(statesBefore.keys)
+        XCTAssertEqual(newStates.filter { statesAfter[$0] == anchor }, [],
+                       "admission alone must not create an ES child of the anchor; new rows: "
+                           + describe(newStates, in: statesAfter))
+        XCTAssertEqual(newStates.count, 1,
+                       "the only ES write this turn may make is its own settled answer; new rows: "
+                           + describe(newStates, in: statesAfter))
+        XCTAssertTrue(newStates.allSatisfy { $0.hasPrefix("chat-") && statesAfter[$0] == "NULL" },
+                      "a new row that is not a parentless information-lineage root is unattributed: "
+                          + describe(newStates, in: statesAfter))
     }
 
     /// THE decisive regression for the gap this slice closes, driven end-to-end
@@ -522,8 +679,12 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
 
         // 2) The output matching the MUTATED ES field is refused, with no write.
         let settlementsBefore = try totalSettlements()
-        let bindingsBefore = try totalBindings()
-        let statesBefore = try totalExecutionStates()
+        let answerBindingsBefore = try answerBindings()
+        let retrievalBindingsBefore = try retrievalBindings()
+        let statesBefore = try executionStatesByParent()
+        let infoRootsBefore = try informationLineageRows()
+        XCTAssertEqual(try unattributedBindings(), 0,
+                       "every binding row must belong to a named class before the request")
 
         let refused = try await dispatch(
             body: baseJSON([
@@ -535,12 +696,32 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         XCTAssertEqual(refused.status, 422, String(decoding: refused.raw, as: UTF8.self))
         XCTAssertEqual(errorKind(refused), "NATIVE_RESULT_CONTRACT_REJECTED")
         XCTAssertNil(settlementPayload(refused), "a refused contract yields no settlement")
+        let answerBindingsAfter = try answerBindings()
+        let retrievalBindingsAfter = try retrievalBindings()
         XCTAssertEqual(try totalSettlements(), settlementsBefore,
                        "a refusal must add no settlement row")
-        XCTAssertEqual(try totalBindings(), bindingsBefore,
-                       "a refusal must add no binding row")
-        XCTAssertEqual(try totalExecutionStates(), statesBefore,
-                       "a refusal must add no child ES row")
+        XCTAssertEqual(
+            answerBindingsAfter, answerBindingsBefore,
+            "a refusal must add no binding under an answer settlement. "
+                + "IS retrieval content bindings (read-side side effect, kept as evidence, "
+                + "not part of this criterion): before=\(retrievalBindingsBefore) "
+                + "after=\(retrievalBindingsAfter)")
+        XCTAssertEqual(try unattributedBindings(), 0,
+                       "a refused continuation must not leave a binding row outside the two classes")
+        // This request returned 422 before any settle: it has no completed-round
+        // semantics to borrow, so no ES row of ANY lineage may appear — not only
+        // no child of the anchor.
+        let statesAfter = try executionStatesByParent()
+        let newStates = Set(statesAfter.keys).subtracting(statesBefore.keys)
+        XCTAssertEqual(newStates.filter { statesAfter[$0] == anchor }, [],
+                       "a refusal must add no ES child of the anchor; new rows: "
+                           + describe(newStates, in: statesAfter))
+        XCTAssertEqual(try informationLineageRows(), infoRootsBefore,
+                       "a refusal must add no information-lineage root: this turn never "
+                           + "settled an answer, so it may not borrow the completed-round write")
+        XCTAssertEqual(newStates, [],
+                       "a refusal writes nothing: no ES row of any lineage may appear; new rows: "
+                           + describe(newStates, in: statesAfter))
     }
 
     // MARK: - 2) Legacy request keeps the original contract untouched
@@ -671,8 +852,12 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     func testNativeContractRejectionIs422AndWritesNothing() async throws {
         let anchor = try stageSettledAnchor(value: "HTTP-CONTRACT-7109")
         let settlementsBefore = try totalSettlements()
-        let bindingsBefore = try totalBindings()
-        let statesBefore = try totalExecutionStates()
+        let answerBindingsBefore = try answerBindings()
+        let retrievalBindingsBefore = try retrievalBindings()
+        let statesBefore = try executionStatesByParent()
+        let infoRootsBefore = try informationLineageRows()
+        XCTAssertEqual(try unattributedBindings(), 0,
+                       "every binding row must belong to a named class before the request")
 
         // Admission recovers the anchor's value; generation returns text that
         // VIOLATES the declared contract, so only the later settlement refuses.
@@ -691,12 +876,32 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         XCTAssertEqual(o.generate, 1, "generation ran; only the later contract refused")
         XCTAssertEqual(o.settlement, 1, "the real settlement authority ran once and refused")
         // The native gate throws BEFORE any store write: nothing was committed.
+        let answerBindingsAfter = try answerBindings()
+        let retrievalBindingsAfter = try retrievalBindings()
         XCTAssertEqual(try totalSettlements(), settlementsBefore,
                        "a contract rejection must add no settlement row")
-        XCTAssertEqual(try totalBindings(), bindingsBefore,
-                       "a contract rejection must add no identity binding row")
-        XCTAssertEqual(try totalExecutionStates(), statesBefore,
-                       "a contract rejection must add no child ES row")
+        XCTAssertEqual(
+            answerBindingsAfter, answerBindingsBefore,
+            "a contract rejection must add no binding under an answer settlement. "
+                + "IS retrieval content bindings (read-side side effect, kept as evidence, "
+                + "not part of this criterion): before=\(retrievalBindingsBefore) "
+                + "after=\(retrievalBindingsAfter)")
+        XCTAssertEqual(try unattributedBindings(), 0,
+                       "a rejected continuation must not leave a binding row outside the two classes")
+        // The native gate threw before the settle transaction, so the contract is
+        // "writes NOTHING": checked per lineage — no child of the anchor, no
+        // information-lineage root, no other row — instead of one table count.
+        let statesAfter = try executionStatesByParent()
+        let newStates = Set(statesAfter.keys).subtracting(statesBefore.keys)
+        XCTAssertEqual(newStates.filter { statesAfter[$0] == anchor }, [],
+                       "a contract rejection must add no ES child of the anchor; new rows: "
+                           + describe(newStates, in: statesAfter))
+        XCTAssertEqual(try informationLineageRows(), infoRootsBefore,
+                       "a contract rejection must add no information-lineage root: nothing "
+                           + "was settled, so no completed-round row is owed to this turn")
+        XCTAssertEqual(newStates, [],
+                       "a contract rejection must add no ES row of any lineage; new rows: "
+                           + describe(newStates, in: statesAfter))
     }
 
     // MARK: - 10) Settlement / identity-binding write failure -> 500, no partial commit
@@ -706,8 +911,10 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         let value = "HTTP-ATOMIC-7110"
         let anchor = try stageSettledAnchor(value: value)
         let settlementsBefore = try totalSettlements()
-        let bindingsBefore = try totalBindings()
-        let statesBefore = try totalExecutionStates()
+        let answerBindingsBefore = try answerBindings()
+        let retrievalBindingsBefore = try retrievalBindings()
+        let statesBefore = try executionStatesByParent()
+        let infoRootsBefore = try informationLineageRows()
         let projectionBefore = projectionReceiptCount(stateID: anchor)
 
         let trigger = "fail_http_identity_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
@@ -735,14 +942,32 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
 
         // Nothing partial survived: settlement rows, binding rows and the in-memory
         // projection are all unchanged from before the request.
+        let answerBindingsAfter = try answerBindings()
+        let retrievalBindingsAfter = try retrievalBindings()
         XCTAssertEqual(try totalSettlements(), settlementsBefore,
                        "settlement insert must roll back when the identity insert fails")
-        XCTAssertEqual(try totalBindings(), bindingsBefore,
-                       "identity + constraint bindings must all roll back")
+        XCTAssertEqual(
+            answerBindingsAfter, answerBindingsBefore,
+            "identity + constraint bindings must all roll back with the settlement. "
+                + "IS retrieval content bindings (unrelated write path, kept as evidence): "
+                + "before=\(retrievalBindingsBefore) after=\(retrievalBindingsAfter)")
+        XCTAssertEqual(try unattributedBindings(), 0,
+                       "a failed commit must not leave a binding row outside the two classes")
         XCTAssertEqual(projectionReceiptCount(stateID: anchor), projectionBefore,
                        "the graph projection must not gain a receipt before commit")
-        XCTAssertEqual(try totalExecutionStates(), statesBefore,
-                       "the child ES insert must roll back with the settlement: no orphan state")
+        // The injected abort fires inside the settle transaction, so the child ES
+        // insert must roll back with it. Checked by lineage: no child of this
+        // anchor, no information-lineage root, no row of any other class.
+        let statesAfter = try executionStatesByParent()
+        let newRows = Set(statesAfter.keys).subtracting(statesBefore.keys)
+        XCTAssertEqual(newRows.filter { statesAfter[$0] == anchor }, [],
+                       "the child ES insert must roll back with the settlement: no orphan "
+                           + "child of the anchor; new rows: " + describe(newRows, in: statesAfter))
+        XCTAssertEqual(try informationLineageRows(), infoRootsBefore,
+                       "a failed commit must add no information-lineage root: nothing settled")
+        XCTAssertEqual(newRows, [],
+                       "a failed commit must add no ES row of any lineage; new rows: "
+                           + describe(newRows, in: statesAfter))
     }
 
     // MARK: - 11) Stream + settle -> HTTP 501 at the TRANSPORT level (fix A)

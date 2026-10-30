@@ -61,10 +61,10 @@ final class SimiGoSnapshotStorageTests: XCTestCase {
         return (declared, try final.encoded())
     }
 
-    func testHeadIsThirteenAndSnapshotReferenceIsNullable() throws {
+    func testHeadIsFourteenAndSnapshotReferenceIsNullable() throws {
         let (db, url) = try makeDatabase("head")
         defer { db.close(); cleanup(url) }
-        XCTAssertEqual(try db.schemaVersion(), 13)
+        XCTAssertEqual(try db.schemaVersion(), 14)
 
         try db.recordExecutionState(id: "state-1", parentID: nil, modelIdentity: "m",
                                     position: 1, continuationID: "C-1", anchor: "a1",
