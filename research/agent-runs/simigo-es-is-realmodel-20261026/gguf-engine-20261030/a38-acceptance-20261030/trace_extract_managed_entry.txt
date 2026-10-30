@@ -1,0 +1,37 @@
+[2026-10-30 18:24:26.113] ℹ️ 🧩 llama.cpp 受管入口: public=8000 engine=127.0.0.1:50508 parallel=1
+[2026-10-30 18:24:26.113] ℹ️ 🌐 llama.cpp Endpoint: bind=127.0.0.1:50508
+[2026-10-30 18:24:26.142] ℹ️ 🚀 启动外部推理后端 llama.cpp | 端口: 50508
+[2026-10-30 18:24:26.268] [llama.cpp] 0.00.095.805 I srv  llama_server: initializing ...
+[2026-10-30 18:24:26.268] [llama.cpp] 0.00.095.812 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+[2026-10-30 18:24:26.270] [llama.cpp] 0.00.097.271 W srv  server_setup: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+[2026-10-30 18:24:26.272] [llama.cpp] 0.00.099.243 I srv    load_model: loading model '/Users/mr.simi/.cache/huggingface/hub/models--LiquidAI--LFM2.5-24B-A2B-GGUF/snapshots/0912d33141f77e10705345a6732bfd83f0252fdc/LFM2.5-24B-A2B-Q6_K.gguf'
+[2026-10-30 18:24:28.232] [llama.cpp] 0.02.059.687 I cmn          init: llama threadpool init, n_threads = 4
+[2026-10-30 18:24:28.313] [llama.cpp] 0.02.141.011 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 131072, kv_unified = 'false'
+[2026-10-30 18:24:28.317] [llama.cpp] 0.02.144.810 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+[2026-10-30 18:24:28.317] [llama.cpp] 0.02.144.935 I srv  server_run_i: model loaded
+[2026-10-30 18:24:28.317] [llama.cpp] 0.02.144.938 I srv  server_on_li: listening on http://127.0.0.1:50508
+[2026-10-30 18:24:28.456] ℹ️ ✅ llama.cpp 后端就绪 (2.3秒)
+[2026-10-30 18:24:28.470] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-10-30 18:26:32.418] [IS] contextInject scope=info-9f2ae1531ce520ed87c6d9fb8b423912 index=0 bytes=4345 candidateBytes=4345 replay=0
+[2026-10-30 18:26:32.418] [BUDGET] r=req-c54c2546 gate=inactive reason=handler_unavailable
+[2026-10-30 18:26:32.418] [ADMIT] grant r=req-c54c2546 endpoint=chat.completions level=1 active=1 waiting=0 waited=0ms
+[2026-10-30 18:26:32.418] [PROTOCOL] arrive r=c54c25 endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-30 18:26:35.899] [ADMIT] release r=req-c54c2546 endpoint=chat.completions level=1 active=0 waiting=0
+[2026-10-30 18:26:35.900] [LC] FORCE_RELEASED r=c54c25 s=openai from=QUEUED reason=unexpected table rejection
+[2026-10-30 18:26:35.900] [LC] RELEASED r=c54c25 s=openai reason=completed
+[2026-10-30 18:26:36.994] [IS] contextInject scope=info-9f2ae1531ce520ed87c6d9fb8b423912 index=0 bytes=4345 candidateBytes=4345 replay=1
+[2026-10-30 18:26:36.994] [BUDGET] r=req-c4c2ead2 gate=inactive reason=handler_unavailable
+[2026-10-30 18:26:36.994] [ADMIT] grant r=req-c4c2ead2 endpoint=chat.completions level=1 active=1 waiting=0 waited=0ms
+[2026-10-30 18:26:36.994] [PROTOCOL] arrive r=c4c2ea endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-30 18:26:38.324] [ADMIT] release r=req-c4c2ead2 endpoint=chat.completions level=1 active=0 waiting=0
+[2026-10-30 18:26:38.324] [LC] FORCE_RELEASED r=c4c2ea s=openai from=QUEUED reason=unexpected table rejection
+[2026-10-30 18:26:38.324] [LC] RELEASED r=c4c2ea s=openai reason=completed
+[2026-10-30 18:27:07.598] [IS] contextInject scope=info-08cbec5e96f842f48093a345e986f0c6 index=0 bytes=4345 candidateBytes=4345 replay=0
+[2026-10-30 18:27:07.599] [BUDGET] r=req-989037b6 gate=inactive reason=handler_unavailable
+[2026-10-30 18:27:07.599] [ADMIT] grant r=req-989037b6 endpoint=chat.completions level=1 active=1 waiting=0 waited=0ms
+[2026-10-30 18:27:07.599] [PROTOCOL] arrive r=989037 endpoint=chat.completions stream=false agent=default s=openai branch=main
+[2026-10-30 18:27:20.921] [ADMIT] release r=req-989037b6 endpoint=chat.completions level=1 active=0 waiting=0
+[2026-10-30 18:27:20.921] [LC] FORCE_RELEASED r=989037 s=openai from=QUEUED reason=unexpected table rejection
+[2026-10-30 18:27:20.922] [LC] RELEASED r=989037 s=openai reason=completed
+[2026-10-30 18:27:22.076] [IS] contextInject scope=info-08cbec5e96f842f48093a345e986f0c6 index=0 bytes=4345 candidateBytes=4268 replay=1 frozenStale=1
+[2026-10-30 18:27:22.096] [IS_REUSE] settlement=7A1A94A7-6C41-4839-94E9-C696C9D64A7B demand=01c1eba6a65b39faa236f0d7fa1af297928e9d7f1b6eeaf325b3a9f01c124108 state=chat-cd24618c-1a68-4bcb-860e-69626d060a88 model_calls=0

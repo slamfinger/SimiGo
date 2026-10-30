@@ -1,0 +1,87 @@
+{
+  "started": "2026-10-30T18:26:31+0800",
+  "base": "http://127.0.0.1:8000",
+  "model": "LiquidAI/LFM2.5-24B-A2B-GGUF",
+  "session": "a38-accept-20261030T182630",
+  "query": "A38 managed-entry acceptance 20261030T182630: reply with exactly one line MARK[A38-20261030T182630]",
+  "payload_sha256_body": "{\"max_tokens\": 64, \"messages\": [{\"content\": \"A38 managed-entry acceptance 20261030T182630: reply with exactly one line MARK[A38-20261030T182630]\", \"role\": \"user\"}], \"model\": \"LiquidAI/LFM2.5-24B-A2B-GGUF\", \"stream\": false, \"temperature\": 0, \"user\": \"a38-accept-20261030T182630\"}",
+  "first": {
+    "status": 200,
+    "elapsed_s": 4.898,
+    "id": "chatcmpl-de6d21d0-e09c-423b-bbd9-2c1a8bfa611d",
+    "content": "",
+    "finish_reason": "length",
+    "simigo": {
+      "settlement_written": false,
+      "completion": "capped"
+    },
+    "usage": null,
+    "model": "LiquidAI/LFM2.5-24B-A2B-GGUF"
+  },
+  "replay": {
+    "status": 200,
+    "elapsed_s": 2.424,
+    "id": "chatcmpl-8911ae09-b6c5-4a11-a7e4-37ad6c8e7a8a",
+    "content": "",
+    "finish_reason": "length",
+    "simigo": {
+      "completion": "capped",
+      "settlement_written": false
+    },
+    "usage": null,
+    "model": "LiquidAI/LFM2.5-24B-A2B-GGUF"
+  },
+  "search": {
+    "status": 200,
+    "elapsed_s": 1.086,
+    "demand_id": "ea1ab7b0a546846dbbcee7088b4353f0198680cc2406c459aa6f3c79a0f46e1d",
+    "reused": false,
+    "status_value": "settled",
+    "result_sha256": "c6a64d01363b491e98819bf2eec2e2e4abb3d09c73b7a7fe4627d179551f40b5",
+    "retrieval_settlement_id": "is-retrieval:ea1ab7b0a546846dbbcee7088b4353f0198680cc2406c459aa6f3c79a0f46e1d",
+    "item_count": 40,
+    "items": [
+      {
+        "locator": "file:work-00000000b2f5467d/7.VBA代码及实例/dylib试验分支/EXP7_20_NOTES.md",
+        "item_id": "file:work-00000000b2f5467d/7.VBA代码及实例/dylib试验分支/EXP7_20_NOTES.md",
+        "line": 8,
+        "text": "- Kept the VBA baseline identical to `exp7_19` and marked this step as a deployment checkpoint.",
+        "kind": "file",
+        "source_sha256": "6b9ea69e7ad297a489ef5921106abaac37c7412a27dc888d9f44d7b4da8bc295"
+      },
+      {
+        "text": "                .Borders(xlEdgeTop).LineStyle = xlNone",
+        "kind": "file",
+        "source_sha256": "5c26d80acff176dc8fe656182047becee39039aac8e527c61744874fbdce4106",
+        "item_id": "file:work-00000000b2f5467d/7.VBA代码及实例/工程预算VBA V1.12-260705.bas",
+        "locator": "file:work-00000000b2f5467d/7.VBA代码及实例/工程预算VBA V1.12-260705.bas",
+        "line": 666
+      },
+      {
+        "item_id": "file:work-00000000b2f5467d/7.VBA代码及实例/工程预算VBA V1.12-260705.bas",
+        "line": 986,
+        "locator": "file:work-00000000b2f5467d/7.VBA代码及实例/工程预算VBA V1.12-260705.bas",
+        "text": "            .Borders(xlInsideHorizontal).LineStyle = xlNone",
+        "source_sha256": "5c26d80acff176dc8fe656182047becee39039aac8e527c61744874fbdce4106",
+        "kind": "file"
+      },
+      {
+        "item_id": "file:work-00000000b2f5467d/7.VBA代码及实例/工程预算VBA V1.12-260705.bas",
+        "line": 1834,
+        "locator": "file:work-00000000b2f5467d/7.VBA代码及实例/工程预算VBA V1.12-260705.bas",
+        "text": "        rngToClear.Borders(xlEdgeTop).LineStyle = xlNone",
+        "kind": "file",
+        "source_sha256": "5c26d80acff176dc8fe656182047becee39039aac8e527c61744874fbdce4106"
+      },
+      {
+        "item_id": "file:work-00000000b2f5467d/7.VBA代码及实例/工程预算VBA V1.12-260705.bas",
+        "text": "        rngToClear.Borders(xlInsideHorizontal).LineStyle = xlNone",
+        "locator": "file:work-00000000b2f5467d/7.VBA代码及实例/工程预算VBA V1.12-260705.bas",
+        "line": 1835,
+        "kind": "file",
+        "source_sha256": "5c26d80acff176dc8fe656182047becee39039aac8e527c61744874fbdce4106"
+      }
+    ]
+  },
+  "finished": "2026-10-30T18:26:39+0800"
+}
