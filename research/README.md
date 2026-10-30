@@ -3,6 +3,28 @@
 本目录把 SimiGo-Lab 的研究仓、R01 夹具和 agent 运行证据以归档形式纳入产品仓。
 它**不参与产品构建**，也不是产品依赖。
 
+## 当前状态导航（2026-10-28）
+
+本目录同时存放**产品期证据**和**Lab 期研究**，两者权威级别不同，按下表取用：
+
+| 想知道 | 读这里 | 不要读 |
+| --- | --- | --- |
+| 产品现在实现了什么、哪些已真机验收、哪些未执行 | `agent-runs/simigo-es-is-realmodel-20261026/ACCEPTANCE-20261026-BUILD-97043902.md`（§3.x 逐批读数 + 收口节） | Lab 期状态表 |
+| 阶段 1/2 还缺什么、哪些需要裁定 | 同目录 `STAGE1-GAP-MATRIX-20261028.md` | 散落的旧阶段报告 |
+| 不同 Agent 当前支持哪些接入方式、wire 标记与 MCP 生命周期 | [`../docs/AGENT-ACCESS.md`](../docs/AGENT-ACCESS.md)（工作区未提交构建） | 测试层读数（见 STAGE1-GAP-MATRIX §4.x） |
+| Lab 期研究结论与原始证据 | `lab/docs/` —— 状态权威只有 `RESEARCH_STATE.md`，其余导航文件是指针 | 产品期验收文档 |
+| 文档层盘点与清理分档 | 同目录 `LAB-DOC-CLEANUP-PLAN-20261028.md` | — |
+| GGUF（llama.cpp）引擎 4 槽并发读数 | `agent-runs/simigo-es-is-realmodel-20261026/gguf-engine-20261030/ACCEPTANCE_gguf_engine.md`（引擎级证据，不是产品 HTTP 路径） | 产品级 4 客户端读数（未执行） |
+
+当前产品能力摘要（详细口径以上表第一行文档为准）：`/v1/chat/completions` 与 `/v1/responses`（含流式）为受管入口，
+进入模型执行前先解析 ES demand 并检查 IS 已结算结果，命中即 0 模型调用复用；成功结果按合同原子结算
+（子状态 + 结算 + 身份绑定 + advancement）。`/v1/completions` 是声明的兼容旁路，wire 上标记
+`simigo.managed = false`。结算消费、受管续跑与 MCP 生命周期工具均已实现；持久化 KV 的非必要性只在
+K1–K3 / U1–U4 已记录的范围内成立，不外推。
+
+`lab/` 是**冻结的 Lab 期研究层**：按原字节导入，不重解释、不重跑、不覆盖；其内容不代表产品当前能力，
+引用 Lab 结论时必须同时引用其 gate 文档与适用范围。
+
 ## 两层归档
 
 | 层 | 位置 | 是否入 Git | 内容 |

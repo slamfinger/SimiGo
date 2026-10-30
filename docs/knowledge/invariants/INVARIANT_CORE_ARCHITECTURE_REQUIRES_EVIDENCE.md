@@ -23,6 +23,6 @@ The Core Architecture should become smaller and more stable as evidence accumula
 
 ## Traceability
 
-- `README_base.md`, §12–§13
+- `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md`（原 `README_base.md`）, §12–§13
 - `docs/experiments/README.md`
 - `docs/decisions/README.md`

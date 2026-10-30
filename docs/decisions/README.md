@@ -58,8 +58,9 @@ ADR
 
 - [Research](../research/README.md) —— 为什么我们知道
 - [Knowledge](../knowledge/README.md) —— 已沉淀的知识层级
-- [Architecture](../architecture/README.md) —— 当前系统是什么
+- [Architecture](../architecture/) —— 当前系统是什么
 
 ## 已归档决策
 
-- [V4_5_STABLE_FOUNDATION_BASELINE.md](V4_5_STABLE_FOUNDATION_BASELINE.md) —— v4.5 Stable Foundation 唯一权威架构指引全文（原 README.md，铁律 1–99 + 三平面模型 + 工具协议规范 + 生命周期收敛 + BatchedDecode 实验轨章程）。**已被 v5.0《核心架构白皮书》（README_base.md）取代**：99 条铁律收敛为 12 条核心不变量，Physical KV 与资源边界移交官方 ChatSession。保留作历史架构记录与设计依据溯源。
+- [ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md](ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md) —— 本地离线 Runtime 不做 prefill 时间门控（W4 原规格撤销）；客户端断连=detach、手动取消仍生效；忽略断连必须配有界执行。实现已落地（build 31），待真机验收。
+- [V4_5_STABLE_FOUNDATION_BASELINE.md](V4_5_STABLE_FOUNDATION_BASELINE.md) —— v4.5 Stable Foundation 唯一权威架构指引全文（原 README.md，铁律 1–99 + 三平面模型 + 工具协议规范 + 生命周期收敛 + BatchedDecode 实验轨章程）。**已被 v5.0《核心架构白皮书》[CORE_ARCHITECTURE_BASELINE_V5_20260912.md](../history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md)（原 README_base.md）取代**：99 条铁律收敛为 12 条核心不变量，Physical KV 与资源边界移交官方 ChatSession。保留作历史架构记录与设计依据溯源。

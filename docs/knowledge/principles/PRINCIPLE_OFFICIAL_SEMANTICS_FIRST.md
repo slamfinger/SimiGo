@@ -25,7 +25,7 @@ Does not prohibit local code for application concerns such as protocol mapping, 
 
 - `docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md`
 - `docs/audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md`
-- `README_base.md`, §5 and §13
+- `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md`（原 `README_base.md`）, §5 and §13
 
 ## Related architecture
 

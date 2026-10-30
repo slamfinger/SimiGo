@@ -44,7 +44,8 @@ NativeMLX cache release                   VERIFIED
 | reason | 语义 |
 |---|---|
 | `completed` | 正常完成 |
-| `cancelled_by_client` | 客户端断连/取消（context 已 closed） |
+| `detached_by_client` | 客户端断连，生成继续跑完（detach；ADR 2026-10-30）；该轮不提交、不结算 |
+| `cancelled_by_client` | 客户端/服务端主动取消（context 已 closed；手动取消仍走此路） |
 | `cancelled_by_runtime` | Runtime shutdown / 配置重载触发停止 |
 | `cancelled_internally` | 推理引擎内部取消（连接仍存活，含 tool 早停） |
 | `model_execution_error: …` | generateHandler 抛出的非取消异常 |

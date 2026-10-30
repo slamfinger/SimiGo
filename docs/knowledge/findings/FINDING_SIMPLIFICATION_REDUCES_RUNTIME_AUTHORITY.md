@@ -34,4 +34,4 @@ It is not evidence that all custom code is undesirable. Application-level concer
 
 - Audit record: `docs/audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md`
 - Lesson: `docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md`
-- Architecture: `README_base.md`, §5 and §13
+- Architecture: `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md`（原 `README_base.md`）, §5 and §13

@@ -29,7 +29,7 @@ V4.5 保留为历史稳定基础。其 99 条历史铁律不直接继续扩张�
 
 ### V5.0 Core Architecture Baseline
 
-- [Core Architecture Baseline](../../README_base.md)
+- [Core Architecture Baseline](../history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md)（原 `README_base.md`，2026-10-30 归档）
 - [Post-audit deletion record](../audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md)
 - [Simplification migration lessons](../lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md)
 

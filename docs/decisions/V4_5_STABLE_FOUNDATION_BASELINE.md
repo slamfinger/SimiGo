@@ -1,6 +1,6 @@
 > **状态：已废弃（SUPERSEDED，2026-09-12）。** 本文是 v4.5 Stable Foundation
 > 时代的唯一权威架构指引（原 README.md，914 行，铁律 1–99 全集），
-> 由 v5.0《核心架构白皮书》（README_base.md）取代：99 条铁律收敛为 12 条核心不变量，
+> 由 v5.0《核心架构白皮书》（现 `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md`，原 `README_base.md`）取代：99 条铁律收敛为 12 条核心不变量，
 > 演进轨道拆分至 docs/experiments/EVOLUTION_TRACK.md，迁移踩坑记录在 docs/lessons/。
 > 重要语义变化：Physical KV 的 Token 账本、前缀匹配与资源边界已交由官方 ChatSession
 > 承担（README_base §5.1.1 / §6.1）。本文仅作历史架构记录保留——
@@ -24,7 +24,7 @@ SimiGo 是运行在 Apple Silicon Mac 上的本地推理运行时：以菜单栏
 | 平台 | macOS（Apple Silicon），SwiftUI 菜单栏应用（`LSUIElement`） |
 | 核心依赖 | [mlx-swift](https://github.com/ml-explore/mlx-swift) 0.31.6 · [mlx-swift-lm](https://github.com/ml-explore/mlx-swift-lm) 3.31.4 · [swift-transformers](https://github.com/huggingface/swift-transformers) 1.3.3 |
 | 测试 | `SimiGoTests`，21 用例（`xcodebuild test` 驱动） |
-| 其他文档 | [部署指南.md](部署指南.md)（LAN 节点部署手册） |
+| 其他文档 | [部署指南.md](../../部署指南.md)（LAN 节点部署手册） |
 
 ---
 
@@ -920,4 +920,4 @@ xcodebuild test -project SimiGo.xcodeproj -scheme SimiGo -destination 'platform=
 
 ## 11.3 运行
 
-构建后从菜单栏图标启动服务、选择本地模型目录即可；API 地址可一键复制。LAN 第二节点部署与多节点扩容见 [部署指南.md](部署指南.md)。
+构建后从菜单栏图标启动服务、选择本地模型目录即可；API 地址可一键复制。LAN 第二节点部署与多节点扩容见 [部署指南.md](../../部署指南.md)。

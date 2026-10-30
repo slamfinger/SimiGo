@@ -21,17 +21,17 @@ SimiGo 是一个以 **Execution State（执行状态）** 为核心抽象的本�
 - 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
 - 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
 
-## Download — v2.1.0 Execution State Reference App
+## Download — v2.2.1
 
 当前公开 DMG：
 
 ```text
-https://github.com/slamfinger/SimiGo/releases/tag/v2.1.0
+https://github.com/slamfinger/SimiGo/releases/tag/v2.2.1
 ```
 
 | Asset | Requirement | Checksum |
 |---|---|---|
-| `SimiGo-v2.1.0.dmg` | Apple Silicon macOS 26.4+ | 见 Release 页面 |
+| `SimiGo-v2.2.1-30-f6a4decf.dmg` | Apple Silicon macOS 26.4+ | 见 Release 页面 |
 
 该 DMG 使用 **ad-hoc signature**，未做 notarization。首次打开若被 Gatekeeper
 拦截，请先校验 Release 页面 SHA-256，再移除 quarantine 属性：
@@ -46,8 +46,8 @@ xattr -dr com.apple.quarantine SimiGo.app
 
 ### 下载运行
 
-1. 从 [v2.1.0 Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.1.0)
-   下载 `SimiGo-v2.1.0.dmg`。
+1. 从 [v2.2.1 Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.1)
+   下载 `SimiGo-v2.2.1-30-f6a4decf.dmg`。
 2. 校验 Release 页面的 SHA-256。
 3. 拖入 `/Applications`，打开菜单栏 SimiGo。
 4. State Graph 入口：菜单栏 → **Execution State Graph...**。
@@ -190,7 +190,7 @@ Execution Continuity  ≠ Computation Semantics
 SimiGo Runtime        ≠ Backend
 ```
 
-**当前阶段：v2.1.0 Reference App / Research Preview，不是 GA。**
+**当前阶段：v2.2.1（build 30）Reference App / Research Preview，不是 GA。**
 
 已经完成真实设备、真实模型和 Runtime 故障矩阵验证，但目前不宣称为生产级通用推理 Runtime，也不宣称已经完成 Backend-independent Runtime。
 
@@ -198,7 +198,8 @@ SimiGo Runtime        ≠ Backend
 
 | 项目 | 当前状态 |
 |---|---|
-| Version | `v2.1.0` (build 10, tag `v2.1.0`) |
+| Version | `v2.2.1` (build 30, tag `v2.2.1`) |
+| 源码构建 | `build 31`（未发版；仅 build 30 在 tag `v2.2.1` 上） |
 | Stage | Execution State Reference App / Research Preview |
 | Platform | Apple Silicon macOS |
 | Minimum macOS | 26.4 |
@@ -228,6 +229,24 @@ SimiGo Runtime        ≠ Backend
 > **P1 = 0**
 
 剩余项目已经分类为 Beta boundary、GA work item 或 product scope。
+
+### 信息空间（IS）当前状态
+
+外部 Agent 与外部 API 产生的信息进入 IS 后，有三个互不替代的状态
+（契约见 `docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md`）：
+
+| 状态 | 含义 | 当前证据 |
+|---|---|---|
+| 已记录 | 输入与来源已写库，未验证 | 真机已观测（本地路径 `turn_state=pending`，外部路径 `recorded`） |
+| 已结算 | 该轮自身跑完并产出有效结算 | 真机已观测（`committed` + `VALID`/`valid` 结算） |
+| 可检索 | 后续符合资格的请求真正消费该历史 | **未观测**：尚无同 scope 后续轮的 `replay=1` 读数 |
+
+在途请求不会成为他人已结算知识：并发窗口里被客户端断开的在途轮始终未 `committed`。
+已知未关闭：取消的本地轮没有终止态（停在 `pending`）；本地路径不写 `request_id` /
+`source_provider`。W4 的时间门控路线已由 owner 裁定撤销（不做 prefill 时间门控，
+见 `docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md`），准入拒绝
+出口已随 build 31 下线、`estMs` 观测保留（`gate=withdrawn`）；其样本污染问题仍是
+独立未关闭项。
 
 ## 2. SimiGo 的核心问题
 
@@ -479,39 +498,28 @@ MLX 是 SimiGo 当前主要的具体执行 Backend / substrate，但 **MLX 不�
 
 ## 11. 文档体系
 
-公开文档已经从单纯的产品说明扩展为研究证据链：
+四个问题，各有唯一入口：
 
-```text
-Research Story
-      ↓
-Execution State architecture
-      ↓
-Runtime consistency
-      ↓
-Oversized execution evidence
-      ↓
-Failure Matrix
-      ↓
-Residency policy
-```
-
-| 文档 | 定位 |
+| 问题 | 入口 |
 |---|---|
-| `README.md` | 项目入口、当前状态、能力与研究方向 |
-| `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md` | 历史 v5 架构白皮书，已 superseded |
-| `docs/research/` | 研究故事与长期问题演进 |
-| `docs/knowledge/findings/` | 已验证的研究 / 工程结果 |
-| `docs/knowledge/invariants/` | 已形成稳定边界的不变量与契约 |
-| `docs/decisions/` | 架构决策 |
-| `docs/lessons/` | 工程经验与故障分析 |
-| `docs/experiments/` | 尚未进入核心架构的实验 |
-| `docs/benchmarks/` | 可重复的实机测量与性能数据 |
-| `部署指南.md` | 本地与局域网部署 |
+| 当前实现是什么 | 本 README §1（含「信息空间（IS）当前状态」）、`docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md`、`docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md` |
+| 怎么运行 | 本 README「Download」「Quick Start」、`部署指南.md`、`docs/AGENT-ACCESS.md` |
+| 怎么验证 | `SimiGoTests` 目标（Xcode）；隔离 xctestrun 驱动见 `research/agent-runs/*/driver/run_isolated_tests.sh`；验收读数入口 `docs/audit/`、`docs/experiments/`、`docs/releases/` |
+| 哪些问题仍未关闭 | `docs/knowledge/open-problems/README.md`（总表）；本 README §1「信息空间（IS）当前状态」；`docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md` §8、§10 |
 
-`README.md` 回答：**SimiGo 现在是什么、已经证明了什么、当前边界在哪里、下一步研究什么。**
+文档分四层，不再混放：
 
-`docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md` 回答历史 v5
-架构原则；它已被当前 Execution State 定位取代。
+1. **权威说明**（产品是什么、怎么用）：`README.md`、`部署指南.md`、`docs/AGENT-ACCESS.md`
+2. **契约与设计**（当前实现必须遵守什么）：`docs/architecture/`、`docs/decisions/`、`docs/knowledge/invariants/`
+3. **冻结证据**（只增不改，不因精简删除）：`docs/audit/`、`docs/experiments/`、`docs/benchmarks/`、`docs/lessons/`、`research/`
+4. **历史与过程**（superseded 或研究叙事）：`docs/history/`、`docs/evolution/`、`docs/research/`
+
+研究叙事链（Research Story → Execution State architecture → Runtime consistency →
+Oversized execution evidence → Failure Matrix → Residency policy）留在 `docs/research/`
+与 `docs/knowledge/findings/`，不再复制进产品入口。
+
+`docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md` 是历史 v5 架构白皮书，
+已被当前 Execution State 定位取代。
 
 ## 12. 当前研究路线
 

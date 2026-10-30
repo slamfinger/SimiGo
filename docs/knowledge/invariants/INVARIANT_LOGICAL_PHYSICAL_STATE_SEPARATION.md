@@ -25,7 +25,7 @@ The v5.0 architecture explicitly separates these domains and defines Physical KV
 
 ## Evidence
 
-- `README_base.md`, §2–§6 and §11
+- `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md`（原 `README_base.md`）, §2–§6 and §11
 - `docs/decisions/V4_5_STABLE_FOUNDATION_BASELINE.md`
 - `docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md`, §2
 

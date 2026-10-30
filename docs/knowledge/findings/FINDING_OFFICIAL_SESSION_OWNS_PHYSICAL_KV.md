@@ -12,7 +12,7 @@ SimiGo retains responsibility for logical session continuity, protocol normaliza
 
 ## Evidence
 
-- `README_base.md` records the v5.0 baseline and states that Physical Token Ledger, exact prefix matching, and trim/rebuild decisions are owned by official `ChatSession`.
+- `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md`（原 `README_base.md`） records the v5.0 baseline and states that Physical Token Ledger, exact prefix matching, and trim/rebuild decisions are owned by official `ChatSession`.
 - `docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md` records the distinction between logical session continuity and physical KV reuse, including the observed warm-hit telemetry.
 - `docs/audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md` records rejection of parallel custom KV/cancellation/admission layers after the simplification pass.
 
@@ -22,6 +22,6 @@ This finding does not claim that every future upstream implementation is suffici
 
 ## Traceability
 
-- Architecture: `README_base.md`, §5–§6
+- Architecture: `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md`（原 `README_base.md`）, §5–§6
 - Lesson: `docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md`, §2–§3
 - Audit record: `docs/audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md`

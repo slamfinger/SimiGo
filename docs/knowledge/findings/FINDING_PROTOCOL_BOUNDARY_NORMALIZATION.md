@@ -26,4 +26,4 @@ The finding is about representation compatibility at an integration boundary. It
 ## Traceability
 
 - Lesson: `docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md`, §1
-- Architecture: `README_base.md`, §5.2
+- Architecture: `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md`（原 `README_base.md`）, §5.2
