@@ -200,7 +200,7 @@ SimiGo Runtime        ≠ Backend
 |---|---|
 | Version | `v2.2.2` (build 32, tag `v2.2.2`) |
 | 源码构建 | `build 32`（与 tag `v2.2.2` 同一构建） |
-| 运行时验证 | v2.2.2 仅完成构建、打包与 DMG 校验；安装版 + 真实模型读数尚未取（v2.2.1 的读数不移植） |
+| 运行时验证 | 安装版已取 3 客户端真机冒烟（两路隔离、零交叉）；流式/工具调用/取消/GGUF 后端未覆盖，见 `research/agent-runs/simigo-es-is-realmodel-20261026/gguf-engine-20261030/ACCEPTANCE_v222_installed_smoke_20261030.md` |
 | Stage | Execution State Reference App / Research Preview |
 | Platform | Apple Silicon macOS |
 | Minimum macOS | 26.4 |

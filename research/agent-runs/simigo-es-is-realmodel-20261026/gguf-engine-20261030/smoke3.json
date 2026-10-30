@@ -1,0 +1,43 @@
+{
+  "started": "2026-10-30T15:40:04+0800",
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "runs": {
+    "ALPHA": {
+      "status": 200,
+      "elapsed": 7.53,
+      "content": "MARK[ALPHA]",
+      "reasoning": "",
+      "finish_reason": "stop",
+      "usage": null,
+      "carries_own_marker": true,
+      "foreign_markers": []
+    },
+    "BRAVO": {
+      "status": 200,
+      "elapsed": 11.54,
+      "content": "MARK[BRAVO]",
+      "reasoning": "",
+      "finish_reason": "stop",
+      "usage": null,
+      "carries_own_marker": true,
+      "foreign_markers": []
+    },
+    "CHARLIE": {
+      "status": 200,
+      "elapsed": 9.55,
+      "content": "MARK[CHARLIE]",
+      "reasoning": "",
+      "finish_reason": "stop",
+      "usage": null,
+      "carries_own_marker": true,
+      "foreign_markers": []
+    }
+  },
+  "warmup": {
+    "status": 200,
+    "elapsed": 34.33,
+    "body": "{\"id\":\"chatcmpl-81b5a96f-e711-452c-a8f5-f9b85b025f98\",\"created\":1793346038,\"model\":\"peculiar-ragdoll\\/Nail-Qwen3.6-35B-A3B-MLX\",\"object\":\"chat.completion\",\"choices\":[{\"message\":{\"content\":\"WARMUP[OK]\",\"role\":\"assistant\"},\"index\":0,\"finish_reason\":\"stop\"}]}"
+  },
+  "concurrent_wall": 11.55,
+  "finished": "2026-10-30T15:40:50+0800"
+}
