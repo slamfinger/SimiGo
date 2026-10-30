@@ -73,3 +73,65 @@ python3 research/agent-runs/simigo-es-is-realmodel-20261026/gguf-engine-20261030
 ```
 
 脚本从 `/v1/models` 取当前模型 id，读数为 `smoke3.json`。
+
+## 7. 追加：owner 在菜单栏启动 GGUF 后端后的读数（2026-10-30 15:45–15:54）
+
+### 7.1 拓扑：这次引擎是产品的子进程，但产品入口仍不在链路上
+
+| 项 | 值 |
+| --- | --- |
+| `127.0.0.1:8000` 监听者 | `llama-server` pid 35459，**PPID = 33868**（`/Applications/SimiGo.app/Contents/MacOS/SimiGo`） |
+| 启动参数 | `--model …Cyber-Tiel-Coder-35B-A3B-GGUF-MTP… --port 8000 --host 127.0.0.1 --alias 0bbcf3cc… --parallel 1 --cache-prompt --slots --cache-type-k q4_0 --cache-type-v q4_0 -ngl 99 -b 1024 -ub 512 --ctx-size 131072 --flash-attn on` |
+| 产品自身监听 | `lsof -a -p 33868 -iTCP -sTCP:LISTEN` **为空** |
+| `/slots` | 1 个（`id 0`，`n_ctx 131072`） |
+| `/health` | `{"status":"ok"}`（引擎形状，无 `model` 字段） |
+| 驻留 | 引擎 RSS 20.4 GB；模型 blob 21 GB；测试开始前已加载约 7.5 min |
+
+产品日志（`~/.simigo/logs/native_mlx_trace.log`，该文件同时接收产品日志与引擎 stderr）：
+
+```
+[15:45:03.219] 🧩 llama-server 参数: … --parallel 1 --cache-prompt --slots …
+[15:45:05.174] 🧩 llama.cpp 性能配置: parallel=1 | ngl=99 | specNMax=2 | flash-attn=on
+```
+
+代码侧对应：GGUF 分支走 `ProcessRuntime`（`Service.swift:958-969`），只有 `HTTPServer` 的三处构造
+（`NativeMLX.swift:457`、`RemoteOpenAIRuntime.swift:53`、`OversizedRuntime.swift:97`）才带 ES/IS、
+结算与准入层。**所以 GGUF 模式下产品只负责拉起引擎，请求由客户端直连 llama.cpp。**
+
+### 7.2 读数：4 路并发（`smoke4.py`，15:54:27–15:54:33）
+
+| 标记 | HTTP | 耗时 (s) | 内容 | 自带标记 | 外来标记 |
+| --- | --- | --- | --- | --- | --- |
+| ALPHA | 200 | 2.08 | `MARK[ALPHA]` | 是 | 无 |
+| BRAVO | 200 | 4.73 | `MARK[BRAVO]` | 是 | 无 |
+| CHARLIE | 200 | 3.02 | `MARK[CHARLIE]` | 是 | 无 |
+| DELTA | 200 | 3.89 | `MARK[DELTA]` | 是 | 无 |
+
+并发墙钟 4.73 s，全部 `finish_reason=stop`。第 5 路（同 `user`、换 session 的 ALPHA 重试）
+200 / 0.84 s / `MARK[ALPHA]`。
+
+引擎日志把「只有 1 个槽」坐实：四个请求全部落在 `slot id 0`，`print_timing` 依次出现在
+15:54:29.6（task 22）、30.5（task 19）、31.4（task 20）、32.3（task 21），间隔 0.86–0.9 s，
+第 5 路 33.1（task 114）——**串行完成，不是同时生成**。
+
+DB 对账（只读副本）：`chat_messages 296→296`、`settlements 314→314`、`information_demands 201→201`、
+`information_reuse_events 3→3`，库文件 mtime 保持 15:40。**GGUF 模式下这 5 次请求在产品侧零写入**，
+与 7.1 的代码路径一致（没有 `HTTPServer` 就没有结算/ES/IS）。
+
+### 7.3 边界
+
+- **不是 4 槽并发读数**：本次 `--parallel 1` 是默认值；`SIMIGO_LLAMA_PARALLEL` 只在引擎被拉起时
+  读一次（`Service.swift:117-119`，上限 4），要取 4 槽读数必须以该环境变量重启 App。这一窗口没有做。
+- **不是产品语义读数**：准入、结算、答案复用、IS 检索在 GGUF 路径上根本不存在（7.1），
+  零交叉只说明引擎单槽在串行服务时不串内容。
+- 脚本传入的 `user` 字段 llama.cpp 不用于隔离，不能据此推断会话身份。
+- 内存边界：35B GGUF 已占 20.4 GB（总 32 GB），4 槽的额外 KV 占用未测量。
+- 只对可执行文件 `2261b1d7…0e1d` 与 shim `e15e01c0…` 有效。
+
+### 7.4 复现
+
+```bash
+python3 research/agent-runs/simigo-es-is-realmodel-20261026/gguf-engine-20261030/smoke4.py
+```
+
+原始读数 `smoke4.json`，参数与槽时序分别见 `spawn_args_20261030.txt`、`slot_timeline_20261030.txt`。

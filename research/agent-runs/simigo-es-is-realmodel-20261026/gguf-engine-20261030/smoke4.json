@@ -1,0 +1,48 @@
+{
+  "started": "2026-10-30T15:54:27+0800",
+  "model": "0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
+  "runs": {
+    "ALPHA": {
+      "status": 200,
+      "elapsed": 2.08,
+      "content": "MARK[ALPHA]",
+      "finish_reason": "stop",
+      "carries_own_marker": true,
+      "foreign_markers": []
+    },
+    "BRAVO": {
+      "status": 200,
+      "elapsed": 4.73,
+      "content": "MARK[BRAVO]",
+      "finish_reason": "stop",
+      "carries_own_marker": true,
+      "foreign_markers": []
+    },
+    "CHARLIE": {
+      "status": 200,
+      "elapsed": 3.02,
+      "content": "MARK[CHARLIE]",
+      "finish_reason": "stop",
+      "carries_own_marker": true,
+      "foreign_markers": []
+    },
+    "DELTA": {
+      "status": 200,
+      "elapsed": 3.89,
+      "content": "MARK[DELTA]",
+      "finish_reason": "stop",
+      "carries_own_marker": true,
+      "foreign_markers": []
+    }
+  },
+  "concurrent_wall": 4.73,
+  "fifth_reuse_probe": {
+    "status": 200,
+    "elapsed": 0.84,
+    "content": "MARK[ALPHA]",
+    "finish_reason": "stop",
+    "carries_own_marker": true,
+    "foreign_markers": []
+  },
+  "finished": "2026-10-30T15:54:33+0800"
+}
