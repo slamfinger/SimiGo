@@ -58,6 +58,23 @@ enum SimiGoProducerIdentity {
     /// auditable, not just a filename.
     static func tokenizerIdentity(fromPath path: String) -> [[String: Any]] {
         let dir = URL(fileURLWithPath: path).standardizedFileURL
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: dir.path, isDirectory: &isDirectory)
+        else { return [] }
+        if !isDirectory.boolValue {
+            // A GGUF checkpoint is a single weight file with the tokenizer
+            // embedded. Hugging Face cache blobs are named by their own
+            // SHA-256, so the name is a content address; anything else falls
+            // back to name+size (hashing a multi-GB file at load is not
+            // affordable).
+            let name = dir.lastPathComponent.lowercased()
+            let attributes = try? FileManager.default.attributesOfItem(atPath: dir.path)
+            let size = (attributes?[.size] as? NSNumber)?.int64Value ?? 0
+            if name.count == 64, name.allSatisfy({ $0.isHexDigit }) {
+                return [["file": name, "sha256": name, "size": size]]
+            }
+            return [["file": name, "size": size]]
+        }
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: dir, includingPropertiesForKeys: nil) else { return [] }
         return files

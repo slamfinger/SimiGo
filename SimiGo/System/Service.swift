@@ -220,7 +220,7 @@ public protocol Runtime: AnyObject, Sendable {
 
 // MARK: - External Process Runtime
 
-private final class ProcessRuntime: Runtime, @unchecked Sendable {
+final class ProcessRuntime: Runtime, @unchecked Sendable {
     private struct State: @unchecked Sendable {
         var process: Process?
         var isRunning = false
@@ -318,15 +318,13 @@ private final class ProcessRuntime: Runtime, @unchecked Sendable {
     // MARK: Start
 
     func start(_ info: ModelInfo, port: Int) async throws {
-        let endpoint = InferenceNodeConfiguration.shared.snapshot()
-
         state.withLock {
             $0.port = port
             $0.isStopping = false
-            $0.healthURLString = endpoint.internalBaseURLString + config.healthEndpoint
+            $0.healthURLString = "http://127.0.0.1:\(port)" + config.healthEndpoint
         }
 
-        Service.log("🌐 \(config.name) Endpoint: bind=\(endpoint.bindHost):\(port), advertised=\(endpoint.advertisedHost):\(port), LAN=\(endpoint.isLANEnabled)")
+        Service.log("🌐 \(config.name) Endpoint: bind=127.0.0.1:\(port)")
 
         let pids = await processIDsOnPort(port)
 
@@ -969,11 +967,8 @@ public final class Service: ObservableObject {
                 return
             }
 
-            let port = node.port
-            let launchArgs = backendConfig.args(info, resolvedConfig, port)
-
-            Self.log("🧩 llama-server 参数: " + launchArgs.joined(separator: " "))
-            runtime = ProcessRuntime(config: backendConfig, launchArgs: launchArgs)
+            runtime = ManagedGGUFRuntime(
+                config: resolvedConfig, backendConfig: backendConfig)
         }
 
         runtimeState.withLock {
