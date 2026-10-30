@@ -21,17 +21,17 @@ SimiGo 是一个以 **Execution State（执行状态）** 为核心抽象的本�
 - 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
 - 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
 
-## Download — v2.2.1
+## Download — v2.2.2
 
 当前公开 DMG：
 
 ```text
-https://github.com/slamfinger/SimiGo/releases/tag/v2.2.1
+https://github.com/slamfinger/SimiGo/releases/tag/v2.2.2
 ```
 
 | Asset | Requirement | Checksum |
 |---|---|---|
-| `SimiGo-v2.2.1-30-f6a4decf.dmg` | Apple Silicon macOS 26.4+ | 见 Release 页面 |
+| `SimiGo-v2.2.2-32-2261b1d7.dmg` | Apple Silicon macOS 26.4+ | 见 Release 页面 |
 
 该 DMG 使用 **ad-hoc signature**，未做 notarization。首次打开若被 Gatekeeper
 拦截，请先校验 Release 页面 SHA-256，再移除 quarantine 属性：
@@ -46,8 +46,8 @@ xattr -dr com.apple.quarantine SimiGo.app
 
 ### 下载运行
 
-1. 从 [v2.2.1 Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.1)
-   下载 `SimiGo-v2.2.1-30-f6a4decf.dmg`。
+1. 从 [v2.2.2 Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.2)
+   下载 `SimiGo-v2.2.2-32-2261b1d7.dmg`。
 2. 校验 Release 页面的 SHA-256。
 3. 拖入 `/Applications`，打开菜单栏 SimiGo。
 4. State Graph 入口：菜单栏 → **Execution State Graph...**。
@@ -190,7 +190,7 @@ Execution Continuity  ≠ Computation Semantics
 SimiGo Runtime        ≠ Backend
 ```
 
-**当前阶段：v2.2.1（build 30）Reference App / Research Preview，不是 GA。**
+**当前阶段：v2.2.2（build 32）Reference App / Research Preview，不是 GA。**
 
 已经完成真实设备、真实模型和 Runtime 故障矩阵验证，但目前不宣称为生产级通用推理 Runtime，也不宣称已经完成 Backend-independent Runtime。
 
@@ -198,8 +198,9 @@ SimiGo Runtime        ≠ Backend
 
 | 项目 | 当前状态 |
 |---|---|
-| Version | `v2.2.1` (build 30, tag `v2.2.1`) |
-| 源码构建 | `build 31`（未发版；仅 build 30 在 tag `v2.2.1` 上） |
+| Version | `v2.2.2` (build 32, tag `v2.2.2`) |
+| 源码构建 | `build 32`（与 tag `v2.2.2` 同一构建） |
+| 运行时验证 | v2.2.2 仅完成构建、打包与 DMG 校验；安装版 + 真实模型读数尚未取（v2.2.1 的读数不移植） |
 | Stage | Execution State Reference App / Research Preview |
 | Platform | Apple Silicon macOS |
 | Minimum macOS | 26.4 |
