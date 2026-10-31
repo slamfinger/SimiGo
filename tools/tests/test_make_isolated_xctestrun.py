@@ -86,7 +86,10 @@ class IsolatedXCTestRunTests(unittest.TestCase):
             env = target["EnvironmentVariables"]
             for key, value in roots.items():
                 self.assertEqual(env[key], value)
-            self.assertEqual(env["KEEP_ME"] == "yes", target["BlueprintName"] == "SimiGoTests")
+            if target["BlueprintName"] == "SimiGoTests":
+                self.assertEqual(env["KEEP_ME"], "yes")
+            else:
+                self.assertEqual(env["OTHER_ONLY"], "yes")
         rec = json.loads(self.record.read_text())
         self.assertEqual(rec["other_differences"], [])
         self.assertEqual(rec["target_env_applied"], [])
