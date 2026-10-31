@@ -14,7 +14,8 @@ import XCTest
 /// No test here reads a live Qoder transcript: the scan root is a static copy
 /// written by `Fixture` into a throwaway directory, and the only writes are
 /// inside a throwaway state directory. The zero-information-space claim is
-/// therefore checked on the filesystem rather than inferred from intent.
+/// checked on the filesystem against the product's known IS store names, so it
+/// is a check rather than an inference from intent.
 final class QoderCollectionLifecycleTests: XCTestCase {
     private var root: URL!
     private var project: URL!
@@ -279,55 +280,82 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         try Fixture.writeLines([Fixture.userLine(uuid: "u-9", text: "control")], to: file)
         XCTAssertNotEqual(try fingerprintTree(project), before)
 
-        // Only the inbox and its lease may exist in the state directory; the
-        // check is a plain directory listing against that allow-list.
-        let allowed: Set<String> = [
-            QoderCandidateInbox.databaseFileName,
-            QoderCollectionLease.lockFileName,
-        ]
+        // Only these exact names may exist in the state directory; the check is a
+        // plain listing against an allow-list, not a prefix match.
+        let database = QoderCandidateInbox.databaseFileName
         let unexpected = try unexpectedStateEntries(
-            in: configuration.stateDirectory, allowed: allowed)
+            in: configuration.stateDirectory,
+            allowed: [
+                database, "\(database)-wal", "\(database)-shm", "\(database)-journal",
+                QoderCollectionLease.lockFileName,
+            ])
         XCTAssertEqual(
             unexpected, [], "unexpected files in the collector state directory: "
                 + "\(unexpected)")
 
+        // Paired control: a file that hides behind the database name's prefix must
+        // still be reported, which is why the allow-list is exact.
+        let lookalike = configuration.stateDirectory
+            .appendingPathComponent("\(database)-lookalike")
+        try Data("control".utf8).write(to: lookalike)
+        XCTAssertEqual(
+            try unexpectedStateEntries(
+                in: configuration.stateDirectory,
+                allowed: [
+                    database, "\(database)-wal", "\(database)-shm", "\(database)-journal",
+                    QoderCollectionLease.lockFileName,
+                ]),
+            ["\(database)-lookalike"])
+        try FileManager.default.removeItem(at: lookalike)
+
         // And no information-space store appears anywhere under the test root.
-        // This package has no IS dependency; the claim is checked, not assumed.
+        // This package has no IS dependency; the claim is checked against the
+        // known IS store names, not assumed.
         let strays = informationSpaceStores(under: root)
         XCTAssertEqual(strays, [], "information-space writes appeared: \(strays)")
 
-        // Paired control for that claim too: a planted store must be visible.
-        // Compared by last component, because enumeration yields the canonical
-        // `/private/var` path while the constructed URL says `/var`.
-        let planted = root.appendingPathComponent("simigo.sqlite3")
-        try Data("control".utf8).write(to: planted)
+        // Paired control for that claim too: a planted store and its sidecar must
+        // both be visible to the same scan.
+        let planted = [
+            root.appendingPathComponent("simigo.sqlite3"),
+            root.appendingPathComponent("simigo.sqlite3-wal"),
+        ]
+        for url in planted { try Data("control".utf8).write(to: url) }
         XCTAssertEqual(
             informationSpaceStores(under: root).map {
                 URL(fileURLWithPath: $0).lastPathComponent
-            },
-            ["simigo.sqlite3"])
-        try FileManager.default.removeItem(at: planted)
+            }.sorted(),
+            ["simigo.sqlite3", "simigo.sqlite3-wal"])
+        for url in planted { try FileManager.default.removeItem(at: url) }
         XCTAssertEqual(informationSpaceStores(under: root), [])
     }
 
+    /// Entries of `directory` that the collector is not allowed to leave behind.
     private func unexpectedStateEntries(
         in directory: URL, allowed: Set<String>
     ) throws -> [String] {
         try FileManager.default.contentsOfDirectory(
             at: directory, includingPropertiesForKeys: nil
-        ).map(\.lastPathComponent).filter {
-            !allowed.contains($0)
-                && !$0.hasPrefix("\(QoderCandidateInbox.databaseFileName)-")
-        }
+        ).map(\.lastPathComponent).filter { !allowed.contains($0) }.sorted()
     }
 
+    /// Paths under `directory` matching the names the product uses for its
+    /// authoritative ES/IS database (plus its SQLite sidecars) and the older
+    /// `information-space` naming. This is a known-name scan, not a general
+    /// classifier: it can only show that no store named like this was written.
     private func informationSpaceStores(under directory: URL) -> [String] {
-        guard let enumerator = FileManager.default.enumerator(at: directory,
-            includingPropertiesForKeys: [.isRegularFileKey]) else { return [] }
+        let names: Set<String> = [
+            "simigo.sqlite3", "simigo.sqlite3-wal",
+            "simigo.sqlite3-shm", "simigo.sqlite3-journal",
+        ]
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory, includingPropertiesForKeys: nil
+        ) else { return [] }
         return enumerator.compactMap { item in
             guard let url = item as? URL else { return nil }
-            return url.path.hasSuffix("simigo.sqlite3")
-                || url.path.contains("information-space") ? url.path : nil
+            guard names.contains(url.lastPathComponent)
+                || url.path.contains("information-space") else { return nil }
+            return url.path
         }.sorted()
     }
 }
