@@ -5,6 +5,7 @@
 #   tools/run_isolated_tests.sh [--app PATH] [--evidence-dir DIR] [--tag NAME]
 #                               [--base-xctestrun PATH] [--destination DEST]
 #                               [--extra-root PATH]... [--only TEST]...
+#                               [--target-env TARGET:KEY=VALUE]...
 #
 # --only passes -only-testing to xcodebuild (repeatable, SimiGoTests/Class/method
 # or SimiGoTests/Class). Targeted selections have NOT been measured for user-state
@@ -57,6 +58,7 @@ BASE=""
 DEST="platform=macOS,arch=arm64"
 EXTRA=()
 ONLY=()
+TARGET_ENV=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --app) APP="$2"; shift 2 ;;
@@ -66,9 +68,22 @@ while [ $# -gt 0 ]; do
     --destination) DEST="$2"; shift 2 ;;
     --extra-root) EXTRA+=("$2"); shift 2 ;;
     --only) ONLY+=("$2"); shift 2 ;;
+    --target-env) TARGET_ENV+=("$2"); shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "RUN_ISOLATED: unknown argument $1" >&2; usage >&2; exit 2 ;;
   esac
+done
+
+# Keep opt-in knobs explicit and allowlisted before creating evidence or isolation state.
+for spec in "${TARGET_ENV[@]:-}"; do
+  case "$spec" in
+    *:SIMIGO_PREFIX_POOL=1|*:SIMIGO_BRANCH_CHECKPOINTS=1|*:SIMIGO_REQUEST_BUDGET_MS=0) ;;
+    *) echo "RUN_ISOLATED: unsupported --target-env $spec" >&2; exit 2 ;;
+  esac
+  target="${spec%%:*}"
+  if [ -z "$target" ] || [ "$target" = "$spec" ]; then
+    echo "RUN_ISOLATED: --target-env must be TARGET:KEY=VALUE" >&2; exit 2
+  fi
 done
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -76,7 +91,9 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 [ -n "$TAG" ] || TAG="run-$stamp"
 
 under() { case "$1" in "$2"|"$2"/*) return 0 ;; *) return 1 ;; esac; }
-REAL_ROOTS=("$HOME_DIR/.simigo" "$HOME_DIR/Library/Application Support/SimiGo")
+REAL_ROOTS=("$HOME_DIR/.simigo" "$HOME_DIR/Library/Application Support/SimiGo"
+            "$HOME_DIR/Library/Preferences/SwiftUI.SimiGo.plist"
+            "$HOME_DIR/Library/Preferences/SimiGo.plist")
 
 # Every layout rule is checked on the path TEXT first and again after symlink
 # resolution. Nothing is created before the text check passes, so a rejected
@@ -133,7 +150,7 @@ else
 fi
 
 # --- fresh root (D4 depends on it) ------------------------------------------
-for d in home cache state-graph; do
+for d in home cache state-graph qoder-projects; do
   if [ -e "$ISO/$d" ]; then rm -rf "$ISO/$d"; fi
   mkdir -p "$ISO/$d"
 done
@@ -154,6 +171,7 @@ START=$(date +%s)
 GEN=(python3 "$ROOT/tools/make_isolated_xctestrun.py" --app "$APP"
      --isolation-root "$ISO" --record "$EVIDENCE/xctestrun_isolation.json")
 [ -n "$BASE" ] && GEN+=(--base-xctestrun "$BASE")
+for v in "${TARGET_ENV[@]:-}"; do GEN+=(--target-env "$v"); done
 "${GEN[@]}" || exit 4
 XR="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["isolated_xctestrun"])' \
       "$EVIDENCE/xctestrun_isolation.json")" || exit 4
@@ -235,7 +253,8 @@ def du(p):
 
 diff = json.load(open(os.path.join(ev, "snapshot_diff.json")))
 xr = json.load(open(os.path.join(ev, "xctestrun_isolation.json")))
-content = {d: du(os.path.join(iso, d)) for d in ("home", "cache", "state-graph")}
+content = {d: du(os.path.join(iso, d))
+           for d in ("home", "cache", "state-graph", "qoder-projects")}
 checks = {
     "test_execute_succeeded": "** TEST EXECUTE SUCCEEDED **" in log,
     "exit_code_zero": rc == 0,
@@ -245,6 +264,7 @@ checks = {
     "isolation_home_used_by_app": os.path.exists(os.path.join(iso, "home", "simigo.sqlite3")),
     "first_run_marker_preprovisioned": os.path.exists(
         os.path.join(iso, "home", "manifests", "first-run-done.json")),
+    "qoder_scan_root_preprovisioned": os.path.isdir(os.path.join(iso, "qoder-projects")),
     "no_real_user_state_write": diff["real_user_state_write_count"] == 0,
     "no_unexpected_write": diff["distinct_violation_count"] == 0,
 }
@@ -268,6 +288,14 @@ rec = {
     "fresh_isolation_root": True,
     "isolation_content_bytes": content,
     "isolation_cache_used_by_app": content["cache"] > 0,
+    "qoder_scan_root": {
+        "path": os.path.join(iso, "qoder-projects"),
+        "present": os.path.isdir(os.path.join(iso, "qoder-projects")),
+        "files": sum(len(fs) for _, _, fs in os.walk(os.path.join(iso, "qoder-projects"))),
+        "bytes": du(os.path.join(iso, "qoder-projects")),
+    },
+    "target_env_requested": TARGET_ENV,
+    "target_env_applied": xr.get("target_env_applied", []),
     "collector_state_observed": {
         "path": collector,
         "present": os.path.isdir(collector),
