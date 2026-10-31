@@ -260,7 +260,7 @@ checks = {
     "exit_code_zero": rc == 0,
     "counts_parsed": counts is not None,
     "no_failures": bool(counts) and counts[2] == 0,
-    "xctestrun_only_three_roots": xr["other_differences"] == [],
+    "xctestrun_only_four_roots_and_requested_opt_ins": xr["other_differences"] == [],
     "isolation_home_used_by_app": os.path.exists(os.path.join(iso, "home", "simigo.sqlite3")),
     "first_run_marker_preprovisioned": os.path.exists(
         os.path.join(iso, "home", "manifests", "first-run-done.json")),
