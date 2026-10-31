@@ -376,10 +376,17 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let pending = try inbox.pendingCandidates()
         XCTAssertEqual(pending.map(\.key), [turn.identity.operationKey])
 
-        // Model the crash window: the first sink accepted this delivery, but
-        // markDelivered was not committed. The restarted Runner must hand over
-        // the exact same key (at-least-once, not exactly-once).
-        let acceptedBeforeCrash = pending.map(\.key)
+        // Model the crash window by invoking a sink that records acceptance,
+        // then deliberately omit markDelivered. The restarted Runner must hand
+        // over the exact same key (at-least-once, not exactly-once).
+        var firstSinkAcceptedKeys: [String] = []
+        let firstSink: QoderCollectionRunner.Sink = { deliveries in
+            firstSinkAcceptedKeys.append(contentsOf: deliveries.map(\.key))
+        }
+        try firstSink(pending.map(\.delivery))
+        let acceptedBeforeCrash = firstSinkAcceptedKeys
+        XCTAssertEqual(acceptedBeforeCrash, pending.map(\.key))
+
         let box = SinkBox(failing: false)
         let runner = QoderCollectionRunner(configuration: configuration) {
             try box.receive($0)
