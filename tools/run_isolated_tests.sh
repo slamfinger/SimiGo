@@ -9,7 +9,17 @@
 # --only passes -only-testing to xcodebuild (repeatable, SimiGoTests/Class/method
 # or SimiGoTests/Class). Targeted selections have NOT been measured for user-state
 # writes the way the full suite has; the snapshot diff still runs and still fails
-# the run on any real-root write.
+# the run on any real-root write. Only the cache-root redirection check is mode
+# dependent: a narrow selection may never touch the cache, so in targeted runs it
+# is reported in isolation_cache_used_by_app without gating. run_mode records
+# which rule applied.
+#
+# First-run wizard: the test host runs the real app delegate, and a managed root
+# without manifests/first-run-done.json opens the visible wizard, whose "移动并重启"
+# button moves the test host into /Applications (observed 2026-10-31, it overwrote
+# the installed Release app). The harness therefore pre-provisions the marker
+# inside the isolation home before the run, so no human click is part of the
+# procedure. The marker file is only ever written under the isolation root.
 #
 # Why a runner and not "just add env vars": testF3DeviceAcceptanceBattery is NOT
 # idempotent w.r.t. the prefix pool on disk (its D4 step asserts mode=extend and
@@ -127,6 +137,16 @@ for d in home cache state-graph; do
   if [ -e "$ISO/$d" ]; then rm -rf "$ISO/$d"; fi
   mkdir -p "$ISO/$d"
 done
+
+# --- pre-provision the first-run marker inside the isolation home -----------
+# The test host runs the real app delegate, and without the marker
+# FirstRunWizard opens a visible window; the suite would then depend on a human
+# clicking it. One of those clicks ("移动并重启") moves the test host into
+# /Applications, so the marker is written here instead. It is written only under
+# the isolation home, never under a real user root.
+mkdir -p "$ISO/home/manifests"
+printf '{\n  "finished_at": "%s",\n  "version": "isolated-test-host",\n  "work_roots": [],\n  "binaries": []\n}\n' \
+  "$(date -u +%FT%TZ)" > "$ISO/home/manifests/first-run-done.json"
 date -u +%FT%TZ > "$EVIDENCE/started_at.txt"
 START=$(date +%s)
 
@@ -164,13 +184,44 @@ python3 "$ROOT/tools/rc_noninterference_diff.py" \
   "$EVIDENCE/snapshot_diff.json" --allow-prefix "$EVIDENCE" || exit 5
 
 END=$(date +%s)
-python3 - "$EVIDENCE" "$TAG" "$RC" "$START" "$END" <<'PY'
-import json, os, re, sys
+python3 - "$EVIDENCE" "$TAG" "$RC" "$START" "$END" "${#ONLY[@]}" <<'PY'
+import json, os, re, subprocess, sys
 ev, tag, rc, start, end = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
+only_count = int(sys.argv[6])
+targeted = only_count > 0
 log = open(os.path.join(ev, "isolated_tests_%s.log" % tag), errors="replace").read()
-m = re.findall(r"Executed (\d+) tests?, with (\d+) tests? skipped and (\d+) failures?", log)
-counts = tuple(int(x) for x in m[-1]) if m else None
 iso = os.path.join(ev, "isolation")
+
+def counts_from_xcresult(path):
+    """(executed, skipped, failures) from the result bundle; authoritative."""
+    if not os.path.isdir(path):
+        return None
+    try:
+        out = subprocess.run(["xcrun", "xcresulttool", "get", "test-results", "summary",
+                             "--path", path], capture_output=True, text=True, timeout=300)
+        if out.returncode != 0:
+            return None
+        s = json.loads(out.stdout)
+        return (s["totalTestCount"], s["skippedTests"], s["failedTests"])
+    except Exception:
+        return None
+
+def counts_from_log(text):
+    m = re.findall(r"Executed (\d+) tests?, with (\d+) tests? skipped and (\d+) failures?", text)
+    if m:
+        return tuple(int(x) for x in m[-1])
+    agg = [(int(a), int(b)) for a, b in
+           re.findall(r"Executed (\d+) tests?, with (\d+) failures", text)]
+    if not agg:
+        return None
+    skipped = len(re.findall(r"^Test Case .*skipped", text, re.M))
+    return (max(agg)[0], skipped, max(agg)[1])
+
+counts = counts_from_xcresult(os.path.join(ev, "Test-%s.xcresult" % tag))
+source = "xcresulttool" if counts else None
+if counts is None:
+    counts = counts_from_log(log)
+    source = "log" if counts else None
 
 def du(p):
     total = 0
@@ -192,16 +243,36 @@ checks = {
     "no_failures": bool(counts) and counts[2] == 0,
     "xctestrun_only_three_roots": xr["other_differences"] == [],
     "isolation_home_used_by_app": os.path.exists(os.path.join(iso, "home", "simigo.sqlite3")),
-    "isolation_cache_used_by_app": content["cache"] > 0,
+    "first_run_marker_preprovisioned": os.path.exists(
+        os.path.join(iso, "home", "manifests", "first-run-done.json")),
     "no_real_user_state_write": diff["real_user_state_write_count"] == 0,
     "no_unexpected_write": diff["distinct_violation_count"] == 0,
 }
+# The cache-root gate proves the full suite really redirects writes into the
+# isolated cache. A targeted selection can legitimately leave it untouched, so
+# in that mode it is recorded as an observation below instead of a gate. No
+# write-audit gate is relaxed by the run mode.
+if not targeted:
+    checks["isolation_cache_used_by_app"] = content["cache"] > 0
+# Observation, not a gate: the GUI app delegate starts the Qoder collector on
+# every launch, so a test host built from a tree that mounts it collects during
+# the run. Recorded here so the contamination is measured rather than assumed.
+collector = os.path.join(iso, "home", "collectors")
 rec = {
     "tag": tag, "evidence_dir": ev, "exit_code": rc, "duration_s": end - start,
     "executed_skipped_failures": counts,
+    "counts_source": source,
+    "run_mode": "targeted" if targeted else "full",
+    "targeted_selections": only_count,
     "xctestrun_isolated_sha256": xr["isolated_sha256"],
     "fresh_isolation_root": True,
     "isolation_content_bytes": content,
+    "isolation_cache_used_by_app": content["cache"] > 0,
+    "collector_state_observed": {
+        "path": collector,
+        "present": os.path.isdir(collector),
+        "bytes": du(collector) if os.path.isdir(collector) else 0,
+    },
     "noninterference": {
         "real_user_state_write_count": diff["real_user_state_write_count"],
         "real_user_state_write_paths": diff["real_user_state_write_paths"],
