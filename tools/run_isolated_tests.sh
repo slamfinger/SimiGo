@@ -4,7 +4,12 @@
 #
 #   tools/run_isolated_tests.sh [--app PATH] [--evidence-dir DIR] [--tag NAME]
 #                               [--base-xctestrun PATH] [--destination DEST]
-#                               [--extra-root PATH]...
+#                               [--extra-root PATH]... [--only TEST]...
+#
+# --only passes -only-testing to xcodebuild (repeatable, SimiGoTests/Class/method
+# or SimiGoTests/Class). Targeted selections have NOT been measured for user-state
+# writes the way the full suite has; the snapshot diff still runs and still fails
+# the run on any real-root write.
 #
 # Why a runner and not "just add env vars": testF3DeviceAcceptanceBattery is NOT
 # idempotent w.r.t. the prefix pool on disk (its D4 step asserts mode=extend and
@@ -41,6 +46,7 @@ TAG=""
 BASE=""
 DEST="platform=macOS,arch=arm64"
 EXTRA=()
+ONLY=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --app) APP="$2"; shift 2 ;;
@@ -49,6 +55,7 @@ while [ $# -gt 0 ]; do
     --base-xctestrun) BASE="$2"; shift 2 ;;
     --destination) DEST="$2"; shift 2 ;;
     --extra-root) EXTRA+=("$2"); shift 2 ;;
+    --only) ONLY+=("$2"); shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "RUN_ISOLATED: unknown argument $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -139,10 +146,14 @@ for r in "${EXTRA[@]:-}"; do [ -n "$r" ] && SNAP+=(--real-root "$r"); done
 
 # --- run --------------------------------------------------------------------
 rm -rf "$EVIDENCE/Test-$TAG.xcresult"
-xcodebuild test-without-building \
-  -xctestrun "$XR" \
-  -destination "$DEST" \
-  -resultBundlePath "$EVIDENCE/Test-$TAG.xcresult" \
+XCBUILD=(test-without-building
+         -xctestrun "$XR"
+         -destination "$DEST"
+         -resultBundlePath "$EVIDENCE/Test-$TAG.xcresult")
+for t in "${ONLY[@]:-}"; do
+  [ -n "$t" ] && XCBUILD+=("-only-testing:$t")
+done
+xcodebuild "${XCBUILD[@]}" \
   2>&1 | tee "$EVIDENCE/isolated_tests_$TAG.log"
 RC=${PIPESTATUS[0]}
 
