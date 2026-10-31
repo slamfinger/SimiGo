@@ -532,7 +532,7 @@ final class QoderTranscriptTailerTests: XCTestCase {
         }
     }
 
-    func testReplayIsSkippedWhenResumeOffsetIsNotALineBoundary() throws {
+    func testInvalidResumeOffsetFailsClosedWithoutAdvancingOrOrphaning() throws {
         let file = mainFile()
         try Fixture.writeLines(
             [Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
@@ -541,20 +541,157 @@ final class QoderTranscriptTailerTests: XCTestCase {
 
         var state = first.cursorState
         let key = try XCTUnwrap(state.cursors.keys.first)
-        let cursor = try XCTUnwrap(state.cursors[key])
-        XCTAssertEqual(cursor.resumeOffset, 0)
+        let healthy = try XCTUnwrap(state.cursors[key])
+        XCTAssertEqual(healthy.resumeOffset, 0)
         state.cursors[key] = QoderFileCursor(
-            path: cursor.path, projectID: cursor.projectID,
-            sessionID: cursor.sessionID, isSubagent: cursor.isSubagent,
-            inode: cursor.inode, offset: cursor.offset,
-            segmentLines: cursor.segmentLines,
+            path: healthy.path, projectID: healthy.projectID,
+            sessionID: healthy.sessionID, isSubagent: healthy.isSubagent,
+            inode: healthy.inode, offset: healthy.offset,
+            segmentLines: healthy.segmentLines,
             resumeOffset: 1, resumeSegmentLines: 0,
-            fingerprint: cursor.fingerprint, updatedAt: cursor.updatedAt)
+            fingerprint: healthy.fingerprint, updatedAt: healthy.updatedAt)
+
+        // The answer arrives while the cursor can no longer name its anchor.
+        try Fixture.writeLines(
+            [
+                Fixture.assistantLine(
+                    uuid: "a-1", parent: "u-1", messageID: "m-1", text: "world"),
+                Fixture.userLine(uuid: "u-2", parent: "a-1", text: "next"),
+            ], to: file, append: true)
 
         let resumed = QoderTranscriptTailer(scanRoot: root, state: state)
-        let idle = poll(resumed)
-        XCTAssertTrue(idle.events.isEmpty)
-        XCTAssertEqual(idle.report.replayedBytes, 0)
-        XCTAssertEqual(idle.report.readBytes, 0)
+        let blocked = poll(resumed)
+        XCTAssertTrue(blocked.events.isEmpty)
+        XCTAssertTrue(Fixture.orphans(blocked.events).isEmpty)
+        XCTAssertEqual(blocked.report.deliveredEvents, 0)
+        XCTAssertEqual(blocked.report.readBytes, 0)
+        XCTAssertTrue(
+            blocked.report.errors.contains { $0.contains("corrupt resume point") })
+        XCTAssertEqual(resumed.cursorState, state)
+
+        // Repeating the poll keeps the path stopped instead of degrading into
+        // a forward read that would emit the answer as an orphan.
+        let again = poll(resumed)
+        XCTAssertTrue(again.events.isEmpty)
+        XCTAssertTrue(
+            again.report.errors.contains { $0.contains("corrupt resume point") })
+        XCTAssertEqual(resumed.cursorState, state)
+    }
+
+    func testInconsistentResumeFieldsFailClosed() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            [Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
+        let first = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        poll(first)
+
+        var state = first.cursorState
+        let key = try XCTUnwrap(state.cursors.keys.first)
+        let healthy = try XCTUnwrap(state.cursors[key])
+        // The line count claims an open turn although the byte offset says
+        // there is none, so neither field can be trusted as the anchor.
+        state.cursors[key] = QoderFileCursor(
+            path: healthy.path, projectID: healthy.projectID,
+            sessionID: healthy.sessionID, isSubagent: healthy.isSubagent,
+            inode: healthy.inode, offset: healthy.offset,
+            segmentLines: healthy.segmentLines,
+            resumeOffset: healthy.offset, resumeSegmentLines: 0,
+            fingerprint: healthy.fingerprint, updatedAt: healthy.updatedAt)
+
+        let resumed = QoderTranscriptTailer(scanRoot: root, state: state)
+        let blocked = poll(resumed)
+        XCTAssertTrue(blocked.events.isEmpty)
+        XCTAssertEqual(blocked.report.readBytes, 0)
+        XCTAssertTrue(
+            blocked.report.errors.contains { $0.contains("corrupt resume point") })
+        XCTAssertEqual(resumed.cursorState, state)
+    }
+
+    func testScannerDistinguishesAbsentFromComplete() throws {
+        let scanner = QoderTranscriptScanner(root: root)
+        guard case .complete(let empty) = scanner.scan() else {
+            return XCTFail("an empty tree is a complete walk with no files")
+        }
+        XCTAssertTrue(empty.isEmpty)
+
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+        let found = scanner.scan()
+        XCTAssertTrue(found.isComplete)
+        XCTAssertTrue(found.errors.isEmpty)
+        XCTAssertEqual(found.files.map(\.sessionID), [Fixture.sessionID])
+
+        try FileManager.default.removeItem(at: root)
+        XCTAssertEqual(scanner.scan(), .absent)
+    }
+
+    func testScannerReportsPartialWhenAProjectCannotBeListed() throws {
+        try XCTSkipIf(getuid() == 0, "root ignores directory permissions")
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o000], ofItemAtPath: project.path)
+        defer {
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o755], ofItemAtPath: project.path)
+        }
+
+        let result = QoderTranscriptScanner(root: root).scan()
+        XCTAssertFalse(result.isComplete)
+        XCTAssertTrue(result.files.isEmpty)
+        XCTAssertFalse(result.errors.isEmpty)
+    }
+
+    func testCompleteScanRetiresCursorsForDeletedFiles() throws {
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+        let tailer = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        poll(tailer)
+        XCTAssertEqual(tailer.cursorState.cursors.count, 1)
+
+        try FileManager.default.removeItem(at: file)
+        let result = poll(tailer)
+        XCTAssertTrue(result.report.errors.isEmpty)
+        XCTAssertTrue(tailer.cursorState.cursors.isEmpty)
+        XCTAssertTrue(result.report.stateChanged)
+    }
+
+    func testPartialScanKeepsCursorsAndReportsTheFailure() throws {
+        try XCTSkipIf(getuid() == 0, "root ignores directory permissions")
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+        let tailer = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        poll(tailer)
+        let saved = tailer.cursorState
+        XCTAssertEqual(saved.cursors.count, 1)
+
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o000], ofItemAtPath: project.path)
+        defer {
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o755], ofItemAtPath: project.path)
+        }
+
+        let failed = poll(tailer)
+        XCTAssertTrue(failed.events.isEmpty)
+        XCTAssertFalse(failed.report.errors.isEmpty)
+        XCTAssertEqual(tailer.cursorState, saved)
+        XCTAssertFalse(failed.report.stateChanged)
+    }
+
+    func testMissingRootKeepsCursors() throws {
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+        let tailer = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        poll(tailer)
+        let saved = tailer.cursorState
+        XCTAssertEqual(saved.cursors.count, 1)
+
+        try FileManager.default.removeItem(at: root)
+        let missing = poll(tailer)
+        XCTAssertTrue(missing.events.isEmpty)
+        XCTAssertTrue(missing.report.errors.isEmpty)
+        XCTAssertEqual(tailer.cursorState, saved)
+        XCTAssertFalse(missing.report.stateChanged)
     }
 }

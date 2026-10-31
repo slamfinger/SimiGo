@@ -288,7 +288,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         try Fixture.writeLines([Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
 
         let scanned = try XCTUnwrap(
-            QoderTranscriptScanner(root: root).scan().first)
+            QoderTranscriptScanner(root: root).scan().files.first)
         let size = Int64(try Data(contentsOf: file).count)
         let inode = try XCTUnwrap(
             (FileManager.default.attributesOfItem(atPath: file.path)[.systemFileNumber]

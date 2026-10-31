@@ -140,42 +140,90 @@ public struct QoderTranscriptFile: Sendable, Equatable {
     public let modificationDate: Date?
 }
 
+/// Outcome of one walk over the transcript tree.
+///
+/// An unreadable directory and an empty one both yield no files, but only a
+/// walk that listed every directory proves a previously seen file was deleted
+/// rather than merely inaccessible. Retiring cursors from a partial view would
+/// erase read positions whose transcripts were never fully delivered.
+public enum QoderTranscriptScanResult: Sendable, Equatable {
+    /// The whole tree was listed successfully.
+    case complete([QoderTranscriptFile])
+    /// The scan root does not exist, so nothing can be proven stale.
+    case absent
+    /// At least one directory could not be listed; `files` is what was
+    /// visible, and every stored cursor must survive this poll.
+    case partial(files: [QoderTranscriptFile], errors: [String])
+
+    public var files: [QoderTranscriptFile] {
+        switch self {
+        case .complete(let files):
+            return files
+        case .absent:
+            return []
+        case .partial(let files, _):
+            return files
+        }
+    }
+
+    public var errors: [String] {
+        guard case .partial(_, let errors) = self else { return [] }
+        return errors
+    }
+
+    /// Only a complete walk distinguishes "deleted" from "temporarily
+    /// unreadable"; stale cursors may be retired from this outcome alone.
+    public var isComplete: Bool {
+        guard case .complete = self else { return false }
+        return true
+    }
+}
+
 /// Finds the transcript files Qoder itself writes:
 ///   <root>/<project>/<session>.jsonl
 ///   <root>/<project>/<session>/subagents/<agent>.jsonl
 public struct QoderTranscriptScanner {
     public let root: URL
 
+    private static let resourceKeys: Set<URLResourceKey> = [
+        .isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey,
+        .fileSizeKey, .creationDateKey, .contentModificationDateKey,
+    ]
+
     public init(root: URL) {
         self.root = root
     }
 
-    public func scan() -> [QoderTranscriptFile] {
+    public func scan() -> QoderTranscriptScanResult {
         let fileManager = FileManager.default
-        let keys: Set<URLResourceKey> = [
-            .isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey,
-            .fileSizeKey, .creationDateKey, .contentModificationDateKey,
-        ]
-        guard
-            let projects = try? fileManager.contentsOfDirectory(
-                at: root, includingPropertiesForKeys: Array(keys),
-                options: [.skipsHiddenFiles])
-        else { return [] }
+        guard fileManager.fileExists(atPath: root.path) else { return .absent }
+
+        var errors: [String] = []
+        guard let projects = list(root, errors: &errors) else {
+            return .partial(files: [], errors: errors)
+        }
 
         var files: [QoderTranscriptFile] = []
         for project in projects {
-            guard let projectValues = try? project.resourceValues(forKeys: keys),
-                projectValues.isDirectory == true, projectValues.isSymbolicLink != true
+            guard
+                let projectValues = try? project.resourceValues(
+                    forKeys: Self.resourceKeys)
+            else {
+                errors.append("cannot read attributes for \(project.path)")
+                continue
+            }
+            guard projectValues.isDirectory == true, projectValues.isSymbolicLink != true
             else { continue }
             let projectID = project.lastPathComponent
-            let children =
-                (try? fileManager.contentsOfDirectory(
-                    at: project, includingPropertiesForKeys: Array(keys),
-                    options: [.skipsHiddenFiles])) ?? []
+            guard let children = list(project, errors: &errors) else { continue }
             for child in children {
-                guard let values = try? child.resourceValues(forKeys: keys),
-                    values.isSymbolicLink != true
-                else { continue }
+                guard
+                    let values = try? child.resourceValues(forKeys: Self.resourceKeys)
+                else {
+                    errors.append("cannot read attributes for \(child.path)")
+                    continue
+                }
+                guard values.isSymbolicLink != true else { continue }
                 if values.isRegularFile == true, child.pathExtension == "jsonl" {
                     if let file = makeFile(
                         child, values: values, projectID: projectID,
@@ -183,16 +231,25 @@ public struct QoderTranscriptScanner {
                         isSubagent: false)
                     {
                         files.append(file)
+                    } else {
+                        errors.append("cannot read attributes for \(child.path)")
                     }
                 } else if values.isDirectory == true {
-                    let subagents = child.appendingPathComponent("subagents", isDirectory: true)
-                    let agents =
-                        (try? fileManager.contentsOfDirectory(
-                            at: subagents, includingPropertiesForKeys: Array(keys),
-                            options: [.skipsHiddenFiles])) ?? []
+                    let subagents = child.appendingPathComponent(
+                        "subagents", isDirectory: true)
+                    // Most sessions have no subagents; a missing directory is
+                    // an empty one, not a failed walk.
+                    guard fileManager.fileExists(atPath: subagents.path) else { continue }
+                    guard let agents = list(subagents, errors: &errors) else { continue }
                     for agent in agents where agent.pathExtension == "jsonl" {
-                        guard let agentValues = try? agent.resourceValues(forKeys: keys),
-                            agentValues.isRegularFile == true,
+                        guard
+                            let agentValues = try? agent.resourceValues(
+                                forKeys: Self.resourceKeys)
+                        else {
+                            errors.append("cannot read attributes for \(agent.path)")
+                            continue
+                        }
+                        guard agentValues.isRegularFile == true,
                             agentValues.isSymbolicLink != true
                         else { continue }
                         if let file = makeFile(
@@ -200,12 +257,27 @@ public struct QoderTranscriptScanner {
                             sessionID: child.lastPathComponent, isSubagent: true)
                         {
                             files.append(file)
+                        } else {
+                            errors.append("cannot read attributes for \(agent.path)")
                         }
                     }
                 }
             }
         }
-        return files.sorted { $0.path < $1.path }
+
+        let sorted = files.sorted { $0.path < $1.path }
+        return errors.isEmpty ? .complete(sorted) : .partial(files: sorted, errors: errors)
+    }
+
+    private func list(_ directory: URL, errors: inout [String]) -> [URL]? {
+        do {
+            return try FileManager.default.contentsOfDirectory(
+                at: directory, includingPropertiesForKeys: Array(Self.resourceKeys),
+                options: [.skipsHiddenFiles])
+        } catch {
+            errors.append("cannot list \(directory.path): \(error)")
+            return nil
+        }
     }
 
     private func makeFile(
@@ -285,8 +357,10 @@ public final class QoderTranscriptTailer {
 
     public func poll(sink: Sink) -> QoderPollReport {
         var report = QoderPollReport()
-        let files = scanner.scan()
+        let scan = scanner.scan()
+        let files = scan.files
         report.scannedFiles = files.count
+        report.errors.append(contentsOf: scan.errors)
         var livePaths: Set<String> = []
 
         for file in files {
@@ -328,18 +402,31 @@ public final class QoderTranscriptTailer {
                         else { continue }
                         nextCursor = reset
                         changed = true
-                    } else if file.size > existing.offset
-                        || (accumulators[file.path] == nil && canReplay(existing))
-                    {
-                        // A cold tailer with an open turn rewinds to the
-                        // anchor even when no new bytes arrived, so recovery
-                        // happens at start rather than at the next append.
-                        let consumed = readAvailable(
-                            file, cursor: &existing, events: &events, report: &report)
-                        nextCursor = existing
-                        changed = consumed
                     } else {
-                        nextCursor = existing
+                        let disposition = resumeDisposition(existing)
+                        if case .invalid(let detail) = disposition {
+                            // Reading on from the committed offset would build
+                            // the answer without the prompt that opened it and
+                            // hand out an orphan, so this path stops where it
+                            // is until the state is repaired or quarantined.
+                            report.errors.append(
+                                "corrupt resume point for \(file.path): \(detail)")
+                            accumulators.removeValue(forKey: file.path)
+                            continue
+                        }
+                        if file.size > existing.offset
+                            || (accumulators[file.path] == nil && disposition == .replay)
+                        {
+                            // A cold tailer with an open turn rewinds to the
+                            // anchor even when no new bytes arrived, so recovery
+                            // happens at start rather than at the next append.
+                            let consumed = readAvailable(
+                                file, cursor: &existing, events: &events, report: &report)
+                            nextCursor = existing
+                            changed = consumed
+                        } else {
+                            nextCursor = existing
+                        }
                     }
                 }
             } else {
@@ -379,13 +466,18 @@ public final class QoderTranscriptTailer {
             }
         }
 
-        let stale = state.cursors.keys.filter { !livePaths.contains($0) }
-        if !stale.isEmpty {
-            for path in stale {
-                state.cursors.removeValue(forKey: path)
-                accumulators.removeValue(forKey: path)
+        // A cursor is retired only when the walk proved the file no longer
+        // exists. An absent root or a partial listing cannot prove deletion,
+        // and erasing a read position would re-baseline undelivered appends.
+        if scan.isComplete {
+            let stale = state.cursors.keys.filter { !livePaths.contains($0) }
+            if !stale.isEmpty {
+                for path in stale {
+                    state.cursors.removeValue(forKey: path)
+                    accumulators.removeValue(forKey: path)
+                }
+                report.stateChanged = true
             }
-            report.stateChanged = true
         }
         return report
     }
@@ -431,16 +523,51 @@ public final class QoderTranscriptTailer {
             updatedAt: Date())
     }
 
-    /// The persisted resume point is usable only when it lies behind the
-    /// committed offset at a counted line boundary. Anything else (corrupt or
-    /// pre-upgrade state) means "resume at offset, no replay".
-    private func canReplay(_ cursor: QoderFileCursor) -> Bool {
+    private enum ResumeDisposition: Equatable {
+        /// No turn was open at the committed offset; nothing to replay.
+        case none
+        /// The cursor names an open turn whose anchor is a line boundary.
+        case replay
+        /// The cursor claims an open turn but cannot name its anchor, so
+        /// reading forward from the committed offset would orphan the answer.
+        case invalid(String)
+    }
+
+    /// Classifies the persisted resume point before any read.
+    ///
+    /// Cursors written before the resume point existed decode to a point equal
+    /// to the committed offset, which is the legitimate "no replay" case. A
+    /// cursor that *does* declare an open turn must name a boundary strictly
+    /// behind the committed position; anything else is damage, not absence, and
+    /// must not degrade into "resume at offset".
+    private func resumeDisposition(_ cursor: QoderFileCursor) -> ResumeDisposition {
+        let declaresOpenTurn =
+            cursor.resumeOffset < cursor.offset
+            || cursor.resumeSegmentLines < cursor.segmentLines
+        guard declaresOpenTurn else {
+            guard cursor.resumeOffset == cursor.offset,
+                cursor.resumeSegmentLines == cursor.segmentLines
+            else {
+                return .invalid(
+                    "resume point \(cursor.resumeOffset)/\(cursor.resumeSegmentLines) "
+                        + "does not match the committed position "
+                        + "\(cursor.offset)/\(cursor.segmentLines)")
+            }
+            return .none
+        }
         guard cursor.resumeOffset >= 0,
             cursor.resumeOffset < cursor.offset,
             cursor.resumeSegmentLines >= 0,
-            cursor.resumeSegmentLines <= cursor.segmentLines
-        else { return false }
-        return isLineBoundary(path: cursor.path, offset: cursor.resumeOffset)
+            cursor.resumeSegmentLines < cursor.segmentLines
+        else {
+            return .invalid(
+                "resume point \(cursor.resumeOffset)/\(cursor.resumeSegmentLines) "
+                    + "is outside 0..<\(cursor.offset)/0..<\(cursor.segmentLines)")
+        }
+        guard isLineBoundary(path: cursor.path, offset: cursor.resumeOffset) else {
+            return .invalid("resume offset \(cursor.resumeOffset) is not a line boundary")
+        }
+        return .replay
     }
 
     /// The resume offset is the start of the anchor line, so the byte before
@@ -483,7 +610,8 @@ public final class QoderTranscriptTailer {
         events: inout [QoderCollectionEvent], report: inout QoderPollReport
     ) -> Bool {
         let committedOffset = cursor.offset
-        let replaying = accumulators[file.path] == nil && canReplay(cursor)
+        let replaying =
+            accumulators[file.path] == nil && resumeDisposition(cursor) == .replay
         var working = cursor
         if replaying {
             working.offset = cursor.resumeOffset
