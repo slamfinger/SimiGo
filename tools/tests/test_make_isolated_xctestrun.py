@@ -116,15 +116,40 @@ class IsolatedXCTestRunTests(unittest.TestCase):
         self.assertEqual(len(rec["target_env_applied"]), 3)
         self.assertTrue(all(item["target"] == "SimiGoTests" for item in rec["target_env_applied"]))
 
+    def test_kv_free_modes_are_allowlisted_and_target_scoped(self):
+        for key in ("SIMIGO_KV_FREE_MATRIX", "SIMIGO_KV_BLOCKED_ONLY"):
+            with self.subTest(key=key):
+                result = self.run_generator(
+                    "--target-env", f"SimiGoTests:{key}=1"
+                )
+                self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+                targets = self.read_output()["TestConfigurations"][0]["TestTargets"]
+                by_name = {
+                    target["BlueprintName"]: target["EnvironmentVariables"]
+                    for target in targets
+                }
+                self.assertEqual(by_name["SimiGoTests"][key], "1")
+                self.assertNotIn(key, by_name["OtherTests"])
+                rec = json.loads(self.record.read_text())
+                self.assertEqual(rec["target_env_applied"][0]["key"], key)
+
     def test_unknown_target_fails_before_writing_output(self):
         result = self.run_generator("--target-env", "MissingTests:SIMIGO_PREFIX_POOL=1")
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertFalse(self.out.exists())
 
-    def test_non_allowlisted_value_fails_before_writing_output(self):
-        result = self.run_generator("--target-env", "SimiGoTests:SIMIGO_PREFIX_POOL=0")
-        self.assertEqual(result.returncode, 2, result.stderr)
-        self.assertFalse(self.out.exists())
+    def test_non_allowlisted_values_fail_before_writing_output(self):
+        for spec in (
+            "SimiGoTests:SIMIGO_PREFIX_POOL=0",
+            "SimiGoTests:SIMIGO_KV_FREE_MATRIX=0",
+            "SimiGoTests:SIMIGO_KV_BLOCKED_ONLY=0",
+            "SimiGoTests:SIMIGO_UNSAFE=1",
+        ):
+            with self.subTest(spec=spec):
+                self.out.unlink(missing_ok=True)
+                result = self.run_generator("--target-env", spec)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertFalse(self.out.exists())
 
     def test_conflicting_preexisting_isolation_root_is_not_overwritten(self):
         self.write_base({
