@@ -66,15 +66,18 @@ final class QoderCollectionRunnerTests: XCTestCase {
 
     private final class SinkBox {
         var failing: Bool
-        var events: [QoderCollectionEvent] = []
+        var deliveries: [QoderCandidateDelivery] = []
+
+        var events: [QoderCollectionEvent] { deliveries.map(\.event) }
+        var keys: [String] { deliveries.map(\.key) }
 
         init(failing: Bool) {
             self.failing = failing
         }
 
-        func receive(_ batch: [QoderCollectionEvent]) throws {
+        func receive(_ batch: [QoderCandidateDelivery]) throws {
             if failing { throw SinkFailure() }
-            events.append(contentsOf: batch)
+            deliveries.append(contentsOf: batch)
         }
     }
 
@@ -124,7 +127,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let configuration = configuration()
         var events: [QoderCollectionEvent] = []
         let first = QoderCollectionRunner(configuration: configuration) {
-            events.append(contentsOf: $0)
+            events.append(contentsOf: $0.map(\.event))
         }
         let report = first.pollOnce()
         XCTAssertEqual(report.baselinedFiles, 1)
@@ -155,7 +158,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
             append: true)
         events.removeAll()
         let resumed = QoderCollectionRunner(configuration: configuration) {
-            events.append(contentsOf: $0)
+            events.append(contentsOf: $0.map(\.event))
         }
         let third = resumed.pollOnce()
         XCTAssertEqual(third.baselinedFiles, 0)
@@ -168,7 +171,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
     func testRunnerRecoversPendingTurnAcrossRestart() throws {
         var events: [QoderCollectionEvent] = []
         let first = QoderCollectionRunner(configuration: configuration()) {
-            events.append(contentsOf: $0)
+            events.append(contentsOf: $0.map(\.event))
         }
         first.pollOnce()
         XCTAssertTrue(
@@ -193,7 +196,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
             ], to: file, append: true)
         events.removeAll()
         let resumed = QoderCollectionRunner(configuration: configuration()) {
-            events.append(contentsOf: $0)
+            events.append(contentsOf: $0.map(\.event))
         }
         resumed.pollOnce()
         let turns = Fixture.turns(events)
@@ -249,7 +252,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         var errors: [String] = []
         let runner = QoderCollectionRunner(
             configuration: configuration,
-            sink: { events.append(contentsOf: $0) },
+            sink: { events.append(contentsOf: $0.map(\.event)) },
             onError: { errors.append($0) })
         runner.start()
         XCTAssertFalse(runner.isRunning)
@@ -315,7 +318,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
 
         var events: [QoderCollectionEvent] = []
         let runner = QoderCollectionRunner(configuration: configuration) {
-            events.append(contentsOf: $0)
+            events.append(contentsOf: $0.map(\.event))
         }
         let report = runner.pollOnce()
         XCTAssertTrue(report.errors.isEmpty)
@@ -356,6 +359,149 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(drained.duplicateCandidates, 0)
         XCTAssertEqual(Fixture.turns(box.events).count, 1)
         XCTAssertEqual(try pendingCount(configuration), 0)
+    }
+
+    func testDeliveryCarriesTheDurableKeySoRedeliveryIsIdentifiable() throws {
+        let configuration = configuration()
+        let accumulator = QoderTurnAccumulator(context: Fixture.context())
+        let turn = try XCTUnwrap(
+            Fixture.turns(Fixture.feed(accumulator, Fixture.turnLines())).first)
+
+        let inbox = QoderCandidateInbox(directoryURL: configuration.stateDirectory)
+        let state = QoderCursorState(initializedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        try inbox.commit(events: [.turn(turn)], cursorState: state)
+        let pending = try inbox.pendingCandidates()
+        XCTAssertEqual(pending.map(\.key), [turn.identity.operationKey])
+
+        // The first attempt reached the sink but the process died before
+        // markDelivered; the restart must hand over the same durable key.
+        let box = SinkBox(failing: false)
+        let runner = QoderCollectionRunner(configuration: configuration) {
+            try box.receive($0)
+        }
+        let report = runner.pollOnce()
+        XCTAssertTrue(report.errors.isEmpty)
+        XCTAssertEqual(box.keys, pending.map(\.key))
+        XCTAssertEqual(box.deliveries.map(\.kind), [.turn])
+        XCTAssertEqual(box.deliveries.first?.event, .turn(turn))
+        XCTAssertEqual(box.deliveries.first?.sequence, pending.first?.sequence)
+        XCTAssertEqual(try pendingCount(configuration), 0)
+    }
+
+    func testInboxRejectsSameIdentityWithDifferentContent() throws {
+        let configuration = configuration()
+        let inbox = QoderCandidateInbox(directoryURL: configuration.stateDirectory)
+        let original = try XCTUnwrap(
+            Fixture.turns(
+                Fixture.feed(
+                    QoderTurnAccumulator(context: Fixture.context()),
+                    Fixture.turnLines())
+            ).first)
+        let rewritten = try XCTUnwrap(
+            Fixture.turns(
+                Fixture.feed(
+                    QoderTurnAccumulator(context: Fixture.context()),
+                    Fixture.turnLines(answer: "different answer"))
+            ).first)
+        XCTAssertEqual(original.identity, rewritten.identity)
+        XCTAssertNotEqual(original.answerDigest, rewritten.answerDigest)
+
+        let state = QoderCursorState(initializedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        try inbox.commit(events: [.turn(original)], cursorState: state)
+
+        let moved = QoderCursorState(
+            initializedAt: state.initializedAt,
+            cursors: [
+                "/tmp/moved.jsonl": QoderFileCursor(
+                    path: "/tmp/moved.jsonl", projectID: "p", sessionID: "s",
+                    isSubagent: false, inode: 1, offset: 100, segmentLines: 4,
+                    fingerprint: "f",
+                    updatedAt: Date(timeIntervalSince1970: 1_700_000_000))
+            ])
+        XCTAssertThrowsError(
+            try inbox.commit(events: [.turn(rewritten)], cursorState: moved)
+        ) { error in
+            guard case QoderCollectionStateError.conflictingCandidate = error else {
+                return XCTFail("expected conflictingCandidate, got \(error)")
+            }
+        }
+        // The rejected batch rolls back as a whole: nothing new is stored and
+        // the cursor does not move past content that was never recorded.
+        XCTAssertEqual(try inbox.pendingCount(), 1)
+        XCTAssertEqual(try inbox.loadCursorState(), state)
+
+        // Same identity with the same content is the replay the design absorbs.
+        let retried = try inbox.commit(events: [.turn(original)], cursorState: state)
+        XCTAssertEqual(retried.insertedCandidates, 0)
+        XCTAssertEqual(retried.duplicateCandidates, 1)
+    }
+
+    func testInboxMigratesASliceThreeVersionOneDatabase() throws {
+        let configuration = configuration()
+        try FileManager.default.createDirectory(
+            at: configuration.stateDirectory, withIntermediateDirectories: true)
+        let databaseURL = configuration.stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+
+        let turn = try XCTUnwrap(
+            Fixture.turns(
+                Fixture.feed(
+                    QoderTurnAccumulator(context: Fixture.context()),
+                    Fixture.turnLines())
+            ).first)
+        let state = QoderCursorState(initializedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let eventPayload = try encoder.encode(QoderCollectionEvent.turn(turn))
+        let cursorPayload = try encoder.encode(state)
+
+        do {
+            let connection = try QoderSQLiteConnection.open(path: databaseURL.path)
+            defer { connection.close() }
+            try connection.execute(
+                """
+                CREATE TABLE cursor_state (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    payload BLOB NOT NULL
+                );
+                CREATE TABLE candidates (
+                    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                    key TEXT NOT NULL UNIQUE,
+                    kind TEXT NOT NULL,
+                    recorded_at REAL NOT NULL,
+                    delivered_at REAL,
+                    payload BLOB NOT NULL
+                );
+                CREATE INDEX candidates_pending_seq
+                    ON candidates(seq) WHERE delivered_at IS NULL;
+                """)
+            let insertCursor = try connection.prepare(
+                "INSERT INTO cursor_state(id, payload) VALUES (1, ?)")
+            try insertCursor.bind(blob: cursorPayload, at: 1)
+            _ = try insertCursor.step()
+            let insertCandidate = try connection.prepare(
+                "INSERT INTO candidates(key, kind, recorded_at, payload) VALUES (?, ?, ?, ?)")
+            try insertCandidate.bind(text: turn.identity.operationKey, at: 1)
+            try insertCandidate.bind(text: QoderCandidateKind.turn.rawValue, at: 2)
+            insertCandidate.bind(double: 1_700_000_001, at: 3)
+            try insertCandidate.bind(blob: eventPayload, at: 4)
+            _ = try insertCandidate.step()
+            try connection.execute("PRAGMA user_version = 1")
+        }
+
+        let inbox = QoderCandidateInbox(directoryURL: configuration.stateDirectory)
+        XCTAssertEqual(try inbox.loadCursorState(), state)
+        XCTAssertEqual(
+            try inbox.pendingCandidates().map(\.key), [turn.identity.operationKey])
+        // The backfilled digest keeps a legitimate replay a duplicate rather
+        // than a false conflict.
+        let retried = try inbox.commit(events: [.turn(turn)], cursorState: state)
+        XCTAssertEqual(retried.insertedCandidates, 0)
+        XCTAssertEqual(retried.duplicateCandidates, 1)
+
+        let upgraded = try QoderSQLiteConnection.open(path: databaseURL.path)
+        defer { upgraded.close() }
+        XCTAssertEqual(try upgraded.scalarInt64("PRAGMA user_version"), 2)
     }
 
     func testInboxAbsorbsReplayedCandidatesWithoutRedeliveringThem() throws {
@@ -418,7 +564,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         var events: [QoderCollectionEvent] = []
         let runner = QoderCollectionRunner(
             configuration: configuration,
-            sink: { events.append(contentsOf: $0) },
+            sink: { events.append(contentsOf: $0.map(\.event)) },
             onError: { _ in })
         let report = runner.pollOnce()
         XCTAssertFalse(report.errors.isEmpty)

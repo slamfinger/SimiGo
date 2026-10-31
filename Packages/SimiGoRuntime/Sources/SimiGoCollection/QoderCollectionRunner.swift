@@ -60,7 +60,11 @@ public struct QoderCollectionConfiguration: Sendable {
 /// whose turns were never durably recorded. Recovery is explicit through
 /// `quarantineState()`.
 public final class QoderCollectionRunner {
-    public typealias Sink = QoderTranscriptTailer.Sink
+    /// Receives durably committed candidates. The pair of `key` and `event`
+    /// makes every delivery identifiable, so an accepted-but-not-marked crash
+    /// redelivers under the same key instead of forcing consumers to re-derive
+    /// identity from the event.
+    public typealias Sink = ([QoderCandidateDelivery]) throws -> Void
 
     public let configuration: QoderCollectionConfiguration
 
@@ -220,7 +224,7 @@ public final class QoderCollectionRunner {
                 var accepted: [String] = []
                 for candidate in batch {
                     do {
-                        try sink([candidate.event])
+                        try sink([candidate.delivery])
                         accepted.append(candidate.key)
                     } catch {
                         report.errors.append(

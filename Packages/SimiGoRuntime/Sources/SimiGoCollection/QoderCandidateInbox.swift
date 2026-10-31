@@ -10,6 +10,8 @@ public enum QoderCollectionStateError: Error, Equatable, CustomStringConvertible
     case corruptState(path: String, detail: String)
     case unsupportedSchema(path: String, version: Int32)
     case corruptLegacyCursor(path: String, detail: String)
+    case conflictingCandidate(key: String, storedDigest: String, incomingDigest: String)
+    case stateAlreadyOwned(path: String, detail: String)
     case sqliteFailure(code: Int32, detail: String)
     case encoding(detail: String)
 
@@ -23,6 +25,12 @@ public enum QoderCollectionStateError: Error, Equatable, CustomStringConvertible
             return "collection state at \(path) has unsupported schema version \(version)"
         case .corruptLegacyCursor(let path, let detail):
             return "legacy cursor at \(path) is corrupt: \(detail)"
+        case .conflictingCandidate(let key, let storedDigest, let incomingDigest):
+            return
+                "candidate \(key) was already recorded with different content "
+                + "(stored \(storedDigest), incoming \(incomingDigest))"
+        case .stateAlreadyOwned(let path, let detail):
+            return "collection state at \(path) is already owned: \(detail)"
         case .sqliteFailure(let code, let detail):
             return "sqlite failure \(code): \(detail)"
         case .encoding(let detail):
@@ -58,6 +66,11 @@ public struct QoderCandidate: Sendable, Equatable {
         self.recordedAt = recordedAt
         self.event = event
     }
+
+    public var delivery: QoderCandidateDelivery {
+        QoderCandidateDelivery(
+            key: key, kind: kind, sequence: sequence, event: event)
+    }
 }
 
 public struct QoderCommitResult: Sendable, Equatable {
@@ -70,6 +83,29 @@ public struct QoderCommitResult: Sendable, Equatable {
     public init(insertedCandidates: Int, duplicateCandidates: Int) {
         self.insertedCandidates = insertedCandidates
         self.duplicateCandidates = duplicateCandidates
+    }
+}
+
+/// One candidate handed to the delivery sink.
+///
+/// `key` is the idempotency key the inbox already persisted. Delivery is
+/// at-least-once, so a consumer that receives the same key twice knows the
+/// second delivery is a replay of the same durable candidate rather than a new
+/// one; consumers must not have to re-derive that key themselves.
+public struct QoderCandidateDelivery: Sendable, Equatable {
+    public let key: String
+    public let kind: QoderCandidateKind
+    public let sequence: Int64
+    public let event: QoderCollectionEvent
+
+    public init(
+        key: String, kind: QoderCandidateKind, sequence: Int64,
+        event: QoderCollectionEvent
+    ) {
+        self.key = key
+        self.kind = kind
+        self.sequence = sequence
+        self.event = event
     }
 }
 
@@ -123,7 +159,7 @@ public final class QoderCandidateInbox {
     public static let databaseFileName = "candidate-inbox.sqlite"
     public static let legacyCursorFileName = "cursor.json"
 
-    private static let schemaVersion: Int32 = 1
+    private static let schemaVersion: Int32 = 2
     private static let sqliteHeader = Data("SQLite format 3\u{0}".utf8)
     private static let schema = """
         CREATE TABLE IF NOT EXISTS cursor_state (
@@ -136,6 +172,7 @@ public final class QoderCandidateInbox {
             kind TEXT NOT NULL,
             recorded_at REAL NOT NULL,
             delivered_at REAL,
+            payload_digest TEXT NOT NULL,
             payload BLOB NOT NULL
         );
         CREATE INDEX IF NOT EXISTS candidates_pending_seq
@@ -195,7 +232,7 @@ public final class QoderCandidateInbox {
         } catch {
             throw QoderCollectionStateError.encoding(detail: String(describing: error))
         }
-        var rows: [(key: String, kind: String, payload: Data)] = []
+        var rows: [(key: String, kind: String, digest: String, payload: Data)] = []
         rows.reserveCapacity(events.count)
         for event in events {
             let payload: Data
@@ -205,7 +242,12 @@ public final class QoderCandidateInbox {
                 throw QoderCollectionStateError.encoding(detail: String(describing: error))
             }
             rows.append(
-                (try QoderCandidateKey.make(for: event), event.candidateKind.rawValue, payload))
+                (
+                    try QoderCandidateKey.make(for: event),
+                    event.candidateKind.rawValue,
+                    QoderDigest.sha256Hex(payload),
+                    payload
+                ))
         }
 
         return try connection.withTransaction {
@@ -214,21 +256,42 @@ public final class QoderCandidateInbox {
             let recordedAt = Date().timeIntervalSince1970
             let insert = try connection.prepare(
                 """
-                INSERT OR IGNORE INTO candidates(key, kind, recorded_at, payload)
-                VALUES (?, ?, ?, ?)
+                INSERT OR IGNORE INTO candidates
+                    (key, kind, recorded_at, payload_digest, payload)
+                VALUES (?, ?, ?, ?, ?)
                 """)
+            let existing = try connection.prepare(
+                "SELECT payload_digest FROM candidates WHERE key = ?")
             for row in rows {
                 try insert.reset()
                 try insert.bind(text: row.key, at: 1)
                 try insert.bind(text: row.kind, at: 2)
                 insert.bind(double: recordedAt, at: 3)
-                try insert.bind(blob: row.payload, at: 4)
+                try insert.bind(text: row.digest, at: 4)
+                try insert.bind(blob: row.payload, at: 5)
                 _ = try insert.step()
                 if connection.changes == 1 {
                     inserted += 1
-                } else {
-                    duplicates += 1
+                    continue
                 }
+                try existing.reset()
+                try existing.bind(text: row.key, at: 1)
+                guard try existing.step(), let stored = existing.text(at: 0) else {
+                    throw QoderCollectionStateError.corruptState(
+                        path: databaseURL.path,
+                        detail: "candidate row missing for \(row.key)")
+                }
+                // The key names a source identity, not the content. Identical
+                // bytes are the replay this design already absorbs; different
+                // bytes under the same identity mean the source was revised
+                // without a revision change, which must not be swallowed as a
+                // duplicate.
+                guard stored == row.digest else {
+                    throw QoderCollectionStateError.conflictingCandidate(
+                        key: row.key, storedDigest: stored,
+                        incomingDigest: row.digest)
+                }
+                duplicates += 1
             }
             let upsert = try connection.prepare(
                 """
@@ -447,14 +510,49 @@ public final class QoderCandidateInbox {
 
     private func validateSchema(_ connection: QoderSQLiteConnection) throws {
         let version = Int32(try connection.scalarInt64("PRAGMA user_version"))
-        if version == 0 {
+        switch version {
+        case 0:
             try connection.withTransaction {
                 try connection.execute(Self.schema)
                 try connection.execute("PRAGMA user_version = \(Self.schemaVersion)")
             }
-        } else if version != Self.schemaVersion {
+        case 1:
+            try migrateVersionOne(connection)
+        case Self.schemaVersion:
+            break
+        default:
             throw QoderCollectionStateError.unsupportedSchema(
                 path: databaseURL.path, version: version)
+        }
+    }
+
+    /// Slice 3 wrote candidates without a payload digest. Existing rows are
+    /// kept and backfilled so the upgrade neither drops undelivered
+    /// candidates nor turns a legitimate replay into a false conflict.
+    private func migrateVersionOne(_ connection: QoderSQLiteConnection) throws {
+        try connection.withTransaction {
+            try connection.execute(
+                "ALTER TABLE candidates ADD COLUMN payload_digest TEXT NOT NULL DEFAULT ''")
+            var rows: [(seq: Int64, payload: Data)] = []
+            do {
+                let select = try connection.prepare("SELECT seq, payload FROM candidates")
+                while try select.step() {
+                    guard let payload = select.blob(at: 1) else {
+                        throw QoderCollectionStateError.corruptState(
+                            path: databaseURL.path, detail: "null candidate payload")
+                    }
+                    rows.append((select.int64(at: 0), payload))
+                }
+            }
+            let update = try connection.prepare(
+                "UPDATE candidates SET payload_digest = ? WHERE seq = ?")
+            for row in rows {
+                try update.reset()
+                try update.bind(text: QoderDigest.sha256Hex(row.payload), at: 1)
+                update.bind(int64: row.seq, at: 2)
+                _ = try update.step()
+            }
+            try connection.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }
     }
 
