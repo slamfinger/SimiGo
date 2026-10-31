@@ -157,6 +157,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
             to: file,
             append: true)
         events.removeAll()
+        first.stop()
         let resumed = QoderCollectionRunner(configuration: configuration) {
             events.append(contentsOf: $0.map(\.event))
         }
@@ -195,6 +196,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
                 Fixture.userLine(uuid: "u-2", parent: "a-1", text: "next"),
             ], to: file, append: true)
         events.removeAll()
+        first.stop()
         let resumed = QoderCollectionRunner(configuration: configuration()) {
             events.append(contentsOf: $0.map(\.event))
         }
@@ -348,6 +350,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try pendingCount(configuration), 2)
 
         box.failing = false
+        first.stop()
         let resumed = QoderCollectionRunner(configuration: configuration) {
             try box.receive($0)
         }
@@ -573,6 +576,76 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertTrue(events.isEmpty)
         XCTAssertFalse(FileManager.default.fileExists(atPath: database.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: legacy.path))
+    }
+
+    func testCollectionLeaseIsExclusiveUntilItsHolderIsReleased() throws {
+        let configuration = configuration()
+        do {
+            let lease = try QoderCollectionLease.acquire(
+                directoryURL: configuration.stateDirectory)
+            XCTAssertEqual(lease.fileURL.lastPathComponent, "collector.lock")
+            XCTAssertThrowsError(
+                try QoderCollectionLease.acquire(
+                    directoryURL: configuration.stateDirectory)
+            ) { error in
+                guard case QoderCollectionStateError.stateAlreadyOwned = error else {
+                    return XCTFail("expected stateAlreadyOwned, got \(error)")
+                }
+            }
+        }
+        // Deallocating the holder closes the descriptor, which releases the
+        // lock; the file itself stays so the next runner can reuse it.
+        let reacquired = try QoderCollectionLease.acquire(
+            directoryURL: configuration.stateDirectory)
+        _ = reacquired
+    }
+
+    func testSecondRunnerCannotTakeOverAnOwnedStateDatabase() throws {
+        let configuration = configuration()
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+
+        var first: QoderCollectionRunner? = QoderCollectionRunner(
+            configuration: configuration) { _ in }
+        let initial = try XCTUnwrap(first).pollOnce()
+        XCTAssertTrue(initial.errors.isEmpty)
+        let owned = try XCTUnwrap(storedCursor(configuration))
+
+        // A new turn lands while the first runner owns the state.
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "u-2", answerUUID: "a-2", messageID: "m-2",
+                prompt: "second", answer: "answer two", nextAnchor: "u-3",
+                parent: "a-1"),
+            to: file, append: true)
+
+        let loserBox = SinkBox(failing: false)
+        let second = QoderCollectionRunner(configuration: configuration) {
+            try loserBox.receive($0)
+        }
+        let blocked = second.pollOnce()
+        XCTAssertTrue(loserBox.deliveries.isEmpty)
+        XCTAssertTrue(blocked.errors.contains { $0.contains("already owned") })
+        XCTAssertNotNil(second.unavailableReason)
+        // The loser must not touch the shared state, and it certainly may not
+        // displace it through quarantine.
+        XCTAssertEqual(try storedCursor(configuration), owned)
+        XCTAssertNil(second.quarantineState())
+        XCTAssertEqual(try storedCursor(configuration), owned)
+
+        // Releasing the owner (as process exit would) lets a new runner resume
+        // from the stored position instead of re-baselining.
+        first = nil
+        let winnerBox = SinkBox(failing: false)
+        let third = QoderCollectionRunner(configuration: configuration) {
+            try winnerBox.receive($0)
+        }
+        let resumed = third.pollOnce()
+        XCTAssertTrue(resumed.errors.isEmpty)
+        XCTAssertEqual(resumed.baselinedFiles, 0)
+        XCTAssertTrue(Fixture.baselines(winnerBox.events).isEmpty)
+        XCTAssertEqual(Fixture.turns(winnerBox.events).count, 1)
+        XCTAssertEqual(Fixture.turns(winnerBox.events).first?.answerText, "answer two")
     }
 
     func testRunnerStartStopToggles() {

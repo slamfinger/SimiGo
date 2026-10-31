@@ -59,6 +59,9 @@ public struct QoderCollectionConfiguration: Sendable {
 /// being replaced in place: re-baselining would silently skip transcripts
 /// whose turns were never durably recorded. Recovery is explicit through
 /// `quarantineState()`.
+///
+/// One runner owns the state directory at a time through an exclusive lease, so
+/// a second instance cannot commit an older cursor snapshot over a newer one.
 public final class QoderCollectionRunner {
     /// Receives durably committed candidates. The pair of `key` and `event`
     /// makes every delivery identifiable, so an accepted-but-not-marked crash
@@ -74,6 +77,7 @@ public final class QoderCollectionRunner {
     private let queue = DispatchQueue(label: "com.simigo.collection.qoder")
     private let queueKey = DispatchSpecificKey<Bool>()
     private var timer: DispatchSourceTimer?
+    private var lease: QoderCollectionLease?
     private var tailer: QoderTranscriptTailer?
     private var failure: String?
 
@@ -114,11 +118,16 @@ public final class QoderCollectionRunner {
         }
     }
 
+    /// Stops polling and gives up the state lease so another runner (or this
+    /// one, restarted) can take it. In-memory turn state is dropped; the next
+    /// start replays the open turn from the durable cursor.
     public func stop() {
         onQueue {
             timer?.setEventHandler {}
             timer?.cancel()
             timer = nil
+            tailer = nil
+            lease = nil
         }
     }
 
@@ -129,10 +138,17 @@ public final class QoderCollectionRunner {
 
     /// Moves unusable state aside and clears the failure so the next poll
     /// starts fresh. Existing transcripts are then baselined at EOF, which is
-    /// a deliberate loss of anything not yet durably recorded.
+    /// a deliberate loss of anything not yet durably recorded. Only the runner
+    /// that owns the state directory may do this.
     @discardableResult
     public func quarantineState() -> URL? {
         onQueue {
+            guard lease != nil else {
+                onError?(
+                    "state quarantine requires ownership of "
+                        + configuration.stateDirectory.path)
+                return nil
+            }
             do {
                 let destination = try inbox.quarantine()
                 tailer = nil
@@ -179,6 +195,10 @@ public final class QoderCollectionRunner {
         if failure != nil { return false }
         if tailer != nil { return true }
         do {
+            if lease == nil {
+                lease = try QoderCollectionLease.acquire(
+                    directoryURL: configuration.stateDirectory)
+            }
             let loaded = try inbox.loadCursorState()
             let created = QoderTranscriptTailer(
                 scanRoot: configuration.scanRoot, state: loaded)
