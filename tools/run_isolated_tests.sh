@@ -269,6 +269,7 @@ checks = {
     "first_run_marker_preprovisioned": os.path.exists(
         os.path.join(iso, "home", "manifests", "first-run-done.json")),
     "qoder_scan_root_preprovisioned": os.path.isdir(os.path.join(iso, "qoder-projects")),
+    "qoder_scan_root_matches_xctestrun": xr["injected_keys"].get("QODER_PROJECTS_DIR") == os.path.join(iso, "qoder-projects"),
     "no_real_user_state_write": diff["real_user_state_write_count"] == 0,
     "no_unexpected_write": diff["distinct_violation_count"] == 0,
 }
