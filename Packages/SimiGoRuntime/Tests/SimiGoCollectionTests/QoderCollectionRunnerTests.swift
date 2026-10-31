@@ -604,6 +604,8 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let report = runner.pollOnce()
         XCTAssertEqual(sinkCalls, 0)
         XCTAssertTrue(report.errors.contains { $0.contains("payload digest mismatch") })
+        XCTAssertTrue(runner.unavailableReason?.contains("payload digest mismatch") == true)
+        XCTAssertEqual(runner.statusSnapshot.pendingCount, 1)
         XCTAssertEqual(try inbox.pendingCount(), 1)
     }
 

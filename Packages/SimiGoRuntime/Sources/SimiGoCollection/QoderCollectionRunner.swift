@@ -325,8 +325,15 @@ public final class QoderCollectionRunner {
                 if accepted.count < batch.count { return }
             }
         } catch {
-            report.errors.append("candidate delivery failed: \(error)")
+            let reason = String(describing: error)
+            report.errors.append("candidate delivery failed: \(reason)")
             lastFailureAt = Date()
+            if case QoderCollectionStateError.corruptState = error {
+                // Corrupt durable payload is not a transient sink failure.
+                // Stop further collection until explicit quarantine/recovery.
+                failure = reason
+                tailer = nil
+            }
         }
     }
 
