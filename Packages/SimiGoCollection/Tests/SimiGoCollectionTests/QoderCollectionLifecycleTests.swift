@@ -111,6 +111,12 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         let first = QoderCollectionRunner(configuration: configuration) { _ in }
         first.start()
         XCTAssertTrue(first.isRunning)
+
+        // start() schedules an immediate asynchronous poll; do not assume the
+        // timer callback has committed the first-sight baseline before stop().
+        // A synchronous poll on the runner's serial queue joins that first scan.
+        let initial = first.pollOnce()
+        XCTAssertTrue(initial.errors.isEmpty, "\\(initial.errors)")
         XCTAssertEqual(try leaseHolderPID(configuration), getpid())
 
         // While that instance is alive, a second one must be refused rather than
