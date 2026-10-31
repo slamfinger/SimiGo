@@ -76,6 +76,7 @@ done
 
 # Keep opt-in knobs explicit and allowlisted before creating evidence or isolation state.
 for spec in "${TARGET_ENV[@]:-}"; do
+  [ -n "$spec" ] || continue
   case "$spec" in
     *:SIMIGO_PREFIX_POOL=1|*:SIMIGO_BRANCH_CHECKPOINTS=1|*:SIMIGO_REQUEST_BUDGET_MS=0) ;;
     *) echo "RUN_ISOLATED: unsupported --target-env $spec" >&2; exit 2 ;;
@@ -171,7 +172,9 @@ START=$(date +%s)
 GEN=(python3 "$ROOT/tools/make_isolated_xctestrun.py" --app "$APP"
      --isolation-root "$ISO" --record "$EVIDENCE/xctestrun_isolation.json")
 [ -n "$BASE" ] && GEN+=(--base-xctestrun "$BASE")
-for v in "${TARGET_ENV[@]:-}"; do GEN+=(--target-env "$v"); done
+for v in "${TARGET_ENV[@]:-}"; do
+  [ -n "$v" ] && GEN+=(--target-env "$v")
+done
 "${GEN[@]}" || exit 4
 XR="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["isolated_xctestrun"])' \
       "$EVIDENCE/xctestrun_isolation.json")" || exit 4
