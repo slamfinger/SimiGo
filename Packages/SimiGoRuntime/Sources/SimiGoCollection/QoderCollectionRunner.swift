@@ -129,7 +129,7 @@ public final class QoderCollectionRunner {
     }
 
     public var isRunning: Bool {
-        onQueue { timer != nil }
+        onQueue { timer != nil && failure == nil }
     }
 
     /// Non-nil while state cannot be used. Unreadable or damaged state is
@@ -154,7 +154,7 @@ public final class QoderCollectionRunner {
                 }
             }
             return QoderCollectionStatus(
-                isRunning: timer != nil,
+                isRunning: timer != nil && reason == nil,
                 unavailableReason: reason,
                 pendingCount: pending,
                 lastDeliveryAt: lastDeliveryAt,
