@@ -84,21 +84,35 @@ public struct QoderCursorState: Codable, Sendable, Equatable {
     }
 }
 
-public protocol QoderCursorStoring: AnyObject {
-    func load() -> QoderCursorState?
-    func save(_ state: QoderCursorState) throws
-}
-
-public final class QoderFileCursorStore: QoderCursorStoring {
+/// Pre-inbox cursor format. It is read once when a Slice 2 state directory is
+/// migrated into the durable inbox; everything after that uses the inbox.
+///
+/// Loading distinguishes absence from damage: a missing file is a first start,
+/// while an unreadable or undecodable one throws. Treating damage as absence
+/// would let the collector silently re-baseline transcripts whose contents
+/// were never reliably delivered.
+public final class QoderFileCursorStore {
     public let fileURL: URL
 
     public init(directoryURL: URL) {
         self.fileURL = directoryURL.appendingPathComponent("cursor.json")
     }
 
-    public func load() -> QoderCursorState? {
-        guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return try? JSONDecoder().decode(QoderCursorState.self, from: data)
+    public func load() throws -> QoderCursorState? {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path, detail: String(describing: error))
+        }
+        do {
+            return try JSONDecoder().decode(QoderCursorState.self, from: data)
+        } catch {
+            throw QoderCollectionStateError.corruptLegacyCursor(
+                path: fileURL.path, detail: String(describing: error))
+        }
     }
 
     public func save(_ state: QoderCursorState) throws {
@@ -222,6 +236,12 @@ public struct QoderPollReport: Sendable, Equatable {
     public var replayedBytes: Int64 = 0
     public var deliveredEvents = 0
     public var parseFailures = 0
+    /// Candidates the durable inbox inserted; replay of an already committed
+    /// batch reports the same events as duplicates instead.
+    public var persistedCandidates = 0
+    public var duplicateCandidates = 0
+    /// Candidates handed to the delivery sink during this poll.
+    public var deliveredCandidates = 0
     public var stateChanged = false
     public var errors: [String] = []
 
@@ -412,13 +432,32 @@ public final class QoderTranscriptTailer {
     }
 
     /// The persisted resume point is usable only when it lies behind the
-    /// committed offset at a line boundary that was counted. Anything else
-    /// (corrupt or pre-upgrade state) means "resume at offset, no replay".
+    /// committed offset at a counted line boundary. Anything else (corrupt or
+    /// pre-upgrade state) means "resume at offset, no replay".
     private func canReplay(_ cursor: QoderFileCursor) -> Bool {
-        cursor.resumeOffset >= 0
-            && cursor.resumeOffset < cursor.offset
-            && cursor.resumeSegmentLines >= 0
-            && cursor.resumeSegmentLines <= cursor.segmentLines
+        guard cursor.resumeOffset >= 0,
+            cursor.resumeOffset < cursor.offset,
+            cursor.resumeSegmentLines >= 0,
+            cursor.resumeSegmentLines <= cursor.segmentLines
+        else { return false }
+        return isLineBoundary(path: cursor.path, offset: cursor.resumeOffset)
+    }
+
+    /// The resume offset is the start of the anchor line, so the byte before
+    /// it must be a newline (or the file start). A cursor whose resume point
+    /// landed mid-line would replay from the middle of a record.
+    private func isLineBoundary(path: String, offset: Int64) -> Bool {
+        guard offset > 0 else { return true }
+        guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path))
+        else { return false }
+        defer { try? handle.close() }
+        do {
+            try handle.seek(toOffset: UInt64(offset - 1))
+            guard let byte = try handle.read(upToCount: 1) else { return false }
+            return byte == Data([0x0A])
+        } catch {
+            return false
+        }
     }
 
     private func accumulator(for file: QoderTranscriptFile) -> QoderTurnAccumulator {

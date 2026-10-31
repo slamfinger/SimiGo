@@ -507,7 +507,7 @@ final class QoderTranscriptTailerTests: XCTestCase {
     func testCursorStoreRoundTripPermissionsAndCorruptFile() throws {
         let directory = root.appendingPathComponent("state", isDirectory: true)
         let store = QoderFileCursorStore(directoryURL: directory)
-        XCTAssertNil(store.load())
+        XCTAssertNil(try store.load())
 
         let state = QoderCursorState(
             initializedAt: Date(timeIntervalSince1970: 1_700_000_000),
@@ -518,13 +518,43 @@ final class QoderTranscriptTailerTests: XCTestCase {
                     fingerprint: "abc", updatedAt: Date(timeIntervalSince1970: 1_700_000_001))
             ])
         try store.save(state)
-        XCTAssertEqual(store.load(), state)
+        XCTAssertEqual(try store.load(), state)
         let attributes = try FileManager.default.attributesOfItem(
             atPath: store.fileURL.path)
         XCTAssertEqual(
             (attributes[.posixPermissions] as? NSNumber)?.intValue, 0o600)
 
         try Data("not a cursor".utf8).write(to: store.fileURL)
-        XCTAssertNil(store.load())
+        XCTAssertThrowsError(try store.load()) { error in
+            guard case QoderCollectionStateError.corruptLegacyCursor = error else {
+                return XCTFail("expected corruptLegacyCursor, got \(error)")
+            }
+        }
+    }
+
+    func testReplayIsSkippedWhenResumeOffsetIsNotALineBoundary() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            [Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
+        let first = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        XCTAssertTrue(Fixture.turns(poll(first).events).isEmpty)
+
+        var state = first.cursorState
+        let key = try XCTUnwrap(state.cursors.keys.first)
+        let cursor = try XCTUnwrap(state.cursors[key])
+        XCTAssertEqual(cursor.resumeOffset, 0)
+        state.cursors[key] = QoderFileCursor(
+            path: cursor.path, projectID: cursor.projectID,
+            sessionID: cursor.sessionID, isSubagent: cursor.isSubagent,
+            inode: cursor.inode, offset: cursor.offset,
+            segmentLines: cursor.segmentLines,
+            resumeOffset: 1, resumeSegmentLines: 0,
+            fingerprint: cursor.fingerprint, updatedAt: cursor.updatedAt)
+
+        let resumed = QoderTranscriptTailer(scanRoot: root, state: state)
+        let idle = poll(resumed)
+        XCTAssertTrue(idle.events.isEmpty)
+        XCTAssertEqual(idle.report.replayedBytes, 0)
+        XCTAssertEqual(idle.report.readBytes, 0)
     }
 }

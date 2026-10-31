@@ -11,7 +11,7 @@ public enum QoderDigest {
     }
 }
 
-public enum QoderAnchorKind: String, Sendable, Equatable {
+public enum QoderAnchorKind: String, Sendable, Equatable, Codable {
     case humanPrompt = "human_prompt"
     case continuationPrompt = "continuation_prompt"
     case notificationPrompt = "notification_prompt"
@@ -21,14 +21,14 @@ public enum QoderAnchorKind: String, Sendable, Equatable {
     public var isHuman: Bool { self == .humanPrompt }
 }
 
-public enum QoderAttributionRelation: String, Sendable, Equatable {
+public enum QoderAttributionRelation: String, Sendable, Equatable, Codable {
     case parentChain = "parent_chain"
     case fileOrderAfterCompaction = "file_order_after_compaction"
     case fileOrderNoChain = "file_order_no_chain"
     case unattached
 }
 
-public enum QoderReviewReason: String, Sendable, Equatable {
+public enum QoderReviewReason: String, Sendable, Equatable, Codable {
     case fileOrderAfterCompaction = "file_order_after_compaction"
     case fileOrderNoChain = "file_order_no_chain"
     case interrupted
@@ -42,7 +42,7 @@ public enum QoderTurnDisposition: Sendable, Equatable {
     case internalRecord
 }
 
-public enum QoderClosureReason: String, Sendable, Equatable {
+public enum QoderClosureReason: String, Sendable, Equatable, Codable {
     case interrupted
     case ambiguousTerminal = "ambiguous_terminal"
     case apiError = "api_error"
@@ -52,13 +52,13 @@ public enum QoderClosureReason: String, Sendable, Equatable {
     case noAnswer = "no_answer"
 }
 
-public enum QoderFinalizationBoundary: String, Sendable, Equatable {
+public enum QoderFinalizationBoundary: String, Sendable, Equatable, Codable {
     case nextAnchor = "next_anchor"
     case endOfInput = "end_of_input"
     case idleFlush = "idle_flush"
 }
 
-public struct QoderAnchorSummary: Sendable, Equatable {
+public struct QoderAnchorSummary: Sendable, Equatable, Codable {
     public let id: String
     public let kind: QoderAnchorKind
     public let segmentLine: Int64
@@ -67,7 +67,7 @@ public struct QoderAnchorSummary: Sendable, Equatable {
     public let isSidechain: Bool
 }
 
-public struct QoderSupersededAnswer: Sendable, Equatable {
+public struct QoderSupersededAnswer: Sendable, Equatable, Codable {
     public let messageID: String
     public let answerDigest: String
     public let textLength: Int
@@ -75,7 +75,7 @@ public struct QoderSupersededAnswer: Sendable, Equatable {
     public let relation: QoderAttributionRelation
 }
 
-public struct QoderSourceIdentity: Sendable, Equatable, Hashable {
+public struct QoderSourceIdentity: Sendable, Equatable, Hashable, Codable {
     public static let adapterVersion = "qoder-transcript-final/v1"
 
     public let sourceType: String
@@ -116,7 +116,7 @@ public struct QoderSourceIdentity: Sendable, Equatable, Hashable {
     }
 }
 
-public struct QoderCollectedTurn: Sendable, Equatable {
+public struct QoderCollectedTurn: Sendable, Equatable, Codable {
     public let candidateID: String
     public let identity: QoderSourceIdentity
     public let projectID: String
@@ -142,7 +142,7 @@ public struct QoderCollectedTurn: Sendable, Equatable {
     public let finalizedBy: QoderFinalizationBoundary
 }
 
-public struct QoderTurnClosure: Sendable, Equatable {
+public struct QoderTurnClosure: Sendable, Equatable, Codable {
     public let projectID: String
     public let sessionID: String
     public let isSubagent: Bool
@@ -156,8 +156,8 @@ public struct QoderTurnClosure: Sendable, Equatable {
     public let finalizedBy: QoderFinalizationBoundary
 }
 
-public struct QoderBaselineEvent: Sendable, Equatable {
-    public enum Reason: String, Sendable, Equatable {
+public struct QoderBaselineEvent: Sendable, Equatable, Codable {
+    public enum Reason: String, Sendable, Equatable, Codable {
         case existingFileAtEnd = "existing_file_at_end"
         case newFileFromStart = "new_file_from_start"
         case truncatedReset = "truncated_reset"
@@ -173,15 +173,15 @@ public struct QoderBaselineEvent: Sendable, Equatable {
     public let reason: Reason
 }
 
-public struct QoderParseFailure: Sendable, Equatable {
+public struct QoderParseFailure: Sendable, Equatable, Codable {
     public let path: String
     public let sessionID: String
     public let segmentLine: Int64
     public let detail: String
 }
 
-public struct QoderOrphanAssistant: Sendable, Equatable {
-    public enum Reason: String, Sendable, Equatable {
+public struct QoderOrphanAssistant: Sendable, Equatable, Codable {
+    public enum Reason: String, Sendable, Equatable, Codable {
         case noOpenTurn = "no_open_turn"
         case beforeCurrentAnchor = "before_current_anchor"
         case lateForClosedTurn = "late_for_closed_turn"
@@ -194,7 +194,7 @@ public struct QoderOrphanAssistant: Sendable, Equatable {
     public let reason: Reason
 }
 
-public struct QoderCompactionEvent: Sendable, Equatable {
+public struct QoderCompactionEvent: Sendable, Equatable, Codable {
     public let path: String
     public let sessionID: String
     public let segmentLine: Int64
@@ -208,4 +208,113 @@ public enum QoderCollectionEvent: Sendable, Equatable {
     case parseFailure(QoderParseFailure)
     case orphanAssistant(QoderOrphanAssistant)
     case compaction(QoderCompactionEvent)
+}
+
+/// Durable inbox encoding. The discriminator strings double as
+/// `QoderCandidateKind` raw values so stored rows stay self-describing.
+extension QoderCollectionEvent: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case payload
+    }
+
+    private enum Kind: String, Codable {
+        case baseline
+        case turn
+        case closedWithoutAnswer = "closed_without_answer"
+        case parseFailure = "parse_failure"
+        case orphanAssistant = "orphan_assistant"
+        case compaction
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .baseline:
+            self = .baseline(try container.decode(QoderBaselineEvent.self, forKey: .payload))
+        case .turn:
+            self = .turn(try container.decode(QoderCollectedTurn.self, forKey: .payload))
+        case .closedWithoutAnswer:
+            self = .closedWithoutAnswer(
+                try container.decode(QoderTurnClosure.self, forKey: .payload))
+        case .parseFailure:
+            self = .parseFailure(try container.decode(QoderParseFailure.self, forKey: .payload))
+        case .orphanAssistant:
+            self = .orphanAssistant(
+                try container.decode(QoderOrphanAssistant.self, forKey: .payload))
+        case .compaction:
+            self = .compaction(try container.decode(QoderCompactionEvent.self, forKey: .payload))
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .baseline(let event):
+            try container.encode(Kind.baseline, forKey: .kind)
+            try container.encode(event, forKey: .payload)
+        case .turn(let event):
+            try container.encode(Kind.turn, forKey: .kind)
+            try container.encode(event, forKey: .payload)
+        case .closedWithoutAnswer(let event):
+            try container.encode(Kind.closedWithoutAnswer, forKey: .kind)
+            try container.encode(event, forKey: .payload)
+        case .parseFailure(let event):
+            try container.encode(Kind.parseFailure, forKey: .kind)
+            try container.encode(event, forKey: .payload)
+        case .orphanAssistant(let event):
+            try container.encode(Kind.orphanAssistant, forKey: .kind)
+            try container.encode(event, forKey: .payload)
+        case .compaction(let event):
+            try container.encode(Kind.compaction, forKey: .kind)
+            try container.encode(event, forKey: .payload)
+        }
+    }
+}
+
+extension QoderTurnDisposition: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case reason
+        case anchorKind
+    }
+
+    private enum Kind: String, Codable {
+        case eligible
+        case requiresReview
+        case deferredAutoTurn
+        case internalRecord
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .eligible:
+            self = .eligible
+        case .requiresReview:
+            self = .requiresReview(
+                try container.decode(QoderReviewReason.self, forKey: .reason))
+        case .deferredAutoTurn:
+            self = .deferredAutoTurn(
+                try container.decode(QoderAnchorKind.self, forKey: .anchorKind))
+        case .internalRecord:
+            self = .internalRecord
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .eligible:
+            try container.encode(Kind.eligible, forKey: .kind)
+        case .requiresReview(let reason):
+            try container.encode(Kind.requiresReview, forKey: .kind)
+            try container.encode(reason, forKey: .reason)
+        case .deferredAutoTurn(let kind):
+            try container.encode(Kind.deferredAutoTurn, forKey: .kind)
+            try container.encode(kind, forKey: .anchorKind)
+        case .internalRecord:
+            try container.encode(Kind.internalRecord, forKey: .kind)
+        }
+    }
 }

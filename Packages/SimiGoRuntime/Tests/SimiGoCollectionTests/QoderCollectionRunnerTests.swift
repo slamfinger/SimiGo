@@ -62,6 +62,22 @@ final class QoderCollectionIdentityTests: XCTestCase {
 
 final class QoderCollectionRunnerTests: XCTestCase {
 
+    private struct SinkFailure: Error {}
+
+    private final class SinkBox {
+        var failing: Bool
+        var events: [QoderCollectionEvent] = []
+
+        init(failing: Bool) {
+            self.failing = failing
+        }
+
+        func receive(_ batch: [QoderCollectionEvent]) throws {
+            if failing { throw SinkFailure() }
+            events.append(contentsOf: batch)
+        }
+    }
+
     private var root: URL!
     private var project: URL!
 
@@ -94,8 +110,12 @@ final class QoderCollectionRunnerTests: XCTestCase {
     private func storedCursor(_ configuration: QoderCollectionConfiguration) throws
         -> QoderFileCursor?
     {
-        try QoderFileCursorStore(directoryURL: configuration.stateDirectory)
-            .load()?.cursors.values.first
+        try QoderCandidateInbox(directoryURL: configuration.stateDirectory)
+            .loadCursorState()?.cursors.values.first
+    }
+
+    private func pendingCount(_ configuration: QoderCollectionConfiguration) throws -> Int {
+        try QoderCandidateInbox(directoryURL: configuration.stateDirectory).pendingCount()
     }
 
     func testRunnerPersistsCursorAndResumesInNewInstance() throws {
@@ -154,16 +174,14 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertTrue(
             FileManager.default.fileExists(
                 atPath: configuration().stateDirectory.appendingPathComponent(
-                    "cursor.json").path))
+                    QoderCandidateInbox.databaseFileName).path))
 
         let file = mainFile()
         try Fixture.writeLines([Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
         first.pollOnce()
         XCTAssertTrue(Fixture.turns(events).isEmpty)
 
-        let stored = try XCTUnwrap(
-            QoderFileCursorStore(directoryURL: configuration().stateDirectory).load())
-        let anchorCursor = try XCTUnwrap(stored.cursors.values.first)
+        let anchorCursor = try XCTUnwrap(storedCursor(configuration()))
         XCTAssertEqual(anchorCursor.resumeOffset, 0)
         XCTAssertEqual(anchorCursor.resumeSegmentLines, 0)
 
@@ -184,6 +202,160 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(turns.first?.answerText, "world")
         XCTAssertEqual(turns.first?.relation, .parentChain)
         XCTAssertTrue(Fixture.orphans(events).isEmpty)
+    }
+
+    func testRunnerKeepsCandidatesWhenDeliveryFailsAndRetriesWithoutRereading() throws {
+        let configuration = configuration()
+        let box = SinkBox(failing: true)
+        let runner = QoderCollectionRunner(configuration: configuration) {
+            try box.receive($0)
+        }
+        runner.pollOnce()
+
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+        let collected = runner.pollOnce()
+        XCTAssertFalse(collected.errors.isEmpty)
+        XCTAssertEqual(Fixture.turns(box.events).count, 0)
+        XCTAssertEqual(try pendingCount(configuration), 2)
+
+        // The cursor advanced even though delivery failed, so the transcript
+        // is not read again; the backlog survives for the next drain.
+        let stored = try XCTUnwrap(storedCursor(configuration))
+        XCTAssertEqual(stored.offset, Int64(try Data(contentsOf: file).count))
+
+        box.failing = false
+        let drained = runner.pollOnce()
+        XCTAssertEqual(drained.readBytes, 0)
+        XCTAssertEqual(drained.deliveredCandidates, 2)
+        XCTAssertTrue(drained.errors.isEmpty)
+        XCTAssertEqual(Fixture.turns(box.events).count, 1)
+        XCTAssertEqual(Fixture.turns(box.events).first?.answerText, "world")
+        XCTAssertEqual(try pendingCount(configuration), 0)
+    }
+
+    func testRunnerFailsClosedOnCorruptStateAndRecoversOnlyByQuarantine() throws {
+        let configuration = configuration()
+        try FileManager.default.createDirectory(
+            at: configuration.stateDirectory, withIntermediateDirectories: true)
+        let database = configuration.stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        try Data("this is not sqlite".utf8).write(to: database)
+
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+
+        var events: [QoderCollectionEvent] = []
+        var errors: [String] = []
+        let runner = QoderCollectionRunner(
+            configuration: configuration,
+            sink: { events.append(contentsOf: $0) },
+            onError: { errors.append($0) })
+        runner.start()
+        XCTAssertFalse(runner.isRunning)
+        XCTAssertNotNil(runner.unavailableReason)
+        XCTAssertFalse(errors.isEmpty)
+
+        let blocked = runner.pollOnce()
+        XCTAssertFalse(blocked.errors.isEmpty)
+        XCTAssertEqual(blocked.baselinedFiles, 0)
+        XCTAssertTrue(events.isEmpty)
+        // Failure close means the damaged state is still there, untouched.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: database.path))
+
+        let quarantined = try XCTUnwrap(runner.quarantineState())
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: quarantined.appendingPathComponent(
+                QoderCandidateInbox.databaseFileName).path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: database.path))
+        XCTAssertNil(runner.unavailableReason)
+
+        // Recovery is explicit and therefore allowed to baseline the existing
+        // transcript at EOF.
+        let recovered = runner.pollOnce()
+        XCTAssertTrue(recovered.errors.isEmpty)
+        XCTAssertEqual(recovered.baselinedFiles, 1)
+        XCTAssertEqual(Fixture.baselines(events).first?.reason, .existingFileAtEnd)
+        XCTAssertTrue(Fixture.turns(events).isEmpty)
+    }
+
+    func testRunnerMigratesSliceTwoCursorIntoTheInbox() throws {
+        let configuration = configuration()
+        let file = mainFile()
+        try Fixture.writeLines([Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
+
+        let scanned = try XCTUnwrap(
+            QoderTranscriptScanner(root: root).scan().first)
+        let size = Int64(try Data(contentsOf: file).count)
+        let inode = try XCTUnwrap(
+            (FileManager.default.attributesOfItem(atPath: file.path)[.systemFileNumber]
+                as? NSNumber)?.uint64Value)
+        let legacy = QoderCursorState(
+            initializedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            cursors: [
+                scanned.path: QoderFileCursor(
+                    path: scanned.path, projectID: scanned.projectID,
+                    sessionID: scanned.sessionID, isSubagent: false,
+                    inode: inode, offset: size, segmentLines: 1,
+                    resumeOffset: 0, resumeSegmentLines: 0,
+                    fingerprint: QoderDigest.sha256Hex(try Data(contentsOf: file)),
+                    updatedAt: Date(timeIntervalSince1970: 1_700_000_001))
+            ])
+        try FileManager.default.createDirectory(
+            at: configuration.stateDirectory, withIntermediateDirectories: true)
+        try QoderFileCursorStore(directoryURL: configuration.stateDirectory)
+            .save(legacy)
+
+        try Fixture.writeLines(
+            [
+                Fixture.assistantLine(
+                    uuid: "a-1", parent: "u-1", messageID: "m-1", text: "world"),
+                Fixture.userLine(uuid: "u-2", parent: "a-1", text: "next"),
+            ], to: file, append: true)
+
+        var events: [QoderCollectionEvent] = []
+        let runner = QoderCollectionRunner(configuration: configuration) {
+            events.append(contentsOf: $0)
+        }
+        let report = runner.pollOnce()
+        XCTAssertTrue(report.errors.isEmpty)
+        XCTAssertEqual(report.baselinedFiles, 0)
+
+        let turns = Fixture.turns(events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.answerText, "world")
+        XCTAssertEqual(turns.first?.relation, .parentChain)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: configuration.stateDirectory.appendingPathComponent(
+                    QoderCandidateInbox.legacyCursorFileName).path))
+        XCTAssertEqual(try storedCursor(configuration)?.offset, Int64(try Data(contentsOf: file).count))
+    }
+
+    func testRunnerDoesNotRescanAfterRestartWithDurableBacklog() throws {
+        let configuration = configuration()
+        let box = SinkBox(failing: true)
+        let first = QoderCollectionRunner(configuration: configuration) {
+            try box.receive($0)
+        }
+        first.pollOnce()
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+        first.pollOnce()
+        XCTAssertEqual(try pendingCount(configuration), 2)
+
+        box.failing = false
+        let resumed = QoderCollectionRunner(configuration: configuration) {
+            try box.receive($0)
+        }
+        let drained = resumed.pollOnce()
+        // The open turn (u-2) is replayed to rebuild state, but the already
+        // committed turn candidate is not regenerated or delivered twice.
+        XCTAssertGreaterThan(drained.replayedBytes, 0)
+        XCTAssertEqual(drained.persistedCandidates, 0)
+        XCTAssertEqual(drained.duplicateCandidates, 0)
+        XCTAssertEqual(Fixture.turns(box.events).count, 1)
+        XCTAssertEqual(try pendingCount(configuration), 0)
     }
 
     func testRunnerStartStopToggles() {
