@@ -66,7 +66,7 @@ the isolated `qoder-projects/` directory during App tests; it never tails the re
 `~/.qoder-cn/projects` tree. The harness snapshots and diffs the protected roots
 before and after, including `~/.simigo`, the SimiGo Application Support root, and
 the app preference plists (`~/Library/Preferences/SwiftUI.SimiGo.plist` and the
-legacy `SimiGo.plist`). Evidence lands in `build/test-isolation/<utc>/` and the app
+short-name `SimiGo.plist`). Evidence lands in `build/test-isolation/<utc>/` and the app
 defaults to `build/test/Build/Products/Debug/SimiGo.app`. It fails closed on an
 unsafe isolation root, a plist diff beyond the four injected roots and explicitly
 requested target opt-ins, a failing or unparsable suite, or any user-state write
