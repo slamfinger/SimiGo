@@ -108,10 +108,14 @@ def main():
             die("conflicting --target-env values for %s/%s" % (target, key), 2)
         existing[key] = value
 
-    for target, settings in requested_target_env.items():
-        if (settings.get("SIMIGO_KV_FREE_MATRIX") == "1"
-                and settings.get("SIMIGO_KV_BLOCKED_ONLY") == "1"):
-            die("KV-free matrix modes are mutually exclusive for target %s" % target, 2)
+    requested_modes = {
+        key
+        for settings in requested_target_env.values()
+        for key in ("SIMIGO_KV_FREE_MATRIX", "SIMIGO_KV_BLOCKED_ONLY")
+        if settings.get(key) == "1"
+    }
+    if len(requested_modes) > 1:
+        die("KV-free matrix modes are mutually exclusive in one invocation", 2)
 
     app = os.path.abspath(a.app)
     iso = os.path.abspath(a.isolation_root)
