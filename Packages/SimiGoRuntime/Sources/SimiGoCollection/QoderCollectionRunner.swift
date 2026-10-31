@@ -98,8 +98,9 @@ public final class QoderCollectionRunner {
         onQueue { timer != nil }
     }
 
-    /// Non-nil while durable state is unusable; collection is stopped and
-    /// `quarantineState()` is the only way back.
+    /// Non-nil while state cannot be used. Unreadable or damaged state is
+    /// recovered through `quarantineState()`; a directory owned by another
+    /// runner needs that owner to stop or exit first.
     public var unavailableReason: String? {
         onQueue { failure }
     }
