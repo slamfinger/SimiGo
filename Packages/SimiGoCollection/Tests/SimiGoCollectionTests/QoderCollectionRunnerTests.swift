@@ -364,7 +364,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try pendingCount(configuration), 0)
     }
 
-    func testDeliveryCarriesTheDurableKeySoRedeliveryIsIdentifiable() throws {
+    func testCrashWindowAfterSinkAcceptanceBeforeMarkDeliveredRedeliversSameStableKey() throws {
         let configuration = configuration()
         let accumulator = QoderTurnAccumulator(context: Fixture.context())
         let turn = try XCTUnwrap(
@@ -376,19 +376,76 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let pending = try inbox.pendingCandidates()
         XCTAssertEqual(pending.map(\.key), [turn.identity.operationKey])
 
-        // The first attempt reached the sink but the process died before
-        // markDelivered; the restart must hand over the same durable key.
+        // Model the crash window by invoking a sink that records acceptance,
+        // then deliberately omit markDelivered. The restarted Runner must hand
+        // over the exact same key (at-least-once, not exactly-once).
+        var firstSinkAcceptedKeys: [String] = []
+        let firstSink: QoderCollectionRunner.Sink = { deliveries in
+            firstSinkAcceptedKeys.append(contentsOf: deliveries.map(\.key))
+        }
+        try firstSink(pending.map(\.delivery))
+        let acceptedBeforeCrash = firstSinkAcceptedKeys
+        XCTAssertEqual(acceptedBeforeCrash, pending.map(\.key))
+
         let box = SinkBox(failing: false)
         let runner = QoderCollectionRunner(configuration: configuration) {
             try box.receive($0)
         }
         let report = runner.pollOnce()
         XCTAssertTrue(report.errors.isEmpty)
-        XCTAssertEqual(box.keys, pending.map(\.key))
+        XCTAssertEqual(box.keys, acceptedBeforeCrash)
         XCTAssertEqual(box.deliveries.map(\.kind), [.turn])
         XCTAssertEqual(box.deliveries.first?.event, .turn(turn))
         XCTAssertEqual(box.deliveries.first?.sequence, pending.first?.sequence)
         XCTAssertEqual(try pendingCount(configuration), 0)
+    }
+
+    func testCollectionOnlyRunnerRetainsCandidatesWithoutPretendingTheyWereDelivered() throws {
+        let configuration = configuration()
+        let runner = QoderCollectionRunner(configuration: configuration)
+        _ = runner.pollOnce()
+
+        try Fixture.writeLines(Fixture.turnLines(), to: mainFile())
+        let report = runner.pollOnce()
+        XCTAssertTrue(report.errors.isEmpty)
+        XCTAssertEqual(report.persistedCandidates, 2)
+        let status = runner.statusSnapshot
+        XCTAssertEqual(status.pendingCount, 2)
+        XCTAssertNil(status.lastDeliveryAt)
+        XCTAssertNil(status.unavailableReason)
+    }
+
+    func testNormallyStoppedRunnerDoesNotRedeliverMarkedCandidates() throws {
+        let configuration = configuration()
+        let box = SinkBox(failing: false)
+        let first = QoderCollectionRunner(configuration: configuration) {
+            try box.receive($0)
+        }
+        _ = first.pollOnce()
+        try Fixture.writeLines(Fixture.turnLines(), to: mainFile())
+        let delivered = first.pollOnce()
+        XCTAssertEqual(delivered.deliveredCandidates, 2)
+        let acceptedKeys = box.keys
+        XCTAssertEqual(acceptedKeys.count, 2)
+        XCTAssertEqual(first.statusSnapshot.pendingCount, 0)
+        XCTAssertNotNil(first.statusSnapshot.lastDeliveryAt)
+        first.stop()
+
+        let inbox = QoderCandidateInbox(directoryURL: configuration.stateDirectory)
+        let cursor = try XCTUnwrap(inbox.loadCursorState())
+        let replay = try inbox.commit(events: box.events, cursorState: cursor)
+        XCTAssertEqual(replay.insertedCandidates, 0)
+        XCTAssertEqual(replay.duplicateCandidates, 2)
+        XCTAssertEqual(try inbox.pendingCount(), 0)
+
+        let resumed = QoderCollectionRunner(configuration: configuration) {
+            try box.receive($0)
+        }
+        let restarted = resumed.pollOnce()
+        XCTAssertTrue(restarted.errors.isEmpty)
+        XCTAssertEqual(restarted.deliveredCandidates, 0)
+        XCTAssertEqual(box.keys, acceptedKeys)
+        XCTAssertEqual(try inbox.pendingCount(), 0)
     }
 
     func testInboxRejectsSameIdentityWithDifferentContent() throws {
@@ -505,6 +562,59 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let upgraded = try QoderSQLiteConnection.open(path: databaseURL.path)
         defer { upgraded.close() }
         XCTAssertEqual(try upgraded.scalarInt64("PRAGMA user_version"), 2)
+    }
+
+    func testPendingCandidatesRejectsPayloadTamperingBeforeSinkDelivery() throws {
+        let configuration = configuration()
+        let inbox = QoderCandidateInbox(directoryURL: configuration.stateDirectory)
+        let turn = try XCTUnwrap(
+            Fixture.turns(
+                Fixture.feed(
+                    QoderTurnAccumulator(context: Fixture.context()),
+                    Fixture.turnLines())
+            ).first)
+        let state = QoderCursorState(
+            initializedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        try inbox.commit(events: [.turn(turn)], cursorState: state)
+
+        let databaseURL = configuration.stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        do {
+            let connection = try QoderSQLiteConnection.open(path: databaseURL.path)
+            defer { connection.close() }
+            let select = try connection.prepare(
+                "SELECT seq, payload FROM candidates WHERE key = ?")
+            try select.bind(text: turn.identity.operationKey, at: 1)
+            XCTAssertTrue(try select.step())
+            let sequence = select.int64(at: 0)
+            var payload = try XCTUnwrap(select.blob(at: 1))
+            let range = try XCTUnwrap(payload.range(of: Data("hello".utf8)))
+            payload.replaceSubrange(range, with: Data("hullo".utf8))
+
+            let update = try connection.prepare(
+                "UPDATE candidates SET payload = ? WHERE seq = ?")
+            try update.bind(blob: payload, at: 1)
+            update.bind(int64: sequence, at: 2)
+            _ = try update.step()
+        }
+
+        XCTAssertThrowsError(try inbox.pendingCandidates()) { error in
+            guard case QoderCollectionStateError.corruptState = error else {
+                return XCTFail("expected corruptState, got \(error)")
+            }
+        }
+
+        var sinkCalls = 0
+        let runner = QoderCollectionRunner(configuration: configuration) { _ in
+            sinkCalls += 1
+        }
+        let report = runner.pollOnce()
+        XCTAssertEqual(sinkCalls, 0)
+        XCTAssertTrue(report.errors.contains { $0.contains("payload digest mismatch") })
+        XCTAssertTrue(runner.unavailableReason?.contains("payload digest mismatch") == true)
+        XCTAssertFalse(runner.statusSnapshot.isRunning)
+        XCTAssertEqual(runner.statusSnapshot.pendingCount, 1)
+        XCTAssertEqual(try inbox.pendingCount(), 1)
     }
 
     func testInboxAbsorbsReplayedCandidatesWithoutRedeliveringThem() throws {

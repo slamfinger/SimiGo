@@ -195,13 +195,16 @@ public struct QoderTranscriptScanner {
     }
 
     public func scan() -> QoderTranscriptScanResult {
-        let fileManager = FileManager.default
-        guard fileManager.fileExists(atPath: root.path) else { return .absent }
+        let projects: [URL]
+        do {
+            projects = try listDirectory(root)
+        } catch {
+            if isNoSuchFileError(error) { return .absent }
+            return .partial(
+                files: [], errors: ["cannot list \(root.path): \(error)"])
+        }
 
         var errors: [String] = []
-        guard let projects = list(root, errors: &errors) else {
-            return .partial(files: [], errors: errors)
-        }
 
         var files: [QoderTranscriptFile] = []
         for project in projects {
@@ -237,10 +240,18 @@ public struct QoderTranscriptScanner {
                 } else if values.isDirectory == true {
                     let subagents = child.appendingPathComponent(
                         "subagents", isDirectory: true)
-                    // Most sessions have no subagents; a missing directory is
-                    // an empty one, not a failed walk.
-                    guard fileManager.fileExists(atPath: subagents.path) else { continue }
-                    guard let agents = list(subagents, errors: &errors) else { continue }
+                    // Most sessions have no subagents. Treat only a real
+                    // no-such-file result as absence; permission and I/O
+                    // failures make the scan partial and preserve cursors.
+                    let agents: [URL]
+                    do {
+                        agents = try listDirectory(subagents)
+                    } catch {
+                        if !isNoSuchFileError(error) {
+                            errors.append("cannot list \(subagents.path): \(error)")
+                        }
+                        continue
+                    }
                     for agent in agents where agent.pathExtension == "jsonl" {
                         guard
                             let agentValues = try? agent.resourceValues(
@@ -271,13 +282,33 @@ public struct QoderTranscriptScanner {
 
     private func list(_ directory: URL, errors: inout [String]) -> [URL]? {
         do {
-            return try FileManager.default.contentsOfDirectory(
-                at: directory, includingPropertiesForKeys: Array(Self.resourceKeys),
-                options: [.skipsHiddenFiles])
+            return try listDirectory(directory)
         } catch {
             errors.append("cannot list \(directory.path): \(error)")
             return nil
         }
+    }
+
+    private func listDirectory(_ directory: URL) throws -> [URL] {
+        try FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: Array(Self.resourceKeys),
+            options: [.skipsHiddenFiles])
+    }
+
+    private func isNoSuchFileError(_ error: Error) -> Bool {
+        let value = error as NSError
+        if value.domain == NSPOSIXErrorDomain,
+            value.code == POSIXErrorCode.ENOENT.rawValue
+        {
+            return true
+        }
+        if value.domain == NSCocoaErrorDomain,
+            value.code == NSFileNoSuchFileError
+                || value.code == NSFileReadNoSuchFileError
+        {
+            return true
+        }
+        return false
     }
 
     private func makeFile(

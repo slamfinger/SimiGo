@@ -1,10 +1,13 @@
 # SimiGoRuntime
 
-Standalone Apache-2.0 runtime package for the public SimiGo app. It contains the
-Execution/Runtime Contract and the Runtime/Backend implementation needed for a
-clean public source build.
+Public Apache-2.0 Swift package used by the SimiGo app.
 
-Initial public snapshot: SimiGo-Lab `25e1a790c841f48d0f3fddc762dcbff3c6d7c72a`.
+- SimiGoRuntimeContract: Execution State, Runtime and Information Space contracts.
+- SimiGo2Experimental: MLX-backed runtime implementation.
 
-This package deliberately excludes research documents, experiment executables,
-model weights, and research-only harnesses.
+Qoder transcript collection is isolated in the MLX-free
+[SimiGoCollection package](../SimiGoCollection/README.md), so its package tests
+do not build the MLX dependency chain.
+
+This package contains runtime code only; research documents, experiment
+executables and model weights are maintained separately.

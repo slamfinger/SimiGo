@@ -155,9 +155,9 @@ extension QoderCollectionEvent {
 /// A missing database is a first start. A database that exists but cannot be
 /// read, is damaged, or carries another schema fails closed until the caller
 /// explicitly quarantines it.
-public final class QoderCandidateInbox {
-    public static let databaseFileName = "candidate-inbox.sqlite"
-    public static let legacyCursorFileName = "cursor.json"
+final class QoderCandidateInbox {
+    static let databaseFileName = "candidate-inbox.sqlite"
+    static let legacyCursorFileName = "cursor.json"
 
     private static let schemaVersion: Int32 = 2
     private static let sqliteHeader = Data("SQLite format 3\u{0}".utf8)
@@ -179,10 +179,10 @@ public final class QoderCandidateInbox {
             ON candidates(seq) WHERE delivered_at IS NULL;
         """
 
-    public let directoryURL: URL
+    let directoryURL: URL
     private var connection: QoderSQLiteConnection?
 
-    public init(directoryURL: URL) {
+    init(directoryURL: URL) {
         self.directoryURL = directoryURL
     }
 
@@ -190,17 +190,17 @@ public final class QoderCandidateInbox {
         connection?.close()
     }
 
-    public var databaseURL: URL {
+    var databaseURL: URL {
         directoryURL.appendingPathComponent(Self.databaseFileName)
     }
 
-    public var legacyCursorURL: URL {
+    var legacyCursorURL: URL {
         directoryURL.appendingPathComponent(Self.legacyCursorFileName)
     }
 
     /// `nil` only when nothing was ever committed here: no database, no legacy
     /// cursor. Damaged state throws instead of looking like a first start.
-    public func loadCursorState() throws -> QoderCursorState? {
+    func loadCursorState() throws -> QoderCursorState? {
         try openIfNeeded()
         guard let connection else {
             throw QoderCollectionStateError.unreadableState(
@@ -216,7 +216,7 @@ public final class QoderCandidateInbox {
     }
 
     @discardableResult
-    public func commit(
+    func commit(
         events: [QoderCollectionEvent], cursorState: QoderCursorState
     ) throws -> QoderCommitResult {
         try openIfNeeded()
@@ -305,7 +305,7 @@ public final class QoderCandidateInbox {
         }
     }
 
-    public func pendingCandidates(limit: Int = 256) throws -> [QoderCandidate] {
+    func pendingCandidates(limit: Int = 256) throws -> [QoderCandidate] {
         try openIfNeeded()
         guard let connection else {
             throw QoderCollectionStateError.unreadableState(
@@ -313,7 +313,7 @@ public final class QoderCandidateInbox {
         }
         let statement = try connection.prepare(
             """
-            SELECT seq, key, kind, recorded_at, payload FROM candidates
+            SELECT seq, key, kind, recorded_at, payload_digest, payload FROM candidates
             WHERE delivered_at IS NULL ORDER BY seq LIMIT ?
             """)
         statement.bind(int64: Int64(max(1, limit)), at: 1)
@@ -322,10 +322,19 @@ public final class QoderCandidateInbox {
             guard let key = statement.text(at: 1),
                 let rawKind = statement.text(at: 2),
                 let kind = QoderCandidateKind(rawValue: rawKind),
-                let payload = statement.blob(at: 4)
+                let payloadDigest = statement.text(at: 4),
+                let payload = statement.blob(at: 5)
             else {
                 throw QoderCollectionStateError.corruptState(
                     path: databaseURL.path, detail: "malformed candidate row")
+            }
+            // Hash the exact BLOB bytes returned by SQLite. Re-encoding the
+            // decoded value would hide byte-level storage corruption.
+            let actualDigest = QoderDigest.sha256Hex(payload)
+            guard actualDigest == payloadDigest else {
+                throw QoderCollectionStateError.corruptState(
+                    path: databaseURL.path,
+                    detail: "candidate payload digest mismatch for \(key): stored \(payloadDigest), actual \(actualDigest)")
             }
             let event: QoderCollectionEvent
             do {
@@ -343,7 +352,7 @@ public final class QoderCandidateInbox {
         return candidates
     }
 
-    public func markDelivered(_ keys: [String]) throws {
+    func markDelivered(_ keys: [String]) throws {
         guard !keys.isEmpty else { return }
         try openIfNeeded()
         guard let connection else {
@@ -366,7 +375,7 @@ public final class QoderCandidateInbox {
         }
     }
 
-    public func pendingCount() throws -> Int {
+    func pendingCount() throws -> Int {
         try openIfNeeded()
         guard let connection else {
             throw QoderCollectionStateError.unreadableState(
@@ -382,7 +391,7 @@ public final class QoderCandidateInbox {
     /// damaged state: it re-baselines existing transcripts at EOF, which is
     /// why it never happens implicitly.
     @discardableResult
-    public func quarantine() throws -> URL {
+    func quarantine() throws -> URL {
         connection?.close()
         connection = nil
         let fileManager = FileManager.default

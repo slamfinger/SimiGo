@@ -4,7 +4,23 @@
 #
 #   tools/run_isolated_tests.sh [--app PATH] [--evidence-dir DIR] [--tag NAME]
 #                               [--base-xctestrun PATH] [--destination DEST]
-#                               [--extra-root PATH]...
+#                               [--extra-root PATH]... [--only TEST]...
+#                               [--target-env TARGET:KEY=VALUE]...
+#
+# --only passes -only-testing to xcodebuild (repeatable, SimiGoTests/Class/method
+# or SimiGoTests/Class). Targeted selections have NOT been measured for user-state
+# writes the way the full suite has; the snapshot diff still runs and still fails
+# the run on any real-root write. Only the cache-root redirection check is mode
+# dependent: a narrow selection may never touch the cache, so in targeted runs it
+# is reported in isolation_cache_used_by_app without gating. run_mode records
+# which rule applied.
+#
+# First-run wizard: the test host runs the real app delegate, and a managed root
+# without manifests/first-run-done.json opens the visible wizard, whose "移动并重启"
+# button moves the test host into /Applications (observed 2026-10-31, it overwrote
+# the installed Release app). The harness therefore pre-provisions the marker
+# inside the isolation home before the run, so no human click is part of the
+# procedure. The marker file is only ever written under the isolation root.
 #
 # Why a runner and not "just add env vars": testF3DeviceAcceptanceBattery is NOT
 # idempotent w.r.t. the prefix pool on disk (its D4 step asserts mode=extend and
@@ -13,7 +29,7 @@
 # root is part of the procedure, not a convenience. Do not "optimise" it away.
 #
 # Fail-closed: unresolvable layout, an unsafe isolation root, a plist that changed
-# beyond the three roots, a failing suite, a missing test count, or ANY user-state
+# beyond the four roots and explicit target opt-ins, a failing suite, a missing test count, or ANY user-state
 # write outside the isolation root all end in a non-zero exit. Nothing here ever
 # deletes a real user directory: the only tree it removes is the isolation root it
 # created itself (marked by .isolation-root).
@@ -41,6 +57,10 @@ TAG=""
 BASE=""
 DEST="platform=macOS,arch=arm64"
 EXTRA=()
+ONLY=()
+TARGET_ENV=()
+KV_FREE_MATRIX=0
+KV_BLOCKED_ONLY=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --app) APP="$2"; shift 2 ;;
@@ -49,17 +69,43 @@ while [ $# -gt 0 ]; do
     --base-xctestrun) BASE="$2"; shift 2 ;;
     --destination) DEST="$2"; shift 2 ;;
     --extra-root) EXTRA+=("$2"); shift 2 ;;
+    --only) ONLY+=("$2"); shift 2 ;;
+    --target-env) TARGET_ENV+=("$2"); shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "RUN_ISOLATED: unknown argument $1" >&2; usage >&2; exit 2 ;;
   esac
 done
+
+# Keep opt-in knobs explicit and allowlisted before creating evidence or isolation state.
+# KV_FREE_MATRIX and KV_BLOCKED_ONLY select separate tests; never pass both to one run.
+for spec in "${TARGET_ENV[@]:-}"; do
+  [ -n "$spec" ] || continue
+  case "$spec" in
+    *:SIMIGO_PREFIX_POOL=1|*:SIMIGO_BRANCH_CHECKPOINTS=1|*:SIMIGO_REQUEST_BUDGET_MS=0|*:SIMIGO_KV_FREE_MATRIX=1|*:SIMIGO_KV_BLOCKED_ONLY=1) ;;
+    *) echo "RUN_ISOLATED: unsupported --target-env $spec" >&2; exit 2 ;;
+  esac
+  target="${spec%%:*}"
+  if [ -z "$target" ] || [ "$target" = "$spec" ]; then
+    echo "RUN_ISOLATED: --target-env must be TARGET:KEY=VALUE" >&2; exit 2
+  fi
+  case "$spec" in
+    *:SIMIGO_KV_FREE_MATRIX=1) KV_FREE_MATRIX=1 ;;
+    *:SIMIGO_KV_BLOCKED_ONLY=1) KV_BLOCKED_ONLY=1 ;;
+  esac
+done
+if [ "$KV_FREE_MATRIX" -eq 1 ] && [ "$KV_BLOCKED_ONLY" -eq 1 ]; then
+  echo "RUN_ISOLATED: KV-free matrix modes are mutually exclusive; run them separately" >&2
+  exit 2
+fi
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 [ -n "$EVIDENCE" ] || EVIDENCE="$ROOT/build/test-isolation/$stamp"
 [ -n "$TAG" ] || TAG="run-$stamp"
 
 under() { case "$1" in "$2"|"$2"/*) return 0 ;; *) return 1 ;; esac; }
-REAL_ROOTS=("$HOME_DIR/.simigo" "$HOME_DIR/Library/Application Support/SimiGo")
+REAL_ROOTS=("$HOME_DIR/.simigo" "$HOME_DIR/Library/Application Support/SimiGo"
+            "$HOME_DIR/Library/Preferences/SwiftUI.SimiGo.plist"
+            "$HOME_DIR/Library/Preferences/SimiGo.plist")
 
 # Every layout rule is checked on the path TEXT first and again after symlink
 # resolution. Nothing is created before the text check passes, so a rejected
@@ -116,10 +162,20 @@ else
 fi
 
 # --- fresh root (D4 depends on it) ------------------------------------------
-for d in home cache state-graph; do
+for d in home cache state-graph qoder-projects; do
   if [ -e "$ISO/$d" ]; then rm -rf "$ISO/$d"; fi
   mkdir -p "$ISO/$d"
 done
+
+# --- pre-provision the first-run marker inside the isolation home -----------
+# The test host runs the real app delegate, and without the marker
+# FirstRunWizard opens a visible window; the suite would then depend on a human
+# clicking it. One of those clicks ("移动并重启") moves the test host into
+# /Applications, so the marker is written here instead. It is written only under
+# the isolation home, never under a real user root.
+mkdir -p "$ISO/home/manifests"
+printf '{\n  "finished_at": "%s",\n  "version": "isolated-test-host",\n  "work_roots": [],\n  "binaries": []\n}\n' \
+  "$(date -u +%FT%TZ)" > "$ISO/home/manifests/first-run-done.json"
 date -u +%FT%TZ > "$EVIDENCE/started_at.txt"
 START=$(date +%s)
 
@@ -127,6 +183,9 @@ START=$(date +%s)
 GEN=(python3 "$ROOT/tools/make_isolated_xctestrun.py" --app "$APP"
      --isolation-root "$ISO" --record "$EVIDENCE/xctestrun_isolation.json")
 [ -n "$BASE" ] && GEN+=(--base-xctestrun "$BASE")
+for v in "${TARGET_ENV[@]:-}"; do
+  [ -n "$v" ] && GEN+=(--target-env "$v")
+done
 "${GEN[@]}" || exit 4
 XR="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["isolated_xctestrun"])' \
       "$EVIDENCE/xctestrun_isolation.json")" || exit 4
@@ -139,10 +198,14 @@ for r in "${EXTRA[@]:-}"; do [ -n "$r" ] && SNAP+=(--real-root "$r"); done
 
 # --- run --------------------------------------------------------------------
 rm -rf "$EVIDENCE/Test-$TAG.xcresult"
-xcodebuild test-without-building \
-  -xctestrun "$XR" \
-  -destination "$DEST" \
-  -resultBundlePath "$EVIDENCE/Test-$TAG.xcresult" \
+XCBUILD=(test-without-building
+         -xctestrun "$XR"
+         -destination "$DEST"
+         -resultBundlePath "$EVIDENCE/Test-$TAG.xcresult")
+for t in "${ONLY[@]:-}"; do
+  [ -n "$t" ] && XCBUILD+=("-only-testing:$t")
+done
+xcodebuild "${XCBUILD[@]}" \
   2>&1 | tee "$EVIDENCE/isolated_tests_$TAG.log"
 RC=${PIPESTATUS[0]}
 
@@ -153,13 +216,45 @@ python3 "$ROOT/tools/rc_noninterference_diff.py" \
   "$EVIDENCE/snapshot_diff.json" --allow-prefix "$EVIDENCE" || exit 5
 
 END=$(date +%s)
-python3 - "$EVIDENCE" "$TAG" "$RC" "$START" "$END" <<'PY'
-import json, os, re, sys
+python3 - "$EVIDENCE" "$TAG" "$RC" "$START" "$END" "${#ONLY[@]}" "${TARGET_ENV[@]:-}" <<'PY'
+import json, os, re, subprocess, sys
 ev, tag, rc, start, end = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
+only_count = int(sys.argv[6])
+target_env_requested = [value for value in sys.argv[7:] if value]
+targeted = only_count > 0
 log = open(os.path.join(ev, "isolated_tests_%s.log" % tag), errors="replace").read()
-m = re.findall(r"Executed (\d+) tests?, with (\d+) tests? skipped and (\d+) failures?", log)
-counts = tuple(int(x) for x in m[-1]) if m else None
 iso = os.path.join(ev, "isolation")
+
+def counts_from_xcresult(path):
+    """(executed, skipped, failures) from the result bundle; authoritative."""
+    if not os.path.isdir(path):
+        return None
+    try:
+        out = subprocess.run(["xcrun", "xcresulttool", "get", "test-results", "summary",
+                             "--path", path], capture_output=True, text=True, timeout=300)
+        if out.returncode != 0:
+            return None
+        s = json.loads(out.stdout)
+        return (s["totalTestCount"], s["skippedTests"], s["failedTests"])
+    except Exception:
+        return None
+
+def counts_from_log(text):
+    m = re.findall(r"Executed (\d+) tests?, with (\d+) tests? skipped and (\d+) failures?", text)
+    if m:
+        return tuple(int(x) for x in m[-1])
+    agg = [(int(a), int(b)) for a, b in
+           re.findall(r"Executed (\d+) tests?, with (\d+) failures", text)]
+    if not agg:
+        return None
+    skipped = len(re.findall(r"^Test Case .*skipped", text, re.M))
+    return (max(agg)[0], skipped, max(agg)[1])
+
+counts = counts_from_xcresult(os.path.join(ev, "Test-%s.xcresult" % tag))
+source = "xcresulttool" if counts else None
+if counts is None:
+    counts = counts_from_log(log)
+    source = "log" if counts else None
 
 def du(p):
     total = 0
@@ -173,24 +268,55 @@ def du(p):
 
 diff = json.load(open(os.path.join(ev, "snapshot_diff.json")))
 xr = json.load(open(os.path.join(ev, "xctestrun_isolation.json")))
-content = {d: du(os.path.join(iso, d)) for d in ("home", "cache", "state-graph")}
+content = {d: du(os.path.join(iso, d))
+           for d in ("home", "cache", "state-graph", "qoder-projects")}
 checks = {
     "test_execute_succeeded": "** TEST EXECUTE SUCCEEDED **" in log,
     "exit_code_zero": rc == 0,
     "counts_parsed": counts is not None,
     "no_failures": bool(counts) and counts[2] == 0,
-    "xctestrun_only_three_roots": xr["other_differences"] == [],
+    "xctestrun_only_four_roots_and_requested_opt_ins": xr["other_differences"] == [],
     "isolation_home_used_by_app": os.path.exists(os.path.join(iso, "home", "simigo.sqlite3")),
-    "isolation_cache_used_by_app": content["cache"] > 0,
+    "first_run_marker_preprovisioned": os.path.exists(
+        os.path.join(iso, "home", "manifests", "first-run-done.json")),
+    "qoder_scan_root_preprovisioned": os.path.isdir(os.path.join(iso, "qoder-projects")),
+    "qoder_scan_root_matches_xctestrun": xr["injected_keys"].get("QODER_PROJECTS_DIR") == os.path.join(iso, "qoder-projects"),
     "no_real_user_state_write": diff["real_user_state_write_count"] == 0,
     "no_unexpected_write": diff["distinct_violation_count"] == 0,
 }
+# The cache-root gate proves the full suite really redirects writes into the
+# isolated cache. A targeted selection can legitimately leave it untouched, so
+# in that mode it is recorded as an observation below instead of a gate. No
+# write-audit gate is relaxed by the run mode.
+if not targeted:
+    checks["isolation_cache_used_by_app"] = content["cache"] > 0
+# Observation, not a gate: the GUI app delegate starts the Qoder collector on
+# every launch, so a test host built from a tree that mounts it collects during
+# the run. Recorded here so the contamination is measured rather than assumed.
+collector = os.path.join(iso, "home", "collectors")
 rec = {
     "tag": tag, "evidence_dir": ev, "exit_code": rc, "duration_s": end - start,
     "executed_skipped_failures": counts,
+    "counts_source": source,
+    "run_mode": "targeted" if targeted else "full",
+    "targeted_selections": only_count,
     "xctestrun_isolated_sha256": xr["isolated_sha256"],
     "fresh_isolation_root": True,
     "isolation_content_bytes": content,
+    "isolation_cache_used_by_app": content["cache"] > 0,
+    "qoder_scan_root": {
+        "path": os.path.join(iso, "qoder-projects"),
+        "present": os.path.isdir(os.path.join(iso, "qoder-projects")),
+        "files": sum(len(fs) for _, _, fs in os.walk(os.path.join(iso, "qoder-projects"))),
+        "bytes": du(os.path.join(iso, "qoder-projects")),
+    },
+    "target_env_requested": target_env_requested,
+    "target_env_applied": xr.get("target_env_applied", []),
+    "collector_state_observed": {
+        "path": collector,
+        "present": os.path.isdir(collector),
+        "bytes": du(collector) if os.path.isdir(collector) else 0,
+    },
     "noninterference": {
         "real_user_state_write_count": diff["real_user_state_write_count"],
         "real_user_state_write_paths": diff["real_user_state_write_paths"],
