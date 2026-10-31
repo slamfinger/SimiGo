@@ -133,6 +133,14 @@ class IsolatedXCTestRunTests(unittest.TestCase):
                 rec = json.loads(self.record.read_text())
                 self.assertEqual(rec["target_env_applied"][0]["key"], key)
 
+    def test_kv_modes_are_mutually_exclusive(self):
+        result = self.run_generator(
+            "--target-env", "SimiGoTests:SIMIGO_KV_FREE_MATRIX=1",
+            "--target-env", "SimiGoTests:SIMIGO_KV_BLOCKED_ONLY=1",
+        )
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertFalse(self.out.exists())
+
     def test_unknown_target_fails_before_writing_output(self):
         result = self.run_generator("--target-env", "MissingTests:SIMIGO_PREFIX_POOL=1")
         self.assertEqual(result.returncode, 2, result.stderr)
