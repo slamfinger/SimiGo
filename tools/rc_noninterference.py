@@ -79,8 +79,14 @@ def main():
         sys.stderr.write("rc_noninterference: HOME is not an absolute path; refusing\n")
         sys.exit(3)
 
-    real = a.real_root or [os.path.join(home, ".simigo"),
-                           os.path.join(home, "Library", "Application Support", "SimiGo")]
+    real = a.real_root or [
+        os.path.join(home, ".simigo"),
+        os.path.join(home, "Library", "Application Support", "SimiGo"),
+        # UserDefaults.standard persists these bundle/app preference domains.
+        # Include the current bundle identifier and the legacy short name.
+        os.path.join(home, "Library", "Preferences", "SwiftUI.SimiGo.plist"),
+        os.path.join(home, "Library", "Preferences", "SimiGo.plist"),
+    ]
     ref = a.reference_root or [os.environ.get("HF_HOME", os.path.join(home, ".cache", "huggingface"))]
 
     roots = []
