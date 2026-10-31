@@ -205,10 +205,11 @@ python3 "$ROOT/tools/rc_noninterference_diff.py" \
   "$EVIDENCE/snapshot_diff.json" --allow-prefix "$EVIDENCE" || exit 5
 
 END=$(date +%s)
-python3 - "$EVIDENCE" "$TAG" "$RC" "$START" "$END" "${#ONLY[@]}" <<'PY'
+python3 - "$EVIDENCE" "$TAG" "$RC" "$START" "$END" "${#ONLY[@]}" "${TARGET_ENV[@]:-}" <<'PY'
 import json, os, re, subprocess, sys
 ev, tag, rc, start, end = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
 only_count = int(sys.argv[6])
+target_env_requested = [value for value in sys.argv[7:] if value]
 targeted = only_count > 0
 log = open(os.path.join(ev, "isolated_tests_%s.log" % tag), errors="replace").read()
 iso = os.path.join(ev, "isolation")
@@ -297,7 +298,7 @@ rec = {
         "files": sum(len(fs) for _, _, fs in os.walk(os.path.join(iso, "qoder-projects"))),
         "bytes": du(os.path.join(iso, "qoder-projects")),
     },
-    "target_env_requested": TARGET_ENV,
+    "target_env_requested": target_env_requested,
     "target_env_applied": xr.get("target_env_applied", []),
     "collector_state_observed": {
         "path": collector,
