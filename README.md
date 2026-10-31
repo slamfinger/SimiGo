@@ -25,7 +25,7 @@
 
 ## 下载运行
 
-从 [GitHub Releases](https://github.com/slamfinger/SimiGo/releases) 获取公开版本。下载后按 Release 页面提供的校验信息验证工件，再按 macOS 安全提示安装运行。
+从 [v2.2.3 Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.3) 获取公开 DMG。Release 页面列出 SHA-256 和首次启动的 Gatekeeper 处理方式；先校验工件，再安装运行。
 
 ## 源码构建与测试
 
