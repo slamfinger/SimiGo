@@ -31,6 +31,18 @@ jobs:
       - name: Test Qoder collection bridge
         run: swift test --package-path Packages/SimiGoCollection --filter SimiGoCollectionTests
 
+  isolation-harness-tests:
+    name: App isolation harness tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Python and shell syntax
+        run: |
+          python3 -m py_compile tools/make_isolated_xctestrun.py tools/rc_noninterference.py tools/tests/test_make_isolated_xctestrun.py
+          bash -n tools/run_isolated_tests.sh
+      - name: Test xctestrun isolation and target opt-ins
+        run: python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
   macos-tests:
     name: macOS targeted tests
     # SimiGo's local public-build toolchain is Xcode 27, but hosted macos-27
