@@ -20,6 +20,17 @@ jobs:
       - name: Open source audit
         run: tools/open_source_audit.sh
 
+  qoder-collection-package-tests:
+    name: Qoder collection package tests
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show Swift toolchain
+        run: swift --version
+      - name: Test Qoder collection bridge
+        run: swift test --package-path Packages/SimiGoRuntime --filter SimiGoCollectionTests
+
   macos-tests:
     name: macOS targeted tests
     # SimiGo's local public-build toolchain is Xcode 27, but hosted macos-27
@@ -35,8 +46,6 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep -E 'macosx|DriverKit' || true
           swift --version
-      - name: Qoder collection bridge tests
-        run: swift test --package-path Packages/SimiGoRuntime --filter SimiGoCollectionTests
       - name: Targeted Execution State tests
         run: |
           xcodebuild test \

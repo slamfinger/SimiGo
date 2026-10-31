@@ -22,12 +22,25 @@ By contributing, you agree that:
 Keep source-code changes Apache-2.0. Documentation changes are CC-BY-4.0. Do
 not add third-party material without identifying its source and license.
 
-## Release hygiene checks
+## Release hygiene and package checks
 
-Before opening a pull request, run:
+Before opening a pull request, run the public-tree audit and the isolated
+Qoder collection package tests:
 
 ```bash
 tools/open_source_audit.sh
+swift test --package-path Packages/SimiGoRuntime --filter SimiGoCollectionTests
+```
+
+The collection package test target is a required macOS CI job. It tests the
+read-only transcript collector, durable inbox, cursor recovery, and delivery
+semantics without loading the App test host. It does not establish the separate
+real-Qoder/App quit-and-relaunch lifecycle acceptance.
+
+The App-hosted Execution State tests remain subject to the isolation procedure
+below. Do not run them against the default user roots.
+
+```bash
 xcodebuild test -project SimiGo.xcodeproj -scheme SimiGo \
   -configuration Debug -destination 'platform=macOS' \
   -derivedDataPath build/test -enableCodeCoverage NO \
