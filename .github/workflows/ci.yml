@@ -35,6 +35,8 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep -E 'macosx|DriverKit' || true
           swift --version
+      - name: Qoder collection bridge tests
+        run: swift test --package-path Packages/SimiGoRuntime --filter SimiGoCollectionTests
       - name: Targeted Execution State tests
         run: |
           xcodebuild test \

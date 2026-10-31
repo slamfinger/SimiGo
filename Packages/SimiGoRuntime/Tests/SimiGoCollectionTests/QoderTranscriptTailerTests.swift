@@ -625,6 +625,29 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertEqual(scanner.scan(), .absent)
     }
 
+    func testScannerClassifiesMissingRootAndUnreadableRootByListingError() throws {
+        let missing = root.appendingPathComponent("not-created", isDirectory: true)
+        XCTAssertEqual(QoderTranscriptScanner(root: missing).scan(), .absent)
+
+        try XCTSkipIf(getuid() == 0, "root ignores directory permissions")
+        let protected = root.appendingPathComponent("protected", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: protected, withIntermediateDirectories: true)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o000], ofItemAtPath: protected.path)
+        defer {
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o755], ofItemAtPath: protected.path)
+        }
+
+        let result = QoderTranscriptScanner(root: protected).scan()
+        guard case .partial(let files, let errors) = result else {
+            return XCTFail("an unreadable root must be partial, not absent")
+        }
+        XCTAssertTrue(files.isEmpty)
+        XCTAssertTrue(errors.contains { $0.contains("cannot list") })
+    }
+
     func testScannerReportsPartialWhenAProjectCannotBeListed() throws {
         try XCTSkipIf(getuid() == 0, "root ignores directory permissions")
         let file = mainFile()

@@ -71,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        QoderCollectionLifecycle.shared.start()
         StatusBarCoordinator.shared.start()
         if FirstRunWizard.isNeeded() {
             // First-run install wizard (owner acceptance 2026-10-26): work
@@ -88,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             _ = SimiGoBootstrapRunner.launchIfNeeded()
             _ = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        QoderCollectionLifecycle.shared.stop()
     }
 }
 

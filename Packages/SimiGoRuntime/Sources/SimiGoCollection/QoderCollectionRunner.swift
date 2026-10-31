@@ -47,6 +47,19 @@ public struct QoderCollectionConfiguration: Sendable {
     }
 }
 
+/// A read-only snapshot of the collector's process-local operational state.
+public struct QoderCollectionStatus: Sendable, Equatable {
+    public let isRunning: Bool
+    public let unavailableReason: String?
+    /// Nil when the state directory is not owned or cannot be read.
+    public let pendingCount: Int?
+    /// Time the configured sink last accepted a delivery in this process.
+    /// This is an operational observation, not a settlement record.
+    public let lastDeliveryAt: Date?
+    /// Time a poll, delivery, or status read last reported an error.
+    public let lastFailureAt: Date?
+}
+
 /// Timer-driven host for `QoderTranscriptTailer` and the durable inbox.
 ///
 /// Poll order is read → commit candidates and cursor in one transaction →
@@ -71,7 +84,7 @@ public final class QoderCollectionRunner {
 
     public let configuration: QoderCollectionConfiguration
 
-    private let sink: Sink
+    private let sink: Sink?
     private let inbox: QoderCandidateInbox
     private let onError: ((String) -> Void)?
     private let queue = DispatchQueue(label: "com.simigo.collection.qoder")
@@ -80,11 +93,13 @@ public final class QoderCollectionRunner {
     private var lease: QoderCollectionLease?
     private var tailer: QoderTranscriptTailer?
     private var failure: String?
+    private var lastDeliveryAt: Date?
+    private var lastFailureAt: Date?
 
-    public init(
+    private init(
         configuration: QoderCollectionConfiguration,
-        sink: @escaping Sink,
-        onError: ((String) -> Void)? = nil
+        sink: Sink?,
+        onError: ((String) -> Void)?
     ) {
         self.configuration = configuration
         self.sink = sink
@@ -92,6 +107,25 @@ public final class QoderCollectionRunner {
             directoryURL: configuration.stateDirectory)
         self.onError = onError
         queue.setSpecific(key: queueKey, value: true)
+    }
+
+    /// Delivery-enabled initializer. The sink is called only after candidates
+    /// and their cursor have committed to the durable inbox.
+    public convenience init(
+        configuration: QoderCollectionConfiguration,
+        sink: @escaping Sink,
+        onError: ((String) -> Void)? = nil
+    ) {
+        self.init(configuration: configuration, sink: Optional(sink), onError: onError)
+    }
+
+    /// Collection-only mode. Candidates remain pending in the durable inbox;
+    /// no delivery or information-space write is implied.
+    public convenience init(
+        configuration: QoderCollectionConfiguration,
+        onError: ((String) -> Void)? = nil
+    ) {
+        self.init(configuration: configuration, sink: nil, onError: onError)
     }
 
     public var isRunning: Bool {
@@ -103,6 +137,29 @@ public final class QoderCollectionRunner {
     /// runner needs that owner to stop or exit first.
     public var unavailableReason: String? {
         onQueue { failure }
+    }
+
+    /// Captures operational status on the runner's serial queue. A missing
+    /// count means the state directory is not owned or could not be read.
+    public var statusSnapshot: QoderCollectionStatus {
+        onQueue {
+            var pending: Int?
+            var reason = failure
+            if lease != nil {
+                do {
+                    pending = try inbox.pendingCount()
+                } catch {
+                    reason = reason ?? String(describing: error)
+                    lastFailureAt = Date()
+                }
+            }
+            return QoderCollectionStatus(
+                isRunning: timer != nil,
+                unavailableReason: reason,
+                pendingCount: pending,
+                lastDeliveryAt: lastDeliveryAt,
+                lastFailureAt: lastFailureAt)
+        }
     }
 
     public func start() {
@@ -166,6 +223,7 @@ public final class QoderCollectionRunner {
         var report = QoderPollReport()
         guard ensureReadyLocked() else {
             report.errors.append(failure ?? "collection state is unavailable")
+            lastFailureAt = Date()
             return report
         }
         guard let tailer else { return report }
@@ -188,6 +246,7 @@ public final class QoderCollectionRunner {
         }
 
         drainLocked(&report)
+        if !report.errors.isEmpty { lastFailureAt = Date() }
         for error in report.errors { onError?(error) }
         return report
     }
@@ -213,6 +272,7 @@ public final class QoderCollectionRunner {
         } catch {
             let reason = String(describing: error)
             failure = reason
+            lastFailureAt = Date()
             onError?("collection unavailable: \(reason)")
             return false
         }
@@ -233,11 +293,15 @@ public final class QoderCollectionRunner {
         } catch {
             tailer = nil
             failure = String(describing: error)
+            lastFailureAt = Date()
             onError?("collection unavailable: \(failure ?? "unknown error")")
         }
     }
 
     private func drainLocked(_ report: inout QoderPollReport) {
+        // Collection-only mode intentionally retains every candidate as
+        // pending. A no-op sink would falsely mark data delivered.
+        guard let sink else { return }
         do {
             while true {
                 let batch = try inbox.pendingCandidates(limit: 128)
@@ -246,6 +310,7 @@ public final class QoderCollectionRunner {
                 for candidate in batch {
                     do {
                         try sink([candidate.delivery])
+                        lastDeliveryAt = Date()
                         accepted.append(candidate.key)
                     } catch {
                         report.errors.append(
@@ -261,6 +326,7 @@ public final class QoderCollectionRunner {
             }
         } catch {
             report.errors.append("candidate delivery failed: \(error)")
+            lastFailureAt = Date()
         }
     }
 

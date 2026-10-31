@@ -19,6 +19,7 @@ struct MenuApp: App {
 
 struct MenuPanelView: View {
     @EnvironmentObject private var svc: Service
+    @StateObject private var qoderCollection = QoderCollectionLifecycle.shared
     @State private var networkModeIsLAN = false
     @State private var isChangingNetworkMode = false
     @State private var showBackendSwitch = false
@@ -27,6 +28,7 @@ struct MenuPanelView: View {
         VStack(alignment: .leading, spacing: 3) {
             statusHeader
             networkSlider.padding(.horizontal, 4)
+            qoderCollectionStatus
 
             Divider().padding(.vertical, 2)
 
@@ -179,6 +181,56 @@ struct MenuPanelView: View {
             Task { @MainActor in await switchNetworkMode(toLAN: wantsLAN) }
         }
         .opacity(isChangingNetworkMode ? 0.6 : 1.0)
+    }
+
+    // MARK: - Qoder Collection (read-only operational status)
+
+    private var qoderCollectionStatus: some View {
+        let status = qoderCollection.snapshot
+        return VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(status?.isRunning == true ? Color.green : Color.gray.opacity(0.6))
+                    .frame(width: 6, height: 6)
+                Text("Qoder 采集")
+                    .font(.system(size: 10, weight: .medium))
+                Spacer()
+                Text(
+                    status?.isRunning == true
+                        ? "运行中"
+                        : (status?.unavailableReason == nil ? "启动中" : "不可用")
+                )
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+            }
+            HStack {
+                Text("待投递 \(status?.pendingCount.map(String.init) ?? "—")")
+                Spacer()
+                Text("最近接收 \(collectorTime(status?.lastDeliveryAt))")
+            }
+            .font(.system(size: 9))
+            .foregroundColor(.secondary)
+            HStack {
+                Text("最近错误 \(collectorTime(status?.lastFailureAt))")
+                Spacer()
+            }
+            .font(.system(size: 9))
+            .foregroundColor(.secondary)
+            if let reason = status?.unavailableReason {
+                Text(reason)
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.55))
+        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+    }
+
+    private func collectorTime(_ date: Date?) -> String {
+        date?.formatted(date: .omitted, time: .shortened) ?? "—"
     }
 
     // MARK: - Network Mode Sync

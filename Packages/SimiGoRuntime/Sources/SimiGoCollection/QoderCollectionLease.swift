@@ -8,10 +8,10 @@ import Foundation
 /// `flock` on `<stateDirectory>/collector.lock` admits one runner at a time
 /// across threads and processes; the kernel drops the lock when the owner
 /// exits, so a crash does not leave a stale lease behind.
-public final class QoderCollectionLease {
-    public static let lockFileName = "collector.lock"
+final class QoderCollectionLease {
+    static let lockFileName = "collector.lock"
 
-    public let fileURL: URL
+    let fileURL: URL
     private let descriptor: Int32
 
     private init(fileURL: URL, descriptor: Int32) {
@@ -19,7 +19,7 @@ public final class QoderCollectionLease {
         self.descriptor = descriptor
     }
 
-    public static func acquire(directoryURL: URL) throws -> QoderCollectionLease {
+    static func acquire(directoryURL: URL) throws -> QoderCollectionLease {
         try FileManager.default.createDirectory(
             at: directoryURL, withIntermediateDirectories: true,
             attributes: [.posixPermissions: 0o700])
