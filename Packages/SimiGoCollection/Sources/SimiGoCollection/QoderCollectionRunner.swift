@@ -8,45 +8,66 @@ public struct QoderCollectionConfiguration: Sendable {
     /// inside the Qoder tree.
     public let stateDirectory: URL
     public let pollInterval: TimeInterval
+    /// Invalid explicit environment configuration. The runner refuses to
+    /// acquire a lease or create state while this value is non-nil.
+    public let configurationError: String?
 
-    public init(scanRoot: URL, stateDirectory: URL, pollInterval: TimeInterval = 2.0) {
+    public init(
+        scanRoot: URL, stateDirectory: URL, pollInterval: TimeInterval = 2.0,
+        configurationError: String? = nil
+    ) {
         self.scanRoot = scanRoot
         self.stateDirectory = stateDirectory
         self.pollInterval = pollInterval
+        self.configurationError = configurationError
     }
 
-    /// `~/.qoder-cn/projects` and `<SIMIGO_HOME or ~/.simigo>/collectors/qoder`.
-    /// The managed root is resolved here rather than imported from the runtime
-    /// contract so this target stays dependency-free.
+    /// Uses the Qoder default only when QODER_PROJECTS_DIR is unset. An
+    /// explicitly supplied empty, relative, or existing non-directory path is
+    /// a configuration error; silently falling back could scan real user data.
+    /// The same rule applies to SIMIGO_HOME because it controls write placement.
     public static func standard(
         env: [String: String] = ProcessInfo.processInfo.environment,
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser
     ) -> QoderCollectionConfiguration {
-        let scanRoot: URL
-        if let override = env["QODER_PROJECTS_DIR"], !override.isEmpty {
-            scanRoot = URL(
-                fileURLWithPath: (override as NSString).standardizingPath,
-                isDirectory: true)
-        } else {
-            scanRoot = homeDirectory.appendingPathComponent(
-                ".qoder-cn/projects", isDirectory: true)
-        }
-        let managedRoot: URL
-        if let override = env["SIMIGO_HOME"], !override.isEmpty {
-            managedRoot = URL(
-                fileURLWithPath: (override as NSString).standardizingPath,
-                isDirectory: true)
-        } else {
-            managedRoot = homeDirectory.appendingPathComponent(
-                ".simigo", isDirectory: true)
-        }
+        let defaultScanRoot = homeDirectory.appendingPathComponent(
+            ".qoder-cn/projects", isDirectory: true)
+        let scan = directoryOverride(
+            key: "QODER_PROJECTS_DIR", env: env, fallback: defaultScanRoot)
+
+        let defaultManagedRoot = homeDirectory.appendingPathComponent(
+            ".simigo", isDirectory: true)
+        let managed = directoryOverride(
+            key: "SIMIGO_HOME", env: env, fallback: defaultManagedRoot)
+
+        let errors = [scan.error, managed.error].compactMap { $0 }
         return QoderCollectionConfiguration(
-            scanRoot: scanRoot,
-            stateDirectory: managedRoot.appendingPathComponent(
-                "collectors/qoder", isDirectory: true))
+            scanRoot: scan.url,
+            stateDirectory: managed.url.appendingPathComponent(
+                "collectors/qoder", isDirectory: true),
+            configurationError: errors.isEmpty ? nil : errors.joined(separator: "; "))
+    }
+
+    private static func directoryOverride(
+        key: String, env: [String: String], fallback: URL
+    ) -> (url: URL, error: String?) {
+        guard let raw = env[key] else { return (fallback, nil) }
+        guard !raw.isEmpty else {
+            return (fallback, "\(key) is explicitly set but empty")
+        }
+        guard (raw as NSString).isAbsolutePath else {
+            return (fallback, "\(key) must be an absolute path")
+        }
+
+        let url = URL(fileURLWithPath: raw, isDirectory: true).standardizedFileURL
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+           !isDirectory.boolValue {
+            return (fallback, "\(key) points to an existing non-directory path: \(url.path)")
+        }
+        return (url, nil)
     }
 }
-
 /// A read-only snapshot of the collector's process-local operational state.
 public struct QoderCollectionStatus: Sendable, Equatable {
     public let isRunning: Bool
@@ -136,7 +157,7 @@ public final class QoderCollectionRunner {
     /// recovered through `quarantineState()`; a directory owned by another
     /// runner needs that owner to stop or exit first.
     public var unavailableReason: String? {
-        onQueue { failure }
+        onQueue { failure ?? configuration.configurationError }
     }
 
     /// Captures operational status on the runner's serial queue. A missing
@@ -144,7 +165,7 @@ public final class QoderCollectionRunner {
     public var statusSnapshot: QoderCollectionStatus {
         onQueue {
             var pending: Int?
-            var reason = failure
+            var reason = failure ?? configuration.configurationError
             if lease != nil {
                 do {
                     pending = try inbox.pendingCount()
@@ -253,6 +274,12 @@ public final class QoderCollectionRunner {
 
     private func ensureReadyLocked() -> Bool {
         if failure != nil { return false }
+        if let configurationError = configuration.configurationError {
+            failure = configurationError
+            lastFailureAt = Date()
+            onError?("collection unavailable: \(configurationError)")
+            return false
+        }
         if tailer != nil { return true }
         do {
             if lease == nil {
