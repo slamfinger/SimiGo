@@ -30,6 +30,8 @@ TARGET_ENV_ALLOWLIST = {
     "SIMIGO_PREFIX_POOL": "1",
     "SIMIGO_BRANCH_CHECKPOINTS": "1",
     "SIMIGO_REQUEST_BUDGET_MS": "0",
+    "SIMIGO_KV_FREE_MATRIX": "1",
+    "SIMIGO_KV_BLOCKED_ONLY": "1",
 }
 ISOLATED_BASENAME = "xctestrun_isolated.xctestrun"
 
@@ -95,7 +97,7 @@ def main():
     ap.add_argument("--record")
     ap.add_argument("--target-env", action="append", default=[],
                     metavar="TARGET:KEY=VALUE",
-                    help="explicitly opt one XCTest target into an allowlisted test mode")
+                    help="opt one XCTest target into a narrowly allowlisted test mode")
     a = ap.parse_args()
 
     requested_target_env = {}
