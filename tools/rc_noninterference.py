@@ -83,7 +83,7 @@ def main():
         os.path.join(home, ".simigo"),
         os.path.join(home, "Library", "Application Support", "SimiGo"),
         # UserDefaults.standard persists these bundle/app preference domains.
-        # Include the current bundle identifier and the legacy short name.
+        # Include the current bundle identifier and the requested short-name path.
         os.path.join(home, "Library", "Preferences", "SwiftUI.SimiGo.plist"),
         os.path.join(home, "Library", "Preferences", "SimiGo.plist"),
     ]
