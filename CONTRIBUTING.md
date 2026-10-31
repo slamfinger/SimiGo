@@ -59,16 +59,39 @@ Run the suite through the in-repo runner:
 tools/run_isolated_tests.sh --tag local-run1
 ```
 
-It creates a fresh isolation root, rewrites the build's xctestrun so that
-`SIMIGO_HOME`, `SIMIGO_CACHE_ROOT` and `SIMIGO_STATE_GRAPH_STORE` all point inside
-that root, snapshots the protected roots before and after, and diffs them. Evidence
-lands in `build/test-isolation/<utc>/` and the app defaults to
-`build/test/Build/Products/Debug/SimiGo.app`. It fails closed on an unsafe isolation
-root, a plist diff beyond the three roots, a failing or unparsable suite, or any
-user-state write outside the isolation root, and it only deletes the isolation root
-it created itself. A plain `xcodebuild test` without those three roots is not
-equivalent and must not be cited as evidence that the suite leaves user state
-untouched.
+It creates a fresh isolation root and rewrites the build's xctestrun so that
+`SIMIGO_HOME`, `SIMIGO_CACHE_ROOT`, `SIMIGO_STATE_GRAPH_STORE` and
+`QODER_PROJECTS_DIR` all point inside it. The Qoder collector therefore scans only
+the isolated `qoder-projects/` directory during App tests; it never tails the real
+`~/.qoder-cn/projects` tree. The harness snapshots and diffs the protected roots
+before and after, including `~/.simigo`, the SimiGo Application Support root, and
+the app preference plists (`~/Library/Preferences/SwiftUI.SimiGo.plist` and the
+legacy `SimiGo.plist`). Evidence lands in `build/test-isolation/<utc>/` and the app
+defaults to `build/test/Build/Products/Debug/SimiGo.app`. It fails closed on an
+unsafe isolation root, a plist diff beyond the four injected roots and explicitly
+requested target opt-ins, a failing or unparsable suite, or any user-state write
+outside the isolation root. It only deletes the isolation root it created itself.
+A plain `xcodebuild test` without those four roots is not equivalent and must not
+be cited as evidence that the suite leaves user state untouched.
+
+Target-specific experiment switches are opt-in and allowlisted. Pass them only for
+the relevant XCTest target, for example:
+
+```bash
+tools/run_isolated_tests.sh --tag prefix-checkpoints \
+  --only SimiGoTests/KVFreeContinuityTests \
+  --target-env SimiGoTests:SIMIGO_PREFIX_POOL=1 \
+  --target-env SimiGoTests:SIMIGO_BRANCH_CHECKPOINTS=1
+
+tools/run_isolated_tests.sh --tag tool-echo-budget \
+  --only SimiGoTests/ToolEchoContinuationRealModelE2ETests \
+  --target-env SimiGoTests:SIMIGO_REQUEST_BUDGET_MS=0
+```
+
+The runner accepts only `SIMIGO_PREFIX_POOL=1`, `SIMIGO_BRANCH_CHECKPOINTS=1` and
+`SIMIGO_REQUEST_BUDGET_MS=0`; it does not change product defaults, and it refuses
+an unknown XCTest target or a conflicting pre-existing xctestrun value. Each
+injected opt-in is recorded in `xctestrun_isolation.json`.
 
 Do not commit local model paths, Hugging Face caches, device serials, signing
 team IDs, DMG files, build products, or model weights.
