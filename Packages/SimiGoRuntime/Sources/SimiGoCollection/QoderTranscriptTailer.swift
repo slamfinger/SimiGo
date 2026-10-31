@@ -6,21 +6,32 @@ import Foundation
 /// line twice. `fingerprint` is a digest of the bytes immediately before
 /// `offset`; together with `inode` it detects a rewritten or replaced file that
 /// merely kept its size, which a size-only cursor would silently trust.
+///
+/// `resumeOffset` is the start of the line that opened the still-open turn (or
+/// `offset` when no turn is open). A cold tailer re-reads from there so turn
+/// state is rebuilt from the transcript itself instead of a serialized
+/// checkpoint: parent chain, compaction boundary, message snapshots, terminals,
+/// and interrupt marks all replay deterministically from the same source.
 public struct QoderFileCursor: Codable, Sendable, Equatable {
-    public let path: String
-    public let projectID: String
-    public let sessionID: String
-    public let isSubagent: Bool
-    public let inode: UInt64
-    public let offset: Int64
-    public let segmentLines: Int64
-    public let fingerprint: String
-    public let updatedAt: Date
+    public var path: String
+    public var projectID: String
+    public var sessionID: String
+    public var isSubagent: Bool
+    public var inode: UInt64
+    public var offset: Int64
+    public var segmentLines: Int64
+    public var resumeOffset: Int64
+    /// Segment lines consumed before the line at `resumeOffset`, so replay
+    /// continues numbering as if the file had been read in one pass.
+    public var resumeSegmentLines: Int64
+    public var fingerprint: String
+    public var updatedAt: Date
 
     public init(
         path: String, projectID: String, sessionID: String, isSubagent: Bool,
-        inode: UInt64, offset: Int64, segmentLines: Int64, fingerprint: String,
-        updatedAt: Date
+        inode: UInt64, offset: Int64, segmentLines: Int64,
+        resumeOffset: Int64? = nil, resumeSegmentLines: Int64? = nil,
+        fingerprint: String, updatedAt: Date
     ) {
         self.path = path
         self.projectID = projectID
@@ -29,8 +40,35 @@ public struct QoderFileCursor: Codable, Sendable, Equatable {
         self.inode = inode
         self.offset = offset
         self.segmentLines = segmentLines
+        self.resumeOffset = resumeOffset ?? offset
+        self.resumeSegmentLines = resumeSegmentLines ?? segmentLines
         self.fingerprint = fingerprint
         self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case path, projectID, sessionID, isSubagent, inode, offset, segmentLines
+        case resumeOffset, resumeSegmentLines, fingerprint, updatedAt
+    }
+
+    /// Cursors written before the resume point existed carry no open-turn
+    /// information; they decode to "no replay" rather than re-reading history.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        path = try container.decode(String.self, forKey: .path)
+        projectID = try container.decode(String.self, forKey: .projectID)
+        sessionID = try container.decode(String.self, forKey: .sessionID)
+        isSubagent = try container.decode(Bool.self, forKey: .isSubagent)
+        inode = try container.decode(UInt64.self, forKey: .inode)
+        offset = try container.decode(Int64.self, forKey: .offset)
+        segmentLines = try container.decode(Int64.self, forKey: .segmentLines)
+        resumeOffset =
+            try container.decodeIfPresent(Int64.self, forKey: .resumeOffset) ?? offset
+        resumeSegmentLines =
+            try container.decodeIfPresent(Int64.self, forKey: .resumeSegmentLines)
+            ?? segmentLines
+        fingerprint = try container.decode(String.self, forKey: .fingerprint)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
     }
 }
 
@@ -179,6 +217,9 @@ public struct QoderPollReport: Sendable, Equatable {
     public var resetFiles = 0
     public var readFiles = 0
     public var readBytes: Int64 = 0
+    /// Bytes re-read from the open turn's anchor to rebuild accumulator state
+    /// after a cold start; a subset of `readBytes`.
+    public var replayedBytes: Int64 = 0
     public var deliveredEvents = 0
     public var parseFailures = 0
     public var stateChanged = false
@@ -267,7 +308,12 @@ public final class QoderTranscriptTailer {
                         else { continue }
                         nextCursor = reset
                         changed = true
-                    } else if file.size > existing.offset {
+                    } else if file.size > existing.offset
+                        || (accumulators[file.path] == nil && canReplay(existing))
+                    {
+                        // A cold tailer with an open turn rewinds to the
+                        // anchor even when no new bytes arrived, so recovery
+                        // happens at start rather than at the next append.
                         let consumed = readAvailable(
                             file, cursor: &existing, events: &events, report: &report)
                         nextCursor = existing
@@ -360,7 +406,19 @@ public final class QoderTranscriptTailer {
         QoderFileCursor(
             path: file.path, projectID: file.projectID, sessionID: file.sessionID,
             isSubagent: file.isSubagent, inode: file.inode, offset: offset,
-            segmentLines: segmentLines, fingerprint: fingerprint, updatedAt: Date())
+            segmentLines: segmentLines, resumeOffset: offset,
+            resumeSegmentLines: segmentLines, fingerprint: fingerprint,
+            updatedAt: Date())
+    }
+
+    /// The persisted resume point is usable only when it lies behind the
+    /// committed offset at a line boundary that was counted. Anything else
+    /// (corrupt or pre-upgrade state) means "resume at offset, no replay".
+    private func canReplay(_ cursor: QoderFileCursor) -> Bool {
+        cursor.resumeOffset >= 0
+            && cursor.resumeOffset < cursor.offset
+            && cursor.resumeSegmentLines >= 0
+            && cursor.resumeSegmentLines <= cursor.segmentLines
     }
 
     private func accumulator(for file: QoderTranscriptFile) -> QoderTurnAccumulator {
@@ -375,11 +433,24 @@ public final class QoderTranscriptTailer {
 
     /// Reads complete lines only, at most `maxBytesPerPoll`. Returns true when
     /// the cursor moved.
+    ///
+    /// When no in-memory accumulator exists and the cursor still points at an
+    /// open turn's anchor, reading starts there instead of at `offset`, so a
+    /// restart rebuilds the unfinished turn from the transcript. A sink failure
+    /// drops the accumulator, which routes the next poll through the same
+    /// replay path and keeps an open turn from being orphaned mid-answer.
     private func readAvailable(
         _ file: QoderTranscriptFile, cursor: inout QoderFileCursor,
         events: inout [QoderCollectionEvent], report: inout QoderPollReport
     ) -> Bool {
-        let available = file.size - cursor.offset
+        let committedOffset = cursor.offset
+        let replaying = accumulators[file.path] == nil && canReplay(cursor)
+        var working = cursor
+        if replaying {
+            working.offset = cursor.resumeOffset
+            working.segmentLines = cursor.resumeSegmentLines
+        }
+        let available = file.size - working.offset
         guard available > 0 else { return false }
         guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: file.path))
         else {
@@ -390,7 +461,7 @@ public final class QoderTranscriptTailer {
 
         let data: Data
         do {
-            try handle.seek(toOffset: UInt64(cursor.offset))
+            try handle.seek(toOffset: UInt64(working.offset))
             guard let read = try handle.read(
                 upToCount: Int(min(available, Int64(maxBytesPerPoll)))),
                 !read.isEmpty
@@ -401,21 +472,32 @@ public final class QoderTranscriptTailer {
             return false
         }
 
+        if replaying {
+            report.replayedBytes += min(
+                Int64(data.count), committedOffset - working.offset)
+        }
+
         guard let lastNewline = data.lastIndex(of: 0x0A) else {
-            return skipOversizedLine(
-                file, cursor: &cursor, available: available, partialBytes: data.count,
+            let moved = skipOversizedLine(
+                file, cursor: &working, available: available, partialBytes: data.count,
                 events: &events, report: &report)
+            cursor = working
+            return moved
         }
 
         let content = data[data.startIndex..<lastNewline]
         let consumed = data.distance(from: data.startIndex, to: lastNewline) + 1
+        let windowStart = working.offset
 
         var lineCount: Int64 = 0
         var start = content.startIndex
         while true {
             let end = content[start...].firstIndex(of: 0x0A) ?? content.endIndex
             lineCount += 1
-            let segmentLine = cursor.segmentLines + lineCount
+            let segmentLine = working.segmentLines + lineCount
+            let lineStart = windowStart + Int64(
+                content.distance(from: content.startIndex, to: start))
+            let lineEnd = lineStart + Int64(content.distance(from: start, to: end)) + 1
             var line = content[start..<end]
             if line.last == 0x0D {
                 line = line.dropLast()
@@ -446,22 +528,24 @@ public final class QoderTranscriptTailer {
                     }
                 }
             }
+            advanceResume(
+                &working, file: file, segmentLine: segmentLine,
+                lineStart: lineStart, lineEnd: lineEnd)
             if end == content.endIndex { break }
             start = content.index(after: end)
         }
 
-        guard let fingerprint = trailingFingerprint(
-            path: file.path, offset: cursor.offset + Int64(consumed))
+        let newOffset = windowStart + Int64(consumed)
+        guard let fingerprint = trailingFingerprint(path: file.path, offset: newOffset)
         else {
             report.errors.append("cannot fingerprint \(file.path) after read")
             return false
         }
-        cursor = QoderFileCursor(
-            path: cursor.path, projectID: cursor.projectID, sessionID: cursor.sessionID,
-            isSubagent: cursor.isSubagent, inode: cursor.inode,
-            offset: cursor.offset + Int64(consumed),
-            segmentLines: cursor.segmentLines + lineCount,
-            fingerprint: fingerprint, updatedAt: Date())
+        working.offset = newOffset
+        working.segmentLines += lineCount
+        working.fingerprint = fingerprint
+        working.updatedAt = Date()
+        cursor = working
         report.readFiles += 1
         report.readBytes += Int64(consumed)
         return true
@@ -475,10 +559,11 @@ public final class QoderTranscriptTailer {
         partialBytes: Int, events: inout [QoderCollectionEvent],
         report: inout QoderPollReport
     ) -> Bool {
+        let lineStart = cursor.offset
         if let afterNewline = findNewline(
-            path: file.path, from: cursor.offset, limit: Int64(maxLineBytes))
+            path: file.path, from: lineStart, limit: Int64(maxLineBytes))
         {
-            let consumed = afterNewline - cursor.offset
+            let consumed = afterNewline - lineStart
             guard
                 let fingerprint = trailingFingerprint(
                     path: file.path, offset: afterNewline)
@@ -486,12 +571,13 @@ public final class QoderTranscriptTailer {
                 report.errors.append("cannot fingerprint \(file.path) after skip")
                 return false
             }
-            cursor = QoderFileCursor(
-                path: cursor.path, projectID: cursor.projectID,
-                sessionID: cursor.sessionID, isSubagent: cursor.isSubagent,
-                inode: cursor.inode, offset: afterNewline,
-                segmentLines: cursor.segmentLines + 1, fingerprint: fingerprint,
-                updatedAt: Date())
+            cursor.offset = afterNewline
+            cursor.segmentLines += 1
+            cursor.fingerprint = fingerprint
+            cursor.updatedAt = Date()
+            advanceResume(
+                &cursor, file: file, segmentLine: cursor.segmentLines,
+                lineStart: lineStart, lineEnd: afterNewline)
             report.parseFailures += 1
             report.readFiles += 1
             report.readBytes += consumed
@@ -507,17 +593,17 @@ public final class QoderTranscriptTailer {
             let advance = Int64(partialBytes)
             guard
                 let fingerprint = trailingFingerprint(
-                    path: file.path, offset: cursor.offset + advance)
+                    path: file.path, offset: lineStart + advance)
             else {
                 report.errors.append("cannot fingerprint \(file.path) after skip")
                 return false
             }
-            cursor = QoderFileCursor(
-                path: cursor.path, projectID: cursor.projectID,
-                sessionID: cursor.sessionID, isSubagent: cursor.isSubagent,
-                inode: cursor.inode, offset: cursor.offset + advance,
-                segmentLines: cursor.segmentLines + 1, fingerprint: fingerprint,
-                updatedAt: Date())
+            cursor.offset = lineStart + advance
+            cursor.segmentLines += 1
+            cursor.fingerprint = fingerprint
+            cursor.updatedAt = Date()
+            // The drop lands mid-line, so the resume point (always a line
+            // boundary) is left where it was; a cold start re-reads the line.
             report.parseFailures += 1
             report.readFiles += 1
             report.readBytes += advance
@@ -530,6 +616,23 @@ public final class QoderTranscriptTailer {
             return true
         }
         return false
+    }
+
+    /// Moves the replay floor: a newly opened anchor pins it to that line's
+    /// start; outside any turn it advances past the consumed line.
+    private func advanceResume(
+        _ cursor: inout QoderFileCursor, file: QoderTranscriptFile,
+        segmentLine: Int64, lineStart: Int64, lineEnd: Int64
+    ) {
+        guard let anchorLine = accumulators[file.path]?.openAnchorSegmentLine else {
+            cursor.resumeOffset = lineEnd
+            cursor.resumeSegmentLines = segmentLine
+            return
+        }
+        if anchorLine == segmentLine {
+            cursor.resumeOffset = lineStart
+            cursor.resumeSegmentLines = segmentLine - 1
+        }
     }
 
     private func findNewline(path: String, from offset: Int64, limit: Int64) -> Int64? {

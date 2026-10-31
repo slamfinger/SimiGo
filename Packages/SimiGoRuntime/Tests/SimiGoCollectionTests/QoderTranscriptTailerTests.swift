@@ -24,6 +24,20 @@ final class QoderTranscriptTailerTests: XCTestCase {
         project.appendingPathComponent("\(session).jsonl")
     }
 
+    private func makeRoot() throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "qoder-tailer-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: url.appendingPathComponent(Fixture.projectID, isDirectory: true),
+            withIntermediateDirectories: true)
+        return url
+    }
+
+    private func projectFile(in root: URL, session: String = Fixture.sessionID) -> URL {
+        root.appendingPathComponent(Fixture.projectID, isDirectory: true)
+            .appendingPathComponent("\(session).jsonl")
+    }
+
     private func subagentFile(
         session: String = Fixture.sessionID, agent: String = "agent-1"
     ) throws -> URL {
@@ -149,6 +163,204 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertEqual(Fixture.turns(result.events).first?.anchor.id, "u-2")
     }
 
+    func testRestartAfterAnchorRecoversPendingTurnForLateAnswer() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            [Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
+        let first = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        let opened = poll(first)
+        XCTAssertTrue(Fixture.turns(opened.events).isEmpty)
+        let stored = try XCTUnwrap(cursor(first))
+        XCTAssertEqual(stored.resumeOffset, 0)
+        XCTAssertEqual(stored.resumeSegmentLines, 0)
+        XCTAssertEqual(stored.offset, Int64(try Data(contentsOf: file).count))
+
+        // The process restarts here: only the persisted cursor survives.
+        let resumed = QoderTranscriptTailer(scanRoot: root, state: first.cursorState)
+        let recovered = poll(resumed)
+        XCTAssertTrue(recovered.events.isEmpty)
+        XCTAssertEqual(recovered.report.replayedBytes, stored.offset)
+
+        try Fixture.writeLines(
+            [
+                Fixture.assistantLine(
+                    uuid: "a-1", parent: "u-1", messageID: "m-1", text: "world"),
+                Fixture.userLine(uuid: "u-2", parent: "a-1", text: "next"),
+            ], to: file, append: true)
+        let result = poll(resumed)
+        let turns = Fixture.turns(result.events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.anchor.id, "u-1")
+        XCTAssertEqual(turns.first?.promptText, "hello")
+        XCTAssertEqual(turns.first?.answerText, "world")
+        XCTAssertEqual(turns.first?.relation, .parentChain)
+        XCTAssertEqual(turns.first?.disposition, .eligible)
+        XCTAssertTrue(Fixture.orphans(result.events).isEmpty)
+    }
+
+    func testRestartAfterAnswerSettlesUnclosedTurnExactlyOnce() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            [
+                Fixture.userLine(uuid: "u-1", text: "hello"),
+                Fixture.assistantLine(
+                    uuid: "a-1", parent: "u-1", messageID: "m-1", text: "world"),
+            ], to: file)
+        let first = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        XCTAssertTrue(Fixture.turns(poll(first).events).isEmpty)
+
+        let resumed = QoderTranscriptTailer(scanRoot: root, state: first.cursorState)
+        try Fixture.appendLine(
+            Fixture.userLine(uuid: "u-2", parent: "a-1", text: "next"), to: file)
+        let closed = poll(resumed)
+        let turns = Fixture.turns(closed.events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.answerText, "world")
+        XCTAssertEqual(turns.first?.relation, .parentChain)
+
+        let again = poll(resumed)
+        XCTAssertTrue(Fixture.turns(again.events).isEmpty)
+    }
+
+    func testRestartAfterCompactionPreservesAttribution() throws {
+        let lines = [
+            Fixture.userLine(uuid: "u-1", text: "hello"),
+            Fixture.userLine(
+                uuid: "c-1", parent: "u-1", text: "summary", isCompactSummary: true),
+            Fixture.assistantLine(
+                uuid: "a-1", parent: "c-1", messageID: "m-1", text: "world"),
+            Fixture.userLine(uuid: "u-2", parent: "a-1", text: "next"),
+        ]
+
+        let continuousRoot = try makeRoot()
+        defer { try? FileManager.default.removeItem(at: continuousRoot) }
+        let continuousFile = projectFile(in: continuousRoot)
+        try Fixture.writeLines(lines, to: continuousFile)
+        let continuous = QoderTranscriptTailer(
+            scanRoot: continuousRoot, state: pastState())
+        let reference = try XCTUnwrap(Fixture.turns(poll(continuous).events).first)
+
+        let restartedRoot = try makeRoot()
+        defer { try? FileManager.default.removeItem(at: restartedRoot) }
+        let restartedFile = projectFile(in: restartedRoot)
+        try Fixture.writeLines(Array(lines.prefix(2)), to: restartedFile)
+        let first = QoderTranscriptTailer(
+            scanRoot: restartedRoot, state: pastState())
+        XCTAssertTrue(Fixture.turns(poll(first).events).isEmpty)
+
+        let resumed = QoderTranscriptTailer(
+            scanRoot: restartedRoot, state: first.cursorState)
+        try Fixture.writeLines(Array(lines.suffix(2)), to: restartedFile, append: true)
+        let restarted = try XCTUnwrap(Fixture.turns(poll(resumed).events).first)
+
+        XCTAssertEqual(reference.relation, .fileOrderAfterCompaction)
+        XCTAssertEqual(restarted.relation, reference.relation)
+        XCTAssertEqual(restarted.disposition, reference.disposition)
+        XCTAssertEqual(restarted.disposition, .requiresReview(.fileOrderAfterCompaction))
+        XCTAssertEqual(restarted.anchor.id, reference.anchor.id)
+        XCTAssertEqual(restarted.promptText, reference.promptText)
+        XCTAssertEqual(restarted.answerText, reference.answerText)
+        XCTAssertEqual(restarted.candidateID, reference.candidateID)
+        XCTAssertEqual(restarted.firstSegmentLine, reference.firstSegmentLine)
+        XCTAssertEqual(restarted.lastSegmentLine, reference.lastSegmentLine)
+    }
+
+    func testRestartReplaysOnlyTheOpenTurnNotFinalizedTurns() throws {
+        let file = mainFile()
+        try Fixture.writeLines(Fixture.turnLines(), to: file)
+        let first = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        XCTAssertEqual(Fixture.turns(poll(first).events).count, 1)
+
+        let stored = try XCTUnwrap(cursor(first))
+        let closedLines = Fixture.turnLines().prefix(2)
+        let anchorStart = closedLines.reduce(Int64(0)) { $0 + Int64($1.utf8.count + 1) }
+        XCTAssertEqual(stored.resumeOffset, anchorStart)
+        XCTAssertEqual(stored.resumeSegmentLines, 2)
+        XCTAssertLessThan(stored.resumeOffset, stored.offset)
+
+        let resumed = QoderTranscriptTailer(scanRoot: root, state: first.cursorState)
+        let replayed = poll(resumed)
+        XCTAssertTrue(Fixture.turns(replayed.events).isEmpty)
+        XCTAssertEqual(
+            replayed.report.replayedBytes, stored.offset - stored.resumeOffset)
+
+        try Fixture.writeLines(
+            [
+                Fixture.assistantLine(
+                    uuid: "a-2", parent: "u-2", messageID: "m-2", text: "second"),
+                Fixture.userLine(uuid: "u-3", parent: "a-2", text: "next"),
+            ], to: file, append: true)
+        let closed = poll(resumed)
+        let turns = Fixture.turns(closed.events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.anchor.id, "u-2")
+        XCTAssertEqual(turns.first?.answerText, "second")
+        XCTAssertTrue(Fixture.orphans(closed.events).isEmpty)
+    }
+
+    func testRestartWithoutAnyOpenTurnDoesNotReplay() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            [Fixture.assistantLine(uuid: "a-1", messageID: "m-1", text: "orphan")],
+            to: file)
+        let first = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        XCTAssertEqual(Fixture.orphans(poll(first).events).count, 1)
+
+        let stored = try XCTUnwrap(cursor(first))
+        XCTAssertEqual(stored.resumeOffset, stored.offset)
+        XCTAssertEqual(stored.resumeSegmentLines, stored.segmentLines)
+
+        let resumed = QoderTranscriptTailer(scanRoot: root, state: first.cursorState)
+        let idle = poll(resumed)
+        XCTAssertTrue(idle.events.isEmpty)
+        XCTAssertEqual(idle.report.replayedBytes, 0)
+        XCTAssertEqual(idle.report.readBytes, 0)
+    }
+
+    func testSinkFailureAfterRestartReplaysFromAnchor() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            [Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
+        let first = QoderTranscriptTailer(scanRoot: root, state: pastState())
+        poll(first)
+
+        let resumed = QoderTranscriptTailer(scanRoot: root, state: first.cursorState)
+        try Fixture.writeLines(
+            [
+                Fixture.assistantLine(
+                    uuid: "a-1", parent: "u-1", messageID: "m-1", text: "world"),
+                Fixture.userLine(uuid: "u-2", parent: "a-1", text: "next"),
+            ], to: file, append: true)
+
+        let failed = poll(resumed) { _ in throw SinkFailure() }
+        XCTAssertFalse(failed.report.errors.isEmpty)
+        XCTAssertEqual(failed.report.deliveredEvents, 0)
+
+        let replayed = poll(resumed)
+        let turns = Fixture.turns(replayed.events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.answerText, "world")
+        XCTAssertTrue(Fixture.orphans(replayed.events).isEmpty)
+        XCTAssertGreaterThan(replayed.report.replayedBytes, 0)
+    }
+
+    func testLegacyCursorWithoutResumeFieldsDecodesToNoReplay() throws {
+        let directory = root.appendingPathComponent("legacy", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true)
+        let store = QoderFileCursorStore(directoryURL: directory)
+        let json = """
+            {"initializedAt":0,"cursors":{"/tmp/legacy.jsonl":{"fingerprint":"abc",\
+            "inode":7,"isSubagent":false,"offset":120,"path":"/tmp/legacy.jsonl",\
+            "projectID":"p","segmentLines":3,"sessionID":"s","updatedAt":0}}}
+            """
+        try Data(json.utf8).write(to: store.fileURL)
+        let state = try XCTUnwrap(store.load())
+        let legacy = try XCTUnwrap(state.cursors["/tmp/legacy.jsonl"])
+        XCTAssertEqual(legacy.resumeOffset, 120)
+        XCTAssertEqual(legacy.resumeSegmentLines, 3)
+    }
+
     func testFileCreatedAfterInitializationReadsFromStart() throws {
         let state = pastState()
         let file = mainFile()
@@ -183,6 +395,8 @@ final class QoderTranscriptTailerTests: XCTestCase {
             Fixture.baselines(result.events).first?.reason, .truncatedReset)
         XCTAssertEqual(
             cursor(resumed)?.offset, newSize)
+        XCTAssertEqual(cursor(resumed)?.resumeOffset, newSize)
+        XCTAssertEqual(cursor(resumed)?.resumeSegmentLines, 0)
         XCTAssertTrue(Fixture.turns(result.events).isEmpty)
 
         try Fixture.writeLines(

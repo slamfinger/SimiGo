@@ -145,6 +145,47 @@ final class QoderCollectionRunnerTests: XCTestCase {
             try storedCursor(configuration)?.offset, Int64(try Data(contentsOf: file).count))
     }
 
+    func testRunnerRecoversPendingTurnAcrossRestart() throws {
+        var events: [QoderCollectionEvent] = []
+        let first = QoderCollectionRunner(configuration: configuration()) {
+            events.append(contentsOf: $0)
+        }
+        first.pollOnce()
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: configuration().stateDirectory.appendingPathComponent(
+                    "cursor.json").path))
+
+        let file = mainFile()
+        try Fixture.writeLines([Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
+        first.pollOnce()
+        XCTAssertTrue(Fixture.turns(events).isEmpty)
+
+        let stored = try XCTUnwrap(
+            QoderFileCursorStore(directoryURL: configuration().stateDirectory).load())
+        let anchorCursor = try XCTUnwrap(stored.cursors.values.first)
+        XCTAssertEqual(anchorCursor.resumeOffset, 0)
+        XCTAssertEqual(anchorCursor.resumeSegmentLines, 0)
+
+        try Fixture.writeLines(
+            [
+                Fixture.assistantLine(
+                    uuid: "a-1", parent: "u-1", messageID: "m-1", text: "world"),
+                Fixture.userLine(uuid: "u-2", parent: "a-1", text: "next"),
+            ], to: file, append: true)
+        events.removeAll()
+        let resumed = QoderCollectionRunner(configuration: configuration()) {
+            events.append(contentsOf: $0)
+        }
+        resumed.pollOnce()
+        let turns = Fixture.turns(events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.anchor.id, "u-1")
+        XCTAssertEqual(turns.first?.answerText, "world")
+        XCTAssertEqual(turns.first?.relation, .parentChain)
+        XCTAssertTrue(Fixture.orphans(events).isEmpty)
+    }
+
     func testRunnerStartStopToggles() {
         let runner = QoderCollectionRunner(configuration: configuration()) { _ in }
         XCTAssertFalse(runner.isRunning)

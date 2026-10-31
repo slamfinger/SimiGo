@@ -118,6 +118,10 @@ public final class QoderTurnAccumulator {
 
     public var hasOpenTurn: Bool { pending != nil }
 
+    /// Segment line that opened the still-open turn. The tailer persists this
+    /// as the replay point so a restart rebuilds the turn from the transcript.
+    public var openAnchorSegmentLine: Int64? { pending?.anchor.line }
+
     public func ingest(
         _ entry: QoderTranscriptEntry, segmentLine: Int64
     ) -> [QoderCollectionEvent] {
