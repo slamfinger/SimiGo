@@ -75,10 +75,11 @@ while [ $# -gt 0 ]; do
 done
 
 # Keep opt-in knobs explicit and allowlisted before creating evidence or isolation state.
+# KV_FREE_MATRIX and KV_BLOCKED_ONLY select separate tests; never pass both to one run.
 for spec in "${TARGET_ENV[@]:-}"; do
   [ -n "$spec" ] || continue
   case "$spec" in
-    *:SIMIGO_PREFIX_POOL=1|*:SIMIGO_BRANCH_CHECKPOINTS=1|*:SIMIGO_REQUEST_BUDGET_MS=0) ;;
+    *:SIMIGO_PREFIX_POOL=1|*:SIMIGO_BRANCH_CHECKPOINTS=1|*:SIMIGO_REQUEST_BUDGET_MS=0|*:SIMIGO_KV_FREE_MATRIX=1|*:SIMIGO_KV_BLOCKED_ONLY=1) ;;
     *) echo "RUN_ISOLATED: unsupported --target-env $spec" >&2; exit 2 ;;
   esac
   target="${spec%%:*}"
