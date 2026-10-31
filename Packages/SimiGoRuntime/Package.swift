@@ -15,7 +15,6 @@ let package = Package(
     products: [
         .library(name: "SimiGo2Experimental", targets: ["SimiGo2Experimental"]),
         .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
-        .library(name: "SimiGoCollection", targets: ["SimiGoCollection"]),
     ],
     dependencies: [
         .package(url: "https://github.com/slamfinger/mlx-swift", revision: "ef5f1b6bb24e27922189316362f3057c64261704"),
@@ -34,9 +33,6 @@ let package = Package(
             ]
         ),
         .target(
-            name: "SimiGoCollection"
-        ),
-        .target(
             name: "SimiGo2Experimental",
             dependencies: [
                 "SimiGoRuntimeContract",
@@ -51,10 +47,6 @@ let package = Package(
         .testTarget(
             name: "SimiGoRuntimeContractTests",
             dependencies: ["SimiGoRuntimeContract"]
-        ),
-        .testTarget(
-            name: "SimiGoCollectionTests",
-            dependencies: ["SimiGoCollection"]
         ),
         .testTarget(
             name: "SimiGo2ExperimentalTests",

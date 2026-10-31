@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import SimiGoCollection
 
 @main
 struct MenuApp: App {

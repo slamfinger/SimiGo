@@ -29,7 +29,7 @@ Qoder collection package tests:
 
 ```bash
 tools/open_source_audit.sh
-swift test --package-path Packages/SimiGoRuntime --filter SimiGoCollectionTests
+swift test --package-path Packages/SimiGoCollection --filter SimiGoCollectionTests
 ```
 
 The collection package test target is a required macOS CI job. It tests the

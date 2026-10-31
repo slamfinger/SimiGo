@@ -214,6 +214,7 @@
 				C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 				C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */,
 				C1632B172FB5000000D1EF95 /* XCLocalSwiftPackageReference "LOCALBCore" */,
+				C1632B1B2FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoCollection" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C138807E2FB37213009F04D2 /* Products */;
@@ -547,6 +548,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/LOCALBCore;
 		};
+		C1632B1B2FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoCollection" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SimiGoCollection;
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -607,7 +612,7 @@
 		};
 		F1A100000000000000000002 /* SimiGoCollection */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */;
+			package = C1632B1B2FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoCollection" */;
 			productName = SimiGoCollection;
 		};
 /* End XCSwiftPackageProductDependency section */
