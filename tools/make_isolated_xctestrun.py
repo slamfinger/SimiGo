@@ -225,7 +225,7 @@ def main():
                       "targets": touched, "target_env_applied": applied_target_env,
                       "other_differences": other}, indent=1))
     if other:
-        sys.stderr.write("make_isolated_xctestrun: plist changed beyond the three roots\n")
+        sys.stderr.write("make_isolated_xctestrun: plist changed beyond the four roots and requested target opt-ins\n")
         sys.exit(2)
 
 
