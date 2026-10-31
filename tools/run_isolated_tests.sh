@@ -59,6 +59,8 @@ DEST="platform=macOS,arch=arm64"
 EXTRA=()
 ONLY=()
 TARGET_ENV=()
+KV_FREE_MATRIX=0
+KV_BLOCKED_ONLY=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --app) APP="$2"; shift 2 ;;
@@ -86,7 +88,15 @@ for spec in "${TARGET_ENV[@]:-}"; do
   if [ -z "$target" ] || [ "$target" = "$spec" ]; then
     echo "RUN_ISOLATED: --target-env must be TARGET:KEY=VALUE" >&2; exit 2
   fi
+  case "$spec" in
+    *:SIMIGO_KV_FREE_MATRIX=1) KV_FREE_MATRIX=1 ;;
+    *:SIMIGO_KV_BLOCKED_ONLY=1) KV_BLOCKED_ONLY=1 ;;
+  esac
 done
+if [ "$KV_FREE_MATRIX" -eq 1 ] && [ "$KV_BLOCKED_ONLY" -eq 1 ]; then
+  echo "RUN_ISOLATED: KV-free matrix modes are mutually exclusive; run them separately" >&2
+  exit 2
+fi
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 [ -n "$EVIDENCE" ] || EVIDENCE="$ROOT/build/test-isolation/$stamp"
