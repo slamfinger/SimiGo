@@ -358,6 +358,77 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try pendingCount(configuration), 0)
     }
 
+    func testInboxAbsorbsReplayedCandidatesWithoutRedeliveringThem() throws {
+        let configuration = configuration()
+        let box = SinkBox(failing: false)
+        let runner = QoderCollectionRunner(configuration: configuration) {
+            try box.receive($0)
+        }
+        runner.pollOnce()
+        try Fixture.writeLines(Fixture.turnLines(), to: mainFile())
+        runner.pollOnce()
+        XCTAssertEqual(box.events.count, 2)
+        XCTAssertEqual(try pendingCount(configuration), 0)
+
+        // A crash between reading and committing leaves the cursor behind, so
+        // the next poll regenerates the same events. They must be absorbed by
+        // their keys rather than recorded and delivered a second time.
+        let inbox = QoderCandidateInbox(directoryURL: configuration.stateDirectory)
+        let state = try XCTUnwrap(inbox.loadCursorState())
+        let replayed = try inbox.commit(events: box.events, cursorState: state)
+        XCTAssertEqual(replayed.insertedCandidates, 0)
+        XCTAssertEqual(replayed.duplicateCandidates, 2)
+        XCTAssertTrue(try inbox.pendingCandidates().isEmpty)
+        XCTAssertEqual(try pendingCount(configuration), 0)
+
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "u-2", answerUUID: "a-2", messageID: "m-2",
+                prompt: "second", answer: "second answer", nextAnchor: "u-3",
+                parent: "a-1"),
+            to: mainFile(),
+            append: true)
+        let next = runner.pollOnce()
+        XCTAssertEqual(next.deliveredCandidates, 1)
+        XCTAssertEqual(Fixture.turns(box.events).count, 2)
+        XCTAssertEqual(Fixture.turns(box.events).last?.answerText, "second answer")
+    }
+
+    func testInboxFailsClosedOnCorruptLegacyCursorWithoutCreatingADatabase() throws {
+        let configuration = configuration()
+        try FileManager.default.createDirectory(
+            at: configuration.stateDirectory, withIntermediateDirectories: true)
+        let legacy = configuration.stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.legacyCursorFileName)
+        try Data("{\"initializedAt\": 0, \"cursors\": {".utf8).write(to: legacy)
+        let database = configuration.stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+
+        let inbox = QoderCandidateInbox(directoryURL: configuration.stateDirectory)
+        XCTAssertThrowsError(try inbox.loadCursorState()) { error in
+            guard case QoderCollectionStateError.corruptLegacyCursor = error else {
+                return XCTFail("expected corruptLegacyCursor, got \(error)")
+            }
+        }
+        // Damage must not be replaced by a fresh database that would baseline
+        // the transcript at EOF.
+        XCTAssertFalse(FileManager.default.fileExists(atPath: database.path))
+
+        try Fixture.writeLines(Fixture.turnLines(), to: mainFile())
+        var events: [QoderCollectionEvent] = []
+        let runner = QoderCollectionRunner(
+            configuration: configuration,
+            sink: { events.append(contentsOf: $0) },
+            onError: { _ in })
+        let report = runner.pollOnce()
+        XCTAssertFalse(report.errors.isEmpty)
+        XCTAssertNotNil(runner.unavailableReason)
+        XCTAssertEqual(report.baselinedFiles, 0)
+        XCTAssertTrue(events.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: database.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: legacy.path))
+    }
+
     func testRunnerStartStopToggles() {
         let runner = QoderCollectionRunner(configuration: configuration()) { _ in }
         XCTAssertFalse(runner.isRunning)
