@@ -29,7 +29,7 @@
 # root is part of the procedure, not a convenience. Do not "optimise" it away.
 #
 # Fail-closed: unresolvable layout, an unsafe isolation root, a plist that changed
-# beyond the three roots, a failing suite, a missing test count, or ANY user-state
+# beyond the four roots and explicit target opt-ins, a failing suite, a missing test count, or ANY user-state
 # write outside the isolation root all end in a non-zero exit. Nothing here ever
 # deletes a real user directory: the only tree it removes is the isolation root it
 # created itself (marked by .isolation-root).
