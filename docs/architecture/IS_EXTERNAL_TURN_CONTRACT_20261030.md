@@ -108,11 +108,14 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 `turn_state='internal'` 落库；文本保留可审计，`verifyExternalTurn` 对它返回 0 行变更，
 不会成为可检索知识。
 
-**调用通道边界**：旧代理曾把
+**调用通道边界**：当前 `/v1/chat/completions` 本地受管路径仍解析
 `metadata.simigo_request_scope` / `client_metadata.simigo_request_scope` /
-`X-SimiGo-Request-Scope: internal` 映射为该资格。该 HTTP 解析与自动捕获路径已删除；
-当前源码中没有产品请求入口把这些 wire 字段映射到上述数据层 API。当前测试直接调用
-数据层 API，不能证明外部 Agent 能通过 HTTP 声明 internal，也不能证明生产调用链已接通。
+`X-SimiGo-Request-Scope`，并将结果用于本地聊天轮次的 `commitChatTurn`。
+这不等于旧代理的外部轮次捕获仍存在：这些字段不会因此调用
+`recordExternalTurn` / `recordExternalResponse`，也不恢复云端 API 转发。
+本节测试直接调用外部轮次数据层 API，不能证明外部 Agent 可通过 HTTP 将结果写入这组
+外部轮次行；MCP 外部结果接入属于另一条显式 ES 生命周期合同（见
+[Agent 接入说明](../AGENT-ACCESS.md) §3）。
 
 数据层合同测试：`SimiGoExternalTurnContractTests` 中的
 `testInternalOperationIsKeptButNeverPromoted` 与
