@@ -631,6 +631,25 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
         )
     }
 
+    /// The original enum shipped five cases; a legacy journal carrying all
+    /// five original permissions (srsWrite included) must decode with the
+    /// set preserved in full — no permission dropped, none renamed. This is
+    /// the acceptance shape for "旧的五权限 journal 仍能解码" and it is kept
+    /// separate from both the four-permission shape above and the six-
+    /// permission (post-branchControl) shape below.
+    func testLegacyFivePermissionJournalStillDecodes() throws {
+        let legacyFive: Set<LOCALBPermission> = [.inference, .informationRead,
+                                                 .srsWrite, .adminPairing, .adminTrust]
+        let payload = try LOCALBPairingEventCodec.encodePairingCommit(
+            makeCommitPayload(permissions: legacyFive)
+        )
+        XCTAssertEqual(
+            try LOCALBPairingEventCodec.decodePairingCommit(payload).permissions, legacyFive
+        )
+        XCTAssertEqual(legacyFive.count, 5)
+        XCTAssertFalse(legacyFive.contains(.branchControl))
+    }
+
     /// The cap derives from allCases.count: a declared 7-entry permissions
     /// field fails closed even though every entry is well-formed and strictly
     /// ordered (the 7th name is unknown, so the unknown guard would also fire).
