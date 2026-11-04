@@ -3,7 +3,7 @@
 > **Execution continuity beyond a model's KV cache.**  
 > **让已完成的计算结果脱离旧执行载体，在新的执行链中被验证、恢复和继续使用。**
 
-SimiGo 是一个围绕 **Execution State（ES）** 与 **Information Space（IS / PALACE）** 展开的本地 AI Runtime 与研究项目。它研究的不是简单地延长缓存寿命，而是：当一段计算已经完成，其结果是否能够在语义充分、来源可验证、依赖闭包完整的条件下，从原模型进程及旧 KV Cache 中独立出来，并在新的 ES continuation 中恢复使用，而不必重复执行已经完成的工作。
+SimiGo 是一个围绕 **Execution State（ES）** 与 **Information Space（IS / PALACE）** 展开的本地 AI Runtime 与研究项目，目前仍处于 Research Preview 阶段，不宣称已成为通用生产级推理服务器或完成 backend-independent ES conformance。它研究的不是简单地延长缓存寿命，而是：当一段计算已经完成，其结果是否能够在语义充分、来源可验证、依赖闭包完整的条件下，从原模型进程及旧 KV Cache 中独立出来，并在新的 ES continuation 中恢复使用，而不必重复执行已经完成的工作。
 
 ## 核心研究问题
 
