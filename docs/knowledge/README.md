@@ -1,48 +1,18 @@
-# SimiGo-Lab Knowledge
+# 知识索引
 
-本目录记录从工程与研究过程中沉淀出的知识，而不是过程日志。
+本目录保存由证据支持、经过提炼的产品与架构知识。它不是研究过程日志，也不替代证据原件。
 
-## 知识阶梯
+## 分类
 
-Observation
-→ Finding
-→ Principle
-→ Invariant
+- [Findings](findings/)：由明确证据支持的发现
+- [Principles](principles/)：可复用原则
+- [Invariants](invariants/)：需要证据支持的稳定架构约束
+- [Open Problems](open-problems/README.md)：当前未关闭问题
 
-## 目录
+尚无内容的历史分类（如 observations）不为目录结构本身增加维护负担。
 
-- `observations/`：直接观察到的事实
-- `findings/`：由证据支持的发现
-- `principles/`：可跨具体实现复用的原则
-- `invariants/`：经过充分验证、成为核心架构约束的稳定不变量
-- `open-problems/`：明确知道尚未解决的问题
+## 历史来源
 
-知识升级必须有证据依据，不能因为文档写得确定就提高知识等级。
+部分知识于 2026-09-22 从 v4.5 → v5.0 收敛材料提炼。原始 Lesson、Audit、Experiment 与研究材料保留作历史证据；本目录仅留摘要及来源链接。
 
-
-## 首轮知识迁移（2026-09-22）
-
-首轮迁移不移动历史原文，而是从已经完成的 v4.5 → v5.0 收敛材料中提炼可复用知识，并保留原始证据路径。
-
-### Findings
-
-- [Physical KV ownership](findings/FINDING_OFFICIAL_SESSION_OWNS_PHYSICAL_KV.md) —— 官方 ChatSession 成为 Physical KV 账本与前缀调和的权威来源。
-- [Protocol boundary normalization](findings/FINDING_PROTOCOL_BOUNDARY_NORMALIZATION.md) —— Tool Call 表示差异必须在协议边界规范化。
-- [Simplification reduces runtime authority](findings/FINDING_SIMPLIFICATION_REDUCES_RUNTIME_AUTHORITY.md) —— 上游语义足够时，删除平行运行时权威本身就是架构收敛。
-
-### Principle
-
-- [Official semantics first](principles/PRINCIPLE_OFFICIAL_SEMANTICS_FIRST.md) —— 先确认上游语义来源，再决定是否需要本地抽象。
-
-### Invariants
-
-- [Logical/physical state separation](invariants/INVARIANT_LOGICAL_PHYSICAL_STATE_SEPARATION.md)
-- [Core architecture requires evidence](invariants/INVARIANT_CORE_ARCHITECTURE_REQUIRES_EVIDENCE.md)
-
-### 迁移原则
-
-历史文档继续作为一手证据保留；本目录只承载经过提炼的知识。这样可以形成：
-
-`Lesson / Experiment / Audit → Evidence → Finding → Principle / Invariant`
-
-而不是把历史记录简单复制到新目录。
+知识层级不由文字确定程度决定：Observation → Finding → Principle → Invariant。升级须有可追溯证据。
