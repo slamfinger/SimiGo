@@ -6,9 +6,11 @@ Welcome contributions include Contract conformance cases, representation
 declarations, backend adapters, execution-state graph features, persistence,
 documentation fixes, and evidence reproducibility improvements.
 
-Do not open a pull request that silently changes the frozen Execution State
-Contract semantics. A semantic change requires a separate Closure Revision Gate
-proposal and explicit human review.
+Changes to externally observable ES / IS / API contracts must be explicit in the
+pull request description and include the intended behavior, compatibility impact,
+focused tests, and evidence limits. Do not silently change semantics, but do not
+assume that a research contract is permanently frozen or that a separate Closure
+Revision Gate is required by this guide.
 
 ## Licensing
 
@@ -28,38 +30,29 @@ Before opening a pull request, run:
 
 ```bash
 tools/open_source_audit.sh
-xcodebuild test -project SimiGo.xcodeproj -scheme SimiGo \
-  -configuration Debug -destination 'platform=macOS' \
-  -derivedDataPath build/test -enableCodeCoverage NO \
-  -only-testing:SimiGoTests/ExecutionStateGraphTests
+tools/run_isolated_tests.sh --tag contributor-check
 ```
 
-Tests are **not** side-effect free by default: the test bundle is loaded into the
-real app process (`TEST_HOST`), and the full `SimiGoTests` suite has been measured to
-write the real `~/.simigo` (IS WAL/SHM, prefix pool, branch checkpoints,
-`logs/native_mlx_trace.log`) unless the roots are overridden. Targeted runs have not
-been measured individually and are therefore not assumed safe.
+App-hosted tests load the test bundle into the real app process (`TEST_HOST`) and
+may write user state. The full `SimiGoTests` suite has been measured to write
+the real `~/.simigo` (IS WAL/SHM, prefix pool, branch checkpoints,
+`logs/native_mlx_trace.log`) unless roots are overridden. Targeted runs are not
+assumed safe unless isolated.
 
-Run the suite through the in-repo runner:
-
-```bash
-tools/run_isolated_tests.sh --tag local-run1
-```
-
-It creates a fresh isolation root, rewrites the build's xctestrun so that
-`SIMIGO_HOME`, `SIMIGO_CACHE_ROOT` and `SIMIGO_STATE_GRAPH_STORE` all point inside
-that root, snapshots the protected roots before and after, and diffs them. Evidence
-lands in `build/test-isolation/<utc>/` and the app defaults to
-`build/test/Build/Products/Debug/SimiGo.app`. It fails closed on an unsafe isolation
-root, a plist diff beyond the three roots, a failing or unparsable suite, or any
-user-state write outside the isolation root, and it only deletes the isolation root
-it created itself. A plain `xcodebuild test` without those three roots is not
-equivalent and must not be cited as evidence that the suite leaves user state
-untouched.
+The in-repo runner creates a fresh isolation root, rewrites the build's
+xctestrun so that `SIMIGO_HOME`, `SIMIGO_CACHE_ROOT` and
+`SIMIGO_STATE_GRAPH_STORE` point inside that root, snapshots protected roots
+before and after, and diffs them. Evidence lands in
+`build/test-isolation/<utc>/`; the app defaults to
+`build/test/Build/Products/Debug/SimiGo.app`. It fails closed on unsafe
+isolation, unexpected plist differences, test failure, or user-state writes
+outside the isolation root, and only deletes the root it created. A plain
+`xcodebuild test` without these overrides is not equivalent and must not be
+cited as evidence that tests leave user state untouched.
 
 Do not commit local model paths, Hugging Face caches, device serials, signing
 team IDs, DMG files, build products, or model weights.
 
 GitHub Actions runs the open-source audit on every PR. The macOS targeted-test
-job uses `macos-26`; while the hosted SDK matrix is being validated, that job is
-allowed to fail without marking the workflow red.
+job uses `macos-26`; while the hosted SDK matrix is being validated, that job
+is allowed to fail without marking the workflow red.

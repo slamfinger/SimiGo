@@ -1,15 +1,17 @@
 # Agent 接入说明（首版支持范围）
 
-> 状态（2026-11-04）：本文件描述 v2.2.4（build 34）本地候选的源码树（未发布）。
+> **状态快照（2026-11-05）**：本文按当时主线源码树描述 Agent 接入合同，不代表
+> v2.2.4（build 34）候选 DMG 的实际包含范围。build 34 固定候选提交为 `e21d8f7b`，
+> 不含后续进入主线的 Qoder collection bridge；候选产物与当前主线的差异见根目录
+> [RELEASE.md](../RELEASE.md)。
+>
 > 自动复用短路（`HTTPServerChat.reusableAnswer`）、MCP 生命周期工具与 GGUF 受管入口
 > 已在 v2.2.3 及更早版本的安装包上验收；`/v1/models` 自举声明（#149，§2.1.1）与
-> Chat `reasoning_content` 透出（#148，§2.8）是 v2.2.3 之后新增的能力，目前只在
-> 隔离根内由测试跑通，安装版运行时取证留给下一次发版。
+> Chat `reasoning_content` 透出（#148，§2.8）是 v2.2.3 之后新增的能力，当时只在
+> 隔离根内由测试跑通，安装版运行时取证留给后续发行。
 >
-> 2026-11-03 变更：云端代理已删除
-> （`RemoteOpenAIRuntime` / `RemoteOpenAIBackend` / `forwardToRemote` 与其外部轮次
-> 自动捕获路径），独立的**信息空间宿主**随之补建（不加载模型即提供 `/mcp`）。
-> §2.1、§3.1、§4 按删除后的语义描述。
+> 2026-11-03 的源码变更：产品云端 provider 代理与外部轮次自动捕获路径已删除。信息空间宿主可在不加载模型时提供 `/mcp`。当时的 v2.2.4/build 34 固定本地候选曾验证 App 启动拉起宿主、模型服务接管 API 端口及停止后宿主回落；该候选不是当前 main 的发行产物，相关证据仅适用于候选快照（见根目录 `RELEASE.md`）。
+> 本文描述 2026-11-05 主线源码树的接入合同，不表示所有客户端 / wire 已完成安装版 E2E。带自有云端 API 的 Agent 经 MCP 显式调用 SimiGo；SimiGo 不代理其模型请求。
 
 ## 1. 什么算「接入」
 
@@ -108,6 +110,14 @@ Responses 的作用域 = 显式会话 → `codex-thread:<thread>` → 同样的�
 
 任一条件不满足都走正常生成，不做「尽力而为」的近似回答。
 
+> **当前实现审查注记（2026-11-05，尚待实施）**：上述四项是复用应满足的合同条件，
+> 但本轮源码静态审查发现，自动答案 shortcut 尚未显式要求历史答案绑定的
+> `demand_id` 与本轮 `resolve` 得到的 demand identity 一致。当前信息空间若因新增
+> committed chat row、文件或摘要而变化，存在旧答案仍满足历史有效性门槛却被复用的风险。
+> 该路径尚无真实机器复现，也未修复；在修复与回归验收前，不应把本节理解为已证明
+> 对所有信息空间变化均能拒绝旧答案。跟踪状态见
+> [Open Problems #1](knowledge/open-problems/README.md)。
+
 **不复用的已知情况**：Chat 请求带非空 `tools` 时跳过复用短路（工具轮不当作可复用问答）；
 这类轮次仍然前置检索并结算。Responses 的复用短路同样跳过工具续轮：请求尾部（最后一条
 user 之后）含 `role: tool` 项，或父响应 output 含 `function_call` 项时 `isToolContinuation`
@@ -176,11 +186,11 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 ### 3.1 传输
 
 - 端点：与 HTTP 入口同一 host:port 的 `POST /mcp`；`GET /mcp` 被拒绝（不发起服务端流）。
-- **独立信息空间宿主**：菜单栏「启动信息空间服务」起一个**不加载模型**的监听器
-  （`modelId = simigo-information-space`，占用同一个 API 端口），它自己持有 HTTP listener、
-  `POST /mcp` 与 IS 读路由，不需要先加载 MLX / llama.cpp，也不需要任何云端后端配置。
-  它的推理路由一律拒绝（`backendNotAvailable`）。带着自有云端 API 的 Agent 可直接对接
-  这个宿主，不必先在本地装好模型。
+- **独立信息空间宿主**：当前候选由 App 启动流程自动拉起一个**不加载模型**的监听器
+  （`modelId = simigo-information-space`，占用同一个 API 端口）；模型服务启动时接管该端口，
+  停止模型后自动回落到宿主。宿主持有 HTTP listener、`POST /mcp` 与 IS 读路由，不需要先加载
+  MLX / llama.cpp，也不需要云端后端配置。其推理路由一律拒绝（`backendNotAvailable`）。
+  带着自有云端 API 的 Agent 可直接对接该宿主，不必先加载本地模型。
 - 协议：JSON-RPC 2.0，无状态 Streamable-HTTP 子集；单条、批量、通知均可；
   通知返回 `202`。`initialize` 返回 `protocolVersion: "2025-06-18"`，能力只有 `tools`。
 - 方法与 HTTP 路由共用同一个 `SimiGoESISDatabase` / `SimiGoInformationLoop`，不存在第二套

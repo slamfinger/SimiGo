@@ -1,7 +1,14 @@
 # IS 外部轮次数据契约（2026-10-30）
 
-**性质**：数据契约 + 检索资格规则，描述当前实现（不是能力规划）。
+**性质**：保留的数据层合同与历史外部轮次检索资格规则；不是当前产品入口、云端代理能力或接入规划说明。
 **权威实现**：`Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift`。
+**阅读边界（2026-11-05 复核）**：
+
+- §1–5 记录的是仍保留在 Runtime 数据层的外部轮次存储合同；其代码入口和合同测试仍在。它们不是当前 App 对外提供的云端代理能力，也不证明当前产品存在调用这些方法的生产路径。
+- 云端代理转发与 HTTP 自动捕获已删除；§3.1、§3.2、§6 中的转发流程和 E2E 只作历史说明。
+- §9–11 是 2026-10-30 的特定客户端 / 安装版窗口快照，不是 2026-11-05 当前安装版状态，也不能外推到其他版本、所有 Agent 或 collection → ES/IS 链路。
+- 本文中的“可检索”仅指 turn_state='committed' 的 chat 行可进入 InformationLoop 检索输入；不等于该内容已具备跨请求答案复用资格，更不等于已完成 ES continuation 消费验收。
+
 **边界**：本文只记录产品代码与测试层已经成立的事实。真机验收读数另见
 `research/agent-runs/simigo-es-is-realmodel-20261026/ACCEPTANCE-20261026-BUILD-97043902.md`
 （测试层读数不写入该文件）；W4、Agent 分类取证等未关闭项见 §8。
@@ -23,7 +30,7 @@
 
 ## 1. 三个状态是三个问题
 
-外部 API 的信息可以从外部进来，也可以只保留不消费。把「入库」「结算」「可检索」
+历史外部 API 轮次可以只被记录，也可以完成结算并进入检索输入。把「入库」「结算」「可检索」
 当同一个开关是此前 Codex 污染事件的根因之一，因此三者分开定义：
 
 | 状态 | 含义 | 载体 |
@@ -97,22 +104,34 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 
 ### 3.3 内部记账（`internalOperation`）
 
-客户端声明为内部操作的轮次，用户/回答行都以 `turn_state='internal'` 落库：
-文本保留可审计，`verifyExternalTurn` 对它返回 0 行变更，永远不会成为可检索知识。
-声明通道是 `metadata.simigo_request_scope` / `client_metadata.simigo_request_scope`
-或 `X-SimiGo-Request-Scope: internal`，只认客户端显式声明，不从 wire、会话或内容推断。
-测试（数据层合同测试，`SimiGoExternalTurnContractTests`）：
-`testInternalOperationIsKeptButNeverPromoted`。原随转发路径退出的
-`testInternalDeclaredForwardedTurnIsKeptButNeverPromoted`（真实 HTTP 转发路径）
-已随代理一并移除，其断言等价物保留在数据层。
+数据层 API 接受显式的 `eligibility: .internalOperation`，并将用户/回答行都以
+`turn_state='internal'` 落库；文本保留可审计，`verifyExternalTurn` 对它返回 0 行变更，
+不会成为可检索知识。
+
+**调用通道边界**：当前 `/v1/chat/completions` 本地受管路径仍解析
+`metadata.simigo_request_scope` / `client_metadata.simigo_request_scope` /
+`X-SimiGo-Request-Scope`，并将结果用于本地聊天轮次的 `commitChatTurn`。
+这不等于旧代理的外部轮次捕获仍存在：这些字段不会因此调用
+`recordExternalTurn` / `recordExternalResponse`，也不恢复云端 API 转发。
+本节测试直接调用外部轮次数据层 API，不能证明外部 Agent 可通过 HTTP 将结果写入这组
+外部轮次行；MCP 外部结果接入属于另一条显式 ES 生命周期合同（见
+[Agent 接入说明](../AGENT-ACCESS.md) §3）。
+
+数据层合同测试：`SimiGoExternalTurnContractTests` 中的
+`testInternalOperationIsKeptButNeverPromoted` 与
+`testInternalOperationStaysOutOfRetrievalBesideCommittedHistory`。原真实 HTTP 转发测试
+`testInternalDeclaredForwardedTurnIsKeptButNeverPromoted` 随代理路径移除；
+当前保留的是数据层断言，不是 HTTP E2E。
 
 ### 3.4 本地重试不收养外部行
 
 `lastUserMessage` 只取 `source_kind='local'` 的最近用户行（`SimiGoESISDatabase.swift`
 中该查询的 `source_kind='local'` 条件）。外部行属于另一个生产方的请求身份，
 本地轮次的 retry 复用不得采纳或提升它。
-本文原引用的 `testLocalRetryNeverAdoptsExternalRow` 在本仓历史中不存在（无任何提交
-包含该名），此处以代码条件为准，不假称有该测试。
+
+数据层测试 `testLocalRetryReuseNeverAdoptsAnExternalRow` 验证：同一会话中存在外部
+`recorded` 用户行时，本地同文请求创建独立行；本地提交不会提升外部行。该测试证明
+数据层隔离，不证明当前产品存在外部请求生产调用方。
 
 ## 4. 并发不变量
 

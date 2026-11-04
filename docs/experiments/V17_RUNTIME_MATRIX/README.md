@@ -1,5 +1,7 @@
 # V1.7-0 Runtime Benchmark Matrix（2026-09-19 开工）
 
+> **历史实验档案**：本文与所列矩阵结果记录 2026-09-19 至 2026-09-20 的 V1.7 实验基线，不是当前 runtime benchmark、当前产品状态或后续实验授权。任何性能 / restore 结论必须按当前 commit、模型、依赖与机器重新测量。
+
 ## Public evidence boundary
 
 `office_out/` 内的 DOCX / XLSX / PPTX / PDF / 图片均为本目录下
