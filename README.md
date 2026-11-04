@@ -3,6 +3,8 @@
 > **Execution continuity beyond a model's KV cache**  
 > **让已完成的计算脱离旧执行载体，在新的执行链中被验证、恢复和继续使用。**
 
+SimiGo studies how a completed computation can outlive the model process and its KV cache. It separates **Execution State (ES)**—the authority for continuation—from **Information Space (IS / PALACE)**—the ledger for settled results, provenance, dependencies, and validity. A fresh execution may consume a prior result only when its declared contract and dependency closure still verify. The central open proof is to release the original model carrier and KV cache, then demonstrate reuse from a genuinely new execution state.
+
 SimiGo 是一个围绕 **Execution State（ES）** 与 **Information Space（IS / PALACE）** 的 AI Runtime 与系统研究项目。它探索一个比缓存复用更根本的问题：
 
 **当模型已经完成一段计算，能否把结果从原模型进程和旧 KV Cache 中独立出来；在来源、版本、依赖闭包与有效性均可验证的前提下，让新的执行状态继续使用它，而不重复执行已经完成的工作？**
