@@ -1,31 +1,18 @@
-# SimiGo-Lab Research
+# 历史研究档案
 
-本目录承载 SimiGo-Lab 的研究层：回答“我们如何知道”。
+本目录保留从 SimiGo-Lab Research / Knowledge Layer 迁入的研究综合材料（首轮结构建立于 2026-09-22）。它用于追溯 Execution State 研究问题、证据脉络与历史综合，不是当前产品状态、开发计划或授权入口。
 
-研究对象不是代码本身，而是问题、假设、实验、证据、发现与综合结论。
+## 内容
 
-## 核心证据链
+- `questions/`：研究问题及其边界
+- `participants/`：参与者与知识来源独立性记录
+- `knowledge-map/`：当时的知识图谱与未知项
+- `synthesis/`：跨实验综合材料
+- `conclusions/`：结论归档；只有索引文件不代表已有独立结论
 
-Research Question
-→ Hypothesis
-→ Experiment
-→ Evidence
-→ Finding
-→ Decision
-→ Architecture / Invariant
+## 阅读边界
 
-## 目录
-
-- `questions/`：预注册研究问题及其研究边界
-- `participants/`：参与者、研究线及其知识来源的独立性记录
-- `knowledge-map/`：已有知识、未知项与独立知识通道
-- `synthesis/`：跨实验、跨参与者的综合分析
-- `conclusions/`：已经形成的研究结论
-
-## 原则
-
-1. 不把功能数量当作研究贡献。
-2. 不把实现细节直接当作结论。
-3. 每个重要结论必须能够追溯到证据。
-4. 区分 observation、finding、decision 和 invariant。
-5. 未经充分验证的内容保持为 hypothesis / open question，不提前升级为 architecture。
+- 研究主张须回到原始证据和明确范围。
+- 历史路线图、研究故事与参与者独立性分析不等同于当前产品实现。
+- 当前产品能力、发布状态和未关闭问题以根 README、RELEASE.md、代码及当前问题索引为准。
+- 保留历史原件；精简导航，不通过删改历史制造新结论。
