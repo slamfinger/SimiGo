@@ -1,7 +1,7 @@
 # 提交就绪包：mlx-swift-lm RFC issue（2026-09-19）
 
 **已提交**：https://github.com/ml-explore/mlx-swift-lm/issues/629
-（2026-09-19，gh CLI 代提，作者 slamfinger，状态 OPEN；本文件以下为
+（2026-09-19，gh CLI 代提，作者 slamfinger；OPEN 是提交时记录的状态，不代表当前上游状态。本文件以下为
 提交内容存档）
 
 ---
