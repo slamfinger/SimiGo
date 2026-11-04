@@ -1,0 +1,126 @@
+import XCTest
+@testable import SimiGo
+
+/// #6 encode-once 回归：ParsedToolCall.argumentsJSON 从计算属性改为构造时
+/// 渲染一次的缓存。锁三件事——渲染结果与按需序列化一致（wire 不变）、
+/// 空参数 "{}"、Codable 契约保持 id/name/arguments 三字段。
+final class TypesBridgeTests: XCTestCase {
+    func testArgumentsJSONMatchesOnDemandSerialization() {
+        let call = ParsedToolCall(
+            id: "call_1",
+            name: "search",
+            arguments: ["query": .string("swift concurrency"), "limit": .number(5)]
+        )
+        let dict = call.arguments.mapValues { $0.toAny() }
+        let expected = String(
+            data: try! JSONSerialization.data(withJSONObject: dict),
+            encoding: .utf8
+        )
+        XCTAssertEqual(call.argumentsJSON, expected)
+    }
+
+    func testArgumentsJSONEmptyArgumentsRendersEmptyObject() {
+        let call = ParsedToolCall(id: "call_2", name: "noop", arguments: [:])
+        XCTAssertEqual(call.argumentsJSON, "{}")
+    }
+
+    func testArgumentsJSONStableAndRoundTrips() {
+        let call = ParsedToolCall(
+            id: "call_3",
+            name: "write",
+            arguments: [
+                "text": .string("引号\"与\\反斜杠\n换行"),
+                "中文键": .string("值"),
+                "count": .number(3),
+                "ok": .bool(true),
+            ]
+        )
+        let first = call.argumentsJSON
+        XCTAssertEqual(call.argumentsJSON, first)
+        let decoded = try! JSONDecoder().decode(
+            [String: JSONValue].self, from: first.data(using: .utf8)!)
+        XCTAssertEqual(decoded, call.arguments)
+    }
+
+    func testCodableContractKeepsThreeFields() throws {
+        let call = ParsedToolCall(id: "call_4", name: "run", arguments: ["a": .bool(true)])
+        let data = try JSONEncoder().encode(call)
+        let obj = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        XCTAssertEqual(Set(obj.keys), ["id", "name", "arguments"])
+
+        let back = try JSONDecoder().decode(ParsedToolCall.self, from: data)
+        XCTAssertEqual(back, call)
+        XCTAssertEqual(back.argumentsJSON, call.argumentsJSON)
+    }
+
+    /// argumentsJSON 存储化之前的存档数据（恰好三字段）必须可解码——
+    /// 解码路径派生 argumentsJSON，不依赖未知键。
+    func testDecodesLegacyThreeFieldPayload() throws {
+        let legacy = #"{"id":"call_9","name":"echo","arguments":{"q":"v","n":2}}"#
+        let call = try JSONDecoder().decode(
+            ParsedToolCall.self, from: Data(legacy.utf8))
+        XCTAssertEqual(call.id, "call_9")
+        XCTAssertEqual(call.name, "echo")
+        XCTAssertEqual(call.arguments["q"], .string("v"))
+        // 渲染结果必须 round-trip 回原 arguments（键序不进契约）
+        let decoded = try JSONDecoder().decode(
+            [String: JSONValue].self, from: Data(call.argumentsJSON.utf8))
+        XCTAssertEqual(decoded, call.arguments)
+    }
+
+    // MARK: - messageText（W1：message content 的唯一规范文本形态）
+
+    /// 核心不变量：同一语义的两种 wire 表示（string / parts 数组）必须收敛为
+    /// 同一串字节。IS 取值、prefill 规模估算、KV 前缀对账三处若读到不同形态，
+    /// multipart 接入就进不了治理（2026-10-28 真实模型窗口实证 est=0 + IS 早退）。
+    func testMessageTextCollapsesBothWireShapes() {
+        let plain = JSONValue.string("你好，世界")
+        let multipart = JSONValue.array([
+            .object(["type": .string("text"), "text": .string("你好，")]),
+            .object(["type": .string("text"), "text": .string("世界")]),
+        ])
+        XCTAssertEqual(plain.messageText, multipart.messageText)
+        XCTAssertEqual(multipart.messageText, "你好，世界")
+    }
+
+    func testMessageTextSkipsPartsWithoutTextField() {
+        let value = JSONValue.array([
+            .object(["type": .string("text"), "text": .string("a")]),
+            .object([
+                "type": .string("image_url"),
+                "image_url": .object(["url": .string("https://example.test/x.png")]),
+            ]),
+            .object(["type": .string("text"), "text": .string("b")]),
+            .string("c"),
+        ])
+        XCTAssertEqual(value.messageText, "abc")
+    }
+
+    func testMessageTextScalarAndEmptyForms() {
+        XCTAssertEqual(JSONValue.null.messageText, "")
+        XCTAssertEqual(JSONValue.string("").messageText, "")
+        XCTAssertEqual(JSONValue.bool(true).messageText, "true")
+        XCTAssertEqual(JSONValue.number(5).messageText, String(5.0))
+        XCTAssertEqual(
+            JSONValue.object(["type": .string("text"), "text": .string("t")]).messageText, "t")
+    }
+
+    /// 分组键两侧同形，否则同一会话换一种 content 表示就裂成两个 IS scope。
+    func testInformationScopeIsRepresentationInvariant() {
+        let system: JSONValue = .object([
+            "role": .string("system"), "content": .string("你是助手")
+        ])
+        let userPlain = JSONValue.object([
+            "role": .string("user"), "content": .string("你好")
+        ])
+        let userMultipart = JSONValue.object([
+            "role": .string("user"),
+            "content": .array([
+                .object(["type": .string("text"), "text": .string("你好")])
+            ]),
+        ])
+        let plain = HTTPServer.informationScope(agentId: "a1", messages: [system, userPlain])
+        let multipart = HTTPServer.informationScope(agentId: "a1", messages: [system, userMultipart])
+        XCTAssertEqual(plain, multipart)
+    }
+}

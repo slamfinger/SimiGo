@@ -1,0 +1,465 @@
+import Foundation
+import MLX
+import MLXLMCommon
+import SimiGo2Experimental
+import SimiGoRuntimeContract
+
+/// Route B 前缀池协调器（SIMIGO17_PREFIX_POOL 门 B-4）——跨会话内容寻址
+/// KV 共享在产品日常路径的接缝。
+///
+/// **架构术语红线（beta.3 审计裁定，2026-09-27；状态更新 2026-09-28）**：
+/// poolHit / poolBind / poolTokenHit 证明的是 **Representation Reuse
+/// （跨会话找到并消费已存在的前缀表示，免重算）**，不是
+/// **Execution-State Fork（fork point 处 parent/child 共享同一
+/// Representation 的绑定）**。两词不得混用：Branch API 的 fork 仍是
+/// 「分支 checkpoint fork」v1。状态更新：FORK-3 已从 GA 候选落地为
+/// 实现（STEP-8 Binding 类型化 / STEP-9 daily-path 绑定 / STEP-10
+/// forkSessionBranch 插件），共享前缀经济性由 admission 层承载；
+/// forkSessionBranch 保持 checkpoint fork 语义，不转成 poolBind。
+///
+/// **所有权/生命周期边界**：poolBind 后，内存 KV 归消费方 ChatSession
+/// **独占**（自盘物化的独立副本，池从不持有活内存）；池只拥有磁盘
+/// artifact + 声明登记。三条生命周期线：内存侧=既有会话 LRU/
+/// warmTokenBudget/session.clear；登记侧=池 LRU（logical-token budget +
+/// physical-byte budget，任一超限即 LRU 驱逐并删除磁盘 artifact）；
+/// 驱逐对活会话零影响——副本独立。
+/// 绑定登记侧=ExecutionBindingRegistry（STEP-9/10）：deleteSessionBranch
+/// 显式 detach；forkSessionBranch 只登记 child 绑定，不 supersede parent。
+///
+/// 语义（与 E 线 Execution State 原则一致）：逻辑会话按内容消费物理
+/// KV 表示，不按会话身份独占。三步链全程对账（P-I1）：
+///   admission   存储边界哈希 == 对来方消息流重算的链哈希（池内核）
+///   load        快照 sidecar 声明 == 条目声明（适配器，不符即删条目
+///               + 响亮 throw——绝不静默续算）
+///   export      轮末把已处理消息流 + 新鲜 KV 快照注册为新边界
+///
+/// 先级：同会话活复用（cacheEff=1.00 那条健康路径）永远第一优先；
+/// 池只接住「换会话 key / 重启后」的冷重建。
+nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
+    static let shared = NativeMLXPrefixPool()
+
+    private let lock = NSLock()
+    private var store: PrefixSnapshotStore?
+    private var rescanned = false
+    /// FORK-3 step-9 wiring: the REAL holder of Execution↔Representation
+    /// bindings on the daily path. Process-lifetime by design — bindings are
+    /// execution-scoped runtime state; the pool store persists, the registry
+    /// does not (a restored session re-binds on its poolBind).
+    let bindings = ExecutionBindingRegistry()
+
+    /// Deterministic Ref derivation for a pool boundary (R-I1): the entry's
+    /// own chain hash is the content claim; message-level boundaries use the
+    /// message-chain position as boundLength so the exporting parent and the
+    /// binding child derive the IDENTICAL Ref from the same entry.
+    static func representationRef(
+        namespace: PrefixPoolNamespace, boundaryHash: UInt64, boundLength: Int
+    ) -> RepresentationRef {
+        RepresentationRef(
+            kind: .prefixSnapshot,
+            modelIdentity: namespace.modelID,
+            kvLayoutIdentity: namespace.kvFingerprint,
+            renderIdentity: "chat-daily",
+            contentHash: boundaryHash,
+            boundLength: boundLength)
+    }
+    /// 已导出的 token 边界登记（避免同轮重复落盘同一边界）。
+    private var exportedTokenBoundaries = Set<String>()
+    /// 上一次 token 边界导出失败的错误签名（生产降噪，2026-09-29）：同一
+    /// 能力态只报一次首轮聚合失败；错误集变化或出现成功（能力态翻转）后
+    /// 重新武装。negative-capability cache 可复用此签名。
+    private var exportFailureSignature: String?
+
+    static func namespace(modelID: String, kvFingerprint: String?, thinkingDisabled: Bool)
+        -> PrefixPoolNamespace
+    {
+        PrefixPoolNamespace(
+            modelID: modelID,
+            kvFingerprint: (kvFingerprint ?? "none") + "|think:" + (thinkingDisabled ? "0" : "1"))
+    }
+
+    func makeStore() -> PrefixSnapshotStore {
+        lock.lock()
+        defer { lock.unlock() }
+        if let store { return store }
+        let root = SimiGoRuntimeCachePaths.prefixPoolRoot
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(
+                tokenBudget: RuntimeTuning.prefixPoolTokenBudget,
+                physicalByteBudget: RuntimeTuning.prefixPoolPhysicalByteBudget))
+        self.store = store
+        // 重启 warm：磁盘边界重新注册进池。声明式注册——P-I1 在 admission
+        // 对来方消息流重算，坏声明只会 miss。
+        if let count = try? store.rescan() {
+            RuntimeTraceLogger.shared.trace("[MLX] poolRescan entries=\(count)")
+        }
+        return store
+    }
+
+    /// 冷重建前的池查询。返回已对账的命中（覆盖消息数 = tokenCount/2）。
+    func admit(
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        incoming: [(role: String, content: String)]
+    ) -> PrefixAdmission? {
+        guard RuntimeTuning.prefixPoolEnabled else { return nil }
+        let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        let store = makeStore()
+        let result = store.pool.admit(
+            namespace: namespace, promptTokens: PrefixMessageChain.stream(incoming))
+        if result != nil {
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] poolHit messages=\(result!.entry.tokenCount / 2)")
+        }
+        return result
+    }
+
+    /// 命中装载（适配器内完成 sidecar 对账；失败即抛+条目自愈）。
+    func load(_ admission: PrefixAdmission) async throws -> PromptCacheSnapshot {
+        try await makeStore().load(admission)
+    }
+
+    /// B-6/#136：安装 token 级前缀查找钩子（模型加载时一次）。
+    ///
+    /// 组合顺序＝**内存池优先、磁盘池兜底**，两池各答各的问题：
+    ///   内存池（#136）＝同一未完成执行的续接——被取消轮次由引擎证明出的
+    ///     前缀边界，采纳要求 ES 身份逐字相等（见 `PrefixMemoryPool`）；
+    ///   磁盘池（B-6）＝已结算的跨执行复用——同步闭包内池对账（token 链）
+    ///     → sidecar 对账 → 快照装载，任一失败自愈 + nil；其 ES 门禁
+    ///     （`checkBindAuthority` + 结算摘要对账）原样保留，不因内存池存在
+    ///     而绕过。
+    /// 两池都关闭时不安装：钩子为 nil ⇒ 上游 `.prefillAll` 全量 prefill，
+    /// 与迁移前逐字节一致。
+    ///
+    /// 命名空间绑定**基配置**指纹；非基 kvSettings 的会话既不导出也不捕获
+    /// （登记的 beta 边界：跨 plan 类的静默误装不可能发生）。
+    func installHook(modelID: String, kvFingerprint: String?, thinkingDisabled: Bool) {
+        let diskEnabled = RuntimeTuning.prefixPoolEnabled
+        guard diskEnabled || RuntimeTuning.prefixMemoryPoolEnabled else { return }
+        let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        lock.withLock { installedNamespace = namespace }
+        ChatSession.crossSessionPrefixLookup = { [weak self] promptTokenIds in
+            guard let self else { return nil }
+            if let hit = PrefixMemoryPool.shared.adopt(
+                promptTokenIds: promptTokenIds, namespace: namespace)
+            {
+                return (hit.snapshot, hit.matchedTokenCount)
+            }
+            guard diskEnabled,
+                let admission = self.makeStore().pool.admit(
+                    namespace: namespace, promptTokens: promptTokenIds)
+            else { return nil }
+            do {
+                let snapshot = try self.makeStore().loadSync(admission)
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] poolTokenHit tokens=\(admission.entry.tokenCount)")
+                return (snapshot, admission.entry.tokenCount)
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] poolTokenHitRejected err=\(String(describing: error))")
+                return nil
+            }
+        }
+    }
+
+    /// 安装时的基配置命名空间；捕获只接受与它相等的会话。
+    private var installedNamespace: PrefixPoolNamespace?
+
+    /// #136：取消点的边界捕获——唯一入口是引擎自己的证明。
+    ///
+    /// 必须在驱逐（`session.clear()`）之前调用；`interruptedPrefixBoundary()`
+    /// 证明不了边界就抛类型化错误，这里只把原因记成一行
+    /// `memPoolCaptureRefused`——「物理 cache 里还有对象」从来不是恢复证据。
+    /// 返回实际入账的 token 数（0 = 未入账），供调用方观测。
+    func captureInterruptedPrefix(
+        _ session: ChatSession,
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        esStateID: String?, traceKey: String
+    ) async -> Int {
+        guard RuntimeTuning.prefixMemoryPoolEnabled else { return 0 }
+        let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        guard namespace == installedNamespace else {
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] memPoolCaptureSkip session=\(traceKey) reason=notBaseNamespace")
+            return 0
+        }
+        do {
+            let boundary = try await session.interruptedPrefixBoundary()
+            guard let entry = PrefixMemoryPool.shared.capture(
+                boundary, namespace: namespace, esStateID: esStateID)
+            else {
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] memPoolCaptureRejected session=\(traceKey)"
+                        + " tokens=\(boundary.tokenCount) bytes=\(boundary.bytes)")
+                return 0
+            }
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] memPoolCapture session=\(traceKey) tokens=\(boundary.tokenCount)"
+                    + " bytes=\(boundary.bytes)"
+                    + " layers=\(boundary.attentionLayerCount)a/\(boundary.recurrentLayerCount)r"
+                    + " es=\(esStateID.map { String($0.suffix(12)) } ?? "-")")
+            return entry.tokenCount
+        } catch let error as ChatSession.InterruptedPrefixBoundaryError {
+            // 不能恢复——按原因记录，不伪造 PASS，也不动既有驱逐。
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] memPoolCaptureRefused session=\(traceKey) reason=\(error.description)")
+            return 0
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] memPoolCaptureFailed session=\(traceKey) err=\(String(describing: error))")
+            return 0
+        }
+    }
+
+    /// B-6：轮末 token 边界导出——全量 + 2048 网格（best-effort，已导出
+    /// 的边界不重写）。
+    func exportTokenBoundaries(
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        tokenIds: [Int], session: ChatSession
+    ) async {
+        guard RuntimeTuning.prefixPoolEnabled, tokenIds.count > 2048 else { return }
+        let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        let store = makeStore()
+        var boundaries: [Int] = [tokenIds.count]
+        var grid = 2048
+        while grid < tokenIds.count {
+            boundaries.append(grid)
+            grid += 2048
+        }
+        // #4（2026-09-29 效率审查）：一次 cumulative 算出全部前缀位置的链哈希，
+        // 各边界查表取值。取代此前「每个边界切片拷贝 + 全量重哈希」——去重
+        // 检查原在重哈希之后，稳定会话每轮对全部已导出边界重复付费（237k
+        // 实测 40.4ms/轮，随深度平方增长）。cumulative[i] = hash(tokens[0...i])
+        // 与逐边界 PrefixChain.hash(tokens[0..<count]) 逐值相等
+        // （PrefixBoundaryHashEquivalenceTests 差分锁定）；slice 只在未导出
+        // 边界上创建（store.export 的输入）。dedup 键 / grid / 池语义 /
+        // 遥测均不变。
+        let cumulative = PrefixChain.cumulative(tokenIds)
+        // 失败聚合（2026-09-29 降噪）：逐边界失败只累积，轮末按错误集签名
+        // 决定是否发一行聚合——同一能力态（如该模型 noCacheAvailable）不
+        // 逐轮重复，签名变化或全 succeeding 轮重新武装。
+        var failedCounts: [Int] = []
+        var failedErrs: Set<String> = []
+        for count in boundaries {
+            let hash = cumulative[count - 1]
+            let key = SimiGoSettlementKVBinding.Representation(
+                modelID: namespace.modelID, kvFingerprint: namespace.kvFingerprint,
+                tokenCount: count, boundaryHash: hash).poolKey
+            let known = lock.withLock { exportedTokenBoundaries.contains(key) }
+            guard !known else { continue }
+            do {
+                let slice = Array(tokenIds[..<count])
+                _ = try await store.export(
+                    namespace: namespace, tokens: slice
+                ) { url in
+                    try await session.savePrefixSnapshot(to: url, upTo: count)
+                }
+                _ = lock.withLock { exportedTokenBoundaries.insert(key) }
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] poolTokenExport tokens=\(count)")
+            } catch {
+                failedCounts.append(count)
+                failedErrs.insert(String(describing: error))
+            }
+        }
+        if failedCounts.isEmpty {
+            lock.withLock { exportFailureSignature = nil }
+        } else {
+            let signature = failedErrs.sorted().joined(separator: " | ")
+            let alreadyReported = lock.withLock {
+                let alreadyReported = exportFailureSignature == signature
+                exportFailureSignature = signature
+                return alreadyReported
+            }
+            if !alreadyReported {
+                // first/last 按边界值升序（boundaries 数组以全量边界开头，
+                // 尝试序≠升序；2026-09-30 实证 count=3 first=4638 last=4096）。
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] poolTokenExportFailed count=\(failedCounts.count)"
+                        + " first=\(failedCounts.min() ?? 0) last=\(failedCounts.max() ?? 0)"
+                        + " err=\(failedErrs.sorted().first ?? "-")"
+                        + (failedErrs.count > 1 ? " errs=\(failedErrs.count)" : ""))
+            }
+        }
+    }
+    func export(
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        executionID: String, branchID: String?,
+        history: [(role: String, content: String)],
+        save: @escaping (URL) async throws -> Void
+    ) async -> PrefixPoolEntry? {
+        guard RuntimeTuning.prefixPoolEnabled else { return nil }
+        let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        let store = makeStore()
+        do {
+            let entry = try await store.export(
+                namespace: namespace, tokens: PrefixMessageChain.stream(history),
+                write: save)
+            let ref = Self.representationRef(
+                namespace: namespace, boundaryHash: entry.boundaryHash,
+                boundLength: entry.tokenCount)
+            // bind 每次调用 generation 单调 +1（registry B-R3）——轮末重绑
+            // 行里的 bindingGen 是纯递增计数器噪音（2026-09-29 降噪），
+            // 只保留在 restore（poolBind）/ fork 位点。绑定居于 registry。
+            _ = bindings.bind(
+                executionID: executionID, runtimeAddress: "live:\(executionID)", ref: ref)
+            // A-2 写侧：把这轮导出的表示按逻辑分支登记，供本轮结算读取。
+            // 结算在 generate 返回之后运行，而这里的导出是 awaited 的，所以
+            // 「结算时读到的表示」一定出自这一轮。登记的是内容声明（模型
+            // 身份 + KV 指纹 + 边界长度 + 链哈希），落库时只写其摘要。
+            if let branchID {
+                rememberRepresentation(
+                    SimiGoSettlementKVBinding.Representation(
+                        modelID: namespace.modelID,
+                        kvFingerprint: namespace.kvFingerprint,
+                        tokenCount: entry.tokenCount,
+                        boundaryHash: entry.boundaryHash),
+                    forBranch: branchID)
+            }
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] poolExport messages=\(entry.tokenCount / 2) "
+                    + "refHash=\(String(entry.boundaryHash, radix: 16))")
+            return entry
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[MLX] poolExportFailed err=\(String(describing: error))")
+            return nil
+        }
+    }
+
+    // MARK: - A-2: IS-authorised KV reuse
+
+    private static let representationRecordLimit = 64
+    private var exportedRepresentations: [(branchID: String, value: SimiGoSettlementKVBinding.Representation)] = []
+
+    /// The prefix representation this process exported for one logical branch —
+    /// i.e. the content claim a settlement is allowed to make on its behalf.
+    /// A branch that exported nothing (pool disabled, export failed, or the
+    /// artifact evicted before settlement) yields nil, and the settlement then
+    /// records no KV binding: the safe default, because a later continuation has
+    /// nothing authorised to reuse.
+    func representation(forBranch branchID: String) -> SimiGoSettlementKVBinding.Representation? {
+        lock.withLock {
+            exportedRepresentations.last(where: { $0.branchID == branchID })?.value
+        }
+    }
+
+    private func rememberRepresentation(
+        _ value: SimiGoSettlementKVBinding.Representation, forBranch branchID: String
+    ) {
+        lock.withLock {
+            exportedRepresentations.removeAll(where: { $0.branchID == branchID })
+            exportedRepresentations.append((branchID, value))
+            if exportedRepresentations.count > Self.representationRecordLimit {
+                exportedRepresentations.removeFirst(
+                    exportedRepresentations.count - Self.representationRecordLimit)
+            }
+        }
+    }
+
+    /// A-2 fail-closed gate at the bind site.
+    ///
+    /// A governed continuation may load pooled prefix state only when the IS
+    /// settlement it was admitted against recorded THIS entry as its prefix
+    /// boundary. The recorded rows are digests, so the comparison re-derives the
+    /// pool entry's own content claim (namespace + token count + chain hash) and
+    /// matches it against them — a stale entry, a different prefix of the same
+    /// length, or a different model/KV layout all fail.
+    ///
+    /// `.notGoverned` keeps the pre-A-2 daily path byte-for-byte: only requests
+    /// that ran a continuation admission appear in the authority map.
+    enum BindAuthority: Equatable {
+        case notGoverned
+        case allowed
+        case rejected(reason: String)
+
+        var permitsBind: Bool {
+            if case .rejected = self { return false }
+            return true
+        }
+
+        var rejectionReason: String? {
+            if case .rejected(let reason) = self { return reason }
+            return nil
+        }
+    }
+
+    /// Pure decision half of the gate: the gate lookup against the namespace +
+    /// the boundary the engine is ABOUT TO consume. Split out so the real
+    /// security boundary (digest comparison) is testable without a live pool
+    /// entry or a disk artifact — the entry's own claim is what gets checked,
+    /// never a caller's assurance that a matching artifact exists.
+    static func bindVerdict(
+        _ lookup: ISKVBindAuthority.Lookup,
+        namespace: PrefixPoolNamespace,
+        tokenCount: Int, boundaryHash: UInt64
+    ) -> BindAuthority {
+        switch lookup {
+        case .notGoverned:
+            return .notGoverned
+        case .verdict(.unauthorized(let reason)):
+            return .rejected(reason: reason)
+        case .verdict(.authorized(let recorded)):
+            let consumer = SimiGoSettlementKVBinding.Representation(
+                modelID: namespace.modelID,
+                kvFingerprint: namespace.kvFingerprint,
+                tokenCount: tokenCount,
+                boundaryHash: boundaryHash)
+            let verdict = SimiGoSettlementKVBinding.evaluate(
+                recorded: recorded, consumer: consumer)
+            guard verdict.status == .ok else {
+                return .rejected(reason: verdict.code ?? "kv_binding_blocked")
+            }
+            return .allowed
+        }
+    }
+
+    /// #136/§II.3：本轮 ES 权威的一次**只读**取值。在 generate 函数作用域取
+    /// 一次，同时喂磁盘准入与内存采纳。bind 站点用的是注销式 `consume`，
+    /// 在它之后再查第二次必然拿到 `.notGoverned`＝自造放行；所以内存侧只能
+    /// 消费这同一个快照，不许自己再查。只读不注销也保证磁盘路径的注销时机
+    /// 与本改动之前逐字节一致。
+    func peekBindAuthority(esStateID: String) -> ISKVBindAuthority.Lookup {
+        ISKVBindAuthority.shared.peek(esStateID: esStateID)
+    }
+
+    func checkBindAuthority(
+        esStateID: String,
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        entry: PrefixPoolEntry
+    ) -> BindAuthority {
+        Self.bindVerdict(
+            ISKVBindAuthority.shared.consume(esStateID: esStateID),
+            namespace: Self.namespace(
+                modelID: modelID, kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled),
+            tokenCount: entry.tokenCount,
+            boundaryHash: entry.boundaryHash)
+    }
+
+    /// 将快照的 KV 层截断到 claimed 边界（Gate C/D：artifact 是候选，
+    /// claimed boundLength 定义可用边界；因果 KV 保证行 [0..<T] 恰为
+    /// 共享前缀）。不可安全切片（非 KVCacheSimple / 携带模型 state）
+    /// → nil = 候选拒绝，回退精确冷路径。
+    static func truncatedSnapshot(
+        _ snapshot: PromptCacheSnapshot, to tokenCount: Int
+    ) -> PromptCacheSnapshot? {
+        guard snapshot.state == nil, tokenCount > 0 else { return nil }
+        var layers: [any KVCache] = []
+        for layer in snapshot.cache {
+            guard let simple = layer as? KVCacheSimple else { return nil }
+            let state = simple.state
+            guard let first = state.first, first.dim(2) >= tokenCount else {
+                return nil
+            }
+            let copy = KVCacheSimple()
+            copy.state = state.map { $0[.ellipsis, ..<tokenCount, 0...] }
+            layers.append(copy)
+        }
+        return PromptCacheSnapshot(
+            cache: layers, metadata: snapshot.metadata, state: nil)
+    }
+}

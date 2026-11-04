@@ -1,0 +1,351 @@
+name: Open Source CI
+
+on:
+  push:
+    branches: [main, 'product-release/**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-hygiene:
+    name: Release hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Open source audit
+        run: tools/open_source_audit.sh
+
+  release-staging-audit:
+    name: Release staging audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate the release tooling
+        run: python3 -m py_compile tools/png_text_chunks.py tools/release_sanitize.py tools/release_staging_audit.py tools/release_artifact_audit.py tools/release_chain.py tools/release_manifest.py tools/test_release_sanitize.py tools/test_release_staging_audit.py tools/test_repository_png_controls.py tools/test_release_chain.py tools/test_release_manifest.py
+      - name: Manifest and exclusion register are complete
+        run: python3 tools/release_manifest.py check
+      - name: Build, gate, audit and name the provenance of the staging tree
+        run: |
+          work="$(mktemp -d)"
+          # release_chain owns every file under --work and refuses a round whose run
+          # directory holds something it did not create, so the transcript must live outside it.
+          transcript="$RUNNER_TEMP/release-chain-transcript.txt"
+          set -o pipefail
+          python3 tools/release_chain.py --inputs release/release-inputs-v2.2.x.json --exclusions release/release-exclusions-v2.2.x.json --work "$work" | tee "$transcript"
+          # The round must be replayable from the commit this checkout names, and the
+          # sidecar must know it ran in CI rather than on a laptop.
+          grep -q 'inputs_at_commit=True' "$transcript"
+          grep -q 'ci=github-actions' "$transcript"
+      - name: The chain and both audits must be able to fail
+        run: |
+          python3 tools/test_release_sanitize.py
+          python3 tools/test_release_staging_audit.py
+          python3 tools/test_repository_png_controls.py
+          python3 tools/test_release_chain.py
+          python3 tools/test_release_manifest.py
+
+  qoder-collection-package:
+    name: Qoder collection package
+    # MLX-free Swift package. The app links it on the GUI launch path, so a
+    # package that stops building or loses cases blocks the product, not only
+    # the package. No Xcode project, llama.cpp, model weights, or signing.
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: swift --version
+      - name: Derive the case count this lane must execute
+        run: |
+          # Positive control: the expectation comes from the tree under test.
+          # Fails closed if the directory is missing or holds no test method.
+          n=$(grep -rc 'func test' Packages/SimiGoCollection/Tests/SimiGoCollectionTests/*.swift \
+              | awk -F: '{s += $2} END {print s + 0}')
+          if [ "$n" -le 0 ]; then
+            echo "no test methods found under Packages/SimiGoCollection/Tests" >&2
+            exit 1
+          fi
+          echo "EXPECTED_CASES=$n" >> "$GITHUB_ENV"
+          echo "DISCOVERY|Packages/SimiGoCollection|func_test=$n"
+      - name: Package tests
+        run: |
+          set -o pipefail
+          swift test --package-path Packages/SimiGoCollection 2>&1 | tee "$RUNNER_TEMP/qoder-collection.log"
+      - name: Gate on executed cases, not on the light
+        if: always()
+        run: |
+          python3 - "$RUNNER_TEMP/qoder-collection.log" "${EXPECTED_CASES:-}" <<'PY'
+          import os, re, sys
+
+          log_path, expected_raw = sys.argv[1], sys.argv[2]
+          def out(tag, detail):
+              print("GATE|%s|%s" % (tag, detail))
+
+          try:
+              expected = int(expected_raw)
+          except ValueError:
+              expected = None
+          if not expected or expected <= 0:
+              out("expected_cases", "absent_or_invalid (raw=%r)" % expected_raw)
+              out("verdict", "NO_EXPECTATION - refusing to judge without a derived count")
+              sys.exit(1)
+
+          if not os.path.isfile(log_path):
+              out("log", "absent")
+              out("verdict", "STEP_NOT_STARTED - the swift test step never produced a log")
+              sys.exit(1)
+          text = open(log_path, errors="replace").read()
+          statuses = re.findall(r"Test Case '[^']*' (passed|failed|skipped) ", text)
+          passed = sum(1 for c in statuses if c == "passed")
+          failed = sum(1 for c in statuses if c == "failed")
+          skipped = sum(1 for c in statuses if c == "skipped")
+          executed = passed + failed + skipped
+          out("expected_cases", str(expected))
+          out("log", "executed=%d passed=%d failed=%d skipped=%d" %
+              (executed, passed, failed, skipped))
+          if executed == 0:
+              for line in [l.strip() for l in text.splitlines() if "error:" in l][:5]:
+                  out("blocked_error", line[:220])
+              out("verdict", "NO_CASES_EXECUTED - this is not a pass and not a skip")
+              sys.exit(1)
+          if executed != expected or skipped != 0:
+              out("verdict", "UNDEREXECUTED - need executed==%d && skipped==0, got "
+                             "executed==%d skipped==%d" % (expected, executed, skipped))
+              sys.exit(1)
+          if failed != 0:
+              out("verdict", "EXECUTED_WITH_FAILURES - %d of %d cases failed" %
+                  (failed, expected))
+              sys.exit(1)
+          out("verdict", "PASS - executed==%d, skipped==0, failed==0" % expected)
+          PY
+      - name: Scope note
+        run: |
+          echo "SCOPE|this lane covers Packages/SimiGoCollection only"
+          echo "SCOPE|collection-only mode: candidates stay in the inbox; no sink, no IS/ES writes"
+
+  macos-tests:
+    name: macOS targeted tests
+    # SimiGo's local public-build toolchain is Xcode 27, but hosted macos-27
+    # is not yet available to this repository. Keep Xcode 26 visible while
+    # non-blocking until its pinned dependency compatibility is resolved.
+    # Kept deliberately: this is the witness for the Swift 6.3.3 / pinned
+    # mlx-swift-lm incompatibility, not a red light to be deleted. The lane that
+    # produces execution evidence is macos-tests-supported-toolchain below.
+    runs-on: macos-26
+    continue-on-error: true
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -E 'macosx|DriverKit' || true
+          swift --version
+      - name: Targeted Execution State tests
+        run: |
+          xcodebuild test \
+            -project SimiGo.xcodeproj \
+            -scheme SimiGo \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath .build/ci \
+            -enableCodeCoverage NO \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            -only-testing:SimiGoTests/ExecutionStateGraphTests
+
+  # Evidence lane, separate from the Xcode 26 witness above. A green job is not
+  # the acceptance claim; executed == expected && skipped == 0 && failed == 0 is.
+  # The gate distinguishes "nothing ran" from "it ran and failed" instead of
+  # reporting both as a red light with no explanation.
+  macos-tests-supported-toolchain:
+    name: macOS targeted tests (supported toolchain)
+    # macos-26 ships Swift 6.3.3, which does not compile the pinned mlx-swift-lm
+    # revision (region-based isolation error in ChatSession.swift), so that lane
+    # reaches zero test cases. The hosted xcode-27 image defaults to a Swift that
+    # does compile it, and is labelled preview rather than stable - so this job
+    # stays non-blocking. A job that never starts on a vanished preview label is
+    # detected from the run API (no steps executed), not from inside this job.
+    runs-on: xcode-27
+    continue-on-error: true
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          echo "DEVELOPER_DIR=$(xcode-select -p)"
+          echo "ARCH=$(uname -m)  IMAGE=$ImageVersion"
+      - name: Derive the case count this lane must execute
+        run: |
+          # Positive control: the expectation comes from the tree under test, so a
+          # lane that executes nothing cannot pass by matching a stale constant.
+          # Fails closed on exit if the class is missing or holds no test method.
+          n=$(grep -c 'func test' SimiGoTests/ExecutionStateGraphTests.swift)
+          echo "EXPECTED_CASES=$n" >> "$GITHUB_ENV"
+          echo "DISCOVERY|SimiGoTests/ExecutionStateGraphTests|func_test=$n"
+      - name: Targeted Execution State tests (supported toolchain)
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project SimiGo.xcodeproj \
+            -scheme SimiGo \
+            -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath .build/ci-x27 \
+            -resultBundlePath "$RUNNER_TEMP/esg-x27.xcresult" \
+            -enableCodeCoverage NO \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            -only-testing:SimiGoTests/ExecutionStateGraphTests 2>&1 | tee "$RUNNER_TEMP/esg-x27.log"
+      - name: Gate on executed / skipped, not on the light
+        if: always()
+        run: |
+          python3 - "$RUNNER_TEMP/esg-x27.log" "$RUNNER_TEMP/esg-x27.xcresult" "${EXPECTED_CASES:-}" <<'PY'
+          import json, os, re, subprocess, sys
+
+          log_path, bundle_path, expected_raw = sys.argv[1], sys.argv[2], sys.argv[3]
+          def out(tag, detail):
+              print("GATE|%s|%s" % (tag, detail))
+
+          try:
+              expected = int(expected_raw)
+          except ValueError:
+              expected = None
+          if not expected or expected <= 0:
+              out("expected_cases", "absent_or_invalid (raw=%r)" % expected_raw)
+              out("verdict", "NO_EXPECTATION - refusing to judge without a derived count")
+              sys.exit(1)
+          out("expected_cases", str(expected))
+
+          if not os.path.isfile(log_path):
+              out("log", "absent")
+              out("verdict", "STEP_NOT_STARTED - the xcodebuild step never produced a log")
+              sys.exit(1)
+          text = open(log_path, errors="replace").read()
+          lines = text.splitlines()
+
+          # Per-case lines, not the suite summary: "with N failures" counts
+          # assertion failures, which is not the same number as failing cases.
+          # Unanchored on purpose - a real xcodebuild log starts these lines with
+          # "Test Case '-[Module.Class test]' <status>", and a downloaded Actions
+          # export prefixes job/step/timestamp columns before the same text.
+          statuses = re.findall(r"Test Case '[^']*' (passed|failed|skipped) ", text)
+          passed = sum(1 for c in statuses if c == "passed")
+          failed = sum(1 for c in statuses if c == "failed")
+          skipped = sum(1 for c in statuses if c == "skipped")
+          executed = passed + failed + skipped
+          build_blocked = ("Testing cancelled because the build failed" in text or
+                           "** TEST FAILED **" in text) and executed == 0
+          out("log", "executed=%d passed=%d failed=%d skipped=%d build_blocked=%s" %
+              (executed, passed, failed, skipped, build_blocked))
+          # Third source, using the same summary line the repo's own isolation
+          # harness parses (tools/run_isolated_tests.sh): if the per-case lines and
+          # the suite summary disagree on executed or failed, that is a failure of
+          # this gate, not a tie-break. Skipped is printed from both and not
+          # asserted, because the summary's own skipped accounting differs.
+          agg = re.findall(r"Executed (\d+) tests?, with (?:(\d+) tests? skipped and )?"
+                           r"(\d+) failures?", text)
+          if agg:
+              a_exec, a_skip, a_fail = (int(v or 0) for v in agg[-1])
+              out("aggregate", "last=executed=%d failed=%d skipped=%d occurrences=%d" %
+                  (a_exec, a_fail, a_skip, len(agg)))
+              if (a_exec, a_fail) != (executed, failed):
+                  out("verdict", "COUNTS_DISAGREE - per-case lines (%d/%d) and the "
+                                 "Executed summary (%d/%d) disagree on executed/failed" %
+                      (executed, failed, a_exec, a_fail))
+                  sys.exit(1)
+          else:
+              out("aggregate", "no Executed summary line in this log")
+          # Only surfaced when nothing ran: a runtime log full of harmless
+          # "error:" substrings must never be printed next to a PASS verdict.
+          if executed == 0:
+              for line in [l.strip() for l in lines if "error:" in l][:5]:
+                  out("blocked_error", line[:220])
+
+          # Authoritative counts when the result bundle is readable. Both sources
+          # are printed; a disagreement is its own failure rather than a tie-break.
+          xc = None
+          if os.path.exists(bundle_path):
+              try:
+                  raw = subprocess.run(
+                      ["xcrun", "xcresulttool", "get", "test-results", "summary",
+                       "--path", bundle_path],
+                      capture_output=True, text=True, timeout=120)
+                  data = json.loads(raw.stdout) if raw.returncode == 0 and raw.stdout.strip() else None
+              except Exception as exc:
+                  data, raw = None, None
+                  out("xcresulttool", "raised %s" % exc)
+              if isinstance(data, dict):
+                  def counts(d):
+                      k = {x.lower().replace("tests", ""): v for x, v in d.items()
+                           if isinstance(v, int) and not isinstance(v, bool)}
+                      return k if {"passed", "failed", "skipped"} <= set(k) else None
+                  found = []
+                  stack = [data]
+                  while stack:
+                      node = stack.pop()
+                      if isinstance(node, dict):
+                          c = counts(node)
+                          if c:
+                              found.append((c, node))
+                          stack.extend(node.values())
+                      elif isinstance(node, list):
+                          stack.extend(node)
+                  if found:
+                      pick = max(found, key=lambda t: sum(t[0].values()))[1]
+                      xc = {k.lower().replace("tests", ""): pick.get(k) for k in pick
+                            if isinstance(pick.get(k), int)}
+                      out("xcresulttool", json.dumps(xc, sort_keys=True))
+                  else:
+                      out("xcresulttool", "bundle read but no integer count object")
+              else:
+                  out("xcresulttool", "unreadable (rc=%s) - falling back to log counts" %
+                      (raw.returncode if raw is not None else "n/a"))
+          else:
+              out("xcresulttool", "absent - falling back to log counts")
+          if xc is not None:
+              x_exec = sum(int(v or 0) for k, v in xc.items() if k in ("passed", "failed", "skipped"))
+              if (x_exec, int(xc.get("failed") or 0), int(xc.get("skipped") or 0)) != \
+                 (executed, failed, skipped):
+                  out("verdict", "COUNTS_DISAGREE - log and result bundle disagree; "
+                                 "refusing to pick one")
+                  sys.exit(1)
+              source = "log+xcresulttool"
+          else:
+              source = "log"
+          out("counts_source", source)
+
+          if build_blocked:
+              out("verdict", "BUILD_BLOCKED - zero cases executed; this is not a pass "
+                             "and not a skip")
+              sys.exit(1)
+          if executed != expected or skipped != 0:
+              out("verdict", "UNDEREXECUTED - need executed==%d && skipped==0, got "
+                             "executed==%d skipped==%d" % (expected, executed, skipped))
+              sys.exit(1)
+          if failed != 0:
+              out("verdict", "EXECUTED_WITH_FAILURES - %d of %d cases failed" %
+                  (failed, expected))
+              sys.exit(1)
+          out("verdict", "PASS - executed==%d, skipped==0, failed==0 (source=%s)" %
+              (expected, source))
+          PY
+      - name: Scope note
+        run: |
+          echo "SCOPE|this lane covers SimiGoTests/ExecutionStateGraphTests only"
+          echo "SCOPE|no SimiGoRuntime contract suite and no llama.cpp-gated target runs here"
+          # Derived from the file, not asserted from memory: which jobs can still
+          # fail the whole run.
+          awk '/^jobs:$/{injobs=1;next}
+               injobs && /^  [a-zA-Z0-9_-]+:$/{job=$1; sub(/:$/,"",job); order[++n]=job}
+               injobs && /^    continue-on-error: true/{nb[job]=1}
+               END{for(i=1;i<=n;i++){j=order[i]; printf "BLOCKING|%s|%s\n", j, (j in nb ? "non-blocking" : "blocking")}}' \
+            .github/workflows/ci.yml

@@ -1,0 +1,120 @@
+# SimiGo v2.0.0-beta — Release Notes
+
+> **版本说明**：v2.0.0-beta.1 曾发布后撤下（路线优先级裁定：日常小规模
+> 路径是根基）。其继任者 **v2.0.0-beta.2 已交付该裁定的答案**——Execution
+> State 前缀池（跨会话前缀 KV 共享），真机实测池命中轮 201ms vs 冷轮
+> 16,951ms（84 倍），重启 warm。见 v2.0.0-beta.2 Release 页。
+
+## v2.0.0-beta.4 增量（2026-09-29，build 7，基线 main@5fa3d38）
+
+**性质**：beta.3（`87eb6d9`）之后经过完整 Execution State + Fork + Storage/
+Lifecycle + Performance convergence 验证的下一 beta 增量。不是"性能优化版"——
+优化是验证与工程成熟度的一部分，产品定义不变。
+
+**用户可见 delta（beta.3 → 5fa3d38，72 commits / 31 产品提交）**：
+
+- **FORK-3 全线落地**（STEP-8/9/10）：`forkSessionBranch` 插件、
+  ExecutionBindingRegistry 日常路径绑定、有序多 key 事务 gate、
+  checkpoint generation + 内容哈希 commit 证明（fail-closed）。
+- **正确性修复**：`JSONValue.any` 不再将客户端 JSON 整数 0/1 折叠为布尔
+  （`1524859`，差分等价测试锁死；此前 Responses 路径已潜伏）。
+- **Storage/Lifecycle hardening**：retention 字节预算上界（`803af14`）、
+  阻止 pending generate 期间 suspend（`c4f4660`）、save/load/delete 纳入
+  generation gate（`62ef121`）、streamed SHA-256 save receipt（P2-ES-02）。
+- **性能收敛**（Full Gate 验证）：工具参数单次序列化、Responses envelope
+  直读、Chat messages 零序列化转换、PrefixPool 边界哈希 cumulative 查表
+  （237k 实测 40.4→0.76ms，消除平方增长）、retention 预算前置门
+  （常态 19.7→1.25ms）。
+
+**验证状态**：CPU-only 回归 98/98 演进全程绿；Full Gate **111 executed /
+8 skipped / 0 failures @440.6s**（BranchFork、PrefixPoolDailyPathE2E、
+OversizedRuntimeE2E、GenerationLifecycleRace 全部实跑）。全程矩阵见
+`docs/audit/PERF_CONVERGENCE_20260929.md`。
+
+**引擎依赖 provenance**：`SimiGo2Experimental` 为本地包
+（`../SimiGo-Lab/simigo2-experimental`，无 revision pin）。beta.4 binary
+的引擎源码锚 = **Lab @ `8fb16dd`**。纪律说明：最初锚定为 `3d902f2`
+（Gate 时刻源码），但 Lab 在 17:45-19:02 新增了 cyber-tiel 跨后端 probe
+（4 个文件，纯新增于 SimiGo2Experimental target，+1472 行）；为满足
+「provenance 必须指向实际被 Gate 验证的引擎源码」，对 `8fb16dd` 精确
+重跑 Full Gate——**111 executed / 8 skipped / 0 failures @380.0s**，
+PASS。构建期间 Lab 工作树冻结。`mlx-swift-lm` 依赖按 Package.resolved
+钉 `release/v2.0.0-beta-ml`（6d01a13c），beta.4 未变更。
+
+**已知限制（beta.4 事实刷新）**：
+
+1. ~~超规模路径的 usage 计数为 0~~ **已修复**：`GenerationUsageReport`
+   已接入（prompt/generation tokens 与实测 tokensPerSecond）。
+2. 超规模生成不可取消（贪心解码）；建议请求侧限制 max_tokens。（不变）
+3. 单超大模型会话串行（内存本质约束）；fork/branch API 对超规模模型
+   返回不支持。（不变）
+4. ~~超规模模型无 KV cache——每轮全序列重算~~ **表述刷新**：续接轮已走
+   Execution State raw continuation（只消费新增消息）；剩余限制是深上下文
+   延迟特征，以 beta.4 真机记录为准。
+5. 流式输出按 token 文本块推送；`tokensPerSecond` 等遥测为直连路径
+   实测值。（不变）
+
+---
+
+**测试版（Beta）** · tag `v2.0.0-beta.4` · 基线 main@5fa3d38（前序：
+beta.2 基线 main@632b1d9，分支 `release/v2.0.0-beta`，tag `v2.0.0-beta`）
+
+## 一句话
+
+v1.7 全部产品功能保持不变；新增**超规模大模型执行**能力——41.76 GiB 的
+模型（超过 32 GiB 物理内存）在 32 GiB 的 Apple Silicon 上通过
+OpenAI 兼容 API 正常服务，swap 全程平坦、压力绿、确定性可复现。
+
+## 新增能力（v2.0）
+
+- **超规模模型服务**：`qwen3_next` 架构且权重 ≥ 20 GiB 的模型自动路由到
+  分段执行引擎（placeholder-first 加载、persistent-floor 推导、
+  ResidencyController 驱动的段驻留 + INV-1 逐转移审计、严格 Execution
+  State 会话——每轮消费绑定表示并逻辑推进）。
+- 出货档位：6×8 层流式单元——实测 8.8 s/token、峰值 8.2 GiB、cache 0、
+  swap 0（系统基线平坦）、压力绿。
+- **驱逐时序修复**：段 forward 后立即压力驱回地板，消除 load-before-evict
+  双占引发的系统性换页（2-12 GiB 振荡 → 基线平坦）。
+- 已验证模型：Qwen3-Coder-Next-4bit（41.76 GiB）；其余模型走 v1.7
+  原生路径，行为零变化。
+
+## 产品功能保持
+
+- OpenAI 兼容 API（Chat/Completions/Responses）、流式与非流式、
+  多 Session/Branch、KV 与 Prefix Reuse、资源准入与缓存淘汰、
+  Tool Calling 与 Governance、Capability Contract——全部不变
+  （NativeMLX.swift 仅新增超大模型路由分支；其余零改动）。
+
+## 已知限制（Beta）
+
+1. 超规模路径的 usage 计数为 0（chat 层 token ledger 未接入直连路径——
+   v2.0 GA 工作项）；内容与确定性已验证。
+2. 超规模生成不可取消（贪心解码）；建议请求侧限制 max_tokens。
+3. 单超大模型会话串行（内存本质约束）；fork/branch API 对超规模模型
+   返回不支持。
+4. 超规模模型无 KV cache——每轮全序列重算，上下文 >~650 tokens 后
+   延迟线性上升（段级 KV/前缀复用为 v2.0 GA 方向）。
+5. 流式输出按 token 文本块推送；`tokensPerSecond` 等遥测为直连路径
+   实测值。
+
+## 验证（真机 Apple M5 / 32 GiB）
+
+- 产品回归：v1.7 全部构建与端点保持（NativeMLX 零行为变更）。
+- 超规模 E2E：`/v1/chat/completions` 两次真实请求——200、内容一致
+  （restore-replay 确定性）、TTFT/延迟符合预期（~11 s/token）。
+- 严格 Execution State 自测：restore-replay 确定性、生命周期记录、
+  INV-1（96-192 转移逐转移审计）全部 PASS。
+- 引擎回归：SimiGo-Lab 87/87 测试 PASS。
+
+## 安装
+
+1. 将 `SimiGo-v2.0.0-beta.app` 拷入 /Applications。
+2. 菜单栏选择模型目录（超规模模型自动识别，日志出现
+   `[V2] oversized model detected`）。
+3. 启动服务后按 v1.7 相同方式调用 API。
+4. 依赖说明（2026-09-27 更新：远端分支切换已兑现）：v2.0-beta 的引擎包
+   SimiGo2Experimental + SimiGoRuntimeContract 来自兄弟克隆的 SimiGo-Lab
+   仓库（Xcode 本地包引用，`../SimiGo-Lab/simigo2-experimental`）；引擎对
+   `mlx-swift-lm` 的依赖已切至公开远端分支
+   `slamfinger/mlx-swift-lm@release/v2.0-beta-ml`（Package.resolved 钉住
+   6d01a13c）。从源码构建需双仓兄弟克隆，见 `部署指南.md` 第六节。

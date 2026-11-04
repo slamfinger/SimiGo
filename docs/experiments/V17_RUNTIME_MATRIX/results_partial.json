@@ -1,0 +1,87 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "depths": [
+  10000
+ ],
+ "results": {
+  "depth10000": {
+   "depthTokensTarget": 10000,
+   "build": [
+    {
+     "round": 1,
+     "wallS": 24.0,
+     "mode": "cold",
+     "promptTokens": 9447,
+     "promptTimeS": 23.3,
+     "ttftS": 0.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false"
+    },
+    {
+     "round": 2,
+     "wallS": 24.1,
+     "mode": "rebuild",
+     "promptTokens": 18340,
+     "promptTimeS": 23.4,
+     "ttftS": 0.0,
+     "cacheTokens": 9463,
+     "cacheEff": "0.00",
+     "reuse": "true"
+    }
+   ],
+   "warm": {
+    "wallS": 10.6,
+    "trace": {
+     "mode": "rebuild",
+     "promptTokens": 9120,
+     "promptTimeS": 10.4,
+     "ttftS": 10.4,
+     "cacheTokens": 18356,
+     "cacheEff": "0.00",
+     "reuse": "true"
+    }
+   },
+   "restore": {
+    "wallS": 24.9,
+    "trace": {
+     "mode": "cold",
+     "promptTokens": 18493,
+     "promptTimeS": 24.3,
+     "ttftS": 0.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false"
+    }
+   },
+   "rebuild": {
+    "wallS": 23.6,
+    "trace": {
+     "mode": "cold",
+     "promptTokens": 18066,
+     "promptTimeS": 23.2,
+     "ttftS": 23.3,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false"
+    }
+   },
+   "cold": {
+    "wallS": 24.1,
+    "trace": {
+     "mode": "cold",
+     "promptTokens": 18062,
+     "promptTimeS": 23.7,
+     "ttftS": 23.8,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false"
+    }
+   },
+   "memory": {
+    "footprintGB": 21.9,
+    "swapGB": null
+   }
+  }
+ }
+}

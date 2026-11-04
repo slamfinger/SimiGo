@@ -1,0 +1,88 @@
+import Foundation
+import CryptoKit
+
+/// Execution State 引擎只读投影（2026-10-16 收敛：窗口接真身）。
+///
+/// 纯数据快照：由 NativeMLX 在 state 锁内抄会话表；血统经 ExecutionLineage
+/// 自有锁先行快照（弱一致、展示专用——两个状态源无共同原子边界）。
+/// 零行为、零 IO、零新执行语义——不参与 reuse/restore/驱逐任何决策，
+/// 只作展示层事实源（与 S5 血统红线同一纪律：记录与查询，不做决策）。
+/// 外部进程 / 云后端无进程内执行状态，投影为 nil。
+nonisolated public struct EngineExecutionStateSnapshot: Sendable {
+    nonisolated public struct SessionCard: Sendable {
+        /// 列表身份：完整会话表键（含 client-split 分片后缀），字典键级
+        /// 唯一。展示标签经有损压缩、可碰撞（V1.7-2 探针实证长 session
+        /// id 折叠同 traceKey）——身份与展示必须分离，ForEach 不得用
+        /// label 作 id（2026-10-16 外审 F1）。
+        public let mapKey: String
+        /// 紧凑展示键（traceKey 惯例 + client-split 分片后缀）。
+        public let label: String
+        /// 消息级账本条数（history）。
+        public let historyCount: Int
+        /// checkpoint 恢复态会话（raw-cache，vendor 侧无账本）。
+        public let isRestoredSnapshot: Bool
+        /// 活执行新于 durable checkpoint（挂起重试路径会补落盘）。
+        public let checkpointDirty: Bool
+        /// 请求级一次性会话（*-request:UUID，不参与跨请求 reuse）。
+        public let requestScoped: Bool
+        public let lastActivity: Date
+    }
+
+    public let isRunning: Bool
+    public let pendingRequests: Int
+    public let activeGenerations: Int
+    public let sessions: [SessionCard]
+    public let lineageRecords: [ExecutionRecord]
+    public let forks: [BranchForkEvent]
+
+    /// mapKey → 紧凑展示键：镜像 AgentExecutionKey.traceKey 语义
+    /// （default agent 省略、session id 折叠到末段 ≤6 位）；storageKey
+    /// 非标准三段时退化为末 12 字符。client-split 分片后缀（#指纹）
+    /// 原样保留——双客户端分片在 UI 上必须可区分。
+    nonisolated public static func compactLabel(mapKey: String) -> String {
+        var base = mapKey
+        var shard = ""
+        if let hashIndex = mapKey.firstIndex(of: "#") {
+            base = String(mapKey[mapKey.startIndex..<hashIndex])
+            shard = String(mapKey[hashIndex...])
+        }
+        let parts = base.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+        guard parts.count == 3 else { return String(base.suffix(12)) + shard }
+        let agent = parts[0] == "default" ? "" : parts[0] + "/"
+        var block = parts[1].split(separator: "-").last.map(String.init) ?? parts[1]
+        if block.count > 6 { block = String(block.suffix(6)) }
+        return agent + block + "/" + parts[2] + shard
+    }
+
+    /// 会话卡片标签：executionKey 在场时用其 traceKey（权威口径），
+    /// 并以 storageKey 前缀差还原 client-split 分片后缀（与
+    /// sessionClientSplit trace 同法）；否则按 mapKey 推导。
+    /// internal：签名含内部类型 AgentExecutionKey。
+    nonisolated static func label(mapKey: String, executionKey: AgentExecutionKey?) -> String {
+        guard let executionKey else { return compactLabel(mapKey: mapKey) }
+        var label = executionKey.traceKey
+        if mapKey.hasPrefix(executionKey.storageKey + "#") {
+            label += String(mapKey.dropFirst(executionKey.storageKey.count))
+        }
+        return label
+    }
+
+    /// fork 溯源展示标识：紧凑标签 + 完整 storageKey 的稳定摘要后缀
+    /// （2026-10-16 外审 F2 残余收口）。compactLabel 是有损压缩——
+    /// 同 agent/同 session 尾段/同 branch 即碰撞（本仓测试已构造出
+    /// 该案例），fork 行只靠它会显示成相同文字。摘要位把「完整键
+    /// 不同」压制为展示可辨；恒等身份仍是 mapKey / checkpoint meta，
+    /// 此处不承诺无碰撞的数学恒等（32 位摘要，现实会话规模下碰撞
+    /// 概率可忽略）。普通会话卡片仍用既有 traceKey 规则，不受影响。
+    nonisolated public static func forkProvenanceLabel(storageKey: String) -> String {
+        compactLabel(mapKey: storageKey) + "~" + digestSuffix(storageKey)
+    }
+
+    /// SHA-256 前 4 字节（8 hex）。~ 前缀与 session 尾段视觉区隔。
+    nonisolated static func digestSuffix(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8))
+            .prefix(4)
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+}

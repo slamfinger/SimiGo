@@ -1,0 +1,76 @@
+[2026-09-12 03:35:36.186] NativeMLX ready: model=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX port=8000
+[2026-09-12 03:35:36.186] [MEM] afterLoad active=19781MB cache=1621MB peak=20633MB footprint=21539MB swapUsed=0MB
+[2026-09-12 03:35:36.186] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-09-12 03:35:44.834] [LC] REGISTER r=7aad5f s=01a091 to=CREATED
+[2026-09-12 03:35:44.834] [LC] STATE_TRANSITION r=7aad5f s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:35:44.834] [LC] STATE_TRANSITION r=7aad5f s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:35:44.927] [LC] REGISTER r=c94f1f s=01a091 to=CREATED
+[2026-09-12 03:35:44.927] [LC] STATE_TRANSITION r=c94f1f s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:36:09.978] [MLX] session=5da490/main messages=5 history=4 delta=1 reuse=false ttft=24909ms cacheHitTokens=0 cacheEff=0.00 promptTokens=7884 promptTime=24.8s tps=30.9
+[2026-09-12 03:36:09.978] [LC] STATE_TRANSITION r=c94f1f s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:36:09.978] [LC] STATE_TRANSITION r=7aad5f s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:36:09.978] [LC] RELEASED r=7aad5f s=01a091 reason=completed
+[2026-09-12 03:36:28.854] [MLX] session=45ab87/main messages=4 history=3 delta=1 reuse=false ttft=18671ms cacheHitTokens=0 cacheEff=0.00 promptTokens=11492 promptTime=18.6s tps=30.8
+[2026-09-12 03:36:28.856] [LC] STATE_TRANSITION r=c94f1f s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:36:28.856] [LC] RELEASED r=c94f1f s=01a091 reason=completed
+[2026-09-12 03:36:34.974] [LC] REGISTER r=b0aedc s=01a091 to=CREATED
+[2026-09-12 03:36:34.974] [LC] STATE_TRANSITION r=b0aedc s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:36:34.974] [LC] STATE_TRANSITION r=b0aedc s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:36:36.525] [TOOL] event=TOOL_REQUESTED r=724721 gen=724721 tc=daf8df tool=exec_command state=requested
+[2026-09-12 03:36:36.527] [TOOL] event=TOOL_VALIDATED r=724721 gen=724721 tc=daf8df tool=exec_command state=validated
+[2026-09-12 03:36:36.567] [MLX] session=45ab87/main messages=6 history=5 delta=1 reuse=true ttft=1549ms cacheTokens=11499 cacheHitTokens=11499 cacheEff=1.00 promptTokens=17 promptTime=0.3s tps=30.9 toolCalls=1
+[2026-09-12 03:36:36.568] [LC] STATE_TRANSITION r=b0aedc s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:36:36.568] [LC] RELEASED r=b0aedc s=01a091 reason=completed
+[2026-09-12 03:36:36.589] [LC] REGISTER r=edbf68 s=01a091 to=CREATED
+[2026-09-12 03:36:36.589] [LC] STATE_TRANSITION r=edbf68 s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:36:36.589] [LC] STATE_TRANSITION r=edbf68 s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:36:36.589] [TOOL] event=TOOL_RESULT r=e5a95e gen=724721 tc=daf8df tool=exec_command state=result
+[2026-09-12 03:36:39.666] [MLX] session=45ab87/main messages=8 history=7 delta=1 reuse=true ttft=841ms cacheTokens=11553 cacheHitTokens=11553 cacheEff=0.98 promptTokens=266 promptTime=0.8s tps=31.5
+[2026-09-12 03:36:39.666] [LC] STATE_TRANSITION r=edbf68 s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:36:39.666] [LC] RELEASED r=edbf68 s=01a091 reason=completed
+[2026-09-12 03:36:50.533] [LC] REGISTER r=cb7e19 s=01a091 to=CREATED
+[2026-09-12 03:36:50.533] [LC] STATE_TRANSITION r=cb7e19 s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:36:50.533] [LC] STATE_TRANSITION r=cb7e19 s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:36:52.284] [TOOL] event=TOOL_REQUESTED r=4da19f gen=4da19f tc=05f831 tool=exec_command state=requested
+[2026-09-12 03:36:52.284] [TOOL] event=TOOL_VALIDATED r=4da19f gen=4da19f tc=05f831 tool=exec_command state=validated
+[2026-09-12 03:36:52.325] [MLX] session=45ab87/main messages=10 history=9 delta=1 reuse=true ttft=1749ms cacheTokens=11890 cacheHitTokens=11890 cacheEff=1.00 promptTokens=17 promptTime=0.3s tps=31.2 toolCalls=1
+[2026-09-12 03:36:52.325] [LC] STATE_TRANSITION r=cb7e19 s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:36:52.325] [LC] RELEASED r=cb7e19 s=01a091 reason=completed
+[2026-09-12 03:36:52.351] [LC] REGISTER r=4f1f11 s=01a091 to=CREATED
+[2026-09-12 03:36:52.351] [LC] STATE_TRANSITION r=4f1f11 s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:36:52.351] [LC] STATE_TRANSITION r=4f1f11 s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:36:52.351] [TOOL] event=TOOL_RESULT r=303465 gen=4da19f tc=05f831 tool=exec_command state=result
+[2026-09-12 03:37:02.775] [MLX] session=45ab87/main messages=12 history=11 delta=1 reuse=true ttft=1661ms cacheTokens=11951 cacheHitTokens=11951 cacheEff=0.95 promptTokens=675 promptTime=1.6s tps=30.2
+[2026-09-12 03:37:02.777] [LC] STATE_TRANSITION r=4f1f11 s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:37:02.777] [LC] RELEASED r=4f1f11 s=01a091 reason=completed
+[2026-09-12 03:37:04.461] [LC] REGISTER r=417845 s=01a091 to=CREATED
+[2026-09-12 03:37:04.461] [LC] STATE_TRANSITION r=417845 s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:37:04.461] [LC] STATE_TRANSITION r=417845 s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:37:06.409] [TOOL] event=TOOL_REQUESTED r=470b80 gen=470b80 tc=99b2bc tool=exec_command state=requested
+[2026-09-12 03:37:06.409] [TOOL] event=TOOL_VALIDATED r=470b80 gen=470b80 tc=99b2bc tool=exec_command state=validated
+[2026-09-12 03:37:06.453] [MLX] session=45ab87/main messages=14 history=13 delta=1 reuse=true ttft=1946ms cacheTokens=12891 cacheHitTokens=12891 cacheEff=1.00 promptTokens=15 promptTime=0.3s tps=30.7 toolCalls=1
+[2026-09-12 03:37:06.453] [LC] STATE_TRANSITION r=417845 s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:37:06.453] [LC] RELEASED r=417845 s=01a091 reason=completed
+[2026-09-12 03:37:06.478] [LC] REGISTER r=8d1de0 s=01a091 to=CREATED
+[2026-09-12 03:37:06.478] [LC] STATE_TRANSITION r=8d1de0 s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:37:06.478] [LC] STATE_TRANSITION r=8d1de0 s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:37:06.478] [TOOL] event=TOOL_RESULT r=7cb20e gen=470b80 tc=99b2bc tool=exec_command state=result
+[2026-09-12 03:37:16.197] [MLX] session=45ab87/main messages=16 history=15 delta=1 reuse=true ttft=2570ms cacheTokens=12955 cacheHitTokens=12955 cacheEff=0.92 promptTokens=1098 promptTime=2.5s tps=30.5
+[2026-09-12 03:37:16.199] [LC] STATE_TRANSITION r=8d1de0 s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:37:16.199] [LC] RELEASED r=8d1de0 s=01a091 reason=completed
+[2026-09-12 03:37:17.127] [LC] REGISTER r=d078b5 s=01a091 to=CREATED
+[2026-09-12 03:37:17.127] [LC] STATE_TRANSITION r=d078b5 s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:37:17.127] [LC] STATE_TRANSITION r=d078b5 s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:37:19.269] [TOOL] event=TOOL_REQUESTED r=fed0ba gen=fed0ba tc=af7017 tool=exec_command state=requested
+[2026-09-12 03:37:19.269] [TOOL] event=TOOL_VALIDATED r=fed0ba gen=fed0ba tc=af7017 tool=exec_command state=validated
+[2026-09-12 03:37:19.312] [MLX] session=45ab87/main messages=18 history=17 delta=1 reuse=true ttft=2139ms cacheTokens=14272 cacheHitTokens=14272 cacheEff=1.00 promptTokens=16 promptTime=0.3s tps=30.3 toolCalls=1
+[2026-09-12 03:37:19.312] [LC] STATE_TRANSITION r=d078b5 s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:37:19.313] [LC] RELEASED r=d078b5 s=01a091 reason=completed
+[2026-09-12 03:37:19.343] [LC] REGISTER r=417222 s=01a091 to=CREATED
+[2026-09-12 03:37:19.343] [LC] STATE_TRANSITION r=417222 s=01a091 from=CREATED to=QUEUED
+[2026-09-12 03:37:19.343] [LC] STATE_TRANSITION r=417222 s=01a091 from=QUEUED to=RUNNING
+[2026-09-12 03:37:19.343] [TOOL] event=TOOL_RESULT r=8a3950 gen=fed0ba tc=af7017 tool=exec_command state=result
+[2026-09-12 03:37:40.317] [MLX] session=45ab87/main messages=20 history=19 delta=1 reuse=true ttft=8597ms cacheTokens=14342 cacheHitTokens=14342 cacheEff=0.79 promptTokens=3788 promptTime=8.5s tps=29.0
+[2026-09-12 03:37:40.317] [LC] STATE_TRANSITION r=417222 s=01a091 from=RUNNING to=COMPLETING
+[2026-09-12 03:37:40.317] [LC] RELEASED r=417222 s=01a091 reason=completed
+[2026-09-12 03:37:41.348] [LC] REGISTER r=ba52f6 s=01a091 to=CREATED

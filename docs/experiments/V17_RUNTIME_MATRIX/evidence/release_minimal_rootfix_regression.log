@@ -1,0 +1,6 @@
+
+===== 深度档 10000 tokens =====
+  [build r1] wall=13.9s promptTokens=9,447 promptTime=13.3s mode=cold
+  [build r2] wall=24.3s promptTokens=18,340 promptTime=23.7s mode=rebuild
+  [10000] warm=0.2s restore=24.6s rebuild=24.4s cold=25.4s ram=22.0G swap=3.539736328125G
+[checkpoint] 已写 docs/experiments/V17_RUNTIME_MATRIX/results_release_minimal_rootfix_regression.json

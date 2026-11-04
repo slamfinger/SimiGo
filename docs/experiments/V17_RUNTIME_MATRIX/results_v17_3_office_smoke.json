@@ -1,0 +1,93 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "meta": {
+  "stepOverrideEnv": null,
+  "stepFile": null,
+  "binaryBuild": "4",
+  "generatedAt": "2026-09-20T08:26:26",
+  "binaryPath": "build/SimiGo.app/Contents/Info.plist",
+  "serializeGeneration": "true (生产常量)",
+  "smoke": true,
+  "seed": 20260920,
+  "rows": {
+   "expenses": 12,
+   "inventory": 8,
+   "invoices": 6
+  }
+ },
+ "design": "V1.7-3 Local Office Prototype: 3 xlsx (classify/extract/summarize) + cross-file KPI; model decides, harness executes deterministically; ground-truth scored; per-task attempt unit",
+ "runs": [
+  {
+   "task": "expenses",
+   "scenario": "expenses_t1",
+   "attempt": 1,
+   "session": "s1e",
+   "wallS": 10.2,
+   "trace": {
+    "session": "s1e/main",
+    "mode": "cold",
+    "promptTokens": 1085,
+    "promptTimeS": 4.2,
+    "ttftS": 6.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 41.1,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 21.8,
+    "swapGB": 1.389951171875
+   },
+   "anomalyCount": 0,
+   "verdict": "pass"
+  },
+  {
+   "task": "expenses",
+   "scenario": "expenses_t2",
+   "attempt": 1,
+   "session": "s1e",
+   "wallS": 8.2,
+   "trace": {
+    "session": "s1e/main",
+    "mode": "(fragment)",
+    "promptTokens": 852,
+    "promptTimeS": 6.2,
+    "ttftS": 6.2,
+    "cacheTokens": 1161,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 42.4,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.803037109375
+   },
+   "anomalyCount": 0,
+   "verdict": "pass"
+  }
+ ],
+ "task_summaries": [
+  {
+   "task": "expenses",
+   "attempt": 1,
+   "accuracy": 0.917,
+   "applied": 11,
+   "total": 12,
+   "payloadOk": true,
+   "verifyOk": true,
+   "sampleHit": "3/3"
+  }
+ ]
+}

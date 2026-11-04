@@ -1,0 +1,448 @@
+{
+ "session": "ecbench",
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "plan": [
+  {
+   "arm": "E",
+   "fillerChars": 40000,
+   "depthEst": 17500
+  },
+  {
+   "arm": "R",
+   "fillerChars": 400,
+   "depthEst": 27500
+  },
+  {
+   "arm": "E",
+   "fillerChars": 40000,
+   "depthEst": 27650
+  },
+  {
+   "arm": "R",
+   "fillerChars": 400,
+   "depthEst": 37650
+  },
+  {
+   "arm": "E",
+   "fillerChars": 40000,
+   "depthEst": 37800
+  },
+  {
+   "arm": "R",
+   "fillerChars": 400,
+   "depthEst": 47800
+  },
+  {
+   "arm": "E",
+   "fillerChars": 40000,
+   "depthEst": 47950
+  },
+  {
+   "arm": "R",
+   "fillerChars": 400,
+   "depthEst": 57950
+  },
+  {
+   "arm": "E",
+   "fillerChars": 40000,
+   "depthEst": 58100
+  },
+  {
+   "arm": "R",
+   "fillerChars": 400,
+   "depthEst": 68100
+  },
+  {
+   "arm": "E",
+   "fillerChars": 40000,
+   "depthEst": 68250
+  },
+  {
+   "arm": "R",
+   "fillerChars": 400,
+   "depthEst": 78250
+  },
+  {
+   "arm": "E",
+   "fillerChars": 40000,
+   "depthEst": 78400
+  },
+  {
+   "arm": "R",
+   "fillerChars": 400,
+   "depthEst": 88400
+  },
+  {
+   "arm": "E",
+   "fillerChars": 40000,
+   "depthEst": 88550
+  }
+ ],
+ "results": [
+  {
+   "round": 1,
+   "arm": "E",
+   "fillerChars": 40000,
+   "wallS": 11.2,
+   "trace": {
+    "mode": "fork-no-rewind",
+    "promptTokens": 8637,
+    "promptTimeS": 9.8,
+    "ttftS": 11.1,
+    "cacheTokens": 594,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3308.88M  free = 787.12M  (encrypted)",
+    "appRSSKB": "910960"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3308.88M  free = 787.12M  (encrypted)",
+    "appRSSKB": "376000"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 2,
+   "arm": "R",
+   "fillerChars": 400,
+   "wallS": 2.6,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 631,
+    "promptTimeS": 1.2,
+    "ttftS": 2.4,
+    "cacheTokens": 8688,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3308.88M  free = 787.12M  (encrypted)",
+    "appRSSKB": "375920"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3300.88M  free = 795.12M  (encrypted)",
+    "appRSSKB": "635408"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 3,
+   "arm": "E",
+   "fillerChars": 40000,
+   "wallS": 14.3,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 8551,
+    "promptTimeS": 12.8,
+    "ttftS": 14.1,
+    "cacheTokens": 9370,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3300.88M  free = 795.12M  (encrypted)",
+    "appRSSKB": "635408"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3300.88M  free = 795.12M  (encrypted)",
+    "appRSSKB": "561376"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 4,
+   "arm": "R",
+   "fillerChars": 400,
+   "wallS": 3.1,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 631,
+    "promptTimeS": 1.5,
+    "ttftS": 2.8,
+    "cacheTokens": 17972,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3300.88M  free = 795.12M  (encrypted)",
+    "appRSSKB": "561376"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3300.88M  free = 795.12M  (encrypted)",
+    "appRSSKB": "1007712"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 5,
+   "arm": "E",
+   "fillerChars": 40000,
+   "wallS": 17.5,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 8551,
+    "promptTimeS": 15.9,
+    "ttftS": 17.4,
+    "cacheTokens": 18654,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3300.88M  free = 795.12M  (encrypted)",
+    "appRSSKB": "1007712"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3300.88M  free = 795.12M  (encrypted)",
+    "appRSSKB": "752144"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 6,
+   "arm": "R",
+   "fillerChars": 400,
+   "wallS": 3.5,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 631,
+    "promptTimeS": 1.8,
+    "ttftS": 3.3,
+    "cacheTokens": 27256,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3300.88M  free = 795.12M  (encrypted)",
+    "appRSSKB": "752144"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3292.88M  free = 803.12M  (encrypted)",
+    "appRSSKB": "888432"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 7,
+   "arm": "E",
+   "fillerChars": 40000,
+   "wallS": 22.1,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 8551,
+    "promptTimeS": 20.2,
+    "ttftS": 21.9,
+    "cacheTokens": 27938,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3292.88M  free = 803.12M  (encrypted)",
+    "appRSSKB": "888432"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3284.88M  free = 811.12M  (encrypted)",
+    "appRSSKB": "931360"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 8,
+   "arm": "R",
+   "fillerChars": 400,
+   "wallS": 4.2,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 631,
+    "promptTimeS": 2.2,
+    "ttftS": 3.9,
+    "cacheTokens": 36540,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3284.88M  free = 811.12M  (encrypted)",
+    "appRSSKB": "931360"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3284.88M  free = 811.12M  (encrypted)",
+    "appRSSKB": "995152"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 9,
+   "arm": "E",
+   "fillerChars": 40000,
+   "wallS": 30.5,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 8551,
+    "promptTimeS": 28.4,
+    "ttftS": 30.3,
+    "cacheTokens": 37222,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3284.88M  free = 811.12M  (encrypted)",
+    "appRSSKB": "995152"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3507.25M  free = 588.75M  (encrypted)",
+    "appRSSKB": "1082256"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 10,
+   "arm": "R",
+   "fillerChars": 400,
+   "wallS": 4.8,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 637,
+    "promptTimeS": 2.5,
+    "ttftS": 4.4,
+    "cacheTokens": 45824,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3507.25M  free = 588.75M  (encrypted)",
+    "appRSSKB": "1082256"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3499.25M  free = 596.75M  (encrypted)",
+    "appRSSKB": "1176352"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 11,
+   "arm": "E",
+   "fillerChars": 40000,
+   "wallS": 45.0,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 9123,
+    "promptTimeS": 42.6,
+    "ttftS": 44.7,
+    "cacheTokens": 46512,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 4096.00M  used = 3499.25M  free = 596.75M  (encrypted)",
+    "appRSSKB": "1176352"
+   },
+   "mem1": {
+    "swap": "total = 5120.00M  used = 3838.94M  free = 1281.06M  (encrypted)",
+    "appRSSKB": "1296912"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 12,
+   "arm": "R",
+   "fillerChars": 400,
+   "wallS": 6.6,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 637,
+    "promptTimeS": 4.1,
+    "ttftS": 6.2,
+    "cacheTokens": 55686,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 5120.00M  used = 3838.94M  free = 1281.06M  (encrypted)",
+    "appRSSKB": "1296912"
+   },
+   "mem1": {
+    "swap": "total = 5120.00M  used = 3638.94M  free = 1481.06M  (encrypted)",
+    "appRSSKB": "1346048"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 13,
+   "arm": "E",
+   "fillerChars": 40000,
+   "wallS": 56.8,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 9123,
+    "promptTimeS": 54.2,
+    "ttftS": 56.5,
+    "cacheTokens": 56374,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 5120.00M  used = 3638.94M  free = 1481.06M  (encrypted)",
+    "appRSSKB": "1346048"
+   },
+   "mem1": {
+    "swap": "total = 5120.00M  used = 3520.75M  free = 1599.25M  (encrypted)",
+    "appRSSKB": "1465584"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 14,
+   "arm": "R",
+   "fillerChars": 400,
+   "wallS": 7.6,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 637,
+    "promptTimeS": 4.6,
+    "ttftS": 7.1,
+    "cacheTokens": 65548,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 5120.00M  used = 3520.75M  free = 1599.25M  (encrypted)",
+    "appRSSKB": "1465584"
+   },
+   "mem1": {
+    "swap": "total = 5120.00M  used = 3432.75M  free = 1687.25M  (encrypted)",
+    "appRSSKB": "1532832"
+   },
+   "toolCalls": "yes"
+  },
+  {
+   "round": 15,
+   "arm": "E",
+   "fillerChars": 40000,
+   "wallS": 173.2,
+   "trace": {
+    "mode": "fragment",
+    "promptTokens": 9123,
+    "promptTimeS": 170.0,
+    "ttftS": 172.8,
+    "cacheTokens": 66236,
+    "cacheEff": "0.00",
+    "reuse": "true"
+   },
+   "mem0": {
+    "swap": "total = 5120.00M  used = 3432.75M  free = 1687.25M  (encrypted)",
+    "appRSSKB": "1532832"
+   },
+   "mem1": {
+    "swap": "total = 4096.00M  used = 3132.00M  free = 964.00M  (encrypted)",
+    "appRSSKB": "1678880"
+   },
+   "toolCalls": "yes"
+  }
+ ],
+ "continuity": {
+  "wallS": 11.9,
+  "contentHead": "已记录 8 条笔记（R1–R8）。"
+ },
+ "notes": []
+}

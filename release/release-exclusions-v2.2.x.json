@@ -1,0 +1,1189 @@
+{
+  "manifest_version": 1,
+  "rules": "release-manifest-2026-11-01.2",
+  "release_branch": "v2.2.x",
+  "accounting": {
+    "tracked": 9272,
+    "research_not_declared": 8726,
+    "non_research_candidates": 546,
+    "declared": 488,
+    "excluded": 58
+  },
+  "record_fields": [
+    "path",
+    "sha256",
+    "bytes",
+    "reason",
+    "file_type",
+    "repository_privacy_scan",
+    "applies_to_future_releases",
+    "release_branch_whole_tree_scan_required"
+  ],
+  "excluded": [
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/docs_weekly_report_a1.docx",
+      "sha256": "ecd9f3a09326c29a1c5d09b6ab1a30f5cef4d017dbb06fb254f004da79db9460",
+      "bytes": 36915,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/docs_weekly_report_a2.docx",
+      "sha256": "72b2e919e2014174ea231ecd6efe57db4fda6e68ec7474a19a856bb0017b1fed",
+      "bytes": 36915,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/docs_weekly_report_a3.docx",
+      "sha256": "55fb5ce6e133a2eec71356efff44224344db2648851f55b0d82ff4ac96900a14",
+      "bytes": 36915,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/invoice_101.pdf",
+      "sha256": "0240aebb6e32160eba1145fa6140a83b11b1497b5c9e51ebeee9f48950190f71",
+      "bytes": 2470,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/invoice_102.pdf",
+      "sha256": "24ab412a78bcd926b65f845b705407ac346cc73da36c8d808ae261cff33d5c83",
+      "bytes": 2466,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/invoice_103.pdf",
+      "sha256": "158dc77393b84ca1e354aa3ee8f30764371c025885fda2a42cdfaa318309245f",
+      "bytes": 2476,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/invoice_104.pdf",
+      "sha256": "a4ea0545c45b85cd543c547960813f21bd8f61efa37e267ccaba479cb207d11e",
+      "bytes": 2473,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/invoice_scan_301.pdf",
+      "sha256": "cc5a2706ff33d566f3bc25a7a9b84a5ef5528daf2e9b3b7cfa849922d22ee4c0",
+      "bytes": 71151,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/invoice_scan_302.pdf",
+      "sha256": "9b88d58caebf124394c47d876df6c21f7c499a300a86c1961aa98b25bc80b006",
+      "bytes": 69246,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/minutes_周例会.docx",
+      "sha256": "909b15f5ca3c383e14bb6cabe53000df416f0ca4571319809434fe7fd753486b",
+      "bytes": 36932,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/minutes_评审会.docx",
+      "sha256": "7c277cd6cb4c4751cfe18354e6bf45f36fe7a92c4c306e52197a4e457ce30683",
+      "bytes": 36930,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/project_review.pptx",
+      "sha256": "c1764dfa277f057bbc9034232dee986f5556510bebb31b93912f262f69b3406c",
+      "bytes": 31974,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML presentation (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/expenses.xlsx",
+      "sha256": "4b624a9a2132e08b3dd6a64e521d5d5855077b46a24533c50ac4f1fd3423bb5b",
+      "bytes": 6067,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/expenses_classified_a1.xlsx",
+      "sha256": "5d410fa8785962a78edf0d463715e3bd826857cbc3ccf9f0807ad05f675028a5",
+      "bytes": 6323,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/expenses_classified_a2.xlsx",
+      "sha256": "01ab0fbba459da4dc84814b7935acf6ea902fadc447e02adc27993e59c1144a1",
+      "bytes": 6323,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/01_会议纪要/meeting_notes_a.docx",
+      "sha256": "3832ff3e8a1f1798cd17821e841720827059485c5d22a103a9cb15f9bbb9a948",
+      "bytes": 36816,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/01_会议纪要/文档_20260918.docx",
+      "sha256": "fb41d11638c4922781ca6883136d548a6c2399774fcab73a5c7eec5f77b89d8e",
+      "bytes": 36815,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/01_会议纪要/纪要_0912.docx",
+      "sha256": "fff6d058b64a10632c0752630d937b9c2a2ddb109241d1f87562ed49136bcab3",
+      "bytes": 36809,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/02_项目汇报/deck_final_v2.pptx",
+      "sha256": "fa36175832be736185a73f75edeae7f8a3baab5fe8296b186cd964097a052429",
+      "bytes": 29238,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML presentation (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/02_项目汇报/untitled_3.pptx",
+      "sha256": "feeee15860852644dbbfc4c62f8406d89934500db24434f26e0545f1f056c2e2",
+      "bytes": 29239,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML presentation (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/03_财务发票/INV-2026-101.pdf",
+      "sha256": "2d42068a5cd3fde4ad47651b9fead1db4e0d41846647459c6ca73fb3dc75ba3d",
+      "bytes": 2470,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/03_财务发票/INV-2026-104.pdf",
+      "sha256": "c744f072cbfdc70bce90040a46e246029d275b8b5b74f12cffe5131a673235ab",
+      "bytes": 2473,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/03_财务发票/扫描_0023.pdf",
+      "sha256": "bafd34db36ba1ec04be490b3cc8f46429e9bb4655e04bf24665ecbb5cd8c4399",
+      "bytes": 2466,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/04_数据表格/data_08.xlsx",
+      "sha256": "9abd64b7b6cc9031eb367e91ec06940829bff291b401f6268f1848326891f188",
+      "bytes": 5411,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a1/04_数据表格/sheet_q3.xlsx",
+      "sha256": "d87bbd5a03f6d482bc920440d7c032de07d0a1aeb115f0ab6c71148aea5ca370",
+      "bytes": 5410,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a2/01_会议纪要/meeting_notes_a.docx",
+      "sha256": "af4e8c0e5c69240d091a59f00097e0b650f9628d41bf8e5134bdd05360af836f",
+      "bytes": 36816,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a2/01_会议纪要/文档_20260918.docx",
+      "sha256": "65de52ab67a5854aeb9c4ed0f71da4b63690c62b814d17bb26146e0d24d54cb3",
+      "bytes": 36814,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a2/01_会议纪要/纪要_0912.docx",
+      "sha256": "4713631c447c2cbabf6766baf46f36309392ccba7d12baaba149625f6e1c849d",
+      "bytes": 36809,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a2/02_项目汇报/deck_final_v2.pptx",
+      "sha256": "ff179231c2685dceb7ef668905fa2377578b1dcf20c7c7b2ede29e7ac56bf6af",
+      "bytes": 29238,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML presentation (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/organize_a2/02_项目汇报/untitled_3.pptx",
+      "sha256": "b7b29eb5a3c2392ceadf29cb0d545208b5cff7b42600fc2f34cd29cf00351b26",
+      "bytes": 29239,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML presentation (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/report_backend.docx",
+      "sha256": "a4a95574fe71271236a7c017a457b2d06194a2623ca4f08bb749d7cb4cb12819",
+      "bytes": 36821,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/report_data.docx",
+      "sha256": "bc0fd9a7865ea679d441a58a7a3d869ec7e015bb869dc6d5f17628650d2b702e",
+      "bytes": 36763,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/report_mobile.docx",
+      "sha256": "86bdc47a63d10f01bf0548940bb903b5ea04043846fd0bc3f64fadd2f3c167a5",
+      "bytes": 36813,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/INV-2026-101.pdf",
+      "sha256": "2d42068a5cd3fde4ad47651b9fead1db4e0d41846647459c6ca73fb3dc75ba3d",
+      "bytes": 2470,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/INV-2026-104.pdf",
+      "sha256": "c744f072cbfdc70bce90040a46e246029d275b8b5b74f12cffe5131a673235ab",
+      "bytes": 2473,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/data_08.xlsx",
+      "sha256": "9abd64b7b6cc9031eb367e91ec06940829bff291b401f6268f1848326891f188",
+      "bytes": 5411,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/deck_final_v2.pptx",
+      "sha256": "fa36175832be736185a73f75edeae7f8a3baab5fe8296b186cd964097a052429",
+      "bytes": 29238,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML presentation (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/meeting_notes_a.docx",
+      "sha256": "3832ff3e8a1f1798cd17821e841720827059485c5d22a103a9cb15f9bbb9a948",
+      "bytes": 36816,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/sheet_q3.xlsx",
+      "sha256": "d87bbd5a03f6d482bc920440d7c032de07d0a1aeb115f0ab6c71148aea5ca370",
+      "bytes": 5410,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/untitled_3.pptx",
+      "sha256": "feeee15860852644dbbfc4c62f8406d89934500db24434f26e0545f1f056c2e2",
+      "bytes": 29239,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML presentation (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/扫描_0023.pdf",
+      "sha256": "bafd34db36ba1ec04be490b3cc8f46429e9bb4655e04bf24665ecbb5cd8c4399",
+      "bytes": 2466,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/文档_20260918.docx",
+      "sha256": "fb41d11638c4922781ca6883136d548a6c2399774fcab73a5c7eec5f77b89d8e",
+      "bytes": 36815,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/source/纪要_0912.docx",
+      "sha256": "fff6d058b64a10632c0752630d937b9c2a2ddb109241d1f87562ed49136bcab3",
+      "bytes": 36809,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/team_weekly_digest_a1.docx",
+      "sha256": "02dc883c188793742afce48ddad863ed2fc805e783e746cfa535a224fcfd0027",
+      "bytes": 36841,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/team_weekly_digest_a2.docx",
+      "sha256": "58d8b6c4fecb0f848b211d4175b5ec8cef8568b60d7f01d94a7fd7074f28de19",
+      "bytes": 36827,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/inventory.xlsx",
+      "sha256": "a0803bdddeaf2ea679090b4118122f1fa3dd33992a0cef74b08c0c96be93d043",
+      "bytes": 5773,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/inventory_reorder_a1.xlsx",
+      "sha256": "4020de4016492dab34d25f4f912dfa144bbb19907117ac88ba5d54fbdbb9418b",
+      "bytes": 5204,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/inventory_reorder_a2.xlsx",
+      "sha256": "a5c61f6073deb14a17fe659b5e6cea989607c3e13ef98d14289aa520e335492c",
+      "bytes": 5203,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/invoices.xlsx",
+      "sha256": "9654d1ac1ce538557f7ea8e716403f0d16f4e1c22afbccc71b1a57034e1b1e53",
+      "bytes": 5445,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/scanstmp/invoice_scan_301-1.png",
+      "sha256": "208945f197259beaa9b4a2d7bebd9d9fbdb89644e548150a0602ce03c8495c16",
+      "bytes": 76332,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "png image",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "image container",
+        "hits": 0,
+        "coverage": "raw bytes plus every text chunk the shared strict parser can certify: tEXt text, and zTXt/iTXt bodies after the keyword, flag and method fields are split and inflated; a container failing signature, chunk bounds, per-chunk CRC, IEND or trailing-byte checks is uncertifiable and never read as clean",
+        "png_text_chunk_views": 0
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/scanstmp/invoice_scan_301_src.pdf",
+      "sha256": "84f29ce6b448c91b80ca9920c19ef8a750e4f5252fcb1ce59503e638d6d7a044",
+      "bytes": 2475,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/scanstmp/invoice_scan_302-1.png",
+      "sha256": "80cde716f3a62aedefffffe790e35c4f7fd6f3d2b3370161e4b7d7797cc948fd",
+      "bytes": 74539,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "png image",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "image container",
+        "hits": 0,
+        "coverage": "raw bytes plus every text chunk the shared strict parser can certify: tEXt text, and zTXt/iTXt bodies after the keyword, flag and method fields are split and inflated; a container failing signature, chunk bounds, per-chunk CRC, IEND or trailing-byte checks is uncertifiable and never read as clean",
+        "png_text_chunk_views": 0
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/scanstmp/invoice_scan_302_src.pdf",
+      "sha256": "a5a772f86e9912980b2b65b70dea182507fb7632f97223a6e4ded626bcf4f922",
+      "bytes": 2473,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "pdf document",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "pdf container",
+        "hits": 0,
+        "coverage": "raw bytes plus every stream that inflates; a stream that does not inflate is seen only as its compressed bytes"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/scanstmp/pg-1.png",
+      "sha256": "e4f90f0d9dedefb1ee78afe909c23bea13f4925def1961f07fb48f803c38628e",
+      "bytes": 42024,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "png image",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "image container",
+        "hits": 0,
+        "coverage": "raw bytes plus every text chunk the shared strict parser can certify: tEXt text, and zTXt/iTXt bodies after the keyword, flag and method fields are split and inflated; a container failing signature, chunk bounds, per-chunk CRC, IEND or trailing-byte checks is uncertifiable and never read as clean",
+        "png_text_chunk_views": 0
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "tools/open_source_audit.sh",
+      "sha256": "bd1aa13abed45fa7f3b6c2379c6e70f2d03283e30670e7e45415d32cf5b85b01",
+      "bytes": 1964,
+      "reason": "audit rule carrier: its split literals are the scan patterns",
+      "file_type": "shell script",
+      "repository_privacy_scan": {
+        "covered": false,
+        "uncertifiable": false,
+        "engine": null,
+        "hits": null,
+        "why": "the repository audit excludes this path by its own SKIP_FILES rule; the file carries the literals the audit searches for",
+        "coverage": "not opened by either repository engine"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains tracked and the sanitizer rules still redact what the file uses as patterns",
+        "recheck_when": "the sanitizer rule set or these four files change"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "tools/release_artifact_audit.py",
+      "sha256": "767a3d484afbb785f69d8708d3f37350801951b6f66dcd9622c71f211ddf5a41",
+      "bytes": 5065,
+      "reason": "audit rule carrier: redaction would rewrite FORBIDDEN",
+      "file_type": "python source",
+      "repository_privacy_scan": {
+        "covered": false,
+        "uncertifiable": false,
+        "engine": null,
+        "hits": null,
+        "why": "the repository audit excludes this path by its own SKIP_FILES rule; the file carries the literals the audit searches for",
+        "coverage": "not opened by either repository engine"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains tracked and the sanitizer rules still redact what the file uses as patterns",
+        "recheck_when": "the sanitizer rule set or these four files change"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "tools/release_sanitize.py",
+      "sha256": "565c160b4914ca427776b65a0882f9a38cdea6c738d53be60399f3d78faac9e5",
+      "bytes": 13443,
+      "reason": "rule carrier: the temp-path rule rewrites its own pattern",
+      "file_type": "python source",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "text/binary",
+        "hits": 0,
+        "coverage": "raw bytes plus the utf-8 round trip; `git grep -I` skips binary files, so for non-UTF-8 content this engine is the only one that reaches them"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains tracked and the sanitizer rules still redact what the file uses as patterns",
+        "recheck_when": "the sanitizer rule set or these four files change"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "tools/test_release_sanitize.py",
+      "sha256": "1cc1c6604daf6656348822101ff8134cafed2f669ba2c82496425cdd883028ba",
+      "bytes": 13122,
+      "reason": "rule carrier: the temp-path rule guts its fixture",
+      "file_type": "python source",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "text/binary",
+        "hits": 0,
+        "coverage": "raw bytes plus the utf-8 round trip; `git grep -I` skips binary files, so for non-UTF-8 content this engine is the only one that reaches them"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains tracked and the sanitizer rules still redact what the file uses as patterns",
+        "recheck_when": "the sanitizer rule set or these four files change"
+      },
+      "release_branch_whole_tree_scan_required": true
+    }
+  ]
+}

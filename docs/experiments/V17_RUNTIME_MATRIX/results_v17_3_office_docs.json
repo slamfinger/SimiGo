@@ -1,0 +1,311 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "meta": {
+  "stepOverrideEnv": null,
+  "stepFile": null,
+  "binaryBuild": "4",
+  "generatedAt": "2026-09-20T08:40:31",
+  "binaryPath": "build/SimiGo.app/Contents/Info.plist",
+  "serializeGeneration": "true (生产常量)",
+  "smoke": false,
+  "seed": 20260920,
+  "libs": {
+   "python-docx": "1.2.0",
+   "python-pptx": "1.0.2",
+   "reportlab": "5.0.1",
+   "pypdf": "6.19.0"
+  }
+ },
+ "design": "V1.7-3b docs extension: word_minutes/ppt_outline/pdf_invoices; harness parses files (python-docx/python-pptx/pypdf), model extracts, ground-truth scored; per-task attempt unit",
+ "runs": [
+  {
+   "task": "word",
+   "scenario": "word_t1",
+   "attempt": 1,
+   "session": "d1w",
+   "wallS": 2.9,
+   "trace": {
+    "session": "d1w/main",
+    "mode": "cold",
+    "promptTokens": 1159,
+    "promptTimeS": 1.6,
+    "ttftS": 2.7,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 43.6,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 21.6,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"m1_type|周例会\\nm1_actions|4\\nm2_type|评审会\\nm2_actions|3\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "word",
+   "scenario": "word_t2",
+   "attempt": 1,
+   "session": "d1w",
+   "wallS": 2.2,
+   "trace": {
+    "session": "d1w/main",
+    "mode": "(fragment)",
+    "promptTokens": 775,
+    "promptTimeS": 1.3,
+    "ttftS": 2.1,
+    "cacheTokens": 1210,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 43.3,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 21.8,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "ppt",
+   "scenario": "ppt_t1",
+   "attempt": 1,
+   "session": "d1t",
+   "wallS": 2.6,
+   "trace": {
+    "session": "d1t/main",
+    "mode": "cold",
+    "promptTokens": 1003,
+    "promptTimeS": 1.4,
+    "ttftS": 2.5,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 44.0,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 21.4,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"total_slides|9\\nrisk_slides|3,7\\nproject_code|PHOENIX\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "ppt",
+   "scenario": "ppt_t2",
+   "attempt": 1,
+   "session": "d1t",
+   "wallS": 3.4,
+   "trace": {
+    "session": "d1t/main",
+    "mode": "(fragment)",
+    "promptTokens": 778,
+    "promptTimeS": 1.2,
+    "ttftS": 3.2,
+    "cacheTokens": 1050,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 43.4,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"提取与 PPT 内容一致：总页数 9 页（第1-9 页），含「风险」的页为第3页（进度风险与应对）和第7页（预算风险控制），项目代号为 PHOENIX。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "pdf",
+   "scenario": "pdf_t1",
+   "attempt": 1,
+   "session": "d1f",
+   "wallS": 4.3,
+   "trace": {
+    "session": "d1f/main",
+    "mode": "cold",
+    "promptTokens": 976,
+    "promptTimeS": 1.4,
+    "ttftS": 1.4,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 43.7,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 21.4,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": " unpaid invoices: INV-2026-102 (5602.13) and INV-2026-104 (14317.90).\n\nTotal: 5602.13 + 14317.90 = 19920.03\nCount: 2\n\n",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"unpaid_total|19920.03\\nunpaid_count|2\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "pdf",
+   "scenario": "pdf_t2",
+   "attempt": 1,
+   "session": "d1f",
+   "wallS": 4.1,
+   "trace": {
+    "session": "d1f/main",
+    "mode": "(fragment)",
+    "promptTokens": 781,
+    "promptTimeS": 1.2,
+    "ttftS": 1.2,
+    "cacheTokens": 1100,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 42.9,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "未付发票：INV-2026-102（5602.13）和 INV-2026-104（14317.90）。总额 5602.13 + 14317.90 = 19920.03，笔数 2。与提交结果一致。\n\n",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  }
+ ],
+ "task_summaries": [
+  {
+   "task": "word",
+   "attempt": 1,
+   "accuracy": 1.0,
+   "checks": {
+    "m1": {
+     "type": true,
+     "actions": true
+    },
+    "m2": {
+     "type": true,
+     "actions": true
+    }
+   },
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "m1_type": "周例会",
+    "m1_actions": "4",
+    "m2_type": "评审会",
+    "m2_actions": "3"
+   }
+  },
+  {
+   "task": "ppt",
+   "attempt": 1,
+   "accuracy": 1.0,
+   "checks": {
+    "total": true,
+    "risk": true,
+    "code": true
+   },
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "total_slides": "9",
+    "risk_slides": "3,7",
+    "project_code": "PHOENIX"
+   }
+  },
+  {
+   "task": "pdf",
+   "attempt": 1,
+   "accuracy": 1,
+   "submitted": {
+    "unpaid_total": 19920.03,
+    "unpaid_count": 2
+   },
+   "truthTotal": 19920.03,
+   "truthCount": 2,
+   "payloadOk": true,
+   "verifyOk": true
+  }
+ ]
+}

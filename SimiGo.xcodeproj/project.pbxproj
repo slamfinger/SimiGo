@@ -1,0 +1,622 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C1632AE03028D4EB00D1EF95 /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = C1632ADF3028D4EB00D1EF95 /* Hub */; };
+		C1632AE23028D4EB00D1EF95 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE13028D4EB00D1EF95 /* Tokenizers */; };
+		C1632AE43028D4EB00D1EF95 /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE33028D4EB00D1EF95 /* Transformers */; };
+		C1632AE73028D60C00D1EF95 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE63028D60C00D1EF95 /* MLX */; };
+		C1632AEA3028D77B00D1EF95 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE93028D77B00D1EF95 /* MLXLLM */; };
+		C1632AEC3028D78100D1EF95 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEB3028D78100D1EF95 /* MLXVLM */; };
+		C1632AEE3028D78A00D1EF95 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AED3028D78A00D1EF95 /* MLXLMCommon */; };
+		C1632AF03028D80300D1EF95 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEF3028D80300D1EF95 /* MLXHuggingFace */; };
+		C1632B132FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B112FB5000000D1EF95 /* SimiGo2Experimental */; };
+		C1632B142FB5000000D1EF95 /* SimiGoRuntimeContract in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */; };
+		C1632B162FB5000000D1EF95 /* LOCALBCore in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B152FB5000000D1EF95 /* LOCALBCore */; };
+		C1632B262FB5000000D1EF95 /* SimiGoCollection in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B252FB5000000D1EF95 /* SimiGoCollection */; };
+		C1632B202FB5000000D1EF95 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE63028D60C00D1EF95 /* MLX */; };
+		C1632B212FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B112FB5000000D1EF95 /* SimiGo2Experimental */; };
+		C1632B222FB5000000D1EF95 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE93028D77B00D1EF95 /* MLXLLM */; };
+		C1632B232FB5000000D1EF95 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEF3028D80300D1EF95 /* MLXHuggingFace */; };
+		C1632B242FB5000000D1EF95 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE13028D4EB00D1EF95 /* Tokenizers */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C1632B072FB4000000D1EF95 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C13880752FB37212009F04D2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C138807C2FB37213009F04D2;
+			remoteInfo = SimiGo;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		C138807D2FB37213009F04D2 /* SimiGo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimiGo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimiGoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		C138807F2FB37213009F04D2 /* SimiGo */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SimiGo;
+			sourceTree = "<group>";
+		};
+		C1632B002FB4000000D1EF95 /* SimiGoTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SimiGoTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C138807A2FB37213009F04D2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1632AEA3028D77B00D1EF95 /* MLXLLM in Frameworks */,
+				C1632AE73028D60C00D1EF95 /* MLX in Frameworks */,
+				C1632AEC3028D78100D1EF95 /* MLXVLM in Frameworks */,
+				C1632AE43028D4EB00D1EF95 /* Transformers in Frameworks */,
+				C1632AE23028D4EB00D1EF95 /* Tokenizers in Frameworks */,
+				C1632AE03028D4EB00D1EF95 /* Hub in Frameworks */,
+				C1632AEE3028D78A00D1EF95 /* MLXLMCommon in Frameworks */,
+				C1632AF03028D80300D1EF95 /* MLXHuggingFace in Frameworks */,
+				C1632B132FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */,
+				C1632B142FB5000000D1EF95 /* SimiGoRuntimeContract in Frameworks */,
+				C1632B162FB5000000D1EF95 /* LOCALBCore in Frameworks */,
+				C1632B262FB5000000D1EF95 /* SimiGoCollection in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1632B032FB4000000D1EF95 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1632B202FB5000000D1EF95 /* MLX in Frameworks */,
+				C1632B212FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */,
+				C1632B222FB5000000D1EF95 /* MLXLLM in Frameworks */,
+				C1632B232FB5000000D1EF95 /* MLXHuggingFace in Frameworks */,
+				C1632B242FB5000000D1EF95 /* Tokenizers in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C13880742FB37212009F04D2 = {
+			isa = PBXGroup;
+			children = (
+				C138807F2FB37213009F04D2 /* SimiGo */,
+				C1632B002FB4000000D1EF95 /* SimiGoTests */,
+				C1632AE53028D60C00D1EF95 /* Frameworks */,
+				C138807E2FB37213009F04D2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C138807E2FB37213009F04D2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C138807D2FB37213009F04D2 /* SimiGo.app */,
+				C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C1632AE53028D60C00D1EF95 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C138807C2FB37213009F04D2 /* SimiGo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C13880882FB37213009F04D2 /* Build configuration list for PBXNativeTarget "SimiGo" */;
+			buildPhases = (
+				C13880792FB37213009F04D2 /* Sources */,
+				C138807A2FB37213009F04D2 /* Frameworks */,
+				C138807B2FB37213009F04D2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C138807F2FB37213009F04D2 /* SimiGo */,
+			);
+			name = SimiGo;
+			packageProductDependencies = (
+				C1632ADF3028D4EB00D1EF95 /* Hub */,
+				C1632AE13028D4EB00D1EF95 /* Tokenizers */,
+				C1632AE33028D4EB00D1EF95 /* Transformers */,
+				C1632AE63028D60C00D1EF95 /* MLX */,
+				C1632AE93028D77B00D1EF95 /* MLXLLM */,
+				C1632AEB3028D78100D1EF95 /* MLXVLM */,
+				C1632AED3028D78A00D1EF95 /* MLXLMCommon */,
+				C1632AEF3028D80300D1EF95 /* MLXHuggingFace */,
+				C1632B112FB5000000D1EF95 /* SimiGo2Experimental */,
+				C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */,
+				C1632B152FB5000000D1EF95 /* LOCALBCore */,
+				C1632B252FB5000000D1EF95 /* SimiGoCollection */,
+			);
+			productName = SimiGo;
+			productReference = C138807D2FB37213009F04D2 /* SimiGo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C1632B092FB4000000D1EF95 /* SimiGoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1632B062FB4000000D1EF95 /* Build configuration list for PBXNativeTarget "SimiGoTests" */;
+			buildPhases = (
+				C1632B022FB4000000D1EF95 /* Sources */,
+				C1632B032FB4000000D1EF95 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C1632B082FB4000000D1EF95 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C1632B002FB4000000D1EF95 /* SimiGoTests */,
+			);
+			name = SimiGoTests;
+			packageProductDependencies = (
+				C1632AED3028D78A00D1EF95 /* MLXLMCommon */,
+				C1632AE63028D60C00D1EF95 /* MLX */,
+				C1632B112FB5000000D1EF95 /* SimiGo2Experimental */,
+				C1632AE93028D77B00D1EF95 /* MLXLLM */,
+				C1632AEF3028D80300D1EF95 /* MLXHuggingFace */,
+				C1632AE13028D4EB00D1EF95 /* Tokenizers */,
+			);
+			productName = SimiGoTests;
+			productReference = C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C13880752FB37212009F04D2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					C138807C2FB37213009F04D2 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					C1632B092FB4000000D1EF95 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = C138807C2FB37213009F04D2;
+					};
+				};
+			};
+			buildConfigurationList = C13880782FB37212009F04D2 /* Build configuration list for PBXProject "SimiGo" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C13880742FB37212009F04D2;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C1632ADD3028D4B700D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift" */,
+				C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */,
+				C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
+				C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */,
+				C1632B172FB5000000D1EF95 /* XCLocalSwiftPackageReference "LOCALBCore" */,
+				C1632B272FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoCollection" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C138807E2FB37213009F04D2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C138807C2FB37213009F04D2 /* SimiGo */,
+				C1632B092FB4000000D1EF95 /* SimiGoTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C138807B2FB37213009F04D2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C13880792FB37213009F04D2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1632B022FB4000000D1EF95 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C1632B082FB4000000D1EF95 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C138807C2FB37213009F04D2 /* SimiGo */;
+			targetProxy = C1632B072FB4000000D1EF95 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		C13880862FB37213009F04D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		C13880872FB37213009F04D2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		C13880892FB37213009F04D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 34;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 2.2.4;
+				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C138808A2FB37213009F04D2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 34;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 2.2.4;
+				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		C1632B042FB4000000D1EF95 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 7;
+				DEAD_CODE_STRIPPING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimiGo.app/Contents/MacOS/SimiGo";
+			};
+			name = Debug;
+		};
+		C1632B052FB4000000D1EF95 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 7;
+				DEAD_CODE_STRIPPING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimiGo.app/Contents/MacOS/SimiGo";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C13880782FB37212009F04D2 /* Build configuration list for PBXProject "SimiGo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C13880862FB37213009F04D2 /* Debug */,
+				C13880872FB37213009F04D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C13880882FB37213009F04D2 /* Build configuration list for PBXNativeTarget "SimiGo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C13880892FB37213009F04D2 /* Debug */,
+				C138808A2FB37213009F04D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C1632B062FB4000000D1EF95 /* Build configuration list for PBXNativeTarget "SimiGoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1632B042FB4000000D1EF95 /* Debug */,
+				C1632B052FB4000000D1EF95 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C1632ADD3028D4B700D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/slamfinger/mlx-swift";
+			requirement = {
+				kind = revision;
+				revision = "ef5f1b6bb24e27922189316362f3057c64261704";
+			};
+		};
+		C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-transformers.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.3;
+			};
+		};
+		C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/slamfinger/mlx-swift-lm.git";
+			requirement = {
+				kind = revision;
+				revision = "6f88129b19684849a19d9d1c1ed6e0021491906b";
+			};
+		};
+		C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SimiGoRuntime;
+		};
+		C1632B172FB5000000D1EF95 /* XCLocalSwiftPackageReference "LOCALBCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/LOCALBCore;
+		};
+		C1632B272FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoCollection" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SimiGoCollection;
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C1632ADF3028D4EB00D1EF95 /* Hub */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Hub;
+		};
+		C1632AE13028D4EB00D1EF95 /* Tokenizers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Tokenizers;
+		};
+		C1632AE33028D4EB00D1EF95 /* Transformers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Transformers;
+		};
+		C1632AE63028D60C00D1EF95 /* MLX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632ADD3028D4B700D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLX;
+		};
+		C1632AE93028D77B00D1EF95 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLLM;
+		};
+		C1632AEB3028D78100D1EF95 /* MLXVLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXVLM;
+		};
+		C1632AED3028D78A00D1EF95 /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLMCommon;
+		};
+		C1632AEF3028D80300D1EF95 /* MLXHuggingFace */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXHuggingFace;
+		};
+		C1632B112FB5000000D1EF95 /* SimiGo2Experimental */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */;
+			productName = SimiGo2Experimental;
+		};
+		C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */;
+			productName = SimiGoRuntimeContract;
+		};
+		C1632B152FB5000000D1EF95 /* LOCALBCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632B172FB5000000D1EF95 /* XCLocalSwiftPackageReference "LOCALBCore" */;
+			productName = LOCALBCore;
+		};
+		C1632B252FB5000000D1EF95 /* SimiGoCollection */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632B272FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoCollection" */;
+			productName = SimiGoCollection;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = C13880752FB37212009F04D2 /* Project object */;
+}

@@ -1,0 +1,338 @@
+import AppKit
+import SwiftUI
+import Combine
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // G1/G3 controlled headless gate (env-gated). Default GUI path unchanged:
+        // only engages when SIMIGO_HEADLESS_ROLE is present, and fail-closes on an
+        // unsupported role / missing parameters BEFORE any model work.
+        let headless = SimiGoG1G3Entry.evaluate()
+        if headless.requested {
+            guard let role = headless.role else {
+                FileHandle.standardError.write(
+                    ("headless fail-closed: " + (headless.error ?? "unknown") + "\n").data(using: .utf8)!)
+                exit(2)
+            }
+            // Keep AppKit's main loop alive (do not pump a nested runloop here: that
+            // ends the accessory app). Returning from applicationDidFinishLaunching lets
+            // NSApp.run continue servicing the main queue, which drives the @MainActor
+            // task below; exit(code) terminates once the model work finishes. Requires a
+            // bundle id distinct from any running SimiGo instance to avoid the
+            // LaunchServices single-instance handoff.
+            FileHandle.standardError.write(("headless-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
+            Task { @MainActor in
+                FileHandle.standardError.write("headless-task-started\n".data(using: .utf8)!)
+                let code = await SimiGoG1G3Entry.run(role: role)
+                FileHandle.standardError.write(("headless-task-done rc=\(code)\n").data(using: .utf8)!)
+                exit(code)
+            }
+            return
+        }
+        // Generation-environment bootstrap gate (SIMIGO_ENV_BOOTSTRAP=1):
+        // provisions the managed tree, llama.cpp, hf, and the blank ES/IS
+        // database (+ optional SIMIGO_WORKROOT registration), then exits. It
+        // is the one-command path from a bare install to a root where
+        // Execution State / Information Space can run; it never starts a model
+        // or a listener.
+        let envBootstrap = SimiGoEnvBootstrapEntry.evaluate()
+        if envBootstrap.requested {
+            guard envBootstrap.valid else {
+                FileHandle.standardError.write(
+                    ("env-bootstrap fail-closed: " + (envBootstrap.error ?? "unknown") + "\n")
+                        .data(using: .utf8)!)
+                exit(2)
+            }
+            FileHandle.standardError.write("env-bootstrap-entered\n".data(using: .utf8)!)
+            Task { @MainActor in
+                let code = await SimiGoEnvBootstrapEntry.run()
+                exit(code)
+            }
+            return
+        }
+        // LOCALB local-management gate (env-gated, isolated roots only). The
+        // product ships the first-run ceremony / pairing primitives but no
+        // surface called them, so a never-activated host could not bind its
+        // listener at all. This gate only routes an explicit operator command
+        // to those existing APIs; it never activates on an ordinary launch.
+        let management = SimiGoLocalBManagementEntry.evaluate()
+        if management.requested {
+            guard let role = management.role else {
+                FileHandle.standardError.write(
+                    ("localb-mgmt fail-closed: " + (management.error ?? "unknown") + "\n").data(using: .utf8)!)
+                exit(2)
+            }
+            FileHandle.standardError.write(
+                ("localb-mgmt-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
+            Task { @MainActor in
+                let code = await SimiGoLocalBManagementEntry.run(role: role)
+                exit(code)
+            }
+            return
+        }
+        QoderCollectionLifecycle.shared.startIfEnabled()
+        StatusBarCoordinator.shared.start()
+        if FirstRunWizard.isNeeded() {
+            // First-run install wizard (owner acceptance 2026-10-26): work
+            // roots, external binaries into bin/, full bootstrap, then the
+            // /Applications relocation. The wizard drives the bootstrap
+            // itself; the background path below runs on every later start.
+            StatusBarCoordinator.shared.showWizardIfMissingMarker()
+        }
+        StatusBarCoordinator.shared.startInformationSpaceHostIfIdle()
+        // Autonomous, idempotent bootstrap off the main thread: the graph/
+        // schema layer first, then the FULL generation environment (managed
+        // tree, llama.cpp, hf, blank-database guarantee, LOCALB state) —
+        // every step is idempotent, an installed binary short-circuits, an
+        // existing database is never reset (owner ruling 2026-10-26).
+        Task.detached(priority: .utility) {
+            _ = SimiGoBootstrapRunner.launchIfNeeded()
+            _ = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        QoderCollectionLifecycle.shared.stop()
+    }
+}
+
+/// AppKit 直管菜单栏：NSStatusItem + NSPopover + NSWindow。
+/// 取代 MenuBarExtra(.window)——后者在系统睡眠唤醒后点击静默失效
+/// （2026-10-15 实证：performClick 受理、按钮高亮，面板零创建）。
+@MainActor
+final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate {
+    static let shared = StatusBarCoordinator()
+
+    private let svc = Service.shared
+    private var statusItem: NSStatusItem?
+    private let popover = NSPopover()
+    private var settingsWindowController: NSWindowController?
+    private var wizardWindowController: NSWindowController?
+    private var cancellables: Set<AnyCancellable> = []
+    private var popoverClosedAt = Date.distantPast
+    private var autoWizardPrompted = false
+
+    private override init() {
+        super.init()
+    }
+
+    func start() {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.button?.target = self
+        item.button?.action = #selector(togglePopover(_:))
+        item.button?.sendAction(on: [.leftMouseUp])
+        statusItem = item
+
+        popover.behavior = .transient
+        popover.animates = true
+        popover.contentViewController = NSHostingController(
+            rootView: MenuPanelView().environmentObject(svc)
+        )
+        popover.delegate = self
+
+        // objectWillChange 在属性变更前同步发出；经 MainActor Task
+        // 跳到变更完成后再刷新图标。
+        svc.objectWillChange
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in self?.refreshIcon() }
+            }
+            .store(in: &cancellables)
+
+        // The installer deletes the first-run marker and re-opens the app. If an
+        // older instance was still running, `open` only activated it — that
+        // process had already passed the launch check, so the work-directory
+        // step never appeared (owner 2026-10-26). Re-check on every activation.
+        NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.showWizardIfMissingMarker()
+                    self?.startInformationSpaceHostIfIdle()
+                }
+            }
+            .store(in: &cancellables)
+        refreshIcon()
+    }
+
+    /// Show the first-run wizard when the marker is gone but this session has
+    /// not prompted yet; an already visible wizard is never reset.
+    func showWizardIfMissingMarker() {
+        guard FirstRunWizard.isNeeded(), !autoWizardPrompted else { return }
+        if let window = wizardWindowController?.window, window.isVisible { return }
+        autoWizardPrompted = true
+        openWizardWindow()
+    }
+
+    /// 常规启动即拉起无模型的信息空间宿主；首次运行向导期间不启动，
+    /// 向导完成（或安装器重开 App）后的激活事件会补上。
+    func startInformationSpaceHostIfIdle() {
+        guard !FirstRunWizard.isNeeded(), !svc.isRunning else { return }
+        // App 作为 XCTest 宿主时不占用产品端口。
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil,
+              NSClassFromString("XCTestCase") == nil
+        else { return }
+        Task { @MainActor [weak self] in
+            guard let self, !self.svc.isRunning else { return }
+            await self.svc.startInformationSpaceService()
+        }
+    }
+
+    // MARK: - Icon
+
+    private func refreshIcon() {
+        guard let button = statusItem?.button else { return }
+
+        let name: String
+        let color: NSColor
+
+        if svc.status.hasPrefix("⚠️") {
+            name = "exclamationmark.triangle.fill"
+            color = .systemYellow
+        } else if !svc.isRunning {
+            name = "bolt"
+            color = .labelColor
+        } else {
+            name = "bolt.fill"
+            switch svc.memoryPressure {
+            case "critical": color = .systemRed
+            case "warn": color = .systemOrange
+            default: color = .systemGreen
+            }
+        }
+
+        let configuration = NSImage.SymbolConfiguration(paletteColors: [color])
+        button.image = NSImage(systemSymbolName: name, accessibilityDescription: "SimiGo")?
+            .withSymbolConfiguration(configuration)
+    }
+
+    // MARK: - Popover
+
+    @objc private func togglePopover(_ sender: NSStatusBarButton) {
+        if popover.isShown {
+            popover.performClose(sender)
+        } else if Date().timeIntervalSince(popoverClosedAt) > 0.25 {
+            // .transient 在点击图标瞬间先合上面板；冷却窗口防 action 再掀开
+            NSApp.activate(ignoringOtherApps: true)
+            popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+        }
+    }
+
+    // MARK: - Windows
+
+    // MARK: - First-run wizard & environment entries
+
+    func openWizardWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        // 每次都是全新向导：缓存窗口会残留上一次的 step @State，
+        // 表现为"重跑直接跳到完成页"（owner 实测 2026-10-26）。
+        if let controller = wizardWindowController {
+            controller.window?.contentViewController = NSHostingController(
+                rootView: FirstRunWizardView())
+            controller.showWindow(nil)
+            controller.window?.makeKeyAndOrderFront(nil)
+            return
+        }
+        let window = NSWindow(contentViewController: NSHostingController(
+            rootView: FirstRunWizardView()
+        ))
+        window.title = "SimiGo 安装向导"
+        window.styleMask.insert(.resizable)
+        window.setContentSize(NSSize(width: 720, height: 560))
+        window.contentMinSize = NSSize(width: 560, height: 460)
+        window.center()
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        let controller = NSWindowController(window: window)
+        wizardWindowController = controller
+        controller.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// 菜单入口：追加外部工作目录（立即注册进权威数据库）。
+    func addWorkRootFromMenu() {
+        guard let url = FirstRunWizard.pickDirectory() else { return }
+        let r = EnvManager.shared.registerWorkRoot(url.path)
+        let ok = (r["status"] as? String) == "registered"
+        notifyUser(
+            ok ? "已注册工作目录" : "注册失败",
+            ok ? "\(url.path) → \(r["root_id"] ?? "")" : (r["detail"] as? String ?? "未知错误"))
+    }
+
+    /// 菜单入口：按 URL 自动安装外部二进制（下载 → bin → 清缓存）。
+    func installBinaryFromMenu() {
+        let alert = NSAlert()
+        alert.messageText = "安装外部二进制"
+        alert.informativeText = "输入二进制直链 URL（macOS arm64 Mach-O）："
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 380, height: 24))
+        alert.accessoryView = input
+        alert.addButton(withTitle: "安装")
+        alert.addButton(withTitle: "取消")
+        guard alert.runModal() == .alertFirstButtonReturn,
+            let url = URL(string: input.stringValue.trimmingCharacters(in: .whitespaces)),
+            url.scheme?.hasPrefix("http") == true
+        else { return }
+        Task { @MainActor in
+            let r = await EnvManager.shared.installExternalBinary(from: url)
+            notifyUser(
+                (r["status"] as? String) == "installed" ? "安装完成" : "安装结果",
+                "\(url.lastPathComponent): \(r["status"] ?? "?") \(r["detail"] ?? "")")
+        }
+    }
+
+    /// 菜单入口：更新已装二进制（llama.cpp 锁定重建 + hf brew 升级）。
+    func updateBinariesFromMenu() async {
+        let report = await EnvManager.shared.updateInstalledBinaries()
+        let lines = report.map { key, value -> String in
+            if let v = value as? [String: Any] {
+                return "\(key): \(v["status"] ?? "?")"
+            }
+            return "\(key): \(value)"
+        }.sorted()
+        notifyUser("更新已装二进制", lines.isEmpty ? "无可更新项" : lines.joined(separator: "\n"))
+    }
+
+    private func notifyUser(_ title: String, _ text: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = text
+        alert.runModal()
+    }
+
+    func openSettingsWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+
+        if let controller = settingsWindowController {
+            controller.showWindow(nil)
+            controller.window?.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let window = NSWindow(contentViewController: NSHostingController(
+            rootView: Settings().environmentObject(svc)
+        ))
+        window.title = "设置"
+        window.styleMask.remove(.resizable) // 对齐原场景 .windowResizability(.contentSize)
+        window.setContentSize(NSSize(width: 420, height: 700))
+        window.center()
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+
+        let controller = NSWindowController(window: window)
+        settingsWindowController = controller
+        controller.showWindow(nil)
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        popoverClosedAt = Date()
+    }
+
+    // 关窗即释放控制器，下次开窗重建视图（对齐原 WindowGroup 语义）
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+
+        if window === settingsWindowController?.window {
+            window.delegate = nil
+            settingsWindowController = nil
+        }
+    }
+}

@@ -1,0 +1,52 @@
+# macOS
+.DS_Store
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+
+# SPM build artifacts
+.build/
+
+# 个人开发笔记（不上传；如需纳入版本控制，删除此行）
+.learnings/
+
+# 回归骨架编译产物
+tools/harness/.build/
+__pycache__/
+
+# 发布物走 GitHub Release 附件，不入 git 树
+*.dmg
+
+# 发布物走 GitHub Release 附件，app 二进制不入 git 树
+SimiGo.app/
+default.profraw
+
+# Model weights and local model stores are never repository assets
+*.safetensors
+*.gguf
+*.ckpt
+*.pth
+*.weights
+models/
+SimiGo-v*-*.dmg
+SimiGo-v*-Installer.pkg
+
+# Research archive: imported evidence only; never commit runtime/build artifacts or key material
+research/_artifacts/
+research/**/.build/
+research/**/DerivedData/
+research/**/scratch/
+research/**/checkouts/
+research/**/SourcePackages/
+research/**/envtest-root*/
+research/**/*.app/
+research/**/*.dmg
+research/**/*.sqlite3*
+research/**/*.keychain-db
+research/**/*.p12
+research/**/*.pem
+research/lab/vendor/
+research/lab/.transfer/

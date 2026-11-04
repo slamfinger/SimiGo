@@ -1,0 +1,107 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "depths": [
+  10000
+ ],
+ "results": {
+  "depth10000": {
+   "depthTokensTarget": 10000,
+   "build": [
+    {
+     "round": 1,
+     "wallS": 13.9,
+     "session": "m10000/main",
+     "mode": "cold",
+     "promptTokens": 9447,
+     "promptTimeS": 13.3,
+     "ttftS": 0.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false"
+    },
+    {
+     "round": 2,
+     "wallS": 24.3,
+     "session": "m10000/main",
+     "mode": "rebuild",
+     "promptTokens": 18340,
+     "promptTimeS": 23.7,
+     "ttftS": 0.0,
+     "cacheTokens": 9463,
+     "cacheEff": "0.00",
+     "reuse": "true"
+    }
+   ],
+   "warm_setup": {
+    "wallS": 10.8,
+    "trace": {
+     "session": "m10000/main",
+     "mode": "rebuild",
+     "promptTokens": 9120,
+     "promptTimeS": 10.7,
+     "ttftS": 10.8,
+     "cacheTokens": 18356,
+     "cacheEff": "0.00",
+     "reuse": "true"
+    }
+   },
+   "warm": {
+    "wallS": 0.3,
+    "trace": {
+     "session": "m10000/main",
+     "mode": "extend",
+     "promptTokens": 17,
+     "promptTimeS": 0.2,
+     "ttftS": 0.2,
+     "cacheTokens": 9122,
+     "cacheEff": "1.00",
+     "reuse": "true"
+    }
+   },
+   "restore": {
+    "wallS": 25.1,
+    "trace": {
+     "session": "m10000/main",
+     "mode": "cold",
+     "promptTokens": 18516,
+     "promptTimeS": 24.6,
+     "ttftS": 0.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false"
+    },
+    "toolCallId": null
+   },
+   "rebuild": {
+    "wallS": 24.8,
+    "trace": {
+     "session": "m10000/main",
+     "mode": "cold",
+     "promptTokens": 18066,
+     "promptTimeS": 24.4,
+     "ttftS": 24.5,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false"
+    }
+   },
+   "cold": {
+    "wallS": 25.8,
+    "trace": {
+     "session": "00cold/main",
+     "mode": "cold",
+     "promptTokens": 18062,
+     "promptTimeS": 25.4,
+     "ttftS": 25.5,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false"
+    }
+   },
+   "memory": {
+    "footprintGB": 22.0,
+    "swapGB": 3.539736328125
+   }
+  }
+ }
+}

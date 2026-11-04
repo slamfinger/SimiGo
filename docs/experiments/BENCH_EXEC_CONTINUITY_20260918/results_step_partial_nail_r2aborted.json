@@ -1,0 +1,145 @@
+{
+ "session": "cbench/main",
+ "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+ "binary": "7ccd136",
+ "note": "中断于R8;R1-R7有效;驱动JSON未写,由trace重建;mode缺省行为n=1同型",
+ "completions": [
+  {
+   "t": "2026-09-19 00:01:14",
+   "mode": "cold",
+   "promptTokens": 545,
+   "promptTimeS": 23.3,
+   "ttftS": 25.0,
+   "cacheTokens": 0,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:01:24",
+   "mode": "fork-no-rewind",
+   "promptTokens": 8639,
+   "promptTimeS": 8.8,
+   "ttftS": 10.1,
+   "cacheTokens": 596,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:02:01",
+   "mode": "fragment(default)",
+   "promptTokens": 633,
+   "promptTimeS": 4.1,
+   "ttftS": 5.6,
+   "cacheTokens": 8690,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:02:46",
+   "mode": "fragment(default)",
+   "promptTokens": 8553,
+   "promptTimeS": 13.2,
+   "ttftS": 14.8,
+   "cacheTokens": 9374,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:03:23",
+   "mode": "fragment(default)",
+   "promptTokens": 633,
+   "promptTimeS": 2.8,
+   "ttftS": 4.4,
+   "cacheTokens": 17978,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:04:14",
+   "mode": "fragment(default)",
+   "promptTokens": 8553,
+   "promptTimeS": 18.1,
+   "ttftS": 20.0,
+   "cacheTokens": 18662,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:04:53",
+   "mode": "fragment(default)",
+   "promptTokens": 633,
+   "promptTimeS": 3.6,
+   "ttftS": 5.4,
+   "cacheTokens": 27266,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:06:12",
+   "mode": "fragment(default)",
+   "promptTokens": 8553,
+   "promptTimeS": 46.3,
+   "ttftS": 48.2,
+   "cacheTokens": 27950,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:06:53",
+   "mode": "fragment(default)",
+   "promptTokens": 633,
+   "promptTimeS": 5.9,
+   "ttftS": 7.8,
+   "cacheTokens": 36554,
+   "cacheEff": "0.00"
+  },
+  {
+   "t": "2026-09-19 00:08:10",
+   "mode": "fragment(default)",
+   "promptTokens": 8553,
+   "promptTimeS": 44.7,
+   "ttftS": 46.9,
+   "cacheTokens": 37238,
+   "cacheEff": "0.00"
+  }
+ ],
+ "actions": [
+  {
+   "t": "2026-09-19 00:01:14",
+   "action": "rollforwardSkip",
+   "detail": "rollforwardSkip key=cbench/main reason=deltaTooLarge deltaTokensEst=10037"
+  },
+  {
+   "t": "2026-09-19 00:01:55",
+   "action": "rollforward",
+   "detail": "rollforward key=cbench/main history=5 deltaTokensEst=137 deltaTokensCJK=155"
+  },
+  {
+   "t": "2026-09-19 00:02:31",
+   "action": "rollforwardSkip",
+   "detail": "rollforwardSkip key=cbench/main reason=deltaTooLarge deltaTokensEst=10037"
+  },
+  {
+   "t": "2026-09-19 00:03:18",
+   "action": "rollforward",
+   "detail": "rollforward key=cbench/main history=11 deltaTokensEst=137 deltaTokensCJK=155"
+  },
+  {
+   "t": "2026-09-19 00:03:53",
+   "action": "rollforwardSkip",
+   "detail": "rollforwardSkip key=cbench/main reason=deltaTooLarge deltaTokensEst=10037"
+  },
+  {
+   "t": "2026-09-19 00:04:47",
+   "action": "rollforward",
+   "detail": "rollforward key=cbench/main history=17 deltaTokensEst=137 deltaTokensCJK=155"
+  },
+  {
+   "t": "2026-09-19 00:05:23",
+   "action": "rollforwardSkip",
+   "detail": "rollforwardSkip key=cbench/main reason=deltaTooLarge deltaTokensEst=10037"
+  },
+  {
+   "t": "2026-09-19 00:06:45",
+   "action": "rollforward",
+   "detail": "rollforward key=cbench/main history=23 deltaTokensEst=137 deltaTokensCJK=155"
+  },
+  {
+   "t": "2026-09-19 00:07:23",
+   "action": "rollforwardSkip",
+   "detail": "rollforwardSkip key=cbench/main reason=deltaTooLarge deltaTokensEst=10037"
+  }
+ ]
+}

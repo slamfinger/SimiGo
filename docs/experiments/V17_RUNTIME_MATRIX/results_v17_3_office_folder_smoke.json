@@ -1,0 +1,416 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "meta": {
+  "stepOverrideEnv": null,
+  "stepFile": null,
+  "binaryBuild": "4",
+  "generatedAt": "2026-09-20T08:52:42",
+  "binaryPath": "build/SimiGo.app/Contents/Info.plist",
+  "serializeGeneration": "true (生产常量)",
+  "smoke": true,
+  "seed": 20260920
+ },
+ "design": "V1.7-3c: organize (10 mixed files -> 4 folders, model decides, harness copies) + merge (3 team docx reports -> extract 6 + integrate 2, exact scored); per-task attempt unit",
+ "runs": [
+  {
+   "task": "organize",
+   "scenario": "organize_t1",
+   "attempt": 1,
+   "session": "h1o",
+   "wallS": 11.8,
+   "trace": {
+    "session": "h1o/main",
+    "mode": "cold",
+    "promptTokens": 1038,
+    "promptTimeS": 5.8,
+    "ttftS": 7.7,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 36.7,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 21.6,
+    "swapGB": 1.994140625
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"F1|01_会议纪要\\nF2|01_会议纪要\\nF3|01_会议纪要\\nF4|02_项目汇报\\nF5|02_项目汇报\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "organize",
+   "scenario": "organize_t2",
+   "attempt": 1,
+   "session": "h1o",
+   "wallS": 6.1,
+   "trace": {
+    "session": "h1o/main",
+    "mode": "(fragment)",
+    "promptTokens": 785,
+    "promptTimeS": 1.3,
+    "ttftS": 6.0,
+    "cacheTokens": 1105,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 40.5,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.986328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"F1纪要_0912.docx 内容摘要明确为\\\"移动端周例会纪要\\\"，归01_会议纪要正确。F2 meeting_notes_a.docx 为\\\"搜索服务设计评审会纪要\\\"，归01_会议纪要正确。F3 文档_20260918.docx 为\\\"数据组季度规划会纪要\\\"，归01_会议纪要正确。F4 deck_final_v2.pptx 为\\\"PHOENIX项目"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "merge",
+   "scenario": "merge_t1",
+   "attempt": 1,
+   "session": "h1m",
+   "wallS": 3.3,
+   "trace": {
+    "session": "h1m/main",
+    "mode": "cold",
+    "promptTokens": 992,
+    "promptTimeS": 1.6,
+    "ttftS": 3.2,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 41.1,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.986328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"mobile_status|正常\\nmobile_risks|1\\nbackend_status|滞后\\nbackend_risks|2\\ndata_status|无\\ndata_risks|0\\nlagging_teams|backend\\nrisk_total|3\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "merge",
+   "scenario": "merge_t2",
+   "attempt": 1,
+   "session": "h1m",
+   "wallS": 3.9,
+   "trace": {
+    "session": "h1m/main",
+    "mode": "(fragment)",
+    "promptTokens": 787,
+    "promptTimeS": 1.4,
+    "ttftS": 3.8,
+    "cacheTokens": 1061,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 40.3,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.97845703125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"mobile: 状态正常、风险1条，与原文一致。backend: 状态滞后、风险2条，与原文一致。data: 未提供周报文本，填\\\"无\\/0\\\"合理。lagging_teams=backend、risk_total=3(1+2)，均与原文一致。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "organize",
+   "scenario": "organize_t1",
+   "attempt": 2,
+   "session": "h2o",
+   "wallS": 3.3,
+   "trace": {
+    "session": "h2o/main",
+    "mode": "cold",
+    "promptTokens": 1038,
+    "promptTimeS": 1.6,
+    "ttftS": 3.2,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 41.0,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.96283203125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"F1|01_会议纪要\\nF2|01_会议纪要\\nF3|01_会议纪要\\nF4|02_项目汇报\\nF5|02_项目汇报\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "organize",
+   "scenario": "organize_t2",
+   "attempt": 2,
+   "session": "h2o",
+   "wallS": 4.3,
+   "trace": {
+    "session": "h2o/main",
+    "mode": "(fragment)",
+    "promptTokens": 785,
+    "promptTimeS": 1.4,
+    "ttftS": 4.2,
+    "cacheTokens": 1105,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 40.7,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.96283203125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"F1\\/F2\\/F3 均为\\\"纪要\\\"且内容摘要含\\\"与会人员汇报了各自模块进展，讨论了遗留问题与排期\\\"，属会议纪要→01_会议纪要。F4 为 PHOENIX 项目季度汇报封面索引，F5 为客户成功案例汇编封面索引，均属项目汇报→02_项目汇报。分类与文件名、内容摘要一致。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "merge",
+   "scenario": "merge_t1",
+   "attempt": 2,
+   "session": "h2m",
+   "wallS": 3.0,
+   "trace": {
+    "session": "h2m/main",
+    "mode": "cold",
+    "promptTokens": 967,
+    "promptTimeS": 1.5,
+    "ttftS": 2.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 41.2,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.95501953125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"mobile_status|正常\\nmobile_risks|1\\nbackend_status|滞后\\nbackend_risks|2\\nlagging_teams|backend\\nrisk_total|3\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "merge",
+   "scenario": "merge_t2",
+   "attempt": 2,
+   "session": "h2m",
+   "wallS": 3.2,
+   "trace": {
+    "session": "h2m/main",
+    "mode": "(fragment)",
+    "promptTokens": 787,
+    "promptTimeS": 1.4,
+    "ttftS": 3.1,
+    "cacheTokens": 1025,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 40.6,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.95501953125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"mobile 状态正常、风险1条；backend 状态滞后、风险2条；lagging_teams=backend；risk_total=3。均与原文一致。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  }
+ ],
+ "task_summaries": [
+  {
+   "task": "organize",
+   "attempt": 1,
+   "accuracy": 1.0,
+   "placed": "5/5",
+   "payloadOk": true,
+   "verifyOk": true,
+   "placements": {
+    "F1": "01_会议纪要",
+    "F2": "01_会议纪要",
+    "F3": "01_会议纪要",
+    "F4": "02_项目汇报",
+    "F5": "02_项目汇报"
+   }
+  },
+  {
+   "task": "merge",
+   "attempt": 1,
+   "accuracy": 0.833,
+   "checks": {
+    "mobile": {
+     "status": true,
+     "risks": true
+    },
+    "backend": {
+     "status": true,
+     "risks": true
+    },
+    "lagging": false,
+    "risk_total": true
+   },
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "mobile_status": "正常",
+    "mobile_risks": "1",
+    "backend_status": "滞后",
+    "backend_risks": "2",
+    "data_status": "无",
+    "data_risks": "0",
+    "lagging_teams": "backend",
+    "risk_total": "3"
+   }
+  },
+  {
+   "task": "organize",
+   "attempt": 2,
+   "accuracy": 1.0,
+   "placed": "5/5",
+   "payloadOk": true,
+   "verifyOk": true,
+   "placements": {
+    "F1": "01_会议纪要",
+    "F2": "01_会议纪要",
+    "F3": "01_会议纪要",
+    "F4": "02_项目汇报",
+    "F5": "02_项目汇报"
+   }
+  },
+  {
+   "task": "merge",
+   "attempt": 2,
+   "accuracy": 1.0,
+   "checks": {
+    "mobile": {
+     "status": true,
+     "risks": true
+    },
+    "backend": {
+     "status": true,
+     "risks": true
+    },
+    "lagging": true,
+    "risk_total": true
+   },
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "mobile_status": "正常",
+    "mobile_risks": "1",
+    "backend_status": "滞后",
+    "backend_risks": "2",
+    "lagging_teams": "backend",
+    "risk_total": "3"
+   }
+  }
+ ]
+}
