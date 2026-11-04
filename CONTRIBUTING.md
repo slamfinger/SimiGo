@@ -6,9 +6,11 @@ Welcome contributions include Contract conformance cases, representation
 declarations, backend adapters, execution-state graph features, persistence,
 documentation fixes, and evidence reproducibility improvements.
 
-Do not open a pull request that silently changes the frozen Execution State
-Contract semantics. A semantic change requires a separate Closure Revision Gate
-proposal and explicit human review.
+Changes to externally observable ES / IS / API contracts must be explicit in the
+pull request description and include the intended behavior, compatibility impact,
+focused tests, and evidence limits. Do not silently change semantics, but do not
+assume that a research contract is permanently frozen or that a separate Closure
+Revision Gate is required by this guide.
 
 ## Licensing
 
