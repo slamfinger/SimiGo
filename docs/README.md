@@ -20,6 +20,6 @@ This directory contains current contracts, evidence records, and historical rese
 ## Evidence and archive rules
 
 - `audit/`, `experiments/`, `benchmarks/`, and `lessons/` preserve dated evidence. Read each record's scope and limitations; do not infer current product behavior from an old audit.
-- The loose files directly under `docs/` are historical audit, beta, or reference snapshots. They are retained for traceability, not as current product instructions.
+- The loose files directly under `docs/` are a mixed set: `AGENT-ACCESS.md` is current integration guidance; `README.md` is this navigation map; `ARCHIVE_AUDIT_PUBLIC_CURATION_20260927.md`, `AUDIT_BASELINE_20260928.md`, `RELEASE_v2.0.0-beta.md`, and `V2.1_REFERENCE_APP_ARCHITECTURE.md` are historical audit, beta, or reference snapshots. Do not treat the historical files as current product instructions.
 - Historical records are not rewritten to match current code. Correct current-state navigation and known issues in the relevant indexes instead.
 - When a claim depends on current behavior, verify it against the current source, tests, and the matching real-machine evidence. Package tests, app tests, installed builds, and real-model carrier tests are distinct evidence levels.
