@@ -482,12 +482,44 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             targetBranch: targetBranch
                         )
                     },
-                    deleteBranchHandler: { [weak self] agentId, sessionId, branchId in
-                        guard let self else { throw RuntError.notLoaded }
+                    deleteBranchHandler: { [weak self] agentId, sessionId, branchId, expectedGeneration in
+                        guard let self else {
+                            throw BranchLifecycleError.branchUnknown(
+                                sessionId: sessionId, branchId: branchId)
+                        }
+                        // S3-A strictness at the WIRING layer, public API
+                        // only: an unknown target (nonexistent, or a branch
+                        // of another session — the execution-key namespace
+                        // is session-scoped) fails BEFORE deletion, and the
+                        // outcome carries the post-deletion listing.
+                        // expected_generation is RESERVED for the llama.cpp
+                        // ES integration's generation semantics; this
+                        // runtime does not track one yet, so it is not
+                        // enforced here and the outcome reports no
+                        // generation rather than inventing a number.
+                        let before = self.listSessionBranches(
+                            agentId: agentId, sessionId: sessionId
+                        )
+                        let hadLive = before.liveBranches.contains(branchId)
+                        let hadCheckpoint = before.checkpointFiles.contains(branchId)
+                        guard hadLive || hadCheckpoint else {
+                            throw BranchLifecycleError.branchUnknown(
+                                sessionId: sessionId, branchId: branchId)
+                        }
                         try await self.deleteSessionBranch(
                             agentId: agentId,
                             sessionId: sessionId,
                             logicalBranchId: branchId
+                        )
+                        let after = self.listSessionBranches(
+                            agentId: agentId, sessionId: sessionId
+                        )
+                        return BranchDeletionOutcome(
+                            deletedBranch: branchId,
+                            hadLiveSession: hadLive,
+                            hadCheckpointFile: hadCheckpoint,
+                            remainingLiveBranches: after.liveBranches,
+                            remainingCheckpointBranches: after.checkpointFiles
                         )
                     },
                     listBranchesHandler: { [weak self] agentId, sessionId in

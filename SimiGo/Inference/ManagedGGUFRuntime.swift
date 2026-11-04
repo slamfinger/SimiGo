@@ -82,7 +82,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     forkBranchHandler: { _, _, _, _ in
                         throw RuntError.generationFailed("GGUF 后端不提供分支快照")
                     },
-                    deleteBranchHandler: { _, _, _ in },
+                    deleteBranchHandler: { _, _, _, _ in
+                        throw RuntError.generationFailed("GGUF 后端不提供分支快照")
+                    },
                     listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
                     checkHealthHandler: { [weak engine] in
                         await engine?.checkHealth() ?? false

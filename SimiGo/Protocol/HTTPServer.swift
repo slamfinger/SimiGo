@@ -83,11 +83,15 @@ public final class HTTPServer: @unchecked Sendable {
         _ targetBranch: String
     ) async throws -> SessionCacheMetadata
 
+    /// Branch deletion outcome/error types live at module scope next to the
+    /// runtime's own branch lifecycle implementation (NativeMLX.swift); the
+    /// handler below only carries the contract.
     public typealias DeleteBranchHandler = @Sendable (
         _ agentId: String?,
         _ sessionId: String,
-        _ logicalBranchId: String
-    ) async throws -> Void
+        _ logicalBranchId: String,
+        _ expectedGeneration: UInt64?
+    ) async throws -> BranchDeletionOutcome
 
     public typealias ListBranchesHandler = @Sendable (
         _ agentId: String?,
@@ -2744,22 +2748,62 @@ public final class HTTPServer: @unchecked Sendable {
                 )
                 return
             }
+            // S3-A: optional staleness guard — a client holding a stale view
+            // of the branch gets an explicit 409 instead of a silent delete.
+            let expectedGeneration = (json["expected_generation"] as? NSNumber)?.uint64Value
 
-            try await deleteBranchHandler(
-                resolveExplicitAgentId(
-                    from: json,
-                    headers: request.headers
-                ),
-                sessionId,
-                branchId
-            )
+            let outcome: BranchDeletionOutcome
+            do {
+                outcome = try await deleteBranchHandler(
+                    resolveExplicitAgentId(
+                        from: json,
+                        headers: request.headers
+                    ),
+                    sessionId,
+                    branchId,
+                    expectedGeneration
+                )
+            } catch let error as BranchLifecycleError {
+                // Owner ruling 2026-11-05 (S3-A): unknown / cross-session /
+                // generation-mismatch deletions fail OBSERVABLY — a typed
+                // error with its own status, never an `ok:true` body.
+                switch error {
+                case .branchUnknown(let unknownSession, let unknownBranch):
+                    sendError(
+                        "branch_unknown: no live session or checkpoint for "
+                            + "\(unknownSession)/\(unknownBranch)",
+                        status: 404,
+                        on: context.connection,
+                        context: context
+                    )
+                case .branchGenerationMismatch(let expected, let actual):
+                    sendError(
+                        "branch_generation_mismatch: expected \(expected), "
+                            + "actual \(actual)",
+                        status: 409,
+                        on: context.connection,
+                        context: context
+                    )
+                }
+                return
+            }
 
+            // The outcome carries the post-deletion listing (A.3): the
+            // caller verifies the target is gone without a second read.
+            // generation is reported only when the runtime tracks one
+            // (reserved for the llama.cpp ES integration).
+            var body: [String: Any] = [
+                "ok": true,
+                "session_id": sessionId,
+                "deleted_branch": outcome.deletedBranch,
+                "remaining_live": outcome.remainingLiveBranches,
+                "remaining_checkpoints": outcome.remainingCheckpointBranches,
+            ]
+            if let generation = outcome.generation {
+                body["generation"] = generation
+            }
             sendJSON(
-                [
-                    "ok": true,
-                    "session_id": sessionId,
-                    "deleted_branch": branchId,
-                ],
+                body,
                 status: 200,
                 on: context.connection,
                 context: context
