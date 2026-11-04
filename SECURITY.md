@@ -1,9 +1,8 @@
 # Security Policy
 
-## Supported version
+## Supported versions
 
-Security fixes target the latest published release and `main`. At present this
-is the `v2.1.0` Execution State Reference App line.
+Security fixes target the latest published release and `main`. The latest published release is **v2.2.3 / build 33**. The `main` tree may contain unreleased changes; the v2.2.4 / build 34 candidate is not a published release. See [RELEASE.md](RELEASE.md) for release status.
 
 ## Reporting a vulnerability
 
@@ -29,28 +28,29 @@ SimiGo executes models and provides an OpenAI-compatible HTTP service. Priority
 areas include:
 
 - HTTP request parsing and streaming responses;
-- LAN binding and process lifecycle;
+- listener binding, transport security, and process lifecycle;
 - tool-call validation and external agent handoff;
 - checkpoint, prefix-pool, and state-graph persistence;
 - restore/validation paths that must fail closed;
 - external `llama-server` process invocation;
 - model-directory selection and access to local files.
 
-## Current research boundary
+## Current security boundary
 
 SimiGo is a research preview, not a hardened multi-tenant service.
 
-The LAN mode currently has **no authentication**. Do not expose it to the public
-internet or run it on an untrusted network. Keep the API on localhost unless you
-understand the trust boundary. Model files, checkpoints, and state snapshots are
-local trusted inputs; do not point SimiGo at untrusted archives.
+The local API binds to loopback by default. Do not expose it to the public
+internet or an untrusted network. Non-loopback access must use the product's
+TLS/authentication path; review [Agent Access](docs/AGENT-ACCESS.md) and the
+specific configuration in use rather than assuming localhost protections apply
+to LAN deployments. Keep model files, checkpoints, and state snapshots as trusted
+local inputs; do not point SimiGo at untrusted archives.
+
+Report any discrepancy between the documented security boundary and the
+behavior of a particular release or build.
 
 ## Out of scope
 
-The following are product-quality reports rather than security vulnerabilities
-unless they cross a privilege or filesystem trust boundary:
-
-- generation quality;
-- model performance or memory pressure;
-- OpenAI protocol feature differences;
-- lack of cluster authentication in research preview mode.
+Generation quality, model performance or memory pressure, and OpenAI protocol
+feature differences are product-quality reports unless they cross a privilege,
+transport, or filesystem trust boundary.

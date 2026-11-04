@@ -1,36 +1,36 @@
-# SimiGo Open Source Boundary
+# Source, Documentation and Project Identity
 
-SimiGo uses an open research/core / bounded product structure. The current
-public repository contains the research specification, reference runtime,
-conformance material, and the v2.1 Execution State reference app.
+This file describes the repository's licensing boundaries. It is not a statement
+that the repository is public, that every historical design is current, or that
+the product has reached a particular release or conformance level.
 
-## Asset layers
+## License layers
 
-| Layer | Access | License | Boundary |
-|---|---|---|---|
-| Execution State Contract, research documents, evidence records | Open | CC-BY-4.0 | Attribution; no automatic endorsement |
-| Runtime, adapters, conformance code, v2.1 reference app | Open | Apache-2.0 | Commercial use, forks, and derivative implementations are allowed |
-| Future hosted, enterprise, management, and support products | Not in this repository | Separate commercial terms | May be offered independently |
-| Proprietary backend integrations | Not necessarily in this repository | Separate commercial terms | Must conform to a published Representation Declaration |
+| Material | License | Scope |
+|---|---|---|
+| Product and package source, runtime code, scripts and build configuration | Apache-2.0 | Subject to the terms in `LICENSE` and applicable third-party notices |
+| Research specifications, contracts, documentation and evidence records | CC-BY-4.0 | Subject to attribution and the terms in `LICENSE-DOCS` |
+| SimiGo name, logo and official-project identity | Not licensed by the above | See [TRADEMARKS.md](TRADEMARKS.md) |
 
-## What this license permits
+File-level notices and third-party licenses take precedence where applicable.
+Model weights are not distributed by this repository; referenced models remain
+subject to their own licenses.
 
-External researchers and vendors may implement the frozen Execution State
-Contract, build alternate representations, run conformance suites, fork the
-runtime, and use those implementations commercially, subject to Apache-2.0.
-This is intentional: independent implementations strengthen the contract.
+## Historical material
 
-## What is not licensed
+The repository retains archived research, reference implementations and
+superseded architecture documents. Their presence does not make them current
+product architecture, supported APIs, implementation commitments or conformance
+evidence. Use the root [README](README.md), package documentation, current
+source and version-scoped evidence to understand the product as it exists.
 
-- The `SimiGo` name, logo, and official-project identity are not licensed by
-  the code license. See `TRADEMARKS.md`.
-- Hosted, enterprise, support, and future commercial components are not granted
-  by this repository unless explicitly stated.
-- Model weights never belong to SimiGo. This repository ships no model weights;
-  users must obtain each model under its own license.
+## What the licenses do not establish
 
-## Public evidence boundary
+A license grant does not imply official endorsement, product support, release
+availability, security certification, or successful conformance by a fork.
+Passing a version-pinned test suite supports only the scope of that suite; it
+does not establish universal or backend-independent Execution State
+conformance.
 
-The repository may show that an implementation passed a version-pinned test
-battery. It does not change Contract semantics or turn bounded evidence into
-universal, backend-independent, or mathematically minimal claims.
+Compatible implementations must not imply official SimiGo status or
+affiliation. See [TRADEMARKS.md](TRADEMARKS.md).

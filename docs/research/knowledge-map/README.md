@@ -1,13 +1,7 @@
-# Knowledge Map
+# Knowledge Map（历史索引）
 
-用于维护 SimiGo-Lab 的知识地图。
+本目录保存 2026-09 研究阶段的 SimiGo-Lab 知识地图及其分类。它是历史研究材料，不是当前产品架构、开发计划或授权入口。
 
-建议将知识分为：
+阅读具体地图：[SimiGo Knowledge Map](SIMIGO_KNOWLEDGE_MAP_20260922.md)。
 
-- Known：已有充分依据的知识
-- Unknown：尚未回答的问题
-- Hypothesis：待验证假设
-- Independent Channel：独立获得知识的渠道
-- Cross-channel Finding：只有组合多个独立渠道后才出现的发现
-
-这里不放最终架构定义；最终架构应进入 `docs/architecture/`。
+其中 Known / Unknown / Hypothesis / Independent Channel / Cross-channel Finding 是当时的分析分类；结论须回到原始证据，不因出现在地图中而成为当前事实。
