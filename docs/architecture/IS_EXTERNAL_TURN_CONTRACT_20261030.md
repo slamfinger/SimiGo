@@ -2,6 +2,13 @@
 
 **性质**：数据契约 + 检索资格规则，描述当前实现（不是能力规划）。
 **权威实现**：`Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift`。
+**阅读边界（2026-11-05 复核）**：
+
+- §1–5 记录的是仍保留在 Runtime 数据层的外部轮次存储合同；其代码入口和合同测试仍在。它们不是当前 App 对外提供的云端代理能力，也不证明当前产品存在调用这些方法的生产路径。
+- 云端代理转发与 HTTP 自动捕获已删除；§3.1、§3.2、§6 中的转发流程和 E2E 只作历史说明。
+- §9–11 是 2026-10-30 的特定客户端 / 安装版窗口快照，不是 2026-11-05 当前安装版状态，也不能外推到其他版本、所有 Agent 或 collection → ES/IS 链路。
+- 本文中的“可检索”仅指 turn_state='committed' 的 chat 行可进入 InformationLoop 检索输入；不等于该内容已具备跨请求答案复用资格，更不等于已完成 ES continuation 消费验收。
+
 **边界**：本文只记录产品代码与测试层已经成立的事实。真机验收读数另见
 `research/agent-runs/simigo-es-is-realmodel-20261026/ACCEPTANCE-20261026-BUILD-97043902.md`
 （测试层读数不写入该文件）；W4、Agent 分类取证等未关闭项见 §8。
