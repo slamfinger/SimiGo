@@ -1,16 +1,5 @@
-# Research Conclusions
+# Conclusions（历史索引）
 
-这里保存已经经过研究过程形成的结论。
+本目录预留给可追溯到 Research Question → Evidence → Finding → Synthesis 的研究结论。
 
-结论必须能够回溯到：
-
-Research Question → Evidence → Finding → Synthesis → Conclusion
-
-如果结论已经改变 SimiGo 的稳定架构，应进一步进入：
-
-- `docs/decisions/`
-- `docs/architecture/`
-- `docs/knowledge/principles/`
-- `docs/knowledge/invariants/`
-
-具体进入哪个层级，取决于验证程度。
+当前目录仅有索引，不代表已有独立结论。若结论后来成为稳定产品架构，应另行进入 decisions、architecture 或 knowledge；不得仅凭本目录位置提升其效力。
