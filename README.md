@@ -157,6 +157,7 @@ xcodebuild build \
 
 ## 研究与工程文档
 
+- [文档导航与归档规则](docs/README.md)
 - [Agent API / MCP 接入合同](docs/AGENT-ACCESS.md)
 - [IS 外部轮次数据合同与证据边界](docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md)
 - [Execution State 历史研究脉络](docs/research/EXECUTION_STATE_RESEARCH_STORY_20260922.md)

@@ -1,4 +1,4 @@
-# DRAFT：Branch-Fork 生产协议设计登记（2026-09-17）
+# Branch-Fork Protocol：v1 实现记录与 v2 设计草案（2026-09-17）
 
 **状态：v1 已实现并随 v1.4 发布（用户 2026-09-17 明确下令转正，覆盖窗口纪律）——
 Runtime：`forkSessionBranch` / `deleteSessionBranch` / `listSessionBranches` +
