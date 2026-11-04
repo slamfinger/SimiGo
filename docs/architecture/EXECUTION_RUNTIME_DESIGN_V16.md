@@ -1,3 +1,7 @@
+<!-- Historical archive notice -->
+
+> **历史设计规格（2026-09-19）**：本文件记录 V1.6 阶段能力规格与分片实施计划，不是当前 Runtime 实现说明、当前开发计划或实施授权。部分计划状态与现行代码已发生变化；当前行为应以产品源码、Packages/SimiGoRuntime 和当前测试为准。请勿按本文旧基线执行迁移。
+
 # V1.6 Execution Runtime 设计规格（2026-09-19）
 
 **性质**：能力规格 + 分片实施计划（对应 `docs/decisions/V16_DIRECTION_REGISTRATION_20260919.md`）
