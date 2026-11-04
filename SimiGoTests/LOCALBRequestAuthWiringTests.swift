@@ -490,7 +490,14 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
     /// request carrying a well-formed P-INFERENCE proof is denied BEFORE
     /// proof verification — so no proof can bypass the denial. Ordinary
     /// inference keeps serving with the same client.
-    func testBranchOperationsAreDeniedForPairedInferenceClient() throws {
+    /// Owner ruling 2026-11-05 (S2): a client holding only the pairing
+    /// default permissions is refused at the CORRECT stage for every branch
+    /// target — the registry validation inside challenge issuance (400
+    /// permissionDenied, before any ledger consumption) — and a well-formed
+    /// dispatch attempt over a branch target dies at challenge consumption
+    /// (401), never reaching the branch handlers. Ordinary inference keeps
+    /// its authorized behavior.
+    func testBranchOperationsRequireBranchControlPermission() throws {
         let host = try makeAuthorizedHost()
 
         for target in [
@@ -514,22 +521,25 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             )
             let status = try XCTUnwrap(statusLine(of: response))
             XCTAssertTrue(
-                status.contains(" 403 "),
-                "\(target) challenge: expected 403, got: \(status)"
+                status.contains(" 400 "),
+                "\(target) challenge: expected 400, got: \(status)"
             )
-            let text = String(
-                decoding: response ?? Data(), as: UTF8.self
+            let json = try XCTUnwrap(jsonBody(of: response))
+            let bodyText = String(
+                decoding: try XCTUnwrap(JSONSerialization.data(
+                    withJSONObject: json
+                )), as: UTF8.self
             )
             XCTAssertTrue(
-                text.contains("LOCALB_BRANCH_OPERATIONS_NOT_AUTHORIZED"),
-                "\(target) challenge: expected an explicit denial reason, "
-                    + "got: \(text.prefix(300))"
+                bodyText.lowercased().contains("denied"),
+                "\(target) challenge: expected the registry-stage "
+                    + "permission denial, got: \(bodyText.prefix(300))"
             )
         }
 
-        // Dispatch-level denial with a well-formed proof over a branch
-        // target: rejected before verification, regardless of proof
-        // content.
+        // Dispatch-stage: a well-formed proof over a branch target cannot
+        // even reach verification with a usable challenge — the challenge
+        // consumption gate refuses (401) and the branch handlers never run.
         let dummyChallenge = [UInt8](repeating: 0x41, count: 32)
         for target in [
             "/v1/branches/fork",
@@ -550,8 +560,8 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             )
             let status = try XCTUnwrap(statusLine(of: response))
             XCTAssertTrue(
-                status.contains(" 403 "),
-                "\(target) dispatch: expected 403, got: \(status)"
+                status.contains(" 401 "),
+                "\(target) dispatch: expected 401, got: \(status)"
             )
         }
 
@@ -579,9 +589,10 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         )
     }
 
-    /// The route-policy table maps branch mutations to an explicit denial
-    /// that is distinct from open routes and from protected routes.
-    func testRoutePolicyDeniesBranchOperationsExplicitly() {
+    /// The route-policy table maps branch operations to the dedicated
+    /// P-BRANCH-CONTROL permission — protected, distinct from open, from
+    /// P-INFERENCE, and from the previous explicit denial.
+    func testRoutePolicyProtectsBranchOperationsWithBranchControl() {
         for target in [
             "/v1/branches/fork",
             "/v1/branches/delete",
@@ -591,7 +602,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
                 HTTPServer.localbRoutePolicy(
                     forMethod: "POST", routePath: target
                 ),
-                .denied(reason: "LOCALB_BRANCH_OPERATIONS_NOT_AUTHORIZED")
+                .protected(permission: .branchControl)
             )
         }
         XCTAssertEqual(
@@ -611,6 +622,173 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         XCTAssertEqual(
             HTTPServer.localbRoutePolicy(forMethod: "GET", routePath: "/v1/models"),
             .protected(permission: .informationRead)
+        )
+    }
+
+    // MARK: - S2: plaintext allowlist and permission independence
+    // (owner ruling 2026-11-05)
+
+    /// The plaintext compatibility surface must NOT serve branch
+    /// operations: without a proof the request falls through the (removed)
+    /// blanket exemption into the proof ceremony and dies at challenge
+    /// consumption (401) — the branch handlers never run, so no response
+    /// can carry a branch result.
+    func testPlaintextBranchOperationsWithoutProofAreRejected() throws {
+        let host = try makeAuthorizedHost()
+        for target in [
+            "/v1/branches/fork",
+            "/v1/branches/delete",
+            "/v1/branches/list",
+        ] {
+            let request = "POST \(target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.plaintextCompatPort)\r\n"
+                + "Content-Type: application/json\r\n"
+                + "Content-Length: \(("{\"session_id\":\"s\"}").utf8.count)\r\n"
+                + "Connection: close\r\n\r\n{\"session_id\":\"s\"}"
+            let response = sendRequest(
+                port: host.plaintextCompatPort, spkiHex: nil, request: request
+            )
+            let status = try XCTUnwrap(statusLine(of: response))
+            // Header-less plaintext dies pre-ceremony (403, unauthenticated);
+            // with LOCALB headers but no proof it dies at challenge
+            // consumption (401). Both are refusals at an authorization
+            // stage; neither is service, and neither is a blanket pass.
+            let refused = status.contains(" 401 ") || status.contains(" 403 ")
+            XCTAssertTrue(
+                refused,
+                "\(target) plaintext: expected 401/403 (proof ceremony "
+                    + "required), got: \(status)"
+            )
+            let text = String(decoding: response ?? Data(), as: UTF8.self)
+            XCTAssertFalse(
+                status.contains(" 200 "),
+                "\(target) plaintext must never serve a branch result: "
+                    + "\(status)"
+            )
+            XCTAssertFalse(
+                text.lowercased().contains("\"ok\""),
+                "\(target) plaintext must never serve a branch result"
+            )
+        }
+    }
+
+    /// The compatibility surface keeps serving inference without a proof
+    /// (2026-10-26 behavior, unchanged by S2).
+    func testPlaintextInferenceStaysCompatibleWithoutProof() throws {
+        let host = try makeAuthorizedHost()
+        let body =
+            "{\"model\":\"localb-b3-wiring-test\","
+            + "\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}"
+        let request = "POST /v1/chat/completions HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.plaintextCompatPort)\r\n"
+            + "Content-Type: application/json\r\n"
+            + "Content-Length: \(body.utf8.count)\r\n"
+            + "Connection: close\r\n\r\n" + body
+        let response = sendRequest(
+            port: host.plaintextCompatPort, spkiHex: nil, request: request
+        )
+        XCTAssertTrue(
+            try XCTUnwrap(statusLine(of: response)).contains(" 200 ")
+        )
+    }
+
+    /// A client holding ONLY P-BRANCH-CONTROL: branch operations run the
+    /// full challenge → proof → consume ceremony over TLS and serve, while
+    /// generation is refused at challenge issuance (registry-stage
+    /// permission denial). Proves both directions of the independence.
+    func testBranchControlOnlyClientServesBranchAndRefusesGeneration() throws {
+        let host = try makeAuthorizedHost()
+        let coordinator = try XCTUnwrap(host.coordinator)
+        let checkpointBox = try XCTUnwrap(host.trustedCheckpoint)
+        let changed = try coordinator.setClientPermissions(
+            clientKeyID: host.clientKeyID,
+            permissions: [.branchControl],
+            reason: "S2 branchControl-only fixture",
+            checkpoint: checkpointBox.value
+        )
+        checkpointBox.value = changed
+
+        // Branch challenge over TLS: issued, bound to P-BRANCH-CONTROL.
+        let (challengeHex, challengePermission) = try fetchChallenge(
+            host, method: "POST", target: "/v1/branches/list"
+        )
+        XCTAssertEqual(
+            challengePermission, "P-BRANCH-CONTROL",
+            "the branch challenge must bind the dedicated permission"
+        )
+
+        // Full ceremony over TLS → the branch handler serves.
+        let request = try protectedRequest(
+            host,
+            method: "POST",
+            target: "/v1/branches/list",
+            contentType: "application/json",
+            body: "{\"session_id\":\"s\"}",
+            challenge: challengeHex,
+            permission: .branchControl
+        )
+        let response = sendRequest(
+            port: host.port, spkiHex: host.spkiHex, request: request
+        )
+        let status = try XCTUnwrap(statusLine(of: response))
+        XCTAssertTrue(
+            status.contains(" 200 "),
+            "branch dispatch with valid proof: expected 200, got: \(status)"
+        )
+        let json = try XCTUnwrap(jsonBody(of: response))
+        XCTAssertEqual(json["ok"] as? Bool, true, "branch list must serve")
+
+        // Generation is refused for this client at challenge issuance.
+        let generationBody =
+            "{\"method\":\"POST\",\"requestTarget\":\"/v1/chat/completions\"}"
+        let generationRequest =
+            "POST /localb/auth/challenge HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.port)\r\n"
+            + "X-SimiGo-LocalB-Client-Key-ID: \(host.clientKeyID)\r\n"
+            + "Content-Type: application/json\r\n"
+            + "Content-Length: \(generationBody.utf8.count)\r\n"
+            + "Connection: close\r\n\r\n" + generationBody
+        let generationResponse = sendRequest(
+            port: host.port, spkiHex: host.spkiHex, request: generationRequest
+        )
+        XCTAssertTrue(
+            try XCTUnwrap(statusLine(of: generationResponse)).contains(" 400 "),
+            "generation must be refused at challenge issuance"
+        )
+        // Stage evidence by contrast: the SAME registry state just issued a
+        // branchControl challenge (200 above), so this 400 is the
+        // permission check refusing generation — not an availability fault.
+    }
+
+    /// Dispatch-stage independence: an inference-bound challenge and proof
+    /// cannot authorize a branch target — the canonical-permission match in
+    /// the verification gate rejects before the branch handlers run.
+    func testInferenceChallengeCannotAuthorizeBranchTarget() throws {
+        let host = try makeAuthorizedHost()
+        let (challenge, _) = try fetchChallenge(
+            host, method: "POST", target: "/v1/chat/completions"
+        )
+        let request = try protectedRequest(
+            host,
+            method: "POST",
+            target: "/v1/branches/list",
+            contentType: "application/json",
+            body: "{\"session_id\":\"s\"}",
+            challenge: challenge,
+            permission: .inference
+        )
+        let response = sendRequest(
+            port: host.port, spkiHex: host.spkiHex, request: request
+        )
+        let status = try XCTUnwrap(statusLine(of: response))
+        XCTAssertTrue(
+            status.contains(" 401 "),
+            "expected 401 for an inference proof on a branch target, "
+                + "got: \(status)"
+        )
+        XCTAssertFalse(
+            status.contains(" 200 "),
+            "branch result must never be served on an inference proof"
         )
     }
 

@@ -1484,6 +1484,16 @@ public final class HTTPServer: @unchecked Sendable {
         case denied(reason: String)
     }
 
+    /// Owner ruling 2026-11-05 (S2): the plaintext loopback compatibility
+    /// surface serves protected routes WITHOUT the proof ceremony only for
+    /// this explicit allowlist. P-BRANCH-CONTROL is deliberately absent —
+    /// branch operations always run the full challenge → proof → consume
+    /// ceremony, on loopback too. The compatibility surface is never a
+    /// shortcut, and permissions added later do not silently join it.
+    nonisolated static let localbPlaintextLoopbackPermissions: Set<LOCALBPermission> = [
+        .inference, .informationRead, .srsWrite
+    ]
+
     /// The single trusted route→policy table. Challenge issuance and
     /// request authorization MUST both derive their decision through this
     /// function; a permission is never taken from a client header, query
@@ -1529,16 +1539,14 @@ public final class HTTPServer: @unchecked Sendable {
         case ("POST", "/v1/branches/fork"),
              ("POST", "/v1/branches/delete"),
              ("POST", "/v1/branches/list"):
-            // Least-privilege fail-closed (B3 security review 2026-10-16):
-            // branch mutations are NOT part of P-INFERENCE, and no dedicated
-            // branch permission exists yet, so protected access is refused
-            // outright. This is an explicit denial, never a removal from the
-            // table — a missing entry would fall back to the fail-closed
-            // default below, and a nil-style "not listed" could be read as
-            // "no authorization required".
-            return .denied(
-                reason: "LOCALB_BRANCH_OPERATIONS_NOT_AUTHORIZED"
-            )
+            // Owner ruling 2026-11-05 (S2): branch operations carry their own
+            // least-privilege permission. This supersedes the B3 2026-10-16
+            // outright denial — with a dedicated permission the routes are
+            // protected: never open, never part of P-INFERENCE, and
+            // unauthorized clients are refused at challenge issuance and at
+            // dispatch by the same registry validation as every other
+            // protected route.
+            return .protected(permission: .branchControl)
         default:
             if method == "GET", routePath.hasPrefix("/v1/models/") {
                 return .protected(permission: .informationRead)
@@ -2466,6 +2474,10 @@ public final class HTTPServer: @unchecked Sendable {
         // served on it without the LOCALB proof ceremony (responses carry
         // "unprotected-by-LOCALB"). The TLS listener keeps the full B3
         // proof gate unchanged.
+        // Owner ruling 2026-11-05 (S2): the exemption is now an explicit
+        // allowlist (localbPlaintextLoopbackPermissions). Permissions off
+        // the allowlist — P-BRANCH-CONTROL first — fall through to the
+        // full proof ceremony even on plaintext loopback.
         let plaintextLoopback =
             !context.transportSecurity.isTLS
         switch Self.localbRoutePolicy(
@@ -2475,7 +2487,8 @@ public final class HTTPServer: @unchecked Sendable {
         case .open:
             break
         case .protected(let permission):
-            if plaintextLoopback {
+            if plaintextLoopback,
+               Self.localbPlaintextLoopbackPermissions.contains(permission) {
                 break
             }
             request = try verifyLOCALBProtectedRequest(

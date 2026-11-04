@@ -13,12 +13,45 @@ class LOCALBTestCase: XCTestCase {
 
     // MARK: - Fixture
 
+    /// Indirection so tests can move the registry head (permission grants,
+    /// revocations) and have the server's trusted-checkpoint closure follow
+    /// the new head instead of a snapshot pinned at pairing time.
+    final class LOCALBTrustedCheckpointBox {
+        var value: LOCALBRegistryCheckpoint
+        init(value: LOCALBRegistryCheckpoint) { self.value = value }
+    }
+
     struct Host {
         let port: UInt16
         let plaintextCompatPort: UInt16
         let spkiHex: String
         let clientKey: Curve25519.Signing.PrivateKey
         let clientKeyID: String
+        /// Present when the host was built through makeAuthorizedHost;
+        /// bootstrap-path fixtures wire their own registry instead.
+        let store: LOCALBRegistryStore?
+        let coordinator: LOCALBPairingCoordinator?
+        let trustedCheckpoint: LOCALBTrustedCheckpointBox?
+
+        init(
+            port: UInt16,
+            plaintextCompatPort: UInt16,
+            spkiHex: String,
+            clientKey: Curve25519.Signing.PrivateKey,
+            clientKeyID: String,
+            store: LOCALBRegistryStore? = nil,
+            coordinator: LOCALBPairingCoordinator? = nil,
+            trustedCheckpoint: LOCALBTrustedCheckpointBox? = nil
+        ) {
+            self.port = port
+            self.plaintextCompatPort = plaintextCompatPort
+            self.spkiHex = spkiHex
+            self.clientKey = clientKey
+            self.clientKeyID = clientKeyID
+            self.store = store
+            self.coordinator = coordinator
+            self.trustedCheckpoint = trustedCheckpoint
+        }
     }
 
     func randomPort() -> UInt16 {
@@ -149,11 +182,11 @@ class LOCALBTestCase: XCTestCase {
             identity: identity,
             plaintextCompatibilityPort: Int(plaintextCompatPort)
         )
+        let trustedCheckpointBox = LOCALBTrustedCheckpointBox(value: committed)
         if configureAuthorization {
-            var trustedCheckpoint = committed
             server.configureLOCALBRequestAuthorization(
                 coordinator: coordinator,
-                trustedCheckpoint: { trustedCheckpoint }
+                trustedCheckpoint: { trustedCheckpointBox.value }
             )
         }
         try server.start()
@@ -164,7 +197,10 @@ class LOCALBTestCase: XCTestCase {
             plaintextCompatPort: plaintextCompatPort,
             spkiHex: identity.spkiSHA256Hex,
             clientKey: clientKey,
-            clientKeyID: clientKeyID
+            clientKeyID: clientKeyID,
+            store: store,
+            coordinator: coordinator,
+            trustedCheckpoint: trustedCheckpointBox
         )
     }
 
