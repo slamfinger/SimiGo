@@ -2,7 +2,7 @@
 
 Date: 2026-10-15  
 Status: Accepted (user decision)  
-Releases affected: none further; v2.1.5 remains the current release
+Release context: v2.1.5 was current on the decision date; this line is not a current release-status statement
 
 ## Context
 
