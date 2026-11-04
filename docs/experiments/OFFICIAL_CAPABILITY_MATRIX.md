@@ -1,5 +1,7 @@
 # 官方 MLX 能力覆盖矩阵（Official Capability Matrix）
 
+> **历史能力快照（2026-11-05）**：本文列出的 Core 接入状态与 Official Capability Completion 路线对应 2026-09-12 指定 mlx-swift-lm revision。不能将表中的 Core 标记或“下一阶段”描述直接当作当前 main 的完整 API 能力、产品优先级或验收证据。
+
 日期：2026-09-12
 核对基准：mlx-swift-lm `exp/cancel-retained-prefix@45ccd57`（v1.3 时点 Package.resolved 钉定 commit，2026-09-14 起 Pin 升至 5ba0bc1；快照 `11d5531` 存于 `vendor/mlx-swift-lm-5ba0bc1` 谱系合并提交第二父），全部 API 名以该 commit 源码为准。
 
