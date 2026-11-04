@@ -306,7 +306,13 @@ final class CancelChainInternalTests: XCTestCase {
                     storageKey: "t/\(target)", modelId: "cancel-chain-heartbeat-test",
                     savedAt: Date(), history: [])
             },
-            deleteBranchHandler: { _, _, _ in },
+            deleteBranchHandler: { _, _, _, _ in
+                BranchDeletionOutcome(
+                    deletedBranch: "", hadLiveSession: false,
+                    hadCheckpointFile: false, generation: 1,
+                    remainingLiveBranches: [],
+                    remainingCheckpointBranches: [])
+            },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { true },
             cancelGenerationHandler: { cancel.record($0) }

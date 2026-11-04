@@ -39,7 +39,13 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
                     savedAt: Date(),
                     history: [])
             },
-            deleteBranchHandler: { _, _, _ in },
+            deleteBranchHandler: { _, _, _, _ in
+                BranchDeletionOutcome(
+                    deletedBranch: "", hadLiveSession: false,
+                    hadCheckpointFile: false, generation: 1,
+                    remainingLiveBranches: [],
+                    remainingCheckpointBranches: [])
+            },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { health.healthy }
         )

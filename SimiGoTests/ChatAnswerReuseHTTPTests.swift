@@ -121,7 +121,13 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
                     storageKey: "t/\(target)", modelId: "chat-answer-reuse-http-test",
                     savedAt: Date(), history: [])
             },
-            deleteBranchHandler: { _, _, _ in },
+            deleteBranchHandler: { _, _, _, _ in
+                BranchDeletionOutcome(
+                    deletedBranch: "", hadLiveSession: false,
+                    hadCheckpointFile: false, generation: 1,
+                    remainingLiveBranches: [],
+                    remainingCheckpointBranches: [])
+            },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { true },
             informationTurnProducer: {
