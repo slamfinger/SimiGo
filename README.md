@@ -6,11 +6,11 @@ SimiGo 是面向 Apple Silicon / macOS 的本地 AI Runtime。它通过 OpenAI-c
 
 当前产品仍是 Research Preview。SimiGo 不宣称已经成为通用生产级推理服务器，也不宣称已完成 backend-independent Execution State conformance。
 
-## 当前公开版本
+## 当前发行版（v2.2.3 · build 33）
 
 **v2.2.3 · build 33**
 
-- [GitHub Release / DMG](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.3)
+- [GitHub Release / DMG（需仓库访问权限）](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.3)
 - 文件：`SimiGo-v2.2.3-33-740484b5.dmg`
 - 平台：Apple Silicon，macOS 26.4+
 - SHA-256：`f34b74d784e040297224479ca2ba0aa1c8390a4cfbbadd97111325fb212ec322`
@@ -32,7 +32,7 @@ SimiGo 是面向 Apple Silicon / macOS 的本地 AI Runtime。它通过 OpenAI-c
 
 ## v2.2.4 / build 34
 
-v2.2.4 / build 34 仍是未公开的发布候选，不是 GitHub Release 或 GA。候选产物为 ad-hoc 签名且未 notarize；正式 Developer ID 签名、公证、DMG 与安装验收尚未完成。发布身份和该候选的已验证范围见 [RELEASE.md](RELEASE.md)。不要将本地候选 tag、构建或测试结果称为正式发行。
+v2.2.4 / build 34 仍是未发布的本地候选，不是 GitHub Release 或 GA。候选产物为 ad-hoc 签名且未 notarize；尚未完成正式 Developer ID 签名、公证与发布 DMG。安装版已对 IS 宿主启动、真实 GGUF 接管 API 端口及停止后回落做了特定验证，但这不等于完整发行验收。产物身份和证据范围见 [RELEASE.md](RELEASE.md)。不要将本地候选 tag、构建或测试结果称为正式发行。
 
 ## Quick Start
 
