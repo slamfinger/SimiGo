@@ -95,8 +95,9 @@ IS 中的 **recorded、committed、retrievable 是不同状态**。目前已有�
 | 产品概览、公开版本 | 本页 |
 | 安装与服务配置 | [部署指南](部署指南.md) |
 | Agent API / MCP 接入及边界 | [docs/AGENT-ACCESS.md](docs/AGENT-ACCESS.md) |
-| 当前 Runtime 设计 | [Execution Runtime Design](docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md) |
+| Runtime package | [SimiGoRuntime](Packages/SimiGoRuntime/README.md) |
 | IS 外部轮次数据合同 | [IS External Turn Contract](docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md) |
+| 历史 Runtime 设计规格 | [V1.6 archive](docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md)（仅供溯源） |
 | 当前未关闭问题 | [Open Problems](docs/knowledge/open-problems/README.md) |
 | 实验索引 | [Experiments](docs/experiments/README.md) |
 | 架构决策索引 | [Decisions](docs/decisions/README.md) |
