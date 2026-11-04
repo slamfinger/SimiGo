@@ -5,15 +5,17 @@ This directory contains current contracts, evidence records, and historical rese
 ## Start here
 
 - [Agent access contract](AGENT-ACCESS.md) — supported local OpenAI-compatible entry and explicit MCP lifecycle integration; includes current evidence limits.
-- [Architecture](architecture/) — current external-turn contract plus historical runtime / upstream design references.
+- [IS external-turn contract](architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md) — retained data contract and historical client evidence; not a current cloud-provider path.
+- [Historical runtime / MLX designs](architecture/EXECUTION_RUNTIME_DESIGN_V16.md) and [MLX roadmap snapshot](architecture/MLX_LM_REFERENCE_AND_EXPERIMENTAL_ROADMAP_20260918.md) — archived references, not current implementation plans.
 - [Decisions](decisions/README.md) — accepted decisions, proposals, and superseded direction records, separated by status.
 - [Open problems](knowledge/open-problems/README.md) — current product issues that still require evidence or closure.
 - [Knowledge](knowledge/README.md) — evidence-derived findings, principles, invariants, and open problems.
 - [Historical audits](audit/README.md), [experiments](experiments/README.md), and [benchmarks](benchmarks/README.md) — dated review, experiment, and measurement records.
 - [Lessons](lessons/README.md) — incidents, regressions, and engineering lessons.
 - [Research archive](research/README.md) — historical research questions and synthesis, not current product status.
-- [Evolution history](evolution/README.md) and [history](history/) — architecture transitions and integration snapshots.
-- [Release history](releases/) — historical release notes and freeze records. Current distribution status is in the repository-root [README](../README.md) and [RELEASE.md](../RELEASE.md).
+- [Evolution history](evolution/README.md) — architecture transitions.
+- [History: V5 baseline](history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md) and [Qoder collection integration](history/QODER_COLLECTION_INTEGRATION_20261105.md) — dated snapshots.
+- [Release history](releases/README.md) — historical release notes and freeze records. Current distribution status is in the repository-root [README](../README.md) and [RELEASE.md](../RELEASE.md).
 
 ## Evidence and archive rules
 
