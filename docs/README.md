@@ -9,7 +9,7 @@ This directory contains current contracts, evidence records, and historical rese
 - [Decisions](decisions/README.md) — accepted decisions, proposals, and superseded direction records, separated by status.
 - [Open problems](knowledge/open-problems/README.md) — current product issues that still require evidence or closure.
 - [Knowledge](knowledge/README.md) — evidence-derived findings, principles, invariants, and open problems.
-- [Experiments](experiments/README.md) and [benchmarks](benchmarks/README.md) — bounded experiment and measurement records.
+- [Historical audits](audit/README.md), [experiments](experiments/README.md), and [benchmarks](benchmarks/README.md) — dated review, experiment, and measurement records.
 - [Lessons](lessons/README.md) — incidents, regressions, and engineering lessons.
 - [Research archive](research/README.md) — historical research questions and synthesis, not current product status.
 - [Evolution history](evolution/README.md) and [history](history/) — architecture transitions and integration snapshots.
