@@ -603,4 +603,184 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
             XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)
         }
     }
+
+    // MARK: - S1: P-BRANCH-CONTROL codec compatibility (owner approval 2026-11-05)
+
+    /// The full new case space — including srsWrite, which the journal-level
+    /// decoder previously refused — must round-trip through a pairing commit.
+    func testSixPermissionJournalReloadsAfterBranchControl() throws {
+        let all: Set<LOCALBPermission> = [.inference, .informationRead, .srsWrite,
+                                          .adminPairing, .adminTrust, .branchControl]
+        let payload = try LOCALBPairingEventCodec.encodePairingCommit(
+            makeCommitPayload(permissions: all)
+        )
+        XCTAssertEqual(
+            try LOCALBPairingEventCodec.decodePairingCommit(payload).permissions, all
+        )
+    }
+
+    /// Journals written before P-BRANCH-CONTROL existed keep decoding verbatim.
+    func testLegacyJournalWithoutBranchControlStillDecodes() throws {
+        let legacy: Set<LOCALBPermission> = [.inference, .informationRead,
+                                             .adminPairing, .adminTrust]
+        let payload = try LOCALBPairingEventCodec.encodePairingCommit(
+            makeCommitPayload(permissions: legacy)
+        )
+        XCTAssertEqual(
+            try LOCALBPairingEventCodec.decodePairingCommit(payload).permissions, legacy
+        )
+    }
+
+    /// The cap derives from allCases.count: a declared 7-entry permissions
+    /// field fails closed even though every entry is well-formed and strictly
+    /// ordered (the 7th name is unknown, so the unknown guard would also fire).
+    func testSevenEntryPermissionFieldFailsClosed() throws {
+        let payload = try commitPayloadBytes(permissionsBytes: permissionsFieldBytes([
+            "P-ADMIN-PAIRING", "P-ADMIN-TRUST", "P-BRANCH-CONTROL",
+            "P-INFERENCE", "P-INFO-READ", "P-QUEUED", "P-SRS-WRITE"
+        ]))
+        XCTAssertThrowsError(try LOCALBPairingEventCodec.decodePairingCommit(payload)) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .registryCorrupt)
+        }
+    }
+
+    /// Unknown permission rawValues keep failing closed.
+    func testUnknownPermissionNameFailsClosed() throws {
+        let payload = try commitPayloadBytes(
+            permissionsBytes: permissionsFieldBytes(["P-INFERENCE", "P-QUEUED"])
+        )
+        XCTAssertThrowsError(try LOCALBPairingEventCodec.decodePairingCommit(payload)) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .registryCorrupt)
+        }
+    }
+
+    /// Pairing keeps pinning the default set; P-BRANCH-CONTROL must never
+    /// enter it silently.
+    func testDefaultPairingSetExcludesBranchControl() throws {
+        let host = try makeHost()
+        let clientKey = Curve25519.Signing.PrivateKey()
+        let (presentation, secret) = try issue(
+            host, mode: .strictHeadless, expectedClientKey: clientKey
+        )
+        let submission = try makeSubmission(presentation, secret: secret, clientKey: clientKey)
+        let pending = try host.coordinator.preparePairing(
+            submission, checkpoint: presentation.registryCheckpoint
+        )
+        let registered = try host.coordinator.approveAndRegister(
+            pending, checkpoint: presentation.registryCheckpoint
+        )
+        let clientID = try LOCALBSigningInputV1.keyID(
+            publicKeyRaw: Array(clientKey.publicKey.rawRepresentation)
+        )
+        let state = try host.store.loadPairingState(checkpoint: registered)
+        let permissions = state.clients[clientID]?.permissions ?? []
+        XCTAssertEqual(permissions, [.inference, .informationRead])
+        XCTAssertFalse(permissions.contains(.branchControl))
+    }
+
+    /// branchControl is grantable on the change path, the journal sequence
+    /// and head hash both move, and a fresh reload plus the full challenge →
+    /// proof → authorize chain see the new permission.
+    func testBranchControlGrantSurvivesReloadAndAuthorizes() throws {
+        let host = try makeHost()
+        let clientKey = Curve25519.Signing.PrivateKey()
+        let (presentation, secret) = try issue(
+            host, mode: .strictHeadless, expectedClientKey: clientKey
+        )
+        let submission = try makeSubmission(presentation, secret: secret, clientKey: clientKey)
+        let pending = try host.coordinator.preparePairing(
+            submission, checkpoint: presentation.registryCheckpoint
+        )
+        let registered = try host.coordinator.approveAndRegister(
+            pending, checkpoint: presentation.registryCheckpoint
+        )
+        let clientID = try LOCALBSigningInputV1.keyID(
+            publicKeyRaw: Array(clientKey.publicKey.rawRepresentation)
+        )
+
+        let changed = try host.coordinator.setClientPermissions(
+            clientKeyID: clientID, permissions: [.inference, .branchControl],
+            reason: "S1 branch-control grant", checkpoint: registered
+        )
+        XCTAssertEqual(changed.sequence, registered.sequence + 1)
+        XCTAssertNotEqual(changed.headHash, registered.headHash)
+
+        let reloaded = try host.store.loadPairingState(checkpoint: changed)
+        XCTAssertEqual(
+            reloaded.clients[clientID]?.permissions, [.inference, .branchControl]
+        )
+
+        let challenge = try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientID, permission: .branchControl, checkpoint: changed
+        )
+        let request = try makeHTTPRequest()
+        let proof = try LOCALBClientRequestProofV2.sign(
+            clientKeyID: clientID, permission: .branchControl,
+            request: request, challenge: challenge, with: clientKey
+        )
+        let authorized = try host.coordinator.authorizeProtectedRequest(
+            clientKeyID: clientID, permission: .branchControl,
+            request: request, challenge: challenge,
+            proofSignatureRaw: proof, checkpoint: changed
+        )
+        XCTAssertEqual(authorized.permission, .branchControl)
+    }
+
+    // MARK: S1 helpers
+
+    private func makeCommitPayload(
+        permissions: Set<LOCALBPermission>
+    ) -> LOCALBPairingCommitPayload {
+        LOCALBPairingCommitPayload(
+            credentialID: UUID().uuidString.lowercased(),
+            credentialDigest: Array(repeating: 7, count: 32),
+            clientPublicKeyRaw: Array(repeating: 9, count: 32),
+            clientKeyID: LOCALBBinary.hexLower(LOCALBBinary.sha256(Array(repeating: 9, count: 32))),
+            permissions: permissions,
+            registeredAtMilliseconds: 1_000,
+            proofSignatureRaw: Array(repeating: 11, count: 64),
+            tlsSPKIHash: LOCALBBinary.hexLower(LOCALBBinary.sha256(Array("tls".utf8))),
+            srsKeyID: LOCALBBinary.hexLower(LOCALBBinary.sha256(Array("srs".utf8))),
+            protocolVersion: LOCALBConstants.credentialProtocolVersion,
+            operatorAuthorizationReference: "S1-CODEC-TEST"
+        )
+    }
+
+    private func permissionsFieldBytes(_ names: [String]) -> [UInt8] {
+        var out: [UInt8] = []
+        LOCALBBinary.appendU16(UInt16(names.count), to: &out)
+        for name in names.sorted() {
+            let raw = Array(name.utf8)
+            LOCALBBinary.appendU16(UInt16(raw.count), to: &out)
+            out.append(contentsOf: raw)
+        }
+        return out
+    }
+
+    private func commitPayloadBytes(permissionsBytes: [UInt8]) throws -> [UInt8] {
+        try LOCALBPairingFieldCodec.encode(fields: [
+            LOCALBPairingFieldCodec.string("credential_id", value: UUID().uuidString.lowercased()),
+            LOCALBPairingFieldCodec.bytes(Array(repeating: 7, count: 32), label: "credential_digest"),
+            LOCALBPairingFieldCodec.bytes(Array(repeating: 9, count: 32), label: "client_public_key_raw"),
+            LOCALBPairingFieldCodec.string(
+                "client_key_id",
+                value: LOCALBBinary.hexLower(LOCALBBinary.sha256(Array(repeating: 9, count: 32)))
+            ),
+            LOCALBPairingFieldCodec.bytes(permissionsBytes, label: "permissions"),
+            LOCALBPairingFieldCodec.uint64(1_000, label: "registered_at_ms"),
+            LOCALBPairingFieldCodec.bytes(Array(repeating: 11, count: 64), label: "proof_signature_raw"),
+            LOCALBPairingFieldCodec.string(
+                "tls_spki_sha256", value: LOCALBBinary.hexLower(LOCALBBinary.sha256(Array("tls".utf8)))
+            ),
+            LOCALBPairingFieldCodec.string(
+                "srs_key_id", value: LOCALBBinary.hexLower(LOCALBBinary.sha256(Array("srs".utf8)))
+            ),
+            LOCALBPairingFieldCodec.string(
+                "protocol_version", value: LOCALBConstants.credentialProtocolVersion
+            ),
+            LOCALBPairingFieldCodec.string(
+                "operator_authorization_reference", value: "S1-CODEC-TEST"
+            )
+        ])
+    }
 }
