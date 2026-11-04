@@ -6,7 +6,7 @@
 > Chat `reasoning_content` 透出（#148，§2.8）是 v2.2.3 之后新增的能力，目前只在
 > 隔离根内由测试跑通，安装版运行时取证留给下一次发版。
 >
-> 2026-11-03：产品云端 provider 代理与其外部轮次自动捕获路径已删除；信息空间宿主不加载模型也可提供 `/mcp`。
+> 2026-11-03：产品云端 provider 代理与外部轮次自动捕获路径已删除。信息空间宿主不加载模型也可提供 `/mcp`；当前 v2.2.4/build 34 候选由 App 启动流程自动拉起，模型服务启动时接管 API 端口，停止后宿主回落（候选安装版证据见根目录 `RELEASE.md`）。
 > 本文描述源码树的接入合同，不表示所有客户端 / wire 已完成安装版 E2E。带自有云端 API 的 Agent 经 MCP 显式调用 SimiGo；SimiGo 不代理其模型请求。
 
 ## 1. 什么算「接入」
@@ -174,11 +174,11 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 ### 3.1 传输
 
 - 端点：与 HTTP 入口同一 host:port 的 `POST /mcp`；`GET /mcp` 被拒绝（不发起服务端流）。
-- **独立信息空间宿主**：菜单栏「启动信息空间服务」起一个**不加载模型**的监听器
-  （`modelId = simigo-information-space`，占用同一个 API 端口），它自己持有 HTTP listener、
-  `POST /mcp` 与 IS 读路由，不需要先加载 MLX / llama.cpp，也不需要任何云端后端配置。
-  它的推理路由一律拒绝（`backendNotAvailable`）。带着自有云端 API 的 Agent 可直接对接
-  这个宿主，不必先在本地装好模型。
+- **独立信息空间宿主**：当前候选由 App 启动流程自动拉起一个**不加载模型**的监听器
+  （`modelId = simigo-information-space`，占用同一个 API 端口）；模型服务启动时接管该端口，
+  停止模型后自动回落到宿主。宿主持有 HTTP listener、`POST /mcp` 与 IS 读路由，不需要先加载
+  MLX / llama.cpp，也不需要云端后端配置。其推理路由一律拒绝（`backendNotAvailable`）。
+  带着自有云端 API 的 Agent 可直接对接该宿主，不必先加载本地模型。
 - 协议：JSON-RPC 2.0，无状态 Streamable-HTTP 子集；单条、批量、通知均可；
   通知返回 `202`。`initialize` 返回 `protocolVersion: "2025-06-18"`，能力只有 `tools`。
 - 方法与 HTTP 路由共用同一个 `SimiGoESISDatabase` / `SimiGoInformationLoop`，不存在第二套
