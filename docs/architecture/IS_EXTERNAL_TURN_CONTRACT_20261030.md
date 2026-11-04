@@ -104,22 +104,31 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 
 ### 3.3 内部记账（`internalOperation`）
 
-客户端声明为内部操作的轮次，用户/回答行都以 `turn_state='internal'` 落库：
-文本保留可审计，`verifyExternalTurn` 对它返回 0 行变更，永远不会成为可检索知识。
-声明通道是 `metadata.simigo_request_scope` / `client_metadata.simigo_request_scope`
-或 `X-SimiGo-Request-Scope: internal`，只认客户端显式声明，不从 wire、会话或内容推断。
-测试（数据层合同测试，`SimiGoExternalTurnContractTests`）：
-`testInternalOperationIsKeptButNeverPromoted`。原随转发路径退出的
-`testInternalDeclaredForwardedTurnIsKeptButNeverPromoted`（真实 HTTP 转发路径）
-已随代理一并移除，其断言等价物保留在数据层。
+数据层 API 接受显式的 `eligibility: .internalOperation`，并将用户/回答行都以
+`turn_state='internal'` 落库；文本保留可审计，`verifyExternalTurn` 对它返回 0 行变更，
+不会成为可检索知识。
+
+**调用通道边界**：旧代理曾把
+`metadata.simigo_request_scope` / `client_metadata.simigo_request_scope` /
+`X-SimiGo-Request-Scope: internal` 映射为该资格。该 HTTP 解析与自动捕获路径已删除；
+当前源码中没有产品请求入口把这些 wire 字段映射到上述数据层 API。当前测试直接调用
+数据层 API，不能证明外部 Agent 能通过 HTTP 声明 internal，也不能证明生产调用链已接通。
+
+数据层合同测试：`SimiGoExternalTurnContractTests` 中的
+`testInternalOperationIsKeptButNeverPromoted` 与
+`testInternalOperationStaysOutOfRetrievalBesideCommittedHistory`。原真实 HTTP 转发测试
+`testInternalDeclaredForwardedTurnIsKeptButNeverPromoted` 随代理路径移除；
+当前保留的是数据层断言，不是 HTTP E2E。
 
 ### 3.4 本地重试不收养外部行
 
 `lastUserMessage` 只取 `source_kind='local'` 的最近用户行（`SimiGoESISDatabase.swift`
 中该查询的 `source_kind='local'` 条件）。外部行属于另一个生产方的请求身份，
 本地轮次的 retry 复用不得采纳或提升它。
-本文原引用的 `testLocalRetryNeverAdoptsExternalRow` 在本仓历史中不存在（无任何提交
-包含该名），此处以代码条件为准，不假称有该测试。
+
+数据层测试 `testLocalRetryReuseNeverAdoptsAnExternalRow` 验证：同一会话中存在外部
+`recorded` 用户行时，本地同文请求创建独立行；本地提交不会提升外部行。该测试证明
+数据层隔离，不证明当前产品存在外部请求生产调用方。
 
 ## 4. 并发不变量
 
