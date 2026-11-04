@@ -1,5 +1,7 @@
 # mlx-lm 工程能力对照与 SimiGo 演进路线基准
 
+> **历史参照与实验路线快照（2026-09-18）**：本文基于当时的 SimiGo main 与 mlx-lm 参考状态整理，包含当时的“当前状态”和路线排序。它不是 2026-11 当前产品状态、开发路线或实现授权。涉及 MLX / mlx-swift-lm、prefill、KV、admission、batch 等现状，必须重新核对当前源码与实机证据；不得直接沿用本文中的历史状态判断。
+
 日期：2026-09-18  
 基线：SimiGo `main` @ `1d085c4cca5a8fece69eeed6aefb794ad1568be6`  
 分支：`research/mlx-lm-reference-roadmap-20260918`
