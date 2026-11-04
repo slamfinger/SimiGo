@@ -1,5 +1,8 @@
 # SimiGo v2.0.0-beta — Release Notes
 
+> **历史发行记录**：本文描述 2026-09 阶段的 beta 候选及当时证据，不代表当前可下载版本、当前支持版本或当前 main 的功能状态。当前发行状态见仓库根目录 [README](../README.md) 与 [RELEASE.md](../RELEASE.md)。
+
+
 > **版本说明**：v2.0.0-beta.1 曾发布后撤下（路线优先级裁定：日常小规模
 > 路径是根基）。其继任者 **v2.0.0-beta.2 已交付该裁定的答案**——Execution
 > State 前缀池（跨会话前缀 KV 共享），真机实测池命中轮 201ms vs 冷轮
