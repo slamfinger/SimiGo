@@ -2,13 +2,11 @@
 
 ## Supported versions
 
-Security fixes target the latest published release and `main`. The latest published release is **v2.2.3 / build 33**. The `main` tree may contain unreleased changes; the v2.2.4 / build 34 candidate is not a published release. See [RELEASE.md](RELEASE.md) for release status.
+Security fixes target the current main branch and any explicitly published release that is still supported. As of the 2026-11-05 repository review, the GitHub Releases API returned no published Release records; the former README reference to v2.2.3 / build 33 is not treated here as a verified current download or support target. The v2.2.4 / build 34 artifact is a historical, unpublished local candidate, not a supported release. Check the root [README.md](README.md) for current distribution status and [RELEASE.md](RELEASE.md) for the candidate's historical identity.
 
 ## Reporting a vulnerability
 
-Use GitHub's **Private vulnerability reporting** for this repository. Do not
-open a public issue with exploit steps, request payloads, model paths, or local
-network topology.
+Use GitHub's **Private vulnerability reporting** for this repository. Do not open a public issue with exploit steps, request payloads, model paths, or local network topology.
 
 Please include:
 
@@ -16,41 +14,30 @@ Please include:
 - macOS/App Build version;
 - minimal reproduction;
 - impact you observed;
-- whether the issue affects HTTP, persistence, external process launch, or the
-  model backend.
+- whether the issue affects HTTP, persistence, external process launch, or the model backend.
 
-We aim to acknowledge reports within five business days and will coordinate a
-disclosure date with the reporter.
+We aim to acknowledge reports within five business days and will coordinate a disclosure date with the reporter.
 
 ## Security scope
 
-SimiGo executes models and provides an OpenAI-compatible HTTP service. Priority
-areas include:
+SimiGo executes models and provides an OpenAI-compatible HTTP service. Priority areas include:
 
 - HTTP request parsing and streaming responses;
 - listener binding, transport security, and process lifecycle;
 - tool-call validation and external agent handoff;
 - checkpoint, prefix-pool, and state-graph persistence;
 - restore/validation paths that must fail closed;
-- external `llama-server` process invocation;
+- external llama-server process invocation;
 - model-directory selection and access to local files.
 
 ## Current security boundary
 
 SimiGo is a research preview, not a hardened multi-tenant service.
 
-The local API binds to loopback by default. Do not expose it to the public
-internet or an untrusted network. Non-loopback access must use the product's
-TLS/authentication path; review [Agent Access](docs/AGENT-ACCESS.md) and the
-specific configuration in use rather than assuming localhost protections apply
-to LAN deployments. Keep model files, checkpoints, and state snapshots as trusted
-local inputs; do not point SimiGo at untrusted archives.
+The local API binds to loopback by default. Do not expose it to the public internet or an untrusted network. Non-loopback access must use the product's TLS/authentication path; review [Agent Access](docs/AGENT-ACCESS.md) and the specific configuration in use rather than assuming localhost protections apply to LAN deployments. Keep model files, checkpoints, and state snapshots as trusted local inputs; do not point SimiGo at untrusted archives.
 
-Report any discrepancy between the documented security boundary and the
-behavior of a particular release or build.
+Report any discrepancy between the documented security boundary and the behavior of a particular release or build.
 
 ## Out of scope
 
-Generation quality, model performance or memory pressure, and OpenAI protocol
-feature differences are product-quality reports unless they cross a privilege,
-transport, or filesystem trust boundary.
+Generation quality, model performance or memory pressure, and OpenAI protocol feature differences are product-quality reports unless they cross a privilege, transport, or filesystem trust boundary.
