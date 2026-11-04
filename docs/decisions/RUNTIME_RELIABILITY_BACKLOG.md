@@ -1,5 +1,8 @@
 # Runtime 可靠性封口 Backlog（Runtime Reliability Backlog）
 
+> **历史优先级快照（2026-09-11/12）**：P0 封口状态按当时证据记录；本文不再作为当前执行队列。后续条目须重新对照现行源码、测试和 [Open Problems](../knowledge/open-problems/README.md) 才能重新排期。保留原始记录，不据此推断当前仍有相同缺陷。
+
+
 日期：2026-09-11
 状态：生效（P0 立即执行）
 背景：三模型对照排查（docs/experiments/MODEL_COMPATIBILITY_MATRIX.md）结束后的
