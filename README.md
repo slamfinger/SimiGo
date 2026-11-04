@@ -8,7 +8,7 @@ SimiGo 是面向 Apple Silicon / macOS 的本地 AI Runtime。它通过 OpenAI-c
 
 ## 当前公开版本
 
-<badge>v2.2.3 · build 33</badge>
+**v2.2.3 · build 33**
 
 - [GitHub Release / DMG](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.3)
 - 文件：`SimiGo-v2.2.3-33-740484b5.dmg`
