@@ -84,7 +84,7 @@ Execution State 描述身份、lineage、position、continuation 与 lifecycle�
 
 ## IS 当前证据边界
 
-IS 中的 **recorded、committed、retrievable 是不同状态**。目前产品合同区分记录、有效结算与消费资格；对同 scope 后续请求实际消费历史的安装版 `replay=1` 证据尚未观测。取消轮终态、本地请求来源身份和 Agent 分类检索资格等问题仍列在 [Open Problems](docs/knowledge/open-problems/README.md)。
+IS 中的 **recorded、committed、retrievable 是不同状态**。目前已有有限的 `replay=1` 与结算/复用观察，但不能据此声称同 scope 的已结算答案已在受控安装版链路中被后续请求稳定消费。取消轮终态、本地请求来源身份和 Agent 分类检索资格等未关闭问题见 [Open Problems](docs/knowledge/open-problems/README.md)；数据合同及其测试范围见 [IS External Turn Contract](docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md)。
 
 云端模型 API 代理已从产品源码删除。使用自身云端 API 的 Agent 不会通过 SimiGo 本地推理路由；可通过 MCP 生命周期接口显式接入。SimiGo 不将 ChatGPT-Web2API 作为核心 backend。
 
