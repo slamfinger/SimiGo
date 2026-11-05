@@ -1072,36 +1072,10 @@ public final class Service: ObservableObject {
 
     // MARK: Slot State
 
-    private func areSlotsIdle() async -> Bool? {
-        let endpoint = inferenceNode
-        let urlString = endpoint.internalBaseURLString + "/slots"
-
-        guard let url = URL(string: urlString) else {
-            return nil
-        }
-
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 1.0
-
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200,
-                  let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-                return nil
-            }
-
-            for slot in jsonArray {
-                if let state = slot["state"] as? Int, state != 0 {
-                    return false
-                }
-            }
-
-            return true
-        } catch {
-            return nil
-        }
+    /// Slot activity is read from the current runtime's own engine port, not
+    /// from the product listener. Non-GGUF runtimes answer `unknown`.
+    private func slotActivity(for runtime: Runtime?) async -> SlotActivity {
+        await SlotActivityResolver.activity(for: runtime)
     }
 
     private func waitForIdle(timeout: TimeInterval = 10) async -> Bool {
@@ -1112,7 +1086,8 @@ public final class Service: ObservableObject {
                 return false
             }
 
-            if let idle = await areSlotsIdle(), idle {
+            let runtime = runtimeState.withLock { $0 }
+            if await slotActivity(for: runtime) == .idle {
                 return true
             }
 
@@ -1128,6 +1103,29 @@ public final class Service: ObservableObject {
 
     // MARK: Health Check
 
+    #if SIMIGO_HEALTH_CHECK_FAILURE_INJECTION
+    /// Validation-build-only, one-shot health failure. The environment is read
+    /// inside this compile condition, so a normal Release build has neither the
+    /// state nor the symbol.
+    ///
+    /// This injects a *result*, it does not make the engine's `/health`
+    /// endpoint answer 503. The real endpoint is not contacted on the cycle
+    /// that consumes this flag.
+    private static let injectedHealthFailureState = Mutex(false)
+
+    nonisolated static func consumeInjectedHealthFailureIfRequested() -> Bool {
+        guard
+            ProcessInfo.processInfo.environment["SIMIGO_HEALTH_CHECK_FAIL_NEXT"]
+                == "fail-next-health-check"
+        else { return false }
+        return injectedHealthFailureState.withLock { consumed in
+            guard !consumed else { return false }
+            consumed = true
+            return true
+        }
+    }
+    #endif
+
     private func startHealthCheck() {
         healthTask?.cancel()
 
@@ -1140,11 +1138,30 @@ public final class Service: ObservableObject {
 
                 let currentRuntime = self.runtimeState.withLock { $0 }
 
+                #if SIMIGO_HEALTH_CHECK_FAILURE_INJECTION
+                var injectedHealthFailure = false
+                #else
+                let injectedHealthFailure = false
+                #endif
+
                 if let runtime = currentRuntime {
                     if runtime.isGenerating {
                         try? await Task.sleep(nanoseconds: 30_000_000_000)
                         continue
                     }
+
+                    #if SIMIGO_HEALTH_CHECK_FAILURE_INJECTION
+                    if self.backendKind == .gguf {
+                        injectedHealthFailure =
+                            Self.consumeInjectedHealthFailureIfRequested()
+                    }
+                    if injectedHealthFailure {
+                        Self.log(
+                            "🧪 [VALIDATION] 一次性注入健康检查失败结果；"
+                                + "本轮未请求引擎 /health。",
+                            level: .warning)
+                    }
+                    #endif
 
                     // NativeMLX: 空闲超时挂起模型（Phase 1 实验）。
                     // 仅释放模型驻留内存，HTTPServer 保持运行——不触发 restart。
@@ -1156,22 +1173,28 @@ public final class Service: ObservableObject {
                         let _ = await nativeMLX.suspendIfIdle()
                     }
 
-                    // GGUF：外部进程无 isGenerating 信号（恒 false），slot 忙时
-                    // /health 可能 503——先跳过本轮，防止生成中途误判无响应触发重启。
-                    if !runtime.isInProcess && self.backendKind == .gguf {
-                        if let slotsIdle = await self.areSlotsIdle(), !slotsIdle {
-                            Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
-                            try? await Task.sleep(nanoseconds: 30_000_000_000)
-                            continue
-                        }
+                    // GGUF：slot 忙时先跳过本轮，防止生成中途误判无响应触发重启。
+                    // 注入失败时故意走过这一跳，让“失败后仍有 busy slot”的
+                    // 保护分支成为被验证的对象。unknown 不当作空闲，也不阻断
+                    // 已死引擎的恢复——交给健康检查判定。
+                    if !injectedHealthFailure,
+                        !runtime.isInProcess,
+                        self.backendKind == .gguf,
+                        await self.slotActivity(for: runtime) == .busy {
+                        Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
+                        try? await Task.sleep(nanoseconds: 30_000_000_000)
+                        continue
                     }
                 }
 
-                let healthy = await currentRuntime?.checkHealth() ?? false
+                let healthy =
+                    injectedHealthFailure
+                    ? false
+                    : (await currentRuntime?.checkHealth() ?? false)
 
                 if !healthy {
                     if self.backendKind == .gguf {
-                        if let slotsIdle = await self.areSlotsIdle(), !slotsIdle {
+                        if await self.slotActivity(for: currentRuntime) == .busy {
                             Self.log("⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。", level: .warning)
                             try? await Task.sleep(nanoseconds: 30_000_000_000)
                             continue

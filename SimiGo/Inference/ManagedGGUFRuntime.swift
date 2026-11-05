@@ -13,6 +13,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
         var engine: ProcessRuntime?
         var server: HTTPServer?
         var client: GGUFEngineClient?
+        var enginePort: Int?
         var running = false
     }
 
@@ -25,6 +26,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
         state.withLock { $0.client?.activeRequestCount ?? 0 > 0 }
     }
     var isInProcess: Bool { false }
+    /// The loopback port the engine was started on, kept only so slot probes
+    /// can reach the engine directly instead of the product listener.
+    var enginePort: Int? { state.withLock { $0.enginePort } }
 
     init(config: ModelConfig, backendConfig: BackendConfig) {
         self.config = config
@@ -107,6 +111,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                 $0.engine = engine
                 $0.server = server
                 $0.client = client
+                $0.enginePort = enginePort
                 $0.running = true
             }
         } catch {
@@ -122,6 +127,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
             current.server = nil
             current.client = nil
             current.engine = nil
+            current.enginePort = nil
             current.running = false
             return snapshot
         }
