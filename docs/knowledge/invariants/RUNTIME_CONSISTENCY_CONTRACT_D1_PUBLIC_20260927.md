@@ -1,5 +1,7 @@
 # Runtime Consistency Contract — D1 (Public)
 
+> **历史范围说明（2026-11-05）**：本文的 IMPLEMENTED / VERIFIED 只指 2026-09-27 对应 Runtime / MLX 实现和证据范围。它不证明 PALACE IS settlement、跨进程 carrier release、fresh-ES restore 或当前发行版具备相同保证。
+
 Status: IMPLEMENTED / VERIFIED
 Date: 2026-09-27
 

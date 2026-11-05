@@ -1,5 +1,7 @@
 # Invariant: Core architecture requires evidence
 
+> **历史范围说明（2026-11-05）**：本文是 v5.0 Core Architecture 阶段的证据晋升原则记录。可作为研究方法参考，不是当前 SimiGo ES / IS 架构的独立验收结果。
+
 **Status:** Core invariant  
 **Current baseline:** v5.0 Core Architecture Baseline
 

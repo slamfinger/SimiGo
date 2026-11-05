@@ -1,5 +1,7 @@
 # SimiGo-Lab Knowledge Map — 2026-09-22
 
+> **历史知识快照（2026-11-05）**：本图只反映 2026-09-22 当时的证据、pinned MLX / MLXLMCommon 版本和未知项。文中 “Current” / “active evolution direction” 等词均以当日为参照；不能用来判断当前 main 的 upstream 能力或当前研究优先级。特别是 K2 / K4 与后续 backend、ES / IS 研究须重新核对。
+
 本图只登记已有证据支持的关系。未验证的关系明确标为 Hypothesis，不把目录结构当成研究结论。
 
 ## Known
