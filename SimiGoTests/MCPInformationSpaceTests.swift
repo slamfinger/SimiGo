@@ -828,7 +828,7 @@ final class MCPInformationSpaceTests: XCTestCase {
     func testMCPStateSurvivesNativeGraphReconciliationAndKeepsTokenizerBinding() throws {
         let db = try SimiGoESISDatabase(url: dbURL)
         try db.runMigrations()
-        let stateID = "mcp-graph-isolation-\\(UUID().uuidString)"
+        let stateID = "mcp-graph-isolation-\(UUID().uuidString)"
         let begun = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
             arguments: [
@@ -839,14 +839,14 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL)
         XCTAssertEqual(begun["state_id"] as? String, stateID)
         XCTAssertEqual(
-            try rawText("SELECT graph_managed FROM execution_states WHERE state_id='\\(stateID)';"),
+            try rawText("SELECT graph_managed FROM execution_states WHERE state_id='\(stateID)';"),
             "0", "MCP-created ES is external to the native graph")
 
         // An empty native graph may remove native-owned states, but must not
         // erase an unsettled MCP execution it does not own.
         try db.writeGraph(states: [], checkpoints: [])
         XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM execution_states WHERE state_id='\\(stateID)';"),
+            try rawText("SELECT COUNT(*) FROM execution_states WHERE state_id='\(stateID)';"),
             "1", "graph reconciliation must leave external MCP ES intact")
         db.close()
 
@@ -875,7 +875,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL),
             "native graph sync must not make the MCP state look newly created")
         XCTAssertEqual(
-            try rawText("SELECT tokenizer_identity FROM execution_states WHERE state_id='\\(stateID)';"),
+            try rawText("SELECT tokenizer_identity FROM execution_states WHERE state_id='\(stateID)';"),
             "tokenizer-a")
     }
 
