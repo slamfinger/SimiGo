@@ -636,6 +636,14 @@ public final class SimiGoESISDatabase {
          "ALTER TABLE execution_states ADD COLUMN tokenizer_identity TEXT;"),
     ]
 
+    /// v19 distinguishes states owned by the native graph from externally begun
+    /// MCP executions. A graph snapshot may reconcile only its own states; it
+    /// must not erase an external, unsettled ES that has not entered that graph.
+    private static let v19Columns: [(table: String, column: String, sql: String)] = [
+        ("execution_states", "graph_managed",
+         "ALTER TABLE execution_states ADD COLUMN graph_managed INTEGER NOT NULL DEFAULT 1;"),
+    ]
+
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
@@ -850,6 +858,15 @@ public final class SimiGoESISDatabase {
                     try Self.rawExec(handle, column.sql)
                 }
                 try recordMigrationRow(18, "simigo-es-tokenizer-identity-v18")
+            }
+        }
+        if try schemaVersion() < 19 {
+            try transaction {
+                for column in SimiGoESISDatabase.v19Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try recordMigrationRow(19, "simigo-es-graph-ownership-v19")
             }
         }
     }
@@ -1534,11 +1551,12 @@ public final class SimiGoESISDatabase {
     /// mirror its execution graph into SQLite and to satisfy settlement FKs.
     public func recordExecutionState(id: String, parentID: String?, modelIdentity: String,
                                      tokenizerIdentity: String? = nil,
+                                     graphManaged: Bool = true,
                                      position: Int, continuationID: String, anchor: String,
                                      lifecycle: String, createdAt: Date) throws {
         try insertExecutionStateRow(
             id: id, parentID: parentID, modelIdentity: modelIdentity,
-            tokenizerIdentity: tokenizerIdentity,
+            tokenizerIdentity: tokenizerIdentity, graphManaged: graphManaged,
             position: position, continuationID: continuationID, anchor: anchor,
             lifecycle: lifecycle, createdAt: createdAt)
     }
@@ -1551,21 +1569,23 @@ public final class SimiGoESISDatabase {
     /// the conflict update leaves any existing value (including NULL) untouched.
     private func insertExecutionStateRow(id: String, parentID: String?, modelIdentity: String,
                                          tokenizerIdentity: String? = nil,
+                                         graphManaged: Bool = true,
                                          position: Int, continuationID: String, anchor: String,
                                          lifecycle: String, createdAt: Date,
                                          nextInput: String? = nil,
                                          prefixJSON: String? = nil,
                                          idempotencyKey: String? = nil) throws {
         try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, idempotency_key, tokenizer_identity)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, idempotency_key, tokenizer_identity, graph_managed)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
             created_at=excluded.created_at,
             next_input=COALESCE(excluded.next_input, next_input),
             prefix_json=COALESCE(excluded.prefix_json, prefix_json),
-            idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key);
+            idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key),
+            graph_managed=excluded.graph_managed;
         """) { stmt in
             bind(stmt, 1, id)
             bind(stmt, 2, parentID)
@@ -1579,6 +1599,7 @@ public final class SimiGoESISDatabase {
             bind(stmt, 10, prefixJSON)
             bind(stmt, 11, idempotencyKey)
             bind(stmt, 12, tokenizerIdentity)
+            bind(stmt, 13, Int64(graphManaged ? 1 : 0))
         }
     }
 
@@ -5954,13 +5975,14 @@ public final class SimiGoESISDatabase {
                 let prefixJSON = String(data: (try? enc.encode(st.prefix)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 let cpJSON = String(data: (try? enc.encode(st.checkpointIDs.map { $0.uuidString })) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 try execBinding("""
-                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?)
+                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, graph_managed)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,1)
                 ON CONFLICT(state_id) DO UPDATE SET
                     parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
                     continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
                     created_at=excluded.created_at, next_input=excluded.next_input,
-                    prefix_json=excluded.prefix_json, checkpoint_ids_json=excluded.checkpoint_ids_json;
+                    prefix_json=excluded.prefix_json, checkpoint_ids_json=excluded.checkpoint_ids_json,
+                    graph_managed=1;
                 """) { stmt in
                     bind(stmt, 1, st.id)
                     bind(stmt, 2, st.parentID)
@@ -5978,7 +6000,8 @@ public final class SimiGoESISDatabase {
             // Reconcile removals: delete states absent from the incoming set, but
             // only those not referenced by any settlement (protect IS authority).
             let keep = Set(states.map { $0.id })
-            let existing = try fetchColumn("SELECT state_id FROM execution_states;")
+            let existing = try fetchColumn(
+                "SELECT state_id FROM execution_states WHERE graph_managed=1;")
             for sid in existing where !keep.contains(sid) {
                 let ref = try isReferencedBySettlement(sid)
                 if !ref {
