@@ -1250,8 +1250,13 @@ public final class Service: ObservableObject {
                     if Task.isCancelled || !runtimeIsStillCurrent { break }
                     Self.log("⚠ 模型服务无响应，触发解耦重启...", level: .warning)
 
-                    Task { @MainActor [weak self] in
-                        await self?.forceRestart()
+                    Task { @MainActor [weak self, currentRuntime] in
+                        guard let self,
+                              let expectedRuntime = currentRuntime,
+                              self.runtimeState.withLock({ $0 === expectedRuntime }) else {
+                            return
+                        }
+                        await self.forceRestart()
                     }
 
                     return
