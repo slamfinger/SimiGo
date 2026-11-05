@@ -42,14 +42,14 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.schemaVersion(), 0)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 17)   // v17 source identity is the head
+        XCTAssertEqual(try db.schemaVersion(), 19)   // v18 binds MCP tokenizer identity to ES
         XCTAssertTrue(try db.integrityCheck())
         XCTAssertEqual(try db.count("chat_messages"), 0)
         XCTAssertEqual(try db.count("file_contents"), 0)
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
         // Idempotent: re-running does not error or double-apply.
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 17)
+        XCTAssertEqual(try db.schemaVersion(), 19)
     }
 
     /// A database stamped v6 by the old out-of-order gates reports the head
@@ -60,7 +60,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 17)
+        XCTAssertEqual(try db.schemaVersion(), 19)
         db.close()
 
         try rawExec(url, """
@@ -76,12 +76,12 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { repaired.close() }
         XCTAssertEqual(try repaired.schemaVersion(), 6)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 17)
+        XCTAssertEqual(try repaired.schemaVersion(), 19)
         XCTAssertEqual(try repaired.count("chat_messages"), 0)
         XCTAssertEqual(try repaired.count("file_contents"), 0)
         XCTAssertEqual(try repaired.count("retrieval_settlements"), 0)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 17)
+        XCTAssertEqual(try repaired.schemaVersion(), 19)
     }
 
     private func rawExec(_ url: URL, _ sql: String) throws {
@@ -97,6 +97,132 @@ final class SimiGoESISDatabaseTests: XCTestCase {
             sqlite3_free(message)
             throw SimiGoESISDatabase.DatabaseError.sql(detail)
         }
+    }
+
+    private func rawText(_ url: URL, _ sql: String) throws -> String {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
+            sqlite3_close(handle)
+            throw SimiGoESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(handle) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw SimiGoESISDatabase.DatabaseError.sql(sql)
+        }
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return "" }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+    }
+
+    /// An existing v17 store must upgrade in place through v19: tokenizer
+    /// identity remains NULL for historical states, graph ownership defaults
+    /// to native-managed, and both migration rows land exactly once.
+    func testV17UpgradeAddsTokenizerIdentityAndGraphOwnership() throws {
+        let url = tempURL("v17-upgrade")
+        defer { cleanup(url) }
+        let db = try SimiGoESISDatabase(url: url)
+        try db.runMigrations()
+        try db.recordExecutionState(
+            id: "legacy-state", parentID: nil, modelIdentity: "m",
+            position: 1, continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+        db.close()
+
+        // Roll the store back to the exact v17 shape this change upgrades from.
+        try rawExec(url, """
+        ALTER TABLE execution_states DROP COLUMN graph_managed;
+        ALTER TABLE execution_states DROP COLUMN tokenizer_identity;
+        DELETE FROM schema_migrations WHERE version IN (18, 19);
+        """)
+
+        let upgraded = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        defer { upgraded.close() }
+        XCTAssertEqual(try upgraded.schemaVersion(), 17)
+        try upgraded.runMigrations()
+        XCTAssertEqual(try upgraded.schemaVersion(), 19)
+        XCTAssertNil(
+            try upgraded.executionStateTokenizerIdentity("legacy-state"),
+            "a pre-v18 state carries no claim and must keep failing closed")
+        XCTAssertEqual(
+            try rawText(url, "SELECT graph_managed FROM execution_states WHERE state_id='legacy-state';"),
+            "1", "legacy rows default to native graph ownership")
+        XCTAssertEqual(
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version IN (18, 19);"), "2")
+    }
+
+    /// Re-running the v19 migration — including after reopening the store —
+    /// must not duplicate version rows or re-add either column.
+    func testV19MigrationIsIdempotentAcrossReopens() throws {
+        let url = tempURL("v18-idempotent")
+        defer { cleanup(url) }
+        let db = try SimiGoESISDatabase(url: url)
+        try db.runMigrations()
+        try db.runMigrations()
+        db.close()
+
+        let reopened = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        try reopened.runMigrations()
+        XCTAssertEqual(try reopened.schemaVersion(), 19)
+        reopened.close()
+
+        XCTAssertEqual(
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version = 19;"), "1")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT COUNT(*) FROM pragma_table_info('execution_states')
+            WHERE name IN ('tokenizer_identity', 'graph_managed');
+            """), "2")
+    }
+
+    /// The tokenizer is fixed by the insert that creates the state. A later
+    /// upsert may refresh other fields but must not replace a recorded
+    /// tokenizer, even with another non-empty value.
+    func testExistingTokenizerIdentityCannotBeOverwrittenByUpsert() throws {
+        let url = tempURL("tokenizer-immutable")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        try db.recordExecutionState(
+            id: "tokenizer-state", parentID: nil, modelIdentity: "m",
+            tokenizerIdentity: "tokenizer-a", position: 0,
+            continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+        try db.recordExecutionState(
+            id: "tokenizer-state", parentID: nil, modelIdentity: "m",
+            tokenizerIdentity: "tokenizer-b", position: 1,
+            continuationID: "C-2", anchor: "a2",
+            lifecycle: "active", createdAt: Date())
+        XCTAssertEqual(
+            try db.executionStateTokenizerIdentity("tokenizer-state"), "tokenizer-a")
+        XCTAssertEqual(
+            try db.executionStatePosition("tokenizer-state"), 1,
+            "the conflict update must still refresh non-identity fields")
+    }
+
+    /// A legacy row whose tokenizer is NULL must stay unbound: a later write
+    /// cannot turn an unverifiable state into an apparently verified one.
+    func testLegacyNullTokenizerIdentityIsNotBackfilledByUpsert() throws {
+        let url = tempURL("tokenizer-null")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        try db.recordExecutionState(
+            id: "legacy-null", parentID: nil, modelIdentity: "m",
+            position: 0, continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+        XCTAssertNil(try db.executionStateTokenizerIdentity("legacy-null"))
+        try db.recordExecutionState(
+            id: "legacy-null", parentID: nil, modelIdentity: "m",
+            tokenizerIdentity: "caller-asserted", position: 1,
+            continuationID: "C-2", anchor: "a2",
+            lifecycle: "active", createdAt: Date())
+        XCTAssertNil(
+            try db.executionStateTokenizerIdentity("legacy-null"),
+            "a NULL begin-time tokenizer is not a slot to backfill")
+        XCTAssertEqual(
+            try db.executionStatePosition("legacy-null"), 1,
+            "the conflict update must still refresh non-identity fields")
     }
 
     func testLegacyImportWithReadBackAndReceipt() throws {

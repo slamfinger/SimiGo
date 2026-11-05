@@ -527,6 +527,11 @@ extension HTTPServer {
                     throw MCPToolError.invalidArguments(
                         "execution \(stateID) was begun by \(begunModel); a different model needs a new state")
                 }
+                let begunTokenizer = try db.executionStateTokenizerIdentity(stateID) ?? ""
+                guard !begunTokenizer.isEmpty, begunTokenizer == tokenizer else {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) was begun with tokenizer \(begunTokenizer); a different or unrecorded tokenizer cannot resume this state")
+                }
                 resumedPosition = existing
             } else {
                 let parentStateID = optionalString(arguments, "parent_state_id")
@@ -542,6 +547,7 @@ extension HTTPServer {
                 }
                 try db.recordExecutionState(
                     id: stateID, parentID: parentStateID, modelIdentity: model,
+                    tokenizerIdentity: tokenizer, graphManaged: false,
                     position: position, continuationID: "mcp-" + UUID().uuidString,
                     anchor: "", lifecycle: "active", createdAt: Date())
                 resumedPosition = nil
@@ -577,6 +583,11 @@ extension HTTPServer {
             {
                 throw MCPToolError.invalidArguments(
                     "execution \(stateID) was begun by \(begunModel); a settlement cannot be recorded under a different model identity")
+            }
+            let begunTokenizer = try db.executionStateTokenizerIdentity(stateID) ?? ""
+            guard !begunTokenizer.isEmpty, begunTokenizer == tokenizer else {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) was begun with tokenizer \(begunTokenizer); a different or unrecorded tokenizer cannot settle this state")
             }
             // Cross-path declarations make a retry idempotent: the common
             // entrance decides whether this submission reuses the existing
