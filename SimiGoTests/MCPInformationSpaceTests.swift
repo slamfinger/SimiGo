@@ -369,7 +369,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(try rawText("SELECT COUNT(*) FROM settlements;"), "0")
     }
 
-    func testBeginReportsSettledAnswerAcrossEngines() throws {
+    func testBeginDoesNotServeSettledAnswerWithoutCurrentDemand() throws {
         let first = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
             arguments: [
@@ -402,13 +402,16 @@ final class MCPInformationSpaceTests: XCTestCase {
             + "advancement=\(settled["advancement_id"] as? String ?? "") "
             + "reusable=\(again["reusable_answer"] as? [String: Any] ?? [:])")
         XCTAssertNotEqual(again["state_id"] as? String, firstState)
-        guard let reuse = again["reusable_answer"] as? [String: Any] else {
-            XCTFail("no reusable answer; begin=\(again) settle=\(settled)")
-            return
-        }
-        XCTAssertEqual(reuse["text"] as? String, "the exit is north")
-        XCTAssertEqual(reuse["model_calls"] as? Int, 0)
-        XCTAssertEqual(reuse["source_state_id"] as? String, firstState)
+        // begin resolves no current demand, so it has no identity to gate a
+        // historical answer on and must not serve one.
+        XCTAssertTrue(again["reusable_answer"] is NSNull)
+
+        // The answer is still recorded; only the unverified begin path refuses.
+        let db = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        let answered = try XCTUnwrap(
+            try db.answeredDemand(sessionID: "cloud-a", query: "where is the exit"))
+        XCTAssertFalse(answered.answerSettlementID.isEmpty)
+        db.close()
 
         // Another engine may not inherit it, and another scope is another question.
         let otherModel = try HTTPServer.runMCPTool(
@@ -525,10 +528,10 @@ final class MCPInformationSpaceTests: XCTestCase {
         ]
     }
 
-    func testSourcedSettleIsReusableInItsSearchSession() throws {
+    func testSourcedSettleIsRecordedButNotServedByBegin() throws {
         let query = "needle"
         let session = "cloud-sourced-a"
-        try settleSourcedAnswer(
+        let settled = try settleSourcedAnswer(
             session: session, query: query, answer: "the vault is behind the stairs")
 
         let again = try HTTPServer.runMCPTool(
@@ -539,16 +542,16 @@ final class MCPInformationSpaceTests: XCTestCase {
             ],
             databaseURL: dbURL)
         print("[MCP-SOURCED-REUSE] \(again["reusable_answer"] ?? "null")")
-        let reuse = try XCTUnwrap(
-            again["reusable_answer"] as? [String: Any], "begin=\(again)")
-        XCTAssertEqual(reuse["text"] as? String, "the vault is behind the stairs")
-        XCTAssertEqual(reuse["model_calls"] as? Int, 0)
+        XCTAssertTrue(
+            again["reusable_answer"] is NSNull,
+            "begin resolves no current demand and must not serve the answer: \(again)")
 
-        // Same store, same schema: reopening it still answers the demand.
+        // Same store, same schema: reopening it still finds the recorded answer.
         let reopened = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
         let answered = try XCTUnwrap(
             try reopened.answeredDemand(sessionID: session, query: query))
-        XCTAssertEqual(answered.answerSettlementID, reuse["settlement_id"] as? String)
+        XCTAssertEqual(
+            answered.answerSettlementID, settled["settlement_id"] as? String)
         reopened.close()
     }
 
