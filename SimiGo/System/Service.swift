@@ -1241,7 +1241,13 @@ public final class Service: ObservableObject {
                     }
 
                     // Last synchronous gate before scheduling a state-changing restart.
-                    if Task.isCancelled { break }
+                    // Also ensure this iteration still refers to Service's current
+                    // runtime; stop/replacement may have detached the captured one.
+                    let runtimeIsStillCurrent = self.runtimeState.withLock { current -> Bool in
+                        guard let current, let currentRuntime else { return false }
+                        return current === currentRuntime
+                    }
+                    if Task.isCancelled || !runtimeIsStillCurrent { break }
                     Self.log("⚠ 模型服务无响应，触发解耦重启...", level: .warning)
 
                     Task { @MainActor [weak self] in
