@@ -65,7 +65,12 @@ extension HTTPServer {
         let sessionID: String
         let query: String
         let userMessageID: Int64
-        let resolution: SimiGoInformationLoop.Resolution
+        /// Latest retrieval candidate for this request. It may differ from the
+        /// frozen snapshot while an engine prefix must remain byte-identical.
+        let candidateResolution: SimiGoInformationLoop.Resolution?
+        /// The demand represented by the exact Information-Space bytes rendered
+        /// into the model input. Reuse and settlement must bind to this demand.
+        let renderedResolution: SimiGoInformationLoop.Resolution
         let modelIdentity: String
         let identity: SimiGoSettlementIdentityBinding.Identity
         let parentStateID: String?
@@ -202,10 +207,10 @@ extension HTTPServer {
         // chat), not just the live session. This is the cross-Agent, cross-
         // session memory the IS exists for; session identifiers narrow it when
         // a caller supplies them.
-        let resolution = try? loop.resolve(.init(
+        let candidateResolution = try? loop.resolve(.init(
             sessionID: infoSession, query: query, includeChat: true,
             chatSessionIDs: [], limit: 30))
-        let retrieval = resolution ?? SimiGoInformationLoop.Resolution(
+        let retrieval = candidateResolution ?? SimiGoInformationLoop.Resolution(
             demandID: "", stateID: nil, reused: false, hits: [], inputDigest: "",
             resultSHA256: "", retrievalSettlementID: "", itemIDs: [], staleItemIDs: [])
         let candidate = resolution.map { loop.contextBlock($0) } ?? ""
@@ -233,6 +238,9 @@ extension HTTPServer {
                 + " bytes=\(context.utf8.count) candidateBytes=\(candidate.utf8.count)"
                 + " replay=\(snapshot.isReplay ? 1 : 0)"
                 + (snapshot.candidateChanged ? " frozenStale=1" : "")
+                + " candidate_demand=\(candidateResolution?.demandID ?? "none")"
+                + " rendered_demand=\(snapshot.resolution.demandID.isEmpty ? "none" : snapshot.resolution.demandID)"
+                + " demand_origin=\(Self.contextFreezingEnabled ? "rendered_snapshot" : "current_candidate")"
                 + (eligibility == .internalOperation ? " eligibility=internal" : "")
         )
 
@@ -253,7 +261,8 @@ extension HTTPServer {
         let turn = InformationTurn(
             db: db, loop: loop, sessionID: infoSession, query: query,
             userMessageID: userMessageID,
-            resolution: snapshot.resolution,
+            candidateResolution: candidateResolution,
+            renderedResolution: snapshot.resolution,
             modelIdentity: producer?.modelIdentity ?? modelId,
             identity: producer?.identity ?? .absent,
             parentStateID: parent, position: position,
@@ -342,7 +351,7 @@ extension HTTPServer {
         do {
             let committed = try turn.loop.settleTurn(
                 generatedText: text,
-                resolution: turn.resolution,
+                resolution: turn.renderedResolution,
                 stateID: "chat-\(UUID().uuidString.lowercased())",
                 parentStateID: turn.parentStateID,
                 position: turn.position,
@@ -480,7 +489,7 @@ extension HTTPServer {
         guard Self.isAnswerReuseEnabled,
             let reuse = turn.loop.reusableAnswer(
                 sessionID: turn.sessionID, query: turn.query,
-                expectedDemandID: turn.resolution.demandID,
+                expectedDemandID: turn.renderedResolution.demandID,
                 identity: turn.identity)
         else { return nil }
         return ReusableAnswer(
@@ -499,8 +508,7 @@ extension HTTPServer {
             sessionID: turn.sessionID, userMessageID: turn.userMessageID,
             assistantText: reuse.text, model: modelId, createdAt: Date(),
             eligibility: turn.eligibility)
-        let demandID = turn.resolution.demandID.isEmpty
-            ? reuse.demandID : turn.resolution.demandID
+        let demandID = turn.renderedResolution.demandID
         _ = try? turn.db.recordInformationReuse(
             sourceSettlementID: reuse.settlementID,
             sourceStateID: reuse.sourceStateID,
@@ -509,7 +517,9 @@ extension HTTPServer {
             query: turn.query)
         RuntimeTraceLogger.shared.trace(
             "[IS_REUSE] settlement=\(reuse.settlementID) demand=\(demandID) "
-                + "state=\(reuse.sourceStateID) model_calls=0")
+                + "state=\(reuse.sourceStateID) model_calls=0"
+                + " candidate_demand=\(turn.candidateResolution?.demandID ?? "none")"
+                + " rendered_demand=\(turn.renderedResolution.demandID)")
     }
 
     /// The wire shape a stream client expects for a reused answer: one content
