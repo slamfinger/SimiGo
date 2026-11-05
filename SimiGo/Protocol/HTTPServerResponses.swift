@@ -537,7 +537,8 @@ extension HTTPServer {
                     ? .unauthorized(reason: "no_settled_kv_binding")
                     : .authorized(outcome.kvBindings))
             RuntimeTraceLogger.shared.trace(
-                "[PROTOCOL] continuation_admitted r=\(context.requestId)"
+                "[PROTOCOL] continuation_admitted"
+                + " r=\(RuntimeTraceLogger.short(context.requestId))"
                 + " parent=\(anchor) child=\(childESStateID)"
                 + " bindings=\(outcome.verifiedBindings.count)"
                 + " kvBindings=\(outcome.kvBindings.count)")
@@ -1016,13 +1017,13 @@ extension HTTPServer {
         guard turn.eligibility == .ordinary else {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_SKIP] wire=responses reason=internal_operation "
-                    + "session=\(turn.sessionID) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
             return
         }
         guard completion.isSettleable else {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_SKIP] wire=responses completion=\(completion.wireName) "
-                    + "session=\(turn.sessionID) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
             return
         }
 
@@ -1070,12 +1071,12 @@ extension HTTPServer {
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REUSE] wire=responses settlement=\(committed.settlementID) "
-                        + "session=\(turn.sessionID) reused=1 settlement_written=0")
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) reused=1 settlement_written=0")
             }
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
-                    + "session=\(turn.sessionID) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
         }
     }
 

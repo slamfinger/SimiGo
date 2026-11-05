@@ -25,6 +25,14 @@ public final class NativeMLXObservation: @unchecked Sendable {
     private var _generationTokens: Int? = nil           // engine-reported decode tokens
     private var _cacheReuseMode: String? = nil          // engine-reported reuse mode (cold/restore/…)
     private var _reusedSession = false
+    // Per-pass timing from the same turn (2026-11-06): the completion trace
+    // line is the human-readable copy; these are the machine-readable ones so
+    // acceptance reads a value instead of re-parsing the text.
+    private var _ttftSeconds: Double? = nil
+    private var _promptSeconds: Double? = nil
+    private var _deltaMessages: Int? = nil
+    private var _cacheEfficiency: Double? = nil
+    private var _reportedReuseMode: String? = nil
 
     // Lifecycle event counters for this process/instance.
     private var reuseMiss = 0
@@ -40,6 +48,10 @@ public final class NativeMLXObservation: @unchecked Sendable {
     private var lifecycleResume = 0
     private var lifecycleSuspend = 0
     private var generatePasses = 0
+    /// 取消轮的「不提交」收口次数（对应 `[MLX] cancelCommitSkip` 那一行）：
+    /// 流在 cancel 落地时正常结束、本轮拒绝写入 history。结构化计数替代
+    /// 从日志文本反解。
+    private var cancelCommitSkip = 0
     // Memory-reclaim lifecycle observables (LOGICAL level, not physical pages).
     private var referenceRelease = 0
     private var sessionsReleasedAtRelease = 0
@@ -75,7 +87,27 @@ public final class NativeMLXObservation: @unchecked Sendable {
             generatePasses += 1
         }
     }
+
+    /// 同一轮的耗时真值（引擎报的 promptTime、首 token 时延、本轮 delta）。
+    /// 与 `noteEngineTokens` 成对调用；缺哪项就留空，不推断。
+    nonisolated func noteEngineTiming(
+        ttftSeconds: Double?, promptSeconds: Double?,
+        deltaMessages: Int?, reused: Bool,
+        cacheEfficiency: Double? = nil, reportedReuseMode: String? = nil
+    ) {
+        lock.withLock {
+            if let ttftSeconds { _ttftSeconds = ttftSeconds }
+            if let promptSeconds { _promptSeconds = promptSeconds }
+            if let deltaMessages { _deltaMessages = deltaMessages }
+            if let cacheEfficiency { _cacheEfficiency = cacheEfficiency }
+            if let reportedReuseMode { _reportedReuseMode = reportedReuseMode }
+            _reusedSession = reused
+        }
+    }
     nonisolated func noteReuseMiss()      { lock.withLock { reuseMiss += 1; appendEventLocked("reuse_miss") } }
+    nonisolated func noteCancelCommitSkip() {
+        lock.withLock { cancelCommitSkip += 1; appendEventLocked("cancel_commit_skip") }
+    }
     nonisolated func notePrefixMismatch() { lock.withLock { prefixMismatch += 1; appendEventLocked("prefix_mismatch") } }
     nonisolated func notePoolBindHit()    { lock.withLock { poolBindHit += 1; appendEventLocked("pool_bind_hit") } }
     nonisolated func notePoolBindFailed() { lock.withLock { poolBindFailed += 1; appendEventLocked("pool_bind_failed") } }
@@ -135,8 +167,14 @@ public final class NativeMLXObservation: @unchecked Sendable {
             "generation_tokens_engine_reported": _generationTokens ?? NSNull(),
             "cache_reuse_mode_engine_reported": _cacheReuseMode ?? NSNull(),
             "reused_session": _reusedSession,
+            "ttft_seconds": _ttftSeconds ?? NSNull(),
+            "prompt_seconds_engine_reported": _promptSeconds ?? NSNull(),
+            "delta_messages": _deltaMessages ?? NSNull(),
+            "cache_efficiency": _cacheEfficiency ?? NSNull(),
+            "reported_reuse_mode": _reportedReuseMode ?? NSNull(),
             "events": [
                 "reuse_miss": reuseMiss,
+                "cancel_commit_skip": cancelCommitSkip,
                 "prefix_mismatch": prefixMismatch,
                 "pool_bind_hit_cacheLoad": poolBindHit,
                 "pool_bind_failed": poolBindFailed,

@@ -22,6 +22,15 @@ import SimiGoRuntimeContract
 /// 墙钟；T4 之后是否还有 prefill 行；重试的 `reuse=`/`cacheHitTokens=`/
 /// `cacheEff=`/`mode=`/`promptTokens=`；取消轮缺失的缓存读数标明「不可用」，
 /// 不补造、不用重试读数替代；session key 是否一致仅记录（W3 #93 / G9 未裁定）。
+///
+/// **为什么本套件仍然读 trace 文本（2026-11-06 裁定）**：它是针对 ADR 之前
+/// 二进制回放的历史仪器，默认跳过，读数不用于关闭任何未关闭项。它要断言的
+/// 恰恰是「旧二进制在当时输出了什么」，而结构化观测面（
+/// `RuntimeLifecycleCoordinator.snapshot()` / `state/runtime.json` /
+/// `NativeMLXObservation` / `NativeMLXPrefixPool.events(after:)`）在那些
+/// 二进制上并不存在。产品源码不读日志这条纪律不受影响，由
+/// `tools/check_trace_is_evidence_only.sh` 守着；面向当前产品的取消/断连判定
+/// 已迁到 `CancelPathStubHTTPTests` / `CancelChainInternalTests` 的结构化读数。
 final class RealModelStreamingCancelRetryE2ETests: XCTestCase {
 
     private let port = 18_242

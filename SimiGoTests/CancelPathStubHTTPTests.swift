@@ -234,7 +234,8 @@ final class CancelPathStubHTTPTests: XCTestCase {
     private func assertGenerationDetached(
         _ engine: BlockingStubEngine,
         _ cancel: RecordingCancelHandler,
-        traceSince: Int,
+        server: HTTPServer,
+        baseline: HTTPServer.DetachedSnapshot,
         file: StaticString = #filePath,
         line: UInt = #line
     ) async {
@@ -255,13 +256,29 @@ final class CancelPathStubHTTPTests: XCTestCase {
             "a client disconnect must not call the cancel handler: "
                 + "\(cancel.requestIds)",
             file: file, line: line)
-        let detach = await CancelTrace.waitForLine(
-            containing: ["[DETACH]", "slots=1"], since: traceSince, timeout: 10)
-        XCTAssertNotNil(
-            detach,
-            "[DETACH] missing from the window:\n"
-                + CancelTrace.window(since: traceSince),
+        let detach = await waitForDetached(server) {
+            $0.registered > baseline.registered
+        }
+        XCTAssertGreaterThan(
+            detach.registered, baseline.registered,
+            "the disconnect never registered an orphan in the detach ledger "
+                + "(\(detach))",
             file: file, line: line)
+    }
+
+    /// 轮询服务端的 detach 结构化快照（不解析 `[DETACH]` 文本）。
+    private func waitForDetached(
+        _ server: HTTPServer,
+        timeout: TimeInterval = 10,
+        _ predicate: @escaping (HTTPServer.DetachedSnapshot) -> Bool
+    ) async -> HTTPServer.DetachedSnapshot {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            let snapshot = server.detachedSnapshot()
+            if predicate(snapshot) { return snapshot }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        } while Date() < deadline
+        return server.detachedSnapshot()
     }
 
     // MARK: - A1) Streaming Responses plain turn: completes, settles, reuses
@@ -406,7 +423,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         defer { server.stop() }
 
         let before = await ESISSweep.stable()
-        let traceSince = CancelTrace.size()
+        let detachBaseline = server.detachedSnapshot()
 
         let client = StreamingClient(host: host, port: port)
         try await client.start(
@@ -423,7 +440,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
 
         let disconnectAt = client.cancelReading()
         await assertGenerationDetached(
-            engine, cancel, traceSince: traceSince)
+            engine, cancel, server: server, baseline: detachBaseline)
 
         XCTAssertEqual(engine.generateCount, 1, "the detached turn must not restart")
         XCTAssertTrue(engine.exitObserved, "the detached turn must run to completion")
@@ -514,7 +531,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         defer { server.stop() }
 
         let before = await ESISSweep.stable()
-        let traceSince = CancelTrace.size()
+        let detachBaseline = server.detachedSnapshot()
 
         let request = try await StreamingClient.makeRequest(
             host: host, port: port, path: "/v1/chat/completions",
@@ -530,7 +547,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         dataTask.cancel()
 
         await assertGenerationDetached(
-            engine, cancel, traceSince: traceSince)
+            engine, cancel, server: server, baseline: detachBaseline)
         XCTAssertEqual(engine.generateCount, 1, "the detached turn must not restart")
         XCTAssertTrue(engine.exitObserved, "the detached turn must run to completion")
         print(
@@ -557,7 +574,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         defer { server.stop() }
 
         let before = await ESISSweep.stable()
-        let traceSince = CancelTrace.size()
+        let detachBaseline = server.detachedSnapshot()
 
         let client = StreamingClient(host: host, port: port)
         try await client.start(
@@ -573,7 +590,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
 
         client.cancelReading()
         await assertGenerationDetached(
-            engine, cancel, traceSince: traceSince)
+            engine, cancel, server: server, baseline: detachBaseline)
         XCTAssertEqual(engine.generateCount, 1, "the detached turn must not restart")
         XCTAssertTrue(engine.exitObserved, "the detached turn must run to completion")
         print("[TA-A5] callbacks=\(cancel.requestIds) detached=1")
@@ -613,7 +630,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         defer { server.stop() }
 
         let before = await ESISSweep.stable()
-        let traceSince = CancelTrace.size()
+        let detachBaseline = server.detachedSnapshot()
 
         let orphan = StreamingClient(host: host, port: port)
         try await orphan.start(
@@ -630,12 +647,12 @@ final class CancelPathStubHTTPTests: XCTestCase {
         XCTAssertTrue(engine.started)
 
         orphan.cancelReading()
-        let detach = await CancelTrace.waitForLine(
-            containing: ["[DETACH]", "slots=1"], since: traceSince, timeout: 10)
-        XCTAssertNotNil(
-            detach,
-            "[DETACH] missing from the window:\n"
-                + CancelTrace.window(since: traceSince))
+        let detach = await waitForDetached(server) {
+            $0.registered > detachBaseline.registered
+        }
+        XCTAssertGreaterThan(
+            detach.registered, detachBaseline.registered,
+            "the orphan never entered the detach ledger: \(detach)")
 
         // The retry is a different session: it enters the generation window
         // while the orphan is still decoding.
@@ -652,12 +669,12 @@ final class CancelPathStubHTTPTests: XCTestCase {
         let retryFinished = await retry.waitForFinished(timeout: 10)
         XCTAssertTrue(retryFinished, retry.sse)
 
-        let stopped = await CancelTrace.waitForLine(
-            containing: ["[DETACH]", "stop=1"], since: traceSince, timeout: 10)
-        XCTAssertNotNil(
-            stopped,
-            "the orphan never yielded the engine:\n"
-                + CancelTrace.window(since: traceSince))
+        let stopped = await waitForDetached(server) {
+            $0.yielded > detachBaseline.yielded
+        }
+        XCTAssertGreaterThan(
+            stopped.yielded, detachBaseline.yielded,
+            "the orphan never yielded the engine: \(stopped)")
         let orphanCancelled = await engine.waitForCancelObserved(timeout: 10)
         XCTAssertTrue(
             orphanCancelled,

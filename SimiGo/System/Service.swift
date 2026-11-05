@@ -665,7 +665,13 @@ public final class Service: ObservableObject {
         }
 
         let line = "\(icon) \(message)"
-        RuntimeTraceLogger.shared.trace(line)
+        // debug 档归入 verbose（2026-11-05）：逐帧轮询类提示默认不落档，
+        // `SIMIGO_TRACE_VERBOSE=1` 时与旧行为一致。
+        if level == .debug {
+            RuntimeTraceLogger.shared.traceVerbose(line)
+        } else {
+            RuntimeTraceLogger.shared.trace(line)
+        }
 
         if consoleLoggingEnabled || level.rawValue >= LogLevel.warning.rawValue {
             print(line)
@@ -690,25 +696,28 @@ public final class Service: ObservableObject {
 
     private nonisolated func resolveConfig(for path: String) -> ModelConfig {
         if let saved = AppConfig.savedConfig(for: path) {
-            Self.log("[CFG] source=saved model=\(modelName(from: path))")
             return saved
         }
 
         if let recommended = AppConfig.recommendedConfig(for: path) {
-            Self.log("[CFG] source=recommended model=\(modelName(from: path))")
             return recommended
         }
 
-        let modelDefault = ModelConfig.fromModel(path)
-        Self.log("[CFG] source=default model=\(modelName(from: path))")
-        return modelDefault
+        return ModelConfig.fromModel(path)
     }
 
     // MARK: Config Logging
 
+    /// 启动配置收口为一行（2026-11-05 日志瘦身）：此前 source= 与 ctx= 是
+    /// 两行、且 source 每次 resolve 都打一遍（含不加载模型的恢复路径）；
+    /// 现在 1 行带齐 model/source/ctx/采样开关，逐次启动仍是独立证据。
     private func logResolvedConfig(_ config: ModelConfig, path: String) {
+        let source = AppConfig.savedConfig(for: path) != nil
+            ? "saved"
+            : (AppConfig.recommendedConfig(for: path) != nil ? "recommended" : "default")
         Self.log(
-            "[CFG] ctx=\(config.ctxSize) gpu=\(config.gpuLayers)" +
+            "[CFG] source=\(source) model=\(modelName(from: path))"
+            + " ctx=\(config.ctxSize) gpu=\(config.gpuLayers)" +
             " temp=\(config.temperature) topP=\(config.topP) topK=\(config.topK) minP=\(config.minP)" +
             " rep=\(config.repeatPenalty) pres=\(config.presencePenalty) flash=\(config.flashAttention)" +
             " jinja=\(config.jinja) codex=\(config.codexMode) mtp=\(config.useMTP)" +
@@ -936,6 +945,12 @@ public final class Service: ObservableObject {
             hostMode = .model
             status = "● 运行中 (\(statusLabel))"
 
+            // 结构化状态快照的后端身份（2026-11-06）：外部工具从
+            // state/runtime.json 读引擎内部端口，不从 trace 文本反推。
+            RuntimeStateReporter.shared.setContext(
+                backend: info.backendName,
+                model: modelName(from: info.path),
+                enginePort: (runtime as? ManagedGGUFRuntime)?.enginePort)
             Self.log("[READY] \(node.apiBaseURLString)")
 
             if info.kind == .gguf {
@@ -995,6 +1010,9 @@ public final class Service: ObservableObject {
     public func stop() async {
         stopHealthCheck()
 
+        // 归零前先记住是否真有运行实体：停两次（stopModelService 后再调
+        // stop）此前会打两遍「服务已停止」，第二遍是空操作噪音。
+        let wasRunning = isRunning || runtimeState.withLock { $0 != nil }
         let runtime = runtimeState.withLock { state -> Runtime? in
             let runtime = state
             state = nil
@@ -1016,8 +1034,11 @@ public final class Service: ObservableObject {
         backendKind = nil
         memoryPressure = "normal"
         status = "已停止"
+        RuntimeStateReporter.shared.clearContext()
 
-        Self.log("✅ 服务已停止，显存/内存已清空", level: .info)
+        if wasRunning {
+            Self.log("✅ 服务已停止，显存/内存已清空", level: .info)
+        }
     }
 
     /// 用户停止模型：卸载模型后把同一端口交还无模型的信息空间宿主，

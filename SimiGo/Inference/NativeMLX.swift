@@ -1031,13 +1031,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             let verdict = Self.budgetInactiveVerdict(
                 .poolActive, bucket: "unknown", budgetMs: budgetMs, maxTokens: maxTokens)
             traceLogger.trace(
-                "[BUDGET] r=\(requestId) verdict=pool_active gate=inactive reason=prefix_pool_enabled")
+                "[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=pool_active gate=inactive reason=prefix_pool_enabled")
             return verdict
         }
         guard budgetMs > 0 else {
             let verdict = Self.budgetInactiveVerdict(
                 .disabled, bucket: "unknown", budgetMs: budgetMs, maxTokens: maxTokens)
-            traceLogger.trace("[BUDGET] r=\(requestId) verdict=disabled gate=inactive")
+            traceLogger.trace("[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=disabled gate=inactive")
             return verdict
         }
         guard let container = state.withLock({ $0.modelContainer }) else {
@@ -1045,7 +1045,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 .estimateUnavailable, bucket: "unknown",
                 budgetMs: budgetMs, maxTokens: maxTokens)
             traceLogger.trace(
-                "[BUDGET] r=\(requestId) verdict=estimate_unavailable gate=inactive reason=model_not_loaded")
+                "[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=estimate_unavailable gate=inactive reason=model_not_loaded")
             return verdict
         }
         guard
@@ -1058,7 +1058,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 .estimateUnavailable, bucket: "unknown",
                 budgetMs: budgetMs, maxTokens: maxTokens)
             traceLogger.trace(
-                "[BUDGET] r=\(requestId) verdict=estimate_unavailable gate=inactive reason=identity_unresolved")
+                "[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=estimate_unavailable gate=inactive reason=identity_unresolved")
             return verdict
         }
 
@@ -1075,7 +1075,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 .emptyTranscript, bucket: "unknown",
                 budgetMs: budgetMs, maxTokens: maxTokens)
             traceLogger.trace(
-                "[BUDGET] r=\(requestId) verdict=empty_transcript gate=inactive")
+                "[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=empty_transcript gate=inactive")
             return verdict
         }
 
@@ -1085,7 +1085,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 .estimateUnavailable, bucket: "unknown",
                 budgetMs: budgetMs, maxTokens: maxTokens)
             traceLogger.trace(
-                "[BUDGET] r=\(requestId) verdict=estimate_unavailable gate=inactive reason=identity_unavailable")
+                "[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=estimate_unavailable gate=inactive reason=identity_unavailable")
             return verdict
         }
 
@@ -1139,7 +1139,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 .restoreActive, bucket: bucket,
                 budgetMs: budgetMs, maxTokens: maxTokens)
             traceLogger.trace(
-                "[BUDGET] r=\(requestId) verdict=restore_active gate=inactive reason=conditional_restore_would_take_over")
+                "[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=restore_active gate=inactive reason=conditional_restore_would_take_over")
             return verdict
         }
 
@@ -1154,7 +1154,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 .estimateUnavailable, bucket: bucket,
                 budgetMs: budgetMs, maxTokens: maxTokens)
             traceLogger.trace(
-                "[BUDGET] r=\(requestId) verdict=estimate_unavailable gate=inactive reason=render_failed bucket=\(bucket)")
+                "[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=estimate_unavailable gate=inactive reason=render_failed bucket=\(bucket)")
             return verdict
         }
 
@@ -1186,6 +1186,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             budgetMs: budgetMs,
             maxTokens: maxTokens,
             memoryMatchedTokens: memoryMatched)
+        // 结构化留档：日志行供人看，判定本身留给进程内消费者（验收/校准）。
+        controller.recordVerdict(
+            requestID: requestId, verdict: verdict,
+            fullTokens: fullTokens.count, deltaTokens: tokens)
         traceLogger.trace(budgetLogLine(
             requestId: requestId, verdict: verdict, fullTokens: fullTokens.count,
             deltaTokens: tokens))
@@ -1239,7 +1243,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         deltaTokens: Int
     ) -> String {
         var line =
-            "[BUDGET] r=\(requestId) verdict=\(verdict.kind.wireName)" +
+            "[BUDGET] r=\(RuntimeTraceLogger.short(requestId)) verdict=\(verdict.kind.wireName)" +
             " gate=\(verdict.gateWasActive ? "active" : "inactive")" +
             " bucket=\(verdict.bucket)" +
             " promptTokens=\(verdict.promptTokens)" +
@@ -1252,7 +1256,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             line += String(format: " rate=%.1f", rate)
         }
         if !verdict.promptDigest.isEmpty {
-            line += " digest=\(verdict.promptDigest.prefix(12))"
+            line += " digest=\(verdict.promptDigest.prefix(6))"
         }
         if verdict.cached {
             line += " cached=1"
@@ -1275,7 +1279,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         verdict: RequestBudgetVerdict
     ) -> String {
         var line =
-            "[BUDGET_REJECT] r=\(requestId) verdict=\(verdict.kind.wireName)" +
+            "[BUDGET_REJECT] r=\(RuntimeTraceLogger.short(requestId)) verdict=\(verdict.kind.wireName)" +
             " bucket=\(verdict.bucket) tokens=\(verdict.promptTokens)" +
             " estMs=\(verdict.estimatedPrefillMs)" +
             " prefillBudget=\(verdict.prefillBudgetMs)" +
@@ -1685,10 +1689,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             + " bindingGen=\(childBinding.generation)"
                             + " refHash=\(String(poolAdmission.entry.boundaryHash, radix: 16))"
                     )
+                    NativeMLXPrefixPool.shared.note(
+                        .bind, session: executionKey.storageKey,
+                        tokens: poolAdmission.entry.tokenCount,
+                        messages: coveredMessages)
                     observation.notePoolBindHit()
                 } catch {
                     // P-I1 响亮失败已在适配器内自愈（条目已删）；
                     // 本轮回退冷路径，绝不静默续算在未对账表示上。
+                    NativeMLXPrefixPool.shared.note(
+                        .bindFailed, session: executionKey.storageKey,
+                        detail: error.localizedDescription)
                     traceLogger.trace(
                         "[MLX] poolBindFailed err=\(error.localizedDescription)")
                     observation.notePoolBindFailed()
@@ -2128,6 +2139,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 请求 count=false → 复用失败 → 每次多付 ~625s 全量冷预填。
         // 残余竞态窗口：流在 cancel 落地前瞬间自然结束——无法在会话层根除，已收窄。
         if Task.isCancelled {
+            observation.noteCancelCommitSkip()
             traceLogger.trace(
                 "[MLX] cancelCommitSkip session=\(executionKey.traceKey)" +
                 " history=\(managed.history.count)" +
@@ -2328,15 +2340,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var reportedCacheHit = cachedPromptTokens
         var reportedCacheEff = cacheEfficiency
         var reportedMode = cacheReuseMode
-        observation.noteEngineTokens(prompt: promptTokens, cacheHit: reportedCacheHit,
-                                     generation: generationTokens, mode: reportedMode,
-                                     reused: reusedSession)
         if cacheReuseMode == nil, managed.isRestoredSnapshot,
            let n = cacheTokensBefore, n > 0, let d = promptTokens {
             reportedCacheHit = n
             reportedCacheEff = Double(n) / Double(n + d)
             reportedMode = "restore"
         }
+        // 顺序很重要：结构化观测必须拿到**补全后的**值。此前先记后补，日志行
+        // 写 9748 而 `cache_hit_tokens_engine_reported` 记 0——同一轮两个说法，
+        // 验收读结构化值时把 restore 误判成冷启。
+        observation.noteEngineTokens(prompt: promptTokens, cacheHit: reportedCacheHit,
+                                     generation: generationTokens, mode: reportedMode,
+                                     reused: reusedSession)
         // EXP-B：记录上一轮 completion 形态（hedge-skip 判定输入）。
         managed.lastCompletionMode = reportedMode
         managed.lastCompletionCacheEff = reportedCacheEff
@@ -2355,6 +2370,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 轮末完成行（build 4 恢复，211aa59 trim 曾删）：V1.7-0 矩阵
         // 位置法捕获的唯一认证级来源——mode/reuse/cacheEff/ttft 逐轮
         // 真值。纯遥测，零行为变更；逐轮一行，量级与 v1.5/v1.6 相同。
+        // 同一份真值另存进结构化观测：验收读观测量，不再从这行文本反解。
+        observation.noteEngineTiming(
+            ttftSeconds: ttft, promptSeconds: promptSeconds,
+            deltaMessages: delta.count, reused: reusedSession,
+            cacheEfficiency: reportedCacheEff, reportedReuseMode: reportedMode)
         var log =
             "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
             " exec=\(executionId.prefix(6))" +
@@ -2403,7 +2423,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // genTokens/maxTokens 让「触顶」在读日志时可直接判定，不必反推 tps。
         log += " stop=\(completion.wireName)" +
             " genTokens=\(generationTokens.map(String.init) ?? "nil")" +
-            " maxTokens=\(params.maxTokens)"
+            // `Optional(8)` 是 Swift 的调试插值，不是给人看的数字。
+            " maxTokens=\(params.maxTokens.map(String.init) ?? "-")"
 
         // W4/A：真实预填样本（冷/热分桶）+ 同 payload 完成观测。
         // 计数口径：info.promptTokenCount 是本轮实际预填的 delta（restore

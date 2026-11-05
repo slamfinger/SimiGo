@@ -1184,7 +1184,7 @@ public final class HTTPServer: @unchecked Sendable {
                 cancelGeneration: cancelGeneration,
                 detach: detach,
                 claimDetachSlot: { [weak self] in
-                    self?.beginDetachedRequest() ?? false
+                    self?.beginDetachedRequest(context) ?? false
                 }
             )
 
@@ -1197,14 +1197,21 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         if result.detached {
+            // 登记在途孤儿：detach 后连接已移出 `connections`，重试请求
+            // 无法再通过它找到孤儿——而让位必须发生在预填循环内部
+            // （见 yieldDetachedOrphansForContention）。
+            connectionLock.withLock {
+                detachedOrphans[context.key] = context
+            }
+
             // 名额随任务结束归还；任务在取出前已结束（或不存在）时立即归还。
             if let task = result.requestTask {
                 Task { [weak self] in
                     _ = await task.value
-                    self?.endDetachedRequest()
+                    self?.endDetachedRequest(context.key)
                 }
             } else {
-                endDetachedRequest()
+                endDetachedRequest(context.key)
             }
 
             RuntimeTraceLogger.shared.trace(
@@ -1245,21 +1252,72 @@ public final class HTTPServer: @unchecked Sendable {
 
     private let detachedLock = NSLock()
     private var detachedInFlight = 0
+    /// detach 记账的结构化视图（2026-11-06）：判定读这里，不解析 `[DETACH]` 文本。
+    struct DetachedSnapshot: Sendable, Equatable {
+        /// 当前在册、仍持有可能被让位的引擎窗口的孤儿数。
+        let active: Int
+        /// 累计登记次数（本轮被接受继续跑完的断连）。
+        let registered: Int
+        /// 累计因超过名额而被拒绝继续的断连（按旧语义取消）。
+        let refused: Int
+        /// 累计因竞争主动让出引擎的次数。
+        let yielded: Int
+        /// 最近登记继续跑的孤儿请求（短 id，最多 8 个）——保留
+        /// “哪个请求 detach 了”这一身份信息，替代原先从 `[DETACH] r=` 反读。
+        let ids: [String]
+    }
 
-    private func beginDetachedRequest() -> Bool {
+    private var detachedRegisteredCount = 0
+    private var detachedRefusedCount = 0
+    private var detachedYieldedCount = 0
+    private var detachedRegisteredIDs: [String] = []
+
+    func detachedSnapshot() -> DetachedSnapshot {
         detachedLock.lock()
         defer { detachedLock.unlock() }
-        guard detachedInFlight < Self.maxDetachedRequests else { return false }
+        return DetachedSnapshot(
+            active: detachedInFlight,
+            registered: detachedRegisteredCount,
+            refused: detachedRefusedCount,
+            yielded: detachedYieldedCount,
+            ids: detachedRegisteredIDs
+        )
+    }
+
+    /// 在途断连孤儿（`detachedByClient` 且仍持有引擎）。让位要抢在预填
+    /// 提交之前发生：vendor 的前缀证明 `interruptedPrefixBoundary()` 只在
+    /// 「本轮尚未提交」时成立，预填结束、提交之后再取消一律
+    /// `ledgerDisagrees`（rows ≠ ledger 0）→ 已付的 prefill 全丢，下一轮
+    /// 只能 rebuild。旧仓 2026-10-30 的真机对照正好两种都在：预填中被取消
+    /// 那次 `memPoolCapture tokens=24408` 成立并让重试 `memPoolHit`；预填
+    /// 完成后再取消那次 `memPoolCaptureRefused rows 26439 ≠ ledger 0`。
+    private var detachedOrphans: [ObjectIdentifier: ConnectionContext] = [:]
+
+    private func beginDetachedRequest(_ context: ConnectionContext) -> Bool {
+        detachedLock.lock()
+        defer { detachedLock.unlock() }
+        guard detachedInFlight < Self.maxDetachedRequests else {
+            detachedRefusedCount += 1
+            return false
+        }
         detachedInFlight += 1
+        detachedRegisteredCount += 1
+        detachedRegisteredIDs.append(RuntimeTraceLogger.short(context.requestId))
+        if detachedRegisteredIDs.count > 8 {
+            detachedRegisteredIDs.removeFirst(detachedRegisteredIDs.count - 8)
+        }
         return true
     }
 
-    private func endDetachedRequest() {
+    private func endDetachedRequest(_ key: ObjectIdentifier) {
         detachedLock.lock()
         if detachedInFlight > 0 {
             detachedInFlight -= 1
         }
         detachedLock.unlock()
+        connectionLock.withLock {
+            detachedOrphans.removeValue(forKey: key)
+        }
     }
 
     /// 孤儿轮让位（ADR 2026-10-30 补充裁定）：断连后本轮默认跑完；但若
@@ -1270,9 +1328,30 @@ public final class HTTPServer: @unchecked Sendable {
     nonisolated func stopDetachedOrphanIfContended(_ context: ConnectionContext) {
         guard context.detachedByClient else { return }
         guard otherGenerationInFlight() else { return }
+        stopDetachedOrphan(context)
+    }
+
+    /// 有新请求开始排队等引擎：在途孤儿立刻让位。
+    ///
+    /// 与 `stopDetachedOrphanIfContended` 的区别只在触发时机——那一支要等
+    /// 孤儿自己吐出第一个 chunk，而此刻预填早已结束并提交，取消只会把
+    /// 已付的 prefill 变成 `memPoolCaptureRefused`。这里在重试进入准入
+    /// 队列时就取消，取消点落在预填循环的 chunk 边界（`forEachChunk` 的
+    /// 唯一取消点），前缀可证明，重试才可能靠内存池只补算剩余部分。
+    nonisolated func yieldDetachedOrphansForContention() {
+        let orphans = connectionLock.withLock { Array(detachedOrphans.values) }
+        for orphan in orphans {
+            stopDetachedOrphan(orphan)
+        }
+    }
+
+    nonisolated private func stopDetachedOrphan(_ context: ConnectionContext) {
         guard let task = context.takeDetachedRequestTask() else { return }
 
         task.cancel()
+        detachedLock.lock()
+        detachedYieldedCount += 1
+        detachedLock.unlock()
         RuntimeTraceLogger.shared.trace(
             "[DETACH] stop=1 r=\(context.requestId) reason=generation_contended"
         )
@@ -1305,6 +1384,10 @@ public final class HTTPServer: @unchecked Sendable {
         endpoint: String
     ) async -> RequestAdmissionScheduler.Ticket? {
         context.armPeerCloseWatchWhileWaiting()
+        // 本请求即将占用引擎窗口：在途孤儿在预填阶段就让位，别让它把
+        // 已付的 prefill 跑完再被杀掉（那一段前缀已不可证明，见
+        // yieldDetachedOrphansForContention）。
+        yieldDetachedOrphansForContention()
         let started = Date()
         let result = await requestAdmission.acquire(requestId: context.requestId)
         let waitedMs = Int(Date().timeIntervalSince(started) * 1000)
@@ -1312,15 +1395,21 @@ public final class HTTPServer: @unchecked Sendable {
 
         switch result {
         case .admitted(let ticket):
+            RuntimeStateReporter.shared.setAdmission(
+                active: snapshot.active, waiting: snapshot.waiting)
+            // agent/branch 随准入行一起落（2026-11-06）：原 `[PROTOCOL] arrive`
+            // 就是为这两项存在，合并后每请求仍是一行可追溯身份。
             RuntimeTraceLogger.shared.trace(
-                "[ADMIT] grant r=\(context.requestId) endpoint=\(endpoint)"
+                "[ADMIT] grant r=\(RuntimeTraceLogger.short(context.requestId)) endpoint=\(endpoint)"
+                    + " agent=\(context.agentId ?? "default")"
+                    + " branch=\(context.logicalBranchId ?? "main")"
                     + " level=\(snapshot.capacity) active=\(snapshot.active)"
                     + " waiting=\(snapshot.waiting) waited=\(waitedMs)ms")
             return ticket
 
         case .queueFull:
             RuntimeTraceLogger.shared.trace(
-                "[ADMIT] reject r=\(context.requestId) endpoint=\(endpoint)"
+                "[ADMIT] reject r=\(RuntimeTraceLogger.short(context.requestId)) endpoint=\(endpoint)"
                     + " reason=queue_full level=\(snapshot.capacity)"
                     + " active=\(snapshot.active) waiting=\(snapshot.waiting)")
             sendError(
@@ -1332,12 +1421,12 @@ public final class HTTPServer: @unchecked Sendable {
 
         case .cancelled:
             RuntimeTraceLogger.shared.trace(
-                "[ADMIT] cancel r=\(context.requestId) endpoint=\(endpoint)")
+                "[ADMIT] cancel r=\(RuntimeTraceLogger.short(context.requestId)) endpoint=\(endpoint)")
             return nil
 
         case .shuttingDown:
             RuntimeTraceLogger.shared.trace(
-                "[ADMIT] reject r=\(context.requestId) endpoint=\(endpoint)"
+                "[ADMIT] reject r=\(RuntimeTraceLogger.short(context.requestId)) endpoint=\(endpoint)"
                     + " reason=shutting_down")
             sendError(
                 "Server is shutting down",
@@ -1354,10 +1443,12 @@ public final class HTTPServer: @unchecked Sendable {
     ) {
         requestAdmission.release(ticket)
         let snapshot = requestAdmission.debugSnapshot()
+        RuntimeStateReporter.shared.setAdmission(
+            active: snapshot.active, waiting: snapshot.waiting)
+        // 只留“谁释放了”。level/active/waiting 与 release 自身的含义重复，
+        // 真值在 `state/runtime.json` 的 admission 字段里。
         RuntimeTraceLogger.shared.trace(
-            "[ADMIT] release r=\(ticket.requestId) endpoint=\(endpoint)"
-                + " level=\(snapshot.capacity) active=\(snapshot.active)"
-                + " waiting=\(snapshot.waiting)")
+            "[ADMIT] release r=\(RuntimeTraceLogger.short(ticket.requestId)) endpoint=\(endpoint)")
     }
 
     // MARK: - SSE Heartbeat
@@ -3197,21 +3288,11 @@ public final class HTTPServer: @unchecked Sendable {
         context: ConnectionContext,
         stream: Bool? = nil
     ) {
-        // 到达锚点入 trace（2026-10-15）：GUI 进程 stdout 不可见，身份行
-        // 此前只在内存里「到达过」。10-15 事故取证时无法从 trace 区分
-        // 「活客户端管道化」与「孤儿请求排队放行」，每请求一行补齐。
-        // r=/s= 用 6 位短 ID，与 [LC] 行可直连。
-        // stream 标志（2026-10-16）：非流式请求死于此路径的零字节窗口
-        // （undici 300s 拆连），取证时首行即可分流。
-        RuntimeTraceLogger.shared.trace(
-            "[PROTOCOL] arrive" +
-            " r=\(String(context.requestId.dropFirst(4).prefix(6)))" +
-            " endpoint=\(endpoint)" +
-            (stream.map { " stream=\($0)" } ?? "") +
-            " agent=\(context.agentId ?? "default")" +
-            " s=\(context.sessionId.map { String($0.prefix(6)) } ?? "-")" +
-            " branch=\(context.logicalBranchId ?? "main")"
-        )
+        // 到达锚点不再单独落一行（2026-11-06）：`[LC] … to=RUNNING` 与
+        // `[ADMIT] grant` 已经逐请求覆盖，独立 arrive 行是同一事实的第三份
+        // 抄写；到达与否的**判定**改由 `RuntimeLifecycleCoordinator.state(of:)`
+        // 回答（例如取消链测试），不再要求测试 grep 日志。
+        // 机器判定需要的信息（r=/s=/agent/branch/stream）保留在协议行上。
 
         print(
             "[SimiGo Protocol] " +
@@ -3672,7 +3753,7 @@ public final class HTTPServer: @unchecked Sendable {
         context: ConnectionContext
     ) {
         RuntimeTraceLogger.shared.trace(
-            "[BUDGET] r=\(context.requestId) gate=withdrawn"
+            "[BUDGET] r=\(RuntimeTraceLogger.short(context.requestId)) gate=withdrawn"
                 + " verdict=\(verdict.kind.wireName)"
                 + " estMs=\(verdict.estimatedPrefillMs)"
                 + " prefillBudget=\(verdict.prefillBudgetMs)"
@@ -3685,7 +3766,7 @@ public final class HTTPServer: @unchecked Sendable {
     /// running a verdict it cannot enforce in time.
     func noteBudgetGateInactive(reason: String, context: ConnectionContext) {
         RuntimeTraceLogger.shared.trace(
-            "[BUDGET] r=\(context.requestId) gate=inactive reason=\(reason)")
+            "[BUDGET] r=\(RuntimeTraceLogger.short(context.requestId)) gate=inactive reason=\(reason)")
     }
 
     /// W4/A: the single terminal for a refused turn. HTTP 503 with a

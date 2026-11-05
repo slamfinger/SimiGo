@@ -238,16 +238,22 @@ extension HTTPServer {
             ? "none" : snapshot.resolution.demandID
         let demandOrigin = Self.contextFreezingEnabled
             ? "rendered_snapshot" : "current_candidate"
+        // 6 字符压缩（2026-11-05）：scope 与 demand 全是 32/64 位十六进制，
+        // 全量只把行拉长，不增加可分辨性；两者相等时只留一份。
+        let shortRenderedDemand = RuntimeTraceLogger.short(renderedDemandID)
+        let shortCandidateDemand = RuntimeTraceLogger.short(candidateDemandID)
         var traceFields = [
-            "[IS] contextInject scope=\(infoSession)",
+            "[IS] contextInject scope=\(RuntimeTraceLogger.short(infoSession))",
             "index=\(targetIndex)",
             "bytes=\(context.utf8.count)",
             "candidateBytes=\(candidate.utf8.count)",
             "replay=\(snapshot.isReplay ? 1 : 0)",
-            "candidate_demand=\(candidateDemandID)",
-            "rendered_demand=\(renderedDemandID)",
+            "demand=\(shortRenderedDemand)",
             "demand_origin=\(demandOrigin)"
         ]
+        if shortCandidateDemand != shortRenderedDemand {
+            traceFields.append("candidate_demand=\(shortCandidateDemand)")
+        }
         if snapshot.candidateChanged { traceFields.append("frozenStale=1") }
         if eligibility == .internalOperation { traceFields.append("eligibility=internal") }
         RuntimeTraceLogger.shared.trace(traceFields.joined(separator: " "))
@@ -341,19 +347,19 @@ extension HTTPServer {
         guard turn.eligibility == .ordinary else {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_SKIP] wire=chat reason=internal_operation "
-                    + "session=\(turn.sessionID) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
             return
         }
         guard completion.isSettleable else {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_SKIP] wire=chat completion=\(completion.wireName) "
-                    + "session=\(turn.sessionID) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
             return
         }
         guard !producedToolCalls else {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_SKIP] wire=chat reason=tool_calls "
-                    + "session=\(turn.sessionID) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
             return
         }
         do {
@@ -372,13 +378,13 @@ extension HTTPServer {
                 operationKey: turn.operationKey)
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
-                    "[SETTLE_REUSE] wire=chat settlement=\(committed.settlementID) "
-                        + "session=\(turn.sessionID) reused=1 settlement_written=0")
+                    "[SETTLE_REUSE] wire=chat settlement=\(RuntimeTraceLogger.short(committed.settlementID)) "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) reused=1 settlement_written=0")
             }
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=chat reason=\"\(error)\" "
-                    + "session=\(turn.sessionID) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
         }
     }
 
@@ -524,10 +530,11 @@ extension HTTPServer {
             sessionID: turn.sessionID,
             query: turn.query)
         RuntimeTraceLogger.shared.trace(
-            "[IS_REUSE] settlement=\(reuse.settlementID) demand=\(demandID) "
-                + "state=\(reuse.sourceStateID) model_calls=0"
-                + " candidate_demand=\(turn.candidateResolution?.demandID ?? "none")"
-                + " rendered_demand=\(turn.renderedResolution.demandID)")
+            "[IS_REUSE] settlement=\(RuntimeTraceLogger.short(reuse.settlementID))"
+                + " demand=\(RuntimeTraceLogger.short(demandID))"
+                + " state=\(RuntimeTraceLogger.short(reuse.sourceStateID)) model_calls=0"
+                + " candidate_demand="
+                + "\(RuntimeTraceLogger.short(turn.candidateResolution?.demandID ?? "none"))")
     }
 
     /// The wire shape a stream client expects for a reused answer: one content
@@ -955,14 +962,29 @@ extension HTTPServer {
                 }
             )
 
+            // 断连 ≠ 取消（2026-11-05 修订 ADR 2026-10-30「detached 轮不结算」）：
+            // 60 s 看门狗是远端 API 的产物，首 token 何时出由本机硬件决定，
+            // 不是这条 request 的语义终点。客户端自己走掉的轮次，答案仍是它
+            // 问的那一问的合法回答；不落 IS，同一 prompt 的重试就只能重算
+            // 模型，60 s 门槛永远消不掉。手动取消 / Runtime 停止不走 detach
+            // （`cancelGenerationHandler`），下面这条判据不会放行它们。
+            let settleAfterDetach = context.detachedByClient
             guard
-                !context.closed,
+                !context.closed || settleAfterDetach,
                 !Task.isCancelled
             else {
                 return
             }
 
             if let turn = information.turn {
+                if context.closed {
+                    // 出处单独留痕：这一笔没有送达客户端，是看门狗超时而非
+                    // 用户取消，后续同 query 的复用必须能追溯到这里。
+                    RuntimeTraceLogger.shared.trace(
+                        "[IS] settleAfterDetach r=\(RuntimeTraceLogger.short(context.requestId))"
+                            + " session=\(RuntimeTraceLogger.short(turn.sessionID))"
+                            + " reason=client_watchdog_not_user_cancel")
+                }
                 settleInformationTurn(
                     turn,
                     assistantText: streamedContent.value,

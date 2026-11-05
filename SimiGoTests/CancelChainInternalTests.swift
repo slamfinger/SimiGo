@@ -84,7 +84,8 @@ final class CancelChainInternalTests: XCTestCase {
         let server = try await startServer(engine, cancel)
         defer { server.stop() }
 
-        let traceSince = CancelTrace.size()
+        let detachBaseline = server.detachedSnapshot()
+        let lifecycleBaseline = await RuntimeLifecycleCoordinator.shared.snapshot()
 
         let client = StreamingClient(host: host, port: port)
         try await client.start(
@@ -100,27 +101,32 @@ final class CancelChainInternalTests: XCTestCase {
 
         client.cancelReading()
 
-        let peerClosedLine = await CancelTrace.waitForLine(
-            containing: ["[PROTOCOL] peerClosed"], since: traceSince, timeout: 10)
-        let line = try XCTUnwrap(
-            peerClosedLine,
-            "[PROTOCOL] peerClosed missing from the window:\n"
-                + CancelTrace.window(since: traceSince))
-        let shortID = try XCTUnwrap(
-            CancelTrace.token("r=", in: line),
-            "the peerClosed line carries no request id: \(line)")
-
-        let detachLine = await CancelTrace.waitForLine(
-            containing: ["[DETACH]", "slots=1"], since: traceSince, timeout: 10)
-        let detach = try XCTUnwrap(
-            detachLine,
-            "[DETACH] missing from the window:\n"
-                + CancelTrace.window(since: traceSince))
+        // 结构化证据（2026-11-06 裁定）：谁被登记成孤儿，读服务端 detach 账本
+        // （`claimDetachSlot` 只由 `terminate(detach: true)` —— 也就是 peer close
+        // ——触发，所以 registered 递增本身就是“断连已被协议层接住”的证据）。
+        // 生命周期计数证明本轮只挂了一个请求，`native_mlx_trace.log` 只作事后
+        // 审计证据，不再参与判定。
+        let coordinator = RuntimeLifecycleCoordinator.shared
+        let registered = await CancelPathWait.until(timeout: 10) {
+            server.detachedSnapshot().registered > detachBaseline.registered
+        }
+        let detach = server.detachedSnapshot()
+        XCTAssertTrue(
+            registered,
+            "the orphan never entered the detach ledger: \(detach)")
         XCTAssertEqual(
-            String(CancelTrace.token("r=", in: detach)?
-                .dropFirst("req-".count).prefix(6) ?? "-"),
-            shortID,
-            "the detached turn is the request the peer close named: \(detach)")
+            detach.ids.count, detachBaseline.ids.count + 1,
+            "exactly one orphan id must be recorded: \(detach.ids)")
+        let closed = await coordinator.snapshot()
+        XCTAssertEqual(
+            closed.registered, lifecycleBaseline.registered + 1,
+            "the peer close must belong to exactly one request: "
+                + "registered \(lifecycleBaseline.registered) -> \(closed.registered)")
+        XCTAssertEqual(
+            closed.byState[RuntimeState.cancelling.rawValue] ?? 0,
+            lifecycleBaseline.byState[RuntimeState.cancelling.rawValue] ?? 0,
+            "a client disconnect must not put the turn on the cancel chain: "
+                + "\(closed.byState)")
 
         // The detached turn must keep running after the client is gone.
         let exited = await engine.waitForExit(timeout: 15)
@@ -142,11 +148,11 @@ final class CancelChainInternalTests: XCTestCase {
             cancel.count, 0,
             "a second close/terminate produced a cancel callback: \(cancel.requestIds)")
         XCTAssertEqual(
-            CancelTrace.count(
-                "[DETACH]", since: traceSince), 1,
-            "the orphan slot must be claimed exactly once:\n"
-                + CancelTrace.window(since: traceSince))
-        print("[TB-B1] peerClosed=\(line) detach=\(detach) callbacks=\(cancel.requestIds)")
+            server.detachedSnapshot().registered, detachBaseline.registered + 1,
+            "the orphan slot must be claimed exactly once: "
+                + "\(server.detachedSnapshot())")
+        print("[TB-B1] closed=\(closed.byState) detach=\(detach) "
+            + "callbacks=\(cancel.requestIds)")
     }
 
     // MARK: - B2a) The heartbeat keeps a silent-but-live stream alive
@@ -318,7 +324,7 @@ final class CancelChainInternalTests: XCTestCase {
             cancelGenerationHandler: { cancel.record($0) }
         )
         let eventCounter = LockedCounter()
-        let traceSince = CancelTrace.size()
+        let detachBaseline = server.detachedSnapshot()
         let heartbeat = server.startSSEHeartbeat(
             for: context,
             interval: 0.05,
@@ -352,25 +358,26 @@ final class CancelChainInternalTests: XCTestCase {
             cancel.count, 0,
             "a send failure must detach, not call the cancel handler: \(cancel.requestIds)")
 
-        let detachLine = await CancelTrace.waitForLine(
-            containing: ["[DETACH]", "r=\(context.requestId)"],
-            since: traceSince, timeout: 10)
-        XCTAssertNotNil(
-            detachLine,
-            "[DETACH] r=\(context.requestId) missing from the window:\n"
-                + CancelTrace.window(since: traceSince))
+        let expectedID = CancelTrace.shortID(ofRequestID: context.requestId)
+        let registered = await CancelPathWait.until(timeout: 10) {
+            server.detachedSnapshot().ids.contains(expectedID)
+        }
+        XCTAssertTrue(
+            registered,
+            "the detached turn \(expectedID) never entered the detach ledger: "
+                + "\(server.detachedSnapshot().ids)")
 
         try? await Task.sleep(nanoseconds: 1_000_000_000)
         XCTAssertEqual(
             cancel.count, 0,
             "the heartbeat failure must not turn into a cancel: \(cancel.requestIds)")
         XCTAssertEqual(
-            CancelTrace.count("[DETACH]", since: traceSince), 1,
-            "the detached turn must claim exactly one orphan slot:\n"
-                + CancelTrace.window(since: traceSince))
+            server.detachedSnapshot().registered, detachBaseline.registered + 1,
+            "the detached turn must claim exactly one orphan slot: "
+                + "\(server.detachedSnapshot())")
         print(
             "[TB-B2b] detached=\(context.detachedByClient) closed=\(context.closed) "
-                + "callbacks=\(cancel.requestIds) detachLine=\(detachLine ?? "nil") "
+                + "callbacks=\(cancel.requestIds) detachIDs=\(server.detachedSnapshot().ids) "
                 + "heartbeatEvents=\(eventCounter.value) "
                 + "connectionState=\(stateRecorder.latest)")
     }

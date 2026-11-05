@@ -72,7 +72,17 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     bindHost: node.bindHost,
                     bonjourEnabled: node.bonjourEnabled,
                     generateHandler: { requestId, _, _, _, messages, tools, requestConfig, onChunk, onToolCall, onReasoning in
-                        try await client.generate(
+                        // P0-3 对齐（2026-11-06）：GGUF 此前从不置 RUNNING，
+                        // 于是每个跑满引擎的成功请求都以 `finish(from: QUEUED)`
+                        // 收尾（2026-10-30 实测 FORCE_RELEASED 32 次），
+                        // 在途标记缺失、真实占用与 LC 状态不一致。
+                        // MLX 在拿到 generation gate 后置位；GGUF 在这里拿到的是
+                        // 已 admission 的同一窗口，语义相同。转换失败不影响生成：
+                        // 已被取消的请求由 client.cancel 收口，重复调用则忽略。
+                        try? await RuntimeLifecycleCoordinator.shared.transition(
+                            requestID: requestId,
+                            to: .running)
+                        return try await client.generate(
                             requestId: requestId,
                             messages: messages,
                             tools: tools,
