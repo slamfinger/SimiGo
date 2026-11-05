@@ -825,6 +825,60 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(try rawText("SELECT COUNT(*) FROM settlements;"), "1")
     }
 
+    func testMCPStateSurvivesNativeGraphReconciliationAndKeepsTokenizerBinding() throws {
+        let db = try SimiGoESISDatabase(url: dbURL)
+        try db.runMigrations()
+        let stateID = "mcp-graph-isolation-\\(UUID().uuidString)"
+        let begun = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "state_id": stateID,
+                "model": "cloud-model",
+                "tokenizer": "tokenizer-a",
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(begun["state_id"] as? String, stateID)
+        XCTAssertEqual(
+            try rawText("SELECT graph_managed FROM execution_states WHERE state_id='\\(stateID)';"),
+            "0", "MCP-created ES is external to the native graph")
+
+        // An empty native graph may remove native-owned states, but must not
+        // erase an unsettled MCP execution it does not own.
+        try db.writeGraph(states: [], checkpoints: [])
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM execution_states WHERE state_id='\\(stateID)';"),
+            "1", "graph reconciliation must leave external MCP ES intact")
+        db.close()
+
+        // Reopen from SQLite alone, then prove the begin-time tokenizer remains
+        // authoritative: a different tokenizer cannot claim the surviving ES.
+        let reopened = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertEqual(try reopened.executionStateTokenizerIdentity(stateID), "tokenizer-a")
+        reopened.close()
+
+        let resumed = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "state_id": stateID,
+                "model": "cloud-model",
+                "tokenizer": "tokenizer-a",
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(resumed["resumed"] as? Bool, true)
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "state_id": stateID,
+                "model": "cloud-model",
+                "tokenizer": "tokenizer-b",
+            ],
+            databaseURL: dbURL),
+            "native graph sync must not make the MCP state look newly created")
+        XCTAssertEqual(
+            try rawText("SELECT tokenizer_identity FROM execution_states WHERE state_id='\\(stateID)';"),
+            "tokenizer-a")
+    }
+
     func testLegacyMCPStateWithoutTokenizerCannotSettle() throws {
         let db = try SimiGoESISDatabase(url: dbURL)
         try db.runMigrations()
