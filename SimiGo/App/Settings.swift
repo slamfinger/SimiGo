@@ -126,7 +126,7 @@ struct Settings: View {
                         Divider()
                         HStack(spacing: 6) {
                             Text(svc.isRunning
-                                 ? "服务运行中 · \(AppConfig.currentAPIAddress)"
+                                 ? "服务运行中"
                                  : "服务未启动")
                                 .font(.caption)
                                 .foregroundColor(svc.isRunning ? .green : .secondary)

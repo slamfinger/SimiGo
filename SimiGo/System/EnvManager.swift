@@ -1113,7 +1113,7 @@ public final class EnvManager: ObservableObject {
 
         isDownloading = true
         downloadProgress = 0
-        downloadLog = "🚀 开始执行模型下载 (自动注入 HF_ENDPOINT=https://hf-mirror.com)...\n$ \(cmd)\n"
+        downloadLog = "🚀 开始执行模型下载 (HF_ENDPOINT=\(ProcessRunner.hfEndpoint()))...\n$ \(cmd)\n"
         commandInput = cmd
         commandStatus = "下载中"
         appendCommandLog("$ \(cmd)")
