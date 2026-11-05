@@ -171,6 +171,56 @@ final class SimiGoESISDatabaseTests: XCTestCase {
             """), "1")
     }
 
+    /// The tokenizer is fixed by the insert that creates the state. A later
+    /// upsert may refresh other fields but must not replace a recorded
+    /// tokenizer, even with another non-empty value.
+    func testExistingTokenizerIdentityCannotBeOverwrittenByUpsert() throws {
+        let url = tempURL("tokenizer-immutable")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        try db.recordExecutionState(
+            id: "tokenizer-state", parentID: nil, modelIdentity: "m",
+            tokenizerIdentity: "tokenizer-a", position: 0,
+            continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+        try db.recordExecutionState(
+            id: "tokenizer-state", parentID: nil, modelIdentity: "m",
+            tokenizerIdentity: "tokenizer-b", position: 1,
+            continuationID: "C-2", anchor: "a2",
+            lifecycle: "active", createdAt: Date())
+        XCTAssertEqual(
+            try db.executionStateTokenizerIdentity("tokenizer-state"), "tokenizer-a")
+        XCTAssertEqual(
+            try db.executionStatePosition("tokenizer-state"), 1,
+            "the conflict update must still refresh non-identity fields")
+    }
+
+    /// A legacy row whose tokenizer is NULL must stay unbound: a later write
+    /// cannot turn an unverifiable state into an apparently verified one.
+    func testLegacyNullTokenizerIdentityIsNotBackfilledByUpsert() throws {
+        let url = tempURL("tokenizer-null")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        try db.recordExecutionState(
+            id: "legacy-null", parentID: nil, modelIdentity: "m",
+            position: 0, continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+        XCTAssertNil(try db.executionStateTokenizerIdentity("legacy-null"))
+        try db.recordExecutionState(
+            id: "legacy-null", parentID: nil, modelIdentity: "m",
+            tokenizerIdentity: "caller-asserted", position: 1,
+            continuationID: "C-2", anchor: "a2",
+            lifecycle: "active", createdAt: Date())
+        XCTAssertNil(
+            try db.executionStateTokenizerIdentity("legacy-null"),
+            "a NULL begin-time tokenizer is not a slot to backfill")
+        XCTAssertEqual(
+            try db.executionStatePosition("legacy-null"), 1,
+            "the conflict update must still refresh non-identity fields")
+    }
+
     func testLegacyImportWithReadBackAndReceipt() throws {
         let url = tempURL("import")
         let db = try SimiGoESISDatabase(url: url)

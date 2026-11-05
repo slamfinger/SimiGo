@@ -1546,6 +1546,9 @@ public final class SimiGoESISDatabase {
     /// Caller owns the transaction. Shared by the standalone upsert and the
     /// atomic child-state + settlement commit, so a continuation can create its
     /// child ES and settle it as one authoritative unit.
+    ///
+    /// `tokenizerIdentity` is written only by the insert that creates the row;
+    /// the conflict update leaves any existing value (including NULL) untouched.
     private func insertExecutionStateRow(id: String, parentID: String?, modelIdentity: String,
                                          tokenizerIdentity: String? = nil,
                                          position: Int, continuationID: String, anchor: String,
@@ -1562,8 +1565,7 @@ public final class SimiGoESISDatabase {
             created_at=excluded.created_at,
             next_input=COALESCE(excluded.next_input, next_input),
             prefix_json=COALESCE(excluded.prefix_json, prefix_json),
-            idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key),
-            tokenizer_identity=COALESCE(excluded.tokenizer_identity, tokenizer_identity);
+            idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key);
         """) { stmt in
             bind(stmt, 1, id)
             bind(stmt, 2, parentID)
