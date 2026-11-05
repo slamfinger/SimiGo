@@ -218,8 +218,9 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
                     keys.contains(forbidden),
                     "bootstrap must not expose \(forbidden)")
             }
+            let userRoot = (NSHomeDirectory() as NSString).deletingLastPathComponent + "/"
             for text in strings {
-                XCTAssertFalse(text.contains("/Users/"), "filesystem path leaked: \(text)")
+                XCTAssertFalse(text.contains(userRoot), "filesystem path leaked: \(text)")
                 XCTAssertFalse(text.contains(".sqlite"), "database location leaked: \(text)")
                 XCTAssertFalse(text.contains("tokenizer.adapter.json"), "file name leaked: \(text)")
             }
