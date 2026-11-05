@@ -239,7 +239,7 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 ### 3.5 settle 的前置条件（违反即整体拒绝，不部分写入）
 
 - 该 `state_id` 必须已经 `begin`；未开始的执行不能结算。
-- `model` 必须与 begin 时的模型身份一致；换模型必须新开一个 state。
+- `model` 必须与 begin 时持久化的模型身份一致；换模型必须新开一个 state。**当前实现尚未把 begin 时的 `tokenizer` 写入 ES 并在 settle 时比对**：settle 使用调用方当次提供的 tokenizer 建立 producer binding，故不能声称 model + tokenizer 已跨 begin/settle 固定；见 [Open Problem #9](knowledge/open-problems/README.md#9-mcp-begin--settle-未绑定同一-tokenizer-identity)。
 - 一个 state 只结算一次。
 - `demand_id` 与 `retrieval_settlement_id` 必须**同时给或同时不给**；给了检索结算，它必须仍为 `valid`。
 - `dependencies[].content_address` 必须是载体中**已封存的对象 id**（例如某条先前结算的
