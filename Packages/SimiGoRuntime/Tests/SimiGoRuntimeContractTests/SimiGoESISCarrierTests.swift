@@ -326,7 +326,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         try db.runMigrations()
         // v8 backfill re-applies on top of the rolled-back head, then the chain
         // runs through to the current head.
-        XCTAssertEqual(try db.schemaVersion(), 18)
+        XCTAssertEqual(try db.schemaVersion(), 19)
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedFileContents, 0)
