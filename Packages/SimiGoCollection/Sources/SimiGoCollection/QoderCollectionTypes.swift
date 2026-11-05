@@ -25,14 +25,12 @@ public enum QoderAttributionRelation: String, Sendable, Equatable, Codable {
     case parentChain = "parent_chain"
     case fileOrderAfterCompaction = "file_order_after_compaction"
     case fileOrderNoChain = "file_order_no_chain"
-    case unattached
 }
 
 public enum QoderReviewReason: String, Sendable, Equatable, Codable {
     case fileOrderAfterCompaction = "file_order_after_compaction"
     case fileOrderNoChain = "file_order_no_chain"
     case interrupted
-    case unattached
 }
 
 public enum QoderTurnDisposition: Sendable, Equatable {
@@ -160,6 +158,9 @@ public struct QoderBaselineEvent: Sendable, Equatable, Codable {
     public enum Reason: String, Sendable, Equatable, Codable {
         case existingFileAtEnd = "existing_file_at_end"
         case newFileFromStart = "new_file_from_start"
+        /// 启用前就存在的文件，按「回填」策略从头读：采集的正是它已有的
+        /// 会话内容，不是一个从 EOF 开始的空基线。
+        case existingFileFromStart = "existing_file_from_start"
         case truncatedReset = "truncated_reset"
         case identityReset = "identity_reset"
         case fingerprintReset = "fingerprint_reset"

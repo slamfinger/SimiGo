@@ -77,10 +77,21 @@ public struct QoderCursorState: Codable, Sendable, Equatable {
     /// backfilled. Files created afterwards are read from their first byte.
     public var initializedAt: Date
     public var cursors: [String: QoderFileCursor]
+    /// The baseline policy these cursors were built under. A cursor made by
+    /// `skip_existing` sits at EOF, so switching to `read_existing` would keep
+    /// skipping exactly the content the new policy promises to collect. When
+    /// the stored policy differs, the cursors are retired and the files are
+    /// re-read from their first byte; the candidate keys are stable, so the
+    /// inbox absorbs the replay instead of duplicating it.
+    public var policy: String?
 
-    public init(initializedAt: Date, cursors: [String: QoderFileCursor] = [:]) {
+    public init(
+        initializedAt: Date, cursors: [String: QoderFileCursor] = [:],
+        policy: String? = nil
+    ) {
         self.initializedAt = initializedAt
         self.cursors = cursors
+        self.policy = policy
     }
 }
 
@@ -330,6 +341,8 @@ public struct QoderTranscriptScanner {
 public struct QoderPollReport: Sendable, Equatable {
     public var scannedFiles = 0
     public var baselinedFiles = 0
+    /// 既有文件按回填策略从头读的个数（`existingFileFromStart`）。
+    public var backfilledFiles = 0
     public var newFilesFromStart = 0
     public var resetFiles = 0
     public var readFiles = 0
@@ -351,6 +364,17 @@ public struct QoderPollReport: Sendable, Equatable {
     public init() {}
 }
 
+/// 首次见到一个文件时怎么处理。
+///
+/// `skipExisting` 是历史默认：启用前就存在的文件基线与 EOF，永不回溯——
+/// 宁可漏采也不把用户既有对话偷偷读进来。
+/// `readExisting` 是「采集桥」的语义：选了目录就把该目录已有的会话采进来。
+/// 两者都只影响**没有游标**的文件；有游标的文件照旧增量 tail。
+public enum QoderBaselinePolicy: String, Sendable, Equatable, Codable {
+    case skipExisting = "skip_existing"
+    case readExisting = "read_existing"
+}
+
 /// Forward-only incremental reader over Qoder transcripts.
 ///
 /// Every poll: discover files, verify each cursor still describes the same
@@ -363,6 +387,7 @@ public final class QoderTranscriptTailer {
     public typealias Sink = ([QoderCollectionEvent]) throws -> Void
 
     public let scanRoot: URL
+    public let baselinePolicy: QoderBaselinePolicy
     public let maxBytesPerPoll: Int
     public let maxLineBytes: Int
 
@@ -374,10 +399,12 @@ public final class QoderTranscriptTailer {
         scanRoot: URL,
         state: QoderCursorState? = nil,
         now: Date = Date(),
+        baselinePolicy: QoderBaselinePolicy = .skipExisting,
         maxBytesPerPoll: Int = 4 << 20,
         maxLineBytes: Int = 32 << 20
     ) {
         self.scanRoot = scanRoot
+        self.baselinePolicy = baselinePolicy
         self.scanner = QoderTranscriptScanner(root: scanRoot)
         self.maxBytesPerPoll = maxBytesPerPoll
         self.maxLineBytes = maxLineBytes
@@ -388,6 +415,15 @@ public final class QoderTranscriptTailer {
 
     public func poll(sink: Sink) -> QoderPollReport {
         var report = QoderPollReport()
+        // A cursor is only meaningful under the policy that produced it: after
+        // `skip_existing` parks a file at EOF, `read_existing` must not inherit
+        // that position, or "选目录即采集既有会话" would silently collect nothing.
+        if state.policy != baselinePolicy.rawValue {
+            state.cursors.removeAll()
+            accumulators.removeAll()
+            state.policy = baselinePolicy.rawValue
+            report.stateChanged = true
+        }
         let scan = scanner.scan()
         let files = scan.files
         report.scannedFiles = files.count
@@ -462,14 +498,21 @@ public final class QoderTranscriptTailer {
                 }
             } else {
                 let created = file.creationDate ?? file.modificationDate ?? .distantPast
-                if created > state.initializedAt {
+                let backfill = baselinePolicy == .readExisting
+                if backfill || created > state.initializedAt {
                     events.append(
                         .baseline(
                             QoderBaselineEvent(
                                 path: file.path, projectID: file.projectID,
                                 sessionID: file.sessionID, isSubagent: file.isSubagent,
-                                offset: 0, reason: .newFileFromStart)))
-                    report.newFilesFromStart += 1
+                                offset: 0,
+                                reason: backfill
+                                    ? .existingFileFromStart : .newFileFromStart)))
+                    if backfill {
+                        report.backfilledFiles += 1
+                    } else {
+                        report.newFilesFromStart += 1
+                    }
                     var cursor = makeCursor(
                         file, offset: 0, segmentLines: 0,
                         fingerprint: QoderDigest.sha256Hex(Data()))
@@ -529,6 +572,10 @@ public final class QoderTranscriptTailer {
             report.baselinedFiles += 1
         case .newFileFromStart:
             report.newFilesFromStart += 1
+        case .existingFileFromStart:
+            // 回填路径在 first-seen 分支自己发事件并计数（offset=0）；这里只
+            // 为 switch 完整，正常不会走到。
+            report.backfilledFiles += 1
         case .truncatedReset, .identityReset, .fingerprintReset:
             report.resetFiles += 1
         }

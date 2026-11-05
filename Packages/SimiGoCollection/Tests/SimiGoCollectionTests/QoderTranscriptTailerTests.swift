@@ -92,6 +92,63 @@ final class QoderTranscriptTailerTests: XCTestCase {
             cursor(tailer)?.offset, size)
     }
 
+    /// 采集桥语义：`readExisting` 把启用前就存在的会话从头读进来，而不是
+    /// 在 EOF 立一个空基线。默认策略的对照在上面那条测试里。
+    func testReadExistingPolicyBackfillsExistingFileFromStart() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            Fixture.turnLines(prompt: "first prompt", answer: "first answer"),
+            to: file)
+
+        let tailer = QoderTranscriptTailer(
+            scanRoot: root, now: Date(), baselinePolicy: .readExisting)
+        let result = poll(tailer)
+
+        XCTAssertEqual(result.report.scannedFiles, 1)
+        XCTAssertEqual(result.report.backfilledFiles, 1)
+        XCTAssertEqual(result.report.baselinedFiles, 0)
+        let baseline = try XCTUnwrap(Fixture.baselines(result.events).first)
+        XCTAssertEqual(baseline.reason, .existingFileFromStart)
+        XCTAssertEqual(baseline.offset, 0)
+        let turns = Fixture.turns(result.events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.promptText, "first prompt")
+        XCTAssertEqual(turns.first?.answerText, "first answer")
+        XCTAssertGreaterThan(result.report.readBytes, 0)
+
+        // 第二轮不再回填：游标已存在，只走增量。
+        let second = poll(tailer)
+        XCTAssertTrue(second.events.isEmpty)
+        XCTAssertEqual(second.report.backfilledFiles, 0)
+    }
+
+    /// 采集桥是**后来**打开的：先前的 `skip_existing` 已在 EOF 立了游标，
+    /// 换成 `read_existing` 必须把那段既有会话读出来，而不是继承旧位置。
+    func testSwitchingPolicyRetiresCursorsMadeAtEndOfFile() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            Fixture.turnLines(prompt: "before enable", answer: "old answer"), to: file)
+
+        let skipped = QoderTranscriptTailer(scanRoot: root, now: Date())
+        let first = poll(skipped)
+        XCTAssertTrue(Fixture.turns(first.events).isEmpty)
+
+        let reader = QoderTranscriptTailer(
+            scanRoot: root, state: skipped.cursorState, baselinePolicy: .readExisting)
+        let result = poll(reader)
+
+        let turns = Fixture.turns(result.events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.promptText, "before enable")
+        XCTAssertEqual(result.report.backfilledFiles, 1)
+        XCTAssertEqual(result.report.baselinedFiles, 0)
+        XCTAssertEqual(reader.cursorState.policy, QoderBaselinePolicy.readExisting.rawValue)
+
+        // 策略稳定后不再重复回填。
+        let second = poll(reader)
+        XCTAssertTrue(second.events.isEmpty)
+    }
+
     func testAppendedTurnIsCollectedAfterBaseline() throws {
         let file = mainFile()
         try Fixture.writeLines(Fixture.turnLines(), to: file)

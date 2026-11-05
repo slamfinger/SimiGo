@@ -7,7 +7,7 @@ struct Settings: View {
     @State private var envMessage = ""
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
-    @ObservedObject private var qoderCollection = QoderCollectionLifecycle.shared
+    @ObservedObject private var collection = QoderCollectionLifecycle.shared
     @State private var workRoots: [EnvManager.WorkRootEntry] = []
     @State private var workRootPendingRemoval: EnvManager.WorkRootEntry?
     @State private var informationSpaceStatus = ""
@@ -42,6 +42,26 @@ struct Settings: View {
         let r = EnvManager.shared.removeWorkRoot(rootID: root.rootID)
         envMessage = "\(root.path): \(r["status"] ?? "?")"
         refreshWorkRoots()
+    }
+
+    /// 采集桥＝「选哪个目录就导入哪个目录」：点按钮直接弹目录面板，选完即
+    /// 跑一次一次性导入（把该目录已有的会话写进 Information Space）。
+    /// 取消面板不改动任何状态。
+    private func openCollectionBridge() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "选择要采集的目录"
+        panel.prompt = "采集此目录"
+        let current = URL(
+            fileURLWithPath: collection.scanRootPath, isDirectory: true)
+        if FileManager.default.fileExists(atPath: current.path) {
+            panel.directoryURL = current
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        collection.setScanRoot(url)
+        collection.setEnabled(true)
     }
 
     /// 与首启向导同一张 `roots` 表：这里的 +/− 增减的就是安装时设定的
@@ -112,70 +132,40 @@ struct Settings: View {
                             Button("刷新状态") { refreshInformationSpace(deep: false) }
                             Button("深度校验") { refreshInformationSpace(deep: true) }
                             Button("重新对账工作目录") { reconcileInformationSpace() }
+                            Button("采集桥…") { openCollectionBridge() }
                             if informationSpaceBusy {
                                 ProgressView().controlSize(.small)
                             }
                         }
                         .disabled(informationSpaceBusy)
+                        if collection.isEnabled {
+                            HStack(spacing: 6) {
+                                Image(systemName: collection.isRunning
+                                      ? "arrow.triangle.2.circlepath" : "tray.and.arrow.down")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                                Text(collection.scanRootPath)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .textSelection(.enabled)
+                                Spacer()
+                                if collection.isRunning {
+                                    Button("停止") { collection.setEnabled(false) }
+                                        .buttonStyle(.borderless)
+                                }
+                            }
+                            if !collection.statusText.isEmpty {
+                                Text(collection.statusText)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                         if !informationSpaceStatus.isEmpty {
                             Text(informationSpaceStatus)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
-                        }
-                        Divider()
-                        HStack(spacing: 6) {
-                            Text(svc.isRunning
-                                 ? "服务运行中"
-                                 : "服务未启动")
-                                .font(.caption)
-                                .foregroundColor(svc.isRunning ? .green : .secondary)
-                            Spacer()
-                        }
-                        Text(svc.hostMode == .informationSpace
-                             ? "启动 App 即提供 MCP 与信息空间读写接口；启动模型时自动接管同一端口，停止模型后自动回落。"
-                             : "模型服务正在运行，信息空间接口由同一端口提供。")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                sectionBox("Qoder 采集（只读桥）") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Toggle(
-                            "启用 Qoder 采集",
-                            isOn: Binding(
-                                get: { qoderCollection.isEnabled },
-                                set: { qoderCollection.setEnabled($0) }
-                            )
-                        )
-                        Text("默认关闭。开启后只读扫描 Qoder 的 transcript 目录（默认 ~/.qoder-cn/projects），把重建出的轮次候选保存到本机 $SIMIGO_HOME/collectors/qoder 的持久 inbox。")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("不导入历史，不写 Information Space / Execution State，不做结算或复用；候选只是来源记录，不等于结算资格。")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        if qoderCollection.isEnabled {
-                            Divider()
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(qoderCollection.isRunning ? Color.green : Color.orange)
-                                    .frame(width: 6, height: 6)
-                                Text(qoderCollection.isRunning ? "运行中" : "不可用")
-                                    .font(.caption)
-                                if let pending = qoderCollection.pendingCount {
-                                    Text("· 待投递 \(pending)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                Spacer()
-                            }
-                            if let reason = qoderCollection.unavailableReason {
-                                Text(reason)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .textSelection(.enabled)
-                            }
                         }
                     }
                 }
