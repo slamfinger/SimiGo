@@ -179,6 +179,22 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     @MainActor
     func testStreamingExactRepeatIsServedWithoutModelCall() async throws {
         let session = "chat-reuse-stream-\(UUID().uuidString)"
+        let previousFreeze = ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"]
+        let previousReuse = ProcessInfo.processInfo.environment["SIMIGO_IS_ANSWER_REUSE"]
+        setenv("SIMIGO_IS_CONTEXT_FREEZE", "1", 1)
+        setenv("SIMIGO_IS_ANSWER_REUSE", "1", 1)
+        defer {
+            if let previousFreeze {
+                setenv("SIMIGO_IS_CONTEXT_FREEZE", previousFreeze, 1)
+            } else {
+                unsetenv("SIMIGO_IS_CONTEXT_FREEZE")
+            }
+            if let previousReuse {
+                setenv("SIMIGO_IS_ANSWER_REUSE", previousReuse, 1)
+            } else {
+                unsetenv("SIMIGO_IS_ANSWER_REUSE")
+            }
+        }
 
         try await withServer {
             let first = try await dispatch(session: session, input: "where is the vault")
@@ -193,15 +209,24 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             let db = try XCTUnwrap(store.esis)
             let stateAfterFirst = try db.currentChatStateID(sessionID: session)
             let settlementsAfterFirst = try db.readSettlementReceipts().count
+            let answeredBeforeRepeat = try XCTUnwrap(
+                db.answeredDemand(sessionID: session, query: "where is the vault"))
+            let demandsBeforeRepeat = try db.count("information_demands")
 
             let second = try await dispatch(session: session, input: "where is the vault")
             XCTAssertEqual(second.status, 200, second.sse)
             XCTAssertEqual(second.generate, 1, "a streaming exact repeat must not call the model")
+            XCTAssertEqual(
+                try db.count("information_demands"), demandsBeforeRepeat + 1,
+                "the second request resolves a fresh candidate after the first turn changed the chat watermark")
 
             let block = try XCTUnwrap(second.reuse, "reuse is reported on the stream")
             XCTAssertEqual(block["answer_reuse"] as? Bool, true)
             XCTAssertEqual(block["model_calls"] as? Int, 0)
             let demandID = try XCTUnwrap(block["demand_id"] as? String)
+            XCTAssertEqual(
+                demandID, answeredBeforeRepeat.demandID,
+                "reuse is authorized by the frozen demand actually rendered, not the newer retrieval candidate")
             let settlementID = try XCTUnwrap(block["settlement_id"] as? String)
             XCTAssertEqual(block["source_state_id"] as? String, stateAfterFirst,
                            "the source is the state that produced the answer")
@@ -219,6 +244,11 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             let event = try XCTUnwrap(db.informationReuseEvent(demandID: demandID))
             XCTAssertEqual(event.sourceSettlementID, settlementID)
             XCTAssertEqual(event.modelCalls, 0)
+            let answeredAfterRepeat = try XCTUnwrap(
+                db.answeredDemand(sessionID: session, query: "where is the vault"))
+            XCTAssertEqual(
+                answeredAfterRepeat.demandID, answeredBeforeRepeat.demandID,
+                "the answer remains published against the rendered demand")
 
             // A different question is not an exact repeat and still generates.
             let third = try await dispatch(session: session, input: "where is the anvil")
