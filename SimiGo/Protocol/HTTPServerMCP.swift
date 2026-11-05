@@ -547,7 +547,7 @@ extension HTTPServer {
                 }
                 try db.recordExecutionState(
                     id: stateID, parentID: parentStateID, modelIdentity: model,
-                    tokenizerIdentity: tokenizer,
+                    tokenizerIdentity: tokenizer, graphManaged: false,
                     position: position, continuationID: "mcp-" + UUID().uuidString,
                     anchor: "", lifecycle: "active", createdAt: Date())
                 resumedPosition = nil
