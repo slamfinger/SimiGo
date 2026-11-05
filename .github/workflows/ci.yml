@@ -168,19 +168,44 @@ jobs:
           print(f"EXPECTED_CASES={count}")
           print(f"DISCOVERY|P0/P1 App test methods={count}")
           PY
-      - name: Run P0/P1 HTTP and MCP XCTest
+      - name: Build P0/P1 HTTP and MCP tests
         run: |
           set -o pipefail
-          xcodebuild test \
+          xcodebuild build-for-testing \
             -project SimiGo.xcodeproj \
             -scheme SimiGo \
             -configuration Debug \
             -destination 'platform=macOS,arch=arm64' \
             -derivedDataPath .build/ci-p0-p1 \
-            -resultBundlePath "$RUNNER_TEMP/p0-p1-app.xcresult" \
             -enableCodeCoverage NO \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
+            -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
+            -only-testing:SimiGoTests/MCPInformationSpaceTests
+      - name: Generate isolated App test xctestrun
+        run: |
+          set -euo pipefail
+          products=".build/ci-p0-p1/Build/Products"
+          app="$products/Debug/SimiGo.app"
+          isolation="$RUNNER_TEMP/p0-p1-isolation"
+          mkdir -p "$isolation/home" "$isolation/cache" "$isolation/state-graph"
+          python3 tools/make_isolated_xctestrun.py \
+            --app "$app" \
+            --isolation-root "$isolation" \
+            --record "$RUNNER_TEMP/p0-p1-xctestrun-isolation.json"
+          xr="$products/xctestrun_isolated.xctestrun"
+          test -f "$xr"
+          echo "ISOLATED_XCTESTRUN=$xr" >> "$GITHUB_ENV"
+          echo "ISOLATION|fresh root=$isolation"
+          echo "ISOLATION|xctestrun=$xr"
+      - name: Run isolated P0/P1 HTTP and MCP XCTest
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -xctestrun "$ISOLATED_XCTESTRUN" \
+            -destination 'platform=macOS,arch=arm64' \
+            -resultBundlePath "$RUNNER_TEMP/p0-p1-app.xcresult" \
+            -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-app.log"
