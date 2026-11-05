@@ -547,24 +547,11 @@ extension HTTPServer {
                 resumedPosition = nil
             }
 
-            // Reuse is reported here as a READ of the settled answer; the caller
-            // still owns the decision, and nothing is written for asking.
-            var reusable: [String: Any] = [:]
-            if let sessionID, let query = optionalString(arguments, "query") {
-                let loop = SimiGoInformationLoop(database: db)
-                if let answer = loop.reusableAnswer(
-                    sessionID: sessionID, query: query,
-                    identity: .init(model: model, tokenizer: tokenizer))
-                {
-                    reusable = [
-                        "text": answer.text,
-                        "settlement_id": answer.settlementID,
-                        "demand_id": answer.demandID,
-                        "source_state_id": answer.sourceStateID,
-                        "model_calls": 0,
-                    ]
-                }
-            }
+            // MCP begin does not resolve the current Information-Space demand.
+            // It must not expose a historical answer as if it satisfied this
+            // newly begun ES. A future MCP reuse path must resolve and bind the
+            // current demand, then use explicit settlement consumption.
+            let reusable: [String: Any] = [:]
             return [
                 "state_id": stateID,
                 "parent_state_id": try db.executionStateParentID(stateID) ?? "",

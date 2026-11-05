@@ -480,6 +480,7 @@ extension HTTPServer {
         guard Self.isAnswerReuseEnabled,
             let reuse = turn.loop.reusableAnswer(
                 sessionID: turn.sessionID, query: turn.query,
+                expectedDemandID: turn.resolution.demandID,
                 identity: turn.identity)
         else { return nil }
         return ReusableAnswer(

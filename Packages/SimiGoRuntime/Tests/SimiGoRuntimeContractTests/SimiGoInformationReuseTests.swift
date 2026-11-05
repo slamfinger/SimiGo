@@ -53,10 +53,13 @@ final class SimiGoInformationReuseTests: XCTestCase {
 
     func testExactRepeatInSameScopeIsServableWithoutWritingASettlement() throws {
         try settleAnsweredTurn()
+        let current = try loop.resolve(.init(
+            sessionID: "info-a", query: query, includeChat: false, limit: 5))
         let settlementsBefore = try db.count("settlements")
 
         let reuse = try XCTUnwrap(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: identity))
+            sessionID: "info-a", query: query,
+            expectedDemandID: current.demandID, identity: identity))
         XCTAssertEqual(reuse.text, "the exit is north")
         XCTAssertEqual(reuse.sessionID, "info-a")
         XCTAssertEqual(reuse.query, query)
@@ -65,6 +68,26 @@ final class SimiGoInformationReuseTests: XCTestCase {
         XCTAssertEqual(reuse.sourceStateID, "S-1")
         // Serving a reuse is a read: it never adds a settlement of its own.
         XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+    }
+
+
+    func testChangedCurrentDemandCannotReuseHistoricalAnswer() throws {
+        let original = try settleAnsweredTurn()
+        let changed = try loop.resolve(.init(
+            sessionID: "info-a", query: query,
+            requestIdentity: "new-turn-after-scope-change",
+            includeChat: false, limit: 5))
+
+        XCTAssertNotEqual(changed.demandID, original.demandID)
+        XCTAssertNil(loop.reusableAnswer(
+            sessionID: "info-a", query: query,
+            expectedDemandID: changed.demandID, identity: identity))
+    }
+
+    func testMissingCurrentDemandCannotReuseHistoricalAnswer() throws {
+        try settleAnsweredTurn()
+        XCTAssertNil(loop.reusableAnswer(
+            sessionID: "info-a", query: query, identity: identity))
     }
 
     /// Rule 1: nothing was ever answered for this question.
