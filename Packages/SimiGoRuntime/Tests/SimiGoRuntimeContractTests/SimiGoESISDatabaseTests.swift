@@ -99,6 +99,78 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         }
     }
 
+    private func rawText(_ url: URL, _ sql: String) throws -> String {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
+            sqlite3_close(handle)
+            throw SimiGoESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(handle) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw SimiGoESISDatabase.DatabaseError.sql(sql)
+        }
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return "" }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+    }
+
+    /// An existing v17 store must upgrade in place: the tokenizer column
+    /// appears without touching rows, historical states stay unbound (NULL),
+    /// and the version row lands exactly once.
+    func testV17UpgradeAddsTokenizerIdentityAndLeavesLegacyRowsUnbound() throws {
+        let url = tempURL("v17-upgrade")
+        defer { cleanup(url) }
+        let db = try SimiGoESISDatabase(url: url)
+        try db.runMigrations()
+        try db.recordExecutionState(
+            id: "legacy-state", parentID: nil, modelIdentity: "m",
+            position: 1, continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+        db.close()
+
+        // Roll the store back to the exact v17 shape this change upgrades from.
+        try rawExec(url, """
+        ALTER TABLE execution_states DROP COLUMN tokenizer_identity;
+        DELETE FROM schema_migrations WHERE version = 18;
+        """)
+
+        let upgraded = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        defer { upgraded.close() }
+        XCTAssertEqual(try upgraded.schemaVersion(), 17)
+        try upgraded.runMigrations()
+        XCTAssertEqual(try upgraded.schemaVersion(), 18)
+        XCTAssertNil(
+            try upgraded.executionStateTokenizerIdentity("legacy-state"),
+            "a pre-v18 state carries no claim and must keep failing closed")
+        XCTAssertEqual(
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version = 18;"), "1")
+    }
+
+    /// Re-running the v18 migration — including after reopening the store —
+    /// must not duplicate the version row or re-add the column.
+    func testV18MigrationIsIdempotentAcrossReopens() throws {
+        let url = tempURL("v18-idempotent")
+        defer { cleanup(url) }
+        let db = try SimiGoESISDatabase(url: url)
+        try db.runMigrations()
+        try db.runMigrations()
+        db.close()
+
+        let reopened = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        try reopened.runMigrations()
+        XCTAssertEqual(try reopened.schemaVersion(), 18)
+        reopened.close()
+
+        XCTAssertEqual(
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version = 18;"), "1")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT COUNT(*) FROM pragma_table_info('execution_states')
+            WHERE name = 'tokenizer_identity';
+            """), "1")
+    }
+
     func testLegacyImportWithReadBackAndReceipt() throws {
         let url = tempURL("import")
         let db = try SimiGoESISDatabase(url: url)
