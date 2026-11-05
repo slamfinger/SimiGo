@@ -15,6 +15,7 @@
 | 7 | 断连→重试的前缀保留 / 冷 prefill 不匹配 | 未关闭，待安装版验收 | [取消与 prefill ADR](../../decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md)：build 31 detach / bounded orphan 实现已落地；真机前缀保留路径未成立 |
 | 8 | MCP `reusable_answer` 命中没有新的 ES 消费 / advancement 路径 | **源码静态审查发现 / 待合同裁定** | `simigo_es_begin` 首次调用先创建 active ES，再返回历史答案提示；命中只读，不写 reuse event、settlement 或 advancement。当前九个 MCP 工具中没有独立消费此答案并推进新 ES 的操作；若 Agent 跳过模型调用并直接采用答案，新 ES 留在 begun-but-unsettled。不能把 `model_calls=0` 当成新 ES 已消费旧结算的证据。尚无第三方 Agent 实际调用序列验收。 |
 | 9 | MCP begin → settle 未绑定同一 tokenizer identity | **源码静态审查发现 / 待回归验证** | `simigo_es_begin` 将 `model` 写入 `execution_states`，resume 时只比较已存 model；`tokenizer` 仅用于 begin 时查询答案复用，没有写入 ES。`simigo_es_settle` 再由调用方提供 tokenizer，并用该值建立 producer binding，但未与 begin 时 tokenizer 比较。因此同一 state 可在 begin 时声明 tokenizer A、settle 时声明 tokenizer B；这不等于身份已被跨生命周期固定。尚无实机复现；应补 begin(A) → settle(B) 的拒绝测试，再决定最小修复。 |
+| 10 | 显式 settlement consumption 的 consumer ES identity 与 consumer binding 可分别声明 | **低优先级 API 不变量缺口 / 待核验** | `SimiGoSettlementConsumption.Request` 同时接收 `consumerModelIdentity` 与 `consumerIdentity`。当前消费路径用 `consumerIdentity` 对源 settlement 做 admission / 写入 consumer binding，却用独立的 `consumerModelIdentity` 创建 consumer ES；未见二者 model 字段必须相等的入口不变量。调用方与现有测试通常传相同值，但 API 本身允许不一致声明。尚无错误调用实证；建议先补 mismatch 拒绝测试，再决定是否在 initializer 或 `consume` 前置校验。 |
 
 ## 使用规则
 
