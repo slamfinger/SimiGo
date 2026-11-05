@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 9272,
-    "research_not_declared": 8726,
-    "non_research_candidates": 546,
-    "declared": 488,
+    "tracked": 549,
+    "research_not_declared": 0,
+    "non_research_candidates": 549,
+    "declared": 491,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -1200,6 +1200,10 @@
       "output": "docs/AUDIT_BASELINE_20260928.md"
     },
     {
+      "path": "docs/README.md",
+      "output": "docs/README.md"
+    },
+    {
       "path": "docs/RELEASE_v2.0.0-beta.md",
       "output": "docs/RELEASE_v2.0.0-beta.md"
     },
@@ -1290,6 +1294,10 @@
     {
       "path": "docs/audit/POST_FREEZE_CODE_AUDIT_2026-09-19.md",
       "output": "docs/audit/POST_FREEZE_CODE_AUDIT_2026-09-19.md"
+    },
+    {
+      "path": "docs/audit/README.md",
+      "output": "docs/audit/README.md"
     },
     {
       "path": "docs/audit/REQUEST_TASK_PUBLICATION_AUDIT_2026-09-11.md",
@@ -1620,6 +1628,10 @@
       "output": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md"
     },
     {
+      "path": "docs/history/QODER_COLLECTION_INTEGRATION_20261105.md",
+      "output": "docs/history/QODER_COLLECTION_INTEGRATION_20261105.md"
+    },
+    {
       "path": "docs/knowledge/README.md",
       "output": "docs/knowledge/README.md"
     },
@@ -1680,10 +1692,6 @@
       "output": "docs/knowledge/invariants/RUNTIME_CONSISTENCY_CONTRACT_D1_PUBLIC_20260927.md"
     },
     {
-      "path": "docs/knowledge/observations/README.md",
-      "output": "docs/knowledge/observations/README.md"
-    },
-    {
       "path": "docs/knowledge/open-problems/README.md",
       "output": "docs/knowledge/open-problems/README.md"
     },
@@ -1726,6 +1734,10 @@
     {
       "path": "docs/releases/BETA_RELEASE_FREEZE_EXECUTION_STATE_20260929.md",
       "output": "docs/releases/BETA_RELEASE_FREEZE_EXECUTION_STATE_20260929.md"
+    },
+    {
+      "path": "docs/releases/README.md",
+      "output": "docs/releases/README.md"
     },
     {
       "path": "docs/releases/RELEASE_NOTES_v1.3.md",

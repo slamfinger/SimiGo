@@ -1027,16 +1027,16 @@ extension HTTPServer {
         }
 
         if let settlementID {
-            guard !turn.resolution.demandID.isEmpty,
-                !turn.resolution.retrievalSettlementID.isEmpty
+            guard !turn.renderedResolution.demandID.isEmpty,
+                !turn.renderedResolution.retrievalSettlementID.isEmpty
             else { return }
             let result = (try? turn.db.settlementReceipt(settlementID))?.payload
                 ?? Data(text.utf8)
             _ = try? turn.db.recordInformationAdvancement(.init(
-                demandID: turn.resolution.demandID,
-                stateID: stateID ?? turn.resolution.stateID ?? "",
+                demandID: turn.renderedResolution.demandID,
+                stateID: stateID ?? turn.renderedResolution.stateID ?? "",
                 settlementID: settlementID,
-                retrievalSettlementID: turn.resolution.retrievalSettlementID,
+                retrievalSettlementID: turn.renderedResolution.retrievalSettlementID,
                 actions: ["responses.completion"],
                 result: result))
             if let stateID {
@@ -1056,7 +1056,7 @@ extension HTTPServer {
         do {
             let committed = try turn.loop.settleTurn(
                 generatedText: text,
-                resolution: turn.resolution,
+                resolution: turn.renderedResolution,
                 stateID: "chat-\(UUID().uuidString.lowercased())",
                 parentStateID: turn.parentStateID,
                 position: turn.position,
