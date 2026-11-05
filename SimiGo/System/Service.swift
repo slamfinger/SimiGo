@@ -1192,6 +1192,9 @@ public final class Service: ObservableObject {
                        let nativeMLX = runtime as? NativeMLX {
                         // 健康循环只需“尝试挂起”，返回值用于静默处理。
                         let _ = await nativeMLX.suspendIfIdle()
+                        // stop()/runtime replacement cancels this task; never
+                        // let an older health iteration proceed after an await.
+                        if Task.isCancelled { break }
                     }
 
                     // GGUF：slot 忙时先跳过本轮，防止生成中途误判无响应触发重启。
@@ -1200,11 +1203,17 @@ public final class Service: ObservableObject {
                     // 已死引擎的恢复——交给健康检查判定。
                     if !injectedHealthFailure,
                         !runtime.isInProcess,
-                        self.backendKind == .gguf,
-                        await self.slotActivity(for: runtime) == .busy {
-                        Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
-                        try? await Task.sleep(nanoseconds: 30_000_000_000)
-                        continue
+                        self.backendKind == .gguf {
+                        let activity = await self.slotActivity(for: runtime)
+                        // The probe maps transport cancellation to .unknown.
+                        // Re-check task cancellation before interpreting that
+                        // value as a real observation.
+                        if Task.isCancelled { break }
+                        if activity == .busy {
+                            Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
+                            try? await Task.sleep(nanoseconds: 30_000_000_000)
+                            continue
+                        }
                     }
                 }
 
@@ -1212,10 +1221,15 @@ public final class Service: ObservableObject {
                     injectedHealthFailure
                     ? false
                     : (await currentRuntime?.checkHealth() ?? false)
+                // checkHealth() may finish after stopHealthCheck() has cancelled
+                // this task. A cancelled iteration must not schedule a restart.
+                if Task.isCancelled { break }
 
                 if !healthy {
                     if self.backendKind == .gguf {
-                        if await self.slotActivity(for: currentRuntime) == .busy {
+                        let activity = await self.slotActivity(for: currentRuntime)
+                        if Task.isCancelled { break }
+                        if activity == .busy {
                             Self.log("⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。", level: .warning)
                             try? await Task.sleep(nanoseconds: 30_000_000_000)
                             continue
