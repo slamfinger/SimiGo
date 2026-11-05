@@ -363,10 +363,16 @@ public struct SimiGoInformationLoop {
     public func reusableAnswer(
         sessionID: String,
         query: String,
+        expectedDemandID: String? = nil,
         identity: SimiGoSettlementIdentityBinding.Identity
     ) -> ReusableAnswer? {
-        guard let answered = try? database.answeredDemand(
-            sessionID: sessionID, query: query)
+        // A historical answer is reusable only for the exact demand resolved
+        // for this turn. Callers without a current resolution fail closed.
+        guard let expectedDemandID,
+            !expectedDemandID.isEmpty,
+            let answered = try? database.answeredDemand(
+                sessionID: sessionID, query: query),
+            answered.demandID == expectedDemandID
         else { return nil }
         guard let receipt = try? database.settlementReceipt(answered.answerSettlementID),
             receipt.validity == "valid" else { return nil }
