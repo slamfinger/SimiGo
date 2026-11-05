@@ -771,6 +771,9 @@ final class MCPInformationSpaceTests: XCTestCase {
     }
 
     func testBeginTokenizerIdentityIsFixedAcrossResumeAndSettle() throws {
+        let db = try SimiGoESISDatabase(url: dbURL)
+        try db.runMigrations()
+        defer { db.close() }
         let stateID = "tokenizer-bound-state"
         let begun = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
@@ -820,6 +823,9 @@ final class MCPInformationSpaceTests: XCTestCase {
     }
 
     func testLegacyMCPStateWithoutTokenizerCannotSettle() throws {
+        let db = try SimiGoESISDatabase(url: dbURL)
+        try db.runMigrations()
+        defer { db.close() }
         try db.recordExecutionState(
             id: "legacy-no-tokenizer", parentID: nil,
             modelIdentity: "cloud-model", position: 0,
