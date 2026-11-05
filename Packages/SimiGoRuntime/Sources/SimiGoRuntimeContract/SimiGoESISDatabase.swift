@@ -628,6 +628,14 @@ public final class SimiGoESISDatabase {
         ON information_demands(session_id, request_identity, query, state);
     """
 
+    /// v18 binds the tokenizer identity to the ES at begin time. NULL remains
+    /// meaningful for legacy/non-MCP states; MCP settlement requires a recorded
+    /// begin-time tokenizer and never backfills an unverifiable identity.
+    private static let v18Columns: [(table: String, column: String, sql: String)] = [
+        ("execution_states", "tokenizer_identity",
+         "ALTER TABLE execution_states ADD COLUMN tokenizer_identity TEXT;"),
+    ]
+
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
@@ -833,6 +841,15 @@ public final class SimiGoESISDatabase {
                 }
                 try Self.rawExec(handle, SimiGoESISDatabase.v17Indexes)
                 try recordMigrationRow(17, "simigo-settlement-source-identity-v17")
+            }
+        }
+        if try schemaVersion() < 18 {
+            try transaction {
+                for column in SimiGoESISDatabase.v18Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try recordMigrationRow(18, "simigo-es-tokenizer-identity-v18")
             }
         }
     }
@@ -1516,10 +1533,12 @@ public final class SimiGoESISDatabase {
     /// Upsert an execution state into the authoritative store. Used by the app to
     /// mirror its execution graph into SQLite and to satisfy settlement FKs.
     public func recordExecutionState(id: String, parentID: String?, modelIdentity: String,
+                                     tokenizerIdentity: String? = nil,
                                      position: Int, continuationID: String, anchor: String,
                                      lifecycle: String, createdAt: Date) throws {
         try insertExecutionStateRow(
             id: id, parentID: parentID, modelIdentity: modelIdentity,
+            tokenizerIdentity: tokenizerIdentity,
             position: position, continuationID: continuationID, anchor: anchor,
             lifecycle: lifecycle, createdAt: createdAt)
     }
@@ -1528,21 +1547,23 @@ public final class SimiGoESISDatabase {
     /// atomic child-state + settlement commit, so a continuation can create its
     /// child ES and settle it as one authoritative unit.
     private func insertExecutionStateRow(id: String, parentID: String?, modelIdentity: String,
+                                         tokenizerIdentity: String? = nil,
                                          position: Int, continuationID: String, anchor: String,
                                          lifecycle: String, createdAt: Date,
                                          nextInput: String? = nil,
                                          prefixJSON: String? = nil,
                                          idempotencyKey: String? = nil) throws {
         try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, idempotency_key)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, idempotency_key, tokenizer_identity)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
             created_at=excluded.created_at,
             next_input=COALESCE(excluded.next_input, next_input),
             prefix_json=COALESCE(excluded.prefix_json, prefix_json),
-            idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key);
+            idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key),
+            tokenizer_identity=COALESCE(excluded.tokenizer_identity, tokenizer_identity);
         """) { stmt in
             bind(stmt, 1, id)
             bind(stmt, 2, parentID)
@@ -1555,6 +1576,7 @@ public final class SimiGoESISDatabase {
             bind(stmt, 9, nextInput)
             bind(stmt, 10, prefixJSON)
             bind(stmt, 11, idempotencyKey)
+            bind(stmt, 12, tokenizerIdentity)
         }
     }
 
@@ -4649,6 +4671,19 @@ public final class SimiGoESISDatabase {
     public func executionStateModelIdentity(_ stateID: String) throws -> String? {
         let stmt = try prepare("""
         SELECT model_identity FROM execution_states WHERE state_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, stateID)
+        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        else { return nil }
+        return String(cString: c)
+    }
+
+    /// Tokenizer identity fixed when an MCP execution state is first begun.
+    /// Nil means legacy or non-MCP state; MCP settle/resume must fail closed.
+    public func executionStateTokenizerIdentity(_ stateID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT tokenizer_identity FROM execution_states WHERE state_id=?;
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
