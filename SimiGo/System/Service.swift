@@ -1240,6 +1240,8 @@ public final class Service: ObservableObject {
                         }
                     }
 
+                    // Last synchronous gate before scheduling a state-changing restart.
+                    if Task.isCancelled { break }
                     Self.log("⚠ 模型服务无响应，触发解耦重启...", level: .warning)
 
                     Task { @MainActor [weak self] in
