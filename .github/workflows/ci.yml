@@ -358,7 +358,7 @@ jobs:
       - name: Gate on executed Runtime cases
         if: always()
         run: |
-          python3 - "$RUNNER_TEMP/runtime-contract.log" "\${EXPECTED_CASES:-}" <<'PY'
+          python3 - "$RUNNER_TEMP/runtime-contract.log" "${EXPECTED_CASES:-}" <<'PY'
           import os, re, sys
 
           log_path, expected_raw = sys.argv[1:3]
