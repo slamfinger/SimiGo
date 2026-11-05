@@ -42,14 +42,14 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.schemaVersion(), 0)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 18)   // v18 binds MCP tokenizer identity to ES
+        XCTAssertEqual(try db.schemaVersion(), 19)   // v18 binds MCP tokenizer identity to ES
         XCTAssertTrue(try db.integrityCheck())
         XCTAssertEqual(try db.count("chat_messages"), 0)
         XCTAssertEqual(try db.count("file_contents"), 0)
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
         // Idempotent: re-running does not error or double-apply.
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 18)
+        XCTAssertEqual(try db.schemaVersion(), 19)
     }
 
     /// A database stamped v6 by the old out-of-order gates reports the head
@@ -60,7 +60,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 18)
+        XCTAssertEqual(try db.schemaVersion(), 19)
         db.close()
 
         try rawExec(url, """
@@ -76,12 +76,12 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { repaired.close() }
         XCTAssertEqual(try repaired.schemaVersion(), 6)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 18)
+        XCTAssertEqual(try repaired.schemaVersion(), 19)
         XCTAssertEqual(try repaired.count("chat_messages"), 0)
         XCTAssertEqual(try repaired.count("file_contents"), 0)
         XCTAssertEqual(try repaired.count("retrieval_settlements"), 0)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 18)
+        XCTAssertEqual(try repaired.schemaVersion(), 19)
     }
 
     private func rawExec(_ url: URL, _ sql: String) throws {
@@ -115,10 +115,10 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
     }
 
-    /// An existing v17 store must upgrade in place: the tokenizer column
-    /// appears without touching rows, historical states stay unbound (NULL),
-    /// and the version row lands exactly once.
-    func testV17UpgradeAddsTokenizerIdentityAndLeavesLegacyRowsUnbound() throws {
+    /// An existing v17 store must upgrade in place through v19: tokenizer
+    /// identity remains NULL for historical states, graph ownership defaults
+    /// to native-managed, and both migration rows land exactly once.
+    func testV17UpgradeAddsTokenizerIdentityAndGraphOwnership() throws {
         let url = tempURL("v17-upgrade")
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
@@ -131,25 +131,29 @@ final class SimiGoESISDatabaseTests: XCTestCase {
 
         // Roll the store back to the exact v17 shape this change upgrades from.
         try rawExec(url, """
+        ALTER TABLE execution_states DROP COLUMN graph_managed;
         ALTER TABLE execution_states DROP COLUMN tokenizer_identity;
-        DELETE FROM schema_migrations WHERE version = 18;
+        DELETE FROM schema_migrations WHERE version IN (18, 19);
         """)
 
         let upgraded = try SimiGoESISDatabase(url: url, createIfNeeded: false)
         defer { upgraded.close() }
         XCTAssertEqual(try upgraded.schemaVersion(), 17)
         try upgraded.runMigrations()
-        XCTAssertEqual(try upgraded.schemaVersion(), 18)
+        XCTAssertEqual(try upgraded.schemaVersion(), 19)
         XCTAssertNil(
             try upgraded.executionStateTokenizerIdentity("legacy-state"),
             "a pre-v18 state carries no claim and must keep failing closed")
         XCTAssertEqual(
-            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version = 18;"), "1")
+            try rawText(url, "SELECT graph_managed FROM execution_states WHERE state_id='legacy-state';"),
+            "1", "legacy rows default to native graph ownership")
+        XCTAssertEqual(
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version IN (18, 19);"), "2")
     }
 
-    /// Re-running the v18 migration — including after reopening the store —
-    /// must not duplicate the version row or re-add the column.
-    func testV18MigrationIsIdempotentAcrossReopens() throws {
+    /// Re-running the v19 migration — including after reopening the store —
+    /// must not duplicate version rows or re-add either column.
+    func testV19MigrationIsIdempotentAcrossReopens() throws {
         let url = tempURL("v18-idempotent")
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
@@ -159,16 +163,16 @@ final class SimiGoESISDatabaseTests: XCTestCase {
 
         let reopened = try SimiGoESISDatabase(url: url, createIfNeeded: false)
         try reopened.runMigrations()
-        XCTAssertEqual(try reopened.schemaVersion(), 18)
+        XCTAssertEqual(try reopened.schemaVersion(), 19)
         reopened.close()
 
         XCTAssertEqual(
-            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version = 18;"), "1")
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version = 19;"), "1")
         XCTAssertEqual(
             try rawText(url, """
             SELECT COUNT(*) FROM pragma_table_info('execution_states')
-            WHERE name = 'tokenizer_identity';
-            """), "1")
+            WHERE name IN ('tokenizer_identity', 'graph_managed');
+            """), "2")
     }
 
     /// The tokenizer is fixed by the insert that creates the state. A later
