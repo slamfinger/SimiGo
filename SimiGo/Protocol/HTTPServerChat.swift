@@ -213,7 +213,7 @@ extension HTTPServer {
         let retrieval = candidateResolution ?? SimiGoInformationLoop.Resolution(
             demandID: "", stateID: nil, reused: false, hits: [], inputDigest: "",
             resultSHA256: "", retrievalSettlementID: "", itemIDs: [], staleItemIDs: [])
-        let candidate = resolution.map { loop.contextBlock($0) } ?? ""
+        let candidate = candidateResolution.map { loop.contextBlock($0) } ?? ""
         // The turn this block is attached to. Inside a tool loop the client
         // repeats the same trailing user message every request, so this is a
         // mid-chain position the engine has already committed.
@@ -232,17 +232,25 @@ extension HTTPServer {
         // One readable line per turn: the landed index is the fact that decides
         // whether the committed prefix drifts — a mid-chain index sits inside
         // what the engine already rendered, `tail` does not.
-        RuntimeTraceLogger.shared.trace(
-            "[IS] contextInject scope=\(infoSession)"
-                + " index=\(target.map { String($0) } ?? "tail")"
-                + " bytes=\(context.utf8.count) candidateBytes=\(candidate.utf8.count)"
-                + " replay=\(snapshot.isReplay ? 1 : 0)"
-                + (snapshot.candidateChanged ? " frozenStale=1" : "")
-                + " candidate_demand=\(candidateResolution?.demandID ?? "none")"
-                + " rendered_demand=\(snapshot.resolution.demandID.isEmpty ? "none" : snapshot.resolution.demandID)"
-                + " demand_origin=\(Self.contextFreezingEnabled ? "rendered_snapshot" : "current_candidate")"
-                + (eligibility == .internalOperation ? " eligibility=internal" : "")
-        )
+        let targetIndex = target.map { String($0) } ?? "tail"
+        let candidateDemandID = candidateResolution?.demandID ?? "none"
+        let renderedDemandID = snapshot.resolution.demandID.isEmpty
+            ? "none" : snapshot.resolution.demandID
+        let demandOrigin = Self.contextFreezingEnabled
+            ? "rendered_snapshot" : "current_candidate"
+        var traceFields = [
+            "[IS] contextInject scope=\(infoSession)",
+            "index=\(targetIndex)",
+            "bytes=\(context.utf8.count)",
+            "candidateBytes=\(candidate.utf8.count)",
+            "replay=\(snapshot.isReplay ? 1 : 0)",
+            "candidate_demand=\(candidateDemandID)",
+            "rendered_demand=\(renderedDemandID)",
+            "demand_origin=\(demandOrigin)"
+        ]
+        if snapshot.candidateChanged { traceFields.append("frozenStale=1") }
+        if eligibility == .internalOperation { traceFields.append("eligibility=internal") }
+        RuntimeTraceLogger.shared.trace(traceFields.joined(separator: " "))
 
         // Persist only this turn's user text, not the whole request envelope:
         // re-storing the accumulated history would make every later retrieval
