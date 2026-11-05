@@ -75,6 +75,10 @@ nonisolated enum GGUFSlotActivityProbe {
         }
         var request = URLRequest(url: url)
         request.timeoutInterval = 1.0
+        // /slots is a live process-safety signal. Never let URLCache return a
+        // previous idle/busy snapshot to the health-check decision.
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         do {
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else {
