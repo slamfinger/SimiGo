@@ -214,7 +214,7 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 
 ```
 simigo_es_begin(model, tokenizer, [session_id, query])
-  └─ reusable_answer 非 null  → 可直接跳过自己的云端调用（只读，不写任何东西）
+  └─ reusable_answer 非 null  → Agent 可选择跳过自己的云端调用（只读答案查询；begin 已创建/恢复 ES state，但不写消费结算或推进该 state）
   └─ reusable_answer 为 null  → 调用自己的云端 API 产出 output
 simigo_es_settle(state_id, model, tokenizer, output,
                  [session_id, query], [demand_id + retrieval_settlement_id], [dependencies])
@@ -252,7 +252,7 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 
 `simigo_es_begin` 在同时给出 `session_id` 与 `query` 时，会按 2.4 的同一套门控检查是否已有
 可复用的已结算回答。命中时返回 `reusable_answer{text, settlement_id, demand_id, source_state_id, model_calls: 0}`，
-且**不写入任何东西**；是否跳过云端调用由 Agent 自己决定。注意：这只是向 Agent 提供一个历史答案候选，不是把来源结算消费进 `begin` 创建的 ES。若 Agent 跳过云端调用而不再执行 `simigo_es_settle`，该新 state 仍保持 begun-but-unsettled；`reusable_answer` 本身不会创建消费派生结算、推进新 ES，也不会让这个 state 自动变为已完成。真正的显式零模型调用消费目前走 Responses 的 `settlement_consumption` opt-in，不应把它与 MCP begin 的只读答案提示混为一谈。
+答案查询本身**不写入消费结算或推进 ES**；但 `begin` 已创建（或恢复）一个 begun-but-unsettled 的 ES state。是否跳过云端调用由 Agent 自己决定。注意：这只是向 Agent 提供一个历史答案候选，不是把来源结算消费进 `begin` 创建的 ES。若 Agent 跳过云端调用而不再执行 `simigo_es_settle`，该新 state 仍保持 begun-but-unsettled；`reusable_answer` 本身不会创建消费派生结算、推进新 ES，也不会让这个 state 自动变为已完成。真正的显式零模型调用消费目前走 Responses 的 `settlement_consumption` opt-in，不应把它与 MCP begin 的只读答案提示混为一谈。
 
 > 原缺陷 **D-2**（`simigo_is_search` 不接受 `session_id`，检索 demand 不带会话身份，导致
 > 「先 search、再带来源 settle、再 begin 复用」拿不到 `reusable_answer`）已关闭：该工具现在接受
