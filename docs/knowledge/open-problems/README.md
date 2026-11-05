@@ -6,8 +6,8 @@
 
 | # | 问题 | 状态 | 证据 / 边界 |
 |---|---|---|---|
-| 1 | 自动答案复用未显式绑定本轮 resolve 的 demand identity | **高优先级待核验 / 待修复** | 2026-11-05 源码静态审查：`prepareInformationTurn` 先 resolve 当前 demand，自动 shortcut 再调用 `reusableAnswer`；当前复用判断未显式比较历史 `answeredDemand.demandID` 与本轮 `resolution.demandID`。新增 committed chat row、文件或摘要可能改变当前 demand，而旧 answer / retrieval settlement 仍可能有效。尚无真实机器复现；不得写成已确认实机缺陷。建议先补 demand 变化与 resolve-failure 回归，再实施 fail-closed 比较。HTTP Chat 与 MCP begin 的共享路径影响范围须在实施时确认。 |
-| 2 | 已结算答案在后续同 scope 请求中的消费资格与安装版 replay 证据 | 未关闭（部分观察已有） | [IS 外部轮次合同](../../architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md) §10：该窗口未观测同 scope 后续消费；§11.2–11.3 已观测 IS `replay=1`、跨 Agent demand 共享及 Qoder 最终结算/复用。尚缺针对“同 scope 已结算答案→后续请求消费”的清晰、受控验收，不应将 §10 的时点结论泛化为无 replay 证据 |
+| 1 | 自动答案复用未显式绑定本轮 resolve 的 demand identity | **高优先级待核验 / 待修复** | 2026-11-05 源码静态审查：`prepareInformationTurn` 先 resolve 当前 demand，自动 shortcut 再调用 `reusableAnswer`；`reusableAnswer(sessionID, query, identity:)` 未接收本轮 `resolution.demandID`，也未比较历史 `answeredDemand.demandID` 与当前 demand。新增 committed chat row、文件或摘要可能改变当前 demand，而旧 answer / retrieval settlement 仍可能有效。另一个审计风险：`recordReusedAnswer` 写 reuse event 时优先采用本轮 `turn.resolution.demandID`，因此若 shortcut 错误命中旧答案，消费记录可能被归到新 demand，不能单凭该 event 的 demand ID 证明答案来源与当前 demand 一致。尚无真实机器复现；不得写成已确认实机缺陷。建议先补 demand 变化、resolve-failure 与 reuse-event provenance 回归，再实施 fail-closed 比较。HTTP Chat 与 MCP begin 的共享路径影响范围须在实施时确认。 |
+| 2 | 已结算答案在后续同 scope 请求中的消费资格与安装版 replay 证据 | 未关闭（部分观察已有） | [IS 外部轮次合同](../../architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md) §10：该窗口未观测同 scope 后续消费。§11.1 的 `replay=1` 是检索上下文复用标记，不是答案结算消费；§11.3 的 `model_calls=0` 后台标题/建议复用是跨日、跨 scope 的历史观察，不能代替同 scope 受控验收。Qoder 的 24408-token `memPoolHit` 是物理前缀/KV 加速，也不是 IS 语义答案复用。尚缺“同 scope 已结算答案→后续请求消费”的受控安装版验收；不得把不同层次的 replay / reuse 合并为同一证据。 |
 | 3 | 客户端断连后本地轮仍停留在 `pending`，存储状态未表达请求已结束 | 未关闭 | 同合同 §10；fail-closed 防止错误结算，但状态未终止 |
 | 4 | 本地路径缺少 `request_id` / `source_provider` | 未关闭 / 待裁定 | 同合同 §10；字段当前仅由历史外部数据合同路径使用 |
 | 5 | Agent 类别（后台 rollout、内部记账等）的 `thread_source` 取证与检索资格 | 未关闭 | 同合同 §9；类别值及资格规则尚未完整取证 |

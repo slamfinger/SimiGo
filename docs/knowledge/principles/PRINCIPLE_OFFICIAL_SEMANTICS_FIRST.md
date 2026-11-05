@@ -1,5 +1,7 @@
 # Principle: Official semantics first
 
+> **适用范围说明（2026-11-05）**：该原则源自 2026-09 的 MLX / ChatSession 简化迁移。用于判断是否应复用上游既有语义；不意味着所有后续 backend 都已提供 SimiGo 所需语义，也不排除在证实上游缺口后引入必要的本地实现。
+
 **Status:** Generalized principle  
 **Origin:** 2026-09 simplification and ChatSession migration
 

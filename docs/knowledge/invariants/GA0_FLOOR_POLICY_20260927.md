@@ -1,5 +1,7 @@
 # GA-0 — Floor Residency Policy
 
+> **历史范围说明（2026-11-05）**：本文记录 2026-09-27 的 v5.0 Runtime / Residency floor policy。TARGET_DEPENDENT 与 beta floor=0 是当时实现 / 配置结论；不代表当前产品默认值，也不构成 ES / IS 语义不变量。
+
 Status: FORMALIZED / TARGET-DEPENDENT
 Date: 2026-09-27
 

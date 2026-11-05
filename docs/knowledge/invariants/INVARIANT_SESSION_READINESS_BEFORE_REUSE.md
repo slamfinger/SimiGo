@@ -1,5 +1,7 @@
 # Invariant：Session 在完成可复用条件前不得进入可复用池
 
+> **历史范围说明（2026-11-05）**：本文记录 2026-09-17 特定 session lifecycle 的真机观察与目标状态模型。rawEv 条件和 READY 状态模型不是当前所有 Agent / backend 的通用复用合同，须按现行实现重新核验。
+
 **日期**：2026-09-22
 
 ## Invariant

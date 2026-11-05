@@ -1,5 +1,7 @@
 # Invariant: Logical identity and physical compute state remain separate
 
+> **历史范围说明（2026-11-05）**：本文中的 Logical Context State / Execution State / Physical KV / Resource / Protocol 分类来自 v5.0 基线。其分层思想可供参考，但术语及责任边界须与当前根 README 的 ES / IS / Backend 定义逐项对照；不得把旧 Physical KV 结论直接等同于 PALACE settlement。
+
 **Status:** Core invariant  
 **Current baseline:** v5.0 Core Architecture Baseline
 
