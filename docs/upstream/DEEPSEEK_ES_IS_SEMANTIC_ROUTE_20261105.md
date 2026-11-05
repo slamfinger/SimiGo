@@ -7,6 +7,14 @@
 
 ---
 
+## 0. 姿态修订（2026-11-05，用户裁定）
+
+路线 B 的目标由「向开源生态提出 ES/IS 架构」调整为「**向相关技术社区开放 ES/IS 研究，邀请独立审查与复现**」。定位为 Research Note / Independent Technical Review：不要求任何对象接受 ES/IS，把判断权交给审查者；不预设普遍适用性，不预设任何项目需要采用它。对方认为没有新意、发现互补、复现成功、最终不采用——都是有效审查结果。
+
+定位文本、分对象邀请矩阵、证据前置条件（P1–P3，P2 硬前置）与纪律见 [ROUTE_B_RESEARCH_NOTE_POSITIONING_20261105.md](ROUTE_B_RESEARCH_NOTE_POSITIONING_20261105.md)。§3 的 working title（"A Semantic Architecture for..."）降为内部工作标题；B4 交付物相应改为 Research Note v0。
+
+---
+
 ## 1. 路线定位
 
 | | 路线 A · 工程实现 | 路线 B · 架构语义 |
@@ -38,7 +46,9 @@
 
 Working title：
 
-**Execution State (ES) and Information State (IS): A Semantic Architecture for Reliable Continuation Across Model Execution Lifecycles**
+**Execution State (ES) and Information Space (IS): A Semantic Architecture for Reliable Continuation Across Model Execution Lifecycles**
+
+> 命名裁定（2026-11-05）：IS = Information Space（信息空间），沿用仓库既有名称，不引入 "Information State"。
 
 五个核心论点（每条必须绑定证据，不允许概念自证）：
 
@@ -96,13 +106,14 @@ Working title：
 
 | 步骤 | 工作 | 产出 |
 |---|---|---|
-| B0 | 冻结术语表（ES / IS / settlement / validity / carrier / 续接），中英对照 | 术语表文档 |
-| B1 | 最小形式化核心（状态、转移、结算与失效规则） | 语义核心草稿 |
+| B0 | 中英术语表（15 项：正/反定义、实现映射、OPEN 清单；仅冻结术语对应关系，不冻结未证明语义边界） | [B0_ESIS_GLOSSARY_20261105.md](B0_ESIS_GLOSSARY_20261105.md) — **ACCEPTED**（2026-11-05；OPEN 收敛为 OQ-1 / OQ-3 / OQ-8） |
+| B1 | 最小形式化（关系骨架 ES_n ──Settlement──▶ IS ──Admission──▶ ES_{n+1}；规则 R1–R6；状态转换；恢复时约束；KV = 可选载体；三项 OPEN 显式保留） | [B1_ESIS_MINIMAL_FORMALIZATION_20261105.md](B1_ESIS_MINIMAL_FORMALIZATION_20261105.md) — **ACCEPTED**（2026-11-05 定案；Settled(ρ) 按解释性定案，不改正文） |
+| P2 | 真机实验方案与公开复刻链（四阶段：真实模型结算 / 旧 KV 实际释放 / IS 恢复 / 全新 ES 续推；每阶段含可观测证据、复现步骤、预期读数、反例判据、阶段因果；两条验收红线） | [P2_EXPERIMENT_PLAN_20261105.md](P2_EXPERIMENT_PLAN_20261105.md) — **G1 PASS · CLOSED**（2026-11-05）；[配置记录](P2_CONFIG_RECORD_20261105.md)：①②③定案、④提案待裁定、⑤未起草；[交接报告](HANDOVER_TO_NEXT_AGENT_20261105.md)（移交新 Agent 实施）；实验执行授权另行保留 |
 | B2 | 从测试/实验导出 evidence map（固化 §6） | 证据映射文档 |
 | B3 | related-work 对照与差异论证（§5 由 hypothesis 升级或降级） | 对照文档 |
-| B4 | 提案 v0（按 §4 骨架成文） | 提案文档 |
-| B5 | 复刻指南（外部实现者视角：只依赖冻结合同 + conformance，不依赖 SimiGo 内部结构） | 复刻指南 |
-| B6 | 渠道盘点（vLLM / SGLang / Agent 框架 / DeepSeek 官方渠道；只调研，不发送） | 渠道清单 |
+| B4 | Research Note v0（研究定位优先于架构定位；按 §4 骨架成文，受定位文档 P1–P3 证据前置门控，P2 硬前置） | 研究说明文档 |
+| B5 | 复刻指南（外部实现者视角：只依赖冻结合同 + conformance；与定位文档 P1「面向外部的精简语义说明」合并推进） | 复刻指南 |
+| B6 | 渠道盘点（llama.cpp 第一优先，其余后续；一次一个对象；只调研，不发送——授权边界不变） | 渠道清单 |
 
 与路线 A 的耦合：B2/B5 的证据与复刻材料可与路线 A 共享，但提案文本、受众与时间线完全独立。
 
