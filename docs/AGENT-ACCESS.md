@@ -248,11 +248,22 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 - 返回的 `state_id` 是本次结算产生的**子执行状态**，不是入参里 begin 的 `state_id`；
   继续续跑或对结果再次引用时用返回的这个值（入参的那个 state 已结算、不可复用）。
 
-### 3.6 `reusable_answer` 是读
+### 3.6 `reusable_answer` 查询是读，但 `begin` 本身会创建 ES
 
-`simigo_es_begin` 在同时给出 `session_id` 与 `query` 时，会按 2.4 的同一套门控检查是否已有
-可复用的已结算回答。命中时返回 `reusable_answer{text, settlement_id, demand_id, source_state_id, model_calls: 0}`，
-且**不写入任何东西**；是否跳过云端调用由 Agent 自己决定。
+`simigo_es_begin` 在同时给出 `session_id` 与 `query` 时，会按 2.4 的复用门控查询是否已有
+可复用的已结算回答。命中时返回
+`reusable_answer{text, settlement_id, demand_id, source_state_id, model_calls: 0}`。
+
+边界必须区分：
+- 首次 `begin` 会先创建一个新的 active ES；复用查询本身不新增 settlement、
+  `information_reuse_events` 或 advancement。已有 state 的 resume 则不新建 state。
+- 命中只向 Agent 提供一个可复用答案提示；是否跳过云端调用由 Agent 决定。
+- 当前 MCP 工具集没有独立的“消费这条 reusable answer 并推进新 ES”操作。若 Agent 直接采用答案而不再生成，
+  该次新建 ES 不会因 `begin` 命中而自动结算或 advancement，仍是 begun-but-unsettled。
+  因此，不能把 `model_calls: 0` 或返回答案等同于已完成一次新的 ES/IS 消费。
+- 复用查询当前只按 session + query 查找历史 answered demand，再校验答案 / 检索结算有效性与 producer
+  model/tokenizer binding；它不先对当前信息空间重新执行 `resolve`。新内容加入后是否仍应复用，
+  见 [Open Problem #1](knowledge/open-problems/README.md#1-自动答案复用未显式绑定本轮-resolve-的-demand-identity)。
 
 > 原缺陷 **D-2**（`simigo_is_search` 不接受 `session_id`，检索 demand 不带会话身份，导致
 > 「先 search、再带来源 settle、再 begin 复用」拿不到 `reusable_answer`）已关闭：该工具现在接受
