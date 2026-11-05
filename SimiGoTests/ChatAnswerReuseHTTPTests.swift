@@ -227,4 +227,43 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             XCTAssertNil(third.reuse)
         }
     }
+
+    /// Exact wording is not enough: reuse is bound to the demand resolved for
+    /// THIS turn. With prefix freezing off the second request re-resolves after
+    /// the first turn's chat rows were committed, so the same words describe a
+    /// different information scope. The settled answer must not be served.
+    @MainActor
+    func testChangedCurrentDemandIsNotServedByReuse() async throws {
+        let session = "chat-demand-change-\(UUID().uuidString)"
+        let previous = ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"]
+        setenv("SIMIGO_IS_CONTEXT_FREEZE", "0", 1)
+        defer {
+            if let previous {
+                setenv("SIMIGO_IS_CONTEXT_FREEZE", previous, 1)
+            } else {
+                unsetenv("SIMIGO_IS_CONTEXT_FREEZE")
+            }
+        }
+
+        try await withServer {
+            let first = try await dispatch(session: session, input: "where is the vault")
+            XCTAssertEqual(first.status, 200, first.sse)
+            XCTAssertEqual(first.generate, 1, "the first turn generates")
+            XCTAssertNil(first.reuse)
+
+            let store = ExecutionStateGraphStore()
+            let db = try XCTUnwrap(store.esis)
+            let demandsAfterFirst = try db.count("information_demands")
+
+            let second = try await dispatch(session: session, input: "where is the vault")
+            XCTAssertEqual(second.status, 200, second.sse)
+            XCTAssertEqual(
+                second.generate, 2,
+                "the same words are a different demand once the scope moved")
+            XCTAssertNil(second.reuse, "a changed current demand must not inherit the old answer")
+            XCTAssertEqual(
+                try db.count("information_demands"), demandsAfterFirst + 1,
+                "the second turn resolved a NEW demand, so the old answer was out of scope")
+        }
+    }
 }
