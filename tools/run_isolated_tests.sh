@@ -4,7 +4,8 @@
 #
 #   tools/run_isolated_tests.sh [--app PATH] [--evidence-dir DIR] [--tag NAME]
 #                               [--base-xctestrun PATH] [--destination DEST]
-#                               [--extra-root PATH]...
+#                               [--only-testing TEST-ID]... [--expected-cases N]
+#                               [--cache-write-not-required] [--extra-root PATH]...
 #
 # Why a runner and not "just add env vars": testF3DeviceAcceptanceBattery is NOT
 # idempotent w.r.t. the prefix pool on disk (its D4 step asserts mode=extend and
@@ -41,6 +42,9 @@ TAG=""
 BASE=""
 DEST="platform=macOS,arch=arm64"
 EXTRA=()
+ONLY_TESTING=()
+EXPECTED_CASES=""
+CACHE_WRITE_NOT_REQUIRED=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --app) APP="$2"; shift 2 ;;
@@ -48,11 +52,22 @@ while [ $# -gt 0 ]; do
     --tag) TAG="$2"; shift 2 ;;
     --base-xctestrun) BASE="$2"; shift 2 ;;
     --destination) DEST="$2"; shift 2 ;;
+    --only-testing)
+      [ $# -ge 2 ] && [ -n "$2" ] || {
+        echo "RUN_ISOLATED: --only-testing needs a test identifier" >&2; exit 2;
+      }
+      ONLY_TESTING+=("-only-testing:$2")
+      shift 2 ;;
+    --expected-cases) EXPECTED_CASES="$2"; shift 2 ;;
+    --cache-write-not-required) CACHE_WRITE_NOT_REQUIRED=1; shift ;;
     --extra-root) EXTRA+=("$2"); shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "RUN_ISOLATED: unknown argument $1" >&2; usage >&2; exit 2 ;;
   esac
 done
+if [ -n "$EXPECTED_CASES" ] && ! [[ "$EXPECTED_CASES" =~ ^[1-9][0-9]*$ ]]; then
+  echo "RUN_ISOLATED: --expected-cases must be a positive integer" >&2; exit 2
+fi
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 [ -n "$EVIDENCE" ] || EVIDENCE="$ROOT/build/test-isolation/$stamp"
@@ -139,11 +154,16 @@ for r in "${EXTRA[@]:-}"; do [ -n "$r" ] && SNAP+=(--real-root "$r"); done
 
 # --- run --------------------------------------------------------------------
 rm -rf "$EVIDENCE/Test-$TAG.xcresult"
-xcodebuild test-without-building \
-  -xctestrun "$XR" \
-  -destination "$DEST" \
-  -resultBundlePath "$EVIDENCE/Test-$TAG.xcresult" \
-  2>&1 | tee "$EVIDENCE/isolated_tests_$TAG.log"
+XCODE_CMD=(xcodebuild test-without-building)
+if [ "${#ONLY_TESTING[@]}" -gt 0 ]; then
+  XCODE_CMD+=("${ONLY_TESTING[@]}")
+fi
+XCODE_CMD+=(
+  -xctestrun "$XR"
+  -destination "$DEST"
+  -resultBundlePath "$EVIDENCE/Test-$TAG.xcresult"
+)
+"${XCODE_CMD[@]}" 2>&1 | tee "$EVIDENCE/isolated_tests_$TAG.log"
 RC=${PIPESTATUS[0]}
 
 # --- post snapshot + diff ---------------------------------------------------
@@ -153,9 +173,11 @@ python3 "$ROOT/tools/rc_noninterference_diff.py" \
   "$EVIDENCE/snapshot_diff.json" --allow-prefix "$EVIDENCE" || exit 5
 
 END=$(date +%s)
-python3 - "$EVIDENCE" "$TAG" "$RC" "$START" "$END" <<'PY'
+python3 - "$EVIDENCE" "$TAG" "$RC" "$START" "$END" "$CACHE_WRITE_NOT_REQUIRED" "$EXPECTED_CASES" <<'PY'
 import json, os, re, sys
 ev, tag, rc, start, end = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
+cache_write_not_required = sys.argv[6] == "1"
+expected_cases = int(sys.argv[7]) if sys.argv[7] else None
 log = open(os.path.join(ev, "isolated_tests_%s.log" % tag), errors="replace").read()
 m = re.findall(r"Executed (\d+) tests?, with (\d+) tests? skipped and (\d+) failures?", log)
 counts = tuple(int(x) for x in m[-1]) if m else None
@@ -178,18 +200,23 @@ checks = {
     "test_execute_succeeded": "** TEST EXECUTE SUCCEEDED **" in log,
     "exit_code_zero": rc == 0,
     "counts_parsed": counts is not None,
+    "at_least_one_test_executed": bool(counts) and counts[0] > 0,
+    "expected_case_count": expected_cases is None or (bool(counts) and counts[0] == expected_cases),
+    "selected_cases_not_skipped": expected_cases is None or (bool(counts) and counts[1] == 0),
     "no_failures": bool(counts) and counts[2] == 0,
     "xctestrun_only_three_roots": xr["other_differences"] == [],
     "isolation_home_used_by_app": os.path.exists(os.path.join(iso, "home", "simigo.sqlite3")),
-    "isolation_cache_used_by_app": content["cache"] > 0,
+    "isolation_cache_used_by_app": cache_write_not_required or content["cache"] > 0,
     "no_real_user_state_write": diff["real_user_state_write_count"] == 0,
     "no_unexpected_write": diff["distinct_violation_count"] == 0,
 }
 rec = {
     "tag": tag, "evidence_dir": ev, "exit_code": rc, "duration_s": end - start,
     "executed_skipped_failures": counts,
+    "expected_cases": expected_cases,
     "xctestrun_isolated_sha256": xr["isolated_sha256"],
     "fresh_isolation_root": True,
+    "cache_write_not_required": cache_write_not_required,
     "isolation_content_bytes": content,
     "noninterference": {
         "real_user_state_write_count": diff["real_user_state_write_count"],

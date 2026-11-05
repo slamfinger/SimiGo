@@ -31,8 +31,8 @@ public struct SimiGoInformationLoop {
         public var includeChat: Bool
         /// Empty means every eligible committed session in this personal space.
         public var chatSessionIDs: [String]
-        /// Items that are already part of the live turn and must not be fed back
-        /// as retrieved context (e.g. the user message being answered).
+        /// Items outside this demand's input basis, including rows that belong
+        /// to an already-settled copy of the exact question being answered.
         public var excludeItemIDs: Set<String>
         public var limit: Int
 
@@ -396,13 +396,18 @@ public struct SimiGoInformationLoop {
     /// best-effort answer:
     /// 1. this exact question was already ANSWERED in this information scope;
     /// 2. the answering settlement is still `valid`;
-    /// 3. the retrieval settlement behind that demand is still `valid` — the
+    /// 3. the current resolve has produced the exact same demand ID as the
+    ///    answer's retrieval-backed demand; a missing/failed resolve or a changed
+    ///    information-space snapshot refuses the shortcut;
+    /// 4. the retrieval settlement behind that demand is still `valid` — the
     ///    answer row carries no file edges of its own, so this dependency check
-    ///    is what catches a source that moved since the answer was settled;
-    /// 4. the producer model and tokenizer bindings match the engine serving
+    ///    catches a source that moved since the answer was settled;
+    /// 5. the producer model and tokenizer bindings match the engine serving
     ///    this turn, so a different model never inherits another engine's
     ///    settled value (an absent binding refuses too, which is why a turn
-    ///    without a resolved producer identity can never reuse).
+    ///    without a resolved producer identity can never reuse). A result with
+    ///    no retrieval settlement has no comparable source-demand snapshot and
+    ///    is therefore not eligible for automatic answer reuse.
     public func reusableAnswer(
         sessionID: String,
         query: String,
@@ -419,10 +424,16 @@ public struct SimiGoInformationLoop {
         else { return nil }
         guard let receipt = try? database.settlementReceipt(answered.answerSettlementID),
             receipt.validity == "valid" else { return nil }
-        if let retrievalID = answered.retrievalSettlementID, !retrievalID.isEmpty {
-            guard let retrieval = try? database.settlementReceipt(retrievalID),
-                retrieval.validity == "valid" else { return nil }
-        }
+        // Every shortcut must be grounded in a current demand snapshot. A
+        // historical answer without a retrieval settlement has no comparable
+        // source-demand identity, so it cannot prove freshness and is not served.
+        guard let currentDemandID, !currentDemandID.isEmpty,
+            let retrievalID = answered.retrievalSettlementID,
+            !retrievalID.isEmpty,
+            currentDemandID == answered.demandID,
+            let retrieval = try? database.settlementReceipt(retrievalID),
+            retrieval.validity == "valid"
+        else { return nil }
         let verdict = SimiGoSettlementIdentityBinding.evaluate(
             recorded: receipt.bindings, consumer: identity)
         guard verdict.status == .ok else { return nil }

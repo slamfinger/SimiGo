@@ -16,7 +16,7 @@ import SimiGoRuntimeContract
 ///   signed HTTPS POST /v1/chat/completions (stream: true)
 ///     -> HTTPServer.route -> handleChatCompletionsStreaming
 ///     -> prepareInformationTurn (real ES demand + IS resolve)
-///     -> reusableAnswer gate (settlement validity + producer identity)
+///     -> reusableAnswer gate (current demand + settlement validity + producer identity)
 ///     -> serveReusedAnswerStream (one content chunk + stop + [DONE])
 ///
 /// The only substituted component is generation (a counter, never a model).
