@@ -74,9 +74,9 @@ final class SimiGoInformationReuseTests: XCTestCase {
     func testChangedCurrentDemandCannotReuseHistoricalAnswer() throws {
         let original = try settleAnsweredTurn()
         let changed = try loop.resolve(.init(
-            sessionID: "info-a", query: query,
+            sessionID: "info-a",
             requestIdentity: "new-turn-after-scope-change",
-            includeChat: false, limit: 5))
+            query: query, includeChat: false, limit: 5))
 
         XCTAssertNotEqual(changed.demandID, original.demandID)
         XCTAssertNil(loop.reusableAnswer(
