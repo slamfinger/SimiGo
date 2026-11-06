@@ -612,7 +612,7 @@ public struct LOCALBRegistryStore {
         }
         let fd = openat(
             rootFD, ".localb-registry.lock",
-            O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+            O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         guard Self.isRegularFile(fd: fd) else {
             close(fd)
@@ -631,7 +631,7 @@ public struct LOCALBRegistryStore {
         guard frame.count <= Self.maxEventBytes else { throw LOCALBStatus.resourceLimit }
         let fd = openat(
             directoryFD, ".localb-registry.events",
-            O_WRONLY | O_APPEND | O_NOFOLLOW | O_CLOEXEC)
+            O_WRONLY | O_APPEND | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         guard Self.isRegularFile(fd: fd) else {
             close(fd)
@@ -713,7 +713,7 @@ public struct LOCALBRegistryStore {
     private func replayJournal(directoryFD: Int32) throws -> ReplayedState {
         let fd = openat(
             directoryFD, ".localb-registry.events",
-            O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+            O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
         guard fd >= 0 else { throw LOCALBStatus.registryCorrupt }
         defer { close(fd) }
         var fileInfo = stat()
