@@ -1285,6 +1285,10 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
     /// weights, which use the separate Hugging Face workflow.
     static let defaultMaximumDownloadBytes: Int64 = 2_000_000_000
 
+    private var maximumSizeErrorDescription: String {
+        "Binary download exceeds the configured \\(maximumDownloadBytes)-byte limit"
+    }
+
     func urlSession(
         _ session: URLSession, downloadTask: URLSessionDownloadTask,
         didWriteData bytesWritten: Int64, totalBytesWritten: Int64,
@@ -1297,7 +1301,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
             settle(.failure(NSError(
                 domain: "EnvManager", code: 413,
                 userInfo: [NSLocalizedDescriptionKey:
-                    "Binary download exceeds the 2,000,000,000-byte limit"])))
+                    maximumSizeErrorDescription])))
             return
         }
         lock.lock()
@@ -1338,7 +1342,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
                 throw NSError(
                     domain: "EnvManager", code: 413,
                     userInfo: [NSLocalizedDescriptionKey:
-                        "Binary download exceeds the 2,000,000,000-byte limit"])
+                        maximumSizeErrorDescription])
             }
 
             // Stage beside the destination. The final rename is atomic and

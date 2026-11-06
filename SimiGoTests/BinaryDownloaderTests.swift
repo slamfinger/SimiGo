@@ -79,8 +79,9 @@ final class BinaryDownloaderTests: XCTestCase {
         do {
             _ = try await download.value
             XCTFail("oversized payload unexpectedly replaced the installed binary")
-        } catch {
-            // Expected: the declared/actual payload exceeds the configured cap.
+        } catch let error as NSError {
+            XCTAssertEqual(error.domain, "EnvManager")
+            XCTAssertEqual(error.code, 413)
         }
         XCTAssertEqual(try Data(contentsOf: destination), previous)
         let entries = try FileManager.default.contentsOfDirectory(
