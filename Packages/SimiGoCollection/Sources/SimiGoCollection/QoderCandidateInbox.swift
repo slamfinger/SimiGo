@@ -504,12 +504,28 @@ final class QoderCandidateInbox {
                     path: directoryURL.path, detail: "state directory is not a real directory")
             }
         }
-        do {
-            try fileManager.setAttributes(
-                [.posixPermissions: 0o700], ofItemAtPath: directoryURL.path)
-        } catch {
+
+        // Keep an opened descriptor for the directory boundary: compare it to
+        // the lstat result, then secure permissions through that descriptor
+        // rather than re-resolving the path with setAttributes().
+        let directoryFD = open(
+            directoryURL.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        guard directoryFD >= 0 else {
             throw QoderCollectionStateError.unreadableState(
-                path: directoryURL.path, detail: String(describing: error))
+                path: directoryURL.path, detail: String(cString: strerror(errno)))
+        }
+        defer { close(directoryFD) }
+        var openedDirectoryInfo = stat()
+        guard fstat(directoryFD, &openedDirectoryInfo) == 0,
+              (openedDirectoryInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedDirectoryInfo.st_dev == directoryInfo.st_dev,
+              openedDirectoryInfo.st_ino == directoryInfo.st_ino,
+              openedDirectoryInfo.st_uid == geteuid(),
+              (openedDirectoryInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0,
+              fchmod(directoryFD, 0o700) == 0 else {
+            throw QoderCollectionStateError.unreadableState(
+                path: directoryURL.path,
+                detail: "state directory changed or could not be secured")
         }
     }
 
@@ -532,7 +548,7 @@ final class QoderCandidateInbox {
               (info.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: path,
-                detail: "database must be an owned, private, single-link regular file")
+                detail: "database must be an owned, non-shared-writable, single-link regular file")
         }
 
         var header = [UInt8](repeating: 0, count: 16)
