@@ -188,7 +188,7 @@ jobs:
   # These are deliberately separate from the ExecutionStateGraph witness lane:
   # a green graph test cannot stand in for HTTP/MCP behavior or Runtime migrations.
   macos-p0-p1-app-tests:
-    name: macOS P0/P1 HTTP and MCP tests
+    name: macOS HTTP/MCP, installer and LOCALB auth tests
     # Xcode 27 is required by the pinned MLX dependency for the app test target.
     # Unlike the graph-only preview witness, this lane is blocking and gates on
     # executed == discovered, skipped == 0, failed == 0.
@@ -210,6 +210,9 @@ jobs:
           files = [
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
+              Path("SimiGoTests/BinaryDownloaderTests.swift"),
+              Path("SimiGoTests/LOCALBManagementEntryTests.swift"),
+              Path("SimiGoTests/LOCALBBranchLifecycleTests.swift"),
           ]
           missing = [str(p) for p in files if not p.is_file()]
           if missing:
@@ -236,7 +239,10 @@ jobs:
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
-            -only-testing:SimiGoTests/MCPInformationSpaceTests
+            -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/BinaryDownloaderTests \
+            -only-testing:SimiGoTests/LOCALBManagementEntryTests \
+            -only-testing:SimiGoTests/LOCALBBranchLifecycleTests
       - name: Generate isolated App test xctestrun
         run: |
           set -euo pipefail
@@ -263,6 +269,9 @@ jobs:
             -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/BinaryDownloaderTests \
+            -only-testing:SimiGoTests/LOCALBManagementEntryTests \
+            -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-app.log"
       - name: Gate on executed cases and xcresult counts
         if: always()
@@ -359,7 +368,8 @@ jobs:
       - name: Scope note
         if: always()
         run: |
-          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests only"
+          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests + BinaryDownloaderTests + LOCALBManagementEntryTests + LOCALBBranchLifecycleTests"
+          echo "SCOPE|covers installer cancellation/size/metadata and LOCALB management/lifecycle authorization paths"
           echo "SCOPE|no claim about external models, Qoder, or end-to-end Agent execution"
 
   runtime-contract-tests:
