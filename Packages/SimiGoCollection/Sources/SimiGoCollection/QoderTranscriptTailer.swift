@@ -1,4 +1,157 @@
+import Darwin
 import Foundation
+
+/// Descriptor-based access to Qoder transcript files. Candidate paths are
+/// discovered by the scanner, but every metadata/content read re-opens the
+/// path beneath the pinned scan root with O_NOFOLLOW on each component.
+enum QoderTranscriptPathAccess {
+    struct OpenedFile {
+        let descriptor: Int32
+        let size: Int64
+        let inode: UInt64
+        let creationDate: Date?
+        let modificationDate: Date?
+    }
+
+    static func canonicalPath(_ path: String) -> String {
+        guard let resolved = path.withCString({ Darwin.realpath($0, nil) }) else {
+            return URL(fileURLWithPath: path).standardizedFileURL.path
+        }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved)).standardizedFileURL.path
+    }
+
+    static func openDirectoryPathNoFollow(_ path: String) throws -> Int32 {
+        let standardized = URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL.path
+        let canonical = canonicalPath(path)
+        guard canonical == standardized else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(ELOOP))
+        }
+
+        // macOS temporary roots may traverse APFS firmlink/alias components
+        // that realpath canonicalizes but that cannot all be walked with a
+        // component-wise O_NOFOLLOW sequence. Pin the resolved directory by
+        // comparing the opened descriptor with the exact lstat leaf identity.
+        var pathInfo = stat()
+        let statResult = canonical.withCString { Darwin.lstat($0, &pathInfo) }
+        guard statResult == 0, (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        }
+        let descriptor = canonical.withCString {
+            Darwin.open($0, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        }
+        guard descriptor >= 0 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        }
+        var openedInfo = stat()
+        guard Darwin.fstat(descriptor, &openedInfo) == 0,
+              (openedInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedInfo.st_dev == pathInfo.st_dev,
+              openedInfo.st_ino == pathInfo.st_ino else {
+            let code = errno
+            Darwin.close(descriptor)
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(code))
+        }
+        return descriptor
+    }
+
+    static func relativePath(_ path: String, under root: URL) throws -> String {
+        let rootParts = root.standardizedFileURL.pathComponents
+        let pathParts = URL(fileURLWithPath: path).standardizedFileURL.pathComponents
+        guard pathParts.count > rootParts.count,
+              Array(pathParts.prefix(rootParts.count)) == rootParts else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(EINVAL))
+        }
+        let relative = pathParts.dropFirst(rootParts.count).joined(separator: "/")
+        guard !relative.isEmpty else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(EINVAL))
+        }
+        return relative
+    }
+
+    static func openFile(
+        rootDirectoryFD: Int32,
+        relativePath: String,
+        expectedInode: UInt64? = nil
+    ) throws -> OpenedFile {
+        let components = relativePath.split(
+            separator: "/", omittingEmptySubsequences: false)
+        guard !components.isEmpty,
+              components.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }) else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(EINVAL))
+        }
+        var parentFD = Darwin.dup(rootDirectoryFD)
+        guard parentFD >= 0 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        }
+        for component in components.dropLast() {
+            let next = String(component).withCString {
+                Darwin.openat(
+                    parentFD, $0,
+                    O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+            }
+            guard next >= 0 else {
+                let code = errno
+                Darwin.close(parentFD)
+                throw NSError(domain: NSPOSIXErrorDomain, code: Int(code))
+            }
+            Darwin.close(parentFD)
+            parentFD = next
+        }
+        let leaf = String(components[components.count - 1])
+        let descriptor = leaf.withCString {
+            Darwin.openat(
+                parentFD, $0,
+                O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)
+        }
+        let openError = errno
+        Darwin.close(parentFD)
+        guard descriptor >= 0 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(openError))
+        }
+        var info = stat()
+        guard Darwin.fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_size >= 0,
+              expectedInode == nil || UInt64(info.st_ino) == expectedInode else {
+            Darwin.close(descriptor)
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(EINVAL))
+        }
+        let creation = Date(
+            timeIntervalSince1970: Double(info.st_birthtimespec.tv_sec)
+                + Double(info.st_birthtimespec.tv_nsec) / 1_000_000_000)
+        let modification = Date(
+            timeIntervalSince1970: Double(info.st_mtimespec.tv_sec)
+                + Double(info.st_mtimespec.tv_nsec) / 1_000_000_000)
+        return OpenedFile(
+            descriptor: descriptor, size: Int64(info.st_size), inode: UInt64(info.st_ino),
+            creationDate: creation, modificationDate: modification)
+    }
+
+    static func read(descriptor: Int32, offset: Int64, count: Int) throws -> Data {
+        guard offset >= 0, count >= 0 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(EINVAL))
+        }
+        var result = Data()
+        var buffer = [UInt8](repeating: 0, count: min(64 * 1024, max(1, count)))
+        while result.count < count {
+            let requested = min(buffer.count, count - result.count)
+            let amount = buffer.withUnsafeMutableBytes { raw -> Int in
+                guard let base = raw.baseAddress else { return -1 }
+                return Darwin.pread(
+                    descriptor, base, requested, off_t(offset + Int64(result.count)))
+            }
+            if amount < 0 && errno == EINTR { continue }
+            guard amount >= 0 else {
+                throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+            }
+            if amount == 0 { break }
+            result.append(contentsOf: buffer.prefix(amount))
+        }
+        return result
+    }
+}
+
 
 /// Durable read position for one transcript file.
 ///
@@ -202,10 +355,22 @@ public struct QoderTranscriptScanner {
     ]
 
     public init(root: URL) {
-        self.root = root
+        self.root = URL(
+            fileURLWithPath: QoderTranscriptPathAccess.canonicalPath(root.path),
+            isDirectory: true)
     }
 
     public func scan() -> QoderTranscriptScanResult {
+        let rootDirectoryFD: Int32
+        do {
+            rootDirectoryFD = try QoderTranscriptPathAccess.openDirectoryPathNoFollow(root.path)
+        } catch {
+            if isNoSuchFileError(error) { return .absent }
+            return .partial(
+                files: [], errors: ["cannot safely open scan root \(root.path): \(error)"])
+        }
+        defer { Darwin.close(rootDirectoryFD) }
+
         let projects: [URL]
         do {
             projects = try listDirectory(root)
@@ -240,7 +405,7 @@ public struct QoderTranscriptScanner {
                 guard values.isSymbolicLink != true else { continue }
                 if values.isRegularFile == true, child.pathExtension == "jsonl" {
                     if let file = makeFile(
-                        child, values: values, projectID: projectID,
+                        child, rootDirectoryFD: rootDirectoryFD, projectID: projectID,
                         sessionID: child.deletingPathExtension().lastPathComponent,
                         isSubagent: false)
                     {
@@ -283,7 +448,7 @@ public struct QoderTranscriptScanner {
                             agentValues.isSymbolicLink != true
                         else { continue }
                         if let file = makeFile(
-                            agent, values: agentValues, projectID: projectID,
+                            agent, rootDirectoryFD: rootDirectoryFD, projectID: projectID,
                             sessionID: child.lastPathComponent, isSubagent: true)
                         {
                             files.append(file)
@@ -331,18 +496,21 @@ public struct QoderTranscriptScanner {
     }
 
     private func makeFile(
-        _ url: URL, values: URLResourceValues, projectID: String, sessionID: String,
+        _ url: URL, rootDirectoryFD: Int32, projectID: String, sessionID: String,
         isSubagent: Bool
     ) -> QoderTranscriptFile? {
-        guard let size = values.fileSize,
-            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-            let fileNumber = attributes[.systemFileNumber] as? NSNumber
-        else { return nil }
-        return QoderTranscriptFile(
-            path: url.path, projectID: projectID, sessionID: sessionID,
-            isSubagent: isSubagent, size: Int64(size), inode: fileNumber.uint64Value,
-            creationDate: values.creationDate,
-            modificationDate: values.contentModificationDate)
+        do {
+            let relative = try QoderTranscriptPathAccess.relativePath(url.path, under: root)
+            let opened = try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootDirectoryFD, relativePath: relative)
+            defer { Darwin.close(opened.descriptor) }
+            return QoderTranscriptFile(
+                path: url.path, projectID: projectID, sessionID: sessionID,
+                isSubagent: isSubagent, size: opened.size, inode: opened.inode,
+                creationDate: opened.creationDate, modificationDate: opened.modificationDate)
+        } catch {
+            return nil
+        }
     }
 }
 
@@ -411,9 +579,12 @@ public final class QoderTranscriptTailer {
         maxBytesPerPoll: Int = 4 << 20,
         maxLineBytes: Int = 32 << 20
     ) {
-        self.scanRoot = scanRoot
+        let canonicalRoot = URL(
+            fileURLWithPath: QoderTranscriptPathAccess.canonicalPath(scanRoot.path),
+            isDirectory: true)
+        self.scanRoot = canonicalRoot
         self.baselinePolicy = baselinePolicy
-        self.scanner = QoderTranscriptScanner(root: scanRoot)
+        self.scanner = QoderTranscriptScanner(root: canonicalRoot)
         self.maxBytesPerPoll = maxBytesPerPoll
         self.maxLineBytes = maxLineBytes
         self.state = state ?? QoderCursorState(initializedAt: now)
@@ -464,7 +635,7 @@ public final class QoderTranscriptTailer {
                 } else {
                     guard
                         let current = trailingFingerprint(
-                            path: file.path, offset: existing.offset)
+                            path: file.path, offset: existing.offset, expectedInode: file.inode)
                     else {
                         report.errors.append("cannot fingerprint \(file.path)")
                         continue
@@ -569,7 +740,8 @@ public final class QoderTranscriptTailer {
         events: inout [QoderCollectionEvent], report: inout QoderPollReport
     ) -> QoderFileCursor? {
         guard
-            let fingerprint = trailingFingerprint(path: file.path, offset: file.size)
+            let fingerprint = trailingFingerprint(
+            path: file.path, offset: file.size, expectedInode: file.inode)
         else {
             report.errors.append("cannot fingerprint \(file.path)")
             return nil
@@ -650,7 +822,8 @@ public final class QoderTranscriptTailer {
                 "resume point \(cursor.resumeOffset)/\(cursor.resumeSegmentLines) "
                     + "is outside 0..<\(cursor.offset)/0..<\(cursor.segmentLines)")
         }
-        guard isLineBoundary(path: cursor.path, offset: cursor.resumeOffset) else {
+        guard isLineBoundary(
+            path: cursor.path, offset: cursor.resumeOffset, expectedInode: cursor.inode) else {
             return .invalid("resume offset \(cursor.resumeOffset) is not a line boundary")
         }
         return .replay
@@ -659,18 +832,14 @@ public final class QoderTranscriptTailer {
     /// The resume offset is the start of the anchor line, so the byte before
     /// it must be a newline (or the file start). A cursor whose resume point
     /// landed mid-line would replay from the middle of a record.
-    private func isLineBoundary(path: String, offset: Int64) -> Bool {
-        guard offset > 0 else { return true }
-        guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path))
-        else { return false }
-        defer { try? handle.close() }
-        do {
-            try handle.seek(toOffset: UInt64(offset - 1))
-            guard let byte = try handle.read(upToCount: 1) else { return false }
-            return byte == Data([0x0A])
-        } catch {
-            return false
-        }
+    private func isLineBoundary(path: String, offset: Int64, expectedInode: UInt64) -> Bool {
+        guard offset > 0,
+              let opened = try? openTranscriptFile(path: path, expectedInode: expectedInode)
+        else { return offset == 0 }
+        defer { Darwin.close(opened.descriptor) }
+        guard let byte = try? QoderTranscriptPathAccess.read(
+            descriptor: opened.descriptor, offset: offset - 1, count: 1) else { return false }
+        return byte == Data([0x0A])
     }
 
     private func accumulator(for file: QoderTranscriptFile) -> QoderTurnAccumulator {
@@ -705,21 +874,25 @@ public final class QoderTranscriptTailer {
         }
         let available = file.size - working.offset
         guard available > 0 else { return false }
-        guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: file.path))
-        else {
-            report.errors.append("cannot open \(file.path)")
+        let opened: QoderTranscriptPathAccess.OpenedFile
+        do {
+            opened = try openTranscriptFile(path: file.path, expectedInode: file.inode)
+        } catch {
+            report.errors.append("cannot safely open \(file.path): \(error)")
             return false
         }
-        defer { try? handle.close() }
+        defer { Darwin.close(opened.descriptor) }
+        guard opened.size >= working.offset else {
+            report.errors.append("transcript changed before read: \(file.path)")
+            return false
+        }
 
         let data: Data
         do {
-            try handle.seek(toOffset: UInt64(working.offset))
-            guard let read = try handle.read(
-                upToCount: Int(min(available, Int64(maxBytesPerPoll)))),
-                !read.isEmpty
-            else { return false }
-            data = read
+            data = try QoderTranscriptPathAccess.read(
+                descriptor: opened.descriptor, offset: working.offset,
+                count: Int(min(available, Int64(maxBytesPerPoll))))
+            guard !data.isEmpty else { return false }
         } catch {
             report.errors.append("read failed for \(file.path): \(error)")
             return false
@@ -789,7 +962,8 @@ public final class QoderTranscriptTailer {
         }
 
         let newOffset = windowStart + Int64(consumed)
-        guard let fingerprint = trailingFingerprint(path: file.path, offset: newOffset)
+        guard let fingerprint = trailingFingerprint(
+            path: file.path, offset: newOffset, expectedInode: file.inode)
         else {
             report.errors.append("cannot fingerprint \(file.path) after read")
             return false
@@ -814,12 +988,13 @@ public final class QoderTranscriptTailer {
     ) -> Bool {
         let lineStart = cursor.offset
         if let afterNewline = findNewline(
-            path: file.path, from: lineStart, limit: Int64(maxLineBytes))
+            path: file.path, from: lineStart, limit: Int64(maxLineBytes),
+            expectedInode: file.inode)
         {
             let consumed = afterNewline - lineStart
             guard
                 let fingerprint = trailingFingerprint(
-                    path: file.path, offset: afterNewline)
+                    path: file.path, offset: afterNewline, expectedInode: file.inode)
             else {
                 report.errors.append("cannot fingerprint \(file.path) after skip")
                 return false
@@ -846,7 +1021,7 @@ public final class QoderTranscriptTailer {
             let advance = Int64(partialBytes)
             guard
                 let fingerprint = trailingFingerprint(
-                    path: file.path, offset: lineStart + advance)
+                    path: file.path, offset: lineStart + advance, expectedInode: file.inode)
             else {
                 report.errors.append("cannot fingerprint \(file.path) after skip")
                 return false
@@ -888,45 +1063,52 @@ public final class QoderTranscriptTailer {
         }
     }
 
-    private func findNewline(path: String, from offset: Int64, limit: Int64) -> Int64? {
-        guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path))
-        else { return nil }
-        defer { try? handle.close() }
-        do {
-            try handle.seek(toOffset: UInt64(offset))
-            var scanned: Int64 = 0
-            while scanned < limit {
-                guard let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty
-                else { return nil }
-                if let newline = chunk.firstIndex(of: 0x0A) {
-                    return offset + scanned
-                        + Int64(chunk.distance(from: chunk.startIndex, to: newline)) + 1
-                }
-                scanned += Int64(chunk.count)
-            }
-            return nil
-        } catch {
-            return nil
-        }
+    private func openTranscriptFile(
+        path: String, expectedInode: UInt64
+    ) throws -> QoderTranscriptPathAccess.OpenedFile {
+        let rootFD = try QoderTranscriptPathAccess.openDirectoryPathNoFollow(scanRoot.path)
+        defer { Darwin.close(rootFD) }
+        let relative = try QoderTranscriptPathAccess.relativePath(path, under: scanRoot)
+        return try QoderTranscriptPathAccess.openFile(
+            rootDirectoryFD: rootFD, relativePath: relative, expectedInode: expectedInode)
     }
 
-    private func trailingFingerprint(path: String, offset: Int64) -> String? {
+    private func findNewline(
+        path: String, from offset: Int64, limit: Int64, expectedInode: UInt64
+    ) -> Int64? {
+        guard offset >= 0, limit >= 0,
+              let opened = try? openTranscriptFile(path: path, expectedInode: expectedInode)
+        else { return nil }
+        defer { Darwin.close(opened.descriptor) }
+        var scanned: Int64 = 0
+        while scanned < limit {
+            let count = Int(min(1 << 20, limit - scanned))
+            guard let chunk = try? QoderTranscriptPathAccess.read(
+                descriptor: opened.descriptor, offset: offset + scanned, count: count),
+                !chunk.isEmpty else { return nil }
+            if let newline = chunk.firstIndex(of: 0x0A) {
+                return offset + scanned
+                    + Int64(chunk.distance(from: chunk.startIndex, to: newline)) + 1
+            }
+            scanned += Int64(chunk.count)
+        }
+        return nil
+    }
+
+    private func trailingFingerprint(
+        path: String, offset: Int64, expectedInode: UInt64
+    ) -> String? {
         guard offset >= 0 else { return nil }
         if offset == 0 { return QoderDigest.sha256Hex(Data()) }
         let window: Int64 = 256
         let start = max(0, offset - window)
-        guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path))
+        guard let opened = try? openTranscriptFile(path: path, expectedInode: expectedInode)
         else { return nil }
-        defer { try? handle.close() }
-        do {
-            try handle.seek(toOffset: UInt64(start))
-            guard let data = try handle.read(upToCount: Int(offset - start)),
-                data.count == Int(offset - start)
-            else { return nil }
-            return QoderDigest.sha256Hex(data)
-        } catch {
-            return nil
-        }
+        defer { Darwin.close(opened.descriptor) }
+        guard let data = try? QoderTranscriptPathAccess.read(
+            descriptor: opened.descriptor, offset: start, count: Int(offset - start)),
+            data.count == Int(offset - start) else { return nil }
+        return QoderDigest.sha256Hex(data)
     }
 
     private func deliver(

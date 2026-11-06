@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import SimiGoCollection
@@ -680,6 +681,47 @@ final class QoderTranscriptTailerTests: XCTestCase {
 
         try FileManager.default.removeItem(at: root)
         XCTAssertEqual(scanner.scan(), .absent)
+    }
+
+    func testNoFollowReaderRejectsSymlinkLeavesAndIntermediateDirectories() throws {
+        let fileManager = FileManager.default
+        let nestedDirectory = project.appendingPathComponent("nested", isDirectory: true)
+        try fileManager.createDirectory(at: nestedDirectory, withIntermediateDirectories: true)
+        let regularFile = nestedDirectory.appendingPathComponent("session.jsonl")
+        try Data("{\"type\":\"message\"}\n".utf8).write(to: regularFile)
+
+        let outside = fileManager.temporaryDirectory
+            .appendingPathComponent("qoder-nofollow-outside-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
+        let outsideFile = outside.appendingPathComponent("session.jsonl")
+        try Data("{\"type\":\"outside\"}\n".utf8).write(to: outsideFile)
+        defer { try? fileManager.removeItem(at: outside) }
+
+        let canonicalRoot = QoderTranscriptPathAccess.canonicalPath(root.path)
+        let rootFD = try QoderTranscriptPathAccess.openDirectoryPathNoFollow(canonicalRoot)
+        defer { Darwin.close(rootFD) }
+        let relative = "\(Fixture.projectID)/nested/session.jsonl"
+        let opened = try QoderTranscriptPathAccess.openFile(
+            rootDirectoryFD: rootFD, relativePath: relative)
+        Darwin.close(opened.descriptor)
+
+        try fileManager.removeItem(at: regularFile)
+        try fileManager.createSymbolicLink(at: regularFile, withDestinationURL: outsideFile)
+        XCTAssertThrowsError(
+            try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootFD, relativePath: relative),
+            "a symlink leaf must never be read")
+
+        try fileManager.removeItem(at: regularFile)
+        try Data("{\"type\":\"message\"}\n".utf8).write(to: regularFile)
+        try fileManager.moveItem(
+            at: nestedDirectory,
+            to: project.appendingPathComponent("nested-original", isDirectory: true))
+        try fileManager.createSymbolicLink(at: nestedDirectory, withDestinationURL: outside)
+        XCTAssertThrowsError(
+            try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootFD, relativePath: relative),
+            "a symlinked parent directory must never be traversed")
     }
 
     func testScannerNeverFollowsSymlinkedSubagentsDirectory() throws {
