@@ -5910,11 +5910,18 @@ public final class SimiGoESISDatabase {
             let nextInput = sqlite3_column_text(stmt, 4).map { String(cString: $0) } ?? ""
             let prefixText = sqlite3_column_text(stmt, 5).map { String(cString: $0) } ?? "[]"
             let cpText = sqlite3_column_text(stmt, 6).map { String(cString: $0) } ?? "[]"
-            let prefixRead = (try? dec.decode([String].self, from: Data(prefixText.utf8))) ?? []
-            let cpRead = (try? dec.decode([String].self, from: Data(cpText.utf8))) ?? []
+            let prefixRead = try dec.decode([String].self, from: Data(prefixText.utf8))
+            let cpStrings = try dec.decode([String].self, from: Data(cpText.utf8))
+            let cpRead = try cpStrings.map { value -> UUID in
+                guard let id = UUID(uuidString: value) else {
+                    throw DatabaseError.migrationMismatch(
+                        "invalid checkpoint UUID in state \(s.id): \(value)")
+                }
+                return id
+            }
             guard pos == s.position, cont == s.continuationID, anchor == s.anchor,
                   nextInput == s.nextInput, prefixRead == s.prefix,
-                  cpRead == s.checkpointIDs.map({ $0.uuidString }) else {
+                  cpRead == s.checkpointIDs else {
                 throw DatabaseError.migrationMismatch("state field drift: \(s.id)")
             }
         }
@@ -5930,7 +5937,7 @@ public final class SimiGoESISDatabase {
             let sum = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
             let state = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
             let prefixText = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "[]"
-            let prefixRead = (try? dec.decode([String].self, from: Data(prefixText.utf8))) ?? []
+            let prefixRead = try dec.decode([String].self, from: Data(prefixText.utf8))
             guard sum == c.checksum, state == c.stateID, prefixRead == c.prefix else {
                 throw DatabaseError.migrationMismatch("checkpoint field drift: \(c.id)")
             }
@@ -6093,15 +6100,25 @@ public final class SimiGoESISDatabase {
             sqlite3_column_type(stmt, i) == SQLITE_NULL ? nil : txt(stmt, i)
         }
         while try stepRowOrDone(sstmt) {
-            let prefix = (try? dec.decode([String].self, from: Data(txt(sstmt, 9).utf8))) ?? []
-            let cpStrings = (try? dec.decode([String].self, from: Data(txt(sstmt, 10).utf8))) ?? []
-            let created = parseISO8601(txt(sstmt, 3)) ?? Date(timeIntervalSince1970: 0)
+            let stateID = txt(sstmt, 0)
+            let prefix = try dec.decode([String].self, from: Data(txt(sstmt, 9).utf8))
+            let checkpointStrings = try dec.decode([String].self, from: Data(txt(sstmt, 10).utf8))
+            let checkpointIDs = try checkpointStrings.map { value -> UUID in
+                guard let id = UUID(uuidString: value) else {
+                    throw DatabaseError.sql(
+                        "readGraph: invalid checkpoint UUID '\(value)' for state \(stateID)")
+                }
+                return id
+            }
+            guard let created = parseISO8601(txt(sstmt, 3)) else {
+                throw DatabaseError.sql("readGraph: invalid created_at for state \(stateID)")
+            }
             states.append(GraphState(
-                id: txt(sstmt, 0), parentID: opt(sstmt, 1), modelIdentity: txt(sstmt, 2),
+                id: stateID, parentID: opt(sstmt, 1), modelIdentity: txt(sstmt, 2),
                 createdAt: created, position: Int(sqlite3_column_int64(sstmt, 4)),
                 continuationID: txt(sstmt, 5), nextInput: txt(sstmt, 8),
                 anchor: txt(sstmt, 6), prefix: prefix, lifecycle: txt(sstmt, 7),
-                checkpointIDs: cpStrings.compactMap { UUID(uuidString: $0) }))
+                checkpointIDs: checkpointIDs))
         }
         var cps: [GraphCheckpoint] = []
         let cstmt = try prepare("""
@@ -6111,14 +6128,21 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(cstmt) }
         while try stepRowOrDone(cstmt) {
-            let prefix = (try? dec.decode([String].self, from: Data(txt(cstmt, 7).utf8))) ?? []
-            guard let uuid = UUID(uuidString: txt(cstmt, 0)) else { continue }
+            let checkpointIDText = txt(cstmt, 0)
+            guard let uuid = UUID(uuidString: checkpointIDText) else {
+                throw DatabaseError.sql(
+                    "readGraph: invalid checkpoint identifier '\(checkpointIDText)'")
+            }
+            let prefix = try dec.decode([String].self, from: Data(txt(cstmt, 7).utf8))
+            guard let created = parseISO8601(txt(cstmt, 8)) else {
+                throw DatabaseError.sql(
+                    "readGraph: invalid created_at for checkpoint \(checkpointIDText)")
+            }
             cps.append(GraphCheckpoint(
                 id: uuid, stateID: txt(cstmt, 1), modelIdentity: txt(cstmt, 2),
                 position: Int(sqlite3_column_int64(cstmt, 3)), continuationID: txt(cstmt, 4),
                 nextInput: txt(cstmt, 5), anchor: txt(cstmt, 6), prefix: prefix,
-                createdAt: parseISO8601(txt(cstmt, 8)) ?? Date(timeIntervalSince1970: 0),
-                checksum: txt(cstmt, 9)))
+                createdAt: created, checksum: txt(cstmt, 9)))
         }
         return (states, cps)
     }
@@ -6142,14 +6166,17 @@ public final class SimiGoESISDatabase {
         SELECT settlement_id, state_id, schema_version, payload, payload_digest, settled_at,
                payload_object_id
         FROM settlements
-        WHERE validation_status IS NULL OR validation_status != 'MIGRATED_LEGACY'
+        WHERE validation_status IS NULL
+           OR validation_status NOT IN ('MIGRATED_LEGACY','IS_RETRIEVAL')
         ORDER BY settled_at, settlement_id;
         """)
         defer { sqlite3_finalize(stmt) }
         func t(_ i: Int32) -> String { sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? "" }
         var out: [SettlementReceiptRow] = []
         while try stepRowOrDone(stmt) {
-            guard let uuid = UUID(uuidString: t(0)) else { continue }
+            guard let uuid = UUID(uuidString: t(0)) else {
+                throw DatabaseError.sql("readSettlementReceipts: invalid settlement UUID '\(t(0))'")
+            }
             let objectID = t(6)
             let payload: Data
             if !objectID.isEmpty {
@@ -6160,9 +6187,17 @@ public final class SimiGoESISDatabase {
                     payload = Data(bytes: base, count: bytes)
                 } else { payload = Data() }
             }
+            guard NativeSHA256.hexDigest(payload) == t(4) else {
+                throw DatabaseError.sql(
+                    "readSettlementReceipts: payload digest mismatch for \(uuid)")
+            }
+            guard let settledAt = parseISO8601(t(5)) else {
+                throw DatabaseError.sql(
+                    "readSettlementReceipts: invalid settled_at for \(uuid)")
+            }
             out.append(SettlementReceiptRow(
                 id: uuid, stateID: t(1), schemaVersion: t(2), payload: payload,
-                payloadDigest: t(4), settledAt: parseISO8601(t(5)) ?? Date(timeIntervalSince1970: 0)))
+                payloadDigest: t(4), settledAt: settledAt))
         }
         return out
     }
