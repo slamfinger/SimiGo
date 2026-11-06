@@ -987,17 +987,27 @@ extension SimiGoESISDatabaseTests {
         XCTAssertEqual(retrieval.hits.map(\.relativePath), ["needle-binary.bin"])
 
         func retrievalStatus() throws -> String {
+            var reader: OpaquePointer?
+            guard sqlite3_open(databaseURL.path, &reader) == SQLITE_OK, let reader else {
+                throw SimiGoESISDatabase.DatabaseError.sql("cannot open retrieval status reader")
+            }
+            defer { sqlite3_close(reader) }
             var stmt: OpaquePointer?
             let sql = """
             SELECT status FROM retrieval_settlements
             WHERE demand_id='\(retrieval.demandID)';
             """
-            XCTAssertEqual(sqlite3_prepare_v2(db.handleForTesting, sql, -1, &stmt, nil), SQLITE_OK)
-            guard let stmt else { throw DatabaseError.sql("missing retrieval status statement") }
+            guard sqlite3_prepare_v2(reader, sql, -1, &stmt, nil) == SQLITE_OK,
+                let stmt
+            else {
+                throw SimiGoESISDatabase.DatabaseError.sql("cannot prepare retrieval status query")
+            }
             defer { sqlite3_finalize(stmt) }
             guard sqlite3_step(stmt) == SQLITE_ROW,
                 let value = sqlite3_column_text(stmt, 0)
-            else { throw DatabaseError.sql("missing retrieval status row") }
+            else {
+                throw SimiGoESISDatabase.DatabaseError.sql("missing retrieval status row")
+            }
             return String(cString: value)
         }
         XCTAssertEqual(try retrievalStatus(), "valid")
