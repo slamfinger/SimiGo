@@ -516,20 +516,38 @@ final class QoderCandidateInbox {
     /// A file that exists must be a real SQLite database. Zero bytes, foreign
     /// content, or a damaged header all mean damage, never "fresh".
     private func validateHeader(at path: String) throws {
-        let url = URL(fileURLWithPath: path)
-        guard let handle = try? FileHandle(forReadingFrom: url) else {
+        // Header inspection must not follow a planted symlink or read a device,
+        // FIFO, or hard-linked external file before SQLite's own open.
+        let descriptor = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+        guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
-                path: path, detail: "cannot open database file")
+                path: path, detail: String(cString: strerror(errno)))
         }
-        defer { try? handle.close() }
-        let header: Data
-        do {
-            header = try handle.read(upToCount: 16) ?? Data()
-        } catch {
+        defer { close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_uid == geteuid(),
+              info.st_nlink == 1,
+              (info.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
             throw QoderCollectionStateError.unreadableState(
-                path: path, detail: String(describing: error))
+                path: path,
+                detail: "database must be an owned, private, single-link regular file")
         }
-        guard header == Self.sqliteHeader else {
+
+        var header = [UInt8](repeating: 0, count: 16)
+        var offset = 0
+        while offset < header.count {
+            let amount = header.withUnsafeMutableBytes { raw -> Int in
+                guard let base = raw.baseAddress else { return -1 }
+                return Darwin.read(
+                    descriptor, base.advanced(by: offset), header.count - offset)
+            }
+            if amount < 0 && errno == EINTR { continue }
+            guard amount > 0 else { break }
+            offset += amount
+        }
+        guard offset == header.count, Data(header) == Self.sqliteHeader else {
             throw QoderCollectionStateError.corruptState(
                 path: path, detail: "missing SQLite header")
         }
