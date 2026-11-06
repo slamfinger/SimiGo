@@ -506,9 +506,9 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         ]
 
         for (method, target) in routes {
-            let noProof = "\(method) \(target) HTTP/1.1\\r\\n"
-                + "Host: 127.0.0.1:\(host.port)\\r\\n"
-                + "Connection: close\\r\\n\\r\\n"
+            let noProof = "\(method) \(target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + "Connection: close\r\n\r\n"
             let refused = sendRequest(
                 port: host.port, spkiHex: host.spkiHex, request: noProof)
             XCTAssertTrue(
@@ -534,18 +534,18 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         let host = try makeAuthorizedHost()
         let requests: [(method: String, target: String, body: String)] = [
             ("GET", "/v1/simigo/search?q=proof-boundary", ""),
-            ("POST", "/v1/simigo/search", "{\\"q\\":\\"proof-boundary\\"}"),
-            ("PUT", "/v1/simigo/roots", "{\\"root_id\\":\\"test\\",\\"path\\":\\"/tmp\\\\"}"),
-            ("POST", "/v1/simigo/roots", "{\\"root_id\\":\\"test\\",\\"path\\":\\"/tmp\\\\"}"),
+            ("POST", "/v1/simigo/search", "{\"q\":\"proof-boundary\"}"),
+            ("PUT", "/v1/simigo/roots", "{\"root_id\":\"test\",\"path\":\"/tmp\\"}"),
+            ("POST", "/v1/simigo/roots", "{\"root_id\":\"test\",\"path\":\"/tmp\\"}"),
         ]
 
         for item in requests {
-            let contentType = item.body.isEmpty ? "" : "Content-Type: application/json\\r\\n"
-            let noProof = "\(item.method) \(item.target) HTTP/1.1\\r\\n"
-                + "Host: 127.0.0.1:\(host.port)\\r\\n"
+            let contentType = item.body.isEmpty ? "" : "Content-Type: application/json\r\n"
+            let noProof = "\(item.method) \(item.target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
                 + contentType
-                + "Content-Length: \(item.body.utf8.count)\\r\\n"
-                + "Connection: close\\r\\n\\r\\n"
+                + "Content-Length: \(item.body.utf8.count)\r\n"
+                + "Connection: close\r\n\r\n"
                 + item.body
             let response = sendRequest(
                 port: host.port, spkiHex: host.spkiHex, request: noProof)
