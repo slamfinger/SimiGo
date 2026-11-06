@@ -724,6 +724,10 @@ public final class HTTPServer: @unchecked Sendable {
     private var connections: [ObjectIdentifier: ConnectionContext] = [:]
     private let connectionLock = NSLock()
 
+    var activeConnectionCount: Int {
+        connectionLock.withLock { connections.count }
+    }
+
     let responsesStore = ResponsesStateStore()
 
     // MARK: - LOCALB transport security mode
