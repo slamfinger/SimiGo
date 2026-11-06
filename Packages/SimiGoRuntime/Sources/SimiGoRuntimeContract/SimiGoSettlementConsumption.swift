@@ -203,8 +203,9 @@ public enum SimiGoSettlementConsumption {
             }
 
             // 1. Re-admit the NAMED source inside the write transaction. A
-            // refusal here (missing/tampered/invalid/dependency/identity) is
-            // final: no row is written and no recompute is silently substituted.
+            // refusal here (missing/tampered/invalid/dependency) is final. Any
+            // identity restriction is checked only when explicitly recorded by
+            // this reuse contract; no recompute is silently substituted.
             let admitted = try SimiGoISAdmission.admit(
                 db: db, settlementID: request.sourceSettlementID,
                 consumer: request.consumerIdentity,
