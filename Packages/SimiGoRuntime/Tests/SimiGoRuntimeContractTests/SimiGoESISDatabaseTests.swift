@@ -703,4 +703,35 @@ extension SimiGoESISDatabaseTests {
             XCTFail("unexpected error: \(error)")
         }
     }
+
+    func testReadGraphRejectsMalformedAuthoritativePrefixJSON() throws {
+        let url = tempURL("malformed-graph")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        let state = SimiGoESISDatabase.GraphState(
+            id: "malformed-state", parentID: nil, modelIdentity: "test-model",
+            createdAt: Date(timeIntervalSince1970: 700000000), position: 1,
+            continuationID: "C-1", nextInput: "continue", anchor: "a1",
+            prefix: ["complete-prefix"], lifecycle: "active", checkpointIDs: [])
+        try db.writeGraph(states: [state], checkpoints: [])
+
+        var writer: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &writer), SQLITE_OK)
+        guard let writer else {
+            XCTFail("could not open SQLite corruption-test connection")
+            return
+        }
+        defer { sqlite3_close(writer) }
+        XCTAssertEqual(
+            sqlite3_exec(
+                writer,
+                "UPDATE execution_states SET prefix_json='not-json' WHERE state_id='malformed-state';",
+                nil, nil, nil),
+            SQLITE_OK)
+
+        XCTAssertThrowsError(try db.readGraph())
+    }
+
 }
