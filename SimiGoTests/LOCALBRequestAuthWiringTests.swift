@@ -637,7 +637,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             XCTAssertEqual(
                 HTTPServer.localbRoutePolicy(forMethod: method, routePath: target),
                 .protected(permission: .informationRead),
-                "\\(method) \\(target) must require P-INFO-READ"
+                "\(method) \(target) must require P-INFO-READ"
             )
         }
 
@@ -651,7 +651,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             XCTAssertEqual(
                 HTTPServer.localbRoutePolicy(forMethod: method, routePath: target),
                 .protected(permission: .srsWrite),
-                "\\(method) \\(target) must require P-SRS-WRITE"
+                "\(method) \(target) must require P-SRS-WRITE"
             )
         }
 
@@ -674,16 +674,16 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         ]
 
         for (method, target) in requests {
-            let request = "\\(method) \\(target) HTTP/1.1\\r\\n"
-                + "Host: 127.0.0.1:\\(host.port)\\r\\n"
-                + "Content-Length: 0\\r\\n"
-                + "Connection: close\\r\\n\\r\\n"
+            let request = "\(method) \(target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + "Content-Length: 0\r\n"
+                + "Connection: close\r\n\r\n"
             let response = sendRequest(
                 port: host.port, spkiHex: host.spkiHex, request: request)
             let status = try XCTUnwrap(statusLine(of: response))
             XCTAssertTrue(
                 status.contains(" 401 "),
-                "\\(method) \\(target) must reject an unpaired TLS peer, got: \\(status)"
+                "\(method) \(target) must reject an unpaired TLS peer, got: \(status)"
             )
         }
 
