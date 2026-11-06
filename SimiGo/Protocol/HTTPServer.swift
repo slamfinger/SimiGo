@@ -1606,14 +1606,14 @@ public final class HTTPServer: @unchecked Sendable {
         case ("GET", "/v1/simigo/env"),
              ("GET", "/v1/simigo/roots"),
              ("GET", "/v1/simigo/is/status"),
-             ("GET", "/v1/simigo/search"),
              ("GET", "/v1/models"), ("GET", "/models"),
              ("GET", "/v1/simigo/is/settlement"),
              ("GET", "/v1/simigo/is/dependency"),
              ("GET", "/v1/simigo/is/file"),
              ("GET", "/v1/simigo/is/object"):
             return .protected(permission: .informationRead)
-        case ("POST", "/v1/simigo/search"),
+        case ("GET", "/v1/simigo/search"),
+             ("POST", "/v1/simigo/search"),
              ("PUT", "/v1/simigo/roots"),
              ("POST", "/v1/simigo/roots"),
              ("POST", "/v1/simigo/is/reconcile"),
