@@ -926,4 +926,43 @@ extension SimiGoESISDatabaseTests {
             "missing")
     }
 
+
+    func testInformationDemandRefusesIndexOnlyInputWithoutMetadataAddress() throws {
+        let databaseURL = tempURL("missing-index-address")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-index-address-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("the unique body token is present here".utf8)
+            .write(to: rootURL.appendingPathComponent("source.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "index-address-root", rootURL: rootURL, carryText: false)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+
+        var writer: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(databaseURL.path, &writer), SQLITE_OK)
+        guard let writer else {
+            XCTFail("could not open SQLite corruption-test connection")
+            return
+        }
+        defer { sqlite3_close(writer) }
+        let sql = """
+        DELETE FROM is_index_entries
+        WHERE srs_identity='file:index-address-root/source.txt';
+        """
+        XCTAssertEqual(sqlite3_exec(writer, sql, nil, nil, nil), SQLITE_OK)
+
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "unique body token", rootID: "index-address-root", limit: 10))
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 0,
+            "A demand without complete source-address provenance must not be persisted")
+    }
+
 }
