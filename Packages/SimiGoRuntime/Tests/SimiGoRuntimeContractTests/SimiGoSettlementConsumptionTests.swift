@@ -49,6 +49,8 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
         value: String = "alpha beta gamma",
         query: String = "alpha facts",
         linkFile: Bool = false,
+        bindIdentity: Bool = true,
+        requiredConsumerIdentity: SimiGoSettlementIdentityBinding.Identity? = nil,
         stateID: String = UUID().uuidString
     ) throws -> String {
         let now = Date()
@@ -60,8 +62,14 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
             generatedText: value,
             contractJSON: SimiGoInformationLoop.chatResultContractJSON,
             verifiedBindings: [:], settledAt: now)
-        let settlementID = try fixture.db.recordNativeSettlementWithIdentity(
-            settled, stateID: stateID, identity: identity).uuidString
+        let settlementID: String
+        if bindIdentity {
+            settlementID = try fixture.db.recordNativeSettlementWithIdentity(
+                settled, stateID: stateID, identity: identity).uuidString
+        } else {
+            settlementID = try fixture.db.recordNativeSettlement(
+                settled, stateID: stateID)
+        }
         if linkFile {
             try fixture.db.linkSettlementToExternalFile(
                 settlementID: settlementID, binding: "content",
@@ -74,7 +82,8 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
             contractVersion: SimiGoSettlementConsumption.Contract.version,
             query: query,
             rootIDs: ["work"],
-            extractField: SimiGoSettlementConsumption.Contract.defaultExtractField)
+            extractField: SimiGoSettlementConsumption.Contract.defaultExtractField,
+            requiredConsumerIdentity: requiredConsumerIdentity)
         return settlementID
     }
 
@@ -333,19 +342,32 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
 
     // MARK: - 6. identity / contract mismatch
 
-    func testIdentityAndContractMismatchAreRefused() throws {
-        let fixture = try makeFixture("refuse-contract")
+    func testCrossModelConsumptionIsAllowedUnlessIdentityIsExplicitlyRequired() throws {
+        let fixture = try makeFixture("identity-contract")
         defer { cleanup(fixture) }
         let source = try makeSource(fixture)
 
-        // A different engine may not inherit this settled value.
+        // Producer identity remains stored as provenance, but the default reuse
+        // contract does not require the consumer to run the same engine.
+        let crossModel = try consumed(SimiGoSettlementConsumption.consume(
+            db: fixture.db,
+            request: request(source: source, identity: otherIdentity)))
+        XCTAssertEqual(crossModel.value, "alpha beta gamma")
+        let childBindings = try fixture.db.settlementBindings(
+            settlementID: crossModel.consumerSettlementID)
+        XCTAssertEqual(childBindings[SimiGoSettlementIdentityBinding.consumerModelKey],
+                       SimiGoSettlementIdentityBinding.digest(otherIdentity.model))
+
+        // A task may explicitly make the consuming engine part of its contract.
+        let constrained = try makeSource(
+            fixture, requiredConsumerIdentity: identity,
+            stateID: "explicit-identity-contract")
         XCTAssertThrowsError(try SimiGoSettlementConsumption.consume(
             db: fixture.db,
-            request: request(source: source, identity: otherIdentity))) { error in
-            guard case .producerBinding(let verdict)? =
-                error as? SimiGoISAdmission.Refusal
-            else { return XCTFail("expected producer binding refusal, got \(error)") }
-            XCTAssertEqual(verdict.code, "SETTLEMENT_BINDING_MODEL_MISMATCH")
+            request: request(source: constrained, consumer: "explicit-mismatch",
+                             identity: otherIdentity))) { error in
+            XCTAssertEqual(error as? SimiGoSettlementConsumption.Refusal,
+                           .identityConstraintMismatch(settlementID: constrained))
         }
 
         // Unsupported contract version is a refusal, not a recompute.
@@ -381,7 +403,19 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
                 .missingField("query"))
         }
 
-        XCTAssertEqual(try fixture.db.count("settlement_consumptions"), 0)
+        XCTAssertEqual(try fixture.db.count("settlement_consumptions"), 1)
+    }
+
+    func testSettlementWithoutProducerIdentityCanDeclareAndBeConsumed() throws {
+        let fixture = try makeFixture("identity-absent")
+        defer { cleanup(fixture) }
+        let source = try makeSource(
+            fixture, bindIdentity: false, stateID: "no-producer-identity")
+        let result = try consumed(SimiGoSettlementConsumption.consume(
+            db: fixture.db,
+            request: request(source: source, identity: otherIdentity)))
+        XCTAssertEqual(result.value, "alpha beta gamma")
+        XCTAssertEqual(try fixture.db.count("settlement_consumptions"), 1)
     }
 
     // MARK: - 7. race: invalidation cannot interleave; failure rolls back

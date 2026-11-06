@@ -4760,6 +4760,7 @@ public final class SimiGoESISDatabase {
         query: String,
         rootIDs: [String]? = nil,
         extractField: String = "content",
+        requiredConsumerIdentity: SimiGoSettlementIdentityBinding.Identity? = nil,
         declaredAt: Date = Date()
     ) throws -> SettlementReuseDeclaration {
         try transactionResult {
@@ -4784,24 +4785,22 @@ public final class SimiGoESISDatabase {
             let requestedRoots = (rootIDs?.isEmpty == false)
                 ? Array(Set(rootIDs!)).sorted()
                 : canonical.rootIDs
-            let bindings = try settlementBindings(settlementID: settlementID)
-            let derived = row.validationStatus == "DERIVED_CONSUMPTION"
-            let modelKey = derived
-                ? SimiGoSettlementIdentityBinding.consumerModelKey
-                : SimiGoSettlementIdentityBinding.modelKey
-            let tokenizerKey = derived
-                ? SimiGoSettlementIdentityBinding.consumerTokenizerKey
-                : SimiGoSettlementIdentityBinding.tokenizerKey
-            guard let model = bindings[modelKey], !model.isEmpty,
-                let tokenizer = bindings[tokenizerKey], !tokenizer.isEmpty
-            else {
-                throw SimiGoSettlementConsumption.Refusal.identityUndeclared(settlementID)
+            // Engine identity is provenance by default. It becomes a reuse
+            // restriction only when the task explicitly declares the consumer
+            // identity as semantically material.
+            let identityJSON: String
+            if let requiredConsumerIdentity {
+                guard requiredConsumerIdentity.isSpecified else {
+                    throw SimiGoSettlementConsumption.Refusal.identityUndeclared(settlementID)
+                }
+                identityJSON = try Self.canonicalJSON([
+                    "kind": "consumer",
+                    "model": SimiGoSettlementIdentityBinding.digest(requiredConsumerIdentity.model),
+                    "tokenizer": SimiGoSettlementIdentityBinding.digest(requiredConsumerIdentity.tokenizer),
+                ])
+            } else {
+                identityJSON = "{}"
             }
-            let identityJSON = try Self.canonicalJSON([
-                "kind": derived ? "consumer" : "producer",
-                "model": model,
-                "tokenizer": tokenizer,
-            ])
             let rootsJSON = try Self.canonicalJSON(requestedRoots)
 
             if let existing = try settlementReuseContract(settlementID: settlementID) {
@@ -4811,7 +4810,10 @@ public final class SimiGoESISDatabase {
                     && existing.query == query
                     && existing.rootIDs == requestedRoots
                     && existing.canonicalDigest == canonical.digest
-                    && existing.requiredIdentityJSON == identityJSON
+                    // Omitting an option preserves an existing declaration's
+                    // identity constraint; only an explicit replacement is compared.
+                    && (requiredConsumerIdentity == nil
+                        || existing.requiredIdentityJSON == identityJSON)
                     && existing.extractField == extractField
                 guard same else {
                     throw SimiGoSettlementConsumption.Refusal.contractMismatch(
