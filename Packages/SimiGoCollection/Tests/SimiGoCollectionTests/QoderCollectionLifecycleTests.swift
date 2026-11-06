@@ -180,7 +180,7 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         // timer callback has committed the first-sight baseline before stop().
         // A synchronous poll on the runner's serial queue joins that first scan.
         let initial = first.pollOnce()
-        XCTAssertTrue(initial.errors.isEmpty, "\\(initial.errors)")
+        XCTAssertTrue(initial.errors.isEmpty, "\(initial.errors)")
         XCTAssertEqual(try leaseHolderPID(configuration), getpid())
 
         // While that instance is alive, a second one must be refused rather than
