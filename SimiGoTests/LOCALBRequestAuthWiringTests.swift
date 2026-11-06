@@ -597,7 +597,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             + "{"
         try sendPartialBytes(partialBodyRequest, over: slowBody)
         assertPeerClosed(slowBody, timeout: 3)
-        XCTAssertEqual(host.server?.activeConnectionCount, 0)
+        waitForActiveConnections(0, server: try XCTUnwrap(host.server))
     }
 
     func testConnectionCapRejectsExcessAndTeardownReleasesCapacity() throws {
