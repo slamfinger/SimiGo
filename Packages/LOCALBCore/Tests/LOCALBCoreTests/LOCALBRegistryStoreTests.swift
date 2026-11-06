@@ -98,7 +98,7 @@ final class LOCALBRegistryStoreTests: XCTestCase {
         let checkpoint = try store.initializeNewLineage()
         let journal = root.appendingPathComponent(".localb-registry.events")
         let externalLink = root.deletingLastPathComponent()
-            .appendingPathComponent("registry-journal-hardlink-\\(UUID().uuidString)")
+            .appendingPathComponent("registry-journal-hardlink-\(UUID().uuidString)")
         try FileManager.default.linkItem(at: journal, to: externalLink)
         defer { try? FileManager.default.removeItem(at: externalLink) }
         let original = try Data(contentsOf: journal)
