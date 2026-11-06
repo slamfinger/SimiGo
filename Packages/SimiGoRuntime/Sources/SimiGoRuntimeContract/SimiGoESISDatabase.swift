@@ -2665,7 +2665,8 @@ public final class SimiGoESISDatabase {
         guard fileByteCap >= 0, maxDepth >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
         }
-        let requestedRoot = rootURL.resolvingSymlinksInPath().standardizedFileURL
+        let requestedRootPath = try canonicalDirectoryPath(atPath: rootURL.path)
+        let requestedRoot = URL(fileURLWithPath: requestedRootPath, isDirectory: true)
         let scanRoot: URL
         if let registeredPath = try rootLocatorPath(rootID) {
             let registeredRoot = URL(fileURLWithPath: registeredPath).standardizedFileURL
@@ -2987,8 +2988,25 @@ public final class SimiGoESISDatabase {
         let inode: UInt64
     }
 
+    private func canonicalDirectoryPath(atPath path: String) throws -> String {
+        let resolved = path.withCString { Darwin.realpath($0, nil) }
+        guard let resolved else {
+            throw DatabaseError.sql(
+                "canonicalDirectoryPath: \(String(cString: strerror(errno)))")
+        }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
+            .standardizedFileURL.path
+    }
+
     private func openDirectoryNoFollow(atPath path: String) throws -> Int32 {
-        let components = URL(fileURLWithPath: path).standardizedFileURL.pathComponents
+        let canonicalPath = try canonicalDirectoryPath(atPath: path)
+        guard canonicalPath == URL(fileURLWithPath: path, isDirectory: true)
+            .standardizedFileURL.path else {
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: registered directory path now resolves elsewhere")
+        }
+        let components = URL(fileURLWithPath: canonicalPath).standardizedFileURL.pathComponents
         guard components.first == "/" else {
             throw DatabaseError.sql("openDirectoryNoFollow: expected an absolute path")
         }
