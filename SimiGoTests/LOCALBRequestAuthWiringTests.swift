@@ -557,14 +557,14 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             // P-SRS-WRITE is host-owned and intentionally absent from the
             // paired-client grant set. The public TLS challenge path must not
             // issue a proof that the registry cannot authorize.
-            let challengeBody = "{\\"method\\":\\"\(item.method)\\","
-                + "\\"requestTarget\\":\\"\(item.target)\\"}"
-            let challengeRequest = "POST /localb/auth/challenge HTTP/1.1\\r\\n"
-                + "Host: 127.0.0.1:\(host.port)\\r\\n"
-                + "X-SimiGo-LocalB-Client-Key-ID: \(host.clientKeyID)\\r\\n"
-                + "Content-Type: application/json\\r\\n"
-                + "Content-Length: \(challengeBody.utf8.count)\\r\\n"
-                + "Connection: close\\r\\n\\r\\n" + challengeBody
+            let challengeBody = "{\"method\":\"\(item.method)\","
+                + "\"requestTarget\":\"\(item.target)\"}"
+            let challengeRequest = "POST /localb/auth/challenge HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + "X-SimiGo-LocalB-Client-Key-ID: \(host.clientKeyID)\r\n"
+                + "Content-Type: application/json\r\n"
+                + "Content-Length: \(challengeBody.utf8.count)\r\n"
+                + "Connection: close\r\n\r\n" + challengeBody
             let challengeResponse = sendRequest(
                 port: host.port, spkiHex: host.spkiHex, request: challengeRequest)
             let challengeStatus = try XCTUnwrap(statusLine(of: challengeResponse))
