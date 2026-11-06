@@ -574,6 +574,141 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         }
     }
 
+    func testSlowRequestHeadAndBodyAreClosedAtAbsoluteDeadlines() throws {
+        let limits = HTTPServer.RequestLimits(
+            maxConnections: 8,
+            headerTimeout: .milliseconds(250),
+            bodyTimeout: .milliseconds(250))
+        let host = try makeAuthorizedHost(requestLimits: limits)
+
+        let slowHead = try openPinnedTLSConnection(host, expectReady: true)
+        try sendPartialBytes(
+            "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1\r\n",
+            over: slowHead)
+        assertPeerClosed(slowHead, timeout: 3)
+
+        let slowBody = try openPinnedTLSConnection(host, expectReady: true)
+        let partialBodyRequest =
+            "POST /v1/simigo/search HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.port)\r\n"
+            + "Content-Type: application/json\r\n"
+            + "Content-Length: 128\r\n"
+            + "Connection: close\r\n\r\n"
+            + "{"
+        try sendPartialBytes(partialBodyRequest, over: slowBody)
+        assertPeerClosed(slowBody, timeout: 3)
+        XCTAssertEqual(host.server?.activeConnectionCount, 0)
+    }
+
+    func testConnectionCapRejectsExcessAndTeardownReleasesCapacity() throws {
+        let limits = HTTPServer.RequestLimits(
+            maxConnections: 2,
+            headerTimeout: .seconds(5),
+            bodyTimeout: .seconds(5))
+        let host = try makeAuthorizedHost(requestLimits: limits)
+        let server = try XCTUnwrap(host.server)
+
+        let first = try openPinnedTLSConnection(host, expectReady: true)
+        let second = try openPinnedTLSConnection(host, expectReady: true)
+        XCTAssertEqual(server.activeConnectionCount, 2)
+
+        let excess = try openPinnedTLSConnection(host, expectReady: false)
+        XCTAssertEqual(server.activeConnectionCount, 2)
+        excess.cancel()
+
+        first.cancel()
+        waitForActiveConnections(1, server: server)
+        let replacement = try openPinnedTLSConnection(host, expectReady: true)
+        XCTAssertEqual(server.activeConnectionCount, 2)
+
+        server.stop()
+        assertPeerClosed(second, timeout: 3)
+        assertPeerClosed(replacement, timeout: 3)
+        XCTAssertEqual(server.activeConnectionCount, 0)
+    }
+
+    private func openPinnedTLSConnection(
+        _ host: Host,
+        expectReady: Bool
+    ) throws -> NWConnection {
+        let options = NWProtocolTLS.Options()
+        sec_protocol_options_set_verify_block(
+            options.securityProtocolOptions,
+            { _, secTrust, complete in
+                guard
+                    let trust = sec_trust_copy_ref(secTrust)
+                        .takeRetainedValue() as SecTrust?,
+                    let certificate = SecTrustGetCertificateAtIndex(trust, 0),
+                    let hex = try? LOCALBTransportIdentityStore
+                        .spkiSHA256Hex(of: certificate)
+                else {
+                    complete(false)
+                    return
+                }
+                complete(hex == host.spkiHex)
+            },
+            DispatchQueue.global())
+
+        let connection = NWConnection(
+            host: "127.0.0.1",
+            port: NWEndpoint.Port(rawValue: host.port)!,
+            using: NWParameters(tls: options))
+        let ready = expectation(description: "pinned TLS connection ready")
+        let rejected = expectation(description: "pinned TLS connection rejected")
+        connection.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                ready.fulfill()
+            case .failed, .cancelled:
+                rejected.fulfill()
+            default:
+                break
+            }
+        }
+        connection.start(queue: DispatchQueue.global())
+        wait(for: [expectReady ? ready : rejected], timeout: 5)
+        return connection
+    }
+
+    private func sendPartialBytes(_ request: String, over connection: NWConnection) throws {
+        let sent = expectation(description: "partial request bytes sent")
+        connection.send(content: Data(request.utf8), completion: .contentProcessed { error in
+            XCTAssertNil(error)
+            sent.fulfill()
+        })
+        wait(for: [sent], timeout: 3)
+    }
+
+    private func assertPeerClosed(
+        _ connection: NWConnection,
+        timeout: TimeInterval
+    ) {
+        let closed = expectation(description: "server closed incomplete connection")
+        connection.receive(
+            minimumIncompleteLength: 1,
+            maximumLength: 1
+        ) { _, _, isComplete, error in
+            if error != nil || isComplete {
+                closed.fulfill()
+            }
+        }
+        wait(for: [closed], timeout: timeout)
+        connection.cancel()
+    }
+
+    private func waitForActiveConnections(
+        _ expected: Int,
+        server: HTTPServer,
+        timeout: TimeInterval = 3
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if server.activeConnectionCount == expected { return }
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        XCTAssertEqual(server.activeConnectionCount, expected)
+    }
+
     func testBranchOperationsRequireBranchControlPermission() throws {
         let host = try makeAuthorizedHost()
 
