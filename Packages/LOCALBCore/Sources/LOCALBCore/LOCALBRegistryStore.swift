@@ -612,7 +612,7 @@ public struct LOCALBRegistryStore {
         }
         let fd = openat(
             rootFD, ".localb-registry.lock",
-            O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+            O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         guard Self.isRegularFile(fd: fd) else {
             close(fd)
