@@ -123,7 +123,7 @@ final class QoderCollectionLease {
         guard amount > 0 else { return nil }
         let text = String(decoding: bytes.prefix(amount), as: UTF8.self)
         guard let firstLine = text.split(
-            separator: "\\n", omittingEmptySubsequences: true).first
+            separator: "\n", omittingEmptySubsequences: true).first
         else { return nil }
         let value = String(firstLine).trimmingCharacters(in: .whitespacesAndNewlines)
         return value.isEmpty ? nil : value
