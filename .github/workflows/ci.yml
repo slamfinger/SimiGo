@@ -211,6 +211,8 @@ jobs:
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
               Path("SimiGoTests/BinaryDownloaderTests.swift"),
+              Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift"),
+              Path("SimiGoTests/SlotActivityTests.swift"),
               Path("SimiGoTests/LOCALBManagementEntryTests.swift"),
               Path("SimiGoTests/LOCALBBranchLifecycleTests.swift"),
           ]
@@ -241,6 +243,8 @@ jobs:
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/BinaryDownloaderTests \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
+            -only-testing:SimiGoTests/SlotActivityTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests
       - name: Generate isolated App test xctestrun
@@ -270,6 +274,8 @@ jobs:
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/BinaryDownloaderTests \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
+            -only-testing:SimiGoTests/SlotActivityTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-app.log"
