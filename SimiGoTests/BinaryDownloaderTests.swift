@@ -92,6 +92,34 @@ final class BinaryDownloaderTests: XCTestCase {
         XCTAssertEqual(entries.map(\.lastPathComponent).sorted(), ["engine"])
     }
 
+    func testFinishCallbackRejectsUnavailableTemporaryFileMetadata() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-downloader-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let destination = directory.appendingPathComponent("engine")
+        let previous = Data("previous-engine".utf8)
+        try previous.write(to: destination)
+        let missingTemporaryFile = directory.appendingPathComponent("missing-download")
+        let configuration = URLSessionConfiguration.ephemeral
+        let downloader = BinaryDownloader(
+            destination: destination, configuration: configuration) { _, _ in }
+        let session = URLSession(configuration: configuration)
+        let task = session.downloadTask(
+            with: URL(string: "https://simigo.invalid/engine")!)
+
+        downloader.urlSession(
+            session, downloadTask: task, didFinishDownloadingTo: missingTemporaryFile)
+        session.invalidateAndCancel()
+
+        XCTAssertEqual(try Data(contentsOf: destination), previous)
+        let entries = try FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: nil)
+        XCTAssertEqual(entries.map(\\.lastPathComponent).sorted(), ["engine"])
+    }
+
     func testSuccessfulDownloadAtomicallyReplacesExistingDestination() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("binary-downloader-\(UUID().uuidString)", isDirectory: true)
