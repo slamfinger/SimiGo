@@ -79,11 +79,22 @@ final class QoderCollectionLease {
 
     /// Best-effort diagnostic only; the lock, not the contents, is the truth.
     private static func holder(of fileURL: URL) -> String? {
-        guard let data = try? Data(contentsOf: fileURL),
-            let text = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-            !text.isEmpty
+        let descriptor = open(
+            fileURL.path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else { return nil }
+        defer { close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG
         else { return nil }
+        var bytes = [UInt8](repeating: 0, count: 64)
+        let count = bytes.withUnsafeMutableBytes {
+            Darwin.read(descriptor, $0.baseAddress, $0.count)
+        }
+        guard count > 0,
+              let text = String(bytes: bytes.prefix(count), encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty else { return nil }
         return text
     }
 
