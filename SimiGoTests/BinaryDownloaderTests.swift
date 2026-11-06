@@ -64,7 +64,8 @@ final class BinaryDownloaderTests: XCTestCase {
             ) { _, _ in }
         }
         await fulfillment(of: [started], timeout: 5)
-        XCTAssertEqual(try await download.value, Int64(payload.count))
+        let downloadedSize = try await download.value
+        XCTAssertEqual(downloadedSize, Int64(payload.count))
         XCTAssertEqual(try Data(contentsOf: destination), payload)
     }
 }
