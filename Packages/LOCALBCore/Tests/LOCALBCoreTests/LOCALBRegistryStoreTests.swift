@@ -32,8 +32,9 @@ final class LOCALBRegistryStoreTests: XCTestCase {
         try FileManager.default.createDirectory(
             at: outside, withIntermediateDirectories: true)
         let link = outside.deletingLastPathComponent()
-            .appendingPathComponent("registry-root-link-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("registry-root-link-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        defer { try? FileManager.default.removeItem(at: link) }
         let externalJournal = outside.appendingPathComponent(".localb-registry.events")
         let externalLock = outside.appendingPathComponent(".localb-registry.lock")
 
