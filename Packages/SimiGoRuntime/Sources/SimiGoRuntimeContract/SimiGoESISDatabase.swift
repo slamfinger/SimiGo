@@ -5614,19 +5614,26 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, Int64(prefix.utf8.count))
         bind(stmt, 2, prefix)
         var out: [DependencyEntry] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            func text(_ i: Int32) -> String {
-                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func text(_ i: Int32) -> String {
+                    sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+                }
+                out.append(DependencyEntry(
+                    appendOrder: Int(sqlite3_column_int64(stmt, 0)),
+                    dependencyID: text(1),
+                    contentAddress: text(2),
+                    revision: Int(sqlite3_column_int64(stmt, 3)),
+                    reason: text(4),
+                    recordedAt: text(5)))
+                continue
             }
-            out.append(DependencyEntry(
-                appendOrder: Int(sqlite3_column_int64(stmt, 0)),
-                dependencyID: text(1),
-                contentAddress: text(2),
-                revision: Int(sqlite3_column_int64(stmt, 3)),
-                reason: text(4),
-                recordedAt: text(5)))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return out
         }
-        return out
     }
 
     /// A settled file's carried bytes, read back and verified through its
