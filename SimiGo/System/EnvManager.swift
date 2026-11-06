@@ -1317,9 +1317,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
         let completion = takeCompletionLocked()
         lock.unlock()
         guard let completion else { return }
-        publish(
-            completion, result: .failure(CancellationError()),
-            removeStagingFile: true)
+        publish(completion, result: .failure(CancellationError()))
     }
 
     func urlSession(
@@ -1393,12 +1391,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
         let completion = takeCompletionLocked()
         lock.unlock()
         guard let completion else { return }
-        publish(
-            completion, result: result,
-            removeStagingFile: {
-                if case .failure = result { return true }
-                return false
-            }())
+        publish(completion, result: result)
     }
 
     func urlSession(
@@ -1424,7 +1417,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
         let completion = takeCompletionLocked()
         lock.unlock()
         guard let completion else { return }
-        publish(completion, result: result, removeStagingFile: true)
+        publish(completion, result: result)
     }
 
     /// Must be called with the state lock held.
@@ -1441,12 +1434,11 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
 
     private func publish(
         _ completion: Completion,
-        result: Result<Int64, Error>,
-        removeStagingFile: Bool
+        result: Result<Int64, Error>
     ) {
-        if removeStagingFile {
-            try? FileManager.default.removeItem(at: destination)
-        }
+        // The destination only exists after a successful, lock-protected move.
+        // On failure it may be a caller-owned pre-existing file, so never remove
+        // it merely because this transfer failed or was cancelled.
         switch result {
         case .success:
             completion.session?.finishTasksAndInvalidate()
