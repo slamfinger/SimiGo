@@ -770,4 +770,32 @@ extension SimiGoESISDatabaseTests {
             "present")
     }
 
+
+    func testInformationDemandRefusesMissingIndexOnlyFileWithoutCachingPartialResult() throws {
+        let databaseURL = tempURL("missing-index-only")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-index-only-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        try Data("the unique body token is present here".utf8).write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "index-only-root", rootURL: rootURL, carryText: false)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+
+        try fm.removeItem(at: fileURL)
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "unique body token", rootID: "index-only-root", limit: 10))
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 0,
+            "A demand with an unreadable settled source must not be persisted")
+    }
+
 }
