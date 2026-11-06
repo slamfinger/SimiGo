@@ -200,15 +200,23 @@ public final class SimiGoESISDatabase {
 
     /// Highest applied schema version, or 0 if none.
     public func schemaVersion() throws -> Int {
-        var stmt: OpaquePointer?
-        guard sqlite3_prepare_v2(handle, "SELECT MAX(version) FROM schema_migrations;", -1, &stmt, nil) == SQLITE_OK else {
-            // Table absent → version 0 (fresh DB).
-            sqlite3_finalize(stmt)
-            return 0
+        // Only a missing migration table identifies a fresh database. A prepare
+        // or step error on an existing schema must never downgrade it to v0.
+        do {
+            let table = try prepare("""
+            SELECT 1 FROM sqlite_master
+            WHERE type='table' AND name='schema_migrations' LIMIT 1;
+            """)
+            defer { sqlite3_finalize(table) }
+            guard try stepRowOrDone(table) else { return 0 }
         }
+
+        let stmt = try prepare("SELECT MAX(version) FROM schema_migrations;")
         defer { sqlite3_finalize(stmt) }
-        if try stepRowOrDone(stmt) { return Int(sqlite3_column_int64(stmt, 0)) }
-        return 0
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql("schemaVersion: MAX(version) returned no row")
+        }
+        return Int(sqlite3_column_int64(stmt, 0))
     }
 
     private static let v1 = """
@@ -1488,11 +1496,13 @@ public final class SimiGoESISDatabase {
 
     private func prepare(_ sql: String) throws -> OpaquePointer {
         var stmt: OpaquePointer?
-        if sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) != SQLITE_OK || stmt == nil {
-            let m = sqlite3_errmsg(handle).map { String(cString: $0) } ?? "prepare failed"
-            throw DatabaseError.sql(m)
+        let rc = sqlite3_prepare_v2(handle, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let prepared = stmt else {
+            let message = String(cString: sqlite3_errmsg(handle))
+            if let stmt { sqlite3_finalize(stmt) }
+            throw DatabaseError.sql(message)
         }
-        return stmt!
+        return prepared
     }
 
     private func bind(_ stmt: OpaquePointer, _ i: Int32, _ text: String) {
