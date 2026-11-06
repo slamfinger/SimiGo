@@ -5218,13 +5218,28 @@ public final class SimiGoESISDatabase {
     private func invalidateRetrievalSettlementsInTransaction(
         rootID: String, relativePath: String, oldDigest: String
     ) throws {
-        guard !oldDigest.isEmpty else { return }
-        let needle = "\(rootID)/\(relativePath)=\(oldDigest)"
+        // File-content rows contribute their previous digest to the canonical
+        // input string. Filename-only candidates (binary/oversized files) have
+        // no such digest, so their canonical root/path token must also invalidate
+        // the retrieval that cited the filename.
+        if !oldDigest.isEmpty {
+            let digestNeedle = "\(rootID)/\(relativePath)=\(oldDigest)"
+            try execBinding("""
+            UPDATE retrieval_settlements SET status='invalidated'
+            WHERE status='valid' AND instr(inputs_digest, ?) > 0;
+            """) { stmt in
+                bind(stmt, 1, digestNeedle)
+            }
+        }
+        let filenameNeedle = try Self.canonicalJSON([
+            "root_id": rootID,
+            "relative_path": relativePath,
+        ])
         try execBinding("""
         UPDATE retrieval_settlements SET status='invalidated'
         WHERE status='valid' AND instr(inputs_digest, ?) > 0;
         """) { stmt in
-            bind(stmt, 1, needle)
+            bind(stmt, 1, filenameNeedle)
         }
     }
 
