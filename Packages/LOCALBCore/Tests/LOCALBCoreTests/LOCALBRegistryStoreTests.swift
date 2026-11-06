@@ -127,6 +127,44 @@ final class LOCALBRegistryStoreTests: XCTestCase {
         XCTAssertEqual(snapshot.entry(for: try keyEntryKeyID(key))?.status, .revoked)
     }
 
+    func testRegistryRejectsSymlinkedRootWithoutWritingThroughIt() throws {
+        let external = makeRoot().appendingPathComponent("external", isDirectory: true)
+        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
+        let linked = external.deletingLastPathComponent().appendingPathComponent(
+            "linked-root", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: external)
+        let store = LOCALBRegistryStore(rootURL: linked)
+        XCTAssertThrowsError(try store.initializeNewLineage())
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: external.appendingPathComponent(".localb-registry.events").path))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: external.appendingPathComponent(".localb-registry.lock").path))
+    }
+
+    func testRegistryRejectsSymlinkedLockAndJournalWithoutChangingTargets() throws {
+        let root = makeRoot()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let marker = root.deletingLastPathComponent().appendingPathComponent(
+            "registry-external-marker-\(UUID().uuidString)")
+        let original = Data("untouched".utf8)
+        try original.write(to: marker)
+        let store = LOCALBRegistryStore(rootURL: root)
+        try FileManager.default.createSymbolicLink(
+            at: root.appendingPathComponent(".localb-registry.lock"),
+            withDestinationURL: marker)
+        XCTAssertThrowsError(try store.initializeNewLineage())
+        try FileManager.default.removeItem(at: root.appendingPathComponent(".localb-registry.lock"))
+
+        // A valid lock but a journal symlink must also be rejected.
+        _ = try store.initializeNewLineage()
+        try FileManager.default.removeItem(at: root.appendingPathComponent(".localb-registry.events"))
+        try FileManager.default.createSymbolicLink(
+            at: root.appendingPathComponent(".localb-registry.events"),
+            withDestinationURL: marker)
+        XCTAssertThrowsError(try store.loadVerified(checkpoint: nil))
+        XCTAssertEqual(try Data(contentsOf: marker), original)
+    }
+
     func testCorruptTailIsNotSilentlyRepaired() throws {
         let root = makeRoot()
         let store = LOCALBRegistryStore(rootURL: root)
