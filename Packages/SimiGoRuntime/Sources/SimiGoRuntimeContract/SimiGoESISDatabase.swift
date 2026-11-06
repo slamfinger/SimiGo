@@ -2630,9 +2630,26 @@ public final class SimiGoESISDatabase {
 
             // Size from metadata first: a multi-GB root is mostly binaries, and
             // reading them only to discard them made a stale scan I/O bound.
-            guard size <= Int64(fileByteCap),
-                let data = try? Data(contentsOf: file), data.count <= fileByteCap
-            else {
+            // A size-cap exclusion is intentional; an I/O failure is not evidence
+            // that the previous settled content should be withdrawn.
+            guard size <= Int64(fileByteCap) else {
+                skipped += 1
+                indexedFiles.append((rel, file, size, modified, nil))
+                if let old = previous[rel] {
+                    cleared.append((rel, old, false))
+                }
+                continue
+            }
+            let data: Data
+            do {
+                data = try Data(contentsOf: file)
+            } catch {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: cannot read \(rel): \(error)")
+            }
+            // The file may have grown after metadata was read. That is still an
+            // explicit size-cap exclusion, unlike a failed read above.
+            guard data.count <= fileByteCap else {
                 skipped += 1
                 indexedFiles.append((rel, file, size, modified, nil))
                 if let old = previous[rel] {
