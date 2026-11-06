@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import SimiGoCollection
@@ -239,6 +240,19 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try pendingCount(configuration), 0)
     }
 
+    func testInboxRejectsFIFOInsteadOfBlockingDuringHeaderValidation() throws {
+        let stateDirectory = configuration().stateDirectory
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        let database = stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        let result = database.path.withCString { Darwin.mkfifo($0, mode_t(0o600)) }
+        XCTAssertEqual(result, 0, "mkfifo failed: \(String(cString: strerror(errno)))")
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount(),
+            "a FIFO is not a fresh or valid SQLite database")
+    }
     func testInboxRefusesSymlinkedSQLiteDatabase() throws {
         let stateDirectory = configuration().stateDirectory
         let targetDirectory = root.appendingPathComponent("external-state", isDirectory: true)
