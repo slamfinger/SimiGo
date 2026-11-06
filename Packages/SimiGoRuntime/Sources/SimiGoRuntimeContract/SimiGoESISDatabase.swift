@@ -1475,13 +1475,13 @@ public final class SimiGoESISDatabase {
     }
 
     public func count(_ table: String) throws -> Int {
-        var stmt: OpaquePointer?
-        // table name is internal constant only, never user input.
-        guard sqlite3_prepare_v2(handle, "SELECT COUNT(*) FROM \(table);", -1, &stmt, nil) == SQLITE_OK
-        else { sqlite3_finalize(stmt); throw DatabaseError.sql("count prepare failed") }
+        // Table names are internal constants only, never user input.
+        let stmt = try prepare("SELECT COUNT(*) FROM \(table);")
         defer { sqlite3_finalize(stmt) }
-        if try stepRowOrDone(stmt) { return Int(sqlite3_column_int64(stmt, 0)) }
-        return 0
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql("count: SELECT COUNT(*) returned no row")
+        }
+        return Int(sqlite3_column_int64(stmt, 0))
     }
 
     // MARK: - Statement binding helpers
@@ -5249,7 +5249,7 @@ public final class SimiGoESISDatabase {
         try execBinding("""
         UPDATE retrieval_settlements SET status='invalidated'
         WHERE status='valid' AND inputs_digest NOT LIKE '{%';
-        """)
+        """) { _ in }
     }
 
     /// Reconciliation for lost watcher events: mark indexed files under a root
