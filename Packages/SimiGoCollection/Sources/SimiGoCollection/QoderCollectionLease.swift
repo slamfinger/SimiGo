@@ -62,10 +62,11 @@ final class QoderCollectionLease {
               openedRootInfo.st_dev == rootInfo.st_dev,
               openedRootInfo.st_ino == rootInfo.st_ino,
               openedRootInfo.st_uid == geteuid(),
-              (openedRootInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
+              (openedRootInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0,
+              fchmod(directoryFD, 0o700) == 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: directoryURL.path,
-                detail: "state directory changed while opening its descriptor")
+                detail: "state directory changed or could not be secured while opening its descriptor")
         }
 
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
