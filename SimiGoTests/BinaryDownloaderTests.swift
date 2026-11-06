@@ -122,7 +122,7 @@ final class BinaryDownloaderTests: XCTestCase {
 
     func testPublishDownloadedBinaryReplacesExistingFileWithExecutableMode() throws {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("binary-publish-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("binary-publish-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -144,7 +144,7 @@ final class BinaryDownloaderTests: XCTestCase {
 
     func testPublishDownloadedBinaryFailureLeavesExistingFileUntouched() throws {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("binary-publish-failure-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("binary-publish-failure-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
