@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import Darwin
 import SQLite3
 
 /// Why the collector's durable state cannot be used. The cases stay distinct
@@ -627,9 +628,19 @@ final class QoderSQLiteConnection {
         // final database component untouched so NOFOLLOW still rejects a DB
         // symlink rather than following it.
         let requestedURL = URL(fileURLWithPath: path)
-        let parentURL = requestedURL.deletingLastPathComponent().resolvingSymlinksInPath()
-        let canonicalPath = parentURL.appendingPathComponent(
-            requestedURL.lastPathComponent).path
+        let parentPath = requestedURL.deletingLastPathComponent().path
+        // Foundation's URL symlink resolution does not produce the same
+        // canonical VFS path on all hosted macOS runners. realpath() resolves
+        // every existing parent component before SQLite applies NOFOLLOW.
+        guard let resolvedParent = realpath(parentPath, nil) else {
+            throw Self.error(
+                code: SQLITE_CANTOPEN, path: path,
+                detail: "cannot resolve database parent: \(String(cString: strerror(errno)))")
+        }
+        defer { free(resolvedParent) }
+        let canonicalParent = String(cString: resolvedParent)
+        let canonicalPath = URL(fileURLWithPath: canonicalParent, isDirectory: true)
+            .appendingPathComponent(requestedURL.lastPathComponent).path
         var handle: OpaquePointer?
         let code = sqlite3_open_v2(
             canonicalPath, &handle,
