@@ -2472,10 +2472,13 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        if sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW {
+            guard let c = sqlite3_column_text(stmt, 0) else { return nil }
             return String(cString: c)
         }
-        return nil
+        if rc == SQLITE_DONE { return nil }
+        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
     }
 
     // MARK: - External roots / work-file / agent-session indexing
@@ -4869,8 +4872,10 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
-        if sqlite3_step(stmt) == SQLITE_ROW { return sqlite3_column_int64(stmt, 0) }
-        return nil
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW { return sqlite3_column_int64(stmt, 0) }
+        if rc == SQLITE_DONE { return nil }
+        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
     }
 
     /// Read the stored content digest for an indexed external file (nil if absent).
@@ -4879,10 +4884,13 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
-        if sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW {
+            guard let c = sqlite3_column_text(stmt, 0) else { return nil }
             return String(cString: c)
         }
-        return nil
+        if rc == SQLITE_DONE { return nil }
+        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
     }
 
     /// Re-index an external file, reporting whether its content digest CHANGED.
@@ -4954,10 +4962,13 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT payload_object_id FROM settlements WHERE settlement_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) else {
-            return nil
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW {
+            guard let c = sqlite3_column_text(stmt, 0) else { return nil }
+            return String(cString: c)
         }
-        return String(cString: c)
+        if rc == SQLITE_DONE { return nil }
+        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
     }
 
     /// Content address of a settled file, when its bytes are carried.
@@ -4968,10 +4979,13 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) else {
-            return nil
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW {
+            guard let c = sqlite3_column_text(stmt, 0) else { return nil }
+            return String(cString: c)
         }
-        return String(cString: c)
+        if rc == SQLITE_DONE { return nil }
+        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
     }
 
     /// The transitive closure of settlements affected by a source-file change:
