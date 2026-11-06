@@ -1154,7 +1154,10 @@ public final class SimiGoESISDatabase {
             let all = try prepare("SELECT object_id FROM is_objects;")
             defer { sqlite3_finalize(all) }
             var ids: [String] = []
-            while try stepRowOrDone(all), let c = sqlite3_column_text(all, 0) {
+            while try stepRowOrDone(all) {
+                guard let c = sqlite3_column_text(all, 0) else {
+                    throw DatabaseError.sql("carrierReport: NULL object_id in object inventory")
+                }
                 ids.append(String(cString: c))
             }
             for id in ids {
@@ -2612,7 +2615,36 @@ public final class SimiGoESISDatabase {
                 digest: text(1),
                 objectID: sqlite3_column_type(prevStmt, 2) == SQLITE_NULL ? nil : text(2))
         }
-        _ = sqlite3_reset(prevStmt)
+
+        // Some indexed files (binary, oversized, or non-UTF8) intentionally
+        // have no file_contents row. Keep their external-file inventory too,
+        // otherwise a later root scan cannot detect their disappearance.
+        var previousExternalFiles: [String: String] = [:]
+        do {
+            let externalStmt = try prepare("""
+            SELECT relative_path, content_digest FROM external_files
+            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
+            """)
+            defer { sqlite3_finalize(externalStmt) }
+            bind(externalStmt, 1, rootID)
+            while true {
+                let rc = sqlite3_step(externalStmt)
+                if rc == SQLITE_ROW {
+                    guard let path = sqlite3_column_text(externalStmt, 0) else {
+                        throw DatabaseError.sql("external_files contains a NULL relative_path")
+                    }
+                    let relativePath = String(cString: path)
+                    let digest = sqlite3_column_text(externalStmt, 1)
+                        .map { String(cString: $0) } ?? ""
+                    previousExternalFiles[relativePath] = digest
+                    continue
+                }
+                guard rc == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
+                break
+            }
+        }
 
         var scanned = 0, reused = 0, skipped = 0
         var entityBytesRead = 0
@@ -2623,12 +2655,20 @@ public final class SimiGoESISDatabase {
         let modifiedFormatter = ISO8601DateFormatter()
 
         let scanRoot = rootURL.resolvingSymlinksInPath()
+        var enumerationFailure: (path: String, message: String)?
         guard let enumerator = fm.enumerator(
             at: scanRoot,
             includingPropertiesForKeys: [
                 .isRegularFileKey, .fileSizeKey, .contentModificationDateKey,
             ],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants])
+            options: [.skipsHiddenFiles, .skipsPackageDescendants],
+            errorHandler: { url, error in
+                if enumerationFailure == nil {
+                    enumerationFailure = (url.path, error.localizedDescription)
+                }
+                // A skipped subtree would make the observed path set incomplete.
+                return false
+            })
         else {
             // Enumerating an unreadable root must not look like "every file was
             // deleted" — that would strand the carried content behind a mass
@@ -2655,13 +2695,26 @@ public final class SimiGoESISDatabase {
                 modifiedFormatter.string(from: $0)
             }
 
-            // Size from metadata first: a multi-GB root is mostly binaries, and
-            // reading them only to discard them made a stale scan I/O bound.
-            guard size <= Int64(fileByteCap),
-                let data = try? Data(contentsOf: file), data.count <= fileByteCap
-            else {
+            // Size-cap exclusions are intentional; an actual I/O error is not
+            // evidence that the previous settled content should be withdrawn.
+            guard size <= Int64(fileByteCap) else {
                 skipped += 1
                 indexedFiles.append((rel, file, size, modified, nil))
+                if let old = previous[rel] {
+                    cleared.append((rel, old, false))
+                }
+                continue
+            }
+            let data: Data
+            do {
+                data = try Data(contentsOf: file)
+            } catch {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: cannot read \(rel): \(error)")
+            }
+            guard data.count <= fileByteCap else {
+                skipped += 1
+                indexedFiles.append((rel, file, Int64(data.count), modified, nil))
                 if let old = previous[rel] {
                     cleared.append((rel, old, false))
                 }
@@ -2691,10 +2744,28 @@ public final class SimiGoESISDatabase {
                 size: size, modified: modified, previous: previous[rel]))
         }
 
-        // Indexed rows whose file disappeared from the latest scan.
+        // Enumeration errors can occur after some descendants were yielded.
+        // Abort before computing removals or opening the settlement transaction.
+        if let failure = enumerationFailure {
+            throw DatabaseError.sql(
+                "settleWorkRootContents: cannot enumerate \(failure.path): \(failure.message)")
+        }
+
+        // Indexed rows whose file disappeared from the latest scan. The
+        // file_contents snapshot misses intentionally uncarried files, so also
+        // reconcile every previously-present external_files path.
         var removed = 0
+        var clearedPaths = Set<String>()
         for (rel, old) in previous where !seen.contains(rel) {
             cleared.append((rel, old, true))
+            clearedPaths.insert(rel)
+            removed += 1
+        }
+        for (rel, digest) in previousExternalFiles
+        where !seen.contains(rel) && !clearedPaths.contains(rel) {
+            cleared.append((
+                rel, FileContentState(digest: digest, objectID: nil), true))
+            clearedPaths.insert(rel)
             removed += 1
         }
 
@@ -3033,74 +3104,95 @@ public final class SimiGoESISDatabase {
     public func executeInformationDemand(
         query: String, rootID: String? = nil, limit: Int = 200
     ) throws -> DemandRetrieval {
-        // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
-        let canonicalInput = try canonicalDemandInput(
-            query: query, rootIDs: rootID.map { [$0] })
-        var inputs: [(root: String, path: String, objectID: String)] = []
-        var unresolvedInputs: [(root: String, path: String)] = []
-        for entry in canonicalInput.entries {
-            if let objectID = entry.objectID {
-                inputs.append((entry.rootID, entry.relativePath, objectID))
+        // The input basis, cache check, result scan and publication must observe
+        // one database revision. BEGIN IMMEDIATE also prevents a competing root
+        // settlement from changing file_contents between these stages.
+        return try transactionResult {
+            // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
+            let canonicalInput = try canonicalDemandInput(
+                query: query, rootIDs: rootID.map { [$0] })
+            var inputs: [(root: String, path: String, objectID: String)] = []
+            var unresolvedInputs: [(root: String, path: String)] = []
+            for entry in canonicalInput.entries {
+                if let objectID = entry.objectID {
+                    inputs.append((entry.rootID, entry.relativePath, objectID))
+                } else {
+                    // Index-only settlement: the address is the identity record's
+                    // metadata object, not a copy of the entity bytes.
+                    unresolvedInputs.append((entry.rootID, entry.relativePath))
+                }
+            }
+            for input in unresolvedInputs {
+                if let address = try latestIndexObjectID(
+                    identity: "file:\(input.root)/\(input.path)")
+                {
+                    inputs.append((input.root, input.path, address))
+                }
+            }
+            let canonical = canonicalInput.canonical
+            // The result limit and filename-index matches both change the
+            // persisted hit set, so they are part of retrieval identity.
+            let effectiveLimit = max(0, limit)
+            let filenameHits = try fileNameHits(
+                query: query, rootID: rootID, limit: effectiveLimit)
+            let demandBasis = try Self.canonicalJSON([
+                "canonical_input": canonical,
+                "root_scope": rootID.map { $0 as Any } ?? NSNull(),
+                "result_limit": effectiveLimit,
+                "filename_hits": filenameHits.map {
+                    ["root_id": $0.rootID, "relative_path": $0.relativePath]
+                },
+            ])
+            let demandID = NativeSHA256.hexDigest(Data(demandBasis.utf8))
+            let roots = canonicalInput.rootIDs
+
+            // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
+            let settled = try prepare("""
+            SELECT result_object_id, result_sha256, result_json FROM retrieval_settlements
+            WHERE demand_id=? AND status='valid';
+            """)
+            bind(settled, 1, demandID)
+            let settledRC = sqlite3_step(settled)
+            if settledRC == SQLITE_ROW {
+                func col(_ i: Int32) -> String {
+                    sqlite3_column_text(settled, i).map { String(cString: $0) } ?? ""
+                }
+                let objectID = col(0)
+                let storedSHA = col(1)
+                let legacyJSON = col(2)
+                sqlite3_finalize(settled)
+
+                let data: Data?
+                if !objectID.isEmpty {
+                    data = try? readObject(objectID)
+                } else {
+                    data = Data(legacyJSON.utf8)
+                }
+                if let data,
+                    NativeSHA256.hexDigest(data) == storedSHA,
+                    let rows = try? JSONDecoder().decode([ContentHit].self, from: data)
+                {
+                    return DemandRetrieval(
+                        demandID: demandID, reused: true, hits: rows,
+                        resultSHA256: storedSHA, status: "reused")
+                }
             } else {
-                // Index-only settlement: the address is the identity record's
-                // metadata object, not a copy of the entity bytes.
-                unresolvedInputs.append((entry.rootID, entry.relativePath))
+                sqlite3_finalize(settled)
+                guard settledRC == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
             }
-        }
-        for input in unresolvedInputs {
-            if let address = try latestIndexObjectID(
-                identity: "file:\(input.root)/\(input.path)")
-            {
-                inputs.append((input.root, input.path, address))
-            }
-        }
-        let canonical = canonicalInput.canonical
-        let demandID = canonicalInput.digest
-        let roots = canonicalInput.rootIDs
 
-        // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
-        let settled = try prepare("""
-        SELECT result_object_id, result_sha256, result_json FROM retrieval_settlements
-        WHERE demand_id=? AND status='valid';
-        """)
-        defer { sqlite3_finalize(settled) }
-        bind(settled, 1, demandID)
-        if try stepRowOrDone(settled) {
-            func col(_ i: Int32) -> String {
-                sqlite3_column_text(settled, i).map { String(cString: $0) } ?? ""
+            // 3) 重算：在同一数据库快照的已结算内容索引上检索
+            var hits = try searchSettledContent(query: query, rootID: rootID, limit: effectiveLimit)
+            if hits.isEmpty {
+                // Reuse the filename candidate snapshot included in demand identity.
+                hits = filenameHits
             }
-            let objectID = col(0)
-            let storedSHA = col(1)
-            let legacyJSON = col(2)
-            _ = sqlite3_reset(settled)
-            let data: Data?
-            if !objectID.isEmpty {
-                data = try? readObject(objectID)
-            } else {
-                data = Data(legacyJSON.utf8)
-            }
-            if let data,
-                let rows = try? JSONDecoder().decode([ContentHit].self, from: data)
-            {
-                return DemandRetrieval(
-                    demandID: demandID, reused: true, hits: rows,
-                    resultSHA256: storedSHA, status: "reused")
-            }
-        } else {
-            _ = sqlite3_reset(settled)
-        }
+            let resultData = try JSONEncoder().encode(hits)
+            let resultSHA = NativeSHA256.hexDigest(resultData)
 
-        // 3) 重算：在已结算内容索引上检索（确定性 consumer：只绑定摘要与原文行）
-        var hits = try searchSettledContent(query: query, rootID: rootID, limit: limit)
-        if hits.isEmpty {
-            // 文件名命中（external_files 路径匹配）也纳入 demand 结果
-            hits = try fileNameHits(query: query, rootID: rootID, limit: limit)
-        }
-        let resultData = try JSONEncoder().encode(hits)
-        let resultSHA = NativeSHA256.hexDigest(resultData)
-
-        // 4) 结果写入对象库，结算行只保留引用；索引追加 demand 身份
-        try transaction {
+            // 4) 结果写入对象库，结算行只保留引用；索引追加 demand 身份
             let objectID = try ensureObject(resultData)
             try execBinding("""
             UPDATE retrieval_settlements SET status='invalidated'
@@ -3122,7 +3214,7 @@ public final class SimiGoESISDatabase {
                 bind(stmt, 1, demandID)
                 bind(stmt, 2, query)
                 bind(stmt, 3, roots.joined(separator: ","))
-                bind(stmt, 4, canonical)
+                bind(stmt, 4, demandBasis)
                 bind(stmt, 5, resultSHA)
                 bind(stmt, 6, Int64(hits.count))
                 bind(stmt, 7, "valid")
@@ -3137,30 +3229,46 @@ public final class SimiGoESISDatabase {
                     contentAddress: input.objectID,
                     reason: "demand-input")
             }
+
+            return DemandRetrieval(
+                demandID: demandID, reused: false, hits: hits,
+                resultSHA256: resultSHA, status: "settled")
         }
-        return DemandRetrieval(
-            demandID: demandID, reused: false, hits: hits,
-            resultSHA256: resultSHA, status: "settled")
     }
 
     /// 文件名/路径命中的确定性 consumer（demand 结果的一部分）。
     private func fileNameHits(query: String, rootID: String?, limit: Int) throws -> [ContentHit] {
-        var sql = "SELECT root_id, relative_path FROM external_files WHERE relative_path LIKE ?"
+        guard limit > 0 else { return [] }
+        var sql = """
+        SELECT root_id, relative_path FROM external_files
+        WHERE relative_path LIKE ? AND COALESCE(status,'present')='present'
+        """
         if rootID != nil { sql += " AND root_id='" + rootID!.replacingOccurrences(of: "'", with: "''") + "'" }
         sql += " ORDER BY relative_path LIMIT \(limit);"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        bind(stmt, 1, "%" + query.replacingOccurrences(of: "'", with: "''") + "%")
+        bind(stmt, 1, "%" + query + "%")
+        guard limit > 0 else { return [] }
         var hits: [ContentHit] = []
-        while try stepRowOrDone(stmt), hits.count < limit {
-            func col(_ i: Int32) -> String {
-                guard let c = sqlite3_column_text(stmt, i) else { return "" }
-                return String(cString: c)
+        while hits.count < limit {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func col(_ i: Int32) -> String {
+                    guard let c = sqlite3_column_text(stmt, i) else { return "" }
+                    return String(cString: c)
+                }
+                hits.append(ContentHit(
+                    rootID: col(0), relativePath: col(1), lineNo: 0,
+                    lineText: col(1)))
+                continue
             }
-            hits.append(ContentHit(
-                rootID: col(0), relativePath: col(1), lineNo: 0,
-                lineText: col(1)))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return hits
         }
+        // The SQL query has the same LIMIT, so reaching this count is a
+        // deliberate bounded completion rather than a partial error result.
         return hits
     }
 
@@ -3182,7 +3290,7 @@ public final class SimiGoESISDatabase {
         let rows = try settledFileRows(rootID: rootID)
         var hits: [ContentHit] = []
         for row in rows {
-            guard let body = try searchableFileText(row) else { continue }
+            let body = try searchableFileText(row)
             for (idx, line) in body.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
             where line.localizedCaseInsensitiveContains(query) {
                 hits.append(ContentHit(
@@ -3214,41 +3322,68 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [SettledFileRow] = []
-        while try stepRowOrDone(stmt) {
-            func text(_ i: Int32) -> String? {
-                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func text(_ i: Int32) -> String? {
+                    sqlite3_column_text(stmt, i).map { String(cString: $0) }
+                }
+                let bytes = Int(sqlite3_column_bytes(stmt, 4))
+                let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
+                rows.append(SettledFileRow(
+                    rootID: text(0) ?? "", relativePath: text(1) ?? "",
+                    digest: text(2) ?? "", objectID: text(3), legacy: legacy))
+                continue
             }
-            let bytes = Int(sqlite3_column_bytes(stmt, 4))
-            let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
-            rows.append(SettledFileRow(
-                rootID: text(0) ?? "", relativePath: text(1) ?? "",
-                digest: text(2) ?? "", objectID: text(3), legacy: legacy))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return rows
         }
-        return rows
     }
 
-    /// Settled text for a row, or nil when no source produces bytes matching
-    /// the settled digest. Object store first (legacy/carrier rows), then the
-    /// registered root locator (index-only rows).
-    func searchableFileText(_ row: SettledFileRow) throws -> String? {
-        if let objectID = row.objectID, !objectID.isEmpty,
-            let data = try? readObject(objectID),
-            NativeSHA256.hexDigest(data) == row.digest
-        {
+    /// Resolve and verify every settled text row. Missing, unreadable or changed
+    /// index-only sources are errors, not ordinary no-match results: silently
+    /// skipping one would let a partial retrieval be persisted under a full basis.
+    func searchableFileText(_ row: SettledFileRow) throws -> String {
+        if let objectID = row.objectID, !objectID.isEmpty {
+            let data = try readObject(objectID)
+            guard NativeSHA256.hexDigest(data) == row.digest else {
+                throw DatabaseError.sql(
+                    "searchableFileText: carried object digest mismatch for \(row.rootID)/\(row.relativePath)")
+            }
             return String(decoding: data, as: UTF8.self)
         }
-        if !row.legacy.isEmpty, NativeSHA256.hexDigest(row.legacy) == row.digest {
+        if !row.legacy.isEmpty {
+            guard NativeSHA256.hexDigest(row.legacy) == row.digest else {
+                throw DatabaseError.sql(
+                    "searchableFileText: legacy content digest mismatch for \(row.rootID)/\(row.relativePath)")
+            }
             return String(decoding: row.legacy, as: UTF8.self)
         }
-        guard let locator = try rootLocatorPath(row.rootID) else { return nil }
+        guard let locator = try rootLocatorPath(row.rootID) else {
+            throw DatabaseError.sql(
+                "searchableFileText: no locator for settled file \(row.rootID)/\(row.relativePath)")
+        }
         let relative = row.relativePath
         guard !relative.isEmpty,
             !relative.split(separator: "/").contains("..")
-        else { return nil }
+        else {
+            throw DatabaseError.sql(
+                "searchableFileText: invalid relative path for \(row.rootID)/\(row.relativePath)")
+        }
         let url = URL(fileURLWithPath: locator).appendingPathComponent(relative)
-        guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]),
-            NativeSHA256.hexDigest(data) == row.digest
-        else { return nil }
+        let data: Data
+        do {
+            data = try Data(contentsOf: url, options: [.mappedIfSafe])
+        } catch {
+            throw DatabaseError.sql(
+                "searchableFileText: cannot read \(row.rootID)/\(row.relativePath): \(error)")
+        }
+        guard NativeSHA256.hexDigest(data) == row.digest else {
+            throw DatabaseError.sql(
+                "searchableFileText: source digest changed for \(row.rootID)/\(row.relativePath)")
+        }
         return String(decoding: data, as: UTF8.self)
     }
 
@@ -5025,7 +5160,10 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
         var out: [String] = []
-        while try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) {
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("affectedClosure: NULL identifier")
+            }
             out.append(String(cString: c))
         }
         return out
@@ -5092,49 +5230,84 @@ public final class SimiGoESISDatabase {
     /// settlement invalidated by the sweep.
     @discardableResult
     public func reconcileRoot(rootID: String, seenRelativePaths: Set<String>) throws -> [String] {
-        let stmt = try prepare("SELECT relative_path FROM external_files WHERE root_id=?;")
-        defer { sqlite3_finalize(stmt) }
-        bind(stmt, 1, rootID)
-        var indexed: [String] = []
-        while try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) {
-            indexed.append(String(cString: c))
-        }
-        _ = sqlite3_reset(stmt)
-        let existing = indexed.filter { !seenRelativePaths.contains($0) }
-        guard !existing.isEmpty else { return [] }
-
-        var invalidated: [String] = []
-        try transaction {
-            for path in existing {
-                let digestStmt = try prepare("""
-                SELECT content_sha256 FROM file_contents WHERE root_id=? AND relative_path=?;
-                """)
-                defer { sqlite3_finalize(digestStmt) }
-                var oldDigest = ""
-                if try stepRowOrDone(digestStmt),
-                    let c = sqlite3_column_text(digestStmt, 0)
-                {
-                    oldDigest = String(cString: c)
+        // Hold the write lock for both the inventory snapshot and the missing-path
+        // mutations. A root settlement cannot update this inventory between them.
+        return try transactionResult {
+            let stmt = try prepare("""
+            SELECT relative_path FROM external_files
+            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
+            """)
+            defer { sqlite3_finalize(stmt) }
+            bind(stmt, 1, rootID)
+            var indexed: [String] = []
+            while true {
+                let rc = sqlite3_step(stmt)
+                if rc == SQLITE_ROW {
+                    guard let c = sqlite3_column_text(stmt, 0) else {
+                        throw DatabaseError.sql(
+                            "reconcileRoot: NULL relative_path for root \(rootID)")
+                    }
+                    indexed.append(String(cString: c))
+                    continue
                 }
-                _ = sqlite3_reset(digestStmt)
-                invalidated += try affectedClosure(rootID: rootID, relativePath: path)
+                guard rc == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
+                break
+            }
+
+            let existing = indexed.filter { !seenRelativePaths.contains($0) }
+            guard !existing.isEmpty else { return [] }
+
+            var invalidated = Set<String>()
+            for path in existing {
+                let oldDigest: String
+                do {
+                    let digestStmt = try prepare("""
+                    SELECT content_sha256 FROM file_contents
+                    WHERE root_id=? AND relative_path=?;
+                    """)
+                    defer { sqlite3_finalize(digestStmt) }
+                    bind(digestStmt, 1, rootID)
+                    bind(digestStmt, 2, path)
+                    let rc = sqlite3_step(digestStmt)
+                    if rc == SQLITE_ROW {
+                        guard let c = sqlite3_column_text(digestStmt, 0) else {
+                            throw DatabaseError.sql(
+                                "reconcileRoot: NULL content digest for \(rootID)/\(path)")
+                        }
+                        oldDigest = String(cString: c)
+                    } else if rc == SQLITE_DONE {
+                        // An external-file-only row (binary/oversized/non-UTF8)
+                        // legitimately has no carried file_contents digest.
+                        oldDigest = ""
+                    } else {
+                        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    }
+                }
+
+                invalidated.formUnion(try affectedClosure(
+                    rootID: rootID, relativePath: path))
                 try invalidateRetrievalSettlementsInTransaction(
                     rootID: rootID, relativePath: path, oldDigest: oldDigest)
                 try execBinding("""
                 DELETE FROM file_contents WHERE root_id=? AND relative_path=?;
-                """) { s in
-                    bind(s, 1, rootID); bind(s, 2, path)
+                """) { deleteStmt in
+                    bind(deleteStmt, 1, rootID)
+                    bind(deleteStmt, 2, path)
                 }
                 try execBinding("""
                 UPDATE external_files SET status='missing'
                 WHERE root_id=? AND relative_path=?;
-                """) { s in
-                    bind(s, 1, rootID); bind(s, 2, path)
+                """) { updateStmt in
+                    bind(updateStmt, 1, rootID)
+                    bind(updateStmt, 2, path)
                 }
             }
-            try markSettlementsInvalidInTransaction(invalidated)
+            let invalidatedIDs = invalidated.sorted()
+            try markSettlementsInvalidInTransaction(invalidatedIDs)
+            return invalidatedIDs
         }
-        return invalidated
     }
 
     /// Transitive dependents of a seed settlement set: the seeds themselves plus
@@ -5154,7 +5327,10 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         var out: [String] = []
-        while try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) {
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("transitiveDependents: NULL identifier")
+            }
             out.append(String(cString: c))
         }
         return out
@@ -5182,7 +5358,10 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT type FROM pragma_table_info(?);")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, table)
-        while try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) {
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("tableHasBlobColumn: NULL column type")
+            }
             if String(cString: c).uppercased().contains("BLOB") { return true }
         }
         return false
@@ -5761,7 +5940,10 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
         var out: [String] = []
-        while try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) {
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("upstreamDependencyClosure: NULL identifier")
+            }
             out.append(String(cString: c))
         }
         return out
