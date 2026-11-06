@@ -166,10 +166,7 @@ public struct SimiGoInformationLoop {
             if !demand.rootIDs.isEmpty, !demand.rootIDs.contains(row.rootID) { continue }
             let identity = "file:\(row.rootID)/\(row.relativePath)"
             guard !demand.excludeItemIDs.contains(identity) else { continue }
-            guard let text = try database.searchableFileText(row) else {
-                stale.append(identity)
-                continue
-            }
+            let text = try database.searchableFileText(row)
             inputs.append("\(identity)=\(row.digest)")
             if let address = try database.latestIndexObjectID(identity: identity) {
                 addresses.append(.init(itemID: identity, contentAddress: address))
