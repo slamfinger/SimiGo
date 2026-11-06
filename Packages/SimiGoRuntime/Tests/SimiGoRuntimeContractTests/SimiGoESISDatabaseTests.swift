@@ -965,4 +965,47 @@ extension SimiGoESISDatabaseTests {
             "A demand without complete source-address provenance must not be persisted")
     }
 
+
+    func testRemovedFilenameOnlyInputInvalidatesItsRetrievalSettlement() throws {
+        let databaseURL = tempURL("filename-only-invalidation")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-filename-only-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("needle-binary.bin")
+        try Data([0xFF, 0xFE]).write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "filename-root", rootURL: rootURL, carryText: false)
+        XCTAssertEqual(try db.count("file_contents"), 0)
+
+        let retrieval = try db.executeInformationDemand(
+            query: "needle", rootID: "filename-root", limit: 10)
+        XCTAssertEqual(retrieval.hits.map(\.relativePath), ["needle-binary.bin"])
+
+        func retrievalStatus() throws -> String {
+            var stmt: OpaquePointer?
+            let sql = """
+            SELECT status FROM retrieval_settlements
+            WHERE demand_id='\(retrieval.demandID)';
+            """
+            XCTAssertEqual(sqlite3_prepare_v2(db.handleForTesting, sql, -1, &stmt, nil), SQLITE_OK)
+            guard let stmt else { throw DatabaseError.sql("missing retrieval status statement") }
+            defer { sqlite3_finalize(stmt) }
+            guard sqlite3_step(stmt) == SQLITE_ROW,
+                let value = sqlite3_column_text(stmt, 0)
+            else { throw DatabaseError.sql("missing retrieval status row") }
+            return String(cString: value)
+        }
+        XCTAssertEqual(try retrievalStatus(), "valid")
+
+        try FileManager.default.removeItem(at: fileURL)
+        _ = try db.settleWorkRootContents(
+            rootID: "filename-root", rootURL: rootURL, carryText: false)
+        XCTAssertEqual(try retrievalStatus(), "invalidated")
+    }
+
 }
