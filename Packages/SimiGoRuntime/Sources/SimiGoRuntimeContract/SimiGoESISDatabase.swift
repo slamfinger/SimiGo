@@ -175,18 +175,28 @@ public final class SimiGoESISDatabase {
                 primary: primary, extended: sqlite3_extended_errcode(db), message: message)
         }
         defer { sqlite3_finalize(stmt) }
-        let stepRC = sqlite3_step(stmt)
-        if stepRC == SQLITE_ROW {
-            let text = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
-            return text == "ok" ? .ok : .corrupted(text)
+        var messages: [String] = []
+        while true {
+            let stepRC = sqlite3_step(stmt)
+            if stepRC == SQLITE_ROW {
+                messages.append(
+                    sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+                continue
+            }
+            if stepRC == SQLITE_DONE { break }
+
+            let primary = sqlite3_errcode(db)
+            let message = String(cString: sqlite3_errmsg(db))
+            if primary == SQLITE_NOTADB {
+                return .corrupted(message)
+            }
+            return .executionError(
+                primary: primary, extended: sqlite3_extended_errcode(db), message: message)
         }
-        let primary = sqlite3_errcode(db)
-        let message = String(cString: sqlite3_errmsg(db))
-        if primary == SQLITE_NOTADB {
-            return .corrupted(message)
+        guard !messages.isEmpty else {
+            return .corrupted("integrity_check returned no rows")
         }
-        return .executionError(
-            primary: primary, extended: sqlite3_extended_errcode(db), message: message)
+        return messages == ["ok"] ? .ok : .corrupted(messages.joined(separator: "\n"))
     }
 
     private static func integrityOK(_ db: OpaquePointer) -> Bool {
