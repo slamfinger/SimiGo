@@ -4314,7 +4314,6 @@ public final class HTTPServer: @unchecked Sendable {
             }
         }
     }
-    }
 }
 
 // MARK: - Thread-Safe Value
