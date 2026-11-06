@@ -299,6 +299,22 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: database), original)
     }
 
+    func testInboxRejectsGroupOrWorldWritableStateDirectory() throws {
+        let stateDirectory = configuration().stateDirectory
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o777], ofItemAtPath: stateDirectory.path)
+        let database = stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount())
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: database.path),
+            "an unsafe state directory must be refused before SQLite creates the inbox")
+    }
+
     func testInboxRefusesSymlinkedStateDirectory() throws {
         let outside = root.appendingPathComponent("outside-inbox-state", isDirectory: true)
         try FileManager.default.createDirectory(
