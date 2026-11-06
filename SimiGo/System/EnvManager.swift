@@ -1236,11 +1236,25 @@ private final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unc
         }
     }
 
+    /// Refuse downloads that exceed a hard disk-consumption ceiling. This is
+    /// deliberately enforced while streaming (not after the temporary file has
+    /// already consumed the disk). The cap is for installer payloads, not model
+    /// weights, which use the separate Hugging Face workflow.
+    private static let maximumDownloadBytes: Int64 = 2_000_000_000
+
     func urlSession(
         _ session: URLSession, downloadTask: URLSessionDownloadTask,
         didWriteData bytesWritten: Int64, totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64
     ) {
+        guard totalBytesWritten <= Self.maximumDownloadBytes else {
+            downloadTask.cancel()
+            settle(.failure(NSError(
+                domain: "EnvManager", code: 413,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "Binary download exceeds the 2,000,000,000-byte limit"])))
+            return
+        }
         progress(totalBytesWritten, totalBytesExpectedToWrite)
     }
 
