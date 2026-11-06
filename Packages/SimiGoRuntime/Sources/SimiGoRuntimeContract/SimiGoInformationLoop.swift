@@ -387,7 +387,6 @@ public struct SimiGoInformationLoop {
                 // next user row starts a different turn.
                 excluded.insert(questionID)
                 excluded.insert(row.itemID)
-                matchingQuestionID = nil
             }
         }
         return excluded
