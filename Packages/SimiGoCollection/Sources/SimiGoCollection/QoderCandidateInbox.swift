@@ -180,21 +180,13 @@ final class QoderCandidateInbox {
             ON candidates(seq) WHERE delivered_at IS NULL;
         """
 
-    let directoryURL: URL
+    private(set) var directoryURL: URL
     private var connection: QoderSQLiteConnection?
 
     init(directoryURL: URL) {
-        // Preserve the final component for O_NOFOLLOW validation, but resolve
-        // platform-owned aliases in its parent (macOS commonly exposes temp
-        // directories through /var -> /private/var). SQLite's NOFOLLOW flag
-        // validates the path as a whole, so handing it the alias would reject
-        // an otherwise safe, non-linked state directory.
-        let standardized = directoryURL.standardizedFileURL
-        let resolvedParent = standardized
-            .deletingLastPathComponent()
-            .resolvingSymlinksInPath()
-        self.directoryURL = resolvedParent.appendingPathComponent(
-            standardized.lastPathComponent, isDirectory: true)
+        // Parent aliases are resolved only after they exist in prepareDirectory.
+        // The final component is kept intact for the O_NOFOLLOW directory check.
+        self.directoryURL = directoryURL.standardizedFileURL
     }
 
     deinit {
@@ -495,6 +487,27 @@ final class QoderCandidateInbox {
             throw QoderCollectionStateError.unreadableState(
                 path: directoryURL.path, detail: String(describing: error))
         }
+
+        // macOS SQLite canonicalizes the entire database path before applying
+        // SQLITE_OPEN_NOFOLLOW. Resolve all existing parent components now,
+        // after directory creation, but preserve the final state-directory
+        // component so a symlink at that boundary is still rejected below.
+        let parentURL = directoryURL.deletingLastPathComponent()
+        var resolvedParent = [CChar](repeating: 0, count: Int(PATH_MAX))
+        let parentResolved = parentURL.path.withCString { source in
+            resolvedParent.withUnsafeMutableBufferPointer { target in
+                Darwin.realpath(source, target.baseAddress) != nil
+            }
+        }
+        guard parentResolved else {
+            throw QoderCollectionStateError.unreadableState(
+                path: parentURL.path,
+                detail: "cannot resolve existing state parent: \(String(cString: strerror(errno)))")
+        }
+        let finalComponent = directoryURL.lastPathComponent
+        directoryURL = URL(fileURLWithPath: String(cString: resolvedParent), isDirectory: true)
+            .appendingPathComponent(finalComponent, isDirectory: true)
+
         let descriptor = open(
             directoryURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
         guard descriptor >= 0 else {
