@@ -3126,11 +3126,12 @@ public final class SimiGoESISDatabase {
                 }
             }
             for input in unresolvedInputs {
-                if let address = try latestIndexObjectID(
-                    identity: "file:\(input.root)/\(input.path)")
-                {
-                    inputs.append((input.root, input.path, address))
+                let identity = "file:\(input.root)/\(input.path)"
+                guard let address = try latestIndexObjectID(identity: identity) else {
+                    throw DatabaseError.sql(
+                        "executeInformationDemand: missing metadata object address for \(identity)")
                 }
+                inputs.append((input.root, input.path, address))
             }
             let canonical = canonicalInput.canonical
             // The result limit and filename-index matches both change the
