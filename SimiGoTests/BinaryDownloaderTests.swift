@@ -6,7 +6,7 @@ import XCTest
 final class BinaryDownloaderTests: XCTestCase {
     func testCancellationCancelsURLSessionDownloadAndPreservesExistingDestination() async throws {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("binary-downloader-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("binary-downloader-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -51,9 +51,46 @@ final class BinaryDownloaderTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: lateTemporary.path))
     }
 
-    func testSuccessfulDownloadAtomicallyReplacesExistingDestination() async throws {
+    func testOversizedDownloadPreservesExistingDestination() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("binary-downloader-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let destination = directory.appendingPathComponent("engine")
+        let previous = Data("previous-engine".utf8)
+        try previous.write(to: destination)
+        let payload = Data("oversized".utf8)
+        let started = expectation(description: "oversized response started")
+        ControlledBinaryDownloadURLProtocol.configure(
+            mode: .respond(payload), started: started, stopped: nil)
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [ControlledBinaryDownloadURLProtocol.self]
+
+        let download = Task {
+            try await BinaryDownloader.download(
+                from: URL(string: "https://simigo.invalid/engine")!,
+                to: destination, configuration: configuration,
+                maximumDownloadBytes: Int64(payload.count - 1)
+            ) { _, _ in }
+        }
+        await fulfillment(of: [started], timeout: 5)
+        do {
+            _ = try await download.value
+            XCTFail("oversized payload unexpectedly replaced the installed binary")
+        } catch {
+            // Expected: the declared/actual payload exceeds the configured cap.
+        }
+        XCTAssertEqual(try Data(contentsOf: destination), previous)
+        let entries = try FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: nil)
+        XCTAssertEqual(entries.map(\\.lastPathComponent).sorted(), ["engine"])
+    }
+
+    func testSuccessfulDownloadAtomicallyReplacesExistingDestination() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-downloader-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -120,7 +157,10 @@ private nonisolated final class ControlledBinaryDownloadURLProtocol:
         guard let url = request.url,
             let response = HTTPURLResponse(
                 url: url, statusCode: 200, httpVersion: nil,
-                headerFields: ["Content-Type": "application/octet-stream"])
+                headerFields: [
+                    "Content-Type": "application/octet-stream",
+                    "Content-Length": String(payload.count),
+                ])
         else {
             client?.urlProtocol(self, didFailWithError: URLError(.badURL))
             return

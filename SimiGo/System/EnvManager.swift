@@ -1219,6 +1219,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
     private let destination: URL
     private let progress: @Sendable (Int64, Int64) -> Void
     private let configuration: URLSessionConfiguration
+    private let maximumDownloadBytes: Int64
     private let lock = NSLock()
     private var continuation: CheckedContinuation<Int64, Error>?
     private var session: URLSession?
@@ -1227,10 +1228,12 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
 
     init(
         destination: URL, configuration: URLSessionConfiguration,
+        maximumDownloadBytes: Int64 = Self.defaultMaximumDownloadBytes,
         progress: @escaping @Sendable (Int64, Int64) -> Void
     ) {
         self.destination = destination
         self.configuration = configuration
+        self.maximumDownloadBytes = max(0, maximumDownloadBytes)
         self.progress = progress
         super.init()
     }
@@ -1238,10 +1241,12 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
     static func download(
         from url: URL, to destination: URL,
         configuration: URLSessionConfiguration = .default,
+        maximumDownloadBytes: Int64 = defaultMaximumDownloadBytes,
         progress: @escaping @Sendable (Int64, Int64) -> Void
     ) async throws -> Int64 {
         try await BinaryDownloader(
-            destination: destination, configuration: configuration, progress: progress
+            destination: destination, configuration: configuration,
+            maximumDownloadBytes: maximumDownloadBytes, progress: progress
         ).run(url: url)
     }
 
@@ -1278,7 +1283,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
     /// deliberately enforced while streaming (not after the temporary file has
     /// already consumed the disk). The cap is for installer payloads, not model
     /// weights, which use the separate Hugging Face workflow.
-    private static let maximumDownloadBytes: Int64 = 2_000_000_000
+    static let defaultMaximumDownloadBytes: Int64 = 2_000_000_000
 
     func urlSession(
         _ session: URLSession, downloadTask: URLSessionDownloadTask,
@@ -1287,8 +1292,8 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
     ) {
         let expectedExceedsLimit =
             totalBytesExpectedToWrite > 0
-                && totalBytesExpectedToWrite > Self.maximumDownloadBytes
-        guard totalBytesWritten <= Self.maximumDownloadBytes, !expectedExceedsLimit else {
+                && totalBytesExpectedToWrite > maximumDownloadBytes
+        guard totalBytesWritten <= maximumDownloadBytes, !expectedExceedsLimit else {
             settle(.failure(NSError(
                 domain: "EnvManager", code: 413,
                 userInfo: [NSLocalizedDescriptionKey:
@@ -1329,7 +1334,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
                     userInfo: [NSLocalizedDescriptionKey: "Downloaded binary size is unavailable"])
             }
             let size = Int64(fileSize)
-            guard size <= Self.maximumDownloadBytes else {
+            guard size <= maximumDownloadBytes else {
                 throw NSError(
                     domain: "EnvManager", code: 413,
                     userInfo: [NSLocalizedDescriptionKey:
