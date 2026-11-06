@@ -114,6 +114,43 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: target), sentinel)
     }
 
+    func testLeaseRejectsHardLinkedLockWithoutTouchingTarget() throws {
+        let state = root.appendingPathComponent("hardlink-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: state, withIntermediateDirectories: true)
+        let target = root.appendingPathComponent("lease-target")
+        let sentinel = Data("do-not-truncate".utf8)
+        try sentinel.write(to: target)
+        try FileManager.default.linkItem(
+            at: target,
+            to: state.appendingPathComponent(QoderCollectionLease.lockFileName))
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
+    func testLeaseRejectsGroupOrWorldWritableLockFile() throws {
+        let state = root.appendingPathComponent("writable-lock-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: state, withIntermediateDirectories: true)
+        let lock = state.appendingPathComponent(QoderCollectionLease.lockFileName)
+        try Data("pid".utf8).write(to: lock)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o666], ofItemAtPath: lock.path)
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+    }
+
+    func testLeaseRejectsGroupOrWorldWritableStateDirectory() throws {
+        let state = root.appendingPathComponent("writable-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: state, withIntermediateDirectories: true)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o777], ofItemAtPath: state.path)
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+    }
+
     func testLeaseRejectsSymlinkedStateDirectory() throws {
         let outside = root.appendingPathComponent("outside-state", isDirectory: true)
         try FileManager.default.createDirectory(
