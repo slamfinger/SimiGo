@@ -117,7 +117,7 @@ final class BinaryDownloaderTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: destination), previous)
         let entries = try FileManager.default.contentsOfDirectory(
             at: directory, includingPropertiesForKeys: nil)
-        XCTAssertEqual(entries.map(\\.lastPathComponent).sorted(), ["engine"])
+        XCTAssertEqual(entries.map(\.lastPathComponent).sorted(), ["engine"])
     }
 
     func testSuccessfulDownloadAtomicallyReplacesExistingDestination() async throws {
