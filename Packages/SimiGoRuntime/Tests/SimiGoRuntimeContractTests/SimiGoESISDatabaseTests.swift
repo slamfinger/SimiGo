@@ -712,9 +712,9 @@ extension SimiGoESISDatabaseTests {
         try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: rootURL) }
 
-        try Data("needle first\\n".utf8)
+        try Data("needle first\n".utf8)
             .write(to: rootURL.appendingPathComponent("a.txt"))
-        try Data("needle second\\n".utf8)
+        try Data("needle second\n".utf8)
             .write(to: rootURL.appendingPathComponent("b.txt"))
 
         let db = try SimiGoESISDatabase(url: databaseURL)

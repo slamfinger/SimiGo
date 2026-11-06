@@ -2997,7 +2997,7 @@ public final class SimiGoESISDatabase {
     }
 
     /// 执行一次信息需求（demand）：
-    ///   demand_id = SHA256(query + 注册根集合 + 全部已结算内容摘要的规范串联)
+    ///   demand_id = SHA256(规范输入基础 + 有效结果数量上限)
     /// 同一 demand 且结算有效 → 直接返回已结算结果（**不再重复计算**，即
     /// ES₁ 已结算关系对 ES₂ 合法复用）；任一输入摘要变化 → 新 demand，重算
     /// 并落新结算，旧结算置 invalidated。结果逐项摘要绑定，确定性 consumer
@@ -3079,7 +3079,7 @@ public final class SimiGoESISDatabase {
             var hits = try searchSettledContent(query: query, rootID: rootID, limit: effectiveLimit)
             if hits.isEmpty {
                 // 文件名命中（external_files 路径匹配）也纳入 demand 结果
-                hits = try fileNameHits(query: query, rootID: rootID, limit: limit)
+                hits = try fileNameHits(query: query, rootID: rootID, limit: effectiveLimit)
             }
             let resultData = try JSONEncoder().encode(hits)
             let resultSHA = NativeSHA256.hexDigest(resultData)
