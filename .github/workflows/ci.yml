@@ -376,8 +376,12 @@ jobs:
               sys.exit(1)
           a_exec, a_skip, a_fail = (int(x or 0) for x in aggregate[-1])
           out("aggregate", "executed=%d failed=%d skipped=%d" % (a_exec, a_fail, a_skip))
-          if (a_exec, a_fail, a_skip) != (executed, failed, skipped):
-              out("verdict", "LOG_COUNT_DISAGREEMENT")
+          # XCTest's suite summary reports assertion failures, while the
+          # per-case lines report failed test methods. One method may contain
+          # multiple failing assertions, so compare only execution and skip
+          # counts here; both failure measures must independently be zero.
+          if (a_exec, a_skip) != (executed, skipped):
+              out("verdict", "LOG_EXECUTION_COUNT_DISAGREEMENT")
               sys.exit(1)
 
           if not os.path.isdir(bundle_path):
@@ -418,7 +422,7 @@ jobs:
           if (x_exec, xc["failed"], xc["skipped"]) != (executed, failed, skipped):
               out("verdict", "LOG_XCRESULT_DISAGREEMENT")
               sys.exit(1)
-          if executed != expected or skipped != 0 or failed != 0:
+          if executed != expected or skipped != 0 or failed != 0 or a_fail != 0:
               out("verdict", "NOT_PASS")
               sys.exit(1)
           out("verdict", "PASS - executed==expected, skipped==0, failed==0")
