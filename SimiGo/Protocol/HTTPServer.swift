@@ -59,6 +59,29 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Public Types
 
+    /// Resource limits for incomplete HTTP connections. Deadlines are absolute
+    /// per protocol phase and are not extended by trickle progress.
+    public struct RequestLimits: Sendable {
+        public let maxConnections: Int
+        public let headerTimeout: Duration
+        public let bodyTimeout: Duration
+
+        public init(
+            maxConnections: Int = 64,
+            headerTimeout: Duration = .seconds(10),
+            bodyTimeout: Duration = .seconds(60)
+        ) {
+            precondition(maxConnections > 0, "maxConnections must be positive")
+            precondition(headerTimeout > .zero, "headerTimeout must be positive")
+            precondition(bodyTimeout > .zero, "bodyTimeout must be positive")
+            self.maxConnections = maxConnections
+            self.headerTimeout = headerTimeout
+            self.bodyTimeout = bodyTimeout
+        }
+
+        public static let production = RequestLimits()
+    }
+
     public typealias GenerateHandler = @Sendable (
         _ requestId: String,
         _ agentId: String?,
@@ -124,6 +147,7 @@ public final class HTTPServer: @unchecked Sendable {
 
     enum HTTPServerError: Error {
         case badRequest(String)
+        case requestReadTimedOut
         case payloadTooLarge
         case unsupportedTransferEncoding(String)
         case expectationFailed
@@ -137,6 +161,8 @@ public final class HTTPServer: @unchecked Sendable {
             switch self {
             case .badRequest, .clientDisconnected:
                 return 400
+            case .requestReadTimedOut:
+                return 408
             case .payloadTooLarge:
                 return 413
             case .unsupportedTransferEncoding:
@@ -158,6 +184,8 @@ public final class HTTPServer: @unchecked Sendable {
             switch self {
             case .badRequest(let message):
                 return message
+            case .requestReadTimedOut:
+                return "Request read deadline exceeded"
             case .payloadTooLarge:
                 return "Request body too large"
             case .unsupportedTransferEncoding(let value):
@@ -684,6 +712,7 @@ public final class HTTPServer: @unchecked Sendable {
     /// UI 模型设置兜底：请求未显式指定的字段（采样/maxTokens/thinking/kvCache）
     /// 落到 UI 值而非 ModelConfig 硬编码默认——模型页参数此前对协议请求不生效。
     private let baseConfigProvider: () -> ModelConfig
+    private let requestLimits: RequestLimits
 
     private let queue = DispatchQueue(
         label: "com.simigo.httpserver.connections",
@@ -694,6 +723,10 @@ public final class HTTPServer: @unchecked Sendable {
 
     private var connections: [ObjectIdentifier: ConnectionContext] = [:]
     private let connectionLock = NSLock()
+
+    var activeConnectionCount: Int {
+        connectionLock.withLock { connections.count }
+    }
 
     let responsesStore = ResponsesStateStore()
 
@@ -807,7 +840,8 @@ public final class HTTPServer: @unchecked Sendable {
         managedContinuation: ManagedContinuationHandler? = nil,
         informationTurnProducer: InformationTurnProducerProvider? = nil,
         requestBudget: RequestBudgetHandler? = nil,
-        requestAdmission: RequestAdmissionScheduler? = nil
+        requestAdmission: RequestAdmissionScheduler? = nil,
+        requestLimits: RequestLimits = .production
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -845,6 +879,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.requestBudget = requestBudget
         self.requestAdmission = requestAdmission
             ?? RequestAdmissionScheduler(limit: RuntimeTuning.requestConcurrencyLevel)
+        self.requestLimits = requestLimits
     }
 
     // MARK: - Lifecycle
@@ -1038,13 +1073,23 @@ public final class HTTPServer: @unchecked Sendable {
         _ connection: NWConnection,
         transportSecurity: ConnectionContext.TransportSecurity = .plainHTTP
     ) {
-        let context = ConnectionContext(
-            connection: connection,
-            transportSecurity: transportSecurity
-        )
-
-        connectionLock.withLock {
+        // Bound sockets before allocating a ConnectionContext, receive task,
+        // or per-connection queue. The dictionary includes peers that have
+        // not sent a complete request header.
+        let context: ConnectionContext? = connectionLock.withLock {
+            guard connections.count < requestLimits.maxConnections else {
+                return nil
+            }
+            let context = ConnectionContext(
+                connection: connection,
+                transportSecurity: transportSecurity
+            )
             connections[context.key] = context
+            return context
+        }
+        guard let context else {
+            connection.cancel()
+            return
         }
 
         connection.stateUpdateHandler = {
@@ -1118,6 +1163,11 @@ public final class HTTPServer: @unchecked Sendable {
                     request,
                     context: context
                 )
+
+            } catch HTTPServerError.requestReadTimedOut {
+                // The receive deadline cancels the underlying NWConnection;
+                // terminate removes the context and releases its admission slot.
+                self.terminateForClientGone(context)
 
             } catch is CancellationError {
                 // terminate() owns cancellation.
@@ -4126,182 +4176,95 @@ public final class HTTPServer: @unchecked Sendable {
     private func readRequest(
         from connection: NWConnection
     ) async throws -> HTTPRequest {
+        let clock = ContinuousClock()
+        let headerDeadline = clock.now.advanced(by: requestLimits.headerTimeout)
+        var buffer = Data()
+        let delimiter = Data("\r\n\r\n".utf8)
 
-        var buffer =
-            Data()
-
-        let delimiter =
-            Data(
-                "\r\n\r\n".utf8
-            )
-
-        while
-            buffer.range(
-                of: delimiter
-            ) == nil {
-
+        while buffer.range(of: delimiter) == nil {
             guard
-                let chunk =
-                    try await connection.receiveAsync(
-                        min: 1,
-                        max:
-                            Self.receiveChunkSize
-                    ),
-
+                let chunk = try await receiveBeforeDeadline(
+                    from: connection,
+                    min: 1,
+                    max: Self.receiveChunkSize,
+                    deadline: headerDeadline),
                 !chunk.isEmpty
             else {
                 throw HTTPServerError.clientDisconnected
             }
 
             buffer.append(chunk)
-
-            if buffer.count >
-                Self.maxHeaderBytes {
-
+            if buffer.count > Self.maxHeaderBytes {
                 throw HTTPServerError.payloadTooLarge
             }
         }
 
-        guard
-            let headerRange =
-                buffer.range(
-                    of: delimiter
-                )
-        else {
-            throw HTTPServerError.badRequest(
-                "Malformed headers"
-            )
+        guard let headerRange = buffer.range(of: delimiter) else {
+            throw HTTPServerError.badRequest("Malformed headers")
         }
-
-        guard
-            headerRange.lowerBound <=
-                Self.maxHeaderBytes
-        else {
+        guard headerRange.lowerBound <= Self.maxHeaderBytes else {
             throw HTTPServerError.payloadTooLarge
         }
-
-        guard
-            let headerText =
-                String(
-                    data:
-                        buffer[
-                            ..<headerRange
-                                .lowerBound
-                        ],
-                    encoding: .utf8
-                )
+        guard let headerText = String(
+            data: buffer[..<headerRange.lowerBound], encoding: .utf8)
         else {
-            throw HTTPServerError.badRequest(
-                "Headers are not valid UTF-8"
-            )
+            throw HTTPServerError.badRequest("Headers are not valid UTF-8")
         }
 
-        let head = try Self.HTTPRequestHeadParser.parse(
-            headerText
-        )
+        let head = try Self.HTTPRequestHeadParser.parse(headerText)
 
-        if let expect =
-            head.headers["expect"] {
-
-            let normalizedExpect =
-                expect
-                    .trimmingCharacters(
-                        in:
-                            .whitespacesAndNewlines
-                    )
-                    .lowercased()
-
+        if let expect = head.headers["expect"] {
+            let normalizedExpect = expect
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
             if normalizedExpect.isEmpty {
-                // 无 Expect，继续
+                // No Expect header.
             } else if normalizedExpect == "100-continue" {
-                // HTTP/1.1 规范行为：告知客户端继续发送请求体。
-                // （curl 对 >1KB 请求体自动附带此头；拒绝会让部分 LAN 客户端超时）
                 connection.send(
-                    content:
-                        Data(
-                            "HTTP/1.1 100 Continue\r\n\r\n".utf8
-                        ),
-                    completion:
-                        .contentProcessed { _ in }
-                )
+                    content: Data("HTTP/1.1 100 Continue\r\n\r\n".utf8),
+                    completion: .contentProcessed { _ in })
             } else {
-                throw HTTPServerError
-                    .expectationFailed
+                throw HTTPServerError.expectationFailed
             }
         }
 
-        let bodyStart =
-            headerRange.upperBound
-
-        var body =
-            buffer.subdata(
-                in:
-                    bodyStart..<buffer.count
-            )
-
+        let bodyStart = headerRange.upperBound
+        var body = buffer.subdata(in: bodyStart..<buffer.count)
         let contentLength = head.contentLength
 
-        if contentLength == 0,
-           !body.isEmpty {
-
+        if contentLength == 0, !body.isEmpty {
             throw HTTPServerError.badRequest(
-                "Request body requires Content-Length"
-            )
+                "Request body requires Content-Length")
+        }
+        if body.count > contentLength {
+            body = body.prefix(contentLength)
         }
 
-        if body.count >
-            contentLength {
-
-            body =
-                body.prefix(
-                    contentLength
-                )
-        }
-
-        while
-            body.count <
-            contentLength {
-
+        // One absolute body deadline. Receiving small chunks never extends it.
+        let bodyDeadline = clock.now.advanced(by: requestLimits.bodyTimeout)
+        while body.count < contentLength {
             guard
-                let chunk =
-                    try await connection.receiveAsync(
-                        min: 1,
-                        max:
-                            min(
-                                Self.receiveChunkSize,
-                                contentLength -
-                                    body.count
-                            )
-                    ),
-
+                let chunk = try await receiveBeforeDeadline(
+                    from: connection,
+                    min: 1,
+                    max: min(
+                        Self.receiveChunkSize,
+                        contentLength - body.count),
+                    deadline: bodyDeadline),
                 !chunk.isEmpty
             else {
                 throw HTTPServerError.clientDisconnected
             }
 
-            let remaining =
-                contentLength -
-                body.count
-
-            if chunk.count >
-                remaining {
-
-                body.append(
-                    chunk.prefix(
-                        remaining
-                    )
-                )
-
+            let remaining = contentLength - body.count
+            if chunk.count > remaining {
+                body.append(chunk.prefix(remaining))
                 break
             }
-
             body.append(chunk)
         }
 
-        guard
-            body.count ==
-                contentLength
-        else {
+        guard body.count == contentLength else {
             throw HTTPServerError.clientDisconnected
         }
 
@@ -4311,8 +4274,45 @@ public final class HTTPServer: @unchecked Sendable {
             requestTarget: head.requestTarget,
             authority: head.authority,
             headers: head.headers,
-            body: body
-        )
+            body: body)
+    }
+
+    private func receiveBeforeDeadline(
+        from connection: NWConnection,
+        min: Int,
+        max: Int,
+        deadline: ContinuousClock.Instant
+    ) async throws -> Data? {
+        let clock = ContinuousClock()
+        let remaining = clock.now.duration(to: deadline)
+        guard remaining > .zero else {
+            connection.cancel()
+            throw HTTPServerError.requestReadTimedOut
+        }
+
+        return try await withThrowingTaskGroup(of: Data?.self) { group in
+            group.addTask {
+                try await connection.receiveAsync(min: min, max: max)
+            }
+            group.addTask {
+                try await Task.sleep(for: remaining)
+                throw HTTPServerError.requestReadTimedOut
+            }
+
+            do {
+                guard let result = try await group.next() else {
+                    throw CancellationError()
+                }
+                group.cancelAll()
+                return result
+            } catch {
+                group.cancelAll()
+                // receiveAsync's cancellation handler cancels NWConnection,
+                // forcing the outstanding Network.framework callback to resume.
+                connection.cancel()
+                throw error
+            }
+        }
     }
 }
 
@@ -4392,29 +4392,24 @@ private extension NWConnection {
         min: Int = 1,
         max: Int = 32 * 1024
     ) async throws -> Data? {
-
-        try await withCheckedThrowingContinuation {
-            continuation in
-
-            receive(
-                minimumIncompleteLength: min,
-                maximumLength: max
-            ) {
-                data,
-                _,
-                _,
-                error in
-
-                if let error {
-                    continuation.resume(
-                        throwing: error
-                    )
-                } else {
-                    continuation.resume(
-                        returning: data
-                    )
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation {
+                continuation in
+                receive(
+                    minimumIncompleteLength: min,
+                    maximumLength: max
+                ) { data, _, _, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: data)
+                    }
                 }
             }
+        } onCancel: {
+            // Cancelling the Swift task alone does not cancel Network.framework's
+            // pending receive. Cancel the connection so the callback resumes.
+            self.cancel()
         }
     }
 }
