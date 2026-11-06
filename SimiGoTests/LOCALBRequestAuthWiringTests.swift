@@ -2,6 +2,7 @@ import CryptoKit
 import Foundation
 import LOCALBCore
 import Network
+import Security
 import XCTest
 
 @testable import SimiGo
@@ -628,7 +629,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
     }
 
     private func openPinnedTLSConnection(
-        _ host: Host,
+        _ host: LOCALBTestCase.Host,
         expectReady: Bool
     ) throws -> NWConnection {
         let options = NWProtocolTLS.Options()
