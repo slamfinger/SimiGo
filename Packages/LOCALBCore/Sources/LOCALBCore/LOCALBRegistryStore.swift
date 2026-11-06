@@ -115,7 +115,7 @@ public struct LOCALBRegistryStore {
     /// independently by the operator before any trusted service is activated.
     public func initializeNewLineage(lineageID: String = UUID().uuidString.lowercased()) throws -> LOCALBRegistryCheckpoint {
         guard localBIsCanonicalUUID(lineageID) else { throw LOCALBStatus.invalidConfiguration }
-        return try withLock(exclusive: true, createRootIfMissing: true)  directoryFD in directoryFD in
+        return try withLock(exclusive: true, createRootIfMissing: true) { directoryFD in
             let event = Event(
                 sequence: 1,
                 timestampMilliseconds: Self.nowMilliseconds(),
@@ -158,7 +158,7 @@ public struct LOCALBRegistryStore {
     /// Passing nil is B2 and always fails closed.
     public func loadVerified(checkpoint: LOCALBRegistryCheckpoint?) throws -> LOCALBRegistrySnapshot {
         guard let checkpoint else { throw LOCALBStatus.registryCheckpointUnavailable }
-        return try withLock(exclusive: false, createRootIfMissing: false)  directoryFD in
+        return try withLock(exclusive: false, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let lineageID = state.lineageID else { throw LOCALBStatus.registryLineageUninitialized }
@@ -172,7 +172,7 @@ public struct LOCALBRegistryStore {
     /// operator-held checkpoint. Pairing and per-request auth must call this
     /// rather than retaining stale authority snapshots.
     func loadPairingState(checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBPairingStateView {
-        try withLock(exclusive: false, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: false, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let lineageID = state.lineageID else { throw LOCALBStatus.registryLineageUninitialized }
@@ -189,7 +189,7 @@ public struct LOCALBRegistryStore {
     /// supplied externally trusted checkpoint. Callers must not persist the
     /// returned head inside the registry and then treat it as an external anchor.
     func currentCheckpoint(extending trustedCheckpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: false, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: false, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(trustedCheckpoint, against: state)
             return try Self.checkpoint(for: state)
@@ -203,7 +203,7 @@ public struct LOCALBRegistryStore {
                                       checkpoint: LOCALBRegistryCheckpoint?) throws -> LOCALBRegistryCheckpoint {
         guard publicKeyRaw.count == 32 else { throw LOCALBStatus.invalidConfiguration }
         guard let checkpoint else { throw LOCALBStatus.registryCheckpointUnavailable }
-        return try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        return try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let lineageID = state.lineageID else { throw LOCALBStatus.registryLineageUninitialized }
@@ -248,7 +248,7 @@ public struct LOCALBRegistryStore {
         guard !reasonBytes.isEmpty, reasonBytes.count <= 512 else {
             throw LOCALBStatus.registryInvalidTransition
         }
-        return try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        return try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let entry = state.entries[keyID] else { throw LOCALBStatus.issuerUnknown }
@@ -280,7 +280,7 @@ public struct LOCALBRegistryStore {
     /// operation, never as a side effect of an unauthenticated Phase-V failure.
     @discardableResult
     func expireDuePairingCredentials(checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             var state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             let now = Self.nowMilliseconds()
@@ -313,7 +313,7 @@ public struct LOCALBRegistryStore {
     @discardableResult
     func appendPairingCredentialIssued(_ credential: LOCALBPairingCredentialEntry,
                                       checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             var state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
 
@@ -367,7 +367,7 @@ public struct LOCALBRegistryStore {
     @discardableResult
     func expirePairingCredentialIfDue(credentialID: String, digest: [UInt8],
                                       checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let credential = state.credentials[credentialID] else {
@@ -399,7 +399,7 @@ public struct LOCALBRegistryStore {
     func commitPairing(_ pending: LOCALBPairingApprovalRequest,
                        operatorAuthorizationReference: String?,
                        checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let credential = state.credentials[pending.credentialID] else {
@@ -490,7 +490,7 @@ public struct LOCALBRegistryStore {
     @discardableResult
     func appendPairingCredentialRevocation(credentialID: String, reason: String,
                                            checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let credential = state.credentials[credentialID] else {
@@ -528,7 +528,7 @@ public struct LOCALBRegistryStore {
     @discardableResult
     func appendClientRevocation(clientKeyID: String, reason: String,
                                 checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard state.clients[clientKeyID]?.status == .active else {
@@ -550,7 +550,7 @@ public struct LOCALBRegistryStore {
     func appendClientPermissions(clientKeyID: String, permissions: Set<LOCALBPermission>,
                                 reason: String,
                                 checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false)  directoryFD in
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
             let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard state.clients[clientKeyID]?.status == .active else {
