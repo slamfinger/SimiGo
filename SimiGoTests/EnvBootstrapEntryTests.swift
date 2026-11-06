@@ -133,6 +133,34 @@ final class EnvBootstrapEntryTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
     }
 
+    func testBinaryDownloaderTreatsFileSizeMetadataFailureAsError() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-download-metadata-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let missing = directory.appendingPathComponent("missing.bin")
+        let destination = directory.appendingPathComponent("staged.bin")
+
+        let downloader = BinaryDownloader(
+            destination: destination, maximumBytes: 1024,
+            configuration: Self.stallingDownloadConfiguration(), progress: { _, _ in })
+        let transfer = Task {
+            try await downloader.run(url: URL(string: "https://download.test/metadata")!)
+        }
+        let started = expectation(
+            forNotification: BinaryDownloadStallingURLProtocol.didStart, object: nil)
+        await fulfillment(of: [started], timeout: 2)
+        downloader.finishDownloadedFile(at: missing, statusCode: 200)
+
+        do {
+            _ = try await transfer.value
+            XCTFail("a missing file-size value must not be converted into a zero-byte success")
+        } catch {
+            XCTAssertFalse(error is CancellationError)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
     func testBinaryDownloaderRejectsInvalidLimitBeforeStarting() async {
         let destination = FileManager.default.temporaryDirectory
             .appendingPathComponent("invalid-download-\(UUID().uuidString)")
