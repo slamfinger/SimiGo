@@ -262,6 +262,22 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: targetDatabase), targetBefore)
     }
 
+    func testInboxRefusesSymlinkedStateDirectory() throws {
+        let outside = root.appendingPathComponent("outside-inbox-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: outside, withIntermediateDirectories: true)
+        let link = root.appendingPathComponent("state-directory-link", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        let redirectedDatabase = outside.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: link).pendingCount())
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: redirectedDatabase.path),
+            "a symlinked state root must not create a database in its target")
+    }
+
     func testRunnerFailsClosedOnCorruptStateAndRecoversOnlyByQuarantine() throws {
         let configuration = configuration()
         try FileManager.default.createDirectory(

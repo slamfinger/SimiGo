@@ -114,6 +114,20 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: target), sentinel)
     }
 
+    func testLeaseRejectsSymlinkedStateDirectory() throws {
+        let outside = root.appendingPathComponent("outside-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: outside, withIntermediateDirectories: true)
+        let target = outside.appendingPathComponent(QoderCollectionLease.lockFileName)
+        let sentinel = Data("outside-directory-lock".utf8)
+        try sentinel.write(to: target)
+        let link = root.appendingPathComponent("state-directory-link", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: link))
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
     // MARK: - start -> lease -> second instance refused -> stop -> resume
 
     func testStartTakesTheLeaseAndStopLetsANewInstanceResume() throws {

@@ -570,19 +570,34 @@ public struct LOCALBRegistryStore {
 
     private func withLock<T>(exclusive: Bool, createRootIfMissing: Bool,
                              _ body: () throws -> T) throws -> T {
-        if createRootIfMissing {
+        var rootInfo = stat()
+        if lstat(rootURL.path, &rootInfo) == 0 {
+            guard (rootInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw LOCALBStatus.registryPersistenceFailure
+            }
+        } else {
+            let code = errno
+            guard code == ENOENT, createRootIfMissing else {
+                if !createRootIfMissing, code == ENOENT {
+                    throw LOCALBStatus.registryLineageUninitialized
+                }
+                throw LOCALBStatus.registryPersistenceFailure
+            }
             try FileManager.default.createDirectory(
                 at: rootURL, withIntermediateDirectories: true,
                 attributes: [.posixPermissions: 0o700]
             )
-        } else {
-            var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: rootURL.path, isDirectory: &isDirectory),
-                  isDirectory.boolValue else {
-                throw LOCALBStatus.registryLineageUninitialized
+            guard lstat(rootURL.path, &rootInfo) == 0,
+                  (rootInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw LOCALBStatus.registryPersistenceFailure
             }
         }
-        let fd = open(lockURL.path, O_CREAT | O_RDWR | O_NOFOLLOW, 0o600)
+        // Anchor the lock open to the validated directory; O_NOFOLLOW on the
+        // final lock component alone does not protect a symlinked root.
+        let rootFD = open(rootURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW)
+        guard rootFD >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        defer { close(rootFD) }
+        let fd = openat(rootFD, ".localb-registry.lock", O_CREAT | O_RDWR | O_NOFOLLOW, 0o600)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         guard Self.isRegularFile(fd: fd) else {
             close(fd)

@@ -479,9 +479,32 @@ final class QoderCandidateInbox {
 
     private func prepareDirectory() throws {
         let fileManager = FileManager.default
+        var directoryInfo = stat()
+        if lstat(directoryURL.path, &directoryInfo) == 0 {
+            guard (directoryInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: "state directory must not be a symlink")
+            }
+        } else {
+            let code = errno
+            guard code == ENOENT else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: String(cString: strerror(code)))
+            }
+            do {
+                try fileManager.createDirectory(
+                    at: directoryURL, withIntermediateDirectories: true)
+            } catch {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: String(describing: error))
+            }
+            guard lstat(directoryURL.path, &directoryInfo) == 0,
+                  (directoryInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: "state directory is not a real directory")
+            }
+        }
         do {
-            try fileManager.createDirectory(
-                at: directoryURL, withIntermediateDirectories: true)
             try fileManager.setAttributes(
                 [.posixPermissions: 0o700], ofItemAtPath: directoryURL.path)
         } catch {

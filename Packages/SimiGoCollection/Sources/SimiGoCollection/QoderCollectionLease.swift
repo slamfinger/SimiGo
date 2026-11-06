@@ -20,11 +20,46 @@ final class QoderCollectionLease {
     }
 
     static func acquire(directoryURL: URL) throws -> QoderCollectionLease {
-        try FileManager.default.createDirectory(
-            at: directoryURL, withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700])
+        // Refuse a state-directory entry that is itself a symlink. The lock
+        // is then opened relative to a verified directory descriptor, so a
+        // parent-path substitution cannot redirect this child open.
+        var rootInfo = stat()
+        if lstat(directoryURL.path, &rootInfo) == 0 {
+            guard (rootInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: "state directory must not be a symlink")
+            }
+        } else {
+            let code = errno
+            guard code == ENOENT else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: String(cString: strerror(code)))
+            }
+            do {
+                try FileManager.default.createDirectory(
+                    at: directoryURL, withIntermediateDirectories: true,
+                    attributes: [.posixPermissions: 0o700])
+            } catch {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: String(describing: error))
+            }
+            guard lstat(directoryURL.path, &rootInfo) == 0,
+                  (rootInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: "state directory is not a real directory")
+            }
+        }
+        let directoryFD = open(
+            directoryURL.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        guard directoryFD >= 0 else {
+            throw QoderCollectionStateError.unreadableState(
+                path: directoryURL.path, detail: String(cString: strerror(errno)))
+        }
+        defer { close(directoryFD) }
+
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
-        let descriptor = open(fileURL.path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
+        let descriptor = openat(
+            directoryFD, lockFileName, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path, detail: String(cString: strerror(errno)))

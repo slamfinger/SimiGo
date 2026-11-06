@@ -27,6 +27,21 @@ final class LOCALBRegistryStoreTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: target), sentinel)
     }
 
+    func testRegistryRejectsSymlinkedRootDirectory() throws {
+        let outside = makeRoot()
+        try FileManager.default.createDirectory(
+            at: outside, withIntermediateDirectories: true)
+        let link = outside.deletingLastPathComponent()
+            .appendingPathComponent("registry-root-link-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        let externalJournal = outside.appendingPathComponent(".localb-registry.events")
+        let externalLock = outside.appendingPathComponent(".localb-registry.lock")
+
+        XCTAssertThrowsError(try LOCALBRegistryStore(rootURL: link).initializeNewLineage())
+        XCTAssertFalse(FileManager.default.fileExists(atPath: externalJournal.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: externalLock.path))
+    }
+
     func testJournalSymlinkIsRejectedWithoutAppendingToTarget() throws {
         let root = makeRoot()
         let store = LOCALBRegistryStore(rootURL: root)
