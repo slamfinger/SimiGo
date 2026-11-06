@@ -156,12 +156,12 @@ final class LOCALBRegistryStoreTests: XCTestCase {
         try FileManager.default.removeItem(at: root.appendingPathComponent(".localb-registry.lock"))
 
         // A valid lock but a journal symlink must also be rejected.
-        _ = try store.initializeNewLineage()
+        let checkpoint = try store.initializeNewLineage()
         try FileManager.default.removeItem(at: root.appendingPathComponent(".localb-registry.events"))
         try FileManager.default.createSymbolicLink(
             at: root.appendingPathComponent(".localb-registry.events"),
             withDestinationURL: marker)
-        XCTAssertThrowsError(try store.loadVerified(checkpoint: nil))
+        XCTAssertThrowsError(try store.loadVerified(checkpoint: checkpoint))
         XCTAssertEqual(try Data(contentsOf: marker), original)
     }
 
