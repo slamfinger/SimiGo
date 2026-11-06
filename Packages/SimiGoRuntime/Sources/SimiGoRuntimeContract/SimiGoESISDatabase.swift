@@ -6171,7 +6171,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT 1 FROM settlements WHERE state_id=? LIMIT 1;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        return sqlite3_step(stmt) == SQLITE_ROW
+        return try stepRowOrDone(stmt)
     }
 
     /// Lossless timestamp codec for the authoritative store. The legacy JSON graph
