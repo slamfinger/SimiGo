@@ -68,7 +68,7 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
                 settled, stateID: stateID, identity: identity).uuidString
         } else {
             settlementID = try fixture.db.recordNativeSettlement(
-                settled, stateID: stateID).uuidString
+                settled, stateID: stateID)
         }
         if linkFile {
             try fixture.db.linkSettlementToExternalFile(
@@ -360,8 +360,8 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
 
         // A task may explicitly make the consuming engine part of its contract.
         let constrained = try makeSource(
-            fixture, stateID: "explicit-identity-contract",
-            requiredConsumerIdentity: identity)
+            fixture, requiredConsumerIdentity: identity,
+            stateID: "explicit-identity-contract")
         XCTAssertThrowsError(try SimiGoSettlementConsumption.consume(
             db: fixture.db,
             request: request(source: constrained, consumer: "explicit-mismatch",
