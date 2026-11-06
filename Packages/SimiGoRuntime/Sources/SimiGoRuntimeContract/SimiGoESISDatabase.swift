@@ -2665,7 +2665,18 @@ public final class SimiGoESISDatabase {
         guard fileByteCap >= 0, maxDepth >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
         }
-        let scanRoot = rootURL.resolvingSymlinksInPath().standardizedFileURL
+        let requestedRoot = rootURL.resolvingSymlinksInPath().standardizedFileURL
+        let scanRoot: URL
+        if let registeredPath = try rootLocatorPath(rootID) {
+            let registeredRoot = URL(fileURLWithPath: registeredPath).standardizedFileURL
+            guard registeredRoot.path == requestedRoot.path else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: registered root locator changed for \(rootID)")
+            }
+            scanRoot = registeredRoot
+        } else {
+            scanRoot = requestedRoot
+        }
         let rootDirectoryFD = try openDirectoryNoFollow(atPath: scanRoot.path)
         defer { Darwin.close(rootDirectoryFD) }
         // file_contents references roots, so the root must exist before any
@@ -3652,8 +3663,7 @@ public final class SimiGoESISDatabase {
         guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         let path = String(cString: c)
-        guard !path.isEmpty else { return nil }
-        return URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL.path
+        return path.isEmpty ? nil : URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
     // MARK: - 对话落库（Information Space：会话即信息）

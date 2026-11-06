@@ -854,6 +854,45 @@ extension SimiGoESISDatabaseTests {
             "missing")
     }
 
+    func testRegisteredRootRefusesRootDirectoryReplacementWithSymlink() throws {
+        let databaseURL = tempURL("symlink-root-replacement")
+        let parent = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-root-replacement-\(UUID().uuidString)", isDirectory: true)
+        let rootURL = parent.appendingPathComponent("registered-root", isDirectory: true)
+        let movedRoot = parent.appendingPathComponent("original-root", isDirectory: true)
+        let externalRoot = parent.appendingPathComponent("external-root", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try fm.createDirectory(at: externalRoot, withIntermediateDirectories: true)
+        let original = Data("same settled bytes".utf8)
+        try original.write(to: rootURL.appendingPathComponent("source.txt"))
+        try original.write(to: externalRoot.appendingPathComponent("source.txt"))
+        defer { try? fm.removeItem(at: parent) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "root-identity", rootURL: rootURL, carryText: false)
+
+        try fm.moveItem(at: rootURL, to: movedRoot)
+        try fm.createSymbolicLink(at: rootURL, withDestinationURL: externalRoot)
+
+        XCTAssertThrowsError(
+            try db.searchSettledContent(
+                query: "same settled bytes", rootID: "root-identity", limit: 10),
+            "a registered root replaced by a symlink must not redirect retrieval")
+        XCTAssertThrowsError(
+            try db.settleWorkRootContents(
+                rootID: "root-identity", rootURL: rootURL, carryText: false),
+            "a rootID must not silently rebind to the symlink target")
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "root-identity")
+                .first(where: { $0.relativePath == "source.txt" })?.status,
+            "present")
+    }
+
     func testRegisteredRootRefusesSymlinkedSourceForRetrievalAndSettlement() throws {
         let databaseURL = tempURL("symlink-source")
         let rootURL = FileManager.default.temporaryDirectory
