@@ -3182,7 +3182,8 @@ public final class SimiGoESISDatabase {
             // Validate locator-backed bytes before considering a cached result:
             // settled database rows can be unchanged while physical files move.
             var currentHits = try searchSettledContent(
-                query: query, rootID: rootID, limit: effectiveLimit)
+                query: query, rootID: rootID, limit: effectiveLimit,
+                strictSourceValidation: true)
             if currentHits.isEmpty { currentHits = filenameHits }
 
             // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
@@ -3322,6 +3323,19 @@ public final class SimiGoESISDatabase {
     public func searchSettledContent(query: String, rootID: String? = nil, limit: Int = 200)
         throws -> [ContentHit]
     {
+        // Interactive search keeps its historical best-effort behavior: a
+        // source whose bytes no longer match the settled digest is not a hit.
+        // Demand settlement uses the strict overload below because publishing
+        // a partial result from an incomplete source basis would be unsound.
+        try searchSettledContent(
+            query: query, rootID: rootID, limit: limit,
+            strictSourceValidation: false)
+    }
+
+    private func searchSettledContent(
+        query: String, rootID: String?, limit: Int,
+        strictSourceValidation: Bool
+    ) throws -> [ContentHit] {
         guard !query.isEmpty, limit > 0 else { return [] }
         let rows = try settledFileRows(rootID: rootID)
         var hits: [ContentHit] = []
@@ -3329,8 +3343,11 @@ public final class SimiGoESISDatabase {
             let body: String
             do {
                 body = try searchableFileText(row)
-            } catch DatabaseError.staleExternalSource {
-                continue
+            } catch let error as DatabaseError {
+                if case .staleExternalSource = error, !strictSourceValidation {
+                    continue
+                }
+                throw error
             }
             for (idx, line) in body.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
             where line.localizedCaseInsensitiveContains(query) {
