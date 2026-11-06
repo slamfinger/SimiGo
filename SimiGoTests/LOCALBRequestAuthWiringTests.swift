@@ -662,7 +662,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
     }
 
     func testInformationAndManagementRoutesRefuseUnpairedTLSClients() throws {
-        let host = try makeAuthorizedHost()
+        let host = try makeAuthorizedHost(additionalPermissions: [.srsWrite])
         let requests: [(String, String)] = [
             ("GET", "/v1/simigo/env"),
             ("GET", "/v1/simigo/roots"),
