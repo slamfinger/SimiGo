@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 549,
+    "tracked": 566,
     "research_not_declared": 0,
-    "non_research_candidates": 549,
-    "declared": 491,
+    "non_research_candidates": 566,
+    "declared": 508,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -692,6 +692,10 @@
       "output": "SimiGo/App/QoderCollectionLifecycle.swift"
     },
     {
+      "path": "SimiGo/App/QoderExternalTurnSink.swift",
+      "output": "SimiGo/App/QoderExternalTurnSink.swift"
+    },
+    {
       "path": "SimiGo/App/Settings.swift",
       "output": "SimiGo/App/Settings.swift"
     },
@@ -760,6 +764,10 @@
       "output": "SimiGo/Inference/LifecycleGates.swift"
     },
     {
+      "path": "SimiGo/Inference/ManagedGGUFRuntime+SlotActivity.swift",
+      "output": "SimiGo/Inference/ManagedGGUFRuntime+SlotActivity.swift"
+    },
+    {
       "path": "SimiGo/Inference/ManagedGGUFRuntime.swift",
       "output": "SimiGo/Inference/ManagedGGUFRuntime.swift"
     },
@@ -824,8 +832,16 @@
       "output": "SimiGo/Model/TypesBridge.swift"
     },
     {
+      "path": "SimiGo/Observability/RuntimeStateReporter.swift",
+      "output": "SimiGo/Observability/RuntimeStateReporter.swift"
+    },
+    {
       "path": "SimiGo/Observability/TraceLogger.swift",
       "output": "SimiGo/Observability/TraceLogger.swift"
+    },
+    {
+      "path": "SimiGo/Protocol/BranchLifecycle.swift",
+      "output": "SimiGo/Protocol/BranchLifecycle.swift"
     },
     {
       "path": "SimiGo/Protocol/ContinuationAdmission.swift",
@@ -1004,6 +1020,14 @@
       "output": "SimiGoTests/LOCALBAuthorizedE2ESupport.swift"
     },
     {
+      "path": "SimiGoTests/LOCALBBranchLifecycleTests.swift",
+      "output": "SimiGoTests/LOCALBBranchLifecycleTests.swift"
+    },
+    {
+      "path": "SimiGoTests/LOCALBManagementEntryTests.swift",
+      "output": "SimiGoTests/LOCALBManagementEntryTests.swift"
+    },
+    {
       "path": "SimiGoTests/LOCALBRequestAuthWiringTests.swift",
       "output": "SimiGoTests/LOCALBRequestAuthWiringTests.swift"
     },
@@ -1076,6 +1100,10 @@
       "output": "SimiGoTests/PrefixPoolNamespaceRecencyTests.swift"
     },
     {
+      "path": "SimiGoTests/QoderExternalTurnSinkTests.swift",
+      "output": "SimiGoTests/QoderExternalTurnSinkTests.swift"
+    },
+    {
       "path": "SimiGoTests/RealModelStreamingCancelRetryE2ETests.swift",
       "output": "SimiGoTests/RealModelStreamingCancelRetryE2ETests.swift"
     },
@@ -1146,6 +1174,10 @@
     {
       "path": "SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift",
       "output": "SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift"
+    },
+    {
+      "path": "SimiGoTests/SlotActivityTests.swift",
+      "output": "SimiGoTests/SlotActivityTests.swift"
     },
     {
       "path": "SimiGoTests/StaleAdmissionCacheEvictionTests.swift",
@@ -1852,12 +1884,48 @@
       "output": "docs/research/synthesis/V45_V50_RESEARCH_COVERAGE_AUDIT_20260922.md"
     },
     {
+      "path": "docs/upstream/B0_ESIS_GLOSSARY_20261105.md",
+      "output": "docs/upstream/B0_ESIS_GLOSSARY_20261105.md"
+    },
+    {
+      "path": "docs/upstream/B1_ESIS_MINIMAL_FORMALIZATION_20261105.md",
+      "output": "docs/upstream/B1_ESIS_MINIMAL_FORMALIZATION_20261105.md"
+    },
+    {
+      "path": "docs/upstream/DEEPSEEK_ES_IS_SEMANTIC_ROUTE_20261105.md",
+      "output": "docs/upstream/DEEPSEEK_ES_IS_SEMANTIC_ROUTE_20261105.md"
+    },
+    {
+      "path": "docs/upstream/HANDOVER_TO_NEXT_AGENT_20261105.md",
+      "output": "docs/upstream/HANDOVER_TO_NEXT_AGENT_20261105.md"
+    },
+    {
+      "path": "docs/upstream/P2_CONFIG_RECORD_20261105.md",
+      "output": "docs/upstream/P2_CONFIG_RECORD_20261105.md"
+    },
+    {
+      "path": "docs/upstream/P2_EXECUTION_AUTHORIZATION_REQUEST_20261105.md",
+      "output": "docs/upstream/P2_EXECUTION_AUTHORIZATION_REQUEST_20261105.md"
+    },
+    {
+      "path": "docs/upstream/P2_EXPERIMENT_PLAN_20261105.md",
+      "output": "docs/upstream/P2_EXPERIMENT_PLAN_20261105.md"
+    },
+    {
+      "path": "docs/upstream/ROUTE_B_RESEARCH_NOTE_POSITIONING_20261105.md",
+      "output": "docs/upstream/ROUTE_B_RESEARCH_NOTE_POSITIONING_20261105.md"
+    },
+    {
       "path": "release/release-exclusions-v2.2.x.json",
       "output": "release/release-exclusions-v2.2.x.json"
     },
     {
       "path": "release/release-inputs-v2.2.x.json",
       "output": "release/release-inputs-v2.2.x.json"
+    },
+    {
+      "path": "tools/check_trace_is_evidence_only.sh",
+      "output": "tools/check_trace_is_evidence_only.sh"
     },
     {
       "path": "tools/dev_install.sh",
