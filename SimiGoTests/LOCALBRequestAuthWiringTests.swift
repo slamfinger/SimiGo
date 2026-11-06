@@ -653,20 +653,31 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             host: "127.0.0.1",
             port: NWEndpoint.Port(rawValue: host.port)!,
             using: NWParameters(tls: options))
-        let ready = expectation(description: "pinned TLS connection ready")
-        let rejected = expectation(description: "pinned TLS connection rejected")
+        let reachedExpectedState = expectation(
+            description: expectReady
+                ? "pinned TLS connection ready"
+                : "pinned TLS connection rejected")
+        let stateLock = NSLock()
+        var fulfilled = false
         connection.stateUpdateHandler = { state in
+            let matched: Bool
             switch state {
             case .ready:
-                ready.fulfill()
+                matched = expectReady
             case .failed, .cancelled:
-                rejected.fulfill()
+                matched = !expectReady
             default:
-                break
+                matched = false
             }
+            guard matched else { return }
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { reachedExpectedState.fulfill() }
         }
         connection.start(queue: DispatchQueue.global())
-        wait(for: [expectReady ? ready : rejected], timeout: 5)
+        wait(for: [reachedExpectedState], timeout: 5)
         return connection
     }
 
