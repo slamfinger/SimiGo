@@ -81,7 +81,10 @@ final class EnvBootstrapEntryTests: XCTestCase {
         let transfer = Task {
             try await downloader.run(url: URL(string: "https://127.0.0.1/unused")!)
         }
-        try await Task.sleep(nanoseconds: 50_000_000)
+        let started = expectation(
+            forNotification: BinaryDownloadStallingURLProtocol.didStart,
+            object: nil)
+        await fulfillment(of: [started], timeout: 2)
         downloader.finishDownloadedFile(at: source, statusCode: 200)
 
         do {
@@ -112,7 +115,10 @@ final class EnvBootstrapEntryTests: XCTestCase {
         let transfer = Task {
             try await downloader.run(url: URL(string: "https://127.0.0.1/unused")!)
         }
-        try await Task.sleep(nanoseconds: 50_000_000)
+        let started = expectation(
+            forNotification: BinaryDownloadStallingURLProtocol.didStart,
+            object: nil)
+        await fulfillment(of: [started], timeout: 2)
         transfer.cancel()
 
         do {
@@ -161,10 +167,13 @@ final class EnvBootstrapEntryTests: XCTestCase {
 
 
 private final class BinaryDownloadStallingURLProtocol: URLProtocol {
+    static let didStart = Notification.Name("BinaryDownloadStallingURLProtocol.didStart")
+
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
+        NotificationCenter.default.post(name: Self.didStart, object: nil)
         guard let url = request.url,
               let response = HTTPURLResponse(
                 url: url, statusCode: 200, httpVersion: "HTTP/1.1",
