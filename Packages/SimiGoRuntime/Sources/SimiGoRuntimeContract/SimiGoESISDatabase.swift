@@ -3224,7 +3224,7 @@ public final class SimiGoESISDatabase {
         let rows = try settledFileRows(rootID: rootID)
         var hits: [ContentHit] = []
         for row in rows {
-            guard let body = try searchableFileText(row) else { continue }
+            let body = try searchableFileText(row)
             for (idx, line) in body.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
             where line.localizedCaseInsensitiveContains(query) {
                 hits.append(ContentHit(
@@ -3276,28 +3276,48 @@ public final class SimiGoESISDatabase {
         }
     }
 
-    /// Settled text for a row, or nil when no source produces bytes matching
-    /// the settled digest. Object store first (legacy/carrier rows), then the
-    /// registered root locator (index-only rows).
-    func searchableFileText(_ row: SettledFileRow) throws -> String? {
-        if let objectID = row.objectID, !objectID.isEmpty,
-            let data = try? readObject(objectID),
-            NativeSHA256.hexDigest(data) == row.digest
-        {
+    /// Resolve and verify every settled text row. Missing, unreadable or changed
+    /// index-only sources are errors, not ordinary no-match results: silently
+    /// skipping one would let a partial retrieval be persisted under a full basis.
+    func searchableFileText(_ row: SettledFileRow) throws -> String {
+        if let objectID = row.objectID, !objectID.isEmpty {
+            let data = try readObject(objectID)
+            guard NativeSHA256.hexDigest(data) == row.digest else {
+                throw DatabaseError.sql(
+                    "searchableFileText: carried object digest mismatch for \(row.rootID)/\(row.relativePath)")
+            }
             return String(decoding: data, as: UTF8.self)
         }
-        if !row.legacy.isEmpty, NativeSHA256.hexDigest(row.legacy) == row.digest {
+        if !row.legacy.isEmpty {
+            guard NativeSHA256.hexDigest(row.legacy) == row.digest else {
+                throw DatabaseError.sql(
+                    "searchableFileText: legacy content digest mismatch for \(row.rootID)/\(row.relativePath)")
+            }
             return String(decoding: row.legacy, as: UTF8.self)
         }
-        guard let locator = try rootLocatorPath(row.rootID) else { return nil }
+        guard let locator = try rootLocatorPath(row.rootID) else {
+            throw DatabaseError.sql(
+                "searchableFileText: no locator for settled file \(row.rootID)/\(row.relativePath)")
+        }
         let relative = row.relativePath
         guard !relative.isEmpty,
             !relative.split(separator: "/").contains("..")
-        else { return nil }
+        else {
+            throw DatabaseError.sql(
+                "searchableFileText: invalid relative path for \(row.rootID)/\(row.relativePath)")
+        }
         let url = URL(fileURLWithPath: locator).appendingPathComponent(relative)
-        guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]),
-            NativeSHA256.hexDigest(data) == row.digest
-        else { return nil }
+        let data: Data
+        do {
+            data = try Data(contentsOf: url, options: [.mappedIfSafe])
+        } catch {
+            throw DatabaseError.sql(
+                "searchableFileText: cannot read \(row.rootID)/\(row.relativePath): \(error)")
+        }
+        guard NativeSHA256.hexDigest(data) == row.digest else {
+            throw DatabaseError.sql(
+                "searchableFileText: source digest changed for \(row.rootID)/\(row.relativePath)")
+        }
         return String(decoding: data, as: UTF8.self)
     }
 
