@@ -1275,7 +1275,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
 
     static func download(
         from url: URL, to destination: URL,
-        maximumBytes: Int64 = EnvManager.defaultExternalBinaryDownloadLimitBytes,
+        maximumBytes: Int64,
         configuration: URLSessionConfiguration = .default,
         progress: @escaping @Sendable (Int64, Int64) -> Void
     ) async throws -> Int64 {
