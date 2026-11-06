@@ -518,7 +518,7 @@ final class QoderCandidateInbox {
     private func validateHeader(at path: String) throws {
         // Header inspection must not follow a planted symlink or read a device,
         // FIFO, or hard-linked external file before SQLite's own open.
-        let descriptor = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+        let descriptor = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: path, detail: String(cString: strerror(errno)))
