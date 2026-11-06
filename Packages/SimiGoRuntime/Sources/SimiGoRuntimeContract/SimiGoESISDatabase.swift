@@ -5161,8 +5161,12 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT validity FROM settlements WHERE settlement_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        if sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
             return String(cString: c)
+        }
+        if rc != SQLITE_DONE {
+            throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
         }
         throw DatabaseError.sql("settlementValidity: unknown settlement \(settlementID)")
     }
