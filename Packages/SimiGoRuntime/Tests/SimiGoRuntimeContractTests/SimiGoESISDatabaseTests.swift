@@ -734,4 +734,196 @@ extension SimiGoESISDatabaseTests {
         XCTAssertThrowsError(try db.readGraph())
     }
 
+
+    func testInformationDemandCacheIdentityIncludesResultLimit() throws {
+        let databaseURL = tempURL("demand-limit")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-limit-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        try Data("needle first\n".utf8)
+            .write(to: rootURL.appendingPathComponent("a.txt"))
+        try Data("needle second\n".utf8)
+            .write(to: rootURL.appendingPathComponent("b.txt"))
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "limit-root", rootURL: rootURL)
+
+        let one = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 1)
+        XCTAssertEqual(one.hits.count, 1)
+        XCTAssertFalse(one.reused)
+
+        let two = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 2)
+        XCTAssertEqual(two.hits.count, 2)
+        XCTAssertNotEqual(two.demandID, one.demandID)
+        XCTAssertFalse(two.reused)
+
+        let twoAgain = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 2)
+        XCTAssertTrue(twoAgain.reused)
+        XCTAssertEqual(twoAgain.hits, two.hits)
+    }
+
+    func testInformationDemandCacheIdentityIncludesRequestedRootScope() throws {
+        let databaseURL = tempURL("demand-root-scope")
+        let rootA = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-root-a-\(UUID().uuidString)", isDirectory: true)
+        let rootB = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-root-b-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootA, withIntermediateDirectories: true)
+        try fm.createDirectory(at: rootB, withIntermediateDirectories: true)
+        defer {
+            try? fm.removeItem(at: rootA)
+            try? fm.removeItem(at: rootB)
+        }
+
+        // Binary files create filename-index rows but no settled text-content rows.
+        try Data([0xFF, 0xFE]).write(to: rootA.appendingPathComponent("needle-alpha.bin"))
+        try Data([0xFF, 0xFE]).write(to: rootB.appendingPathComponent("needle-beta.bin"))
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "root-a", rootURL: rootA)
+        _ = try db.settleWorkRootContents(rootID: "root-b", rootURL: rootB)
+
+        let a = try db.executeInformationDemand(
+            query: "needle", rootID: "root-a", limit: 10)
+        XCTAssertEqual(a.hits.map(\.relativePath), ["needle-alpha.bin"])
+
+        let b = try db.executeInformationDemand(
+            query: "needle", rootID: "root-b", limit: 10)
+        XCTAssertEqual(b.hits.map(\.relativePath), ["needle-beta.bin"])
+        XCTAssertNotEqual(a.demandID, b.demandID)
+        XCTAssertFalse(b.reused)
+    }
+
+    func testRootSettlementMarksRemovedNonTextFilesMissing() throws {
+        let databaseURL = tempURL("missing-nontext")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-nontext-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("binary.dat")
+        try Data([0xFF, 0xFE]).write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+
+        _ = try db.settleWorkRootContents(rootID: "nontext-root", rootURL: rootURL)
+        let present = try db.listExternalFiles(rootID: "nontext-root")
+        XCTAssertEqual(present.first(where: { $0.relativePath == "binary.dat" })?.status, "present")
+        XCTAssertEqual(try db.count("file_contents"), 0)
+
+        try fm.removeItem(at: fileURL)
+        let report = try db.settleWorkRootContents(rootID: "nontext-root", rootURL: rootURL)
+        XCTAssertEqual(report.removed, 1)
+        let afterRemoval = try db.listExternalFiles(rootID: "nontext-root")
+        XCTAssertEqual(
+            afterRemoval.first(where: { $0.relativePath == "binary.dat" })?.status,
+            "missing")
+    }
+
+    func testRootSettlementAbortsWhenNestedDirectoryCannotBeEnumerated() throws {
+        let databaseURL = tempURL("enumeration-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-enumeration-error-\(UUID().uuidString)", isDirectory: true)
+        let nestedURL = rootURL.appendingPathComponent("locked", isDirectory: true)
+        let fileURL = nestedURL.appendingPathComponent("keep.txt")
+        let fm = FileManager.default
+        try fm.createDirectory(at: nestedURL, withIntermediateDirectories: true)
+        try Data("preserve settled content".utf8).write(to: fileURL)
+        defer {
+            try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: nestedURL.path)
+            try? fm.removeItem(at: rootURL)
+        }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "enumeration-root", rootURL: rootURL)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "enumeration-root")
+                .first(where: { $0.relativePath == "locked/keep.txt" })?.status,
+            "present")
+
+        try fm.setAttributes([.posixPermissions: 0], ofItemAtPath: nestedURL.path)
+        XCTAssertThrowsError(
+            try db.settleWorkRootContents(rootID: "enumeration-root", rootURL: rootURL))
+
+        // Restore access before reading the assertions and before temporary cleanup.
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: nestedURL.path)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "enumeration-root")
+                .first(where: { $0.relativePath == "locked/keep.txt" })?.status,
+            "present")
+    }
+
+    func testInformationDemandRefusesMissingIndexOnlyFileWithoutCachingPartialResult() throws {
+        let databaseURL = tempURL("missing-index-only")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-index-only-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        try Data("the unique body token is present here".utf8).write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "index-only-root", rootURL: rootURL, carryText: false)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+
+        try fm.removeItem(at: fileURL)
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "unique body token", rootID: "index-only-root", limit: 10))
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 0,
+            "A demand with an unreadable settled source must not be persisted")
+    }
+
+    func testManualRootReconciliationMarksMissingOnceAndIsIdempotent() throws {
+        let databaseURL = tempURL("manual-reconcile")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-manual-reconcile-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("settled text".utf8).write(to: rootURL.appendingPathComponent("keep.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "manual-root", rootURL: rootURL)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+
+        _ = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
+        XCTAssertEqual(try db.count("file_contents"), 0)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "manual-root")
+                .first(where: { $0.relativePath == "keep.txt" })?.status,
+            "missing")
+
+        let second = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
+        XCTAssertTrue(second.isEmpty)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "manual-root")
+                .first(where: { $0.relativePath == "keep.txt" })?.status,
+            "missing")
+    }
+
 }
