@@ -6405,10 +6405,12 @@ public final class SimiGoESISDatabase {
             let stateID = txt(sstmt, 0)
             let prefixJSON = txt(sstmt, 9)
             let checkpointJSON = txt(sstmt, 10)
-            let prefix = try dec.decode(
-                [String].self, from: Data((prefixJSON.isEmpty ? "[]" : prefixJSON).utf8))
+            // These columns are authoritative serialized state. An empty,
+            // NULL, or malformed value is corruption; never reconstruct an
+            // apparently complete graph by silently substituting empty arrays.
+            let prefix = try dec.decode([String].self, from: Data(prefixJSON.utf8))
             let checkpointStrings = try dec.decode(
-                [String].self, from: Data((checkpointJSON.isEmpty ? "[]" : checkpointJSON).utf8))
+                [String].self, from: Data(checkpointJSON.utf8))
             let checkpointIDs = try checkpointStrings.map { value -> UUID in
                 guard let id = UUID(uuidString: value) else {
                     throw DatabaseError.sql(
