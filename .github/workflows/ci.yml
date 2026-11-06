@@ -72,7 +72,7 @@ jobs:
           if not files:
               raise SystemExit("LOCALBCore test source directory is missing or empty")
           count = sum(
-              len(re.findall(r"^\\s*func test\\w+", p.read_text(), re.M))
+              len(re.findall(r"^\s*func test\w+", p.read_text(), re.M))
               for p in files
           )
           if count <= 0:
