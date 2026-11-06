@@ -65,6 +65,124 @@ final class EnvBootstrapEntryTests: XCTestCase {
         XCTAssertTrue(try after.listRoots().contains { $0.rootID == rootID })
     }
 
+
+    func testBinaryDownloaderRejectsOversizedDownloadedFile() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-download-limit-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("source.bin")
+        let destination = directory.appendingPathComponent("staged.bin")
+        try Data(repeating: 0x41, count: 9).write(to: source)
+
+        let downloader = BinaryDownloader(
+            destination: destination, maximumBytes: 8,
+            configuration: Self.stallingDownloadConfiguration(), progress: { _, _ in })
+        let transfer = Task {
+            try await downloader.run(url: URL(string: "https://127.0.0.1/unused")!)
+        }
+        let started = expectation(
+            forNotification: BinaryDownloadStallingURLProtocol.didStart,
+            object: nil)
+        await fulfillment(of: [started], timeout: 2)
+        downloader.finishDownloadedFile(at: source, statusCode: 200)
+
+        do {
+            _ = try await transfer.value
+            XCTFail("expected the 9-byte file to exceed the 8-byte limit")
+        } catch let error as BinaryDownloaderError {
+            guard case .maximumSizeExceeded(let limit, let actual) = error else {
+                return XCTFail("unexpected downloader error: \(error)")
+            }
+            XCTAssertEqual(limit, 8)
+            XCTAssertEqual(actual, 9)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
+    func testBinaryDownloaderCancellationWinsAgainstLateFinishCallback() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-download-cancel-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("late.bin")
+        let destination = directory.appendingPathComponent("staged.bin")
+        try Data(repeating: 0x42, count: 32).write(to: source)
+
+        let downloader = BinaryDownloader(
+            destination: destination, maximumBytes: 1024,
+            configuration: Self.stallingDownloadConfiguration(), progress: { _, _ in })
+        let transfer = Task {
+            try await downloader.run(url: URL(string: "https://127.0.0.1/unused")!)
+        }
+        let started = expectation(
+            forNotification: BinaryDownloadStallingURLProtocol.didStart,
+            object: nil)
+        await fulfillment(of: [started], timeout: 2)
+        transfer.cancel()
+
+        do {
+            _ = try await transfer.value
+            XCTFail("expected cancellation")
+        } catch is CancellationError {
+            // Expected.
+        }
+        // Simulate a URLSession finish callback that was queued before cancellation completed.
+        downloader.finishDownloadedFile(at: source, statusCode: 200)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+    }
+
+    func testBinaryDownloaderTreatsFileSizeMetadataFailureAsError() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-download-metadata-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let missing = directory.appendingPathComponent("missing.bin")
+        let destination = directory.appendingPathComponent("staged.bin")
+
+        let downloader = BinaryDownloader(
+            destination: destination, maximumBytes: 1024,
+            configuration: Self.stallingDownloadConfiguration(), progress: { _, _ in })
+        let transfer = Task {
+            try await downloader.run(url: URL(string: "https://download.test/metadata")!)
+        }
+        let started = expectation(
+            forNotification: BinaryDownloadStallingURLProtocol.didStart, object: nil)
+        await fulfillment(of: [started], timeout: 2)
+        downloader.finishDownloadedFile(at: missing, statusCode: 200)
+
+        do {
+            _ = try await transfer.value
+            XCTFail("a missing file-size value must not be converted into a zero-byte success")
+        } catch {
+            XCTAssertFalse(error is CancellationError)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
+    func testBinaryDownloaderRejectsInvalidLimitBeforeStarting() async {
+        let destination = FileManager.default.temporaryDirectory
+            .appendingPathComponent("invalid-download-\(UUID().uuidString)")
+        do {
+            _ = try await BinaryDownloader.download(
+                from: URL(string: "https://127.0.0.1/unused")!,
+                to: destination, maximumBytes: 0, progress: { _, _ in })
+            XCTFail("expected an invalid limit error")
+        } catch let error as BinaryDownloaderError {
+            XCTAssertEqual(error, .invalidMaximumBytes)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
+    private static func stallingDownloadConfiguration() -> URLSessionConfiguration {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [BinaryDownloadStallingURLProtocol.self]
+        return configuration
+    }
+
     func testStableRootIDIsDeterministic() {
         XCTAssertEqual(
             EnvManager.stableRootID(forPath: "/a/b/c"),
@@ -73,4 +191,28 @@ final class EnvBootstrapEntryTests: XCTestCase {
             EnvManager.stableRootID(forPath: "/a/b/c"),
             EnvManager.stableRootID(forPath: "/a/b/d"))
     }
+}
+
+
+private final class BinaryDownloadStallingURLProtocol: URLProtocol {
+    static let didStart = Notification.Name("BinaryDownloadStallingURLProtocol.didStart")
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        NotificationCenter.default.post(name: Self.didStart, object: nil)
+        guard let url = request.url,
+              let response = HTTPURLResponse(
+                url: url, statusCode: 200, httpVersion: "HTTP/1.1",
+                headerFields: ["Content-Length": "1048576"])
+        else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        // Deliberately do not finish: the caller controls completion/cancellation.
+    }
+
+    override func stopLoading() {}
 }
