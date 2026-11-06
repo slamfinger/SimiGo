@@ -120,6 +120,46 @@ final class BinaryDownloaderTests: XCTestCase {
         XCTAssertEqual(entries.map(\.lastPathComponent).sorted(), ["engine"])
     }
 
+    func testPublishDownloadedBinaryReplacesExistingFileWithExecutableMode() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-publish-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let destination = directory.appendingPathComponent("engine")
+        let staged = directory.appendingPathComponent(".engine.download")
+        try Data("old-engine".utf8).write(to: destination)
+        let expected = Data("validated-new-engine".utf8)
+        try expected.write(to: staged)
+
+        try BinaryDownloader.publishDownloadedBinary(at: staged, to: destination)
+
+        XCTAssertEqual(try Data(contentsOf: destination), expected)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: staged.path))
+        let attributes = try FileManager.default.attributesOfItem(atPath: destination.path)
+        XCTAssertEqual(
+            (attributes[.posixPermissions] as? NSNumber)?.intValue, 0o755)
+    }
+
+    func testPublishDownloadedBinaryFailureLeavesExistingFileUntouched() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-publish-failure-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let destination = directory.appendingPathComponent("engine")
+        let missingStagedFile = directory.appendingPathComponent(".missing.download")
+        let previous = Data("existing-engine".utf8)
+        try previous.write(to: destination)
+
+        XCTAssertThrowsError(
+            try BinaryDownloader.publishDownloadedBinary(
+                at: missingStagedFile, to: destination))
+        XCTAssertEqual(try Data(contentsOf: destination), previous)
+    }
+
     func testSuccessfulDownloadAtomicallyReplacesExistingDestination() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("binary-downloader-\(UUID().uuidString)", isDirectory: true)
