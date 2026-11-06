@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import SimiGoCollection
@@ -101,6 +102,17 @@ final class QoderCollectionLifecycleTests: XCTestCase {
             parent: "a-1")
     }
 
+    func testLeaseRejectsFIFOWithoutBlockingOrWriting() throws {
+        let state = root.appendingPathComponent("fifo-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: state, withIntermediateDirectories: true)
+        let lock = state.appendingPathComponent(QoderCollectionLease.lockFileName)
+        let result = lock.path.withCString { Darwin.mkfifo($0, mode_t(0o600)) }
+        XCTAssertEqual(result, 0, "mkfifo failed: \(String(cString: strerror(errno)))")
+
+        XCTAssertThrowsError(
+            try QoderCollectionLease.acquire(directoryURL: state),
+            "a FIFO must be rejected after a nonblocking open and fstat")
+    }
     func testLeaseRejectsSymlinkAndLeavesTargetUntouched() throws {
         let state = root.appendingPathComponent("symlink-state", isDirectory: true)
         try FileManager.default.createDirectory(at: state, withIntermediateDirectories: true)
