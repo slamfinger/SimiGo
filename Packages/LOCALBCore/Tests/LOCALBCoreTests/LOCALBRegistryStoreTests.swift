@@ -16,6 +16,31 @@ final class LOCALBRegistryStoreTests: XCTestCase {
         try LOCALBSigningInputV1.keyID(publicKeyRaw: Array(key.publicKey.rawRepresentation))
     }
 
+    func testRegistryLockSymlinkIsRejectedWithoutTouchingTarget() throws {
+        let root = makeRoot()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let target = root.deletingLastPathComponent().appendingPathComponent("lock-target-\(UUID().uuidString)")
+        let sentinel = Data("do-not-modify".utf8)
+        try sentinel.write(to: target)
+        try FileManager.default.createSymbolicLink(at: root.appendingPathComponent(".localb-registry.lock"), withDestinationURL: target)
+        XCTAssertThrowsError(try LOCALBRegistryStore(rootURL: root).initializeNewLineage())
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
+    func testJournalSymlinkIsRejectedWithoutAppendingToTarget() throws {
+        let root = makeRoot()
+        let store = LOCALBRegistryStore(rootURL: root)
+        let checkpoint = try store.initializeNewLineage()
+        let journal = root.appendingPathComponent(".localb-registry.events")
+        try FileManager.default.removeItem(at: journal)
+        let target = root.deletingLastPathComponent().appendingPathComponent("journal-target-\(UUID().uuidString)")
+        let sentinel = Data("do-not-append".utf8)
+        try sentinel.write(to: target)
+        try FileManager.default.createSymbolicLink(at: journal, withDestinationURL: target)
+        XCTAssertThrowsError(try store.appendKeyRegistration(publicKeyRaw: Array(Curve25519.Signing.PrivateKey().publicKey.rawRepresentation), generation: 1, checkpoint: checkpoint))
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
     func testFirstRunProducesOfflineCheckpointAndMissingCheckpointFailsClosed() throws {
         let store = LOCALBRegistryStore(rootURL: makeRoot())
         let checkpoint = try store.initializeNewLineage()

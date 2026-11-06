@@ -128,8 +128,12 @@ public struct LOCALBRegistryStore {
                 previousHash: Self.zeroHash
             )
             let frame = try Self.encodeEventFrame(event)
-            let fd = open(journalURL.path, O_WRONLY | O_CREAT | O_EXCL, 0o600)
+            let fd = open(journalURL.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0o600)
             guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+            guard Self.isRegularFile(fd: fd) else {
+                close(fd)
+                throw LOCALBStatus.registryPersistenceFailure
+            }
             defer { close(fd) }
             do {
                 try Self.writeAll(fd: fd, bytes: frame)
@@ -578,8 +582,12 @@ public struct LOCALBRegistryStore {
                 throw LOCALBStatus.registryLineageUninitialized
             }
         }
-        let fd = open(lockURL.path, O_CREAT | O_RDWR, 0o600)
+        let fd = open(lockURL.path, O_CREAT | O_RDWR | O_NOFOLLOW, 0o600)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        guard Self.isRegularFile(fd: fd) else {
+            close(fd)
+            throw LOCALBStatus.registryPersistenceFailure
+        }
         defer { close(fd) }
         guard flock(fd, exclusive ? LOCK_EX : LOCK_SH) == 0 else {
             throw LOCALBStatus.registryPersistenceFailure
@@ -591,16 +599,26 @@ public struct LOCALBRegistryStore {
     private func appendEventLocked(_ event: Event) throws {
         let frame = try Self.encodeEventFrame(event)
         guard frame.count <= Self.maxEventBytes else { throw LOCALBStatus.resourceLimit }
-        let fd = open(journalURL.path, O_WRONLY | O_APPEND)
+        let fd = open(journalURL.path, O_WRONLY | O_APPEND | O_NOFOLLOW)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        guard Self.isRegularFile(fd: fd) else {
+            close(fd)
+            throw LOCALBStatus.registryPersistenceFailure
+        }
         defer { close(fd) }
         try Self.writeAll(fd: fd, bytes: frame)
         guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
         try syncRootDirectory()
     }
 
+    private static func isRegularFile(fd: Int32) -> Bool {
+        var info = stat()
+        guard fstat(fd, &info) == 0 else { return false }
+        return (info.st_mode & S_IFMT) == S_IFREG
+    }
+
     private func syncRootDirectory() throws {
-        let fd = open(rootURL.path, O_RDONLY)
+        let fd = open(rootURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         defer { close(fd) }
         guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
