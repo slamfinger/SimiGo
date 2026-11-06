@@ -262,6 +262,43 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: targetDatabase), targetBefore)
     }
 
+    func testInboxRefusesHardLinkedSQLiteDatabase() throws {
+        let targetDirectory = root.appendingPathComponent(
+            "external-hardlink-state", isDirectory: true)
+        let stateDirectory = configuration().stateDirectory
+        try FileManager.default.createDirectory(
+            at: targetDirectory, withIntermediateDirectories: true)
+        try QoderCandidateInbox(directoryURL: targetDirectory).pendingCount()
+        let targetDatabase = targetDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        let stateDatabase = stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        try FileManager.default.linkItem(at: targetDatabase, to: stateDatabase)
+        let targetBefore = try Data(contentsOf: targetDatabase)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount())
+        XCTAssertEqual(try Data(contentsOf: targetDatabase), targetBefore)
+    }
+
+    func testInboxRefusesGroupOrWorldWritableSQLiteDatabase() throws {
+        let stateDirectory = configuration().stateDirectory
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount()
+        let database = stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        let original = try Data(contentsOf: database)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o666], ofItemAtPath: database.path)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount())
+        XCTAssertEqual(try Data(contentsOf: database), original)
+    }
+
     func testInboxRefusesSymlinkedStateDirectory() throws {
         let outside = root.appendingPathComponent("outside-inbox-state", isDirectory: true)
         try FileManager.default.createDirectory(
