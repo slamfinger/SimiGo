@@ -207,9 +207,15 @@ extension HTTPServer {
         // chat), not just the live session. This is the cross-Agent, cross-
         // session memory the IS exists for; session identifiers narrow it when
         // a caller supplies them.
+        // Exclude the exact question/answer pairs already published in this
+        // session before computing the current demand watermark. If exclusion
+        // lookup fails, an empty set is conservative: prior rows remain in the
+        // basis and the current-demand gate refuses historical answer reuse.
+        let reuseExclusions = (try? loop.answerReuseExclusions(
+            sessionID: infoSession, query: query)) ?? []
         let candidateResolution = try? loop.resolve(.init(
             sessionID: infoSession, query: query, includeChat: true,
-            chatSessionIDs: [], limit: 30))
+            chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))
         let retrieval = candidateResolution ?? SimiGoInformationLoop.Resolution(
             demandID: "", stateID: nil, reused: false, hits: [], inputDigest: "",
             resultSHA256: "", retrievalSettlementID: "", itemIDs: [], staleItemIDs: [])

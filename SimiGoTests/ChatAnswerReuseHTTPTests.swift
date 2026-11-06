@@ -223,8 +223,8 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             XCTAssertEqual(second.status, 200, second.sse)
             XCTAssertEqual(second.generate, 1, "a streaming exact repeat must not call the model")
             XCTAssertEqual(
-                try db.count("information_demands"), demandsBeforeRepeat + 1,
-                "the second request resolves a fresh candidate after the first turn changed the chat watermark")
+                try db.count("information_demands"), demandsBeforeRepeat,
+                "the exact repeat resolves the already answered demand, so it mints no new demand row")
 
             let block = try XCTUnwrap(second.reuse, "reuse is reported on the stream")
             XCTAssertEqual(block["answer_reuse"] as? Bool, true)
@@ -265,9 +265,10 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     }
 
     /// Exact wording is not enough: reuse is bound to the demand resolved for
-    /// THIS turn. With prefix freezing off the second request re-resolves after
-    /// the first turn's chat rows were committed, so the same words describe a
-    /// different information scope. The settled answer must not be served.
+    /// THIS turn. An answer's own question and answer rows are excluded from
+    /// that basis, so only information the turn did not itself publish moves it.
+    /// Committing a turn in another session does, and the settled answer must
+    /// then not be served for the same words.
     @MainActor
     func testChangedCurrentDemandIsNotServedByReuse() async throws {
         let session = "chat-demand-change-\(UUID().uuidString)"
@@ -290,6 +291,21 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             let store = ExecutionStateGraphStore()
             let db = try XCTUnwrap(store.esis)
             let demandsAfterFirst = try db.count("information_demands")
+
+            // New information this answer did not produce: a committed turn in a
+            // different session, inside the same shared personal space.
+            let external = "chat-demand-change-external-\(UUID().uuidString)"
+            let externalUser = try db.appendChatMessage(
+                sessionID: external, role: "user",
+                content: "the vault moved to the north shelf",
+                model: nil, createdAt: Date())
+            try db.commitChatTurn(
+                sessionID: external, userMessageID: externalUser,
+                assistantText: "CHAT-EXTERNAL-DEMAND-SOURCE-73B",
+                model: nil, createdAt: Date())
+            XCTAssertEqual(
+                try db.count("information_demands"), demandsAfterFirst,
+                "committing chat rows resolves no demand of its own")
 
             let second = try await dispatch(session: session, input: "where is the vault")
             XCTAssertEqual(second.status, 200, second.sse)

@@ -42,14 +42,14 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.schemaVersion(), 0)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 19)   // v18 binds MCP tokenizer identity to ES
+        XCTAssertEqual(try db.schemaVersion(), 21)   // v21 backfills legacy NULL graph columns
         XCTAssertTrue(try db.integrityCheck())
         XCTAssertEqual(try db.count("chat_messages"), 0)
         XCTAssertEqual(try db.count("file_contents"), 0)
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
         // Idempotent: re-running does not error or double-apply.
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 19)
+        XCTAssertEqual(try db.schemaVersion(), 21)
     }
 
     /// A database stamped v6 by the old out-of-order gates reports the head
@@ -60,7 +60,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 19)
+        XCTAssertEqual(try db.schemaVersion(), 21)
         db.close()
 
         try rawExec(url, """
@@ -76,12 +76,12 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { repaired.close() }
         XCTAssertEqual(try repaired.schemaVersion(), 6)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 19)
+        XCTAssertEqual(try repaired.schemaVersion(), 21)
         XCTAssertEqual(try repaired.count("chat_messages"), 0)
         XCTAssertEqual(try repaired.count("file_contents"), 0)
         XCTAssertEqual(try repaired.count("retrieval_settlements"), 0)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 19)
+        XCTAssertEqual(try repaired.schemaVersion(), 21)
     }
 
     private func rawExec(_ url: URL, _ sql: String) throws {
@@ -115,7 +115,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
     }
 
-    /// An existing v17 store must upgrade in place through v19: tokenizer
+    /// An existing v17 store must upgrade in place through v20: tokenizer
     /// identity remains NULL for historical states, graph ownership defaults
     /// to native-managed, and both migration rows land exactly once.
     func testV17UpgradeAddsTokenizerIdentityAndGraphOwnership() throws {
@@ -133,14 +133,14 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         try rawExec(url, """
         ALTER TABLE execution_states DROP COLUMN graph_managed;
         ALTER TABLE execution_states DROP COLUMN tokenizer_identity;
-        DELETE FROM schema_migrations WHERE version IN (18, 19);
+        DELETE FROM schema_migrations WHERE version >= 18;
         """)
 
         let upgraded = try SimiGoESISDatabase(url: url, createIfNeeded: false)
         defer { upgraded.close() }
         XCTAssertEqual(try upgraded.schemaVersion(), 17)
         try upgraded.runMigrations()
-        XCTAssertEqual(try upgraded.schemaVersion(), 19)
+        XCTAssertEqual(try upgraded.schemaVersion(), 21)
         XCTAssertNil(
             try upgraded.executionStateTokenizerIdentity("legacy-state"),
             "a pre-v18 state carries no claim and must keep failing closed")
@@ -148,7 +148,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
             try rawText(url, "SELECT graph_managed FROM execution_states WHERE state_id='legacy-state';"),
             "1", "legacy rows default to native graph ownership")
         XCTAssertEqual(
-            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version IN (18, 19);"), "2")
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version >= 18;"), "4")
     }
 
     /// Re-running the v19 migration — including after reopening the store —
@@ -163,7 +163,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
 
         let reopened = try SimiGoESISDatabase(url: url, createIfNeeded: false)
         try reopened.runMigrations()
-        XCTAssertEqual(try reopened.schemaVersion(), 19)
+        XCTAssertEqual(try reopened.schemaVersion(), 21)
         reopened.close()
 
         XCTAssertEqual(
@@ -702,5 +702,516 @@ extension SimiGoESISDatabaseTests {
         } catch {
             XCTFail("unexpected error: \(error)")
         }
+    }
+
+    func testReadGraphRejectsMalformedAuthoritativePrefixJSON() throws {
+        let url = tempURL("malformed-graph")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        let state = SimiGoESISDatabase.GraphState(
+            id: "malformed-state", parentID: nil, modelIdentity: "test-model",
+            createdAt: Date(timeIntervalSince1970: 700000000), position: 1,
+            continuationID: "C-1", nextInput: "continue", anchor: "a1",
+            prefix: ["complete-prefix"], lifecycle: "active", checkpointIDs: [])
+        try db.writeGraph(states: [state], checkpoints: [])
+
+        var writer: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &writer), SQLITE_OK)
+        guard let writer else {
+            XCTFail("could not open SQLite corruption-test connection")
+            return
+        }
+        defer { sqlite3_close(writer) }
+        XCTAssertEqual(
+            sqlite3_exec(
+                writer,
+                "UPDATE execution_states SET prefix_json='not-json' WHERE state_id='malformed-state';",
+                nil, nil, nil),
+            SQLITE_OK)
+
+        XCTAssertThrowsError(try db.readGraph())
+    }
+
+
+    func testReadGraphRejectsEmptyAuthoritativeGraphJSON() throws {
+        let url = tempURL("empty-graph-json")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        let state = SimiGoESISDatabase.GraphState(
+            id: "empty-json-state", parentID: nil, modelIdentity: "test-model",
+            createdAt: Date(timeIntervalSince1970: 700000000), position: 1,
+            continuationID: "C-1", nextInput: "continue", anchor: "a1",
+            prefix: ["complete-prefix"], lifecycle: "active", checkpointIDs: [])
+        try db.writeGraph(states: [state], checkpoints: [])
+
+        // Empty TEXT is not a valid serialized empty collection. Treating it
+        // as [] would silently turn corrupt authoritative state into a graph.
+        try rawExec(url, "UPDATE execution_states SET prefix_json='' WHERE state_id='empty-json-state';")
+        XCTAssertThrowsError(try db.readGraph(), "empty prefix_json must be corruption")
+
+        try rawExec(url, "UPDATE execution_states SET prefix_json='[\"complete-prefix\"]', checkpoint_ids_json='' WHERE state_id='empty-json-state';")
+        XCTAssertThrowsError(try db.readGraph(), "empty checkpoint_ids_json must be corruption")
+    }
+    func testInformationDemandCacheIdentityIncludesResultLimit() throws {
+        let databaseURL = tempURL("demand-limit")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-limit-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        try Data("needle first\n".utf8)
+            .write(to: rootURL.appendingPathComponent("a.txt"))
+        try Data("needle second\n".utf8)
+            .write(to: rootURL.appendingPathComponent("b.txt"))
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "limit-root", rootURL: rootURL)
+
+        let one = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 1)
+        XCTAssertEqual(one.hits.count, 1)
+        XCTAssertFalse(one.reused)
+
+        let two = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 2)
+        XCTAssertEqual(two.hits.count, 2)
+        XCTAssertNotEqual(two.demandID, one.demandID)
+        XCTAssertFalse(two.reused)
+
+        let twoAgain = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 2)
+        XCTAssertTrue(twoAgain.reused)
+        XCTAssertEqual(twoAgain.hits, two.hits)
+    }
+
+    func testInformationDemandCacheIdentityIncludesRequestedRootScope() throws {
+        let databaseURL = tempURL("demand-root-scope")
+        let rootA = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-root-a-\(UUID().uuidString)", isDirectory: true)
+        let rootB = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-root-b-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootA, withIntermediateDirectories: true)
+        try fm.createDirectory(at: rootB, withIntermediateDirectories: true)
+        defer {
+            try? fm.removeItem(at: rootA)
+            try? fm.removeItem(at: rootB)
+        }
+
+        // Binary files create filename-index rows but no settled text-content rows.
+        try Data([0xFF, 0xFE]).write(to: rootA.appendingPathComponent("needle-alpha.bin"))
+        try Data([0xFF, 0xFE]).write(to: rootB.appendingPathComponent("needle-beta.bin"))
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "root-a", rootURL: rootA)
+        _ = try db.settleWorkRootContents(rootID: "root-b", rootURL: rootB)
+
+        let a = try db.executeInformationDemand(
+            query: "needle", rootID: "root-a", limit: 10)
+        XCTAssertEqual(a.hits.map(\.relativePath), ["needle-alpha.bin"])
+
+        let b = try db.executeInformationDemand(
+            query: "needle", rootID: "root-b", limit: 10)
+        XCTAssertEqual(b.hits.map(\.relativePath), ["needle-beta.bin"])
+        XCTAssertNotEqual(a.demandID, b.demandID)
+        XCTAssertFalse(b.reused)
+    }
+
+    func testRootSettlementMarksRemovedNonTextFilesMissing() throws {
+        let databaseURL = tempURL("missing-nontext")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-nontext-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("binary.dat")
+        try Data([0xFF, 0xFE]).write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+
+        _ = try db.settleWorkRootContents(rootID: "nontext-root", rootURL: rootURL)
+        let present = try db.listExternalFiles(rootID: "nontext-root")
+        XCTAssertEqual(present.first(where: { $0.relativePath == "binary.dat" })?.status, "present")
+        XCTAssertEqual(try db.count("file_contents"), 0)
+
+        try fm.removeItem(at: fileURL)
+        let report = try db.settleWorkRootContents(rootID: "nontext-root", rootURL: rootURL)
+        XCTAssertEqual(report.removed, 1)
+        let afterRemoval = try db.listExternalFiles(rootID: "nontext-root")
+        XCTAssertEqual(
+            afterRemoval.first(where: { $0.relativePath == "binary.dat" })?.status,
+            "missing")
+    }
+
+    func testRootSettlementAbortsWhenNestedDirectoryCannotBeEnumerated() throws {
+        let databaseURL = tempURL("enumeration-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-enumeration-error-\(UUID().uuidString)", isDirectory: true)
+        let nestedURL = rootURL.appendingPathComponent("locked", isDirectory: true)
+        let fileURL = nestedURL.appendingPathComponent("keep.txt")
+        let fm = FileManager.default
+        try fm.createDirectory(at: nestedURL, withIntermediateDirectories: true)
+        try Data("preserve settled content".utf8).write(to: fileURL)
+        defer {
+            try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: nestedURL.path)
+            try? fm.removeItem(at: rootURL)
+        }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "enumeration-root", rootURL: rootURL)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "enumeration-root")
+                .first(where: { $0.relativePath == "locked/keep.txt" })?.status,
+            "present")
+
+        try fm.setAttributes([.posixPermissions: 0], ofItemAtPath: nestedURL.path)
+        XCTAssertThrowsError(
+            try db.settleWorkRootContents(rootID: "enumeration-root", rootURL: rootURL))
+
+        // Restore access before reading the assertions and before temporary cleanup.
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: nestedURL.path)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "enumeration-root")
+                .first(where: { $0.relativePath == "locked/keep.txt" })?.status,
+            "present")
+    }
+
+    func testInformationDemandRefusesMissingIndexOnlyFileWithoutCachingPartialResult() throws {
+        let databaseURL = tempURL("missing-index-only")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-index-only-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        try Data("the unique body token is present here".utf8).write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "index-only-root", rootURL: rootURL, carryText: false)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+
+        try fm.removeItem(at: fileURL)
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "unique body token", rootID: "index-only-root", limit: 10))
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 0,
+            "A demand with an unreadable settled source must not be persisted")
+    }
+
+    func testManualRootReconciliationMarksMissingOnceAndIsIdempotent() throws {
+        let databaseURL = tempURL("manual-reconcile")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-manual-reconcile-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("settled text".utf8).write(to: rootURL.appendingPathComponent("keep.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "manual-root", rootURL: rootURL)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+
+        _ = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
+        XCTAssertEqual(try db.count("file_contents"), 0)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "manual-root")
+                .first(where: { $0.relativePath == "keep.txt" })?.status,
+            "missing")
+
+        let second = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
+        XCTAssertTrue(second.isEmpty)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "manual-root")
+                .first(where: { $0.relativePath == "keep.txt" })?.status,
+            "missing")
+    }
+
+
+    func testInformationDemandRefusesIndexOnlyInputWithoutMetadataAddress() throws {
+        let databaseURL = tempURL("missing-index-address")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-index-address-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+
+        // Construct an incomplete index-only record without deleting from the
+        // append-only carrier ledger (which correctly rejects destructive SQL).
+        try rawExec(databaseURL, """
+        INSERT INTO roots(root_id, category, display_name, locator_type, status, created_at, last_scanned_at)
+        VALUES('index-address-root','work','\(rootURL.path)','path','present','t','t');
+        INSERT INTO file_contents(
+            root_id, relative_path, content_sha256, content, settled_at, object_id)
+        VALUES('index-address-root','source.txt','source-digest','', 't', NULL);
+        """)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+        XCTAssertNil(try db.latestIndexObjectID(
+            identity: "file:index-address-root/source.txt"))
+
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "unique body token", rootID: "index-address-root", limit: 10))
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 0,
+            "A demand without complete source-address provenance must not be persisted")
+    }
+
+
+    func testRemovedFilenameOnlyInputInvalidatesItsRetrievalSettlement() throws {
+        let databaseURL = tempURL("filename-only-invalidation")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-filename-only-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("needle-binary.bin")
+        try Data([0xFF, 0xFE]).write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "filename-root", rootURL: rootURL, carryText: false)
+        XCTAssertEqual(try db.count("file_contents"), 0)
+
+        let retrieval = try db.executeInformationDemand(
+            query: "needle", rootID: "filename-root", limit: 10)
+        XCTAssertEqual(retrieval.hits.map(\.relativePath), ["needle-binary.bin"])
+
+        func retrievalStatus() throws -> String {
+            var reader: OpaquePointer?
+            guard sqlite3_open(databaseURL.path, &reader) == SQLITE_OK, let reader else {
+                throw SimiGoESISDatabase.DatabaseError.sql("cannot open retrieval status reader")
+            }
+            defer { sqlite3_close(reader) }
+            var stmt: OpaquePointer?
+            let sql = """
+            SELECT status FROM retrieval_settlements
+            WHERE demand_id='\(retrieval.demandID)';
+            """
+            guard sqlite3_prepare_v2(reader, sql, -1, &stmt, nil) == SQLITE_OK,
+                let stmt
+            else {
+                throw SimiGoESISDatabase.DatabaseError.sql("cannot prepare retrieval status query")
+            }
+            defer { sqlite3_finalize(stmt) }
+            guard sqlite3_step(stmt) == SQLITE_ROW,
+                let value = sqlite3_column_text(stmt, 0)
+            else {
+                throw SimiGoESISDatabase.DatabaseError.sql("missing retrieval status row")
+            }
+            return String(cString: value)
+        }
+        XCTAssertEqual(try retrievalStatus(), "valid")
+
+        try FileManager.default.removeItem(at: fileURL)
+        _ = try db.settleWorkRootContents(
+            rootID: "filename-root", rootURL: rootURL, carryText: false)
+        XCTAssertEqual(try retrievalStatus(), "invalidated")
+    }
+
+
+    func testInformationDemandRefusesChangedIndexOnlyFileWithoutCachingPartialResult() throws {
+        let databaseURL = tempURL("changed-index-only")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-changed-index-only-\\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        try Data("needle original bytes".utf8).write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "changed-index-only-root", rootURL: rootURL, carryText: false)
+
+        // Keep the path available but change its bytes without a new root
+        // settlement. An index-only reader must detect the digest mismatch,
+        // rather than silently publishing a retrieval from the remaining rows.
+        try Data("needle changed bytes".utf8).write(to: fileURL)
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "needle", rootID: "changed-index-only-root", limit: 10))
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 0,
+            "A demand based on stale physical bytes must not be persisted")
+    }
+
+}
+
+extension SimiGoESISDatabaseTests {
+
+    private func legacyState(_ id: String, checkpointIDs: [UUID] = []) -> SimiGoESISDatabase.GraphState {
+        SimiGoESISDatabase.GraphState(
+            id: id, parentID: nil, modelIdentity: "test-model",
+            createdAt: Date(timeIntervalSince1970: 700000000), position: 1,
+            continuationID: "C-\(id)", nextInput: "next", anchor: "a1",
+            prefix: ["p1"], lifecycle: "active", checkpointIDs: checkpointIDs)
+    }
+
+    private func legacyCheckpoint(_ id: String, stateID: String,
+                                  createdAt: TimeInterval) -> SimiGoESISDatabase.GraphCheckpoint {
+        SimiGoESISDatabase.GraphCheckpoint(
+            id: UUID(uuidString: id)!, stateID: stateID, modelIdentity: "test-model",
+            position: 1, continuationID: "C-\(stateID)", nextInput: "next", anchor: "a1",
+            prefix: ["p1"], createdAt: Date(timeIntervalSince1970: createdAt),
+            checksum: "sha256-abc")
+    }
+
+    /// Put the store back into the shape a pre-v21 build leaves behind: the two
+    /// v2 `ALTER TABLE ADD COLUMN` columns are NULL while the rows are live.
+    private func makeLegacyNullRows(_ url: URL, _ stateID: String) throws {
+        try rawExec(url, """
+        UPDATE execution_states SET checkpoint_ids_json=NULL, prefix_json=NULL WHERE state_id='\(stateID)';
+        DELETE FROM schema_migrations WHERE version >= 21;
+        """)
+    }
+
+    func testV21RebuildsLegacyNullCheckpointListFromCheckpoints() throws {
+        let url = tempURL("v21-rebuild")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        // The rows are deliberately handed to the writer newest-first, so the
+        // rebuilt list can only come out right if it is ordered by creation time
+        // rather than by whatever the table scan happens to return.
+        let earlier = "11111111-1111-1111-1111-111111111111"
+        let later = "22222222-2222-2222-2222-222222222222"
+        try db.writeGraph(
+            states: [legacyState("v21-state", checkpointIDs: [UUID(uuidString: earlier)!, UUID(uuidString: later)!])],
+            checkpoints: [
+                legacyCheckpoint(later, stateID: "v21-state", createdAt: 1_800_000_100),
+                legacyCheckpoint(earlier, stateID: "v21-state", createdAt: 1_800_000_000),
+            ])
+        try makeLegacyNullRows(url, "v21-state")
+        XCTAssertEqual(
+            try rawText(url, "SELECT typeof(checkpoint_ids_json) FROM execution_states WHERE state_id='v21-state';"),
+            "null")
+
+        let migrated = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        defer { migrated.close() }
+        try migrated.runMigrations()
+
+        XCTAssertEqual(
+            try rawText(url, "SELECT checkpoint_ids_json FROM execution_states WHERE state_id='v21-state';"),
+            "[\"\(earlier)\",\"\(later)\"]",
+            "the backfilled list is the state's authoritative checkpoint rows in creation order")
+        XCTAssertEqual(
+            try rawText(url, "SELECT prefix_json FROM execution_states WHERE state_id='v21-state';"),
+            "[]", "a legacy NULL prefix is the serialized empty list")
+        let graph = try migrated.readGraph()
+        XCTAssertEqual(
+            graph.states.first(where: { $0.id == "v21-state" })?.checkpointIDs,
+            [UUID(uuidString: earlier)!, UUID(uuidString: later)!])
+        // The two views of the same authority must agree, row for row.
+        XCTAssertEqual(
+            graph.states.first(where: { $0.id == "v21-state" })?.checkpointIDs,
+            graph.checkpoints.filter { $0.stateID == "v21-state" }.map(\.id))
+        XCTAssertEqual(
+            try rawText(url, "SELECT COUNT(*) FROM execution_states WHERE checkpoint_ids_json IS NULL;"), "0")
+    }
+
+    func testV21BackfillsLegacyNullWithoutCheckpointsToEmptyList() throws {
+        let url = tempURL("v21-empty")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        try db.writeGraph(states: [legacyState("v21-orphan")], checkpoints: [])
+        try makeLegacyNullRows(url, "v21-orphan")
+
+        let migrated = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        defer { migrated.close() }
+        try migrated.runMigrations()
+
+        XCTAssertEqual(
+            try rawText(url, "SELECT checkpoint_ids_json FROM execution_states WHERE state_id='v21-orphan';"),
+            "[]")
+        XCTAssertEqual(try migrated.readGraph().states.first?.checkpointIDs, [])
+        XCTAssertEqual(try migrated.readGraph().states.count, 1)
+    }
+
+    func testV21DoesNotWidenTheStrictReadForBlankOrLaterNullRows() throws {
+        let url = tempURL("v21-strict")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        try db.writeGraph(
+            states: [legacyState("v21-blank", checkpointIDs: [UUID()])],
+            checkpoints: [])
+
+        // v21 has already been recorded, so it rewrites nothing: these are not
+        // the legacy shape but genuine corruption, and must stay fatal.
+        try rawExec(url, "UPDATE execution_states SET checkpoint_ids_json='' WHERE state_id='v21-blank';")
+        XCTAssertThrowsError(try db.readGraph(), "blank checkpoint_ids_json stays corruption after v21")
+        try rawExec(url, "UPDATE execution_states SET checkpoint_ids_json='[\"not-a-uuid\"]' WHERE state_id='v21-blank';")
+        XCTAssertThrowsError(try db.readGraph(), "a malformed UUID stays corruption after v21")
+        try rawExec(url, "UPDATE execution_states SET checkpoint_ids_json=NULL WHERE state_id='v21-blank';")
+        XCTAssertThrowsError(try db.readGraph(), "a NULL written after v21 must not be normalized away")
+    }
+
+    func testRecordExecutionStateSerializesCheckpointListInsteadOfNull() throws {
+        let url = tempURL("v21-writer")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        try db.recordExecutionState(
+            id: "mirror-state", parentID: nil, modelIdentity: "test-model",
+            position: 0, continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+
+        XCTAssertEqual(
+            try rawText(url, "SELECT typeof(checkpoint_ids_json) FROM execution_states WHERE state_id='mirror-state';"),
+            "text", "the mirroring writer must never leave the authoritative column NULL")
+        XCTAssertEqual(
+            try rawText(url, "SELECT checkpoint_ids_json FROM execution_states WHERE state_id='mirror-state';"),
+            "[]")
+        XCTAssertNoThrow(try db.readGraph())
+    }
+
+    func testV21MigrationIsIdempotentAndLeavesNoNullRows() throws {
+        let url = tempURL("v21-idempotent")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        try db.writeGraph(states: [legacyState("v21-twice")], checkpoints: [])
+        try makeLegacyNullRows(url, "v21-twice")
+
+        let migrated = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        defer { migrated.close() }
+        try migrated.runMigrations()
+        try migrated.runMigrations()
+
+        XCTAssertEqual(
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version = 21;"), "1")
+        XCTAssertEqual(
+            try rawText(url, "SELECT COUNT(*) FROM execution_states WHERE checkpoint_ids_json IS NULL OR prefix_json IS NULL;"), "0")
     }
 }
