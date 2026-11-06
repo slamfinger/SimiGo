@@ -3031,13 +3031,18 @@ public final class SimiGoESISDatabase {
                 }
             }
             let canonical = canonicalInput.canonical
-            // The result limit changes the persisted hit set, so it is part of
-            // this retrieval's identity even though it is not a source-file input.
+            // The result limit and filename-index matches both change the
+            // persisted hit set, so they are part of retrieval identity.
             let effectiveLimit = max(0, limit)
+            let filenameHits = try fileNameHits(
+                query: query, rootID: rootID, limit: effectiveLimit)
             let demandBasis = try Self.canonicalJSON([
                 "canonical_input": canonical,
                 "root_scope": rootID.map { $0 as Any } ?? NSNull(),
                 "result_limit": effectiveLimit,
+                "filename_hits": filenameHits.map {
+                    ["root_id": $0.rootID, "relative_path": $0.relativePath]
+                },
             ])
             let demandID = NativeSHA256.hexDigest(Data(demandBasis.utf8))
             let roots = canonicalInput.rootIDs
@@ -3082,8 +3087,8 @@ public final class SimiGoESISDatabase {
             // 3) 重算：在同一数据库快照的已结算内容索引上检索
             var hits = try searchSettledContent(query: query, rootID: rootID, limit: effectiveLimit)
             if hits.isEmpty {
-                // 文件名命中（external_files 路径匹配）也纳入 demand 结果
-                hits = try fileNameHits(query: query, rootID: rootID, limit: effectiveLimit)
+                // Reuse the filename candidate snapshot included in demand identity.
+                hits = filenameHits
             }
             let resultData = try JSONEncoder().encode(hits)
             let resultSHA = NativeSHA256.hexDigest(resultData)
