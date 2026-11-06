@@ -83,7 +83,7 @@ S0 预检（不加载模型）
 | 探针 A | begin M1；settle 声明 M2 repo ID 字符串；不加载 M2 | 拒绝路径解析/加载 M2：停止 |
 | 源文件注入 | F/N1/N2 均为实验专用真实文件，位于 `<实验根>/source/`；改前/改后记录 digest；不碰生产文件 | 无法确认真实磁盘变更：停止 |
 
-本次建议的实验绝对根：`/Users/mr.simi/Documents/Codex/2026-11-05/agent-1-p2-config-record-20261105/work/p2-c1`；E0 确认可写后固定，所有 `SIMIGO_HOME` / `SIMIGO_CACHE_ROOT` / 证据目录均在其下。
+本次建议的实验绝对根：`<实验根>/work/p2-c1`（`<实验根>` 为 E0 当场 `pwd` 实测并记录的本机实验根，与 §4 表内 `<实验根>/source/` 同一根）；E0 确认可写后固定，所有 `SIMIGO_HOME` / `SIMIGO_CACHE_ROOT` / 证据目录均在其下。
 
 **E0 失败即停**：以上任一项不能满足，必须在任何模型加载前停止并报告；不得以“先跑起来再说”替代配置核验。
 
