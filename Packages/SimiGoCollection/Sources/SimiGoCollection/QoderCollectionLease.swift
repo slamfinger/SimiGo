@@ -60,7 +60,9 @@ final class QoderCollectionLease {
         guard fstat(directoryFD, &openedRootInfo) == 0,
               (openedRootInfo.st_mode & S_IFMT) == S_IFDIR,
               openedRootInfo.st_dev == rootInfo.st_dev,
-              openedRootInfo.st_ino == rootInfo.st_ino else {
+              openedRootInfo.st_ino == rootInfo.st_ino,
+              openedRootInfo.st_uid == geteuid(),
+              (openedRootInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: directoryURL.path,
                 detail: "state directory changed while opening its descriptor")
@@ -75,7 +77,10 @@ final class QoderCollectionLease {
         }
         var fileInfo = stat()
         guard fstat(descriptor, &fileInfo) == 0,
-              (fileInfo.st_mode & S_IFMT) == S_IFREG else {
+              (fileInfo.st_mode & S_IFMT) == S_IFREG,
+              fileInfo.st_uid == geteuid(),
+              fileInfo.st_nlink == 1,
+              (fileInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
             close(descriptor)
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path, detail: "lease must be a regular, non-symlink file")
