@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 566,
+    "tracked": 567,
     "research_not_declared": 0,
-    "non_research_candidates": 566,
-    "declared": 508,
+    "non_research_candidates": 567,
+    "declared": 509,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -22,6 +22,702 @@
     {
       "path": "CONTRIBUTING.md",
       "output": "CONTRIBUTING.md"
+    },
+    {
+      "path": "docs/AGENT-ACCESS.md",
+      "output": "docs/AGENT-ACCESS.md"
+    },
+    {
+      "path": "docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md",
+      "output": "docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md"
+    },
+    {
+      "path": "docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md",
+      "output": "docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md"
+    },
+    {
+      "path": "docs/architecture/MLX_LM_REFERENCE_AND_EXPERIMENTAL_ROADMAP_20260918.md",
+      "output": "docs/architecture/MLX_LM_REFERENCE_AND_EXPERIMENTAL_ROADMAP_20260918.md"
+    },
+    {
+      "path": "docs/ARCHIVE_AUDIT_PUBLIC_CURATION_20260927.md",
+      "output": "docs/ARCHIVE_AUDIT_PUBLIC_CURATION_20260927.md"
+    },
+    {
+      "path": "docs/AUDIT_BASELINE_20260928.md",
+      "output": "docs/AUDIT_BASELINE_20260928.md"
+    },
+    {
+      "path": "docs/audit/B_HEDGE_SKIP_EXPERIMENT_DESIGN_20260929.md",
+      "output": "docs/audit/B_HEDGE_SKIP_EXPERIMENT_DESIGN_20260929.md"
+    },
+    {
+      "path": "docs/audit/BETA_AUDIT_3_REAUDIT_20260929.md",
+      "output": "docs/audit/BETA_AUDIT_3_REAUDIT_20260929.md"
+    },
+    {
+      "path": "docs/audit/BETA_RELEASE_SMOKE_1_20260929.md",
+      "output": "docs/audit/BETA_RELEASE_SMOKE_1_20260929.md"
+    },
+    {
+      "path": "docs/audit/BETA_STORAGE_1_20260929.md",
+      "output": "docs/audit/BETA_STORAGE_1_20260929.md"
+    },
+    {
+      "path": "docs/audit/BETA4_PROD_FINDINGS_20260929.md",
+      "output": "docs/audit/BETA4_PROD_FINDINGS_20260929.md"
+    },
+    {
+      "path": "docs/audit/CANCELLATION_TOKEN_PLACEMENT_AUDIT_2026-09-09.md",
+      "output": "docs/audit/CANCELLATION_TOKEN_PLACEMENT_AUDIT_2026-09-09.md"
+    },
+    {
+      "path": "docs/audit/CHATSESSION_AND_REQUEST_LIFECYCLE_AUDIT_2026-09-11.md",
+      "output": "docs/audit/CHATSESSION_AND_REQUEST_LIFECYCLE_AUDIT_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/CHATSESSION_REUSE_PREFIX_AUDIT_2026-09-11.md",
+      "output": "docs/audit/CHATSESSION_REUSE_PREFIX_AUDIT_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-18.md",
+      "output": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-18.md"
+    },
+    {
+      "path": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-19.md",
+      "output": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-19.md"
+    },
+    {
+      "path": "docs/audit/EXECID_TEST_QUALITY_REVIEW_2026-09-19.md",
+      "output": "docs/audit/EXECID_TEST_QUALITY_REVIEW_2026-09-19.md"
+    },
+    {
+      "path": "docs/audit/LIFECYCLE_AND_SSE_AUDIT_2026-09-11.md",
+      "output": "docs/audit/LIFECYCLE_AND_SSE_AUDIT_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/LIFECYCLE_EXTERNAL_REVIEW_2026-09-19.md",
+      "output": "docs/audit/LIFECYCLE_EXTERNAL_REVIEW_2026-09-19.md"
+    },
+    {
+      "path": "docs/audit/NATIVE_MLX_PRESSURE_POLICY_AUDIT_2026-09-09.md",
+      "output": "docs/audit/NATIVE_MLX_PRESSURE_POLICY_AUDIT_2026-09-09.md"
+    },
+    {
+      "path": "docs/audit/OFFICIAL_MLX_CAPABILITY_MATRIX_2026-09-11.md",
+      "output": "docs/audit/OFFICIAL_MLX_CAPABILITY_MATRIX_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/PERF_CONVERGENCE_20260929.md",
+      "output": "docs/audit/PERF_CONVERGENCE_20260929.md"
+    },
+    {
+      "path": "docs/audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md",
+      "output": "docs/audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/POST_FREEZE_CODE_AUDIT_2026-09-19.md",
+      "output": "docs/audit/POST_FREEZE_CODE_AUDIT_2026-09-19.md"
+    },
+    {
+      "path": "docs/audit/README.md",
+      "output": "docs/audit/README.md"
+    },
+    {
+      "path": "docs/audit/REQUEST_TASK_PUBLICATION_AUDIT_2026-09-11.md",
+      "output": "docs/audit/REQUEST_TASK_PUBLICATION_AUDIT_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/STREAM_TOKEN_FILTER_AUDIT_2026-09-11.md",
+      "output": "docs/audit/STREAM_TOKEN_FILTER_AUDIT_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/STREAMING_AND_LIFECYCLE_FINDINGS_2026-09-11.md",
+      "output": "docs/audit/STREAMING_AND_LIFECYCLE_FINDINGS_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/STREAMING_LIFECYCLE_REGRESSION_2026-09-11.md",
+      "output": "docs/audit/STREAMING_LIFECYCLE_REGRESSION_2026-09-11.md"
+    },
+    {
+      "path": "docs/benchmarks/README.md",
+      "output": "docs/benchmarks/README.md"
+    },
+    {
+      "path": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md",
+      "output": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md"
+    },
+    {
+      "path": "docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md",
+      "output": "docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md"
+    },
+    {
+      "path": "docs/decisions/DECISION_SWIFT15_NO_ADAPT.md",
+      "output": "docs/decisions/DECISION_SWIFT15_NO_ADAPT.md"
+    },
+    {
+      "path": "docs/decisions/README.md",
+      "output": "docs/decisions/README.md"
+    },
+    {
+      "path": "docs/decisions/RUNTIME_RELIABILITY_BACKLOG.md",
+      "output": "docs/decisions/RUNTIME_RELIABILITY_BACKLOG.md"
+    },
+    {
+      "path": "docs/decisions/TOOL_GOVERNANCE_CONTRACT.md",
+      "output": "docs/decisions/TOOL_GOVERNANCE_CONTRACT.md"
+    },
+    {
+      "path": "docs/decisions/TRANSCRIPT_NORMALIZATION_PROPOSAL_20261016.md",
+      "output": "docs/decisions/TRANSCRIPT_NORMALIZATION_PROPOSAL_20261016.md"
+    },
+    {
+      "path": "docs/decisions/V15_ENDGAME_DECISION_20260919.md",
+      "output": "docs/decisions/V15_ENDGAME_DECISION_20260919.md"
+    },
+    {
+      "path": "docs/decisions/V16_DIRECTION_REGISTRATION_20260919.md",
+      "output": "docs/decisions/V16_DIRECTION_REGISTRATION_20260919.md"
+    },
+    {
+      "path": "docs/decisions/V17_DIRECTION_REGISTRATION_20260919.md",
+      "output": "docs/decisions/V17_DIRECTION_REGISTRATION_20260919.md"
+    },
+    {
+      "path": "docs/decisions/V4_5_STABLE_FOUNDATION_BASELINE.md",
+      "output": "docs/decisions/V4_5_STABLE_FOUNDATION_BASELINE.md"
+    },
+    {
+      "path": "docs/evolution/README.md",
+      "output": "docs/evolution/README.md"
+    },
+    {
+      "path": "docs/experiments/BENCH_442FBF_FORK_REWIND_20260918/README.md",
+      "output": "docs/experiments/BENCH_442FBF_FORK_REWIND_20260918/README.md"
+    },
+    {
+      "path": "docs/experiments/BENCH_442FBF_FORK_REWIND_20260918/trace_segment.log",
+      "output": "docs/experiments/BENCH_442FBF_FORK_REWIND_20260918/trace_segment.log"
+    },
+    {
+      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/README.md",
+      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/README.md"
+    },
+    {
+      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live_r2.json",
+      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live_r2.json"
+    },
+    {
+      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live.json",
+      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live.json"
+    },
+    {
+      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step_partial_nail_r2aborted.json",
+      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step_partial_nail_r2aborted.json"
+    },
+    {
+      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step1024_r2.json",
+      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step1024_r2.json"
+    },
+    {
+      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step1024.json",
+      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step1024.json"
+    },
+    {
+      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results.json",
+      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results.json"
+    },
+    {
+      "path": "docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/README.md",
+      "output": "docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/README.md"
+    },
+    {
+      "path": "docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/results.json",
+      "output": "docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/results.json"
+    },
+    {
+      "path": "docs/experiments/BRANCH_FORK_ROLLFORWARD_EXPLORATION_20260918.md",
+      "output": "docs/experiments/BRANCH_FORK_ROLLFORWARD_EXPLORATION_20260918.md"
+    },
+    {
+      "path": "docs/experiments/C2_SESSION_READINESS_MATRIX_20260922.md",
+      "output": "docs/experiments/C2_SESSION_READINESS_MATRIX_20260922.md"
+    },
+    {
+      "path": "docs/experiments/evidence/p1-2-acceptance-2026-09-12-0335-0337.log",
+      "output": "docs/experiments/evidence/p1-2-acceptance-2026-09-12-0335-0337.log"
+    },
+    {
+      "path": "docs/experiments/EVOLUTION_TRACK.md",
+      "output": "docs/experiments/EVOLUTION_TRACK.md"
+    },
+    {
+      "path": "docs/experiments/EXECUTION_FORK_F0_PROBE_20260918.md",
+      "output": "docs/experiments/EXECUTION_FORK_F0_PROBE_20260918.md"
+    },
+    {
+      "path": "docs/experiments/EXECUTION_FORK_F0_PROBE_RESULTS_20260919.md",
+      "output": "docs/experiments/EXECUTION_FORK_F0_PROBE_RESULTS_20260919.md"
+    },
+    {
+      "path": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md",
+      "output": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md"
+    },
+    {
+      "path": "docs/experiments/jsonvalue-roundtrip-repro.swift",
+      "output": "docs/experiments/jsonvalue-roundtrip-repro.swift"
+    },
+    {
+      "path": "docs/experiments/MODEL_COMPATIBILITY_MATRIX.md",
+      "output": "docs/experiments/MODEL_COMPATIBILITY_MATRIX.md"
+    },
+    {
+      "path": "docs/experiments/OFFICIAL_CAPABILITY_MATRIX.md",
+      "output": "docs/experiments/OFFICIAL_CAPABILITY_MATRIX.md"
+    },
+    {
+      "path": "docs/experiments/README.md",
+      "output": "docs/experiments/README.md"
+    },
+    {
+      "path": "docs/experiments/UPSTREAM_ISSUE_DRAFT_kv_prefix_sharing_cow.md",
+      "output": "docs/experiments/UPSTREAM_ISSUE_DRAFT_kv_prefix_sharing_cow.md"
+    },
+    {
+      "path": "docs/experiments/UPSTREAM_ISSUE_SUBMISSION_READY.md",
+      "output": "docs/experiments/UPSTREAM_ISSUE_SUBMISSION_READY.md"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/c5_c6_restore_hit_20260919.log",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/c5_c6_restore_hit_20260919.log"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_dispatch_watchdog_regression.log",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_dispatch_watchdog_regression.log"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_dispatch_watchdog_trace_tail.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_dispatch_watchdog_trace_tail.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_listener_restart_immediate_regression.log",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_listener_restart_immediate_regression.log"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_listener_restart_immediate_trace_tail.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_listener_restart_immediate_trace_tail.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_minimal_rootfix_regression.log",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_minimal_rootfix_regression.log"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_rootfix_regression.log",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_rootfix_regression.log"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_stage_trace_frozen_trace_tail.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_stage_trace_frozen_trace_tail.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_stage_trace_regression.log",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_stage_trace_regression.log"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_taskwatchdog_frozen_trace_tail.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_taskwatchdog_frozen_trace_tail.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_taskwatchdog_regression.log",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_taskwatchdog_regression.log"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_0418.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_0418.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_2nd.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_2nd.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_3rd.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_3rd.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_release_taskwatchdog.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_release_taskwatchdog.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_sample_after_dispatch_watchdog.txt",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_sample_after_dispatch_watchdog.txt"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/SimiGo-2026-09-19-033926.ips",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/SimiGo-2026-09-19-033926.ips"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/daily_report_a1.md",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/daily_report_a1.md"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/daily_report_a2.md",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/daily_report_a2.md"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/ground_truth_docs.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/ground_truth_docs.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/ground_truth_folder.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/ground_truth_folder.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/ground_truth.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/ground_truth.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/README.md",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/README.md"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_build4_formal_matrix.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_build4_formal_matrix.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_build4_measured_10k.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_build4_measured_10k.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_c5c6_10k.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_c5c6_10k.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_partial.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_partial.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_release_minimal_rootfix_regression.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_release_minimal_rootfix_regression.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_release_rootfix_regression.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_release_rootfix_regression.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_step_ab_repeats.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_step_ab_repeats.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_step1024_120k_ab.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_step1024_120k_ab.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_1_longctx.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_1_longctx.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_2_concurrency.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_2_concurrency.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_docs_smoke.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_docs_smoke.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_docs.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_docs.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_folder_smoke.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_folder_smoke.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_folder.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_folder.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_smoke.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_smoke.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office.json"
+    },
+    {
+      "path": "docs/experiments/V17_RUNTIME_MATRIX/step_ab_seed_messages.json",
+      "output": "docs/experiments/V17_RUNTIME_MATRIX/step_ab_seed_messages.json"
+    },
+    {
+      "path": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md",
+      "output": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md"
+    },
+    {
+      "path": "docs/history/QODER_COLLECTION_INTEGRATION_20261105.md",
+      "output": "docs/history/QODER_COLLECTION_INTEGRATION_20261105.md"
+    },
+    {
+      "path": "docs/knowledge/findings/FAILURE_MATRIX_FINAL_20260926.md",
+      "output": "docs/knowledge/findings/FAILURE_MATRIX_FINAL_20260926.md"
+    },
+    {
+      "path": "docs/knowledge/findings/FINDING_LONG_CONTEXT_REBUILD_COST_20260922.md",
+      "output": "docs/knowledge/findings/FINDING_LONG_CONTEXT_REBUILD_COST_20260922.md"
+    },
+    {
+      "path": "docs/knowledge/findings/FINDING_OFFICIAL_SESSION_OWNS_PHYSICAL_KV.md",
+      "output": "docs/knowledge/findings/FINDING_OFFICIAL_SESSION_OWNS_PHYSICAL_KV.md"
+    },
+    {
+      "path": "docs/knowledge/findings/FINDING_PROTOCOL_BOUNDARY_NORMALIZATION.md",
+      "output": "docs/knowledge/findings/FINDING_PROTOCOL_BOUNDARY_NORMALIZATION.md"
+    },
+    {
+      "path": "docs/knowledge/findings/FINDING_PROTOCOL_INPUT_MUST_BE_NORMALIZED_BEFORE_OBJC_BOUNDARY.md",
+      "output": "docs/knowledge/findings/FINDING_PROTOCOL_INPUT_MUST_BE_NORMALIZED_BEFORE_OBJC_BOUNDARY.md"
+    },
+    {
+      "path": "docs/knowledge/findings/FINDING_SIMPLIFICATION_REDUCES_RUNTIME_AUTHORITY.md",
+      "output": "docs/knowledge/findings/FINDING_SIMPLIFICATION_REDUCES_RUNTIME_AUTHORITY.md"
+    },
+    {
+      "path": "docs/knowledge/findings/O6_OVERSIZED_EXECUTION_STATE_20260926.md",
+      "output": "docs/knowledge/findings/O6_OVERSIZED_EXECUTION_STATE_20260926.md"
+    },
+    {
+      "path": "docs/knowledge/findings/README.md",
+      "output": "docs/knowledge/findings/README.md"
+    },
+    {
+      "path": "docs/knowledge/invariants/GA0_FLOOR_POLICY_20260927.md",
+      "output": "docs/knowledge/invariants/GA0_FLOOR_POLICY_20260927.md"
+    },
+    {
+      "path": "docs/knowledge/invariants/INVARIANT_CORE_ARCHITECTURE_REQUIRES_EVIDENCE.md",
+      "output": "docs/knowledge/invariants/INVARIANT_CORE_ARCHITECTURE_REQUIRES_EVIDENCE.md"
+    },
+    {
+      "path": "docs/knowledge/invariants/INVARIANT_LOGICAL_PHYSICAL_STATE_SEPARATION.md",
+      "output": "docs/knowledge/invariants/INVARIANT_LOGICAL_PHYSICAL_STATE_SEPARATION.md"
+    },
+    {
+      "path": "docs/knowledge/invariants/INVARIANT_SESSION_READINESS_BEFORE_REUSE.md",
+      "output": "docs/knowledge/invariants/INVARIANT_SESSION_READINESS_BEFORE_REUSE.md"
+    },
+    {
+      "path": "docs/knowledge/invariants/README.md",
+      "output": "docs/knowledge/invariants/README.md"
+    },
+    {
+      "path": "docs/knowledge/invariants/RUNTIME_CONSISTENCY_CONTRACT_D1_PUBLIC_20260927.md",
+      "output": "docs/knowledge/invariants/RUNTIME_CONSISTENCY_CONTRACT_D1_PUBLIC_20260927.md"
+    },
+    {
+      "path": "docs/knowledge/open-problems/README.md",
+      "output": "docs/knowledge/open-problems/README.md"
+    },
+    {
+      "path": "docs/knowledge/principles/PRINCIPLE_OFFICIAL_SEMANTICS_FIRST.md",
+      "output": "docs/knowledge/principles/PRINCIPLE_OFFICIAL_SEMANTICS_FIRST.md"
+    },
+    {
+      "path": "docs/knowledge/principles/README.md",
+      "output": "docs/knowledge/principles/README.md"
+    },
+    {
+      "path": "docs/knowledge/README.md",
+      "output": "docs/knowledge/README.md"
+    },
+    {
+      "path": "docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md",
+      "output": "docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md"
+    },
+    {
+      "path": "docs/lessons/cancel-mid-prefill-poisoned-session-2026-09-17.md",
+      "output": "docs/lessons/cancel-mid-prefill-poisoned-session-2026-09-17.md"
+    },
+    {
+      "path": "docs/lessons/incident-app-crash-and-server-hang-2026-09-19.md",
+      "output": "docs/lessons/incident-app-crash-and-server-hang-2026-09-19.md"
+    },
+    {
+      "path": "docs/lessons/kv-fork-checkpoint-experiment-2026-09-17.md",
+      "output": "docs/lessons/kv-fork-checkpoint-experiment-2026-09-17.md"
+    },
+    {
+      "path": "docs/lessons/native_mlx-longrun-trace-2026-09-14.md",
+      "output": "docs/lessons/native_mlx-longrun-trace-2026-09-14.md"
+    },
+    {
+      "path": "docs/lessons/README.md",
+      "output": "docs/lessons/README.md"
+    },
+    {
+      "path": "docs/lessons/reconnect-counter-render-loop-2026-09-18.md",
+      "output": "docs/lessons/reconnect-counter-render-loop-2026-09-18.md"
+    },
+    {
+      "path": "docs/README.md",
+      "output": "docs/README.md"
+    },
+    {
+      "path": "docs/RELEASE_v2.0.0-beta.md",
+      "output": "docs/RELEASE_v2.0.0-beta.md"
+    },
+    {
+      "path": "docs/releases/BETA_RELEASE_FREEZE_EXECUTION_STATE_20260929.md",
+      "output": "docs/releases/BETA_RELEASE_FREEZE_EXECUTION_STATE_20260929.md"
+    },
+    {
+      "path": "docs/releases/README.md",
+      "output": "docs/releases/README.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v1.3.md",
+      "output": "docs/releases/RELEASE_NOTES_v1.3.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v1.5.md",
+      "output": "docs/releases/RELEASE_NOTES_v1.5.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v1.6.md",
+      "output": "docs/releases/RELEASE_NOTES_v1.6.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v1.7.md",
+      "output": "docs/releases/RELEASE_NOTES_v1.7.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v2.1.0.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.1.0.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v2.1.1.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.1.1.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v2.1.2.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.1.2.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v2.1.3.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.1.3.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v2.1.4.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.1.4.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v2.1.5.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.1.5.md"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_v2.1.6.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.1.6.md"
+    },
+    {
+      "path": "docs/releases/V16_FINAL_BASELINE_20260919.md",
+      "output": "docs/releases/V16_FINAL_BASELINE_20260919.md"
+    },
+    {
+      "path": "docs/research/conclusions/README.md",
+      "output": "docs/research/conclusions/README.md"
+    },
+    {
+      "path": "docs/research/EXECUTION_STATE_RESEARCH_STORY_20260922.md",
+      "output": "docs/research/EXECUTION_STATE_RESEARCH_STORY_20260922.md"
+    },
+    {
+      "path": "docs/research/knowledge-map/README.md",
+      "output": "docs/research/knowledge-map/README.md"
+    },
+    {
+      "path": "docs/research/knowledge-map/SIMIGO_KNOWLEDGE_MAP_20260922.md",
+      "output": "docs/research/knowledge-map/SIMIGO_KNOWLEDGE_MAP_20260922.md"
+    },
+    {
+      "path": "docs/research/participants/PARTICIPANT_INDEPENDENCE_20260922.md",
+      "output": "docs/research/participants/PARTICIPANT_INDEPENDENCE_20260922.md"
+    },
+    {
+      "path": "docs/research/participants/README.md",
+      "output": "docs/research/participants/README.md"
+    },
+    {
+      "path": "docs/research/questions/Q_FORK_AND_UPSTREAM_SEMANTICS_20260922.md",
+      "output": "docs/research/questions/Q_FORK_AND_UPSTREAM_SEMANTICS_20260922.md"
+    },
+    {
+      "path": "docs/research/questions/Q_SESSION_READINESS_20260922.md",
+      "output": "docs/research/questions/Q_SESSION_READINESS_20260922.md"
+    },
+    {
+      "path": "docs/research/questions/README.md",
+      "output": "docs/research/questions/README.md"
+    },
+    {
+      "path": "docs/research/README.md",
+      "output": "docs/research/README.md"
+    },
+    {
+      "path": "docs/research/synthesis/ARCHITECTURE_TURNING_POINTS_INDEX_20260922.md",
+      "output": "docs/research/synthesis/ARCHITECTURE_TURNING_POINTS_INDEX_20260922.md"
+    },
+    {
+      "path": "docs/research/synthesis/README.md",
+      "output": "docs/research/synthesis/README.md"
+    },
+    {
+      "path": "docs/research/synthesis/RETROSPECTIVE_EVIDENCE_MAP_20260922.md",
+      "output": "docs/research/synthesis/RETROSPECTIVE_EVIDENCE_MAP_20260922.md"
+    },
+    {
+      "path": "docs/research/synthesis/V45_RULES_TO_V50_INVARIANTS_20260922.md",
+      "output": "docs/research/synthesis/V45_RULES_TO_V50_INVARIANTS_20260922.md"
+    },
+    {
+      "path": "docs/research/synthesis/V45_TO_V50_ARCHITECTURE_TRANSITION_MAP_20260922.md",
+      "output": "docs/research/synthesis/V45_TO_V50_ARCHITECTURE_TRANSITION_MAP_20260922.md"
+    },
+    {
+      "path": "docs/research/synthesis/V45_V50_RESEARCH_COVERAGE_AUDIT_20260922.md",
+      "output": "docs/research/synthesis/V45_V50_RESEARCH_COVERAGE_AUDIT_20260922.md"
+    },
+    {
+      "path": "docs/upstream/B0_ESIS_GLOSSARY_20261105.md",
+      "output": "docs/upstream/B0_ESIS_GLOSSARY_20261105.md"
+    },
+    {
+      "path": "docs/upstream/B1_ESIS_MINIMAL_FORMALIZATION_20261105.md",
+      "output": "docs/upstream/B1_ESIS_MINIMAL_FORMALIZATION_20261105.md"
+    },
+    {
+      "path": "docs/upstream/DEEPSEEK_ES_IS_SEMANTIC_ROUTE_20261105.md",
+      "output": "docs/upstream/DEEPSEEK_ES_IS_SEMANTIC_ROUTE_20261105.md"
+    },
+    {
+      "path": "docs/upstream/HANDOVER_TO_NEXT_AGENT_20261105.md",
+      "output": "docs/upstream/HANDOVER_TO_NEXT_AGENT_20261105.md"
+    },
+    {
+      "path": "docs/upstream/P2_CONFIG_RECORD_20261105.md",
+      "output": "docs/upstream/P2_CONFIG_RECORD_20261105.md"
+    },
+    {
+      "path": "docs/upstream/P2_EXECUTION_AUTHORIZATION_REQUEST_20261105.md",
+      "output": "docs/upstream/P2_EXECUTION_AUTHORIZATION_REQUEST_20261105.md"
+    },
+    {
+      "path": "docs/upstream/P2_EXPERIMENT_PLAN_20261105.md",
+      "output": "docs/upstream/P2_EXPERIMENT_PLAN_20261105.md"
+    },
+    {
+      "path": "docs/upstream/ROUTE_B_RESEARCH_NOTE_POSITIONING_20261105.md",
+      "output": "docs/upstream/ROUTE_B_RESEARCH_NOTE_POSITIONING_20261105.md"
+    },
+    {
+      "path": "docs/V2.1_REFERENCE_APP_ARCHITECTURE.md",
+      "output": "docs/V2.1_REFERENCE_APP_ARCHITECTURE.md"
     },
     {
       "path": "LICENSE",
@@ -252,6 +948,26 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/L4Reconciliation.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandCSV.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandCSV.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandExperimentRunner.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandExperimentRunner.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerGroup.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerGroup.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerPolicy.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerPolicy.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerResidencyEngine.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerResidencyEngine.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateAB.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateAB.swift"
     },
@@ -276,24 +992,8 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LLAMAServerExecutionStateForkRestore.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandCSV.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandCSV.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandExperimentRunner.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerDemandExperimentRunner.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerGroup.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerGroup.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerPolicy.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerPolicy.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerResidencyEngine.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/LayerResidencyEngine.swift"
+      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MaterializationCoordinator.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MaterializationCoordinator.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXExecutionStateBackend.swift",
@@ -330,10 +1030,6 @@
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXResidencyBackend.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MLXResidencyBackend.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MaterializationCoordinator.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/MaterializationCoordinator.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ModelInventoryReference.swift",
@@ -384,12 +1080,12 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/O6SegmentPhaseProfiler.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentMaterializer.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentMaterializer.swift"
-    },
-    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentedEngine.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentedEngine.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentMaterializer.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedSegmentMaterializer.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/OversizedTokenLedger.swift",
@@ -480,12 +1176,16 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoBootstrap.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift"
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoInformationLoop.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoInformationLoop.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoISAdmission.swift",
@@ -494,10 +1194,6 @@
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoISContextLedger.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoISContextLedger.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoInformationLoop.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoInformationLoop.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoManagedContinuation.swift",
@@ -548,6 +1244,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoBootstrapTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoEngineRecipeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoEngineRecipeTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISCarrierTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISCarrierTests.swift"
     },
@@ -560,20 +1260,8 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoEngineRecipeTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoEngineRecipeTests.swift"
-    },
-    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoExternalTurnContractTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoExternalTurnContractTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISAdmissionTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISAdmissionTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISContextLedgerTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISContextLedgerTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationLoopTests.swift",
@@ -582,6 +1270,14 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationReuseTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationReuseTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISAdmissionTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISAdmissionTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISContextLedgerTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISContextLedgerTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoManagedContinuationTests.swift",
@@ -632,6 +1328,14 @@
       "output": "RELEASE.md"
     },
     {
+      "path": "release/release-exclusions-v2.2.x.json",
+      "output": "release/release-exclusions-v2.2.x.json"
+    },
+    {
+      "path": "release/release-inputs-v2.2.x.json",
+      "output": "release/release-inputs-v2.2.x.json"
+    },
+    {
       "path": "SECURITY.md",
       "output": "SECURITY.md"
     },
@@ -644,12 +1348,12 @@
       "output": "SimiGo.xcodeproj/project.xcworkspace/contents.xcworkspacedata"
     },
     {
-      "path": "SimiGo.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings",
-      "output": "SimiGo.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings"
-    },
-    {
       "path": "SimiGo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
       "output": "SimiGo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+    },
+    {
+      "path": "SimiGo.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings",
+      "output": "SimiGo.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings"
     },
     {
       "path": "SimiGo.xcodeproj/xcshareddata/xcschemes/SimiGo.xcscheme",
@@ -744,12 +1448,16 @@
       "output": "SimiGo/Inference/GGUFEngineClient.swift"
     },
     {
+      "path": "SimiGo/Inference/InformationSpaceRuntime.swift",
+      "output": "SimiGo/Inference/InformationSpaceRuntime.swift"
+    },
+    {
       "path": "SimiGo/Inference/ISKVBindAuthority.swift",
       "output": "SimiGo/Inference/ISKVBindAuthority.swift"
     },
     {
-      "path": "SimiGo/Inference/InformationSpaceRuntime.swift",
-      "output": "SimiGo/Inference/InformationSpaceRuntime.swift"
+      "path": "SimiGo/Inference/LifecycleGates.swift",
+      "output": "SimiGo/Inference/LifecycleGates.swift"
     },
     {
       "path": "SimiGo/Inference/LOCALBHostRuntime.swift",
@@ -760,16 +1468,12 @@
       "output": "SimiGo/Inference/LOCALBTransportPolicy.swift"
     },
     {
-      "path": "SimiGo/Inference/LifecycleGates.swift",
-      "output": "SimiGo/Inference/LifecycleGates.swift"
+      "path": "SimiGo/Inference/ManagedGGUFRuntime.swift",
+      "output": "SimiGo/Inference/ManagedGGUFRuntime.swift"
     },
     {
       "path": "SimiGo/Inference/ManagedGGUFRuntime+SlotActivity.swift",
       "output": "SimiGo/Inference/ManagedGGUFRuntime+SlotActivity.swift"
-    },
-    {
-      "path": "SimiGo/Inference/ManagedGGUFRuntime.swift",
-      "output": "SimiGo/Inference/ManagedGGUFRuntime.swift"
     },
     {
       "path": "SimiGo/Inference/NativeMLX.swift",
@@ -972,20 +1676,20 @@
       "output": "SimiGoTests/ExecutionStateGraphTests.swift"
     },
     {
-      "path": "SimiGoTests/GGUFManagedEntryHTTPTests.swift",
-      "output": "SimiGoTests/GGUFManagedEntryHTTPTests.swift"
-    },
-    {
-      "path": "SimiGoTests/GGUFManagedEntryRealModelE2ETests.swift",
-      "output": "SimiGoTests/GGUFManagedEntryRealModelE2ETests.swift"
-    },
-    {
       "path": "SimiGoTests/GenerationCompletionHTTPTests.swift",
       "output": "SimiGoTests/GenerationCompletionHTTPTests.swift"
     },
     {
       "path": "SimiGoTests/GenerationCompletionRealModelE2ETests.swift",
       "output": "SimiGoTests/GenerationCompletionRealModelE2ETests.swift"
+    },
+    {
+      "path": "SimiGoTests/GGUFManagedEntryHTTPTests.swift",
+      "output": "SimiGoTests/GGUFManagedEntryHTTPTests.swift"
+    },
+    {
+      "path": "SimiGoTests/GGUFManagedEntryRealModelE2ETests.swift",
+      "output": "SimiGoTests/GGUFManagedEntryRealModelE2ETests.swift"
     },
     {
       "path": "SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests.swift",
@@ -1000,12 +1704,16 @@
       "output": "SimiGoTests/HTTPRequestBoundaryTests.swift"
     },
     {
-      "path": "SimiGoTests/ISKVBindAuthorityTests.swift",
-      "output": "SimiGoTests/ISKVBindAuthorityTests.swift"
+      "path": "SimiGoTests/HTTPServerLOCALBRoutePolicyTests.swift",
+      "output": "SimiGoTests/HTTPServerLOCALBRoutePolicyTests.swift"
     },
     {
       "path": "SimiGoTests/InformationSpaceHostE2ETests.swift",
       "output": "SimiGoTests/InformationSpaceHostE2ETests.swift"
+    },
+    {
+      "path": "SimiGoTests/ISKVBindAuthorityTests.swift",
+      "output": "SimiGoTests/ISKVBindAuthorityTests.swift"
     },
     {
       "path": "SimiGoTests/KVCacheSettingsTests.swift",
@@ -1014,6 +1722,22 @@
     {
       "path": "SimiGoTests/KVFreeContinuityTests.swift",
       "output": "SimiGoTests/KVFreeContinuityTests.swift"
+    },
+    {
+      "path": "SimiGoTests/Lifecycle/GenerationLifecycleRaceTests.swift",
+      "output": "SimiGoTests/Lifecycle/GenerationLifecycleRaceTests.swift"
+    },
+    {
+      "path": "SimiGoTests/Lifecycle/SessionGenerationGateMultiKeyTests.swift",
+      "output": "SimiGoTests/Lifecycle/SessionGenerationGateMultiKeyTests.swift"
+    },
+    {
+      "path": "SimiGoTests/LifecycleRaceTests.swift",
+      "output": "SimiGoTests/LifecycleRaceTests.swift"
+    },
+    {
+      "path": "SimiGoTests/LiveSessionCeilingEvictionRealModelTests.swift",
+      "output": "SimiGoTests/LiveSessionCeilingEvictionRealModelTests.swift"
     },
     {
       "path": "SimiGoTests/LOCALBAuthorizedE2ESupport.swift",
@@ -1040,28 +1764,12 @@
       "output": "SimiGoTests/LOCALBTransportWiringTests.swift"
     },
     {
-      "path": "SimiGoTests/Lifecycle/GenerationLifecycleRaceTests.swift",
-      "output": "SimiGoTests/Lifecycle/GenerationLifecycleRaceTests.swift"
-    },
-    {
-      "path": "SimiGoTests/Lifecycle/SessionGenerationGateMultiKeyTests.swift",
-      "output": "SimiGoTests/Lifecycle/SessionGenerationGateMultiKeyTests.swift"
-    },
-    {
-      "path": "SimiGoTests/LifecycleRaceTests.swift",
-      "output": "SimiGoTests/LifecycleRaceTests.swift"
-    },
-    {
-      "path": "SimiGoTests/LiveSessionCeilingEvictionRealModelTests.swift",
-      "output": "SimiGoTests/LiveSessionCeilingEvictionRealModelTests.swift"
+      "path": "SimiGoTests/ManagedContinuationAdapterTests.swift",
+      "output": "SimiGoTests/ManagedContinuationAdapterTests.swift"
     },
     {
       "path": "SimiGoTests/MCPInformationSpaceTests.swift",
       "output": "SimiGoTests/MCPInformationSpaceTests.swift"
-    },
-    {
-      "path": "SimiGoTests/ManagedContinuationAdapterTests.swift",
-      "output": "SimiGoTests/ManagedContinuationAdapterTests.swift"
     },
     {
       "path": "SimiGoTests/MemoryReliefRealModelTests.swift",
@@ -1216,714 +1924,6 @@
       "output": "THIRD_PARTY_NOTICES.md"
     },
     {
-      "path": "TRADEMARKS.md",
-      "output": "TRADEMARKS.md"
-    },
-    {
-      "path": "docs/AGENT-ACCESS.md",
-      "output": "docs/AGENT-ACCESS.md"
-    },
-    {
-      "path": "docs/ARCHIVE_AUDIT_PUBLIC_CURATION_20260927.md",
-      "output": "docs/ARCHIVE_AUDIT_PUBLIC_CURATION_20260927.md"
-    },
-    {
-      "path": "docs/AUDIT_BASELINE_20260928.md",
-      "output": "docs/AUDIT_BASELINE_20260928.md"
-    },
-    {
-      "path": "docs/README.md",
-      "output": "docs/README.md"
-    },
-    {
-      "path": "docs/RELEASE_v2.0.0-beta.md",
-      "output": "docs/RELEASE_v2.0.0-beta.md"
-    },
-    {
-      "path": "docs/V2.1_REFERENCE_APP_ARCHITECTURE.md",
-      "output": "docs/V2.1_REFERENCE_APP_ARCHITECTURE.md"
-    },
-    {
-      "path": "docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md",
-      "output": "docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md"
-    },
-    {
-      "path": "docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md",
-      "output": "docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md"
-    },
-    {
-      "path": "docs/architecture/MLX_LM_REFERENCE_AND_EXPERIMENTAL_ROADMAP_20260918.md",
-      "output": "docs/architecture/MLX_LM_REFERENCE_AND_EXPERIMENTAL_ROADMAP_20260918.md"
-    },
-    {
-      "path": "docs/audit/BETA4_PROD_FINDINGS_20260929.md",
-      "output": "docs/audit/BETA4_PROD_FINDINGS_20260929.md"
-    },
-    {
-      "path": "docs/audit/BETA_AUDIT_3_REAUDIT_20260929.md",
-      "output": "docs/audit/BETA_AUDIT_3_REAUDIT_20260929.md"
-    },
-    {
-      "path": "docs/audit/BETA_RELEASE_SMOKE_1_20260929.md",
-      "output": "docs/audit/BETA_RELEASE_SMOKE_1_20260929.md"
-    },
-    {
-      "path": "docs/audit/BETA_STORAGE_1_20260929.md",
-      "output": "docs/audit/BETA_STORAGE_1_20260929.md"
-    },
-    {
-      "path": "docs/audit/B_HEDGE_SKIP_EXPERIMENT_DESIGN_20260929.md",
-      "output": "docs/audit/B_HEDGE_SKIP_EXPERIMENT_DESIGN_20260929.md"
-    },
-    {
-      "path": "docs/audit/CANCELLATION_TOKEN_PLACEMENT_AUDIT_2026-09-09.md",
-      "output": "docs/audit/CANCELLATION_TOKEN_PLACEMENT_AUDIT_2026-09-09.md"
-    },
-    {
-      "path": "docs/audit/CHATSESSION_AND_REQUEST_LIFECYCLE_AUDIT_2026-09-11.md",
-      "output": "docs/audit/CHATSESSION_AND_REQUEST_LIFECYCLE_AUDIT_2026-09-11.md"
-    },
-    {
-      "path": "docs/audit/CHATSESSION_REUSE_PREFIX_AUDIT_2026-09-11.md",
-      "output": "docs/audit/CHATSESSION_REUSE_PREFIX_AUDIT_2026-09-11.md"
-    },
-    {
-      "path": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-18.md",
-      "output": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-18.md"
-    },
-    {
-      "path": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-19.md",
-      "output": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-19.md"
-    },
-    {
-      "path": "docs/audit/EXECID_TEST_QUALITY_REVIEW_2026-09-19.md",
-      "output": "docs/audit/EXECID_TEST_QUALITY_REVIEW_2026-09-19.md"
-    },
-    {
-      "path": "docs/audit/LIFECYCLE_AND_SSE_AUDIT_2026-09-11.md",
-      "output": "docs/audit/LIFECYCLE_AND_SSE_AUDIT_2026-09-11.md"
-    },
-    {
-      "path": "docs/audit/LIFECYCLE_EXTERNAL_REVIEW_2026-09-19.md",
-      "output": "docs/audit/LIFECYCLE_EXTERNAL_REVIEW_2026-09-19.md"
-    },
-    {
-      "path": "docs/audit/NATIVE_MLX_PRESSURE_POLICY_AUDIT_2026-09-09.md",
-      "output": "docs/audit/NATIVE_MLX_PRESSURE_POLICY_AUDIT_2026-09-09.md"
-    },
-    {
-      "path": "docs/audit/OFFICIAL_MLX_CAPABILITY_MATRIX_2026-09-11.md",
-      "output": "docs/audit/OFFICIAL_MLX_CAPABILITY_MATRIX_2026-09-11.md"
-    },
-    {
-      "path": "docs/audit/PERF_CONVERGENCE_20260929.md",
-      "output": "docs/audit/PERF_CONVERGENCE_20260929.md"
-    },
-    {
-      "path": "docs/audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md",
-      "output": "docs/audit/POST_AUDIT_DELETION_RECORD_2026-09-11.md"
-    },
-    {
-      "path": "docs/audit/POST_FREEZE_CODE_AUDIT_2026-09-19.md",
-      "output": "docs/audit/POST_FREEZE_CODE_AUDIT_2026-09-19.md"
-    },
-    {
-      "path": "docs/audit/README.md",
-      "output": "docs/audit/README.md"
-    },
-    {
-      "path": "docs/audit/REQUEST_TASK_PUBLICATION_AUDIT_2026-09-11.md",
-      "output": "docs/audit/REQUEST_TASK_PUBLICATION_AUDIT_2026-09-11.md"
-    },
-    {
-      "path": "docs/audit/STREAMING_AND_LIFECYCLE_FINDINGS_2026-09-11.md",
-      "output": "docs/audit/STREAMING_AND_LIFECYCLE_FINDINGS_2026-09-11.md"
-    },
-    {
-      "path": "docs/audit/STREAMING_LIFECYCLE_REGRESSION_2026-09-11.md",
-      "output": "docs/audit/STREAMING_LIFECYCLE_REGRESSION_2026-09-11.md"
-    },
-    {
-      "path": "docs/audit/STREAM_TOKEN_FILTER_AUDIT_2026-09-11.md",
-      "output": "docs/audit/STREAM_TOKEN_FILTER_AUDIT_2026-09-11.md"
-    },
-    {
-      "path": "docs/benchmarks/README.md",
-      "output": "docs/benchmarks/README.md"
-    },
-    {
-      "path": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md",
-      "output": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md"
-    },
-    {
-      "path": "docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md",
-      "output": "docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md"
-    },
-    {
-      "path": "docs/decisions/DECISION_SWIFT15_NO_ADAPT.md",
-      "output": "docs/decisions/DECISION_SWIFT15_NO_ADAPT.md"
-    },
-    {
-      "path": "docs/decisions/README.md",
-      "output": "docs/decisions/README.md"
-    },
-    {
-      "path": "docs/decisions/RUNTIME_RELIABILITY_BACKLOG.md",
-      "output": "docs/decisions/RUNTIME_RELIABILITY_BACKLOG.md"
-    },
-    {
-      "path": "docs/decisions/TOOL_GOVERNANCE_CONTRACT.md",
-      "output": "docs/decisions/TOOL_GOVERNANCE_CONTRACT.md"
-    },
-    {
-      "path": "docs/decisions/TRANSCRIPT_NORMALIZATION_PROPOSAL_20261016.md",
-      "output": "docs/decisions/TRANSCRIPT_NORMALIZATION_PROPOSAL_20261016.md"
-    },
-    {
-      "path": "docs/decisions/V15_ENDGAME_DECISION_20260919.md",
-      "output": "docs/decisions/V15_ENDGAME_DECISION_20260919.md"
-    },
-    {
-      "path": "docs/decisions/V16_DIRECTION_REGISTRATION_20260919.md",
-      "output": "docs/decisions/V16_DIRECTION_REGISTRATION_20260919.md"
-    },
-    {
-      "path": "docs/decisions/V17_DIRECTION_REGISTRATION_20260919.md",
-      "output": "docs/decisions/V17_DIRECTION_REGISTRATION_20260919.md"
-    },
-    {
-      "path": "docs/decisions/V4_5_STABLE_FOUNDATION_BASELINE.md",
-      "output": "docs/decisions/V4_5_STABLE_FOUNDATION_BASELINE.md"
-    },
-    {
-      "path": "docs/evolution/README.md",
-      "output": "docs/evolution/README.md"
-    },
-    {
-      "path": "docs/experiments/BENCH_442FBF_FORK_REWIND_20260918/README.md",
-      "output": "docs/experiments/BENCH_442FBF_FORK_REWIND_20260918/README.md"
-    },
-    {
-      "path": "docs/experiments/BENCH_442FBF_FORK_REWIND_20260918/trace_segment.log",
-      "output": "docs/experiments/BENCH_442FBF_FORK_REWIND_20260918/trace_segment.log"
-    },
-    {
-      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/README.md",
-      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/README.md"
-    },
-    {
-      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results.json",
-      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results.json"
-    },
-    {
-      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live.json",
-      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live.json"
-    },
-    {
-      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live_r2.json",
-      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live_r2.json"
-    },
-    {
-      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step1024.json",
-      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step1024.json"
-    },
-    {
-      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step1024_r2.json",
-      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step1024_r2.json"
-    },
-    {
-      "path": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step_partial_nail_r2aborted.json",
-      "output": "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_step_partial_nail_r2aborted.json"
-    },
-    {
-      "path": "docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/README.md",
-      "output": "docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/README.md"
-    },
-    {
-      "path": "docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/results.json",
-      "output": "docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/results.json"
-    },
-    {
-      "path": "docs/experiments/BRANCH_FORK_ROLLFORWARD_EXPLORATION_20260918.md",
-      "output": "docs/experiments/BRANCH_FORK_ROLLFORWARD_EXPLORATION_20260918.md"
-    },
-    {
-      "path": "docs/experiments/C2_SESSION_READINESS_MATRIX_20260922.md",
-      "output": "docs/experiments/C2_SESSION_READINESS_MATRIX_20260922.md"
-    },
-    {
-      "path": "docs/experiments/EVOLUTION_TRACK.md",
-      "output": "docs/experiments/EVOLUTION_TRACK.md"
-    },
-    {
-      "path": "docs/experiments/EXECUTION_FORK_F0_PROBE_20260918.md",
-      "output": "docs/experiments/EXECUTION_FORK_F0_PROBE_20260918.md"
-    },
-    {
-      "path": "docs/experiments/EXECUTION_FORK_F0_PROBE_RESULTS_20260919.md",
-      "output": "docs/experiments/EXECUTION_FORK_F0_PROBE_RESULTS_20260919.md"
-    },
-    {
-      "path": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md",
-      "output": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md"
-    },
-    {
-      "path": "docs/experiments/MODEL_COMPATIBILITY_MATRIX.md",
-      "output": "docs/experiments/MODEL_COMPATIBILITY_MATRIX.md"
-    },
-    {
-      "path": "docs/experiments/OFFICIAL_CAPABILITY_MATRIX.md",
-      "output": "docs/experiments/OFFICIAL_CAPABILITY_MATRIX.md"
-    },
-    {
-      "path": "docs/experiments/README.md",
-      "output": "docs/experiments/README.md"
-    },
-    {
-      "path": "docs/experiments/UPSTREAM_ISSUE_DRAFT_kv_prefix_sharing_cow.md",
-      "output": "docs/experiments/UPSTREAM_ISSUE_DRAFT_kv_prefix_sharing_cow.md"
-    },
-    {
-      "path": "docs/experiments/UPSTREAM_ISSUE_SUBMISSION_READY.md",
-      "output": "docs/experiments/UPSTREAM_ISSUE_SUBMISSION_READY.md"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/README.md",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/README.md"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/SimiGo-2026-09-19-033926.ips",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/SimiGo-2026-09-19-033926.ips"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/c5_c6_restore_hit_20260919.log",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/c5_c6_restore_hit_20260919.log"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_dispatch_watchdog_regression.log",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_dispatch_watchdog_regression.log"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_dispatch_watchdog_trace_tail.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_dispatch_watchdog_trace_tail.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_listener_restart_immediate_regression.log",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_listener_restart_immediate_regression.log"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_listener_restart_immediate_trace_tail.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_listener_restart_immediate_trace_tail.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_minimal_rootfix_regression.log",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_minimal_rootfix_regression.log"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_rootfix_regression.log",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_rootfix_regression.log"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_stage_trace_frozen_trace_tail.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_stage_trace_frozen_trace_tail.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_stage_trace_regression.log",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_stage_trace_regression.log"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_taskwatchdog_frozen_trace_tail.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_taskwatchdog_frozen_trace_tail.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_taskwatchdog_regression.log",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/release_taskwatchdog_regression.log"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_0418.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_0418.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_2nd.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_2nd.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_3rd.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_3rd.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_release_taskwatchdog.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_hang_sample_release_taskwatchdog.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_sample_after_dispatch_watchdog.txt",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/evidence/simigo_sample_after_dispatch_watchdog.txt"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/daily_report_a1.md",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/daily_report_a1.md"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/daily_report_a2.md",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/daily_report_a2.md"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/ground_truth_docs.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/ground_truth_docs.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/ground_truth_folder.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/folder/ground_truth_folder.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/ground_truth.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/office_out/ground_truth.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_build4_formal_matrix.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_build4_formal_matrix.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_build4_measured_10k.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_build4_measured_10k.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_c5c6_10k.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_c5c6_10k.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_partial.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_partial.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_release_minimal_rootfix_regression.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_release_minimal_rootfix_regression.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_release_rootfix_regression.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_release_rootfix_regression.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_step1024_120k_ab.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_step1024_120k_ab.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_step_ab_repeats.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_step_ab_repeats.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_1_longctx.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_1_longctx.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_2_concurrency.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_2_concurrency.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_docs.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_docs.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_docs_smoke.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_docs_smoke.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_folder.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_folder.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_folder_smoke.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_folder_smoke.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_smoke.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/results_v17_3_office_smoke.json"
-    },
-    {
-      "path": "docs/experiments/V17_RUNTIME_MATRIX/step_ab_seed_messages.json",
-      "output": "docs/experiments/V17_RUNTIME_MATRIX/step_ab_seed_messages.json"
-    },
-    {
-      "path": "docs/experiments/evidence/p1-2-acceptance-2026-09-12-0335-0337.log",
-      "output": "docs/experiments/evidence/p1-2-acceptance-2026-09-12-0335-0337.log"
-    },
-    {
-      "path": "docs/experiments/jsonvalue-roundtrip-repro.swift",
-      "output": "docs/experiments/jsonvalue-roundtrip-repro.swift"
-    },
-    {
-      "path": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md",
-      "output": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md"
-    },
-    {
-      "path": "docs/history/QODER_COLLECTION_INTEGRATION_20261105.md",
-      "output": "docs/history/QODER_COLLECTION_INTEGRATION_20261105.md"
-    },
-    {
-      "path": "docs/knowledge/README.md",
-      "output": "docs/knowledge/README.md"
-    },
-    {
-      "path": "docs/knowledge/findings/FAILURE_MATRIX_FINAL_20260926.md",
-      "output": "docs/knowledge/findings/FAILURE_MATRIX_FINAL_20260926.md"
-    },
-    {
-      "path": "docs/knowledge/findings/FINDING_LONG_CONTEXT_REBUILD_COST_20260922.md",
-      "output": "docs/knowledge/findings/FINDING_LONG_CONTEXT_REBUILD_COST_20260922.md"
-    },
-    {
-      "path": "docs/knowledge/findings/FINDING_OFFICIAL_SESSION_OWNS_PHYSICAL_KV.md",
-      "output": "docs/knowledge/findings/FINDING_OFFICIAL_SESSION_OWNS_PHYSICAL_KV.md"
-    },
-    {
-      "path": "docs/knowledge/findings/FINDING_PROTOCOL_BOUNDARY_NORMALIZATION.md",
-      "output": "docs/knowledge/findings/FINDING_PROTOCOL_BOUNDARY_NORMALIZATION.md"
-    },
-    {
-      "path": "docs/knowledge/findings/FINDING_PROTOCOL_INPUT_MUST_BE_NORMALIZED_BEFORE_OBJC_BOUNDARY.md",
-      "output": "docs/knowledge/findings/FINDING_PROTOCOL_INPUT_MUST_BE_NORMALIZED_BEFORE_OBJC_BOUNDARY.md"
-    },
-    {
-      "path": "docs/knowledge/findings/FINDING_SIMPLIFICATION_REDUCES_RUNTIME_AUTHORITY.md",
-      "output": "docs/knowledge/findings/FINDING_SIMPLIFICATION_REDUCES_RUNTIME_AUTHORITY.md"
-    },
-    {
-      "path": "docs/knowledge/findings/O6_OVERSIZED_EXECUTION_STATE_20260926.md",
-      "output": "docs/knowledge/findings/O6_OVERSIZED_EXECUTION_STATE_20260926.md"
-    },
-    {
-      "path": "docs/knowledge/findings/README.md",
-      "output": "docs/knowledge/findings/README.md"
-    },
-    {
-      "path": "docs/knowledge/invariants/GA0_FLOOR_POLICY_20260927.md",
-      "output": "docs/knowledge/invariants/GA0_FLOOR_POLICY_20260927.md"
-    },
-    {
-      "path": "docs/knowledge/invariants/INVARIANT_CORE_ARCHITECTURE_REQUIRES_EVIDENCE.md",
-      "output": "docs/knowledge/invariants/INVARIANT_CORE_ARCHITECTURE_REQUIRES_EVIDENCE.md"
-    },
-    {
-      "path": "docs/knowledge/invariants/INVARIANT_LOGICAL_PHYSICAL_STATE_SEPARATION.md",
-      "output": "docs/knowledge/invariants/INVARIANT_LOGICAL_PHYSICAL_STATE_SEPARATION.md"
-    },
-    {
-      "path": "docs/knowledge/invariants/INVARIANT_SESSION_READINESS_BEFORE_REUSE.md",
-      "output": "docs/knowledge/invariants/INVARIANT_SESSION_READINESS_BEFORE_REUSE.md"
-    },
-    {
-      "path": "docs/knowledge/invariants/README.md",
-      "output": "docs/knowledge/invariants/README.md"
-    },
-    {
-      "path": "docs/knowledge/invariants/RUNTIME_CONSISTENCY_CONTRACT_D1_PUBLIC_20260927.md",
-      "output": "docs/knowledge/invariants/RUNTIME_CONSISTENCY_CONTRACT_D1_PUBLIC_20260927.md"
-    },
-    {
-      "path": "docs/knowledge/open-problems/README.md",
-      "output": "docs/knowledge/open-problems/README.md"
-    },
-    {
-      "path": "docs/knowledge/principles/PRINCIPLE_OFFICIAL_SEMANTICS_FIRST.md",
-      "output": "docs/knowledge/principles/PRINCIPLE_OFFICIAL_SEMANTICS_FIRST.md"
-    },
-    {
-      "path": "docs/knowledge/principles/README.md",
-      "output": "docs/knowledge/principles/README.md"
-    },
-    {
-      "path": "docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md",
-      "output": "docs/lessons/AUDIT_SIMPLIFY_MIGRATION_LESSONS_2026-09-12.md"
-    },
-    {
-      "path": "docs/lessons/README.md",
-      "output": "docs/lessons/README.md"
-    },
-    {
-      "path": "docs/lessons/cancel-mid-prefill-poisoned-session-2026-09-17.md",
-      "output": "docs/lessons/cancel-mid-prefill-poisoned-session-2026-09-17.md"
-    },
-    {
-      "path": "docs/lessons/incident-app-crash-and-server-hang-2026-09-19.md",
-      "output": "docs/lessons/incident-app-crash-and-server-hang-2026-09-19.md"
-    },
-    {
-      "path": "docs/lessons/kv-fork-checkpoint-experiment-2026-09-17.md",
-      "output": "docs/lessons/kv-fork-checkpoint-experiment-2026-09-17.md"
-    },
-    {
-      "path": "docs/lessons/native_mlx-longrun-trace-2026-09-14.md",
-      "output": "docs/lessons/native_mlx-longrun-trace-2026-09-14.md"
-    },
-    {
-      "path": "docs/lessons/reconnect-counter-render-loop-2026-09-18.md",
-      "output": "docs/lessons/reconnect-counter-render-loop-2026-09-18.md"
-    },
-    {
-      "path": "docs/releases/BETA_RELEASE_FREEZE_EXECUTION_STATE_20260929.md",
-      "output": "docs/releases/BETA_RELEASE_FREEZE_EXECUTION_STATE_20260929.md"
-    },
-    {
-      "path": "docs/releases/README.md",
-      "output": "docs/releases/README.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v1.3.md",
-      "output": "docs/releases/RELEASE_NOTES_v1.3.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v1.5.md",
-      "output": "docs/releases/RELEASE_NOTES_v1.5.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v1.6.md",
-      "output": "docs/releases/RELEASE_NOTES_v1.6.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v1.7.md",
-      "output": "docs/releases/RELEASE_NOTES_v1.7.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v2.1.0.md",
-      "output": "docs/releases/RELEASE_NOTES_v2.1.0.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v2.1.1.md",
-      "output": "docs/releases/RELEASE_NOTES_v2.1.1.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v2.1.2.md",
-      "output": "docs/releases/RELEASE_NOTES_v2.1.2.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v2.1.3.md",
-      "output": "docs/releases/RELEASE_NOTES_v2.1.3.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v2.1.4.md",
-      "output": "docs/releases/RELEASE_NOTES_v2.1.4.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v2.1.5.md",
-      "output": "docs/releases/RELEASE_NOTES_v2.1.5.md"
-    },
-    {
-      "path": "docs/releases/RELEASE_NOTES_v2.1.6.md",
-      "output": "docs/releases/RELEASE_NOTES_v2.1.6.md"
-    },
-    {
-      "path": "docs/releases/V16_FINAL_BASELINE_20260919.md",
-      "output": "docs/releases/V16_FINAL_BASELINE_20260919.md"
-    },
-    {
-      "path": "docs/research/EXECUTION_STATE_RESEARCH_STORY_20260922.md",
-      "output": "docs/research/EXECUTION_STATE_RESEARCH_STORY_20260922.md"
-    },
-    {
-      "path": "docs/research/README.md",
-      "output": "docs/research/README.md"
-    },
-    {
-      "path": "docs/research/conclusions/README.md",
-      "output": "docs/research/conclusions/README.md"
-    },
-    {
-      "path": "docs/research/knowledge-map/README.md",
-      "output": "docs/research/knowledge-map/README.md"
-    },
-    {
-      "path": "docs/research/knowledge-map/SIMIGO_KNOWLEDGE_MAP_20260922.md",
-      "output": "docs/research/knowledge-map/SIMIGO_KNOWLEDGE_MAP_20260922.md"
-    },
-    {
-      "path": "docs/research/participants/PARTICIPANT_INDEPENDENCE_20260922.md",
-      "output": "docs/research/participants/PARTICIPANT_INDEPENDENCE_20260922.md"
-    },
-    {
-      "path": "docs/research/participants/README.md",
-      "output": "docs/research/participants/README.md"
-    },
-    {
-      "path": "docs/research/questions/Q_FORK_AND_UPSTREAM_SEMANTICS_20260922.md",
-      "output": "docs/research/questions/Q_FORK_AND_UPSTREAM_SEMANTICS_20260922.md"
-    },
-    {
-      "path": "docs/research/questions/Q_SESSION_READINESS_20260922.md",
-      "output": "docs/research/questions/Q_SESSION_READINESS_20260922.md"
-    },
-    {
-      "path": "docs/research/questions/README.md",
-      "output": "docs/research/questions/README.md"
-    },
-    {
-      "path": "docs/research/synthesis/ARCHITECTURE_TURNING_POINTS_INDEX_20260922.md",
-      "output": "docs/research/synthesis/ARCHITECTURE_TURNING_POINTS_INDEX_20260922.md"
-    },
-    {
-      "path": "docs/research/synthesis/README.md",
-      "output": "docs/research/synthesis/README.md"
-    },
-    {
-      "path": "docs/research/synthesis/RETROSPECTIVE_EVIDENCE_MAP_20260922.md",
-      "output": "docs/research/synthesis/RETROSPECTIVE_EVIDENCE_MAP_20260922.md"
-    },
-    {
-      "path": "docs/research/synthesis/V45_RULES_TO_V50_INVARIANTS_20260922.md",
-      "output": "docs/research/synthesis/V45_RULES_TO_V50_INVARIANTS_20260922.md"
-    },
-    {
-      "path": "docs/research/synthesis/V45_TO_V50_ARCHITECTURE_TRANSITION_MAP_20260922.md",
-      "output": "docs/research/synthesis/V45_TO_V50_ARCHITECTURE_TRANSITION_MAP_20260922.md"
-    },
-    {
-      "path": "docs/research/synthesis/V45_V50_RESEARCH_COVERAGE_AUDIT_20260922.md",
-      "output": "docs/research/synthesis/V45_V50_RESEARCH_COVERAGE_AUDIT_20260922.md"
-    },
-    {
-      "path": "docs/upstream/B0_ESIS_GLOSSARY_20261105.md",
-      "output": "docs/upstream/B0_ESIS_GLOSSARY_20261105.md"
-    },
-    {
-      "path": "docs/upstream/B1_ESIS_MINIMAL_FORMALIZATION_20261105.md",
-      "output": "docs/upstream/B1_ESIS_MINIMAL_FORMALIZATION_20261105.md"
-    },
-    {
-      "path": "docs/upstream/DEEPSEEK_ES_IS_SEMANTIC_ROUTE_20261105.md",
-      "output": "docs/upstream/DEEPSEEK_ES_IS_SEMANTIC_ROUTE_20261105.md"
-    },
-    {
-      "path": "docs/upstream/HANDOVER_TO_NEXT_AGENT_20261105.md",
-      "output": "docs/upstream/HANDOVER_TO_NEXT_AGENT_20261105.md"
-    },
-    {
-      "path": "docs/upstream/P2_CONFIG_RECORD_20261105.md",
-      "output": "docs/upstream/P2_CONFIG_RECORD_20261105.md"
-    },
-    {
-      "path": "docs/upstream/P2_EXECUTION_AUTHORIZATION_REQUEST_20261105.md",
-      "output": "docs/upstream/P2_EXECUTION_AUTHORIZATION_REQUEST_20261105.md"
-    },
-    {
-      "path": "docs/upstream/P2_EXPERIMENT_PLAN_20261105.md",
-      "output": "docs/upstream/P2_EXPERIMENT_PLAN_20261105.md"
-    },
-    {
-      "path": "docs/upstream/ROUTE_B_RESEARCH_NOTE_POSITIONING_20261105.md",
-      "output": "docs/upstream/ROUTE_B_RESEARCH_NOTE_POSITIONING_20261105.md"
-    },
-    {
-      "path": "release/release-exclusions-v2.2.x.json",
-      "output": "release/release-exclusions-v2.2.x.json"
-    },
-    {
-      "path": "release/release-inputs-v2.2.x.json",
-      "output": "release/release-inputs-v2.2.x.json"
-    },
-    {
       "path": "tools/check_trace_is_evidence_only.sh",
       "output": "tools/check_trace_is_evidence_only.sh"
     },
@@ -1960,12 +1960,12 @@
       "output": "tools/prefill_stats.py"
     },
     {
-      "path": "tools/rc_noninterference.py",
-      "output": "tools/rc_noninterference.py"
-    },
-    {
       "path": "tools/rc_noninterference_diff.py",
       "output": "tools/rc_noninterference_diff.py"
+    },
+    {
+      "path": "tools/rc_noninterference.py",
+      "output": "tools/rc_noninterference.py"
     },
     {
       "path": "tools/release_chain.py",
@@ -2020,10 +2020,6 @@
       "output": "tools/v17_2_concurrency.py"
     },
     {
-      "path": "tools/v17_3_office.py",
-      "output": "tools/v17_3_office.py"
-    },
-    {
       "path": "tools/v17_3_office_docs.bak.112005",
       "output": "tools/v17_3_office_docs.bak.112005"
     },
@@ -2038,6 +2034,14 @@
     {
       "path": "tools/v17_3_office_scan_scanbackups.bak",
       "output": "tools/v17_3_office_scan_scanbackups.bak"
+    },
+    {
+      "path": "tools/v17_3_office.py",
+      "output": "tools/v17_3_office.py"
+    },
+    {
+      "path": "TRADEMARKS.md",
+      "output": "TRADEMARKS.md"
     },
     {
       "path": "部署指南.md",
