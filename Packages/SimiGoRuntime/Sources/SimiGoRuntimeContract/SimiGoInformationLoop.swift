@@ -377,11 +377,16 @@ public struct SimiGoInformationLoop {
         for row in try database.chatIndexRows(sessionIDs: [sessionID]) {
             if row.role == "user" {
                 matchingQuestionID = row.content == query ? row.itemID : nil
-            } else if row.role == "assistant" {
-                if let questionID = matchingQuestionID, answerTexts.contains(row.content) {
-                    excluded.insert(questionID)
-                    excluded.insert(row.itemID)
-                }
+            } else if row.role == "assistant",
+                let questionID = matchingQuestionID,
+                answerTexts.contains(row.content)
+            {
+                // A turn may contain intermediate assistant/tool messages before
+                // the published final text. Keep the question candidate until an
+                // assistant row actually matches a settled answer payload or the
+                // next user row starts a different turn.
+                excluded.insert(questionID)
+                excluded.insert(row.itemID)
                 matchingQuestionID = nil
             }
         }
