@@ -732,4 +732,42 @@ extension SimiGoESISDatabaseTests {
             "missing")
     }
 
+
+    func testRootSettlementAbortsWhenNestedDirectoryCannotBeEnumerated() throws {
+        let databaseURL = tempURL("enumeration-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-enumeration-error-\(UUID().uuidString)", isDirectory: true)
+        let nestedURL = rootURL.appendingPathComponent("locked", isDirectory: true)
+        let fileURL = nestedURL.appendingPathComponent("keep.txt")
+        let fm = FileManager.default
+        try fm.createDirectory(at: nestedURL, withIntermediateDirectories: true)
+        try Data("preserve settled content".utf8).write(to: fileURL)
+        defer {
+            try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: nestedURL.path)
+            try? fm.removeItem(at: rootURL)
+        }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "enumeration-root", rootURL: rootURL)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "enumeration-root")
+                .first(where: { $0.relativePath == "locked/keep.txt" })?.status,
+            "present")
+
+        try fm.setAttributes([.posixPermissions: 0], ofItemAtPath: nestedURL.path)
+        XCTAssertThrowsError(
+            try db.settleWorkRootContents(rootID: "enumeration-root", rootURL: rootURL))
+
+        // Restore access before reading the assertions and before temporary cleanup.
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: nestedURL.path)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "enumeration-root")
+                .first(where: { $0.relativePath == "locked/keep.txt" })?.status,
+            "present")
+    }
+
 }
