@@ -578,7 +578,7 @@ final class SimiGoInformationLoopTests: XCTestCase {
             sessionID: "s-rollback",
             chatTurn: .init(
                 sessionID: "s-rollback", userMessageID: userID,
-                assistantText: "the answer", model: "model-a", createdAt: Date()))
+                assistantText: "the answer", model: "model-a", createdAt: Date())))
         XCTAssertEqual(try rawText(url,
             "SELECT turn_state FROM chat_messages WHERE id=" + String(userID) + ";"), "pending")
         XCTAssertEqual(try rawText(url,
