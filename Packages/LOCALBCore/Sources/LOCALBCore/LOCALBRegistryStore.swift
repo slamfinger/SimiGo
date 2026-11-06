@@ -604,7 +604,9 @@ public struct LOCALBRegistryStore {
         guard fstat(rootFD, &openedRoot) == 0,
               (openedRoot.st_mode & S_IFMT) == S_IFDIR,
               openedRoot.st_dev == rootInfo.st_dev,
-              openedRoot.st_ino == rootInfo.st_ino else {
+              openedRoot.st_ino == rootInfo.st_ino,
+              openedRoot.st_uid == geteuid(),
+              (openedRoot.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
             throw LOCALBStatus.registryPersistenceFailure
         }
         let fd = openat(
@@ -640,10 +642,16 @@ public struct LOCALBRegistryStore {
         try syncRootDirectory(directoryFD: directoryFD)
     }
 
+    /// A journal/lock must be a private inode owned by this process user.
+    /// O_NOFOLLOW rejects symlinks; link-count and mode checks additionally
+    /// reject hard links and files another user can modify through permissions.
     private static func isRegularFile(fd: Int32) -> Bool {
         var info = stat()
         guard fstat(fd, &info) == 0 else { return false }
         return (info.st_mode & S_IFMT) == S_IFREG
+            && info.st_uid == geteuid()
+            && info.st_nlink == 1
+            && (info.st_mode & (S_IWGRP | S_IWOTH)) == 0
     }
 
     private func syncRootDirectory(directoryFD: Int32) throws {
@@ -708,8 +716,8 @@ public struct LOCALBRegistryStore {
         guard fd >= 0 else { throw LOCALBStatus.registryCorrupt }
         defer { close(fd) }
         var fileInfo = stat()
-        guard fstat(fd, &fileInfo) == 0,
-              (fileInfo.st_mode & S_IFMT) == S_IFREG,
+        guard Self.isRegularFile(fd: fd),
+              fstat(fd, &fileInfo) == 0,
               fileInfo.st_size >= 0,
               fileInfo.st_size <= off_t(Self.maxJournalBytes) else {
             throw LOCALBStatus.registryCorrupt
