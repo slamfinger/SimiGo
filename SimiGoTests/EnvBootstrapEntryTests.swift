@@ -192,6 +192,23 @@ final class EnvBootstrapEntryTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: destination), original)
     }
 
+    func testInstallAtomicallyPreservesExistingBinaryWhenStagedSourceIsMissing() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-install-missing-source-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("missing-staged-binary")
+        let target = directory.appendingPathComponent("installed-binary")
+        let original = Data("preserve-previous-release".utf8)
+        try original.write(to: target)
+
+        XCTAssertThrowsError(
+            try BinaryDownloader.installAtomically(stagedAt: source, to: target))
+
+        XCTAssertEqual(try Data(contentsOf: target), original)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
+    }
+
     func testInstallAtomicallyReplacesExistingBinaryWithoutDeleteWindow() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("binary-install-atomic-\(UUID().uuidString)", isDirectory: true)
