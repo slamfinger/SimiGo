@@ -2626,12 +2626,20 @@ public final class SimiGoESISDatabase {
         let modifiedFormatter = ISO8601DateFormatter()
 
         let scanRoot = rootURL.resolvingSymlinksInPath()
+        var enumerationFailure: (path: String, message: String)?
         guard let enumerator = fm.enumerator(
             at: scanRoot,
             includingPropertiesForKeys: [
                 .isRegularFileKey, .fileSizeKey, .contentModificationDateKey,
             ],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants])
+            options: [.skipsHiddenFiles, .skipsPackageDescendants],
+            errorHandler: { url, error in
+                if enumerationFailure == nil {
+                    enumerationFailure = (url.path, error.localizedDescription)
+                }
+                // A skipped subtree would make the observed path set incomplete.
+                return false
+            })
         else {
             // Enumerating an unreadable root must not look like "every file was
             // deleted" — that would strand the carried content behind a mass
@@ -2692,6 +2700,13 @@ public final class SimiGoESISDatabase {
             pending.append(PendingSettlement(
                 relativePath: rel, url: file, data: data, digest: digest,
                 size: size, modified: modified, previous: previous[rel]))
+        }
+
+        // Enumeration errors can occur after some descendants were yielded.
+        // Abort before computing removals or opening the settlement transaction.
+        if let failure = enumerationFailure {
+            throw DatabaseError.sql(
+                "settleWorkRootContents: cannot enumerate \(failure.path): \(failure.message)")
         }
 
         // Indexed rows whose file disappeared from the latest scan. The
