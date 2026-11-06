@@ -4003,6 +4003,44 @@ public final class SimiGoESISDatabase {
             advancedAt: text(4) ?? "")
     }
 
+    /// Every published answer for one exact session/question pair, in
+    /// advancement order. Answer-reuse freshness excludes all of these
+    /// answer summaries and their exact question/answer chat rows: after a
+    /// replacement answer is committed, older answers must remain excluded too.
+    public func answeredDemands(
+        sessionID: String, query: String
+    ) throws -> [AnsweredDemand] {
+        let stmt = try prepare("""
+        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
+               a.state_id, a.advanced_at
+        FROM information_demands d
+        JOIN information_advancements a ON a.demand_id=d.demand_id
+        WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
+        ORDER BY a.advanced_at, a.advancement_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID)
+        bind(stmt, 2, query)
+        var rows: [AnsweredDemand] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            let settlementID = text(1) ?? ""
+            guard !settlementID.isEmpty else {
+                throw DatabaseError.sql(
+                    "answeredDemands: published answer has an empty settlement identifier")
+            }
+            rows.append(AnsweredDemand(
+                demandID: text(0) ?? "",
+                answerSettlementID: settlementID,
+                retrievalSettlementID: text(2),
+                stateID: text(3) ?? "",
+                advancedAt: text(4) ?? ""))
+        }
+        return rows
+    }
+
     /// Publish the demand a settlement answers, so an exact repeat of the same
     /// question in the same session is serveable from the settlement without a
     /// model call. The advancement names the answer settlement and no retrieval
