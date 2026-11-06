@@ -5063,12 +5063,23 @@ public final class SimiGoESISDatabase {
     @discardableResult
     public func reconcileRoot(rootID: String, seenRelativePaths: Set<String>) throws -> [String] {
         let stmt = try prepare("SELECT relative_path FROM external_files WHERE root_id=?;")
+        defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
         var indexed: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
-            indexed.append(String(cString: c))
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                guard let c = sqlite3_column_text(stmt, 0) else {
+                    throw DatabaseError.sql("reconcileRoot returned a NULL relative path")
+                }
+                indexed.append(String(cString: c))
+                continue
+            }
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            break
         }
-        sqlite3_finalize(stmt)
         let existing = indexed.filter { !seenRelativePaths.contains($0) }
         guard !existing.isEmpty else { return [] }
 
@@ -5078,13 +5089,21 @@ public final class SimiGoESISDatabase {
                 let digestStmt = try prepare("""
                 SELECT content_sha256 FROM file_contents WHERE root_id=? AND relative_path=?;
                 """)
-                var oldDigest = ""
-                if sqlite3_step(digestStmt) == SQLITE_ROW,
-                    let c = sqlite3_column_text(digestStmt, 0)
-                {
+                defer { sqlite3_finalize(digestStmt) }
+                bind(digestStmt, 1, rootID)
+                bind(digestStmt, 2, path)
+                let digestRC = sqlite3_step(digestStmt)
+                let oldDigest: String
+                if digestRC == SQLITE_ROW {
+                    guard let c = sqlite3_column_text(digestStmt, 0) else {
+                        throw DatabaseError.sql("reconcileRoot found a NULL file content digest")
+                    }
                     oldDigest = String(cString: c)
+                } else if digestRC == SQLITE_DONE {
+                    oldDigest = ""
+                } else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
                 }
-                sqlite3_finalize(digestStmt)
                 invalidated += try affectedClosure(rootID: rootID, relativePath: path)
                 try invalidateRetrievalSettlementsInTransaction(
                     rootID: rootID, relativePath: path, oldDigest: oldDigest)
