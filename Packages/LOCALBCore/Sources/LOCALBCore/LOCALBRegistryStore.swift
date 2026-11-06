@@ -116,9 +116,14 @@ public struct LOCALBRegistryStore {
     public func initializeNewLineage(lineageID: String = UUID().uuidString.lowercased()) throws -> LOCALBRegistryCheckpoint {
         guard localBIsCanonicalUUID(lineageID) else { throw LOCALBStatus.invalidConfiguration }
         return try withLock(exclusive: true, createRootIfMissing: true) {
-            guard !FileManager.default.fileExists(atPath: journalURL.path) else {
-                throw LOCALBStatus.registryAlreadyInitialized
+            let journalFD: Int32
+            do {
+                journalFD = try openRegistryFile(
+                    Self.journalFileName, flags: O_WRONLY | O_CREAT | O_EXCL, mode: 0o600)
+            } catch let error as LOCALBStatus where error == .registryAlreadyInitialized {
+                throw error
             }
+            defer { close(journalFD) }
             let event = Event(
                 sequence: 1,
                 timestampMilliseconds: Self.nowMilliseconds(),
@@ -128,12 +133,9 @@ public struct LOCALBRegistryStore {
                 previousHash: Self.zeroHash
             )
             let frame = try Self.encodeEventFrame(event)
-            let fd = open(journalURL.path, O_WRONLY | O_CREAT | O_EXCL, 0o600)
-            guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
-            defer { close(fd) }
             do {
-                try Self.writeAll(fd: fd, bytes: frame)
-                guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
+                try Self.writeAll(fd: journalFD, bytes: frame)
+                guard fsync(journalFD) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
                 try syncRootDirectory()
             } catch {
                 // A partial first write is intentionally left fail-closed for
@@ -564,6 +566,49 @@ public struct LOCALBRegistryStore {
 
     // MARK: Locking and durable append
 
+    private func openRootDirectory() throws -> Int32 {
+        let fd = open(rootURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        var info = stat()
+        guard fstat(fd, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFDIR,
+              info.st_uid == getuid(),
+              fchmod(fd, 0o700) == 0
+        else {
+            close(fd)
+            throw LOCALBStatus.registryPersistenceFailure
+        }
+        return fd
+    }
+
+    private func openRegistryFile(
+        _ name: String, flags: Int32, mode: mode_t = 0o600
+    ) throws -> Int32 {
+        let directoryFD = try openRootDirectory()
+        defer { close(directoryFD) }
+        let fd = name.withCString {
+            openat(directoryFD, $0, flags | O_NOFOLLOW | O_CLOEXEC, mode)
+        }
+        guard fd >= 0 else {
+            if errno == EEXIST && name == Self.journalFileName {
+                throw LOCALBStatus.registryAlreadyInitialized
+            }
+            throw LOCALBStatus.registryPersistenceFailure
+        }
+        var info = stat()
+        guard fstat(fd, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_uid == getuid()
+        else {
+            close(fd)
+            throw LOCALBStatus.registryPersistenceFailure
+        }
+        return fd
+    }
+
+    private static let journalFileName = ".localb-registry.events"
+    private static let lockFileName = ".localb-registry.lock"
+
     private func withLock<T>(exclusive: Bool, createRootIfMissing: Bool,
                              _ body: () throws -> T) throws -> T {
         if createRootIfMissing {
@@ -578,8 +623,21 @@ public struct LOCALBRegistryStore {
                 throw LOCALBStatus.registryLineageUninitialized
             }
         }
-        let fd = open(lockURL.path, O_CREAT | O_RDWR, 0o600)
+        let directoryFD = try openRootDirectory()
+        defer { close(directoryFD) }
+        let fd = Self.lockFileName.withCString {
+            openat(directoryFD, $0, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        }
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        var lockInfo = stat()
+        guard fstat(fd, &lockInfo) == 0,
+              (lockInfo.st_mode & S_IFMT) == S_IFREG,
+              lockInfo.st_uid == getuid(),
+              fchmod(fd, 0o600) == 0
+        else {
+            close(fd)
+            throw LOCALBStatus.registryPersistenceFailure
+        }
         defer { close(fd) }
         guard flock(fd, exclusive ? LOCK_EX : LOCK_SH) == 0 else {
             throw LOCALBStatus.registryPersistenceFailure
@@ -591,8 +649,7 @@ public struct LOCALBRegistryStore {
     private func appendEventLocked(_ event: Event) throws {
         let frame = try Self.encodeEventFrame(event)
         guard frame.count <= Self.maxEventBytes else { throw LOCALBStatus.resourceLimit }
-        let fd = open(journalURL.path, O_WRONLY | O_APPEND)
-        guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        let fd = try openRegistryFile(Self.journalFileName, flags: O_WRONLY | O_APPEND)
         defer { close(fd) }
         try Self.writeAll(fd: fd, bytes: frame)
         guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
@@ -600,8 +657,7 @@ public struct LOCALBRegistryStore {
     }
 
     private func syncRootDirectory() throws {
-        let fd = open(rootURL.path, O_RDONLY)
-        guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        let fd = try openRootDirectory()
         defer { close(fd) }
         guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
     }
@@ -656,8 +712,29 @@ public struct LOCALBRegistryStore {
     }
 
     private func replayJournal() throws -> ReplayedState {
-        guard let data = try? Data(contentsOf: journalURL), data.count <= Self.maxJournalBytes else {
-            throw LOCALBStatus.registryCorrupt
+        let fd = try openRegistryFile(Self.journalFileName, flags: O_RDONLY)
+        defer { close(fd) }
+        var info = stat()
+        guard fstat(fd, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_size >= 0,
+              info.st_size <= off_t(Self.maxJournalBytes)
+        else { throw LOCALBStatus.registryCorrupt }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 64 * 1024)
+        while true {
+            let count = buffer.withUnsafeMutableBytes {
+                Darwin.read(fd, $0.baseAddress, $0.count)
+            }
+            if count == 0 { break }
+            if count < 0 {
+                if errno == EINTR { continue }
+                throw LOCALBStatus.registryCorrupt
+            }
+            guard data.count <= Self.maxJournalBytes - count else {
+                throw LOCALBStatus.resourceLimit
+            }
+            data.append(contentsOf: buffer.prefix(count))
         }
         let bytes = Array(data)
         var cursor = 0
