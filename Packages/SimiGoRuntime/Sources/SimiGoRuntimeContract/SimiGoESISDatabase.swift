@@ -3122,16 +3122,27 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, "%" + query.replacingOccurrences(of: "'", with: "''") + "%")
+        guard limit > 0 else { return [] }
         var hits: [ContentHit] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, hits.count < limit {
-            func col(_ i: Int32) -> String {
-                guard let c = sqlite3_column_text(stmt, i) else { return "" }
-                return String(cString: c)
+        while hits.count < limit {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func col(_ i: Int32) -> String {
+                    guard let c = sqlite3_column_text(stmt, i) else { return "" }
+                    return String(cString: c)
+                }
+                hits.append(ContentHit(
+                    rootID: col(0), relativePath: col(1), lineNo: 0,
+                    lineText: col(1)))
+                continue
             }
-            hits.append(ContentHit(
-                rootID: col(0), relativePath: col(1), lineNo: 0,
-                lineText: col(1)))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return hits
         }
+        // The SQL query has the same LIMIT, so reaching this count is a
+        // deliberate bounded completion rather than a partial error result.
         return hits
     }
 
@@ -3185,17 +3196,24 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [SettledFileRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            func text(_ i: Int32) -> String? {
-                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func text(_ i: Int32) -> String? {
+                    sqlite3_column_text(stmt, i).map { String(cString: $0) }
+                }
+                let bytes = Int(sqlite3_column_bytes(stmt, 4))
+                let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
+                rows.append(SettledFileRow(
+                    rootID: text(0) ?? "", relativePath: text(1) ?? "",
+                    digest: text(2) ?? "", objectID: text(3), legacy: legacy))
+                continue
             }
-            let bytes = Int(sqlite3_column_bytes(stmt, 4))
-            let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
-            rows.append(SettledFileRow(
-                rootID: text(0) ?? "", relativePath: text(1) ?? "",
-                digest: text(2) ?? "", objectID: text(3), legacy: legacy))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return rows
         }
-        return rows
     }
 
     /// Settled text for a row, or nil when no source produces bytes matching
