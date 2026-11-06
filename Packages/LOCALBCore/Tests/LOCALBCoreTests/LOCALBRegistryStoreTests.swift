@@ -16,6 +16,97 @@ final class LOCALBRegistryStoreTests: XCTestCase {
         try LOCALBSigningInputV1.keyID(publicKeyRaw: Array(key.publicKey.rawRepresentation))
     }
 
+    func testRegistryLockSymlinkIsRejectedWithoutTouchingTarget() throws {
+        let root = makeRoot()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let target = root.deletingLastPathComponent().appendingPathComponent("lock-target-\(UUID().uuidString)")
+        let sentinel = Data("do-not-modify".utf8)
+        try sentinel.write(to: target)
+        try FileManager.default.createSymbolicLink(at: root.appendingPathComponent(".localb-registry.lock"), withDestinationURL: target)
+        XCTAssertThrowsError(try LOCALBRegistryStore(rootURL: root).initializeNewLineage())
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
+    func testRegistryRejectsSymlinkedRootDirectory() throws {
+        let outside = makeRoot()
+        try FileManager.default.createDirectory(
+            at: outside, withIntermediateDirectories: true)
+        let link = outside.deletingLastPathComponent()
+            .appendingPathComponent("registry-root-link-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        defer { try? FileManager.default.removeItem(at: link) }
+        let externalJournal = outside.appendingPathComponent(".localb-registry.events")
+        let externalLock = outside.appendingPathComponent(".localb-registry.lock")
+
+        XCTAssertThrowsError(try LOCALBRegistryStore(rootURL: link).initializeNewLineage())
+        XCTAssertFalse(FileManager.default.fileExists(atPath: externalJournal.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: externalLock.path))
+    }
+
+    func testJournalSymlinkIsRejectedWithoutAppendingToTarget() throws {
+        let root = makeRoot()
+        let store = LOCALBRegistryStore(rootURL: root)
+        let checkpoint = try store.initializeNewLineage()
+        let journal = root.appendingPathComponent(".localb-registry.events")
+        try FileManager.default.removeItem(at: journal)
+        let target = root.deletingLastPathComponent().appendingPathComponent("journal-target-\(UUID().uuidString)")
+        let sentinel = Data("do-not-append".utf8)
+        try sentinel.write(to: target)
+        try FileManager.default.createSymbolicLink(at: journal, withDestinationURL: target)
+        XCTAssertThrowsError(try store.appendKeyRegistration(publicKeyRaw: Array(Curve25519.Signing.PrivateKey().publicKey.rawRepresentation), generation: 1, checkpoint: checkpoint))
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
+    func testRegistryRejectsGroupOrWorldWritableRootDirectory() throws {
+        let root = makeRoot()
+        try FileManager.default.createDirectory(
+            at: root, withIntermediateDirectories: true)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o777], ofItemAtPath: root.path)
+
+        XCTAssertThrowsError(
+            try LOCALBRegistryStore(rootURL: root).initializeNewLineage())
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: root.appendingPathComponent(".localb-registry.events").path))
+    }
+
+    func testRegistryRejectsGroupOrWorldWritableLockFile() throws {
+        let root = makeRoot()
+        let store = LOCALBRegistryStore(rootURL: root)
+        let checkpoint = try store.initializeNewLineage()
+        let lock = root.appendingPathComponent(".localb-registry.lock")
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o666], ofItemAtPath: lock.path)
+
+        XCTAssertThrowsError(try store.loadVerified(checkpoint: checkpoint))
+    }
+
+    func testRegistryRejectsGroupOrWorldWritableJournal() throws {
+        let root = makeRoot()
+        let store = LOCALBRegistryStore(rootURL: root)
+        let checkpoint = try store.initializeNewLineage()
+        let journal = root.appendingPathComponent(".localb-registry.events")
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o666], ofItemAtPath: journal.path)
+
+        XCTAssertThrowsError(try store.loadVerified(checkpoint: checkpoint))
+    }
+
+    func testRegistryRejectsHardLinkedJournal() throws {
+        let root = makeRoot()
+        let store = LOCALBRegistryStore(rootURL: root)
+        let checkpoint = try store.initializeNewLineage()
+        let journal = root.appendingPathComponent(".localb-registry.events")
+        let externalLink = root.deletingLastPathComponent()
+            .appendingPathComponent("registry-journal-hardlink-\(UUID().uuidString)")
+        try FileManager.default.linkItem(at: journal, to: externalLink)
+        defer { try? FileManager.default.removeItem(at: externalLink) }
+        let original = try Data(contentsOf: journal)
+
+        XCTAssertThrowsError(try store.loadVerified(checkpoint: checkpoint))
+        XCTAssertEqual(try Data(contentsOf: externalLink), original)
+    }
+
     func testFirstRunProducesOfflineCheckpointAndMissingCheckpointFailsClosed() throws {
         let store = LOCALBRegistryStore(rootURL: makeRoot())
         let checkpoint = try store.initializeNewLineage()

@@ -50,6 +50,85 @@ jobs:
           python3 tools/test_release_chain.py
           python3 tools/test_release_manifest.py
 
+  localb-core-package:
+    name: LOCALB core package tests
+    # LOCALBCore is a standalone trust/signing package. Its tests are not part
+    # of the app's XCTest target, so keep a direct SwiftPM execution lane.
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Derive the LOCALBCore test count
+        run: |
+          python3 - >> "$GITHUB_ENV" <<'PY'
+          from pathlib import Path
+          import re
+          root = Path("Packages/LOCALBCore/Tests/LOCALBCoreTests")
+          files = sorted(root.glob("*.swift"))
+          if not files:
+              raise SystemExit("LOCALBCore test source directory is missing or empty")
+          count = sum(
+              len(re.findall(r"^\s*func test\w+", p.read_text(), re.M))
+              for p in files
+          )
+          if count <= 0:
+              raise SystemExit("no LOCALBCore XCTest methods discovered")
+          print(f"EXPECTED_CASES={count}")
+          print(f"DISCOVERY|Packages/LOCALBCore|files={len(files)} func_test={count}")
+          PY
+      - name: Run LOCALBCore SwiftPM tests
+        run: |
+          set -o pipefail
+          swift test --package-path Packages/LOCALBCore 2>&1 | tee "$RUNNER_TEMP/localb-core.log"
+      - name: Gate on executed LOCALBCore cases
+        if: always()
+        run: |
+          python3 - "$RUNNER_TEMP/localb-core.log" "${EXPECTED_CASES:-}" <<'PY'
+          import os, re, sys
+          log_path, expected_raw = sys.argv[1], sys.argv[2]
+          def out(tag, detail):
+              print("GATE|%s|%s" % (tag, detail))
+          try:
+              expected = int(expected_raw)
+          except ValueError:
+              expected = 0
+          if expected <= 0:
+              out("expected_cases", "absent_or_invalid")
+              out("verdict", "NO_EXPECTATION")
+              sys.exit(1)
+          if not os.path.isfile(log_path):
+              out("log", "absent")
+              out("verdict", "STEP_NOT_STARTED")
+              sys.exit(1)
+          text = open(log_path, errors="replace").read()
+          statuses = re.findall(r"Test Case '[^']*' (passed|failed|skipped) ", text)
+          passed = statuses.count("passed")
+          failed = statuses.count("failed")
+          skipped = statuses.count("skipped")
+          executed = passed + failed + skipped
+          out("expected_cases", str(expected))
+          out("log", "executed=%d passed=%d failed=%d skipped=%d" %
+              (executed, passed, failed, skipped))
+          if executed == 0:
+              for line in [line.strip() for line in text.splitlines() if "error:" in line][:5]:
+                  out("blocked_error", line[:220])
+              out("verdict", "NO_CASES_EXECUTED")
+              sys.exit(1)
+          if executed != expected or skipped != 0 or failed != 0:
+              out("verdict", "NOT_PASS")
+              sys.exit(1)
+          out("verdict", "PASS - executed==expected, skipped==0, failed==0")
+          PY
+      - name: Scope note
+        if: always()
+        run: |
+          echo "SCOPE|Packages/LOCALBCore sources and test target, via native SwiftPM manifest"
+          echo "SCOPE|no app integration, transport or real-host claim"
+
   qoder-collection-package:
     name: Qoder collection package
     # MLX-free Swift package. The app links it on the GUI launch path, so a
@@ -133,7 +212,7 @@ jobs:
   # These are deliberately separate from the ExecutionStateGraph witness lane:
   # a green graph test cannot stand in for HTTP/MCP behavior or Runtime migrations.
   macos-p0-p1-app-tests:
-    name: macOS P0/P1 HTTP and MCP tests
+    name: macOS HTTP/MCP, installer and LOCALB auth tests
     # Xcode 27 is required by the pinned MLX dependency for the app test target.
     # Unlike the graph-only preview witness, this lane is blocking and gates on
     # executed == discovered, skipped == 0, failed == 0.
@@ -155,6 +234,11 @@ jobs:
           files = [
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
+              Path("SimiGoTests/BinaryDownloaderTests.swift"),
+              Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift"),
+              Path("SimiGoTests/SlotActivityTests.swift"),
+              Path("SimiGoTests/LOCALBManagementEntryTests.swift"),
+              Path("SimiGoTests/LOCALBBranchLifecycleTests.swift"),
           ]
           missing = [str(p) for p in files if not p.is_file()]
           if missing:
@@ -163,10 +247,24 @@ jobs:
               len(re.findall(r"^\s*func test\w+", p.read_text(), re.M))
               for p in files
           )
-          if count <= 0:
-              raise SystemExit("no P0/P1 App test methods discovered")
-          print(f"EXPECTED_CASES={count}")
-          print(f"DISCOVERY|P0/P1 App test methods={count}")
+          # These two startup tests assert the process-wide secure transport
+          # mode. Run them in their own xctest process below; running them in
+          # the general loopback suite silently exercises the wrong mode.
+          secure_tests = [
+              "testDefaultHostResolutionFailsClosedBeforeActivation",
+              "testDefaultHostResolutionServesAuthorizedRequests",
+          ]
+          localb_tests = Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift").read_text()
+          missing_secure = [name for name in secure_tests if not re.search(
+              rf"^\s*func {name}\s*\(", localb_tests, re.M)]
+          if missing_secure:
+              raise SystemExit("missing secure-mode tests: " + ", ".join(missing_secure))
+          if count <= len(secure_tests):
+              raise SystemExit("no general P0/P1 App test methods remain")
+          app_count = count - len(secure_tests)
+          print(f"EXPECTED_CASES={app_count}")
+          print(f"EXPECTED_SECURE_CASES={len(secure_tests)}")
+          print(f"DISCOVERY|P0/P1 App test methods={count} general={app_count} secure-process={len(secure_tests)}")
           PY
       - name: Build P0/P1 HTTP and MCP tests
         run: |
@@ -181,7 +279,12 @@ jobs:
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
-            -only-testing:SimiGoTests/MCPInformationSpaceTests
+            -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/BinaryDownloaderTests \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
+            -only-testing:SimiGoTests/SlotActivityTests \
+            -only-testing:SimiGoTests/LOCALBManagementEntryTests \
+            -only-testing:SimiGoTests/LOCALBBranchLifecycleTests
       - name: Generate isolated App test xctestrun
         run: |
           set -euo pipefail
@@ -208,7 +311,50 @@ jobs:
             -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/BinaryDownloaderTests \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
+            -only-testing:SimiGoTests/SlotActivityTests \
+            -only-testing:SimiGoTests/LOCALBManagementEntryTests \
+            -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
+            -skip-testing:SimiGoTests/LOCALBRequestAuthWiringTests/testDefaultHostResolutionFailsClosedBeforeActivation \
+            -skip-testing:SimiGoTests/LOCALBRequestAuthWiringTests/testDefaultHostResolutionServesAuthorizedRequests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-app.log"
+      - name: Run secure-mode LOCALB startup tests in a dedicated process
+        run: |
+          set -o pipefail
+          SIMIGO_TRANSPORT=secure xcodebuild test-without-building \
+            -xctestrun "$ISOLATED_XCTESTRUN" \
+            -destination 'platform=macOS,arch=arm64' \
+            -resultBundlePath "$RUNNER_TEMP/localb-secure-startup.xcresult" \
+            -enableCodeCoverage NO \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests/testDefaultHostResolutionFailsClosedBeforeActivation \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests/testDefaultHostResolutionServesAuthorizedRequests \
+            2>&1 | tee "$RUNNER_TEMP/localb-secure-startup.log"
+      - name: Gate on secure-mode startup test execution
+        if: always()
+        run: |
+          python3 - "$RUNNER_TEMP/localb-secure-startup.log" "${EXPECTED_SECURE_CASES:-}" <<'PY'
+          import os, re, sys
+          log_path, expected_raw = sys.argv[1:3]
+          try:
+              expected = int(expected_raw)
+          except ValueError:
+              expected = 0
+          if expected <= 0 or not os.path.isfile(log_path):
+              print("GATE|secure_startup|NO_EXPECTATION_OR_LOG")
+              sys.exit(1)
+          text = open(log_path, errors="replace").read()
+          statuses = re.findall(r"Test Case '[^']*' (passed|failed|skipped) ", text)
+          passed = statuses.count("passed")
+          failed = statuses.count("failed")
+          skipped = statuses.count("skipped")
+          executed = passed + failed + skipped
+          print(f"GATE|secure_startup|executed={executed} passed={passed} failed={failed} skipped={skipped} expected={expected}")
+          if executed != expected or failed or skipped:
+              print("GATE|verdict|SECURE_STARTUP_NOT_PASS")
+              sys.exit(1)
+          print("GATE|verdict|PASS")
+          PY
       - name: Gate on executed cases and xcresult counts
         if: always()
         run: |
@@ -254,8 +400,12 @@ jobs:
               sys.exit(1)
           a_exec, a_skip, a_fail = (int(x or 0) for x in aggregate[-1])
           out("aggregate", "executed=%d failed=%d skipped=%d" % (a_exec, a_fail, a_skip))
-          if (a_exec, a_fail, a_skip) != (executed, failed, skipped):
-              out("verdict", "LOG_COUNT_DISAGREEMENT")
+          # XCTest's suite summary reports assertion failures, while the
+          # per-case lines report failed test methods. One method may contain
+          # multiple failing assertions, so compare only execution and skip
+          # counts here; both failure measures must independently be zero.
+          if (a_exec, a_skip) != (executed, skipped):
+              out("verdict", "LOG_EXECUTION_COUNT_DISAGREEMENT")
               sys.exit(1)
 
           if not os.path.isdir(bundle_path):
@@ -296,7 +446,7 @@ jobs:
           if (x_exec, xc["failed"], xc["skipped"]) != (executed, failed, skipped):
               out("verdict", "LOG_XCRESULT_DISAGREEMENT")
               sys.exit(1)
-          if executed != expected or skipped != 0 or failed != 0:
+          if executed != expected or skipped != 0 or failed != 0 or a_fail != 0:
               out("verdict", "NOT_PASS")
               sys.exit(1)
           out("verdict", "PASS - executed==expected, skipped==0, failed==0")
@@ -304,7 +454,8 @@ jobs:
       - name: Scope note
         if: always()
         run: |
-          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests only"
+          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests + BinaryDownloaderTests + LOCALBRequestAuthWiringTests + SlotActivityTests + LOCALBManagementEntryTests + LOCALBBranchLifecycleTests"
+          echo "SCOPE|covers installer cancellation/size/metadata and LOCALB management/lifecycle authorization paths"
           echo "SCOPE|no claim about external models, Qoder, or end-to-end Agent execution"
 
   runtime-contract-tests:

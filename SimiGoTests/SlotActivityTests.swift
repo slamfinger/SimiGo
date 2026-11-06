@@ -90,9 +90,12 @@ final class SlotActivityTests: XCTestCase {
             port: 54_321,
             session: probeSession(BusySlotsURLProtocol.self))
         XCTAssertEqual(activity, .busy)
+        let request = BusySlotsURLProtocol.recordedRequest()
         XCTAssertEqual(
-            BusySlotsURLProtocol.recordedRequest()?.url?.absoluteString,
+            request?.url?.absoluteString,
             "http://127.0.0.1:54321/slots")
+        XCTAssertEqual(request?.cachePolicy, .reloadIgnoringLocalCacheData)
+        XCTAssertEqual(request?.value(forHTTPHeaderField: "Cache-Control"), "no-cache")
     }
 
     func testProbeTreatsMissingEngineEndpointAsUnknown() async {
@@ -114,6 +117,75 @@ final class SlotActivityTests: XCTestCase {
         let provider: SlotActivityProviding? = nil
         let activity = await SlotActivityResolver.activity(for: provider)
         XCTAssertEqual(activity, .unknown)
+    }
+
+    func testServiceHealthPolicySkipsBusySlotBeforeHealthCheck() {
+        XCTAssertTrue(ServiceHealthCheckPolicy.shouldSkipBeforeHealthCheck(
+            backendIsGGUF: true,
+            runtimeIsInProcess: false,
+            injectedHealthFailure: false,
+            slotActivity: .busy))
+        XCTAssertFalse(ServiceHealthCheckPolicy.shouldSkipBeforeHealthCheck(
+            backendIsGGUF: true,
+            runtimeIsInProcess: false,
+            injectedHealthFailure: false,
+            slotActivity: .unknown))
+        XCTAssertFalse(ServiceHealthCheckPolicy.shouldSkipBeforeHealthCheck(
+            backendIsGGUF: true,
+            runtimeIsInProcess: false,
+            injectedHealthFailure: true,
+            slotActivity: .busy),
+            "Injected failure must reach the post-health busy-slot guard")
+    }
+
+    func testServiceHealthPolicyDefersInjectedHealthFailureWhenSlotRemainsBusy() {
+        XCTAssertEqual(
+            ServiceHealthCheckPolicy.decisionAfterHealthCheck(
+                healthy: false,
+                backendIsGGUF: true,
+                slotActivity: .busy,
+                taskCancelled: false,
+                runtimeIsCurrent: true),
+            .deferRestart)
+    }
+
+    func testServiceHealthPolicyAllowsRecoveryWhenSlotActivityIsUnknown() {
+        XCTAssertEqual(
+            ServiceHealthCheckPolicy.decisionAfterHealthCheck(
+                healthy: false,
+                backendIsGGUF: true,
+                slotActivity: .unknown,
+                taskCancelled: false,
+                runtimeIsCurrent: true),
+            .restart)
+    }
+
+    func testServiceHealthPolicyAllowsRestartWhenSlotIsIdle() {
+        XCTAssertEqual(
+            ServiceHealthCheckPolicy.decisionAfterHealthCheck(
+                healthy: false,
+                backendIsGGUF: true,
+                slotActivity: .idle,
+                taskCancelled: false,
+                runtimeIsCurrent: true),
+            .restart)
+    }
+
+    func testServiceHealthPolicyStopsOnCancellationOrRuntimeReplacement() {
+        let cancelled = ServiceHealthCheckPolicy.decisionAfterHealthCheck(
+            healthy: false,
+            backendIsGGUF: true,
+            slotActivity: .unknown,
+            taskCancelled: true,
+            runtimeIsCurrent: true)
+        let replaced = ServiceHealthCheckPolicy.decisionAfterHealthCheck(
+            healthy: false,
+            backendIsGGUF: true,
+            slotActivity: .unknown,
+            taskCancelled: false,
+            runtimeIsCurrent: false)
+        XCTAssertEqual(cancelled, .stop)
+        XCTAssertEqual(replaced, .stop)
     }
 
     private func probeSession(_ protocolClass: URLProtocol.Type) -> URLSession {

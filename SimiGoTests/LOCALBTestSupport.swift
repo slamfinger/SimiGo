@@ -155,7 +155,8 @@ class LOCALBTestCase: XCTestCase {
     /// listener with an explicit loopback plaintext-compatibility port, and
     /// the B3 request-authorization wiring.
     func makeAuthorizedHost(
-        configureAuthorization: Bool = true
+        configureAuthorization: Bool = true,
+        additionalPermissions: Set<LOCALBPermission> = []
     ) throws -> Host {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -248,7 +249,19 @@ class LOCALBTestCase: XCTestCase {
             identity: identity,
             plaintextCompatibilityPort: Int(plaintextCompatPort)
         )
-        let trustedCheckpointBox = LOCALBTrustedCheckpointBox(value: committed)
+        let authorizedCheckpoint: LOCALBRegistryCheckpoint
+        if additionalPermissions.isEmpty {
+            authorizedCheckpoint = committed
+        } else {
+            // Test fixtures opt into only the additional route permission
+            // they are exercising; production defaults remain unchanged.
+            authorizedCheckpoint = try coordinator.setClientPermissions(
+                clientKeyID: clientKeyID,
+                permissions: Set([.inference, .informationRead]).union(additionalPermissions),
+                reason: "LOCALB HTTP route permission coverage",
+                checkpoint: committed)
+        }
+        let trustedCheckpointBox = LOCALBTrustedCheckpointBox(value: authorizedCheckpoint)
         if configureAuthorization {
             server.configureLOCALBRequestAuthorization(
                 coordinator: coordinator,

@@ -1601,15 +1601,22 @@ public final class HTTPServer: @unchecked Sendable {
         case ("OPTIONS", _),
              ("GET", "/health"),
              ("HEAD", "/health"),
-             ("GET", "/v1/simigo/env"),
-             ("GET", "/v1/simigo/roots"),
-             ("GET", "/v1/simigo/is/status"),
-             ("GET", "/v1/simigo/search"),
-             ("POST", "/v1/simigo/search"),
-             ("PUT", "/v1/simigo/roots"),
-             ("POST", "/v1/simigo/roots"),
              ("POST", "/localb/auth/challenge"):
             return .open
+        case ("GET", "/v1/simigo/env"),
+             ("GET", "/v1/simigo/roots"),
+             ("GET", "/v1/simigo/is/status"):
+            // These disclose host configuration, registered roots, and
+            // Information-Space status. LAN TLS authenticates the server,
+            // not the connecting client; require a paired read permission.
+            return .protected(permission: .informationRead)
+        case ("GET", "/v1/simigo/search"),
+             ("POST", "/v1/simigo/search"),
+             ("PUT", "/v1/simigo/roots"),
+             ("POST", "/v1/simigo/roots"):
+            // Search writes a retrieval settlement; root registration scans
+            // and settles external content. Both require the SRS-write gate.
+            return .protected(permission: .srsWrite)
         case ("GET", "/v1/models"), ("GET", "/models"),
              ("GET", "/v1/simigo/is/settlement"),
              ("GET", "/v1/simigo/is/dependency"),

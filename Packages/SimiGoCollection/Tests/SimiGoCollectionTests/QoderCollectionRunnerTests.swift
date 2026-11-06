@@ -239,6 +239,98 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try pendingCount(configuration), 0)
     }
 
+    func testInboxRefusesSymlinkedSQLiteDatabase() throws {
+        let stateDirectory = configuration().stateDirectory
+        let targetDirectory = root.appendingPathComponent("external-state", isDirectory: true)
+        let targetDatabase = targetDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        try FileManager.default.createDirectory(
+            at: targetDirectory, withIntermediateDirectories: true)
+        // Build a valid SQLite target first so this exercises symlink refusal,
+        // not merely rejection of a malformed SQLite header.
+        try QoderCandidateInbox(directoryURL: targetDirectory).pendingCount()
+        let targetBefore = try Data(contentsOf: targetDatabase)
+
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            at: stateDirectory.appendingPathComponent(QoderCandidateInbox.databaseFileName),
+            withDestinationURL: targetDatabase)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount())
+        XCTAssertEqual(try Data(contentsOf: targetDatabase), targetBefore)
+    }
+
+    func testInboxRefusesHardLinkedSQLiteDatabase() throws {
+        let targetDirectory = root.appendingPathComponent(
+            "external-hardlink-state", isDirectory: true)
+        let stateDirectory = configuration().stateDirectory
+        try FileManager.default.createDirectory(
+            at: targetDirectory, withIntermediateDirectories: true)
+        try QoderCandidateInbox(directoryURL: targetDirectory).pendingCount()
+        let targetDatabase = targetDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        let stateDatabase = stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        try FileManager.default.linkItem(at: targetDatabase, to: stateDatabase)
+        let targetBefore = try Data(contentsOf: targetDatabase)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount())
+        XCTAssertEqual(try Data(contentsOf: targetDatabase), targetBefore)
+    }
+
+    func testInboxRefusesGroupOrWorldWritableSQLiteDatabase() throws {
+        let stateDirectory = configuration().stateDirectory
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount()
+        let database = stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        let original = try Data(contentsOf: database)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o666], ofItemAtPath: database.path)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount())
+        XCTAssertEqual(try Data(contentsOf: database), original)
+    }
+
+    func testInboxRejectsGroupOrWorldWritableStateDirectory() throws {
+        let stateDirectory = configuration().stateDirectory
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o777], ofItemAtPath: stateDirectory.path)
+        let database = stateDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount())
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: database.path),
+            "an unsafe state directory must be refused before SQLite creates the inbox")
+    }
+
+    func testInboxRefusesSymlinkedStateDirectory() throws {
+        let outside = root.appendingPathComponent("outside-inbox-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: outside, withIntermediateDirectories: true)
+        let link = root.appendingPathComponent("state-directory-link", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        let redirectedDatabase = outside.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: link).pendingCount())
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: redirectedDatabase.path),
+            "a symlinked state root must not create a database in its target")
+    }
+
     func testRunnerFailsClosedOnCorruptStateAndRecoversOnlyByQuarantine() throws {
         let configuration = configuration()
         try FileManager.default.createDirectory(

@@ -682,6 +682,35 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertEqual(scanner.scan(), .absent)
     }
 
+    func testScannerNeverFollowsSymlinkedSubagentsDirectory() throws {
+        let fileManager = FileManager.default
+        let sessionDirectory = project.appendingPathComponent(
+            Fixture.sessionID, isDirectory: true)
+        try fileManager.createDirectory(
+            at: sessionDirectory, withIntermediateDirectories: true)
+
+        let outside = fileManager.temporaryDirectory.appendingPathComponent(
+            "qoder-outside-subagents-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(
+            at: outside, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: outside) }
+
+        let externalTranscript = outside.appendingPathComponent(
+            "external-agent.jsonl")
+        try Data(#"{"type":"message"}"#.appending("\n").utf8).write(to: externalTranscript)
+
+        let subagents = sessionDirectory.appendingPathComponent(
+            "subagents", isDirectory: true)
+        try fileManager.createSymbolicLink(
+            at: subagents, withDestinationURL: outside)
+
+        let result = QoderTranscriptScanner(root: root).scan()
+        XCTAssertTrue(result.isComplete, "a rejected symlink is a skipped entry, not a scan failure")
+        XCTAssertTrue(
+            result.files.isEmpty,
+            "scanner must not import transcript files through a symlinked subagents directory")
+    }
+
     func testScannerClassifiesMissingRootAndUnreadableRootByListingError() throws {
         let missing = root.appendingPathComponent("not-created", isDirectory: true)
         XCTAssertEqual(QoderTranscriptScanner(root: missing).scan(), .absent)
