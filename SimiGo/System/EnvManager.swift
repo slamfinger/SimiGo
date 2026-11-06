@@ -1324,12 +1324,12 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
         {
             settle(.failure(NSError(
                 domain: "EnvManager", code: http.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: "HTTP \\(http.statusCode)"])))
+                userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode)"])))
             return
         }
 
         let stagingURL = destination.deletingLastPathComponent().appendingPathComponent(
-            ".\\(destination.lastPathComponent).\\(UUID().uuidString).download")
+            ".\(destination.lastPathComponent).\(UUID().uuidString).download")
         do {
             let values = try location.resourceValues(forKeys: [.fileSizeKey])
             guard let fileSize = values.fileSize, fileSize >= 0 else {
