@@ -2849,15 +2849,23 @@ public final class SimiGoESISDatabase {
         SELECT root_id, display_name, last_scanned_at FROM roots
         WHERE category=? ORDER BY root_id;
         """)
+        defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, category)
         var rows: [(id: String, path: String?, scanned: String?)] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            func text(_ i: Int32) -> String? {
-                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func text(_ i: Int32) -> String? {
+                    sqlite3_column_text(stmt, i).map { String(cString: $0) }
+                }
+                rows.append((text(0) ?? "", text(1), text(2)))
+                continue
             }
-            rows.append((text(0) ?? "", text(1), text(2)))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            break
         }
-        sqlite3_finalize(stmt)
 
         var settledRoots = 0, freshRoots = 0, missingRoots = 0, failedRoots = 0
         var unlocatableRoots = 0
