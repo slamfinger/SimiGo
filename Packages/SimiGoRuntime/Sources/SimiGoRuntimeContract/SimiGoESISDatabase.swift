@@ -904,6 +904,35 @@ public final class SimiGoESISDatabase {
                 try recordMigrationRow(20, "simigo-retrieval-input-basis-version-v20")
             }
         }
+        if try schemaVersion() < 21 {
+            try transaction {
+                // v2 added these two columns with `ALTER TABLE ... ADD COLUMN` and
+                // no DEFAULT, and `insertExecutionStateRow` never listed
+                // checkpoint_ids_json, so a NULL here is a legacy write, not
+                // corruption. readGraph() fails closed on NULL, so rewrite each
+                // list from the authoritative `checkpoints` rows for that state and
+                // fall back to the serialized empty collection. Blank or malformed
+                // values are deliberately left alone: they stay corruption.
+                // The ordering is explicit rather than left to the scan, so the
+                // rebuilt list matches the `created_at` order readGraph() gives the
+                // checkpoints it joins to, whatever physical order the rows live in.
+                try Self.rawExec(handle, """
+                UPDATE execution_states
+                SET checkpoint_ids_json = COALESCE(
+                        (SELECT json_group_array(ordered.checkpoint_id)
+                           FROM (SELECT checkpoint_id, created_at
+                                   FROM checkpoints
+                                  WHERE checkpoints.state_id = execution_states.state_id
+                                  ORDER BY created_at, checkpoint_id) AS ordered),
+                        '[]')
+                WHERE checkpoint_ids_json IS NULL;
+                UPDATE execution_states
+                SET prefix_json = '[]'
+                WHERE prefix_json IS NULL;
+                """)
+                try recordMigrationRow(21, "simigo-es-legacy-null-graph-columns-v21")
+            }
+        }
     }
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
@@ -1625,6 +1654,9 @@ public final class SimiGoESISDatabase {
     ///
     /// `tokenizerIdentity` is written only by the insert that creates the row;
     /// the conflict update leaves any existing value (including NULL) untouched.
+    /// `checkpoint_ids_json` follows the same rule, but always serializes: a
+    /// state this writer creates owns an explicit empty list, never SQL NULL, and
+    /// an existing list is left to the graph writer that owns it.
     private func insertExecutionStateRow(id: String, parentID: String?, modelIdentity: String,
                                          tokenizerIdentity: String? = nil,
                                          graphManaged: Bool = true,
@@ -1632,10 +1664,11 @@ public final class SimiGoESISDatabase {
                                          lifecycle: String, createdAt: Date,
                                          nextInput: String? = nil,
                                          prefixJSON: String? = nil,
+                                         checkpointIDsJSON: String? = nil,
                                          idempotencyKey: String? = nil) throws {
         try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, idempotency_key, tokenizer_identity, graph_managed)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
@@ -1655,9 +1688,10 @@ public final class SimiGoESISDatabase {
             bind(stmt, 8, Self.stamp( createdAt))
             bind(stmt, 9, nextInput)
             bind(stmt, 10, prefixJSON ?? "[]")
-            bind(stmt, 11, idempotencyKey)
-            bind(stmt, 12, tokenizerIdentity)
-            bind(stmt, 13, Int64(graphManaged ? 1 : 0))
+            bind(stmt, 11, checkpointIDsJSON ?? "[]")
+            bind(stmt, 12, idempotencyKey)
+            bind(stmt, 13, tokenizerIdentity)
+            bind(stmt, 14, Int64(graphManaged ? 1 : 0))
         }
     }
 
