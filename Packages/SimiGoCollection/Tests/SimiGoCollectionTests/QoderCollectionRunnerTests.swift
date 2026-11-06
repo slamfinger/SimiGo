@@ -239,6 +239,29 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(try pendingCount(configuration), 0)
     }
 
+    func testInboxRefusesSymlinkedSQLiteDatabase() throws {
+        let stateDirectory = configuration().stateDirectory
+        let targetDirectory = root.appendingPathComponent("external-state", isDirectory: true)
+        let targetDatabase = targetDirectory.appendingPathComponent(
+            QoderCandidateInbox.databaseFileName)
+        try FileManager.default.createDirectory(
+            at: targetDirectory, withIntermediateDirectories: true)
+        // Build a valid SQLite target first so this exercises symlink refusal,
+        // not merely rejection of a malformed SQLite header.
+        try QoderCandidateInbox(directoryURL: targetDirectory).pendingCount()
+        let targetBefore = try Data(contentsOf: targetDatabase)
+
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            at: stateDirectory.appendingPathComponent(QoderCandidateInbox.databaseFileName),
+            withDestinationURL: targetDatabase)
+
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: stateDirectory).pendingCount())
+        XCTAssertEqual(try Data(contentsOf: targetDatabase), targetBefore)
+    }
+
     func testRunnerFailsClosedOnCorruptStateAndRecoversOnlyByQuarantine() throws {
         let configuration = configuration()
         try FileManager.default.createDirectory(

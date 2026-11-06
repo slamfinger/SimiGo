@@ -623,7 +623,7 @@ final class QoderSQLiteConnection {
         var handle: OpaquePointer?
         let code = sqlite3_open_v2(
             path, &handle,
-            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nil)
+            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX | SQLITE_OPEN_NOFOLLOW, nil)
         guard code == SQLITE_OK, let handle else {
             let detail =
                 handle.map { String(cString: sqlite3_errmsg($0)) }

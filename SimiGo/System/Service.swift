@@ -1108,7 +1108,11 @@ public final class Service: ObservableObject {
             }
 
             let runtime = runtimeState.withLock { $0 }
-            if await slotActivity(for: runtime) == .idle {
+            let activity = await slotActivity(for: runtime)
+            // Cancellation can race with a successful URLSession response too;
+            // an idle sample from a cancelled wait must not be reported as ready.
+            if Task.isCancelled { return false }
+            if activity == .idle {
                 return true
             }
 
@@ -1192,6 +1196,9 @@ public final class Service: ObservableObject {
                        let nativeMLX = runtime as? NativeMLX {
                         // 健康循环只需“尝试挂起”，返回值用于静默处理。
                         let _ = await nativeMLX.suspendIfIdle()
+                        // stop()/runtime replacement cancels this task; never
+                        // let an older health iteration proceed after an await.
+                        if Task.isCancelled { break }
                     }
 
                     // GGUF：slot 忙时先跳过本轮，防止生成中途误判无响应触发重启。
@@ -1200,11 +1207,17 @@ public final class Service: ObservableObject {
                     // 已死引擎的恢复——交给健康检查判定。
                     if !injectedHealthFailure,
                         !runtime.isInProcess,
-                        self.backendKind == .gguf,
-                        await self.slotActivity(for: runtime) == .busy {
-                        Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
-                        try? await Task.sleep(nanoseconds: 30_000_000_000)
-                        continue
+                        self.backendKind == .gguf {
+                        let activity = await self.slotActivity(for: runtime)
+                        // The probe maps transport cancellation to .unknown.
+                        // Re-check task cancellation before interpreting that
+                        // value as a real observation.
+                        if Task.isCancelled { break }
+                        if activity == .busy {
+                            Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
+                            try? await Task.sleep(nanoseconds: 30_000_000_000)
+                            continue
+                        }
                     }
                 }
 
@@ -1212,20 +1225,38 @@ public final class Service: ObservableObject {
                     injectedHealthFailure
                     ? false
                     : (await currentRuntime?.checkHealth() ?? false)
+                // checkHealth() may finish after stopHealthCheck() has cancelled
+                // this task. A cancelled iteration must not schedule a restart.
+                if Task.isCancelled { break }
 
                 if !healthy {
                     if self.backendKind == .gguf {
-                        if await self.slotActivity(for: currentRuntime) == .busy {
+                        let activity = await self.slotActivity(for: currentRuntime)
+                        if Task.isCancelled { break }
+                        if activity == .busy {
                             Self.log("⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。", level: .warning)
                             try? await Task.sleep(nanoseconds: 30_000_000_000)
                             continue
                         }
                     }
 
+                    // Last synchronous gate before scheduling a state-changing restart.
+                    // Also ensure this iteration still refers to Service's current
+                    // runtime; stop/replacement may have detached the captured one.
+                    let runtimeIsStillCurrent = self.runtimeState.withLock { current -> Bool in
+                        guard let current, let currentRuntime else { return false }
+                        return current === currentRuntime
+                    }
+                    if Task.isCancelled || !runtimeIsStillCurrent { break }
                     Self.log("⚠ 模型服务无响应，触发解耦重启...", level: .warning)
 
-                    Task { @MainActor [weak self] in
-                        await self?.forceRestart()
+                    Task { @MainActor [weak self, currentRuntime] in
+                        guard let self,
+                              let expectedRuntime = currentRuntime,
+                              self.runtimeState.withLock({ $0 === expectedRuntime }) else {
+                            return
+                        }
+                        await self.forceRestart()
                     }
 
                     return

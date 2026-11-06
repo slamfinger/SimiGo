@@ -24,10 +24,17 @@ final class QoderCollectionLease {
             at: directoryURL, withIntermediateDirectories: true,
             attributes: [.posixPermissions: 0o700])
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
-        let descriptor = open(fileURL.path, O_CREAT | O_RDWR | O_CLOEXEC, 0o600)
+        let descriptor = open(fileURL.path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path, detail: String(cString: strerror(errno)))
+        }
+        var fileInfo = stat()
+        guard fstat(descriptor, &fileInfo) == 0,
+              (fileInfo.st_mode & S_IFMT) == S_IFREG else {
+            close(descriptor)
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path, detail: "lease must be a regular, non-symlink file")
         }
         guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
             let code = errno

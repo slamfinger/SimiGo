@@ -101,6 +101,19 @@ final class QoderCollectionLifecycleTests: XCTestCase {
             parent: "a-1")
     }
 
+    func testLeaseRejectsSymlinkAndLeavesTargetUntouched() throws {
+        let state = root.appendingPathComponent("symlink-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: state, withIntermediateDirectories: true)
+        let target = root.appendingPathComponent("lease-target")
+        let sentinel = Data("outside-state".utf8)
+        try sentinel.write(to: target)
+        let lock = state.appendingPathComponent(QoderCollectionLease.lockFileName)
+        try FileManager.default.createSymbolicLink(at: lock, withDestinationURL: target)
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
     // MARK: - start -> lease -> second instance refused -> stop -> resume
 
     func testStartTakesTheLeaseAndStopLetsANewInstanceResume() throws {

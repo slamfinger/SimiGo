@@ -1236,11 +1236,28 @@ private final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unc
         }
     }
 
+    /// Refuse downloads that exceed a hard disk-consumption ceiling. This is
+    /// deliberately enforced while streaming (not after the temporary file has
+    /// already consumed the disk). The cap is for installer payloads, not model
+    /// weights, which use the separate Hugging Face workflow.
+    private static let maximumDownloadBytes: Int64 = 2_000_000_000
+
     func urlSession(
         _ session: URLSession, downloadTask: URLSessionDownloadTask,
         didWriteData bytesWritten: Int64, totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64
     ) {
+        let expectedExceedsLimit =
+            totalBytesExpectedToWrite > 0
+                && totalBytesExpectedToWrite > Self.maximumDownloadBytes
+        guard totalBytesWritten <= Self.maximumDownloadBytes, !expectedExceedsLimit else {
+            downloadTask.cancel()
+            settle(.failure(NSError(
+                domain: "EnvManager", code: 413,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "Binary download exceeds the 2,000,000,000-byte limit"])))
+            return
+        }
         progress(totalBytesWritten, totalBytesExpectedToWrite)
     }
 
@@ -1248,6 +1265,9 @@ private final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unc
         _ session: URLSession, downloadTask: URLSessionDownloadTask,
         didFinishDownloadingTo location: URL
     ) {
+        // Cancellation/failure may be settled before URLSession delivers the
+        // final temporary-file callback. Never publish that partial file.
+        guard !settled else { return }
         if let http = downloadTask.response as? HTTPURLResponse,
             !(200...299).contains(http.statusCode)
         {
@@ -1256,13 +1276,26 @@ private final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unc
                 userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode)"])))
             return
         }
-        // The delegate's temp file is deleted when this returns; move it now.
         do {
-            let fm = FileManager.default
-            try? fm.removeItem(at: destination)
-            try fm.moveItem(at: location, to: destination)
-            let size = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-            settle(.success(Int64(size)))
+            let values = try location.resourceValues(forKeys: [.fileSizeKey])
+            guard let fileSize = values.fileSize, fileSize >= 0 else {
+                throw NSError(
+                    domain: "EnvManager", code: 500,
+                    userInfo: [NSLocalizedDescriptionKey: "Downloaded binary size is unavailable"])
+            }
+            let size = Int64(fileSize)
+            guard size <= Self.maximumDownloadBytes else {
+                throw NSError(
+                    domain: "EnvManager", code: 413,
+                    userInfo: [NSLocalizedDescriptionKey:
+                        "Binary download exceeds the 2,000,000,000-byte limit"])
+            }
+            // The delegate's temp file is deleted when this returns; move only
+            // after the final size has been verified and before removing an older
+            // destination artifact.
+            try? FileManager.default.removeItem(at: destination)
+            try FileManager.default.moveItem(at: location, to: destination)
+            settle(.success(size))
         } catch {
             settle(.failure(error))
         }
