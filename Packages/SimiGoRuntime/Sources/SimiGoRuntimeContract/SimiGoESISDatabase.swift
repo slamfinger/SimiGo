@@ -2576,16 +2576,24 @@ public final class SimiGoESISDatabase {
         let prevStmt = try prepare("""
         SELECT relative_path, content_sha256, object_id FROM file_contents WHERE root_id=?;
         """)
+        defer { sqlite3_finalize(prevStmt) }
         bind(prevStmt, 1, rootID)
-        while sqlite3_step(prevStmt) == SQLITE_ROW {
-            func text(_ i: Int32) -> String {
-                sqlite3_column_text(prevStmt, i).map { String(cString: $0) } ?? ""
+        while true {
+            let rc = sqlite3_step(prevStmt)
+            if rc == SQLITE_ROW {
+                func text(_ i: Int32) -> String {
+                    sqlite3_column_text(prevStmt, i).map { String(cString: $0) } ?? ""
+                }
+                previous[text(0)] = FileContentState(
+                    digest: text(1),
+                    objectID: sqlite3_column_type(prevStmt, 2) == SQLITE_NULL ? nil : text(2))
+                continue
             }
-            previous[text(0)] = FileContentState(
-                digest: text(1),
-                objectID: sqlite3_column_type(prevStmt, 2) == SQLITE_NULL ? nil : text(2))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            break
         }
-        sqlite3_finalize(prevStmt)
 
         var scanned = 0, reused = 0, skipped = 0
         var entityBytesRead = 0
