@@ -2593,6 +2593,10 @@ public final class SimiGoESISDatabase {
         fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
         carryText: Bool = true
     ) throws -> ContentSettleReport {
+        // Serialize the baseline snapshot, filesystem observation and all index
+        // mutations. Otherwise two overlapping scans can commit in reverse order
+        // and let an older observation overwrite a newer settlement.
+        return try transactionResult {
         let fm = FileManager.default
         // file_contents references roots, so the root must exist before any
         // content row is written (new roots start here, not in the index pass).
@@ -2773,7 +2777,6 @@ public final class SimiGoESISDatabase {
         var created = 0, deduplicated = 0, bytesAddressed = 0
         let now = Self.stamp(Date())
 
-        try transaction {
             for item in cleared {
                 invalidated.formUnion(try affectedClosure(
                     rootID: rootID, relativePath: item.relativePath))
@@ -2884,8 +2887,7 @@ public final class SimiGoESISDatabase {
                     contentDigest: file.digest)
             }
             try markSettlementsInvalidInTransaction(Array(invalidated))
-        }
-        try markRootScanned(rootID)
+            try markRootScanned(rootID)
 
         return ContentSettleReport(
             scanned: scanned, reused: reused, settled: pending.count,
@@ -2895,6 +2897,7 @@ public final class SimiGoESISDatabase {
             objectsCreated: created, deduplicated: deduplicated,
             bytesAddressed: bytesAddressed,
             indexOnly: !carryText, entityBytesRead: entityBytesRead)
+        }
     }
 
     /// Component-aligned relative path. The enumerator can hand back a
