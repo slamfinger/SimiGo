@@ -22,12 +22,10 @@ final class BinaryDownloaderTests: XCTestCase {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [ControlledBinaryDownloadURLProtocol.self]
 
-        let download = Task {
-            try await BinaryDownloader.download(
-                from: URL(string: "https://simigo.invalid/engine")!,
-                to: destination, configuration: configuration
-            ) { _, _ in }
-        }
+        let sourceURL = URL(string: "https://simigo.invalid/engine")!
+        let downloader = BinaryDownloader(
+            destination: destination, configuration: configuration) { _, _ in }
+        let download = Task { try await downloader.run(url: sourceURL) }
 
         await fulfillment(of: [started], timeout: 5)
         download.cancel()
@@ -38,7 +36,19 @@ final class BinaryDownloaderTests: XCTestCase {
             // Expected: cancellation is propagated to the async caller.
         }
         await fulfillment(of: [stopped], timeout: 5)
+
+        // A completion callback already queued when cancellation wins must
+        // not publish its temporary file over the previously installed binary.
+        let lateTemporary = directory.appendingPathComponent("late-download")
+        try Data("partial-download".utf8).write(to: lateTemporary)
+        let callbackSession = URLSession(configuration: .ephemeral)
+        let callbackTask = callbackSession.downloadTask(with: sourceURL)
+        downloader.urlSession(
+            callbackSession, downloadTask: callbackTask,
+            didFinishDownloadingTo: lateTemporary)
+        callbackSession.invalidateAndCancel()
         XCTAssertEqual(try Data(contentsOf: destination), previous)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: lateTemporary.path))
     }
 
     func testSuccessfulDownloadAtomicallyReplacesExistingDestination() async throws {

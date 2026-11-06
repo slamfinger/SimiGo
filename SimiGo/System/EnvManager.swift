@@ -1225,7 +1225,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
     private var downloadTask: URLSessionDownloadTask?
     private var settled = false
 
-    private init(
+    init(
         destination: URL, configuration: URLSessionConfiguration,
         progress: @escaping @Sendable (Int64, Int64) -> Void
     ) {
@@ -1245,7 +1245,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
         ).run(url: url)
     }
 
-    private func run(url: URL) async throws -> Int64 {
+    func run(url: URL) async throws -> Int64 {
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 begin(continuation: continuation, url: url)
