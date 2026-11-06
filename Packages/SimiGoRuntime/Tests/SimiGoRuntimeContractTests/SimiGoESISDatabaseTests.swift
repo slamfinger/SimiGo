@@ -735,6 +735,27 @@ extension SimiGoESISDatabaseTests {
     }
 
 
+    func testReadGraphRejectsEmptyAuthoritativeGraphJSON() throws {
+        let url = tempURL("empty-graph-json")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        let state = SimiGoESISDatabase.GraphState(
+            id: "empty-json-state", parentID: nil, modelIdentity: "test-model",
+            createdAt: Date(timeIntervalSince1970: 700000000), position: 1,
+            continuationID: "C-1", nextInput: "continue", anchor: "a1",
+            prefix: ["complete-prefix"], lifecycle: "active", checkpointIDs: [])
+        try db.writeGraph(states: [state], checkpoints: [])
+
+        // Empty TEXT is not a valid serialized empty collection. Treating it
+        // as [] would silently turn corrupt authoritative state into a graph.
+        try rawExec(url, "UPDATE execution_states SET prefix_json='' WHERE state_id='empty-json-state';")
+        XCTAssertThrowsError(try db.readGraph(), "empty prefix_json must be corruption")
+
+        try rawExec(url, "UPDATE execution_states SET prefix_json='[\"complete-prefix\"]', checkpoint_ids_json='' WHERE state_id='empty-json-state';")
+        XCTAssertThrowsError(try db.readGraph(), "empty checkpoint_ids_json must be corruption")
+    }
     func testInformationDemandCacheIdentityIncludesResultLimit() throws {
         let databaseURL = tempURL("demand-limit")
         let rootURL = FileManager.default.temporaryDirectory
