@@ -551,19 +551,20 @@ final class QoderCandidateInbox {
                 detail: "database must be an owned, non-shared-writable, single-link regular file")
         }
 
-        var header = [UInt8](repeating: 0, count: 16)
+        let headerCount = 16
+        var header = [UInt8](repeating: 0, count: headerCount)
         var offset = 0
-        while offset < header.count {
+        while offset < headerCount {
             let amount = header.withUnsafeMutableBytes { raw -> Int in
                 guard let base = raw.baseAddress else { return -1 }
                 return Darwin.read(
-                    descriptor, base.advanced(by: offset), header.count - offset)
+                    descriptor, base.advanced(by: offset), headerCount - offset)
             }
             if amount < 0 && errno == EINTR { continue }
             guard amount > 0 else { break }
             offset += amount
         }
-        guard offset == header.count, Data(header) == Self.sqliteHeader else {
+        guard offset == headerCount, Data(header) == Self.sqliteHeader else {
             throw QoderCollectionStateError.corruptState(
                 path: path, detail: "missing SQLite header")
         }
