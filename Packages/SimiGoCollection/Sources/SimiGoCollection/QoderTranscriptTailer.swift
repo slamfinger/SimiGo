@@ -27,27 +27,30 @@ enum QoderTranscriptPathAccess {
         guard canonical == standardized else {
             throw NSError(domain: NSPOSIXErrorDomain, code: Int(ELOOP))
         }
-        let components = URL(fileURLWithPath: canonical).standardizedFileURL.pathComponents
-        guard components.first == "/" else {
-            throw NSError(domain: NSPOSIXErrorDomain, code: Int(EINVAL))
+
+        // macOS temporary roots may traverse APFS firmlink/alias components
+        // that realpath canonicalizes but that cannot all be walked with a
+        // component-wise O_NOFOLLOW sequence. Pin the resolved directory by
+        // comparing the opened descriptor with the exact lstat leaf identity.
+        var pathInfo = stat()
+        let statResult = canonical.withCString { Darwin.lstat($0, &pathInfo) }
+        guard statResult == 0, (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
         }
-        var descriptor = Darwin.open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC)
+        let descriptor = canonical.withCString {
+            Darwin.open($0, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        }
         guard descriptor >= 0 else {
             throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
         }
-        for component in components.dropFirst() {
-            let next = component.withCString {
-                Darwin.openat(
-                    descriptor, $0,
-                    O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
-            }
-            guard next >= 0 else {
-                let code = errno
-                Darwin.close(descriptor)
-                throw NSError(domain: NSPOSIXErrorDomain, code: Int(code))
-            }
+        var openedInfo = stat()
+        guard Darwin.fstat(descriptor, &openedInfo) == 0,
+              (openedInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedInfo.st_dev == pathInfo.st_dev,
+              openedInfo.st_ino == pathInfo.st_ino else {
+            let code = errno
             Darwin.close(descriptor)
-            descriptor = next
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(code))
         }
         return descriptor
     }
