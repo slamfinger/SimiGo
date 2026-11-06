@@ -71,7 +71,8 @@ final class QoderCollectionLease {
 
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
         let descriptor = openat(
-            directoryFD, lockFileName, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
+            directoryFD, lockFileName,
+            O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK, 0o600)
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path, detail: String(cString: strerror(errno)))
