@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 /// Process-level exclusive ownership of one collection state directory.
