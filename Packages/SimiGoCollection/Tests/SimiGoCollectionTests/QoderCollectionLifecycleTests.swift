@@ -261,7 +261,8 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
         let target = QoderCandidateInbox(directoryURL: external)
         _ = try target.loadCursorState()
-        target.close()
+        // Keeping the source inbox open is intentional: reading the database
+        // bytes must not require a test-only close API.
         let before = try Data(contentsOf: target.databaseURL)
         let linked = root.appendingPathComponent("linked-state", isDirectory: true)
         try FileManager.default.createDirectory(at: linked, withIntermediateDirectories: true)
