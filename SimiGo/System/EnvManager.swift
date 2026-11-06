@@ -702,9 +702,10 @@ public final class EnvManager: ObservableObject {
             }
             let target = SimiGoPaths.bin.appendingPathComponent(name)
             try fm.createDirectory(at: SimiGoPaths.bin, withIntermediateDirectories: true)
-            if fm.fileExists(atPath: target.path) { try fm.removeItem(at: target) }
-            try fm.moveItem(at: tmp, to: target)
-            try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
+            // Prepare permissions on the staged file, then atomically replace
+            // the installed path. Never unlink the previous binary before the
+            // replacement is known to be publishable.
+            try BinaryDownloader.publishDownloadedBinary(at: tmp, to: target)
             binaryInstallMessage = "已安装 \(target.path)（\(Self.byteText(bytes))）"
             return ["status": "installed", "path": target.path, "bytes": bytes]
         } catch {
@@ -1284,6 +1285,26 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
     /// already consumed the disk). The cap is for installer payloads, not model
     /// weights, which use the separate Hugging Face workflow.
     static let defaultMaximumDownloadBytes: Int64 = 2_000_000_000
+
+    /// Publish a fully downloaded and validated file with one same-volume
+    /// rename. Preparing its executable mode before the rename means readers
+    /// never observe a partial or temporarily non-executable destination; a
+    /// failed rename leaves any existing installed binary untouched.
+    static func publishDownloadedBinary(at stagedURL: URL, to destinationURL: URL) throws {
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755], ofItemAtPath: stagedURL.path)
+        let result = stagedURL.path.withCString { source in
+            destinationURL.path.withCString { destination in
+                Darwin.rename(source, destination)
+            }
+        }
+        guard result == 0 else {
+            let code = errno
+            throw NSError(
+                domain: NSPOSIXErrorDomain, code: Int(code),
+                userInfo: [NSLocalizedDescriptionKey: String(cString: strerror(code))])
+        }
+    }
 
     private var maximumSizeErrorDescription: String {
         "Binary download exceeds the configured \(maximumDownloadBytes)-byte limit"
