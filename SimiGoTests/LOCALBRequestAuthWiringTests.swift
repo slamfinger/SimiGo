@@ -497,6 +497,83 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
     /// dispatch attempt over a branch target dies at challenge consumption
     /// (401), never reaching the branch handlers. Ordinary inference keeps
     /// its authorized behavior.
+    func testLANInformationReadRoutesRequireRealTLSProofAndReachDispatch() throws {
+        let host = try makeAuthorizedHost()
+        let routes = [
+            ("GET", "/v1/simigo/env"),
+            ("GET", "/v1/simigo/roots"),
+            ("GET", "/v1/simigo/is/status"),
+        ]
+
+        for (method, target) in routes {
+            let noProof = "\(method) \(target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + "Connection: close\r\n\r\n"
+            let refused = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: noProof)
+            XCTAssertTrue(
+                try XCTUnwrap(statusLine(of: refused)).contains(" 401 "),
+                "\(method) \(target) must reject a TLS peer without LOCALB proof")
+
+            let (challenge, permission) = try fetchChallenge(
+                host, method: method, target: target)
+            XCTAssertEqual(permission, LOCALBPermission.informationRead.rawValue)
+            let authorized = try protectedRequest(
+                host, method: method, target: target, contentType: nil, body: "",
+                challenge: challenge, permission: .informationRead)
+            let response = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: authorized)
+            let status = try XCTUnwrap(statusLine(of: response))
+            XCTAssertFalse(
+                status.contains(" 401 "),
+                "\(method) \(target) with P-INFO-READ must pass request authorization; got \(status)")
+        }
+    }
+
+    func testSearchAndRootMutationRoutesRejectNoProofOverRealTLS() throws {
+        let host = try makeAuthorizedHost()
+        let requests: [(method: String, target: String, body: String)] = [
+            ("GET", "/v1/simigo/search?q=proof-boundary", ""),
+            ("POST", "/v1/simigo/search", ""),
+            ("PUT", "/v1/simigo/roots", ""),
+            ("POST", "/v1/simigo/roots", ""),
+        ]
+
+        for item in requests {
+            let contentType = item.body.isEmpty ? "" : "Content-Type: application/json\r\n"
+            let noProof = "\(item.method) \(item.target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + contentType
+                + "Content-Length: \(item.body.utf8.count)\r\n"
+                + "Connection: close\r\n\r\n"
+                + item.body
+            let response = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: noProof)
+            let status = try XCTUnwrap(statusLine(of: response))
+            XCTAssertTrue(
+                status.contains(" 401 "),
+                "\(item.method) \(item.target) must reject a TLS peer without LOCALB proof; got \(status)")
+
+            // P-SRS-WRITE is host-owned and intentionally absent from the
+            // paired-client grant set. The public TLS challenge path must not
+            // issue a proof that the registry cannot authorize.
+            let challengeBody = "{\"method\":\"\(item.method)\","
+                + "\"requestTarget\":\"\(item.target)\"}"
+            let challengeRequest = "POST /localb/auth/challenge HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + "X-SimiGo-LocalB-Client-Key-ID: \(host.clientKeyID)\r\n"
+                + "Content-Type: application/json\r\n"
+                + "Content-Length: \(challengeBody.utf8.count)\r\n"
+                + "Connection: close\r\n\r\n" + challengeBody
+            let challengeResponse = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: challengeRequest)
+            let challengeStatus = try XCTUnwrap(statusLine(of: challengeResponse))
+            XCTAssertTrue(
+                challengeStatus.contains(" 400 "),
+                "P-SRS-WRITE is not delegable to paired LAN clients; got \(challengeStatus)")
+        }
+    }
+
     func testBranchOperationsRequireBranchControlPermission() throws {
         let host = try makeAuthorizedHost()
 
