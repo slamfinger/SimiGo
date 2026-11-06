@@ -4610,7 +4610,11 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, sourceSettlementID)
         bind(stmt, 2, consumerStateID)
         bind(stmt, 3, demandID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_DONE { return nil }
+        guard rc == SQLITE_ROW else {
+            throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+        }
         return Self.consumptionRow(stmt)
     }
 
@@ -4627,10 +4631,17 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, consumerStateID)
         var out: [SettlementConsumptionRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            out.append(Self.consumptionRow(stmt))
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                out.append(Self.consumptionRow(stmt))
+                continue
+            }
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return out
         }
-        return out
     }
 
     private static func consumptionRow(
