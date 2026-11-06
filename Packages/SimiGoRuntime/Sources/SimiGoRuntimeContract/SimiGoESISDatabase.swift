@@ -4995,10 +4995,20 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
         var out: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
-            out.append(String(cString: c))
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                guard let c = sqlite3_column_text(stmt, 0) else {
+                    throw DatabaseError.sql("upstream dependency closure returned a NULL settlement id")
+                }
+                out.append(String(cString: c))
+                continue
+            }
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return out
         }
-        return out
     }
 
     /// Invalidate the transitive dependency closure rooted at settlements bound to
