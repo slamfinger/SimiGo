@@ -1228,7 +1228,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
 
     init(
         destination: URL, configuration: URLSessionConfiguration,
-        maximumDownloadBytes: Int64 = Self.defaultMaximumDownloadBytes,
+        maximumDownloadBytes: Int64 = 2_000_000_000,
         progress: @escaping @Sendable (Int64, Int64) -> Void
     ) {
         self.destination = destination

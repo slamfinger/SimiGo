@@ -53,7 +53,7 @@ final class BinaryDownloaderTests: XCTestCase {
 
     func testOversizedDownloadPreservesExistingDestination() async throws {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("binary-downloader-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("binary-downloader-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -85,7 +85,7 @@ final class BinaryDownloaderTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: destination), previous)
         let entries = try FileManager.default.contentsOfDirectory(
             at: directory, includingPropertiesForKeys: nil)
-        XCTAssertEqual(entries.map(\\.lastPathComponent).sorted(), ["engine"])
+        XCTAssertEqual(entries.map(\.lastPathComponent).sorted(), ["engine"])
     }
 
     func testSuccessfulDownloadAtomicallyReplacesExistingDestination() async throws {
