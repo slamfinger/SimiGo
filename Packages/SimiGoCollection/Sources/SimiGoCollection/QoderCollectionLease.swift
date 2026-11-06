@@ -56,6 +56,15 @@ final class QoderCollectionLease {
                 path: directoryURL.path, detail: String(cString: strerror(errno)))
         }
         defer { close(directoryFD) }
+        var openedRootInfo = stat()
+        guard fstat(directoryFD, &openedRootInfo) == 0,
+              (openedRootInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedRootInfo.st_dev == rootInfo.st_dev,
+              openedRootInfo.st_ino == rootInfo.st_ino else {
+            throw QoderCollectionStateError.unreadableState(
+                path: directoryURL.path,
+                detail: "state directory changed while opening its descriptor")
+        }
 
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
         let descriptor = openat(
