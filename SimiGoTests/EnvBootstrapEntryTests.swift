@@ -65,6 +65,84 @@ final class EnvBootstrapEntryTests: XCTestCase {
         XCTAssertTrue(try after.listRoots().contains { $0.rootID == rootID })
     }
 
+
+    func testBinaryDownloaderRejectsOversizedDownloadedFile() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-download-limit-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("source.bin")
+        let destination = directory.appendingPathComponent("staged.bin")
+        try Data(repeating: 0x41, count: 9).write(to: source)
+
+        let downloader = BinaryDownloader(
+            destination: destination, maximumBytes: 8,
+            configuration: .ephemeral, progress: { _, _ in })
+        let transfer = Task {
+            try await downloader.run(url: URL(string: "https://127.0.0.1/unused")!)
+        }
+        try await Task.sleep(nanoseconds: 50_000_000)
+        downloader.finishDownloadedFile(at: source, statusCode: 200)
+
+        do {
+            _ = try await transfer.value
+            XCTFail("expected the 9-byte file to exceed the 8-byte limit")
+        } catch let error as BinaryDownloaderError {
+            guard case .maximumSizeExceeded(let limit, let actual) = error else {
+                return XCTFail("unexpected downloader error: \(error)")
+            }
+            XCTAssertEqual(limit, 8)
+            XCTAssertEqual(actual, 9)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
+    func testBinaryDownloaderCancellationWinsAgainstLateFinishCallback() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("binary-download-cancel-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("late.bin")
+        let destination = directory.appendingPathComponent("staged.bin")
+        try Data(repeating: 0x42, count: 32).write(to: source)
+
+        let downloader = BinaryDownloader(
+            destination: destination, maximumBytes: 1024,
+            configuration: .ephemeral, progress: { _, _ in })
+        let transfer = Task {
+            try await downloader.run(url: URL(string: "https://127.0.0.1/unused")!)
+        }
+        try await Task.sleep(nanoseconds: 50_000_000)
+        downloader.cancel()
+
+        do {
+            _ = try await transfer.value
+            XCTFail("expected cancellation")
+        } catch is CancellationError {
+            // Expected.
+        }
+        // Simulate a URLSession finish callback that was queued before cancellation completed.
+        downloader.finishDownloadedFile(at: source, statusCode: 200)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+    }
+
+    func testBinaryDownloaderRejectsInvalidLimitBeforeStarting() async {
+        let destination = FileManager.default.temporaryDirectory
+            .appendingPathComponent("invalid-download-\(UUID().uuidString)")
+        do {
+            _ = try await BinaryDownloader.download(
+                from: URL(string: "https://127.0.0.1/unused")!,
+                to: destination, maximumBytes: 0, progress: { _, _ in })
+            XCTFail("expected an invalid limit error")
+        } catch let error as BinaryDownloaderError {
+            XCTAssertEqual(error, .invalidMaximumBytes)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
     func testStableRootIDIsDeterministic() {
         XCTAssertEqual(
             EnvManager.stableRootID(forPath: "/a/b/c"),
