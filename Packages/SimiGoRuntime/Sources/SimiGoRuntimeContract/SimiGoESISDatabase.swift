@@ -2587,6 +2587,36 @@ public final class SimiGoESISDatabase {
         }
         sqlite3_finalize(prevStmt)
 
+        // Some indexed files (binary, oversized, or non-UTF8) intentionally
+        // have no file_contents row. Keep their external-file inventory too,
+        // otherwise a later root scan cannot detect their disappearance.
+        var previousExternalFiles: [String: String] = [:]
+        do {
+            let externalStmt = try prepare("""
+            SELECT relative_path, content_digest FROM external_files
+            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
+            """)
+            defer { sqlite3_finalize(externalStmt) }
+            bind(externalStmt, 1, rootID)
+            while true {
+                let rc = sqlite3_step(externalStmt)
+                if rc == SQLITE_ROW {
+                    guard let path = sqlite3_column_text(externalStmt, 0) else {
+                        throw DatabaseError.sql("external_files contains a NULL relative_path")
+                    }
+                    let relativePath = String(cString: path)
+                    let digest = sqlite3_column_text(externalStmt, 1)
+                        .map { String(cString: $0) } ?? ""
+                    previousExternalFiles[relativePath] = digest
+                    continue
+                }
+                guard rc == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
+                break
+            }
+        }
+
         var scanned = 0, reused = 0, skipped = 0
         var entityBytesRead = 0
         var seen = Set<String>()
@@ -2664,10 +2694,21 @@ public final class SimiGoESISDatabase {
                 size: size, modified: modified, previous: previous[rel]))
         }
 
-        // Indexed rows whose file disappeared from the latest scan.
+        // Indexed rows whose file disappeared from the latest scan. The
+        // file_contents snapshot misses intentionally uncarried files, so also
+        // reconcile every previously-present external_files path.
         var removed = 0
+        var clearedPaths = Set<String>()
         for (rel, old) in previous where !seen.contains(rel) {
             cleared.append((rel, old, true))
+            clearedPaths.insert(rel)
+            removed += 1
+        }
+        for (rel, digest) in previousExternalFiles
+        where !seen.contains(rel) && !clearedPaths.contains(rel) {
+            cleared.append((
+                rel, FileContentState(digest: digest, objectID: nil), true))
+            clearedPaths.insert(rel)
             removed += 1
         }
 
@@ -3116,7 +3157,11 @@ public final class SimiGoESISDatabase {
 
     /// 文件名/路径命中的确定性 consumer（demand 结果的一部分）。
     private func fileNameHits(query: String, rootID: String?, limit: Int) throws -> [ContentHit] {
-        var sql = "SELECT root_id, relative_path FROM external_files WHERE relative_path LIKE ?"
+        guard limit > 0 else { return [] }
+        var sql = """
+        SELECT root_id, relative_path FROM external_files
+        WHERE relative_path LIKE ? AND COALESCE(status,'present')='present'
+        """
         if rootID != nil { sql += " AND root_id='" + rootID!.replacingOccurrences(of: "'", with: "''") + "'" }
         sql += " ORDER BY relative_path LIMIT \(limit);"
         let stmt = try prepare(sql)

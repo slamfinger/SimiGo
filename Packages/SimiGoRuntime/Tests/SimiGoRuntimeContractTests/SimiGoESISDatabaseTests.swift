@@ -703,4 +703,33 @@ extension SimiGoESISDatabaseTests {
             XCTFail("unexpected error: \(error)")
         }
     }
+
+    func testRootSettlementMarksRemovedNonTextFilesMissing() throws {
+        let databaseURL = tempURL("missing-nontext")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-nontext-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("binary.dat")
+        try Data([0xFF, 0xFE]).write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+
+        _ = try db.settleWorkRootContents(rootID: "nontext-root", rootURL: rootURL)
+        let present = try db.listExternalFiles(rootID: "nontext-root")
+        XCTAssertEqual(present.first(where: { $0.relativePath == "binary.dat" })?.status, "present")
+        XCTAssertEqual(try db.count("file_contents"), 0)
+
+        try fm.removeItem(at: fileURL)
+        let report = try db.settleWorkRootContents(rootID: "nontext-root", rootURL: rootURL)
+        XCTAssertEqual(report.removed, 1)
+        let afterRemoval = try db.listExternalFiles(rootID: "nontext-root")
+        XCTAssertEqual(
+            afterRemoval.first(where: { $0.relativePath == "binary.dat" })?.status,
+            "missing")
+    }
+
 }
