@@ -140,7 +140,7 @@ public struct SimiGoInformationLoop {
         }
 
         var inputs: [String] = []
-        var stale: [String] = []
+        let stale: [String] = []
         var scored: [(item: Item, score: Int)] = []
         var addresses: [SimiGoESISDatabase.InformationInput] = []
         let keywords = Self.keywords(in: query)
