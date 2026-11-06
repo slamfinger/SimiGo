@@ -11,8 +11,8 @@ import Foundation
 ///
 /// This type makes the settled computation addressable: the producer stores the
 /// digest of the pool entry key it exported alongside the settlement, and a
-/// consumer that has ALREADY passed IS admission (digest integrity, dynamic
-/// validity, dependency closure, producer identity) may bind KV only to the
+/// consumer that has ALREADY passed semantic IS admission (digest integrity,
+/// dynamic validity, dependency closure) may bind KV only to the
 /// representation that settlement names. Any disagreement is a refusal, so the
 /// engine falls back to a full cold prefill instead of silently continuing on an
 /// representation a verified settlement does not authorize.
