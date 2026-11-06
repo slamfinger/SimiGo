@@ -1006,51 +1006,65 @@ extension HTTPServer {
         assistantText: String,
         settlementID: String?,
         stateID: String?,
-        completion: GenerationCompletion
+        completion: GenerationCompletion,
+        producedToolCalls: Bool = false
     ) {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        try? turn.db.commitChatTurn(
-            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-            assistantText: text, model: modelId, createdAt: Date(),
-            eligibility: turn.eligibility)
-        guard turn.eligibility == .ordinary else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=responses reason=internal_operation "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
-            return
-        }
-        guard completion.isSettleable else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=responses completion=\(completion.wireName) "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+        if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
+            do {
+                _ = try turn.db.commitChatTurn(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility)
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[CHAT_COMMIT_REJECT] wire=responses reason=\"\(error)\" "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) committed=0")
+                return
+            }
+            if turn.eligibility != .ordinary {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=responses reason=internal_operation "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            } else if !completion.isSettleable {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=responses completion=\(completion.wireName) "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            } else {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=responses reason=tool_calls "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            }
             return
         }
 
         if let settlementID {
             guard !turn.renderedResolution.demandID.isEmpty,
-                !turn.renderedResolution.retrievalSettlementID.isEmpty
-            else { return }
-            let result = (try? turn.db.settlementReceipt(settlementID))?.payload
-                ?? Data(text.utf8)
-            _ = try? turn.db.recordInformationAdvancement(.init(
-                demandID: turn.renderedResolution.demandID,
-                stateID: stateID ?? turn.renderedResolution.stateID ?? "",
-                settlementID: settlementID,
-                retrievalSettlementID: turn.renderedResolution.retrievalSettlementID,
-                actions: ["responses.completion"],
-                result: result))
-            if let stateID {
-                try? turn.db.linkChatSession(
-                    sessionID: turn.sessionID, stateID: stateID,
-                    modelIdentity: turn.modelIdentity)
+                !turn.renderedResolution.retrievalSettlementID.isEmpty,
+                let linkedStateID = stateID ?? turn.renderedResolution.stateID,
+                !linkedStateID.isEmpty else {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=responses reason=incomplete_continuation_identity "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+                return
             }
-            // The continuation settlement is authoritative but was produced
-            // before this handler could name its demand: distill it now so a
-            // later demand can reuse the conclusion.
-            _ = try? turn.db.recordSettlementSummary(
-                settlementID: settlementID, sessionID: turn.sessionID,
-                query: turn.query)
+            do {
+                _ = try turn.db.commitChatTurnWithExistingSettlement(
+                    .init(
+                        sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                        assistantText: text, model: modelId, createdAt: Date(),
+                        eligibility: turn.eligibility),
+                    settlementID: settlementID, stateID: linkedStateID,
+                    modelIdentity: turn.modelIdentity,
+                    demandID: turn.renderedResolution.demandID,
+                    retrievalSettlementID: turn.renderedResolution.retrievalSettlementID,
+                    actions: ["responses.completion"], query: turn.query)
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+            }
             return
         }
 
@@ -1067,7 +1081,11 @@ extension HTTPServer {
                 summaryQuery: turn.query,
                 actions: ["responses.completion"],
                 sourceIdentity: turn.sourceIdentity.isAbsent ? nil : turn.sourceIdentity,
-                operationKey: turn.operationKey)
+                operationKey: turn.operationKey,
+                chatTurn: .init(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REUSE] wire=responses settlement=\(committed.settlementID) "
@@ -1076,7 +1094,7 @@ extension HTTPServer {
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
         }
     }
 
@@ -1426,7 +1444,8 @@ extension HTTPServer {
                     assistantText: content,
                     settlementID: settlementOutcome?.settlementID,
                     stateID: settlementOutcome?.childESStateID,
-                    completion: result.completion)
+                    completion: result.completion,
+                    producedToolCalls: !toolCalls.value.isEmpty)
             }
 
             let calls =
@@ -1976,7 +1995,8 @@ extension HTTPServer {
                     assistantText: finalContent,
                     settlementID: nil,
                     stateID: nil,
-                    completion: result.completion)
+                    completion: result.completion,
+                    producedToolCalls: !toolCalls.value.isEmpty)
             }
 
             let finalCalls =
