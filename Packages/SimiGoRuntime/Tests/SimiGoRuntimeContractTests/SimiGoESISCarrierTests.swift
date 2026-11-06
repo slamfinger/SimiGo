@@ -378,11 +378,13 @@ final class SimiGoESISCarrierTests: XCTestCase {
         // Change physical bytes without advancing the settled root revision.
         try Data("different content".utf8).write(
             to: root.appendingPathComponent("source.md"))
-        let second = try db.executeInformationDemand(
-            query: "needle", rootID: "stale-cache-root", limit: 10)
-        XCTAssertFalse(second.reused)
-        XCTAssertTrue(second.hits.isEmpty,
-                      "cached citations must be revalidated against physical locator bytes")
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "needle", rootID: "stale-cache-root", limit: 10),
+            "a stale physical source must fail closed before publishing a new retrieval")
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 1,
+            "the stale demand must not append or replace a retrieval settlement")
     }
 
     func testDemandResultIsCarriedAndReused() throws {
