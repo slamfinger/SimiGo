@@ -5241,6 +5241,15 @@ public final class SimiGoESISDatabase {
         """) { stmt in
             bind(stmt, 1, filenameNeedle)
         }
+        // Legacy v1 demand rows stored only the content digest string and did
+        // not persist filename-only candidates or explicit root scope. Their
+        // provenance cannot prove that a filename-only source was absent, so
+        // invalidate these legacy rows on any source-path change rather than
+        // leaving an unverifiable retrieval advertised as valid.
+        try execBinding("""
+        UPDATE retrieval_settlements SET status='invalidated'
+        WHERE status='valid' AND inputs_digest NOT LIKE '{%';
+        """)
     }
 
     /// Reconciliation for lost watcher events: mark indexed files under a root
