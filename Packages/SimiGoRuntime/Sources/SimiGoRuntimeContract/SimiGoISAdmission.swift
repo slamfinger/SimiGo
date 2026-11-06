@@ -241,13 +241,14 @@ public enum SimiGoISAdmission {
         // (3) persist ONLY the contract-cleared settlement, linked to the parent.
         // Each store call manages its own durable transaction; the contract gate
         // already ran above, so a rejection here means nothing was written.
-        try db.recordExecutionState(
+        let childState = SimiGoESISDatabase.ChildExecutionState(
             id: childStateID, parentID: parentStateID, modelIdentity: consumer.model,
             position: 1, continuationID: UUID().uuidString, anchor: admitted.payloadDigest,
-            lifecycle: "active", createdAt: Date())
-        let sid = try db.recordNativeSettlement(settled, stateID: childStateID)
-        try db.recordIdentityBindings(settlementID: sid, identity: consumer)
-        return SettledContinuation(admission: admitted, settled: settled, settlementID: sid)
+            createdAt: Date(), nextInput: admitted.recoveredValue)
+        let sid = try db.recordNativeSettlementWithIdentity(
+            settled, stateID: childStateID, identity: consumer, childState: childState)
+        return SettledContinuation(
+            admission: admitted, settled: settled, settlementID: sid.uuidString)
     }
 
     /// Extract the semantic value from a settled canonical payload. Mirrors the
