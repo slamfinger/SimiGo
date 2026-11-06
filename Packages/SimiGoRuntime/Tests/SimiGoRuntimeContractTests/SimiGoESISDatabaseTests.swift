@@ -703,4 +703,40 @@ extension SimiGoESISDatabaseTests {
             XCTFail("unexpected error: \(error)")
         }
     }
+
+    func testInformationDemandCacheIdentityIncludesResultLimit() throws {
+        let databaseURL = tempURL("demand-limit")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-limit-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        try Data("needle first\\n".utf8)
+            .write(to: rootURL.appendingPathComponent("a.txt"))
+        try Data("needle second\\n".utf8)
+            .write(to: rootURL.appendingPathComponent("b.txt"))
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "limit-root", rootURL: rootURL)
+
+        let one = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 1)
+        XCTAssertEqual(one.hits.count, 1)
+        XCTAssertFalse(one.reused)
+
+        let two = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 2)
+        XCTAssertEqual(two.hits.count, 2)
+        XCTAssertNotEqual(two.demandID, one.demandID)
+        XCTAssertFalse(two.reused)
+
+        let twoAgain = try db.executeInformationDemand(
+            query: "needle", rootID: "limit-root", limit: 2)
+        XCTAssertTrue(twoAgain.reused)
+        XCTAssertEqual(twoAgain.hits, two.hits)
+    }
+
 }

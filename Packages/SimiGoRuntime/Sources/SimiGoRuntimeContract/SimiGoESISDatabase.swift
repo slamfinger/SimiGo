@@ -3031,7 +3031,11 @@ public final class SimiGoESISDatabase {
                 }
             }
             let canonical = canonicalInput.canonical
-            let demandID = canonicalInput.digest
+            // The result limit changes the persisted hit set, so it is part of
+            // this retrieval's identity even though it is not a source-file input.
+            let effectiveLimit = max(0, limit)
+            let demandBasis = canonical + "|result_limit=\(effectiveLimit)"
+            let demandID = NativeSHA256.hexDigest(Data(demandBasis.utf8))
             let roots = canonicalInput.rootIDs
 
             // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
@@ -3072,7 +3076,7 @@ public final class SimiGoESISDatabase {
             }
 
             // 3) 重算：在同一数据库快照的已结算内容索引上检索
-            var hits = try searchSettledContent(query: query, rootID: rootID, limit: limit)
+            var hits = try searchSettledContent(query: query, rootID: rootID, limit: effectiveLimit)
             if hits.isEmpty {
                 // 文件名命中（external_files 路径匹配）也纳入 demand 结果
                 hits = try fileNameHits(query: query, rootID: rootID, limit: limit)
@@ -3102,7 +3106,7 @@ public final class SimiGoESISDatabase {
                 bind(stmt, 1, demandID)
                 bind(stmt, 2, query)
                 bind(stmt, 3, roots.joined(separator: ","))
-                bind(stmt, 4, canonical)
+                bind(stmt, 4, demandBasis)
                 bind(stmt, 5, resultSHA)
                 bind(stmt, 6, Int64(hits.count))
                 bind(stmt, 7, "valid")
