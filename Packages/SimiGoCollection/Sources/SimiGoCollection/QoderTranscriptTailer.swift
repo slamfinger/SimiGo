@@ -254,6 +254,23 @@ public struct QoderTranscriptScanner {
                     // Most sessions have no subagents. Treat only a real
                     // no-such-file result as absence; permission and I/O
                     // failures make the scan partial and preserve cursors.
+                    let subagentValues: URLResourceValues
+                    do {
+                        subagentValues = try subagents.resourceValues(
+                            forKeys: Self.resourceKeys)
+                    } catch {
+                        if !isNoSuchFileError(error) {
+                            errors.append(
+                                "cannot inspect \(subagents.path): \(error)")
+                        }
+                        continue
+                    }
+                    // Missing is the normal case. A symlink or a non-directory
+                    // is never traversed, even if its target is a real directory.
+                    guard subagentValues.isSymbolicLink != true,
+                          subagentValues.isDirectory == true
+                    else { continue }
+
                     let agents: [URL]
                     do {
                         agents = try listDirectory(subagents)
