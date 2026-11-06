@@ -5062,47 +5062,84 @@ public final class SimiGoESISDatabase {
     /// settlement invalidated by the sweep.
     @discardableResult
     public func reconcileRoot(rootID: String, seenRelativePaths: Set<String>) throws -> [String] {
-        let stmt = try prepare("SELECT relative_path FROM external_files WHERE root_id=?;")
-        bind(stmt, 1, rootID)
-        var indexed: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
-            indexed.append(String(cString: c))
-        }
-        sqlite3_finalize(stmt)
-        let existing = indexed.filter { !seenRelativePaths.contains($0) }
-        guard !existing.isEmpty else { return [] }
-
-        var invalidated: [String] = []
-        try transaction {
-            for path in existing {
-                let digestStmt = try prepare("""
-                SELECT content_sha256 FROM file_contents WHERE root_id=? AND relative_path=?;
-                """)
-                var oldDigest = ""
-                if sqlite3_step(digestStmt) == SQLITE_ROW,
-                    let c = sqlite3_column_text(digestStmt, 0)
-                {
-                    oldDigest = String(cString: c)
+        // Hold the write lock for both the inventory snapshot and the missing-path
+        // mutations. A root settlement cannot update this inventory between them.
+        return try transactionResult {
+            let stmt = try prepare("""
+            SELECT relative_path FROM external_files
+            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
+            """)
+            defer { sqlite3_finalize(stmt) }
+            bind(stmt, 1, rootID)
+            var indexed: [String] = []
+            while true {
+                let rc = sqlite3_step(stmt)
+                if rc == SQLITE_ROW {
+                    guard let c = sqlite3_column_text(stmt, 0) else {
+                        throw DatabaseError.sql(
+                            "reconcileRoot: NULL relative_path for root \(rootID)")
+                    }
+                    indexed.append(String(cString: c))
+                    continue
                 }
-                sqlite3_finalize(digestStmt)
-                invalidated += try affectedClosure(rootID: rootID, relativePath: path)
+                guard rc == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
+                break
+            }
+
+            let existing = indexed.filter { !seenRelativePaths.contains($0) }
+            guard !existing.isEmpty else { return [] }
+
+            var invalidated = Set<String>()
+            for path in existing {
+                let oldDigest: String
+                do {
+                    let digestStmt = try prepare("""
+                    SELECT content_sha256 FROM file_contents
+                    WHERE root_id=? AND relative_path=?;
+                    """)
+                    defer { sqlite3_finalize(digestStmt) }
+                    bind(digestStmt, 1, rootID)
+                    bind(digestStmt, 2, path)
+                    let rc = sqlite3_step(digestStmt)
+                    if rc == SQLITE_ROW {
+                        guard let c = sqlite3_column_text(digestStmt, 0) else {
+                            throw DatabaseError.sql(
+                                "reconcileRoot: NULL content digest for \(rootID)/\(path)")
+                        }
+                        oldDigest = String(cString: c)
+                    } else if rc == SQLITE_DONE {
+                        // An external-file-only row (binary/oversized/non-UTF8)
+                        // legitimately has no carried file_contents digest.
+                        oldDigest = ""
+                    } else {
+                        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    }
+                }
+
+                invalidated.formUnion(try affectedClosure(
+                    rootID: rootID, relativePath: path))
                 try invalidateRetrievalSettlementsInTransaction(
                     rootID: rootID, relativePath: path, oldDigest: oldDigest)
                 try execBinding("""
                 DELETE FROM file_contents WHERE root_id=? AND relative_path=?;
-                """) { s in
-                    bind(s, 1, rootID); bind(s, 2, path)
+                """) { deleteStmt in
+                    bind(deleteStmt, 1, rootID)
+                    bind(deleteStmt, 2, path)
                 }
                 try execBinding("""
                 UPDATE external_files SET status='missing'
                 WHERE root_id=? AND relative_path=?;
-                """) { s in
-                    bind(s, 1, rootID); bind(s, 2, path)
+                """) { updateStmt in
+                    bind(updateStmt, 1, rootID)
+                    bind(updateStmt, 2, path)
                 }
             }
-            try markSettlementsInvalidInTransaction(invalidated)
+            let invalidatedIDs = invalidated.sorted()
+            try markSettlementsInvalidInTransaction(invalidatedIDs)
+            return invalidatedIDs
         }
-        return invalidated
     }
 
     /// Transitive dependents of a seed settlement set: the seeds themselves plus

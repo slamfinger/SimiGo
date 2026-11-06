@@ -703,4 +703,34 @@ extension SimiGoESISDatabaseTests {
             XCTFail("unexpected error: \(error)")
         }
     }
+
+    func testManualRootReconciliationMarksMissingOnceAndIsIdempotent() throws {
+        let databaseURL = tempURL("manual-reconcile")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-manual-reconcile-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("settled text".utf8).write(to: rootURL.appendingPathComponent("keep.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "manual-root", rootURL: rootURL)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+
+        _ = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
+        XCTAssertEqual(try db.count("file_contents"), 0)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "manual-root")
+                .first(where: { $0.relativePath == "keep.txt" })?.status,
+            "missing")
+
+        let second = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
+        XCTAssertTrue(second.isEmpty)
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "manual-root")
+                .first(where: { $0.relativePath == "keep.txt" })?.status,
+            "missing")
+    }
+
 }
