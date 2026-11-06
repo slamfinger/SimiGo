@@ -516,6 +516,34 @@ final class QoderTranscriptTailerTests: XCTestCase {
             Int64(try Data(contentsOf: file).count))
     }
 
+    func testSymlinkedSubagentsDirectoryIsNotTraversed() throws {
+        let sessionDirectory = project.appendingPathComponent(
+            Fixture.sessionID, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: sessionDirectory, withIntermediateDirectories: true)
+
+        let external = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "qoder-external-subagents-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: external) }
+        try FileManager.default.createDirectory(
+            at: external, withIntermediateDirectories: true)
+        try Fixture.writeLines(
+            Fixture.turnLines(), to: external.appendingPathComponent("outside.jsonl"))
+
+        let link = sessionDirectory.appendingPathComponent(
+            "subagents", isDirectory: true)
+        try FileManager.default.createSymbolicLink(
+            at: link, withDestinationURL: external)
+
+        let result = QoderTranscriptScanner(root: root).scan()
+        guard case .complete(let files) = result else {
+            return XCTFail("symlinked subagents directory should be ignored, got \(result)")
+        }
+        XCTAssertTrue(
+            files.isEmpty,
+            "transcripts outside the configured scan root must not be returned")
+    }
+
     func testSubagentTurnsAreCollectedAsInternalRecords() throws {
         let file = try subagentFile()
         try Fixture.writeLines(Fixture.turnLines(), to: file)
