@@ -3166,7 +3166,7 @@ public final class SimiGoESISDatabase {
         sql += " ORDER BY relative_path LIMIT \(limit);"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        bind(stmt, 1, "%" + query.replacingOccurrences(of: "'", with: "''") + "%")
+        bind(stmt, 1, "%" + query + "%")
         guard limit > 0 else { return [] }
         var hits: [ContentHit] = []
         while hits.count < limit {
