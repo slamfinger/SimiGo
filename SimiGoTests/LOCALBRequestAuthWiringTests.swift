@@ -534,9 +534,9 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         let host = try makeAuthorizedHost()
         let requests: [(method: String, target: String, body: String)] = [
             ("GET", "/v1/simigo/search?q=proof-boundary", ""),
-            ("POST", "/v1/simigo/search", "{\"q\":\"proof-boundary\"}"),
-            ("PUT", "/v1/simigo/roots", "{\"root_id\":\"test\",\"path\":\"/tmp\\"}"),
-            ("POST", "/v1/simigo/roots", "{\"root_id\":\"test\",\"path\":\"/tmp\\"}"),
+            ("POST", "/v1/simigo/search", ""),
+            ("PUT", "/v1/simigo/roots", ""),
+            ("POST", "/v1/simigo/roots", ""),
         ]
 
         for item in requests {
