@@ -3034,7 +3034,11 @@ public final class SimiGoESISDatabase {
             // The result limit changes the persisted hit set, so it is part of
             // this retrieval's identity even though it is not a source-file input.
             let effectiveLimit = max(0, limit)
-            let demandBasis = canonical + "|result_limit=\(effectiveLimit)"
+            let demandBasis = try Self.canonicalJSON([
+                "canonical_input": canonical,
+                "root_scope": rootID.map { $0 as Any } ?? NSNull(),
+                "result_limit": effectiveLimit,
+            ])
             let demandID = NativeSHA256.hexDigest(Data(demandBasis.utf8))
             let roots = canonicalInput.rootIDs
 

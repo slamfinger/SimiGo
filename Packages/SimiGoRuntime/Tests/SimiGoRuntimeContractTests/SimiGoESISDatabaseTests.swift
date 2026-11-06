@@ -739,4 +739,40 @@ extension SimiGoESISDatabaseTests {
         XCTAssertEqual(twoAgain.hits, two.hits)
     }
 
+
+    func testInformationDemandCacheIdentityIncludesRequestedRootScope() throws {
+        let databaseURL = tempURL("demand-root-scope")
+        let rootA = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-root-a-\(UUID().uuidString)", isDirectory: true)
+        let rootB = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-root-b-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootA, withIntermediateDirectories: true)
+        try fm.createDirectory(at: rootB, withIntermediateDirectories: true)
+        defer {
+            try? fm.removeItem(at: rootA)
+            try? fm.removeItem(at: rootB)
+        }
+
+        // Binary files create filename-index rows but no settled text-content rows.
+        try Data([0xFF, 0xFE]).write(to: rootA.appendingPathComponent("needle-alpha.bin"))
+        try Data([0xFF, 0xFE]).write(to: rootB.appendingPathComponent("needle-beta.bin"))
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "root-a", rootURL: rootA)
+        _ = try db.settleWorkRootContents(rootID: "root-b", rootURL: rootB)
+
+        let a = try db.executeInformationDemand(
+            query: "needle", rootID: "root-a", limit: 10)
+        XCTAssertEqual(a.hits.map(\.relativePath), ["needle-alpha.bin"])
+
+        let b = try db.executeInformationDemand(
+            query: "needle", rootID: "root-b", limit: 10)
+        XCTAssertEqual(b.hits.map(\.relativePath), ["needle-beta.bin"])
+        XCTAssertNotEqual(a.demandID, b.demandID)
+        XCTAssertFalse(b.reused)
+    }
+
 }
