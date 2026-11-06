@@ -2976,18 +2976,26 @@ public final class SimiGoESISDatabase {
         var digests: [String] = []
         var roots: [String] = []
         var entries: [CanonicalDemandInput.Entry] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            func col(_ i: Int32) -> String {
-                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func col(_ i: Int32) -> String {
+                    sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+                }
+                let root = col(0)
+                let path = col(1)
+                let sha = col(2)
+                digests.append("\(root)/\(path)=\(sha)")
+                if !roots.contains(root) { roots.append(root) }
+                let objectID = sqlite3_column_type(stmt, 3) == SQLITE_NULL ? nil : col(3)
+                entries.append(.init(rootID: root, relativePath: path,
+                                     contentSHA256: sha, objectID: objectID))
+                continue
             }
-            let root = col(0)
-            let path = col(1)
-            let sha = col(2)
-            digests.append("\(root)/\(path)=\(sha)")
-            if !roots.contains(root) { roots.append(root) }
-            let objectID = sqlite3_column_type(stmt, 3) == SQLITE_NULL ? nil : col(3)
-            entries.append(.init(rootID: root, relativePath: path,
-                                 contentSHA256: sha, objectID: objectID))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            break
         }
         let canonical = query + "|" + digests.joined(separator: ";")
         return CanonicalDemandInput(
