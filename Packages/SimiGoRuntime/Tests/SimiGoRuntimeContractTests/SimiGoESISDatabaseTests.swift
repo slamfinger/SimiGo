@@ -133,7 +133,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         try rawExec(url, """
         ALTER TABLE execution_states DROP COLUMN graph_managed;
         ALTER TABLE execution_states DROP COLUMN tokenizer_identity;
-        DELETE FROM schema_migrations WHERE version IN (18, 19);
+        DELETE FROM schema_migrations WHERE version >= 18;
         """)
 
         let upgraded = try SimiGoESISDatabase(url: url, createIfNeeded: false)
@@ -148,7 +148,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
             try rawText(url, "SELECT graph_managed FROM execution_states WHERE state_id='legacy-state';"),
             "1", "legacy rows default to native graph ownership")
         XCTAssertEqual(
-            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version IN (18, 19);"), "2")
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version >= 18;"), "3")
     }
 
     /// Re-running the v19 migration — including after reopening the store —
