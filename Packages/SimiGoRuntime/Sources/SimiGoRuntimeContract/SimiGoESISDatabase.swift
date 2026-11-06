@@ -3005,73 +3005,82 @@ public final class SimiGoESISDatabase {
     public func executeInformationDemand(
         query: String, rootID: String? = nil, limit: Int = 200
     ) throws -> DemandRetrieval {
-        // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
-        let canonicalInput = try canonicalDemandInput(
-            query: query, rootIDs: rootID.map { [$0] })
-        var inputs: [(root: String, path: String, objectID: String)] = []
-        var unresolvedInputs: [(root: String, path: String)] = []
-        for entry in canonicalInput.entries {
-            if let objectID = entry.objectID {
-                inputs.append((entry.rootID, entry.relativePath, objectID))
+        // The input basis, cache check, result scan and publication must observe
+        // one database revision. BEGIN IMMEDIATE also prevents a competing root
+        // settlement from changing file_contents between these stages.
+        return try transactionResult {
+            // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
+            let canonicalInput = try canonicalDemandInput(
+                query: query, rootIDs: rootID.map { [$0] })
+            var inputs: [(root: String, path: String, objectID: String)] = []
+            var unresolvedInputs: [(root: String, path: String)] = []
+            for entry in canonicalInput.entries {
+                if let objectID = entry.objectID {
+                    inputs.append((entry.rootID, entry.relativePath, objectID))
+                } else {
+                    // Index-only settlement: the address is the identity record's
+                    // metadata object, not a copy of the entity bytes.
+                    unresolvedInputs.append((entry.rootID, entry.relativePath))
+                }
+            }
+            for input in unresolvedInputs {
+                if let address = try latestIndexObjectID(
+                    identity: "file:\(input.root)/\(input.path)")
+                {
+                    inputs.append((input.root, input.path, address))
+                }
+            }
+            let canonical = canonicalInput.canonical
+            let demandID = canonicalInput.digest
+            let roots = canonicalInput.rootIDs
+
+            // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
+            let settled = try prepare("""
+            SELECT result_object_id, result_sha256, result_json FROM retrieval_settlements
+            WHERE demand_id=? AND status='valid';
+            """)
+            bind(settled, 1, demandID)
+            let settledRC = sqlite3_step(settled)
+            if settledRC == SQLITE_ROW {
+                func col(_ i: Int32) -> String {
+                    sqlite3_column_text(settled, i).map { String(cString: $0) } ?? ""
+                }
+                let objectID = col(0)
+                let storedSHA = col(1)
+                let legacyJSON = col(2)
+                sqlite3_finalize(settled)
+
+                let data: Data?
+                if !objectID.isEmpty {
+                    data = try? readObject(objectID)
+                } else {
+                    data = Data(legacyJSON.utf8)
+                }
+                if let data,
+                    NativeSHA256.hexDigest(data) == storedSHA,
+                    let rows = try? JSONDecoder().decode([ContentHit].self, from: data)
+                {
+                    return DemandRetrieval(
+                        demandID: demandID, reused: true, hits: rows,
+                        resultSHA256: storedSHA, status: "reused")
+                }
             } else {
-                // Index-only settlement: the address is the identity record's
-                // metadata object, not a copy of the entity bytes.
-                unresolvedInputs.append((entry.rootID, entry.relativePath))
+                sqlite3_finalize(settled)
+                guard settledRC == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
             }
-        }
-        for input in unresolvedInputs {
-            if let address = try latestIndexObjectID(
-                identity: "file:\(input.root)/\(input.path)")
-            {
-                inputs.append((input.root, input.path, address))
-            }
-        }
-        let canonical = canonicalInput.canonical
-        let demandID = canonicalInput.digest
-        let roots = canonicalInput.rootIDs
 
-        // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
-        let settled = try prepare("""
-        SELECT result_object_id, result_sha256, result_json FROM retrieval_settlements
-        WHERE demand_id=? AND status='valid';
-        """)
-        bind(settled, 1, demandID)
-        if sqlite3_step(settled) == SQLITE_ROW {
-            func col(_ i: Int32) -> String {
-                sqlite3_column_text(settled, i).map { String(cString: $0) } ?? ""
+            // 3) 重算：在同一数据库快照的已结算内容索引上检索
+            var hits = try searchSettledContent(query: query, rootID: rootID, limit: limit)
+            if hits.isEmpty {
+                // 文件名命中（external_files 路径匹配）也纳入 demand 结果
+                hits = try fileNameHits(query: query, rootID: rootID, limit: limit)
             }
-            let objectID = col(0)
-            let storedSHA = col(1)
-            let legacyJSON = col(2)
-            sqlite3_finalize(settled)
-            let data: Data?
-            if !objectID.isEmpty {
-                data = try? readObject(objectID)
-            } else {
-                data = Data(legacyJSON.utf8)
-            }
-            if let data,
-                let rows = try? JSONDecoder().decode([ContentHit].self, from: data)
-            {
-                return DemandRetrieval(
-                    demandID: demandID, reused: true, hits: rows,
-                    resultSHA256: storedSHA, status: "reused")
-            }
-        } else {
-            sqlite3_finalize(settled)
-        }
+            let resultData = try JSONEncoder().encode(hits)
+            let resultSHA = NativeSHA256.hexDigest(resultData)
 
-        // 3) 重算：在已结算内容索引上检索（确定性 consumer：只绑定摘要与原文行）
-        var hits = try searchSettledContent(query: query, rootID: rootID, limit: limit)
-        if hits.isEmpty {
-            // 文件名命中（external_files 路径匹配）也纳入 demand 结果
-            hits = try fileNameHits(query: query, rootID: rootID, limit: limit)
-        }
-        let resultData = try JSONEncoder().encode(hits)
-        let resultSHA = NativeSHA256.hexDigest(resultData)
-
-        // 4) 结果写入对象库，结算行只保留引用；索引追加 demand 身份
-        try transaction {
+            // 4) 结果写入对象库，结算行只保留引用；索引追加 demand 身份
             let objectID = try ensureObject(resultData)
             try execBinding("""
             UPDATE retrieval_settlements SET status='invalidated'
@@ -3108,10 +3117,11 @@ public final class SimiGoESISDatabase {
                     contentAddress: input.objectID,
                     reason: "demand-input")
             }
+
+            return DemandRetrieval(
+                demandID: demandID, reused: false, hits: hits,
+                resultSHA256: resultSHA, status: "settled")
         }
-        return DemandRetrieval(
-            demandID: demandID, reused: false, hits: hits,
-            resultSHA256: resultSHA, status: "settled")
     }
 
     /// 文件名/路径命中的确定性 consumer（demand 结果的一部分）。
