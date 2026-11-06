@@ -326,7 +326,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         try db.runMigrations()
         // v8 backfill re-applies on top of the rolled-back head, then the chain
         // runs through to the current head.
-        XCTAssertEqual(try db.schemaVersion(), 19)
+        XCTAssertEqual(try db.schemaVersion(), 20)
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedFileContents, 0)
@@ -354,6 +354,36 @@ final class SimiGoESISCarrierTests: XCTestCase {
     }
 
     // MARK: - Demand results
+
+    func testDemandCacheDoesNotReuseAStalePhysicalLocatorResult() throws {
+        let url = tempURL("stale-physical-cache")
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-stale-physical-cache-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            cleanup(url)
+        }
+        try Data("needle is initially here".utf8).write(
+            to: root.appendingPathComponent("source.md"))
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close() }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "stale-cache-root", rootURL: root)
+        let first = try db.executeInformationDemand(
+            query: "needle", rootID: "stale-cache-root", limit: 10)
+        XCTAssertEqual(first.hits.count, 1)
+        XCTAssertFalse(first.reused)
+
+        // Change physical bytes without advancing the settled root revision.
+        try Data("different content".utf8).write(
+            to: root.appendingPathComponent("source.md"))
+        let second = try db.executeInformationDemand(
+            query: "needle", rootID: "stale-cache-root", limit: 10)
+        XCTAssertFalse(second.reused)
+        XCTAssertTrue(second.hits.isEmpty,
+                      "cached citations must be revalidated against physical locator bytes")
+    }
 
     func testDemandResultIsCarriedAndReused() throws {
         let (url, db) = try open("demand")

@@ -140,7 +140,7 @@ public struct SimiGoInformationLoop {
         }
 
         var inputs: [String] = []
-        let stale: [String] = []
+        var stale: [String] = []
         var scored: [(item: Item, score: Int)] = []
         var addresses: [SimiGoESISDatabase.InformationInput] = []
         let keywords = Self.keywords(in: query)
@@ -166,7 +166,13 @@ public struct SimiGoInformationLoop {
             if !demand.rootIDs.isEmpty, !demand.rootIDs.contains(row.rootID) { continue }
             let identity = "file:\(row.rootID)/\(row.relativePath)"
             guard !demand.excludeItemIDs.contains(identity) else { continue }
-            let text = try database.searchableFileText(row)
+            let text: String
+            do {
+                text = try database.searchableFileText(row)
+            } catch SimiGoESISDatabase.DatabaseError.staleExternalSource {
+                stale.append(identity)
+                continue
+            }
             inputs.append("\(identity)=\(row.digest)")
             if let address = try database.latestIndexObjectID(identity: identity) {
                 addresses.append(.init(itemID: identity, contentAddress: address))

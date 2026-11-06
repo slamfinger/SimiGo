@@ -64,6 +64,8 @@ public final class SimiGoESISDatabase {
         case cannotOpen(String)
         case notADatabase(String)
         case sql(String)
+        /// The registered locator has changed since its last settled digest.
+        case staleExternalSource(rootID: String, relativePath: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
         /// Init-time PRAGMA execution failure — an execution condition, NOT a
@@ -887,6 +889,21 @@ public final class SimiGoESISDatabase {
                 try recordMigrationRow(19, "simigo-es-graph-ownership-v19")
             }
         }
+        if try schemaVersion() < 20 {
+            try transaction {
+                // Historical InformationLoop rows stored an opaque demand hash,
+                // so their source paths cannot be identified selectively. Mark
+                // those rows for conservative invalidation; v2 rows are explicit.
+                try Self.rawExec(handle, """
+                UPDATE retrieval_settlements
+                SET inputs_digest='legacy-v1:' || inputs_digest
+                WHERE inputs_digest NOT LIKE '{%'
+                  AND inputs_digest NOT LIKE 'v2:%'
+                  AND inputs_digest NOT LIKE 'legacy-v1:%';
+                """)
+                try recordMigrationRow(20, "simigo-retrieval-input-basis-version-v20")
+            }
+        }
     }
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
@@ -1439,10 +1456,12 @@ public final class SimiGoESISDatabase {
         for settlement in settlements {
             let objectID = try ensureObject(settlement.payload)
             try execBinding("""
-            UPDATE settlements SET payload_object_id=?, payload=X'' WHERE settlement_id=?;
+            UPDATE settlements SET payload_object_id=?, payload_digest=?, payload=X''
+            WHERE settlement_id=?;
             """) { stmt in
                 bind(stmt, 1, objectID)
-                bind(stmt, 2, settlement.id)
+                bind(stmt, 2, objectID)
+                bind(stmt, 3, settlement.id)
             }
             _ = try appendIndexEntryInTransaction(
                 identity: "settlement:\(settlement.id)", objectID: objectID)
@@ -1635,7 +1654,7 @@ public final class SimiGoESISDatabase {
             bind(stmt, 7, lifecycle)
             bind(stmt, 8, Self.stamp( createdAt))
             bind(stmt, 9, nextInput)
-            bind(stmt, 10, prefixJSON)
+            bind(stmt, 10, prefixJSON ?? "[]")
             bind(stmt, 11, idempotencyKey)
             bind(stmt, 12, tokenizerIdentity)
             bind(stmt, 13, Int64(graphManaged ? 1 : 0))
@@ -3160,6 +3179,12 @@ public final class SimiGoESISDatabase {
             let demandID = NativeSHA256.hexDigest(Data(demandBasis.utf8))
             let roots = canonicalInput.rootIDs
 
+            // Validate locator-backed bytes before considering a cached result:
+            // settled database rows can be unchanged while physical files move.
+            var currentHits = try searchSettledContent(
+                query: query, rootID: rootID, limit: effectiveLimit)
+            if currentHits.isEmpty { currentHits = filenameHits }
+
             // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
             let settled = try prepare("""
             SELECT result_object_id, result_sha256, result_json FROM retrieval_settlements
@@ -3184,7 +3209,8 @@ public final class SimiGoESISDatabase {
                 }
                 if let data,
                     NativeSHA256.hexDigest(data) == storedSHA,
-                    let rows = try? JSONDecoder().decode([ContentHit].self, from: data)
+                    let rows = try? JSONDecoder().decode([ContentHit].self, from: data),
+                    rows == currentHits
                 {
                     return DemandRetrieval(
                         demandID: demandID, reused: true, hits: rows,
@@ -3197,12 +3223,8 @@ public final class SimiGoESISDatabase {
                 }
             }
 
-            // 3) 重算：在同一数据库快照的已结算内容索引上检索
-            var hits = try searchSettledContent(query: query, rootID: rootID, limit: effectiveLimit)
-            if hits.isEmpty {
-                // Reuse the filename candidate snapshot included in demand identity.
-                hits = filenameHits
-            }
+            // 3) 重算：在同一数据库快照上、逐一校验 locator 后的检索结果
+            let hits = currentHits
             let resultData = try JSONEncoder().encode(hits)
             let resultSHA = NativeSHA256.hexDigest(resultData)
 
@@ -3304,7 +3326,12 @@ public final class SimiGoESISDatabase {
         let rows = try settledFileRows(rootID: rootID)
         var hits: [ContentHit] = []
         for row in rows {
-            let body = try searchableFileText(row)
+            let body: String
+            do {
+                body = try searchableFileText(row)
+            } catch DatabaseError.staleExternalSource {
+                continue
+            }
             for (idx, line) in body.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
             where line.localizedCaseInsensitiveContains(query) {
                 hits.append(ContentHit(
@@ -3395,8 +3422,8 @@ public final class SimiGoESISDatabase {
                 "searchableFileText: cannot read \(row.rootID)/\(row.relativePath): \(error)")
         }
         guard NativeSHA256.hexDigest(data) == row.digest else {
-            throw DatabaseError.sql(
-                "searchableFileText: source digest changed for \(row.rootID)/\(row.relativePath)")
+            throw DatabaseError.staleExternalSource(
+                rootID: row.rootID, relativePath: row.relativePath)
         }
         return String(decoding: data, as: UTF8.self)
     }
@@ -4273,7 +4300,7 @@ public final class SimiGoESISDatabase {
                 bind(stmt, 1, write.demandID)
                 bind(stmt, 2, write.query)
                 bind(stmt, 3, write.rootIDs.joined(separator: ","))
-                bind(stmt, 4, write.inputDigest)
+                bind(stmt, 4, "v2:\(write.inputDigest)")
                 bind(stmt, 5, resultSHA)
                 bind(stmt, 6, Int64(write.hitCount))
                 bind(stmt, 7, now)
@@ -5258,7 +5285,7 @@ public final class SimiGoESISDatabase {
         // leaving an unverifiable retrieval advertised as valid.
         try execBinding("""
         UPDATE retrieval_settlements SET status='invalidated'
-        WHERE status='valid' AND inputs_digest NOT LIKE '{%';
+        WHERE status='valid' AND inputs_digest LIKE 'legacy-v1:%';
         """) { _ in }
     }
 
@@ -6260,7 +6287,7 @@ public final class SimiGoESISDatabase {
                     bind(stmt, 7, st.lifecycle)
                     bind(stmt, 8, Self.stamp( st.createdAt))
                     bind(stmt, 9, st.nextInput)
-                    bind(stmt, 10, prefixJSON)
+                    bind(stmt, 10, prefixJSON ?? "[]")
                     bind(stmt, 11, cpJSON)
                 }
             }
@@ -6321,8 +6348,12 @@ public final class SimiGoESISDatabase {
         }
         while try stepRowOrDone(sstmt) {
             let stateID = txt(sstmt, 0)
-            let prefix = try dec.decode([String].self, from: Data(txt(sstmt, 9).utf8))
-            let checkpointStrings = try dec.decode([String].self, from: Data(txt(sstmt, 10).utf8))
+            let prefixJSON = txt(sstmt, 9)
+            let checkpointJSON = txt(sstmt, 10)
+            let prefix = try dec.decode(
+                [String].self, from: Data((prefixJSON.isEmpty ? "[]" : prefixJSON).utf8))
+            let checkpointStrings = try dec.decode(
+                [String].self, from: Data((checkpointJSON.isEmpty ? "[]" : checkpointJSON).utf8))
             let checkpointIDs = try checkpointStrings.map { value -> UUID in
                 guard let id = UUID(uuidString: value) else {
                     throw DatabaseError.sql(

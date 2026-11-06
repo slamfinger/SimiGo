@@ -42,14 +42,14 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.schemaVersion(), 0)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 19)   // v18 binds MCP tokenizer identity to ES
+        XCTAssertEqual(try db.schemaVersion(), 20)   // v18 binds MCP tokenizer identity to ES
         XCTAssertTrue(try db.integrityCheck())
         XCTAssertEqual(try db.count("chat_messages"), 0)
         XCTAssertEqual(try db.count("file_contents"), 0)
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
         // Idempotent: re-running does not error or double-apply.
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 19)
+        XCTAssertEqual(try db.schemaVersion(), 20)
     }
 
     /// A database stamped v6 by the old out-of-order gates reports the head
@@ -60,7 +60,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 19)
+        XCTAssertEqual(try db.schemaVersion(), 20)
         db.close()
 
         try rawExec(url, """
@@ -76,12 +76,12 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { repaired.close() }
         XCTAssertEqual(try repaired.schemaVersion(), 6)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 19)
+        XCTAssertEqual(try repaired.schemaVersion(), 20)
         XCTAssertEqual(try repaired.count("chat_messages"), 0)
         XCTAssertEqual(try repaired.count("file_contents"), 0)
         XCTAssertEqual(try repaired.count("retrieval_settlements"), 0)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 19)
+        XCTAssertEqual(try repaired.schemaVersion(), 20)
     }
 
     private func rawExec(_ url: URL, _ sql: String) throws {
@@ -115,7 +115,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
     }
 
-    /// An existing v17 store must upgrade in place through v19: tokenizer
+    /// An existing v17 store must upgrade in place through v20: tokenizer
     /// identity remains NULL for historical states, graph ownership defaults
     /// to native-managed, and both migration rows land exactly once.
     func testV17UpgradeAddsTokenizerIdentityAndGraphOwnership() throws {
@@ -140,7 +140,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { upgraded.close() }
         XCTAssertEqual(try upgraded.schemaVersion(), 17)
         try upgraded.runMigrations()
-        XCTAssertEqual(try upgraded.schemaVersion(), 19)
+        XCTAssertEqual(try upgraded.schemaVersion(), 20)
         XCTAssertNil(
             try upgraded.executionStateTokenizerIdentity("legacy-state"),
             "a pre-v18 state carries no claim and must keep failing closed")
@@ -163,7 +163,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
 
         let reopened = try SimiGoESISDatabase(url: url, createIfNeeded: false)
         try reopened.runMigrations()
-        XCTAssertEqual(try reopened.schemaVersion(), 19)
+        XCTAssertEqual(try reopened.schemaVersion(), 20)
         reopened.close()
 
         XCTAssertEqual(
@@ -932,30 +932,25 @@ extension SimiGoESISDatabaseTests {
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-missing-index-address-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
-        try Data("the unique body token is present here".utf8)
-            .write(to: rootURL.appendingPathComponent("source.txt"))
         defer { try? FileManager.default.removeItem(at: rootURL) }
 
         let db = try SimiGoESISDatabase(url: databaseURL)
         defer { db.close(); cleanup(databaseURL) }
         try db.runMigrations()
-        _ = try db.settleWorkRootContents(
-            rootID: "index-address-root", rootURL: rootURL, carryText: false)
+
+        // Construct an incomplete index-only record without deleting from the
+        // append-only carrier ledger (which correctly rejects destructive SQL).
+        try rawExec(databaseURL, """
+        INSERT INTO roots(root_id, category, display_name, locator_type, status, created_at, last_scanned_at)
+        VALUES('index-address-root','work','\(rootURL.path)','path','present','t','t');
+        INSERT INTO file_contents(
+            root_id, relative_path, content_sha256, content, settled_at, object_id)
+        VALUES('index-address-root','source.txt','source-digest','', 't', NULL);
+        """)
         XCTAssertEqual(try db.count("file_contents"), 1)
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
-
-        var writer: OpaquePointer?
-        XCTAssertEqual(sqlite3_open(databaseURL.path, &writer), SQLITE_OK)
-        guard let writer else {
-            XCTFail("could not open SQLite corruption-test connection")
-            return
-        }
-        defer { sqlite3_close(writer) }
-        let sql = """
-        DELETE FROM is_index_entries
-        WHERE srs_identity='file:index-address-root/source.txt';
-        """
-        XCTAssertEqual(sqlite3_exec(writer, sql, nil, nil, nil), SQLITE_OK)
+        XCTAssertNil(try db.latestIndexObjectID(
+            identity: "file:index-address-root/source.txt"))
 
         XCTAssertThrowsError(
             try db.executeInformationDemand(
