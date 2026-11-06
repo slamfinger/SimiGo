@@ -3006,29 +3006,36 @@ public final class SimiGoESISDatabase {
             throw DatabaseError.sql(
                 "openDirectoryNoFollow: registered directory path now resolves elsewhere")
         }
-        let components = URL(fileURLWithPath: canonicalPath).standardizedFileURL.pathComponents
-        guard components.first == "/" else {
-            throw DatabaseError.sql("openDirectoryNoFollow: expected an absolute path")
-        }
-        var descriptor = Darwin.open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC)
-        guard descriptor >= 0 else {
+
+        // macOS temporary roots can traverse APFS firmlink/alias components
+        // which are canonicalized by realpath but are not all traversable via
+        // a strict component-by-component O_NOFOLLOW walk. Resolve once, then
+        // bind the opened directory descriptor to the exact lstat identity of
+        // that canonical leaf. Descendant paths remain component-wise no-follow.
+        var pathInfo = stat()
+        let statResult = canonicalPath.withCString { Darwin.lstat($0, &pathInfo) }
+        guard statResult == 0, (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
+            let code = errno
             throw DatabaseError.sql(
-                "openDirectoryNoFollow: \(String(cString: strerror(errno)))")
+                "openDirectoryNoFollow: canonical root is not a directory: \(String(cString: strerror(code)))")
         }
-        for component in components.dropFirst() {
-            let next = component.withCString {
-                Darwin.openat(
-                    descriptor, $0,
-                    O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
-            }
-            guard next >= 0 else {
-                let code = errno
-                Darwin.close(descriptor)
-                throw DatabaseError.sql(
-                    "openDirectoryNoFollow: \(String(cString: strerror(code)))")
-            }
+        let descriptor = canonicalPath.withCString {
+            Darwin.open($0, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        }
+        guard descriptor >= 0 else {
+            let code = errno
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: canonical root open failed: \(String(cString: strerror(code)))")
+        }
+        var openedInfo = stat()
+        guard Darwin.fstat(descriptor, &openedInfo) == 0,
+              (openedInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedInfo.st_dev == pathInfo.st_dev,
+              openedInfo.st_ino == pathInfo.st_ino else {
+            let code = errno
             Darwin.close(descriptor)
-            descriptor = next
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: canonical root identity changed: \(String(cString: strerror(code)))")
         }
         return descriptor
     }
