@@ -620,18 +620,28 @@ final class QoderSQLiteConnection {
     }
 
     static func open(path: String) throws -> QoderSQLiteConnection {
+        // Apple's SQLite VFS canonicalizes every path component before applying
+        // SQLITE_OPEN_NOFOLLOW. A caller path under macOS's /var alias would
+        // therefore be rejected even when the database file itself is regular.
+        // Resolve only the already-created parent directory, then leave the
+        // final database component untouched so NOFOLLOW still rejects a DB
+        // symlink rather than following it.
+        let requestedURL = URL(fileURLWithPath: path)
+        let parentURL = requestedURL.deletingLastPathComponent().resolvingSymlinksInPath()
+        let canonicalPath = parentURL.appendingPathComponent(
+            requestedURL.lastPathComponent).path
         var handle: OpaquePointer?
         let code = sqlite3_open_v2(
-            path, &handle,
+            canonicalPath, &handle,
             SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX | SQLITE_OPEN_NOFOLLOW, nil)
         guard code == SQLITE_OK, let handle else {
             let detail =
                 handle.map { String(cString: sqlite3_errmsg($0)) }
                 ?? "sqlite3_open_v2 returned \(code)"
             if let handle { sqlite3_close_v2(handle) }
-            throw Self.error(code: code, path: path, detail: detail)
+            throw Self.error(code: code, path: canonicalPath, detail: detail)
         }
-        return QoderSQLiteConnection(handle: handle, path: path)
+        return QoderSQLiteConnection(handle: handle, path: canonicalPath)
     }
 
     static func error(code: Int32, path: String, detail: String) -> QoderCollectionStateError {
