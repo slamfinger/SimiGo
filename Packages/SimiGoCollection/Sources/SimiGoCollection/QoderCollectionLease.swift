@@ -89,6 +89,10 @@ final class QoderCollectionLease {
         }
         guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
             let code = errno
+            // Read the diagnostic PID from the exact inode whose lock attempt
+            // failed. Re-opening fileURL after closing this descriptor would
+            // re-resolve a mutable path and could follow a swapped symlink.
+            let holderPID = code == EWOULDBLOCK ? holder(of: descriptor) : nil
             close(descriptor)
             guard code == EWOULDBLOCK else {
                 throw QoderCollectionStateError.unreadableState(
@@ -96,7 +100,7 @@ final class QoderCollectionLease {
             }
             throw QoderCollectionStateError.stateAlreadyOwned(
                 path: fileURL.path,
-                detail: holder(of: fileURL).map { "held by pid \($0)" }
+                detail: holderPID.map { "held by pid \($0)" }
                     ?? "held by another runner")
         }
         let pid = Data("\(getpid())\n".utf8)
@@ -108,13 +112,21 @@ final class QoderCollectionLease {
     }
 
     /// Best-effort diagnostic only; the lock, not the contents, is the truth.
-    private static func holder(of fileURL: URL) -> String? {
-        guard let data = try? Data(contentsOf: fileURL),
-            let text = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-            !text.isEmpty
+    /// Read through the already-validated descriptor so diagnostics cannot
+    /// follow a path substitution after the lock attempt.
+    private static func holder(of descriptor: Int32) -> String? {
+        var bytes = [UInt8](repeating: 0, count: 64)
+        let amount = bytes.withUnsafeMutableBytes { raw -> Int in
+            guard let base = raw.baseAddress else { return -1 }
+            return Darwin.pread(descriptor, base, raw.count, 0)
+        }
+        guard amount > 0 else { return nil }
+        let text = String(decoding: bytes.prefix(amount), as: UTF8.self)
+        guard let firstLine = text.split(
+            separator: "\\n", omittingEmptySubsequences: true).first
         else { return nil }
-        return text
+        let value = String(firstLine).trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
     }
 
     deinit {
