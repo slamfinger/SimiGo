@@ -3986,7 +3986,7 @@ public final class SimiGoESISDatabase {
         FROM information_demands d
         JOIN information_advancements a ON a.demand_id=d.demand_id
         WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
-        ORDER BY a.advanced_at DESC, a.advancement_id DESC LIMIT 1;
+        ORDER BY a.rowid DESC LIMIT 1;
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, sessionID)
@@ -4016,7 +4016,7 @@ public final class SimiGoESISDatabase {
         FROM information_demands d
         JOIN information_advancements a ON a.demand_id=d.demand_id
         WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
-        ORDER BY a.advanced_at, a.advancement_id;
+        ORDER BY a.rowid DESC;
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, sessionID)
