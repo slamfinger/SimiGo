@@ -1013,4 +1013,33 @@ extension SimiGoESISDatabaseTests {
         XCTAssertEqual(try retrievalStatus(), "invalidated")
     }
 
+
+    func testInformationDemandRefusesChangedIndexOnlyFileWithoutCachingPartialResult() throws {
+        let databaseURL = tempURL("changed-index-only")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-changed-index-only-\\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        try Data("needle original bytes".utf8).write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "changed-index-only-root", rootURL: rootURL, carryText: false)
+
+        // Keep the path available but change its bytes without a new root
+        // settlement. An index-only reader must detect the digest mismatch,
+        // rather than silently publishing a retrieval from the remaining rows.
+        try Data("needle changed bytes".utf8).write(to: fileURL)
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "needle", rootID: "changed-index-only-root", limit: 10))
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 0,
+            "A demand based on stale physical bytes must not be persisted")
+    }
+
 }
