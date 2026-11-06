@@ -77,7 +77,7 @@ final class EnvBootstrapEntryTests: XCTestCase {
 
         let downloader = BinaryDownloader(
             destination: destination, maximumBytes: 8,
-            configuration: .ephemeral, progress: { _, _ in })
+            configuration: Self.stallingDownloadConfiguration(), progress: { _, _ in })
         let transfer = Task {
             try await downloader.run(url: URL(string: "https://127.0.0.1/unused")!)
         }
@@ -108,12 +108,12 @@ final class EnvBootstrapEntryTests: XCTestCase {
 
         let downloader = BinaryDownloader(
             destination: destination, maximumBytes: 1024,
-            configuration: .ephemeral, progress: { _, _ in })
+            configuration: Self.stallingDownloadConfiguration(), progress: { _, _ in })
         let transfer = Task {
             try await downloader.run(url: URL(string: "https://127.0.0.1/unused")!)
         }
         try await Task.sleep(nanoseconds: 50_000_000)
-        downloader.cancel()
+        transfer.cancel()
 
         do {
             _ = try await transfer.value
@@ -143,6 +143,12 @@ final class EnvBootstrapEntryTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
     }
 
+    private static func stallingDownloadConfiguration() -> URLSessionConfiguration {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [BinaryDownloadStallingURLProtocol.self]
+        return configuration
+    }
+
     func testStableRootIDIsDeterministic() {
         XCTAssertEqual(
             EnvManager.stableRootID(forPath: "/a/b/c"),
@@ -151,4 +157,25 @@ final class EnvBootstrapEntryTests: XCTestCase {
             EnvManager.stableRootID(forPath: "/a/b/c"),
             EnvManager.stableRootID(forPath: "/a/b/d"))
     }
+}
+
+
+private final class BinaryDownloadStallingURLProtocol: URLProtocol {
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        guard let url = request.url,
+              let response = HTTPURLResponse(
+                url: url, statusCode: 200, httpVersion: "HTTP/1.1",
+                headerFields: ["Content-Length": "1048576"])
+        else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        // Deliberately do not finish: the caller controls completion/cancellation.
+    }
+
+    override func stopLoading() {}
 }
