@@ -155,6 +155,7 @@ jobs:
           files = [
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
+              Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift"),
           ]
           missing = [str(p) for p in files if not p.is_file()]
           if missing:
@@ -181,7 +182,8 @@ jobs:
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
-            -only-testing:SimiGoTests/MCPInformationSpaceTests
+            -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests
       - name: Generate isolated App test xctestrun
         run: |
           set -euo pipefail
@@ -208,6 +210,7 @@ jobs:
             -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-app.log"
       - name: Gate on executed cases and xcresult counts
         if: always()
