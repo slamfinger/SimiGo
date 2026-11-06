@@ -198,15 +198,19 @@ public struct SimiGoInformationLoop {
         var chatScope = "chat-scope=off"
         if demand.includeChat {
             let chatRows = try database.chatIndexRows(sessionIDs: demand.chatSessionIDs)
+            // Excluded rows are outside this demand input basis, not merely
+            // outside rendered snippets. An answer’s own question/answer rows
+            // must not make its exact repeat look stale.
+            let scopedChatRows = chatRows.filter {
+                !demand.excludeItemIDs.contains($0.itemID)
+            }
             let scopeSessions = demand.chatSessionIDs.isEmpty
                 ? "all" : demand.chatSessionIDs.sorted().joined(separator: ",")
-            let tail = chatRows.max { $0.messageID < $1.messageID }
+            let tail = scopedChatRows.max { $0.messageID < $1.messageID }
             chatScope = "chat-scope=sessions=\(scopeSessions)"
-                + ";count=\(chatRows.count);max=\(tail?.messageID ?? 0)"
+                + ";count=\(scopedChatRows.count);max=\(tail?.messageID ?? 0)"
                 + ";last=\(tail?.contentSHA256 ?? "-")"
-            for row in chatRows {
-                guard !demand.excludeItemIDs.contains(row.itemID) else { continue }
-                guard NativeSHA256.hexDigest(Data(row.content.utf8)) == row.contentSHA256
+            for row in scopedChatRows {                guard NativeSHA256.hexDigest(Data(row.content.utf8)) == row.contentSHA256
                 else { continue }
                 for (idx, line) in row.content
                     .split(separator: "\n", omittingEmptySubsequences: false).enumerated()
@@ -351,6 +355,38 @@ public struct SimiGoInformationLoop {
         public let query: String
     }
 
+    /// Inputs written by a published answer are not new knowledge. Exclude
+    /// every exact answer summary and only paired question/answer rows that
+    /// correspond to a settled payload. Other sessions remain in the watermark.
+    public func answerReuseExclusions(sessionID: String, query: String) throws -> Set<String> {
+        let answered = try database.answeredDemands(sessionID: sessionID, query: query)
+        guard !answered.isEmpty else { return [] }
+
+        var excluded = Set(answered.map { "settlement:\($0.answerSettlementID)" })
+        var answerTexts: Set<String> = []
+        for row in answered {
+            guard let receipt = try database.settlementReceipt(row.answerSettlementID),
+                let object = try? JSONSerialization.jsonObject(with: receipt.payload) as? [String: Any],
+                let content = object["content"] as? String,
+                !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else { continue }
+            answerTexts.insert(content)
+        }
+
+        var matchingQuestionID: String?
+        for row in try database.chatIndexRows(sessionIDs: [sessionID]) {
+            if row.role == "user" {
+                matchingQuestionID = row.content == query ? row.itemID : nil
+            } else if row.role == "assistant" {
+                if let questionID = matchingQuestionID, answerTexts.contains(row.content) {
+                    excluded.insert(questionID)
+                    excluded.insert(row.itemID)
+                }
+                matchingQuestionID = nil
+            }
+        }
+        return excluded
+    }
     /// Fail-closed gate for serving a turn without a model call. Every condition
     /// is required; any miss returns nil, which means "generate", never a
     /// best-effort answer:
