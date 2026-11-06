@@ -606,7 +606,8 @@ public struct LOCALBRegistryStore {
               openedRoot.st_dev == rootInfo.st_dev,
               openedRoot.st_ino == rootInfo.st_ino,
               openedRoot.st_uid == geteuid(),
-              (openedRoot.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
+              (openedRoot.st_mode & (S_IWGRP | S_IWOTH)) == 0,
+              fchmod(rootFD, 0o700) == 0 else {
             throw LOCALBStatus.registryPersistenceFailure
         }
         let fd = openat(
