@@ -690,14 +690,14 @@ final class QoderTranscriptTailerTests: XCTestCase {
             at: sessionDirectory, withIntermediateDirectories: true)
 
         let outside = fileManager.temporaryDirectory.appendingPathComponent(
-            "qoder-outside-subagents-\\(UUID().uuidString)", isDirectory: true)
+            "qoder-outside-subagents-\(UUID().uuidString)", isDirectory: true)
         try fileManager.createDirectory(
             at: outside, withIntermediateDirectories: true)
         defer { try? fileManager.removeItem(at: outside) }
 
         let externalTranscript = outside.appendingPathComponent(
             "external-agent.jsonl")
-        try Data("{\\"type\\":\\"message\\"}\\n".utf8).write(to: externalTranscript)
+        try Data(#"{"type":"message"}"#.appending("\n").utf8).write(to: externalTranscript)
 
         let subagents = sessionDirectory.appendingPathComponent(
             "subagents", isDirectory: true)
