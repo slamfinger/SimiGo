@@ -602,7 +602,9 @@ public struct LOCALBRegistryStore {
         defer { close(rootFD) }
         var openedRoot = stat()
         guard fstat(rootFD, &openedRoot) == 0,
-              (openedRoot.st_mode & S_IFMT) == S_IFDIR else {
+              (openedRoot.st_mode & S_IFMT) == S_IFDIR,
+              openedRoot.st_dev == rootInfo.st_dev,
+              openedRoot.st_ino == rootInfo.st_ino else {
             throw LOCALBStatus.registryPersistenceFailure
         }
         let fd = openat(
