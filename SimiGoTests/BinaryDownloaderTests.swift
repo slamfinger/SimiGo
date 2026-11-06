@@ -82,6 +82,9 @@ final class BinaryDownloaderTests: XCTestCase {
         } catch let error as NSError {
             XCTAssertEqual(error.domain, "EnvManager")
             XCTAssertEqual(error.code, 413)
+            XCTAssertEqual(
+                error.localizedDescription,
+                "Binary download exceeds the configured \\(Int64(payload.count - 1))-byte limit")
         }
         XCTAssertEqual(try Data(contentsOf: destination), previous)
         let entries = try FileManager.default.contentsOfDirectory(

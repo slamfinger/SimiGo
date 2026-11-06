@@ -1286,7 +1286,7 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
     static let defaultMaximumDownloadBytes: Int64 = 2_000_000_000
 
     private var maximumSizeErrorDescription: String {
-        "Binary download exceeds the configured \\(maximumDownloadBytes)-byte limit"
+        "Binary download exceeds the configured \(maximumDownloadBytes)-byte limit"
     }
 
     func urlSession(
