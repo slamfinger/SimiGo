@@ -98,3 +98,42 @@ extension ManagedGGUFRuntime: SlotActivityProviding {
         return await GGUFSlotActivityProbe.activity(port: port)
     }
 }
+
+/// Pure policy for the Service health loop. Keeping the decision separate from
+/// URLSession and Runtime lets tests cover the safety branches without loading a
+/// model or starting a process.
+nonisolated enum ServiceHealthCheckPolicy {
+    enum Decision: Equatable, Sendable {
+        case continueCycle
+        case deferRestart
+        case stop
+        case restart
+    }
+
+    static func shouldSkipBeforeHealthCheck(
+        backendIsGGUF: Bool,
+        runtimeIsInProcess: Bool,
+        injectedHealthFailure: Bool,
+        slotActivity: SlotActivity
+    ) -> Bool {
+        backendIsGGUF
+            && !runtimeIsInProcess
+            && !injectedHealthFailure
+            && slotActivity == .busy
+    }
+
+    static func decisionAfterHealthCheck(
+        healthy: Bool,
+        backendIsGGUF: Bool,
+        slotActivity: SlotActivity,
+        taskCancelled: Bool,
+        runtimeIsCurrent: Bool
+    ) -> Decision {
+        guard !taskCancelled, runtimeIsCurrent else { return .stop }
+        guard !healthy else { return .continueCycle }
+        if backendIsGGUF && slotActivity == .busy { return .deferRestart }
+        // .unknown is deliberately not treated as idle/busy: the failed health
+        // result remains eligible for dead-engine recovery.
+        return .restart
+    }
+}
