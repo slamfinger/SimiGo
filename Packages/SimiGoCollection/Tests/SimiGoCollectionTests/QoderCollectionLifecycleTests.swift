@@ -246,6 +246,57 @@ final class QoderCollectionLifecycleTests: XCTestCase {
 
     // MARK: - read-only source, isolated state, zero information space
 
+    func testInboxRejectsSymlinkedStateDirectory() throws {
+        let external = root.appendingPathComponent("external-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
+        let linked = root.appendingPathComponent("linked-state", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: external)
+        XCTAssertThrowsError(try QoderCandidateInbox(directoryURL: linked).loadCursorState())
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: external.appendingPathComponent(QoderCandidateInbox.databaseFileName).path))
+    }
+
+    func testInboxRejectsSymlinkedSQLiteFileWithoutChangingTarget() throws {
+        let external = root.appendingPathComponent("external-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
+        let target = QoderCandidateInbox(directoryURL: external)
+        _ = try target.loadCursorState()
+        // Keeping the source inbox open is intentional: reading the database
+        // bytes must not require a test-only close API.
+        let before = try Data(contentsOf: target.databaseURL)
+        let linked = root.appendingPathComponent("linked-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: linked, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            at: linked.appendingPathComponent(QoderCandidateInbox.databaseFileName),
+            withDestinationURL: target.databaseURL)
+        XCTAssertThrowsError(
+            try QoderCandidateInbox(directoryURL: linked).loadCursorState())
+        XCTAssertEqual(try Data(contentsOf: target.databaseURL), before)
+    }
+
+    func testLeaseRejectsSymlinkedLockFileWithoutChangingTarget() throws {
+        let state = root.appendingPathComponent("lock-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: state, withIntermediateDirectories: true)
+        let external = root.appendingPathComponent("external-lock")
+        let original = Data("do-not-change".utf8)
+        try original.write(to: external)
+        try FileManager.default.createSymbolicLink(
+            at: state.appendingPathComponent(QoderCollectionLease.lockFileName),
+            withDestinationURL: external)
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+        XCTAssertEqual(try Data(contentsOf: external), original)
+    }
+
+    func testLeaseRejectsSymlinkedStateDirectory() throws {
+        let external = root.appendingPathComponent("external-lock-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
+        let linked = root.appendingPathComponent("linked-lock-state", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: external)
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: linked))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: external.appendingPathComponent(QoderCollectionLease.lockFileName).path))
+    }
+
     func testCollectionReadsAStaticCopyAndWritesOnlyInsideItsOwnStateDirectory()
         throws {
         let configuration = self.configuration()
