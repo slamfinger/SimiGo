@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -285,6 +286,61 @@ final class SimiGoISAdmissionTests: XCTestCase {
         XCTAssertEqual(reAdmitted.recoveredValue, "delta9")
     }
 
+    func testSettleContinuationRollsBackChildStateAndSettlementWhenIdentityBindingWriteFails() throws {
+        let (url, db) = try open("cont-atomic-binding-failure")
+        defer { db.close(); cleanup(url) }
+        let parentSettlement = try mkSettlement(db, stateID: "P-atomic", value: "hello")
+
+        let statesBefore = try db.count("execution_states")
+        let settlementsBefore = try db.count("settlements")
+        let bindingsBefore = try db.count("settlement_bindings")
+        let objectsBefore = try db.count("is_objects")
+        let itemsBefore = try db.count("information_items")
+
+        // Fail only the producer identity rows, after the continuation has
+        // inserted its child Execution State, payload object, settlement row,
+        // and contract binding. This proves rollback crosses the whole edge.
+        var writer: OpaquePointer?
+        guard sqlite3_open(url.path, &writer) == SQLITE_OK, let writer else {
+            sqlite3_close(writer)
+            throw SimiGoESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(writer) }
+        let trigger = """
+        CREATE TRIGGER fail_producer_identity_binding
+        BEFORE INSERT ON settlement_bindings
+        WHEN NEW.name LIKE 'producer.%'
+        BEGIN
+            SELECT RAISE(ABORT, 'injected producer identity binding failure');
+        END;
+        """
+        var message: UnsafeMutablePointer<CChar>?
+        let triggerRC = sqlite3_exec(writer, trigger, nil, nil, &message)
+        guard triggerRC == SQLITE_OK else {
+            let detail = message.map { String(cString: $0) } ?? "unknown SQLite error"
+            sqlite3_free(message)
+            throw SimiGoESISDatabase.DatabaseError.sql(detail)
+        }
+
+        XCTAssertThrowsError(try SimiGoISAdmission.settleContinuation(
+            db: db, parentStateID: "P-atomic", consumer: producer,
+            childStateID: "C-atomic", generatedText: "RESULT=hello",
+            contractJSON: Data(Self.referenceContract.utf8)))
+
+        XCTAssertNil(try db.latestSettlementID(forStateID: "C-atomic"))
+        XCTAssertEqual(try db.count("execution_states"), statesBefore,
+                       "the child ES row must roll back with the failed identity write")
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore,
+                       "the child settlement must roll back with the failed identity write")
+        XCTAssertEqual(try db.count("settlement_bindings"), bindingsBefore,
+                       "the child contract binding must roll back too")
+        XCTAssertEqual(try db.count("is_objects"), objectsBefore,
+                       "the child payload object must not leak from the failed transaction")
+        XCTAssertEqual(try db.count("information_items"), itemsBefore,
+                       "the child settlement index must not leak from the failed transaction")
+        XCTAssertEqual(try db.latestSettlementID(forStateID: "P-atomic"), parentSettlement,
+                       "the parent settlement remains intact")
+    }
     // Admission runs BEFORE the child contract/persist: an unverified parent is
     // refused with the admission Refusal, and no child settlement appears.
     func testSettleContinuationAllowsCrossModelParentAndRecordsChildProvenance() throws {
