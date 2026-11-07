@@ -279,9 +279,12 @@ final class CancelPathStubHTTPTests: XCTestCase {
             file: file, line: line)
         XCTAssertEqual(receipt.stateID, stateID, file: file, line: line)
         XCTAssertEqual(receipt.validity, "valid", file: file, line: line)
-        XCTAssertFalse(
+        // The chat result contract declares only "content" and has no
+        // verified external binding constraints. It must not manufacture
+        // producer binding rows merely to make a settlement look reusable.
+        XCTAssertTrue(
             receipt.bindings.isEmpty,
-            "the durable answer keeps producer bindings", file: file, line: line)
+            "the chat result contract has no external bindings", file: file, line: line)
         XCTAssertNotNil(
             receipt.summary,
             "the durable answer has its reusable summary", file: file, line: line)
@@ -294,11 +297,9 @@ final class CancelPathStubHTTPTests: XCTestCase {
             file: file, line: line)
 
         let bindings = ESISSweep.newAnswerBindingIDs(before: before, after: after)
-        XCTAssertFalse(bindings.isEmpty, "answer bindings were not persisted",
-                       file: file, line: line)
         XCTAssertTrue(
-            bindings.allSatisfy { $0.hasPrefix("\(settlementID)|") },
-            "new answer bindings belong only to this settlement: \(bindings)",
+            bindings.isEmpty,
+            "the content-only chat contract must not invent answer bindings",
             file: file, line: line)
 
         XCTAssertEqual(
