@@ -1513,7 +1513,7 @@ extension HTTPServer {
             // 取消契约：keepalive 头未提交时客户端仍连接必须给 HTTP
             // 终态，否则将无限等待。
             keepalive.settle()
-            chatTurnTerminal = .cancelled
+            chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
             failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return
@@ -2062,7 +2062,7 @@ extension HTTPServer {
             // 客户端已断连（closed）→ 静默；客户端仍连接 →
             // 必须送达 terminal event 并关闭流，
             // 否则客户端会永远等待本轮 response。
-            chatTurnTerminal = .cancelled
+            chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
             failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return
