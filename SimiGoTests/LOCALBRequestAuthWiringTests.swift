@@ -613,19 +613,31 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         let second = try openPinnedTLSConnection(host, expectReady: true)
         waitForActiveConnections(2, server: server)
 
+        // Keep both accepted connections in the real header-read path. A
+        // connected-but-idle NWConnection is not a strong disconnect witness:
+        // send a partial head, then close one peer while receive is suspended.
+        let partialHead = "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1:\(host.port)\r\n"
+        try sendPartialBytes(partialHead, over: first)
+        try sendPartialBytes(partialHead, over: second)
+
         let excess = try openPinnedTLSConnection(host, expectReady: false)
-        XCTAssertEqual(server.activeConnectionCount, 2)
-        excess.cancel()
+        assertPeerClosed(excess, timeout: 3)
+        XCTAssertEqual(
+            server.activeConnectionCount, 2,
+            "the excess TLS socket must be rejected without consuming a slot")
 
         first.cancel()
         waitForActiveConnections(1, server: server)
         let replacement = try openPinnedTLSConnection(host, expectReady: true)
         waitForActiveConnections(2, server: server)
+        try sendPartialBytes(partialHead, over: replacement)
 
         server.stop()
+        XCTAssertEqual(
+            server.activeConnectionCount, 0,
+            "stop must synchronously release every accepted connection slot")
         assertPeerClosed(second, timeout: 3)
         assertPeerClosed(replacement, timeout: 3)
-        XCTAssertEqual(server.activeConnectionCount, 0)
     }
 
     private func openPinnedTLSConnection(
@@ -657,15 +669,18 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         let reachedExpectedState = expectation(
             description: expectReady
                 ? "pinned TLS connection ready"
-                : "pinned TLS connection rejected")
+                : "pinned TLS rejection or ready-before-reset")
         let stateLock = NSLock()
         var fulfilled = false
         connection.stateUpdateHandler = { state in
             let matched: Bool
             switch state {
             case .ready:
-                matched = expectReady
-            case .failed, .cancelled:
+                // The listener can cancel an over-cap socket after TLS has
+                // reached ready. The caller then proves the peer reset via
+                // assertPeerClosed instead of treating readiness as admission.
+                matched = true
+            case .waiting, .failed, .cancelled:
                 matched = !expectReady
             default:
                 matched = false
