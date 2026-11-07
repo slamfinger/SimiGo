@@ -3523,8 +3523,18 @@ public final class SimiGoESISDatabase {
         case recorded
         /// Verified/settled; eligible for ordinary retrieval.
         case committed
+        /// The request ended before the turn completed; never retrieval eligible.
+        case failed
+        /// The request was cancelled before the turn completed; never retrieval eligible.
+        case cancelled
         /// Client bookkeeping kept as a record, never ordinary memory.
         case internalOperation = "internal"
+    }
+
+    /// Terminal standing for a local request that did not complete.
+    public enum ChatTurnTerminal: String, Sendable {
+        case failed
+        case cancelled
     }
 
     /// Append one conversation line. A user row starts `pending` and only the
@@ -3574,7 +3584,10 @@ public final class SimiGoESISDatabase {
     private static func sameEligibilityClass(_ existing: String, _ target: String) -> Bool {
         let internalState = ChatTurnEligibility.internalOperation.rawValue
         if target == internalState { return existing == internalState }
-        return existing != internalState
+        // Only an in-flight local retry may adopt the existing row. A completed,
+        // failed or cancelled turn is a distinct historical event even when the
+        // next request repeats the exact same words.
+        return existing == ChatTurnState.pending.rawValue
     }
 
     /// Commit this turn: store the reply and promote the user row that started
@@ -3603,6 +3616,29 @@ public final class SimiGoESISDatabase {
                 }
             }
             return assistantID
+        }
+    }
+
+    /// Close an uncompleted local user row without promoting it into retrieval
+    /// history. This is idempotent and touches only the exact pending user row.
+    @discardableResult
+    public func closePendingChatTurn(
+        sessionID: String,
+        userMessageID: Int64,
+        terminal: ChatTurnTerminal
+    ) throws -> Bool {
+        guard userMessageID > 0 else { return false }
+        return try transactionResult {
+            let changed = try execBinding("""
+            UPDATE chat_messages SET turn_state=?
+            WHERE id=? AND session_id=? AND role='user' AND source_kind='local'
+              AND turn_state='pending';
+            """) { stmt in
+                bind(stmt, 1, terminal.rawValue)
+                sqlite3_bind_int64(stmt, 2, userMessageID)
+                bind(stmt, 3, sessionID)
+            }
+            return changed == 1
         }
     }
 
