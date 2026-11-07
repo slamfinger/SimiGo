@@ -129,9 +129,10 @@ jobs:
           echo "SCOPE|this lane covers Packages/SimiGoCollection only"
           echo "SCOPE|collection-only mode: candidates stay in the inbox; no sink, no IS/ES writes"
 
-  # Blocking remote coverage for the P0 answer-demand and P1 MCP tokenizer changes.
-  # These are deliberately separate from the ExecutionStateGraph witness lane:
-  # a green graph test cannot stand in for HTTP/MCP behavior or Runtime migrations.
+  # Blocking remote coverage for P0/P1 answer-demand + MCP behavior and the
+  # P2 detached-completion DB assertions. These remain separate from the
+  # ExecutionStateGraph witness lane: a green graph test cannot stand in for
+  # real HTTP lifecycle/persistence behavior or Runtime migrations.
   macos-p0-p1-app-tests:
     name: macOS P0/P1 HTTP and MCP tests
     # Xcode 27 is required by the pinned MLX dependency for the app test target.
@@ -155,6 +156,7 @@ jobs:
           files = [
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
+              Path("SimiGoTests/CancelPathStubHTTPTests.swift"),
           ]
           missing = [str(p) for p in files if not p.is_file()]
           if missing:
@@ -182,6 +184,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests
+            -only-testing:SimiGoTests/CancelPathStubHTTPTests
       - name: Generate isolated App test xctestrun
         run: |
           set -euo pipefail
@@ -207,7 +210,8 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/p0-p1-app.xcresult" \
             -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
-            -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/MCPInformationSpaceTests
+            -only-testing:SimiGoTests/CancelPathStubHTTPTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-app.log"
       - name: Gate on executed cases and xcresult counts
         if: always()
@@ -304,7 +308,8 @@ jobs:
       - name: Scope note
         if: always()
         run: |
-          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests only"
+          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests + CancelPathStubHTTPTests"
+          echo "SCOPE|includes four-path detached settlement DB assertions and negative controls"
           echo "SCOPE|no claim about external models, Qoder, or end-to-end Agent execution"
 
   runtime-contract-tests:
