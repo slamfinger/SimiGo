@@ -571,25 +571,30 @@ extension HTTPServer {
     /// so a later reader can verify the zero-model-call path from the database
     /// alone.
     func recordReusedAnswer(_ reuse: ReusableAnswer, turn: InformationTurn) {
-        try? turn.db.commitChatTurn(
-            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-            assistantText: reuse.text, model: modelId, createdAt: Date(),
-            eligibility: turn.eligibility)
-        let demandID = turn.renderedResolution.demandID
-        _ = try? turn.db.recordInformationReuse(
-            sourceSettlementID: reuse.settlementID,
-            sourceStateID: reuse.sourceStateID,
-            demandID: demandID,
-            sessionID: turn.sessionID,
-            query: turn.query)
-        RuntimeTraceLogger.shared.trace(
-            "[IS_REUSE] settlement=\(RuntimeTraceLogger.short(reuse.settlementID))"
-                + " demand=\(RuntimeTraceLogger.short(demandID))"
-                + " state=\(RuntimeTraceLogger.short(reuse.sourceStateID)) model_calls=0"
-                + " candidate_demand="
-                + "\(RuntimeTraceLogger.short(turn.candidateResolution?.demandID ?? "none"))")
+        let demandID = reuse.demandID
+        do {
+            _ = try turn.db.commitReusedChatTurn(
+                .init(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: reuse.text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility),
+                sourceSettlementID: reuse.settlementID,
+                sourceStateID: reuse.sourceStateID,
+                demandID: demandID,
+                query: turn.query)
+            RuntimeTraceLogger.shared.trace(
+                "[IS_REUSE] settlement=\(RuntimeTraceLogger.short(reuse.settlementID))"
+                    + " demand=\(RuntimeTraceLogger.short(demandID))"
+                    + " state=\(RuntimeTraceLogger.short(reuse.sourceStateID)) model_calls=0"
+                    + " candidate_demand="
+                    + "\(RuntimeTraceLogger.short(turn.candidateResolution?.demandID ?? "none"))")
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[IS_REUSE_REJECT] reason=\(error) "
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                    + "chat_committed=0 reuse_recorded=0")
+        }
     }
-
     /// The wire shape a stream client expects for a reused answer: one content
     /// chunk, one stop chunk, `[DONE]`. Most OpenAI-compatible agents stream by
     /// default, so a short-circuit that only existed on the non-streaming path

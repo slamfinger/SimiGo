@@ -813,6 +813,90 @@ final class SimiGoInformationLoopTests: XCTestCase {
             "0")
     }
 
+    func testSettlementRefusesChatCommitWhenPendingUserRowIsMissing() throws {
+        let (url, db) = try open("atomic-chat-user-row-missing")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let resolution = try SimiGoInformationLoop(database: db).resolve(
+            .init(sessionID: "s-missing", query: "needle", includeChat: false))
+
+        XCTAssertThrowsError(try SimiGoInformationLoop(database: db).settleTurn(
+            generatedText: "the answer", resolution: resolution,
+            stateID: "S-atomic-user-row-missing", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-missing",
+            chatTurn: .init(
+                sessionID: "s-missing", userMessageID: -1,
+                assistantText: "the answer", model: "model-a", createdAt: Date())))
+
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id='s-missing' AND role='assistant';"),
+            "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM execution_states WHERE state_id='S-atomic-user-row-missing';"),
+            "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM settlements WHERE state_id='S-atomic-user-row-missing';"),
+            "0")
+    }
+
+    func testReusedChatTurnAndReuseEventCommitAtomically() throws {
+        let (url, db) = try open("atomic-chat-reuse")
+        defer { db.close(); cleanup(url) }
+        let loop = SimiGoInformationLoop(database: db)
+        let source = try loop.settleTurn(
+            generatedText: "previous settled answer", resolution: nil,
+            stateID: "S-reuse-source", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let userID = try db.appendChatMessage(
+            sessionID: "s-reuse", role: "user", content: "repeat question",
+            model: nil, createdAt: Date())
+
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+        defer { sqlite3_close(handle) }
+        let trigger = """
+        CREATE TRIGGER abort_atomic_reuse_event
+        BEFORE INSERT ON information_reuse_events
+        BEGIN SELECT RAISE(ABORT, 'injected reuse event failure'); END;
+        """
+        XCTAssertEqual(sqlite3_exec(handle, trigger, nil, nil, nil), SQLITE_OK)
+
+        let chatTurn = SimiGoESISDatabase.ChatTurnCommit(
+            sessionID: "s-reuse", userMessageID: userID,
+            assistantText: "previous settled answer", model: "model-a",
+            createdAt: Date())
+        XCTAssertThrowsError(try db.commitReusedChatTurn(
+            chatTurn, sourceSettlementID: source.settlementID,
+            sourceStateID: "S-reuse-source", demandID: "D-reuse",
+            query: "repeat question"))
+        XCTAssertEqual(try rawText(url,
+            "SELECT turn_state FROM chat_messages WHERE id=" + String(userID) + ";"),
+            "pending")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id='s-reuse' AND role='assistant';"),
+            "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM information_reuse_events WHERE demand_id='D-reuse';"),
+            "0")
+
+        XCTAssertEqual(sqlite3_exec(handle, "DROP TRIGGER abort_atomic_reuse_event;", nil, nil, nil), SQLITE_OK)
+        _ = try db.commitReusedChatTurn(
+            chatTurn, sourceSettlementID: source.settlementID,
+            sourceStateID: "S-reuse-source", demandID: "D-reuse",
+            query: "repeat question")
+        let transcript = try db.listChatMessages(sessionID: "s-reuse")
+        XCTAssertEqual(transcript.count, 2)
+        XCTAssertEqual(transcript[0].content, "repeat question")
+        XCTAssertEqual(transcript[0].turnState, "committed")
+        XCTAssertEqual(transcript[1].content, "previous settled answer")
+        XCTAssertEqual(try db.informationReuseEvent(demandID: "D-reuse")?.sourceSettlementID,
+                       source.settlementID)
+    }
+
     func testSettlementFailureRollsBackChatPromotionAndAssistantRow() throws {
         let (url, db) = try open("atomic-chat-rollback")
         let root = try makeWorkRoot()
