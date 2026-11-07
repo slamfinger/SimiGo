@@ -158,8 +158,8 @@ final class SimiGoInformationReuseTests: XCTestCase {
 
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query, identity: identity,
-            currentDemandID: resolution.demandID))
-    }
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
 
     /// Rule 2 (and the dependency rule with it): once the settled chain is
     /// invalidated, the question falls back to generation. Invalidation cascades
@@ -175,8 +175,8 @@ final class SimiGoInformationReuseTests: XCTestCase {
 
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query, identity: identity,
-            currentDemandID: resolution.demandID))
-    }
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
 
     /// Rule 4: a different engine never inherits settled text, and neither does
     /// an engine whose identity was not resolved.
@@ -204,12 +204,12 @@ final class SimiGoInformationReuseTests: XCTestCase {
 
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-b", query: query, identity: identity,
-            currentDemandID: source.demandID))
-        // Case and whitespace are NOT normalized away — only exact repeats reuse.
+            sessionID: "info-b", query: query, expectedDemandID: source.demandID,
+            identity: identity))
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: "Where is the exit?", identity: identity,
-            currentDemandID: source.demandID))
-    }
+            sessionID: "info-a", query: "Where is the exit?", expectedDemandID: source.demandID,
+            identity: identity))
 
     /// An unresolved producer identity is an absence of a claim, not a wildcard:
     /// two unnamed engines are not the same engine, so 「未识别」 must never let
@@ -225,11 +225,11 @@ final class SimiGoInformationReuseTests: XCTestCase {
 
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query, identity: .absent,
-            currentDemandID: resolution.demandID))
-        XCTAssertNil(loop.reusableAnswer(
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: .absent))
             sessionID: "info-a", query: query, identity: identity,
-            currentDemandID: resolution.demandID))
-
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
         // The refusal is in the binding rule itself, not only in the gate.
         let absentOnly = SimiGoSettlementIdentityBinding.evaluate(
             recorded: SimiGoSettlementIdentityBinding.bindings(for: .absent),
