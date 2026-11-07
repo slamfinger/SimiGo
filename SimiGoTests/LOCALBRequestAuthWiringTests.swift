@@ -582,13 +582,13 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             bodyTimeout: .milliseconds(250))
         let host = try makeAuthorizedHost(requestLimits: limits)
 
-        let slowHead = try openPinnedTLSConnection(host, expectReady: true)
+        let slowHead = try openPinnedTLSConnection(host)
         try sendPartialBytes(
             "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1\r\n",
             over: slowHead)
         assertPeerClosed(slowHead, timeout: 3)
 
-        let slowBody = try openPinnedTLSConnection(host, expectReady: true)
+        let slowBody = try openPinnedTLSConnection(host)
         let partialBodyRequest =
             "POST /v1/simigo/search HTTP/1.1\r\n"
             + "Host: 127.0.0.1:\(host.port)\r\n"
@@ -598,10 +598,11 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             + "{"
         try sendPartialBytes(partialBodyRequest, over: slowBody)
         assertPeerClosed(slowBody, timeout: 3)
-        waitForActiveConnections(0, server: try XCTUnwrap(host.server))
+        waitForConnectionSnapshot(
+            try XCTUnwrap(host.server), active: 0, refusedOverCap: 0)
     }
 
-    func testConnectionCapRejectsExcessAndTeardownReleasesCapacity() throws {
+    func testConnectionCapRefusesExcessAndReleasesIncompleteRequestSlots() throws {
         let limits = HTTPServer.RequestLimits(
             maxConnections: 2,
             headerTimeout: .seconds(30),
@@ -609,41 +610,77 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         let host = try makeAuthorizedHost(requestLimits: limits)
         let server = try XCTUnwrap(host.server)
 
-        let first = try openPinnedTLSConnection(host, expectReady: true)
-        let second = try openPinnedTLSConnection(host, expectReady: true)
-        waitForActiveConnections(2, server: server)
+        // Capacity is observed through the server's admission accounting,
+        // never through client TLS state: an over-cap peer may sit in
+        // .waiting/.preparing without surfacing a reset, which proves nothing
+        // about whether the server spent a slot on it.
+        let first = try openPinnedTLSConnection(host)
+        let second = try openPinnedTLSConnection(host)
+        waitForConnectionSnapshot(server, active: 2, refusedOverCap: 0)
 
-        // Keep both accepted connections in the real header-read path. A
-        // connected-but-idle NWConnection is not a strong disconnect witness:
-        // send a partial head, then close one peer while receive is suspended.
+        // Keep both accepted sockets inside the real header-read path, so the
+        // later disconnect is an incomplete-request disconnect rather than an
+        // idle-socket teardown.
         let partialHead = "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1:\(host.port)\r\n"
         try sendPartialBytes(partialHead, over: first)
         try sendPartialBytes(partialHead, over: second)
 
-        let excess = try openPinnedTLSConnection(host, expectReady: false)
-        assertPeerClosed(excess, timeout: 3)
-        XCTAssertEqual(
-            server.activeConnectionCount, 2,
-            "the excess TLS socket must be rejected without consuming a slot")
+        let excess = startPinnedTLSConnection(host)
+        waitForConnectionSnapshot(server, active: 2, refusedOverCap: 1)
+        excess.cancel()
 
+        // The decisive check: a peer that vanished mid-header must return its
+        // slot, or the cap converts one aborted request into permanent
+        // capacity loss. Prove reuse by admitting a replacement afterwards.
         first.cancel()
-        waitForActiveConnections(1, server: server)
-        let replacement = try openPinnedTLSConnection(host, expectReady: true)
-        waitForActiveConnections(2, server: server)
+        waitForConnectionSnapshot(server, active: 1, refusedOverCap: 1)
+        let replacement = try openPinnedTLSConnection(host)
+        waitForConnectionSnapshot(server, active: 2, refusedOverCap: 1)
         try sendPartialBytes(partialHead, over: replacement)
 
         server.stop()
-        XCTAssertEqual(
-            server.activeConnectionCount, 0,
-            "stop must synchronously release every accepted connection slot")
-        assertPeerClosed(second, timeout: 3)
-        assertPeerClosed(replacement, timeout: 3)
+        waitForConnectionSnapshot(
+            server,
+            active: 0,
+            refusedOverCap: 1,
+            timeout: 0.5,
+            message: "stop must synchronously release every accepted slot")
+        second.cancel()
+        replacement.cancel()
     }
 
     private func openPinnedTLSConnection(
-        _ host: LOCALBTestCase.Host,
-        expectReady: Bool
+        _ host: LOCALBTestCase.Host
     ) throws -> NWConnection {
+        let connection = startPinnedTLSConnection(host)
+        let ready = expectation(description: "pinned TLS connection ready")
+        let stateLock = NSLock()
+        var fulfilled = false
+        connection.stateUpdateHandler = { state in
+            guard case .ready = state else { return }
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { ready.fulfill() }
+        }
+        // A connection can already be ready before the handler is installed.
+        if case .ready = connection.state {
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { ready.fulfill() }
+        }
+        wait(for: [ready], timeout: 5)
+        return connection
+    }
+
+    /// Starts a pinned TLS socket without waiting for any state: the caller
+    /// observes capacity on the server, where admission is decided.
+    private func startPinnedTLSConnection(
+        _ host: LOCALBTestCase.Host
+    ) -> NWConnection {
         let options = NWProtocolTLS.Options()
         sec_protocol_options_set_verify_block(
             options.securityProtocolOptions,
@@ -666,37 +703,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             host: "127.0.0.1",
             port: NWEndpoint.Port(rawValue: host.port)!,
             using: NWParameters(tls: options))
-        let reachedExpectedState = expectation(
-            description: expectReady
-                ? "pinned TLS connection ready"
-                : "pinned TLS rejection or ready-before-reset")
-        let stateLock = NSLock()
-        var fulfilled = false
-        connection.stateUpdateHandler = { state in
-            let matched: Bool
-            switch state {
-            case .ready:
-                // The listener can cancel an over-cap socket after TLS has
-                // reached ready. The caller then proves the peer reset via
-                // assertPeerClosed instead of treating readiness as admission.
-                matched = true
-            case .failed, .cancelled:
-                // .waiting is not a rejection: Network.framework may remain
-                // there while the TLS listener is still negotiating. Wait for
-                // a terminal state or .ready, then observe the peer close.
-                matched = !expectReady
-            default:
-                matched = false
-            }
-            guard matched else { return }
-            stateLock.lock()
-            let shouldFulfill = !fulfilled
-            fulfilled = true
-            stateLock.unlock()
-            if shouldFulfill { reachedExpectedState.fulfill() }
-        }
         connection.start(queue: DispatchQueue.global())
-        wait(for: [reachedExpectedState], timeout: 5)
         return connection
     }
 
@@ -749,17 +756,33 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         connection.cancel()
     }
 
-    private func waitForActiveConnections(
-        _ expected: Int,
-        server: HTTPServer,
-        timeout: TimeInterval = 3
+    private func waitForConnectionSnapshot(
+        _ server: HTTPServer,
+        active: Int,
+        refusedOverCap: Int,
+        timeout: TimeInterval = 3,
+        message: @autoclosure () -> String = ""
     ) {
         let deadline = Date().addingTimeInterval(timeout)
+        var snapshot = server.connectionSnapshot()
         while Date() < deadline {
-            if server.activeConnectionCount == expected { return }
-            Thread.sleep(forTimeInterval: 0.01)
+            snapshot = server.connectionSnapshot()
+            if snapshot.active == active,
+               snapshot.refusedOverCap == refusedOverCap {
+                return
+            }
+            // This module defaults to MainActor isolation, so slot release
+            // runs on the main actor. Blocking the main thread with
+            // Thread.sleep would starve terminate() and make a healthy
+            // release look like a leak; spin the run loop instead.
+            RunLoop.current.run(until: Date().addingTimeInterval(0.01))
         }
-        XCTAssertEqual(server.activeConnectionCount, expected)
+        XCTAssertEqual(
+            snapshot,
+            HTTPServer.ConnectionSnapshot(
+                active: active,
+                refusedOverCap: refusedOverCap),
+            message())
     }
 
     func testBranchOperationsRequireBranchControlPermission() throws {

@@ -771,9 +771,29 @@ public final class HTTPServer: @unchecked Sendable {
 
     private var connections: [ObjectIdentifier: ConnectionContext] = [:]
     private let connectionLock = NSLock()
+    private var refusedOverCapCount = 0
 
-    var activeConnectionCount: Int {
-        connectionLock.withLock { connections.count }
+    /// Lock-protected, authoritative view of connection admission.
+    ///
+    /// Tests observe capacity through this snapshot instead of inferring
+    /// admission from client TLS state: Network.framework may keep an
+    /// over-cap peer in `.waiting`/`.preparing` without surfacing the
+    /// reset, which says nothing about whether the server admitted it.
+    struct ConnectionSnapshot: Sendable, Equatable {
+        /// Sockets currently holding an admission slot.
+        let active: Int
+        /// Cumulative sockets refused because `active` was already at
+        /// `requestLimits.maxConnections`.
+        let refusedOverCap: Int
+    }
+
+    func connectionSnapshot() -> ConnectionSnapshot {
+        connectionLock.withLock {
+            ConnectionSnapshot(
+                active: connections.count,
+                refusedOverCap: refusedOverCapCount
+            )
+        }
     }
 
     let responsesStore = ResponsesStateStore()
@@ -1131,6 +1151,7 @@ public final class HTTPServer: @unchecked Sendable {
         // not sent a complete request header.
         let context: ConnectionContext? = connectionLock.withLock {
             guard connections.count < requestLimits.maxConnections else {
+                refusedOverCapCount += 1
                 return nil
             }
             let context = ConnectionContext(
