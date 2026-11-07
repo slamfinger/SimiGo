@@ -3878,7 +3878,11 @@ public final class SimiGoESISDatabase {
             sessionID: write.sessionID, role: "assistant", data: data, digest: digest,
             model: write.model, createdAt: write.createdAt,
             state: Self.completedState(for: write.eligibility))
-        if write.userMessageID > 0, write.eligibility == .ordinary {
+        if write.eligibility == .ordinary {
+            guard write.userMessageID > 0 else {
+                throw DatabaseError.sql(
+                    "commitChatTurn: ordinary turn requires a pending local user row")
+            }
             let promotedRows = try execBinding("""
             UPDATE chat_messages SET turn_state='committed'
             WHERE id=? AND session_id=? AND role='user'
@@ -4508,6 +4512,31 @@ public final class SimiGoESISDatabase {
         case sourceNotValid(String)
     }
 
+    /// Commit the reused assistant transcript and the zero-model-call reuse
+    /// event together. A reader cannot observe one without the other.
+    @discardableResult
+    public func commitReusedChatTurn(
+        _ chatTurn: ChatTurnCommit,
+        sourceSettlementID: String,
+        sourceStateID: String,
+        demandID: String,
+        query: String,
+        reusedAt: Date = Date()
+    ) throws -> Int64 {
+        try transactionResult {
+            let assistantID = try insertChatTurnRows(chatTurn)
+            _ = try insertInformationReuseEvent(
+                sourceSettlementID: sourceSettlementID,
+                sourceStateID: sourceStateID,
+                demandID: demandID,
+                sessionID: chatTurn.sessionID,
+                query: query,
+                consumerStateID: nil,
+                reusedAt: reusedAt)
+            return assistantID
+        }
+    }
+
     /// Record that `demandID` was answered by an ALREADY-SETTLED result with zero
     /// model calls. The lookup gate ran before generation; validity is re-read
     /// inside this write, so a settlement invalidated in between can never be
@@ -4524,6 +4553,29 @@ public final class SimiGoESISDatabase {
         consumerStateID: String? = nil,
         reusedAt: Date = Date()
     ) throws -> InformationReuseEvent {
+        try transactionResult {
+            try insertInformationReuseEvent(
+                sourceSettlementID: sourceSettlementID,
+                sourceStateID: sourceStateID,
+                demandID: demandID,
+                sessionID: sessionID,
+                query: query,
+                consumerStateID: consumerStateID,
+                reusedAt: reusedAt)
+        }
+    }
+
+    /// Caller owns the transaction, allowing a reuse event to commit together
+    /// with the chat transcript that records the answer being served.
+    private func insertInformationReuseEvent(
+        sourceSettlementID: String,
+        sourceStateID: String,
+        demandID: String,
+        sessionID: String,
+        query: String,
+        consumerStateID: String?,
+        reusedAt: Date
+    ) throws -> InformationReuseEvent {
         guard !demandID.isEmpty else {
             throw InformationReuseError.emptyField("demand_id")
         }
@@ -4531,43 +4583,41 @@ public final class SimiGoESISDatabase {
             throw InformationReuseError.emptyField("source_settlement_id")
         }
         let digest = NativeSHA256.hexDigest(Data("\(sessionID)|\(query)".utf8))
-        return try transactionResult {
-            if let existing = try informationReuseEvent(demandID: demandID) {
-                return existing
-            }
-            guard let receipt = try settlementReceipt(sourceSettlementID),
-                receipt.validity == "valid"
-            else {
-                throw InformationReuseError.sourceNotValid(sourceSettlementID)
-            }
-            let reuseID = UUID().uuidString
-            let stamp = Self.stamp(reusedAt)
-            try execBinding("""
-            INSERT INTO information_reuse_events(
-                reuse_id, source_settlement_id, source_state_id, demand_id,
-                session_id, consumer_state_id, canonical_digest, model_calls,
-                reused_at)
-            VALUES(?,?,?,?,?,?,?,0,?);
-            """) { stmt in
-                bind(stmt, 1, reuseID)
-                bind(stmt, 2, sourceSettlementID)
-                bind(stmt, 3, sourceStateID)
-                bind(stmt, 4, demandID)
-                bind(stmt, 5, sessionID)
-                if let consumerStateID {
-                    bind(stmt, 6, consumerStateID)
-                } else {
-                    sqlite3_bind_null(stmt, 6)
-                }
-                bind(stmt, 7, digest)
-                bind(stmt, 8, stamp)
-            }
-            return InformationReuseEvent(
-                reuseID: reuseID, sourceSettlementID: sourceSettlementID,
-                sourceStateID: sourceStateID, demandID: demandID,
-                sessionID: sessionID, consumerStateID: consumerStateID,
-                canonicalDigest: digest, modelCalls: 0, reusedAt: stamp)
+        if let existing = try informationReuseEvent(demandID: demandID) {
+            return existing
         }
+        guard let receipt = try settlementReceipt(sourceSettlementID),
+            receipt.validity == "valid"
+        else {
+            throw InformationReuseError.sourceNotValid(sourceSettlementID)
+        }
+        let reuseID = UUID().uuidString
+        let stamp = Self.stamp(reusedAt)
+        try execBinding("""
+        INSERT INTO information_reuse_events(
+            reuse_id, source_settlement_id, source_state_id, demand_id,
+            session_id, consumer_state_id, canonical_digest, model_calls,
+            reused_at)
+        VALUES(?,?,?,?,?,?,?,0,?);
+        """) { stmt in
+            bind(stmt, 1, reuseID)
+            bind(stmt, 2, sourceSettlementID)
+            bind(stmt, 3, sourceStateID)
+            bind(stmt, 4, demandID)
+            bind(stmt, 5, sessionID)
+            if let consumerStateID {
+                bind(stmt, 6, consumerStateID)
+            } else {
+                sqlite3_bind_null(stmt, 6)
+            }
+            bind(stmt, 7, digest)
+            bind(stmt, 8, stamp)
+        }
+        return InformationReuseEvent(
+            reuseID: reuseID, sourceSettlementID: sourceSettlementID,
+            sourceStateID: sourceStateID, demandID: demandID,
+            sessionID: sessionID, consumerStateID: consumerStateID,
+            canonicalDigest: digest, modelCalls: 0, reusedAt: stamp)
     }
 
     public func informationReuseEvent(demandID: String) throws -> InformationReuseEvent? {
