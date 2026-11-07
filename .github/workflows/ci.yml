@@ -183,7 +183,7 @@ jobs:
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
-            -only-testing:SimiGoTests/MCPInformationSpaceTests
+            -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/CancelPathStubHTTPTests
       - name: Generate isolated App test xctestrun
         run: |
@@ -210,7 +210,7 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/p0-p1-app.xcresult" \
             -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
-            -only-testing:SimiGoTests/MCPInformationSpaceTests
+            -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/CancelPathStubHTTPTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-app.log"
       - name: Gate on executed cases and xcresult counts
