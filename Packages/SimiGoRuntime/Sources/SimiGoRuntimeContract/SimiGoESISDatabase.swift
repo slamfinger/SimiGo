@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import SQLite3
 
@@ -2661,12 +2662,30 @@ public final class SimiGoESISDatabase {
         // and let an older observation overwrite a newer settlement.
         return try transactionResult {
         let fm = FileManager.default
+        guard fileByteCap >= 0, maxDepth >= 0 else {
+            throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
+        }
+        let requestedRootPath = try canonicalDirectoryPath(atPath: rootURL.path)
+        let requestedRoot = URL(fileURLWithPath: requestedRootPath, isDirectory: true)
+        let scanRoot: URL
+        if let registeredPath = try rootLocatorPath(rootID) {
+            let registeredRoot = URL(fileURLWithPath: registeredPath).standardizedFileURL
+            guard registeredRoot.path == requestedRoot.path else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: registered root locator changed for \(rootID)")
+            }
+            scanRoot = registeredRoot
+        } else {
+            scanRoot = requestedRoot
+        }
+        let rootDirectoryFD = try openDirectoryNoFollow(atPath: scanRoot.path)
+        defer { Darwin.close(rootDirectoryFD) }
         // file_contents references roots, so the root must exist before any
         // content row is written (new roots start here, not in the index pass).
         // Recording the absolute path here is what makes the locator evidence
         // durable: later metadata-only upserts must not erase it.
         try upsertRoot(rootID: rootID, category: category,
-                       displayName: rootURL.path,
+                       displayName: scanRoot.path,
                        locatorType: "path", status: "present")
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
@@ -2721,7 +2740,6 @@ public final class SimiGoESISDatabase {
         var indexedFiles: [(rel: String, url: URL, size: Int64, modified: String?, digest: String?)] = []
         let modifiedFormatter = ISO8601DateFormatter()
 
-        let scanRoot = rootURL.resolvingSymlinksInPath()
         var enumerationFailure: (path: String, message: String)?
         guard let enumerator = fm.enumerator(
             at: scanRoot,
@@ -2744,71 +2762,70 @@ public final class SimiGoESISDatabase {
                 "settleWorkRootContents: cannot enumerate root \(rootID)")
         }
         while let file = enumerator.nextObject() as? URL {
-            var isDir: ObjCBool = false
-            guard fm.fileExists(atPath: file.path, isDirectory: &isDir),
-                !isDir.boolValue
+            var enumeratedInfo = stat()
+            let lstatResult = file.path.withCString { Darwin.lstat($0, &enumeratedInfo) }
+            guard lstatResult == 0 else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: cannot inspect \(file.path): \(String(cString: strerror(errno)))")
+            }
+            let relative = relativePath(of: file, under: scanRoot)
+            guard !relative.isEmpty,
+                relative.split(separator: "/").count <= maxDepth
             else { continue }
-            let rel = relativePath(of: file, under: scanRoot)
-            guard !rel.isEmpty,
-                rel.split(separator: "/").count <= maxDepth
-            else { continue }
-            scanned += 1
-            seen.insert(rel)
-            let values = try? file.resourceValues(forKeys: [
-                .fileSizeKey, .contentModificationDateKey,
-            ])
-            let size = Int64(values?.fileSize ?? 0)
-            let modified = values?.contentModificationDate.map {
-                modifiedFormatter.string(from: $0)
+
+            let fileType = enumeratedInfo.st_mode & S_IFMT
+            if fileType == S_IFDIR { continue }
+            guard fileType == S_IFREG else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: refuses symbolic or non-regular source \(relative)")
             }
 
-            // Size-cap exclusions are intentional; an actual I/O error is not
-            // evidence that the previous settled content should be withdrawn.
-            guard size <= Int64(fileByteCap) else {
-                skipped += 1
-                indexedFiles.append((rel, file, size, modified, nil))
-                if let old = previous[rel] {
-                    cleared.append((rel, old, false))
-                }
-                continue
-            }
-            let data: Data
-            do {
-                data = try Data(contentsOf: file)
-            } catch {
+            // Every component is opened relative to the pinned root FD; no
+            // symlink can redirect either an intermediate directory or the leaf.
+            let read = try readRootFileNoFollow(
+                rootDirectoryFD: rootDirectoryFD,
+                relativePath: relative,
+                maximumBytes: fileByteCap)
+            guard read.device == Int64(enumeratedInfo.st_dev),
+                  read.inode == UInt64(enumeratedInfo.st_ino) else {
                 throw DatabaseError.sql(
-                    "settleWorkRootContents: cannot read \(rel): \(error)")
+                    "settleWorkRootContents: source changed during scan: \(relative)")
             }
-            guard data.count <= fileByteCap else {
+
+            scanned += 1
+            seen.insert(relative)
+            let size = read.size
+            let modified = read.modificationDate.map {
+                modifiedFormatter.string(from: $0)
+            }
+            guard let data = read.data else {
                 skipped += 1
-                indexedFiles.append((rel, file, Int64(data.count), modified, nil))
-                if let old = previous[rel] {
-                    cleared.append((rel, old, false))
+                indexedFiles.append((relative, file, size, modified, nil))
+                if let old = previous[relative] {
+                    cleared.append((relative, old, false))
                 }
                 continue
             }
+
             let digest = NativeSHA256.hexDigest(data)
             entityBytesRead += data.count
-            indexedFiles.append((rel, file, size, modified, digest))
+            indexedFiles.append((relative, file, size, modified, digest))
             guard String(data: data, encoding: .utf8) != nil else {
                 skipped += 1
-                if let old = previous[rel] {
-                    cleared.append((rel, old, false))
+                if let old = previous[relative] {
+                    cleared.append((relative, old, false))
                 }
                 continue
             }
-            // Reuse only when the settled digest still matches AND the row is in
-            // the mode being settled now. An index-only pass over a text-carrying
-            // row must re-settle once to drop the copied bytes.
-            if let old = previous[rel], old.digest == digest,
+            if let old = previous[relative], old.digest == digest,
                 carryText ? old.objectID != nil : old.objectID == nil
             {
                 reused += 1
                 continue
             }
             pending.append(PendingSettlement(
-                relativePath: rel, url: file, data: data, digest: digest,
-                size: size, modified: modified, previous: previous[rel]))
+                relativePath: relative, url: file, data: data, digest: digest,
+                size: size, modified: modified, previous: previous[relative]))
         }
 
         // Enumeration errors can occur after some descendants were yielded.
@@ -2961,6 +2978,186 @@ public final class SimiGoESISDatabase {
             bytesAddressed: bytesAddressed,
             indexOnly: !carryText, entityBytesRead: entityBytesRead)
         }
+    }
+
+    private struct NoFollowFileRead {
+        let data: Data?
+        let size: Int64
+        let modificationDate: Date?
+        let device: Int64
+        let inode: UInt64
+    }
+
+    private func canonicalDirectoryPath(atPath path: String) throws -> String {
+        let resolved = path.withCString { Darwin.realpath($0, nil) }
+        guard let resolved else {
+            throw DatabaseError.sql(
+                "canonicalDirectoryPath: \(String(cString: strerror(errno)))")
+        }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
+            .standardizedFileURL.path
+    }
+
+    private func openDirectoryNoFollow(atPath path: String) throws -> Int32 {
+        let canonicalPath = try canonicalDirectoryPath(atPath: path)
+        guard canonicalPath == URL(fileURLWithPath: path, isDirectory: true)
+            .standardizedFileURL.path else {
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: registered directory path now resolves elsewhere")
+        }
+
+        // macOS temporary roots can traverse APFS firmlink/alias components
+        // which are canonicalized by realpath but are not all traversable via
+        // a strict component-by-component O_NOFOLLOW walk. Resolve once, then
+        // bind the opened directory descriptor to the exact lstat identity of
+        // that canonical leaf. Descendant paths remain component-wise no-follow.
+        var pathInfo = stat()
+        let statResult = canonicalPath.withCString { Darwin.lstat($0, &pathInfo) }
+        guard statResult == 0, (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
+            let code = errno
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: canonical root is not a directory: \(String(cString: strerror(code)))")
+        }
+        let descriptor = canonicalPath.withCString {
+            Darwin.open($0, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        }
+        guard descriptor >= 0 else {
+            let code = errno
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: canonical root open failed: \(String(cString: strerror(code)))")
+        }
+        var openedInfo = stat()
+        guard Darwin.fstat(descriptor, &openedInfo) == 0,
+              (openedInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedInfo.st_dev == pathInfo.st_dev,
+              openedInfo.st_ino == pathInfo.st_ino else {
+            let code = errno
+            Darwin.close(descriptor)
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: canonical root identity changed: \(String(cString: strerror(code)))")
+        }
+        return descriptor
+    }
+
+    private func readRootFileNoFollow(
+        rootDirectoryFD: Int32,
+        relativePath: String,
+        maximumBytes: Int?
+    ) throws -> NoFollowFileRead {
+        if let maximumBytes, maximumBytes < 0 {
+            throw DatabaseError.sql("readRootFileNoFollow: negative byte limit")
+        }
+        let components = relativePath.split(
+            separator: "/", omittingEmptySubsequences: false)
+        guard !components.isEmpty,
+              components.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }) else {
+            throw DatabaseError.sql("readRootFileNoFollow: invalid relative path")
+        }
+
+        var parentFD = Darwin.dup(rootDirectoryFD)
+        guard parentFD >= 0 else {
+            throw DatabaseError.sql(
+                "readRootFileNoFollow: dup failed: \(String(cString: strerror(errno)))")
+        }
+        for component in components.dropLast() {
+            let next = String(component).withCString {
+                Darwin.openat(
+                    parentFD, $0,
+                    O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+            }
+            guard next >= 0 else {
+                let code = errno
+                Darwin.close(parentFD)
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: parent is unavailable or symlinked: \(String(cString: strerror(code)))")
+            }
+            Darwin.close(parentFD)
+            parentFD = next
+        }
+
+        let leaf = String(components[components.count - 1])
+        let fileFD = leaf.withCString {
+            Darwin.openat(
+                parentFD, $0,
+                O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)
+        }
+        let openError = errno
+        Darwin.close(parentFD)
+        guard fileFD >= 0 else {
+            throw DatabaseError.sql(
+                "readRootFileNoFollow: leaf is unavailable or symlinked: \(String(cString: strerror(openError)))")
+        }
+        defer { Darwin.close(fileFD) }
+
+        var initial = stat()
+        guard Darwin.fstat(fileFD, &initial) == 0,
+              (initial.st_mode & S_IFMT) == S_IFREG,
+              initial.st_size >= 0 else {
+            throw DatabaseError.sql("readRootFileNoFollow: source is not a regular file")
+        }
+        let device = Int64(initial.st_dev)
+        let inode = UInt64(initial.st_ino)
+        let modificationDate = Date(
+            timeIntervalSince1970: Double(initial.st_mtimespec.tv_sec)
+                + Double(initial.st_mtimespec.tv_nsec) / 1_000_000_000)
+        let initialSize = Int64(initial.st_size)
+
+        func verifyUnchanged() throws {
+            var finalInfo = stat()
+            guard Darwin.fstat(fileFD, &finalInfo) == 0,
+                  finalInfo.st_dev == initial.st_dev,
+                  finalInfo.st_ino == initial.st_ino,
+                  finalInfo.st_size == initial.st_size,
+                  finalInfo.st_mtimespec.tv_sec == initial.st_mtimespec.tv_sec,
+                  finalInfo.st_mtimespec.tv_nsec == initial.st_mtimespec.tv_nsec else {
+                throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
+            }
+        }
+
+        if let maximumBytes, initialSize > Int64(maximumBytes) {
+            try verifyUnchanged()
+            return NoFollowFileRead(
+                data: nil, size: initialSize,
+                modificationDate: modificationDate, device: device, inode: inode)
+        }
+
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 64 * 1024)
+        while true {
+            let requestCount: Int
+            if let maximumBytes {
+                let remaining = maximumBytes - data.count
+                requestCount = remaining >= buffer.count
+                    ? buffer.count : max(1, remaining + 1)
+            } else {
+                requestCount = buffer.count
+            }
+            let amount = buffer.withUnsafeMutableBytes { raw -> Int in
+                guard let base = raw.baseAddress else { return -1 }
+                return Darwin.read(fileFD, base, requestCount)
+            }
+            if amount < 0 && errno == EINTR { continue }
+            guard amount >= 0 else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
+            }
+            if amount == 0 { break }
+            data.append(contentsOf: buffer.prefix(amount))
+            if let maximumBytes, data.count > maximumBytes {
+                try verifyUnchanged()
+                return NoFollowFileRead(
+                    data: nil, size: initialSize,
+                    modificationDate: modificationDate, device: device, inode: inode)
+            }
+        }
+        try verifyUnchanged()
+        guard Int64(data.count) == initialSize else {
+            throw DatabaseError.sql("readRootFileNoFollow: short or inconsistent file read")
+        }
+        return NoFollowFileRead(
+            data: data, size: initialSize,
+            modificationDate: modificationDate, device: device, inode: inode)
     }
 
     /// Component-aligned relative path. The enumerator can hand back a
@@ -3400,17 +3597,20 @@ public final class SimiGoESISDatabase {
         let digest: String
         let objectID: String?
         let legacy: Data
+        let indexedSize: Int64?
     }
 
     func settledFileRows(rootID: String?) throws -> [SettledFileRow] {
         var sql = """
-        SELECT root_id, relative_path, content_sha256, object_id, content
-        FROM file_contents
+        SELECT f.root_id, f.relative_path, f.content_sha256, f.object_id, f.content, e.size
+        FROM file_contents f
+        LEFT JOIN external_files e
+          ON e.root_id=f.root_id AND e.relative_path=f.relative_path
         """
         if let rootID {
-            sql += " WHERE root_id='" + rootID.replacingOccurrences(of: "'", with: "''") + "'"
+            sql += " WHERE f.root_id='" + rootID.replacingOccurrences(of: "'", with: "''") + "'"
         }
-        sql += " ORDER BY root_id, relative_path;"
+        sql += " ORDER BY f.root_id, f.relative_path;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [SettledFileRow] = []
@@ -3422,9 +3622,12 @@ public final class SimiGoESISDatabase {
                 }
                 let bytes = Int(sqlite3_column_bytes(stmt, 4))
                 let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
+                let indexedSize: Int64? = sqlite3_column_type(stmt, 5) == SQLITE_NULL
+                    ? nil : sqlite3_column_int64(stmt, 5)
                 rows.append(SettledFileRow(
                     rootID: text(0) ?? "", relativePath: text(1) ?? "",
-                    digest: text(2) ?? "", objectID: text(3), legacy: legacy))
+                    digest: text(2) ?? "", objectID: text(3),
+                    legacy: legacy, indexedSize: indexedSize))
                 continue
             }
             guard rc == SQLITE_DONE else {
@@ -3464,13 +3667,30 @@ public final class SimiGoESISDatabase {
             throw DatabaseError.sql(
                 "searchableFileText: invalid relative path for \(row.rootID)/\(row.relativePath)")
         }
-        let url = URL(fileURLWithPath: locator).appendingPathComponent(relative)
-        let data: Data
-        do {
-            data = try Data(contentsOf: url, options: [.mappedIfSafe])
-        } catch {
-            throw DatabaseError.sql(
-                "searchableFileText: cannot read \(row.rootID)/\(row.relativePath): \(error)")
+        let rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
+        defer { Darwin.close(rootDirectoryFD) }
+        // An index-only source is only eligible for a bounded re-read at the
+        // size recorded by the same root scan. If it has grown since indexing,
+        // reject it from its stat metadata before allocating or hashing the new
+        // bytes. Older rows without an external_files size use the historical
+        // 1 MiB default cap rather than an unbounded read.
+        let maximumBytes: Int
+        if let indexedSize = row.indexedSize {
+            guard indexedSize >= 0, indexedSize <= Int64(Int.max) else {
+                throw DatabaseError.sql(
+                    "searchableFileText: invalid indexed size for \(row.rootID)/\(row.relativePath)")
+            }
+            maximumBytes = Int(indexedSize)
+        } else {
+            maximumBytes = 1 << 20
+        }
+        let read = try readRootFileNoFollow(
+            rootDirectoryFD: rootDirectoryFD,
+            relativePath: relative,
+            maximumBytes: maximumBytes)
+        guard let data = read.data else {
+            throw DatabaseError.staleExternalSource(
+                rootID: row.rootID, relativePath: row.relativePath)
         }
         guard NativeSHA256.hexDigest(data) == row.digest else {
             throw DatabaseError.staleExternalSource(
@@ -3489,7 +3709,7 @@ public final class SimiGoESISDatabase {
         guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         let path = String(cString: c)
-        return path.isEmpty ? nil : path
+        return path.isEmpty ? nil : URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
     // MARK: - 对话落库（Information Space：会话即信息）
@@ -4869,7 +5089,11 @@ public final class SimiGoESISDatabase {
         func text(_ i: Int32) -> String {
             sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
         }
-        let roots = (try? JSONDecoder().decode([String].self, from: Data(text(5).utf8))) ?? []
+        let roots = try JSONDecoder().decode([String].self, from: Data(text(5).utf8))
+        guard roots == Array(Set(roots)).sorted() else {
+            throw DatabaseError.sql(
+                "settlementReuseContract: root_ids_json is not a canonical sorted unique array")
+        }
         return SettlementReuseDeclaration(
             settlementID: text(0), contractID: text(1), demandClass: text(2),
             contractVersion: text(3), query: text(4), rootIDs: roots,
@@ -6063,8 +6287,18 @@ public final class SimiGoESISDatabase {
             guard let locator = try rootLocatorPath(rootID),
                 !relativePath.split(separator: "/").contains("..")
             else { return nil }
-            let url = URL(fileURLWithPath: locator).appendingPathComponent(relativePath)
-            guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]),
+            let rootDirectoryFD: Int32
+            do {
+                rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
+            } catch {
+                return nil
+            }
+            defer { Darwin.close(rootDirectoryFD) }
+            guard let read = try? readRootFileNoFollow(
+                rootDirectoryFD: rootDirectoryFD,
+                relativePath: relativePath,
+                maximumBytes: nil),
+                let data = read.data,
                 NativeSHA256.hexDigest(data) == digest
             else { return nil }
             content = data

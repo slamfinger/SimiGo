@@ -257,6 +257,25 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
         XCTAssertEqual(try fixture.db.count("execution_states"), 1)
     }
 
+    func testMalformedStoredReuseRootScopeFailsClosed() throws {
+        let fixture = try makeFixture("malformed-reuse-root-scope")
+        defer { cleanup(fixture) }
+        let source = try makeSource(fixture)
+
+        try rawExec(
+            fixture.dbURL,
+            "UPDATE settlement_reuse_contracts SET root_ids_json='not-json' WHERE settlement_id='\(source)';")
+
+        XCTAssertThrowsError(
+            try fixture.db.settlementReuseContract(settlementID: source),
+            "malformed root scope must not be treated as an empty-root declaration")
+        XCTAssertThrowsError(
+            try SimiGoSettlementConsumption.consume(
+                db: fixture.db, request: request(source: source)),
+            "a corrupt reuse declaration must not admit consumption")
+        XCTAssertEqual(try fixture.db.count("settlement_consumptions"), 0)
+    }
+
     // MARK: - 4. missing / tampered / invalid source
 
     func testMissingTamperedOrInvalidSourceIsRefused() throws {
