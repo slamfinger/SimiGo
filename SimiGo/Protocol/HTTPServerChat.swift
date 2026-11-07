@@ -1128,14 +1128,6 @@ extension HTTPServer {
             _ = HTTPServer.recordHTTPFailureAudit(
                 executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
                 requestID: context.requestId,
-                wire: "chat.completions.non_streaming",
-                terminal: "context_demand_exceeded",
-                modelCalls: 0,
-                settlementsWritten: 0,
-                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
-            _ = HTTPServer.recordHTTPFailureAudit(
-                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
-                requestID: context.requestId,
                 wire: "chat.completions.stream",
                 terminal: "context_demand_exceeded",
                 modelCalls: 0,
@@ -1163,14 +1155,6 @@ extension HTTPServer {
 
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
-            _ = HTTPServer.recordHTTPFailureAudit(
-                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
-                requestID: context.requestId,
-                wire: "chat.completions.non_streaming",
-                terminal: "model_execution_error",
-                modelCalls: 1,
-                settlementsWritten: 0,
-                evidence: [:])
             _ = HTTPServer.recordHTTPFailureAudit(
                 executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
                 requestID: context.requestId,
@@ -1646,6 +1630,14 @@ extension HTTPServer {
             // 未提交头（快失败路径）：直接给 HTTP 400 终态。
             keepalive.settle()
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.non_streaming",
+                terminal: "context_demand_exceeded",
+                modelCalls: 0,
+                settlementsWritten: 0,
+                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else { return }
 
             sendNonStreamingError(
@@ -1658,6 +1650,14 @@ extension HTTPServer {
         } catch {
             keepalive.settle()
             failureReason = "model_execution_error: \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.non_streaming",
+                terminal: "model_execution_error",
+                modelCalls: 1,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
