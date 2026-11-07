@@ -72,6 +72,33 @@ final class QoderTranscriptTailerTests: XCTestCase {
         tailer.cursorState.cursors.values.first
     }
 
+    func testCursorStoreDoesNotFollowSymlinkAndAtomicSavePreservesTarget() throws {
+        let stateDirectory = root.appendingPathComponent("cursor-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        let external = root.appendingPathComponent("external-cursor.json")
+        let original = try JSONEncoder().encode(pastState())
+        try original.write(to: external)
+        let cursor = stateDirectory.appendingPathComponent("cursor.json")
+        try FileManager.default.createSymbolicLink(at: cursor, withDestinationURL: external)
+        let store = QoderFileCursorStore(directoryURL: stateDirectory)
+
+        XCTAssertThrowsError(
+            try store.load(),
+            "legacy cursor loading must not follow a symlink to an external file")
+        XCTAssertEqual(try Data(contentsOf: external), original)
+
+        // A normal atomic save replaces the directory entry, not its target.
+        // The subsequent no-follow chmod must apply to the newly written file.
+        let replacement = pastState()
+        try store.save(replacement)
+        XCTAssertThrowsError(
+            try FileManager.default.destinationOfSymbolicLink(atPath: cursor.path),
+            "save must leave a regular cursor file rather than a symlink")
+        XCTAssertEqual(try Data(contentsOf: external), original)
+        XCTAssertNotNil(try store.load())
+    }
+
     func testFirstPollBaselinesExistingFileAtEnd() throws {
         let file = mainFile()
         try Fixture.writeLines(Fixture.turnLines(), to: file)
