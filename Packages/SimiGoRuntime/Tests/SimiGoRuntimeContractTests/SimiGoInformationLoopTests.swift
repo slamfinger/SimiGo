@@ -145,6 +145,9 @@ final class SimiGoInformationLoopTests: XCTestCase {
         let failedID = try db.appendChatMessage(
             sessionID: "terminal-session", role: "user",
             content: failedText, model: nil, createdAt: Date())
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-failed").isEmpty,
+            "pending input must never be searchable before the request completes")
         XCTAssertTrue(try db.closePendingChatTurn(
             sessionID: "terminal-session", userMessageID: failedID, terminal: .failed))
         XCTAssertEqual(
