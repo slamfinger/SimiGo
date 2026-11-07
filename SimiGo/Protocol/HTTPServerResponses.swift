@@ -1531,7 +1531,16 @@ extension HTTPServer {
             // 终态，否则将无限等待。
             keepalive.settle()
             chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
-            failureReason = context.cancellationFailureReason()
+            let terminal = context.cancellationFailureReason()
+            failureReason = terminal
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.non_streaming",
+                terminal: terminal,
+                modelCalls: 1,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
@@ -1547,6 +1556,22 @@ extension HTTPServer {
             // CONTEXT SAFETY：头未提交（快失败路径）直接给 HTTP 400 终态。
             keepalive.settle()
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: "context_demand_exceeded",
+                modelCalls: 0,
+                settlementsWritten: 0,
+                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.non_streaming",
+                terminal: "context_demand_exceeded",
+                modelCalls: 0,
+                settlementsWritten: 0,
+                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else {
                 return
             }
@@ -1561,6 +1586,22 @@ extension HTTPServer {
         } catch {
             keepalive.settle()
             failureReason = "model_execution_error: \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: "model_execution_error",
+                modelCalls: 1,
+                settlementsWritten: 0,
+                evidence: [:])
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.non_streaming",
+                terminal: "model_execution_error",
+                modelCalls: 1,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
@@ -2080,7 +2121,16 @@ extension HTTPServer {
             // 必须送达 terminal event 并关闭流，
             // 否则客户端会永远等待本轮 response。
             chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
-            failureReason = context.cancellationFailureReason()
+            let terminal = context.cancellationFailureReason()
+            failureReason = terminal
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: terminal,
+                modelCalls: 1,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }

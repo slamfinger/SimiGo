@@ -433,6 +433,59 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     /// Committing a turn in another session does, and the settled answer must
     /// then not be served for the same words.
     @MainActor
+
+    func testHTTPFailureAuditPersistsSafeAppendOnlyTerminalFact() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-http-failure-audit-\\(UUID().uuidString).sqlite3")
+        defer {
+            for suffix in ["", "-wal", "-shm"] {
+                try? FileManager.default.removeItem(at: URL(fileURLWithPath: url.path + suffix))
+            }
+        }
+
+        let executionID = "http-failure-audit-test-\\(UUID().uuidString)"
+        let first = try XCTUnwrap(HTTPServer.recordHTTPFailureAudit(
+            executionID: executionID,
+            requestID: "req-test-1234",
+            wire: "chat.completions.stream",
+            terminal: "cancelled_by_client",
+            modelCalls: 1,
+            settlementsWritten: 0,
+            evidence: ["safe_marker": "test-only"],
+            databaseURL: url))
+        XCTAssertTrue(first.auditPersisted)
+
+        let db = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        defer { db.close() }
+        try db.runMigrations()
+        let event = try XCTUnwrap(db.failureAudit(executionID: executionID))
+        XCTAssertEqual(event.executionID, executionID)
+        XCTAssertEqual(event.phase, .g)
+        XCTAssertNil(event.cause)
+        XCTAssertEqual(event.origin, .request)
+        XCTAssertEqual(event.modelCalls, 1)
+        XCTAssertEqual(event.settlementsWritten, 0)
+        XCTAssertEqual(event.evidence["request_id"], "req-test-1234")
+        XCTAssertEqual(event.evidence["wire"], "chat.completions.stream")
+        XCTAssertEqual(event.evidence["terminal"], "cancelled_by_client")
+        XCTAssertEqual(event.evidence["safe_marker"], "test-only")
+        XCTAssertEqual(event.detail, "wire=chat.completions.stream terminal=cancelled_by_client")
+        XCTAssertEqual(try db.failureAuditHistory(executionID: executionID).count, 1)
+
+        let duplicate = try XCTUnwrap(HTTPServer.recordHTTPFailureAudit(
+            executionID: executionID,
+            requestID: "req-test-1234",
+            wire: "chat.completions.stream",
+            terminal: "model_execution_error",
+            modelCalls: 1,
+            settlementsWritten: 0,
+            databaseURL: url))
+        XCTAssertFalse(duplicate.auditPersisted)
+        XCTAssertEqual(duplicate.failureClass, "duplicate_execution_id")
+        XCTAssertEqual(try XCTUnwrap(db.failureAudit(executionID: executionID)), event)
+        XCTAssertEqual(try db.failureAuditHistory(executionID: executionID).count, 1)
+    }
+
     func testChangedCurrentDemandIsNotServedByReuse() async throws {
         let session = "chat-demand-change-\(UUID().uuidString)"
         let previous = ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"]
