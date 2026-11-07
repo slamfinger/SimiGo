@@ -80,6 +80,32 @@ extension HTTPServer {
         let operationKey: String?
     }
 
+    /// Close only an uncompleted local user row. Successful settlement, reuse,
+    /// incomplete and tool-loop chat writes have already moved the row out of
+    /// pending, so this terminalization is intentionally idempotent.
+    func terminalizePendingInformationTurn(
+        _ turn: InformationTurn?,
+        terminal: SimiGoESISDatabase.ChatTurnTerminal?,
+        context: ConnectionContext
+    ) {
+        guard let turn else { return }
+        let reason = terminal ?? (context.closed ? .cancelled : .failed)
+        do {
+            guard try turn.db.closePendingChatTurn(
+                sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                terminal: reason) else { return }
+            RuntimeTraceLogger.shared.trace(
+                "[CHAT_TURN_TERMINAL] session="
+                    + RuntimeTraceLogger.short(turn.sessionID)
+                    + " state=" + reason.rawValue + " committed=0")
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[CHAT_TURN_TERMINAL] session="
+                    + RuntimeTraceLogger.short(turn.sessionID)
+                    + " state=" + reason.rawValue + " persisted=0")
+        }
+    }
+
     /// Cross-path source identity: every wire accepts the same declaration, so
     /// a result submitted through the model API and the same result submitted
     /// through MCP resolve to one settlement. A partial declaration is passed
@@ -657,6 +683,11 @@ extension HTTPServer {
 
         let information = prepareInformationTurn(
             json: json, headers: headers, agentId: agentId, messages: messages)
+        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        defer {
+            terminalizePendingInformationTurn(
+                information.turn, terminal: chatTurnTerminal, context: context)
+        }
         let turnMessages = information.messages
 
         if let forkFrom =
@@ -1036,6 +1067,7 @@ extension HTTPServer {
         } catch is CancellationError {
             // 取消契约：SSE 头已发出且客户端仍在连接时必须给出终态
             // （error chunk + [DONE] + close），否则客户端将无限等待。
+            chatTurnTerminal = .cancelled
             failureReason = context.cancellationFailureReason()
             guard !context.closed else { return }
 
@@ -1238,6 +1270,11 @@ extension HTTPServer {
 
         let information = prepareInformationTurn(
             json: json, headers: headers, agentId: agentId, messages: messages)
+        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        defer {
+            terminalizePendingInformationTurn(
+                information.turn, terminal: chatTurnTerminal, context: context)
+        }
         let turnMessages = information.messages
 
         if let forkFrom =
@@ -1520,6 +1557,7 @@ extension HTTPServer {
             // 取消契约：非流式尚未发出任何字节（keepalive 未提交头）时，
             // 客户端仍连接必须给出 HTTP 终态。
             keepalive.settle()
+            chatTurnTerminal = .cancelled
             failureReason = context.cancellationFailureReason()
             guard !context.closed else { return }
 
