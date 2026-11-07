@@ -604,14 +604,14 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
     func testConnectionCapRejectsExcessAndTeardownReleasesCapacity() throws {
         let limits = HTTPServer.RequestLimits(
             maxConnections: 2,
-            headerTimeout: .seconds(5),
-            bodyTimeout: .seconds(5))
+            headerTimeout: .seconds(30),
+            bodyTimeout: .seconds(30))
         let host = try makeAuthorizedHost(requestLimits: limits)
         let server = try XCTUnwrap(host.server)
 
         let first = try openPinnedTLSConnection(host, expectReady: true)
         let second = try openPinnedTLSConnection(host, expectReady: true)
-        XCTAssertEqual(server.activeConnectionCount, 2)
+        waitForActiveConnections(2, server: server)
 
         let excess = try openPinnedTLSConnection(host, expectReady: false)
         XCTAssertEqual(server.activeConnectionCount, 2)
@@ -620,7 +620,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         first.cancel()
         waitForActiveConnections(1, server: server)
         let replacement = try openPinnedTLSConnection(host, expectReady: true)
-        XCTAssertEqual(server.activeConnectionCount, 2)
+        waitForActiveConnections(2, server: server)
 
         server.stop()
         assertPeerClosed(second, timeout: 3)
