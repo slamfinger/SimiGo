@@ -17,13 +17,14 @@ testing nothing. `--out` outside the base's directory is rejected.
 
 usage:
   make_isolated_xctestrun.py --app <.../Debug/SimiGo.app> --isolation-root <dir>
-      [--base-xctestrun PATH] [--out PATH] [--record PATH]
+      [--base-xctestrun PATH] [--out PATH] [--record PATH] [--secure-localb]
 
 exit: 0 ok · 2 unexpected plist differences · 3 unusable input
 """
 import argparse, glob, hashlib, json, os, plistlib, sys, time
 
 INJECT_ROOTS = ("SIMIGO_HOME", "SIMIGO_CACHE_ROOT", "SIMIGO_STATE_GRAPH_STORE")
+INJECT_ENVIRONMENT_KEYS = ("SIMIGO_TRANSPORT",)
 ISOLATED_BASENAME = "xctestrun_isolated.xctestrun"
 
 
@@ -66,6 +67,9 @@ def main():
     ap.add_argument("--base-xctestrun")
     ap.add_argument("--out")
     ap.add_argument("--record")
+    ap.add_argument(
+        "--secure-localb", action="store_true",
+        help="inject SIMIGO_TRANSPORT=secure into each XCTest target process")
     a = ap.parse_args()
 
     app = os.path.abspath(a.app)
@@ -99,6 +103,8 @@ def main():
         "SIMIGO_CACHE_ROOT": os.path.join(iso, "cache"),
         "SIMIGO_STATE_GRAPH_STORE": os.path.join(iso, "state-graph", "reference-graph-v1.json"),
     }
+    if a.secure_localb:
+        env["SIMIGO_TRANSPORT"] = "secure"
     for key, val in env.items():
         if not os.path.isabs(val) or os.path.commonpath([os.path.abspath(val), iso]) != iso:
             die("%s resolves outside the isolation root: %s" % (key, val))
@@ -130,7 +136,10 @@ def main():
     removed = {p: v for p, v in base.items() if p not in got}
     changed = {p: {"a": base[p], "b": got[p]} for p in base if p in got and base[p] != got[p]}
     unexpected = {
-        "added": {p: v for p, v in added.items() if not any(p.endswith("/" + k) for k in INJECT_ROOTS)},
+        "added": {
+            p: v for p, v in added.items()
+            if not any(p.endswith("/" + k) for k in (*INJECT_ROOTS, *INJECT_ENVIRONMENT_KEYS))
+        },
         "removed": removed,
         "changed": changed,
     }
@@ -148,6 +157,7 @@ def main():
         "other_differences": other,
         "placement_note": "__TESTROOT__ resolves relative to the xctestrun's directory;"
                           " the isolated copy must stay beside the original.",
+        "secure_localb": bool(a.secure_localb),
         "generated_at": time.strftime("%FT%T%z"),
     }
     if a.record:
