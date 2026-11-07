@@ -3513,8 +3513,10 @@ public final class SimiGoESISDatabase {
     }
 
     /// The standings a line can hold, as stored in `turn_state`. They are
-    /// distinct questions: persisted (`pending`/`recorded`/`internal`),
-    /// verified (`committed`), and retrievable (ordinary retrieval reads
+    /// distinct questions: in flight (`pending`), externally recorded
+    /// (`recorded`), ended without completion (`failed`/`cancelled`),
+    /// internal bookkeeping (`internal`), and verified/retrievable
+    /// (`committed`; ordinary retrieval reads
     /// `committed` rows only, further narrowed by request scope).
     public enum ChatTurnState: String, Sendable {
         /// Local input whose own request is still in flight.
