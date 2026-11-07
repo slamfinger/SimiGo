@@ -1174,6 +1174,13 @@ public final class HTTPServer: @unchecked Sendable {
                 // terminate removes the context and releases its admission slot.
                 self.terminateForClientGone(context)
 
+            } catch HTTPServerError.clientDisconnected {
+                // A peer can close while the header/body read is suspended.
+                // This is not a malformed live request: no 400 response can be
+                // delivered, and the connection/admission slot must be released
+                // through the same idempotent disconnect lifecycle.
+                self.terminateForClientGone(context)
+
             } catch is CancellationError {
                 // terminate() owns cancellation.
 
