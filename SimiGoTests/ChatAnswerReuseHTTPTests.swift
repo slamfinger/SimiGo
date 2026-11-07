@@ -270,6 +270,46 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     /// Committing a turn in another session does, and the settled answer must
     /// then not be served for the same words.
     @MainActor
+    func testCompletedTurnClaimAllowsGrantedDetachButRejectsCancellation() throws {
+        func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
+            let connection = NWConnection(
+                to: .hostPort(
+                    host: NWEndpoint.Host("127.0.0.1"),
+                    port: NWEndpoint.Port(rawValue: 9)!),
+                using: .tcp)
+            connection.start(queue: DispatchQueue(label: "detach-policy-" + label + "-" + UUID().uuidString))
+            return (HTTPServer.ConnectionContext(connection: connection), connection)
+        }
+
+        // An acquired orphan slot preserves a naturally completed generation.
+        let (detached, detachedConnection) = makeContext("detached")
+        defer { detachedConnection.cancel() }
+        XCTAssertTrue(detached.markGenerationStarted())
+        let detachedClose = detached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(detachedClose.detached)
+        XCTAssertFalse(detachedClose.shouldCancelGeneration)
+        XCTAssertTrue(detached.claimCompletedTurnSettlement())
+
+        // A normal cancellation sets the cancellation latch and cannot claim.
+        let (cancelled, cancelledConnection) = makeContext("cancelled")
+        defer { cancelledConnection.cancel() }
+        XCTAssertTrue(cancelled.markGenerationStarted())
+        let cancelledClose = cancelled.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertTrue(cancelledClose.shouldCancelGeneration)
+        XCTAssertFalse(cancelled.claimCompletedTurnSettlement())
+
+        // A later client close cannot cancel a generation already finalizing.
+        let (claimed, claimedConnection) = makeContext("claimed")
+        defer { claimedConnection.cancel() }
+        XCTAssertTrue(claimed.markGenerationStarted())
+        XCTAssertTrue(claimed.claimCompletedTurnSettlement())
+        let lateClose = claimed.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertFalse(lateClose.shouldCancelGeneration)
+    }
+    @MainActor
     func testChangedCurrentDemandIsNotServedByReuse() async throws {
         let session = "chat-demand-change-\(UUID().uuidString)"
         let previous = ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"]
