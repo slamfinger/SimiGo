@@ -1299,6 +1299,7 @@ extension HTTPServer {
         let toolCalls =
             Locked<[ParsedToolCall]>([])
 
+        var modelCallAttempted = false
         do {
             try await context.transitionToQueued()
 
@@ -1378,6 +1379,7 @@ extension HTTPServer {
                 context: context
             )
 
+            modelCallAttempted = true
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
@@ -1538,7 +1540,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "responses.non_streaming",
                 terminal: terminal,
-                modelCalls: 1,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: [:])
             guard !context.closed else {
@@ -1561,7 +1563,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "responses.non_streaming",
                 terminal: "context_demand_exceeded",
-                modelCalls: 0,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else {
@@ -1583,7 +1585,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "responses.non_streaming",
                 terminal: "model_execution_error",
-                modelCalls: 1,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: [:])
             guard !context.closed else {
@@ -1856,6 +1858,7 @@ extension HTTPServer {
             close: false
         )
 
+        var modelCallAttempted = false
         do {
             try await context.transitionToQueued()
 
@@ -1948,6 +1951,7 @@ extension HTTPServer {
                 context: context
             )
 
+            modelCallAttempted = true
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
@@ -2112,7 +2116,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "responses.stream",
                 terminal: terminal,
-                modelCalls: 1,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: [:])
             guard !context.closed else {
@@ -2152,7 +2156,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "responses.stream",
                 terminal: "context_demand_exceeded",
-                modelCalls: 0,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else {
@@ -2190,7 +2194,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "responses.stream",
                 terminal: "model_execution_error",
-                modelCalls: 1,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: [:])
             guard !context.closed else {
