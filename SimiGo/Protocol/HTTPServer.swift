@@ -491,7 +491,8 @@ public final class HTTPServer: @unchecked Sendable {
         /// 落地由 `closeAndTakeRequestTask(detach:…)` 在同一把锁内完成。
         var canDetachGeneration: Bool {
             stateLock.withLock {
-                _generationStarted && !_cancellationSignalled && !_closed
+                _generationStarted && !_cancellationSignalled
+                    && !_settlementClaimed && !_closed
             }
         }
 
@@ -514,6 +515,9 @@ public final class HTTPServer: @unchecked Sendable {
                     return false
                 }
                 _settlementClaimed = true
+                // Once the finalization window is claimed, no orphan-yield pass
+                // may cancel it; release the detached-task retention reference.
+                _detachedRequestTask = nil
                 return true
             }
         }
@@ -529,7 +533,8 @@ public final class HTTPServer: @unchecked Sendable {
         /// 一次性取走 detach 时留存的请求任务；取走后再次调用返回 nil。
         func takeDetachedRequestTask() -> Task<Void, Never>? {
             stateLock.withLock {
-                guard _detachedByClient, let task = _detachedRequestTask else {
+                guard _detachedByClient, !_settlementClaimed,
+                      let task = _detachedRequestTask else {
                     return nil
                 }
 
@@ -575,6 +580,7 @@ public final class HTTPServer: @unchecked Sendable {
                     detach &&
                     _generationStarted &&
                     !_cancellationSignalled &&
+                    !_settlementClaimed &&
                     !_closed
                 let detached = detachable && claimDetachSlot()
 
