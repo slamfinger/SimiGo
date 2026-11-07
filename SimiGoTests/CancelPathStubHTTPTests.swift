@@ -19,7 +19,7 @@ import SimiGoRuntimeContract
 /// claim finalization and persist one answer. Manual/runtime cancellation and
 /// orphan-yield remain fail-closed. Legacy text Completions stays unmanaged.
 ///
-/// /// Evidence level of this file: control flow and ES/IS rows under a stub engine.
+/// Evidence level of this file: control flow and ES/IS rows under a stub engine.
 /// It does NOT prove that a real model execution stopped or completed; that is
 /// the real-model window's measurement object.
 ///
@@ -228,9 +228,6 @@ final class CancelPathStubHTTPTests: XCTestCase {
         }
     }
 
-    /// A client disconnect must leave the turn running under the orphan budget:
-    /// the stub leaves its closure on its own, no cancel callback fires, and the
-    /// engine never observes `Task.isCancelled`.
     /// Positive database proof for a naturally completed detached turn. Each
     /// caller takes its own before/after snapshot and supplies a unique session,
     /// so one route cannot borrow another route's state or settlement as evidence.
@@ -335,6 +332,9 @@ final class CancelPathStubHTTPTests: XCTestCase {
                        file: file, line: line)
     }
 
+    /// A client disconnect must leave the turn running under the orphan budget:
+    /// the stub leaves its closure on its own, no cancel callback fires, and the
+    /// engine never observes `Task.isCancelled`.
     private func assertGenerationDetached(
         _ engine: BlockingStubEngine,
         _ cancel: RecordingCancelHandler,
