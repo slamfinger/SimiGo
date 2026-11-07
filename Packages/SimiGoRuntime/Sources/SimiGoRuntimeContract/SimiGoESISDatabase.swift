@@ -3545,9 +3545,9 @@ public final class SimiGoESISDatabase {
     /// Other roles are written at completion, so they are eligible at once.
     /// Internal-operation rows are written `internal` and stay there.
     ///
-    /// Returns the row id. A repeated trailing user message (tool-loop retry or
-    /// retry of a cancelled turn) reuses its existing row instead of appending
-    /// a duplicate, and the caller can still commit exactly that row.
+    /// Returns the row id. A same-text retry reuses the trailing row only
+    /// while that local user row is still pending. A completed, failed or
+    /// cancelled turn stays in history and the next request receives a new row.
     @discardableResult
     public func appendChatMessage(
         sessionID: String, role: String, content: String, model: String?, createdAt: Date,
