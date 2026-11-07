@@ -264,11 +264,9 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         }
     }
 
-    /// Exact wording is not enough: reuse is bound to the demand resolved for
-    /// THIS turn. An answer's own question and answer rows are excluded from
-    /// that basis, so only information the turn did not itself publish moves it.
-    /// Committing a turn in another session does, and the settled answer must
-    /// then not be served for the same words.
+    /// Disconnect after generation start may detach only when an orphan slot
+    /// is granted; manual cancellation and Runtime shutdown still win. Once a
+    /// completed turn claims finalization, later disconnects cannot orphan-yield it.
     @MainActor
     func testCompletedTurnClaimAllowsGrantedDetachButRejectsCancellation() throws {
         func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
@@ -326,6 +324,12 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             cancelGeneration: true, detach: false)
         XCTAssertTrue(runtimeClose.shouldCancelGeneration)
     }
+
+    /// Exact wording is not enough: reuse is bound to the demand resolved for
+    /// THIS turn. An answer's own question and answer rows are excluded from
+    /// that basis, so only information the turn did not itself publish moves it.
+    /// Committing a turn in another session does, and the settled answer must
+    /// then not be served for the same words.
     @MainActor
     func testChangedCurrentDemandIsNotServedByReuse() async throws {
         let session = "chat-demand-change-\(UUID().uuidString)"
