@@ -3938,9 +3938,10 @@ public final class SimiGoESISDatabase {
                c.content_sha256, c.created_at
         FROM chat_messages c
         LEFT JOIN is_objects o ON o.object_id=c.content_object_id
+        WHERE c.turn_state='committed'
         """
         if let sessionID {
-            sql += " WHERE c.session_id='" + sessionID.replacingOccurrences(of: "'", with: "''") + "'"
+            sql += " AND c.session_id='" + sessionID.replacingOccurrences(of: "'", with: "''") + "'"
         }
         sql += " ORDER BY c.session_id, c.id;"
         let stmt = try prepare(sql)
