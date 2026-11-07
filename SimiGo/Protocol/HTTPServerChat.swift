@@ -89,7 +89,8 @@ extension HTTPServer {
         context: ConnectionContext
     ) {
         guard let turn else { return }
-        let reason = terminal ?? (context.closed ? .cancelled : .failed)
+        let reason = terminal ?? (
+            context.detachedByClient ? .detached : (context.closed ? .cancelled : .failed))
         do {
             guard try turn.db.closePendingChatTurn(
                 sessionID: turn.sessionID, userMessageID: turn.userMessageID,
