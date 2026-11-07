@@ -181,6 +181,27 @@ final class SimiGoInformationLoopTests: XCTestCase {
         XCTAssertFalse(try db.closePendingChatTurn(
             sessionID: "terminal-session", userMessageID: failedID, terminal: .cancelled),
             "a terminal row cannot be rewritten by a later cleanup pass")
+
+        let detachedText = "terminal-marker-detached-" + UUID().uuidString
+        let detachedID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: detachedText, model: nil, createdAt: Date())
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: detachedID, terminal: .detached))
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(detachedID) + ";"),
+            "detached")
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-detached").isEmpty,
+            "detached generation input is preserved as non-retrievable history")
+        let detachedRetryID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: detachedText, model: nil, createdAt: Date())
+        XCTAssertNotEqual(detachedRetryID, detachedID,
+                          "a retry after detach starts a new semantic turn")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(detachedRetryID) + ";"),
+            "pending")
     }
 
     func testCommittedTurnWithSameTextStartsANewSemanticTurn() throws {
