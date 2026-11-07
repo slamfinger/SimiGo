@@ -233,6 +233,11 @@ final class CancelPathStubHTTPTests: XCTestCase {
     /// so one route cannot borrow another route's state or settlement as evidence.
     /// This checks the durable ES/IS rows, not the HTTP terminal event (the peer
     /// has already gone away by design).
+    ///
+    /// `expectedAnswer` is the text actually delivered to the client: these
+    /// managed paths accumulate the streamed chunks and persist that text, so
+    /// it is the concatenation of the stub's chunks, not the stub's final-text
+    /// field (which the protocol path does not consume).
     @MainActor
     private func assertSettledAnswerLifecycle(
         before: ESISSweep.Snapshot,
@@ -553,7 +558,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         reportDelta("A2", before: before, after: after)
         try assertSettledAnswerLifecycle(
             before: before, after: after, session: session,
-            query: question, expectedAnswer: "ABANDONED-ANSWER")
+            query: question, expectedAnswer: "FIRST-DELTASECOND-DELTA")
     }
 
     // MARK: - A2b) Non-streaming Responses: client disconnect detaches, then settles
@@ -594,7 +599,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         reportDelta("A2b", before: before, after: after)
         try assertSettledAnswerLifecycle(
             before: before, after: after, session: session,
-            query: question, expectedAnswer: "A2B-ANSWER")
+            query: question, expectedAnswer: "A2B-FIRSTA2B-SECOND")
     }
 
     // MARK: - A3) Streaming Responses: server-internal cancel keeps the client connected
@@ -682,7 +687,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         reportDelta("A4", before: before, after: after)
         try assertSettledAnswerLifecycle(
             before: before, after: after, session: session,
-            query: question, expectedAnswer: "A4-ANSWER")
+            query: question, expectedAnswer: "A4-FIRSTA4-SECOND")
     }
 
     // MARK: - A4b) Chat streaming: client disconnect detaches, then settles
@@ -725,7 +730,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         reportDelta("A4b", before: before, after: after)
         try assertSettledAnswerLifecycle(
             before: before, after: after, session: session,
-            query: question, expectedAnswer: "A4B-ANSWER")
+            query: question, expectedAnswer: "A4B-FIRSTA4B-SECOND")
     }
 
     // MARK: - A5) Completions streaming: client disconnect detaches generation
@@ -779,8 +784,8 @@ final class CancelPathStubHTTPTests: XCTestCase {
     /// Owner authorization (2026-10-30): reduce the wasted decoding of orphan
     /// turns — "stop generating, keep the prefix". The orphan still runs when
     /// nobody is waiting (A2/A2b/A4/A4b); the moment another generation is in the
-/// engine window, the orphan stops at a token boundary through the standard
-/// cancel wiring (so #134/#136 prefix retention applies), and stays
+    /// engine window, the orphan stops at a token boundary through the standard
+    /// cancel wiring (so #134/#136 prefix retention applies), and stays
     /// fail-closed: no settlement, no commit.
     @MainActor
     func testDetachedOrphanYieldsEngineToQueuedRetry() async throws {
