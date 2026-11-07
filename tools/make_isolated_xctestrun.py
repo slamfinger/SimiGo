@@ -106,8 +106,14 @@ def main():
     if a.secure_localb:
         env["SIMIGO_TRANSPORT"] = "secure"
     for key, val in env.items():
-        if not os.path.isabs(val) or os.path.commonpath([os.path.abspath(val), iso]) != iso:
-            die("%s resolves outside the isolation root: %s" % (key, val))
+        if key in INJECT_ROOTS:
+            if not os.path.isabs(val) or os.path.commonpath([os.path.abspath(val), iso]) != iso:
+                die("%s resolves outside the isolation root: %s" % (key, val))
+        elif key == "SIMIGO_TRANSPORT":
+            if val != "secure":
+                die("unsupported SIMIGO_TRANSPORT value for isolated LOCALB tests: %s" % val)
+        else:
+            die("unsupported injected XCTest environment key: %s" % key)
 
     try:
         with open(base_xr, "rb") as f:
