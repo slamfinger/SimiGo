@@ -3514,7 +3514,7 @@ public final class SimiGoESISDatabase {
 
     /// The standings a line can hold, as stored in `turn_state`. They are
     /// distinct questions: in flight (`pending`), externally recorded
-    /// (`recorded`), ended without completion (`failed`/`cancelled`),
+    /// (`recorded`), ended without completion (`failed`/`cancelled`/`detached`),
     /// internal bookkeeping (`internal`), and verified/retrievable
     /// (`committed`; ordinary retrieval reads
     /// `committed` rows only, further narrowed by request scope).
@@ -3529,6 +3529,8 @@ public final class SimiGoESISDatabase {
         case failed
         /// The request was cancelled before the turn completed; never retrieval eligible.
         case cancelled
+        /// The client detached while generation continued; never retrieval eligible.
+        case detached
         /// Client bookkeeping kept as a record, never ordinary memory.
         case internalOperation = "internal"
     }
@@ -3537,6 +3539,7 @@ public final class SimiGoESISDatabase {
     public enum ChatTurnTerminal: String, Sendable {
         case failed
         case cancelled
+        case detached
     }
 
     /// Append one conversation line. A user row starts `pending` and only the
