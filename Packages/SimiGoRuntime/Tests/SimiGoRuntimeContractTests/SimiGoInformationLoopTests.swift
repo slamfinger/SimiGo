@@ -523,6 +523,139 @@ final class SimiGoInformationLoopTests: XCTestCase {
             expected[SimiGoSettlementIdentityBinding.tokenizerKey])
     }
 
+
+    func testAdvancedDemandCannotBeReopenedAsResolved() throws {
+        let (url, db) = try open("demand-no-regression")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let loop = SimiGoInformationLoop(database: db)
+        let resolution = try loop.resolve(.init(
+            sessionID: "s-demand", requestIdentity: "request-1",
+            query: "needle", includeChat: false))
+        let settled = try loop.settleTurn(
+            generatedText: "answer", resolution: resolution,
+            stateID: "S-demand", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-demand")
+        XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
+
+        let replay = SimiGoESISDatabase.InformationRetrievalWrite(
+            demandID: resolution.demandID, stateID: nil,
+            sessionID: "s-demand", requestIdentity: "request-1",
+            query: "needle", rootIDs: ["work"], includeChat: false,
+            inputDigest: resolution.inputDigest,
+            payload: Data("replacement retrieval".utf8),
+            hitCount: 0, itemIDs: [], inputs: [])
+        XCTAssertThrowsError(try db.recordInformationRetrieval(replay)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.InformationDemandError,
+                .invalidTransition(
+                    demandID: resolution.demandID, from: "ADVANCED", to: "RESOLVED"))
+        }
+        XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+        XCTAssertEqual(try db.settlementValidity(settled.settlementID), "valid")
+    }
+
+    func testSupersededOrMissingDemandCannotBeAdvanced() throws {
+        let (url, db) = try open("demand-advance-guards")
+        defer { db.close(); cleanup(url) }
+        func retrieval(_ id: String) throws {
+            _ = try db.recordInformationRetrieval(.init(
+                demandID: id, stateID: nil, sessionID: "s-supersede",
+                requestIdentity: "request-shared", query: "same question",
+                rootIDs: [], includeChat: false, inputDigest: id,
+                payload: Data("{\"result\":\"ok\"}".utf8),
+                hitCount: 0, itemIDs: [], inputs: []))
+        }
+        try retrieval("demand-old")
+        try retrieval("demand-new")
+        XCTAssertEqual(try db.informationDemand(demandID: "demand-old")?.state, "SUPERSEDED")
+        XCTAssertEqual(try db.informationDemand(demandID: "demand-new")?.state, "RESOLVED")
+
+        let producer = try SimiGoInformationLoop(database: db).settleTurn(
+            generatedText: "answer", resolution: nil,
+            stateID: "S-advance-guard", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let oldWrite = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: "demand-old", stateID: "S-advance-guard",
+            settlementID: producer.settlementID,
+            retrievalSettlementID: "is-retrieval:demand-old",
+            actions: ["chat.completion"], result: Data("answer".utf8))
+        XCTAssertThrowsError(try db.recordInformationAdvancement(oldWrite)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.InformationDemandError,
+                .invalidTransition(
+                    demandID: "demand-old", from: "SUPERSEDED", to: "ADVANCED"))
+        }
+        let missingWrite = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: "does-not-exist", stateID: "S-advance-guard",
+            settlementID: producer.settlementID,
+            retrievalSettlementID: "is-retrieval:does-not-exist",
+            actions: ["chat.completion"], result: Data("answer".utf8))
+        XCTAssertThrowsError(try db.recordInformationAdvancement(missingWrite)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.InformationDemandError,
+                .missingDemand("does-not-exist"))
+        }
+        XCTAssertEqual(try db.count("information_advancements"), 0)
+
+        let newWrite = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: "demand-new", stateID: "S-advance-guard",
+            settlementID: producer.settlementID,
+            retrievalSettlementID: "is-retrieval:demand-new",
+            actions: ["chat.completion"], result: Data("answer".utf8))
+        _ = try db.recordInformationAdvancement(newWrite)
+        XCTAssertEqual(try db.informationDemand(demandID: "demand-new")?.state, "ADVANCED")
+    }
+
+    func testInformationAdvancementReplayIsIdempotentAndCannotReplaceAnswer() throws {
+        let (url, db) = try open("demand-advance-idempotent")
+        defer { db.close(); cleanup(url) }
+        let loop = SimiGoInformationLoop(database: db)
+        let resolution = try loop.resolve(.init(
+            sessionID: "s-idempotent", requestIdentity: "request-idempotent",
+            query: "a question", includeChat: false))
+        let first = try loop.settleTurn(
+            generatedText: "answer one", resolution: nil,
+            stateID: "S-answer-one", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let write = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: resolution.demandID, stateID: "S-answer-one",
+            settlementID: first.settlementID,
+            retrievalSettlementID: resolution.retrievalSettlementID,
+            actions: ["chat.completion"], result: Data("answer one".utf8))
+        let advancementID = try db.recordInformationAdvancement(write)
+        let replayID = try db.recordInformationAdvancement(write)
+        XCTAssertEqual(replayID, advancementID)
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+
+        let second = try loop.settleTurn(
+            generatedText: "answer two", resolution: nil,
+            stateID: "S-answer-two", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let replacement = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: resolution.demandID, stateID: "S-answer-two",
+            settlementID: second.settlementID,
+            retrievalSettlementID: resolution.retrievalSettlementID,
+            actions: ["chat.completion"], result: Data("answer two".utf8))
+        XCTAssertThrowsError(try db.recordInformationAdvancement(replacement)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.InformationDemandError,
+                .advancementConflict(
+                    demandID: resolution.demandID,
+                    existingSettlementID: first.settlementID,
+                    requestedSettlementID: second.settlementID))
+        }
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+        XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
+    }
+
     func testSettlementSummaryIsRecordedAndCitedByLaterDemand() throws {
         let (url, db) = try open("summary-cite")
         defer { db.close(); cleanup(url) }
