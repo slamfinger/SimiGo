@@ -968,17 +968,12 @@ extension HTTPServer {
                 }
             )
 
-            // 断连 ≠ 取消（2026-11-05 修订 ADR 2026-10-30「detached 轮不结算」）：
-            // 60 s 看门狗是远端 API 的产物，首 token 何时出由本机硬件决定，
-            // 不是这条 request 的语义终点。客户端自己走掉的轮次，答案仍是它
-            // 问的那一问的合法回答；不落 IS，同一 prompt 的重试就只能重算
-            // 模型，60 s 门槛永远消不掉。手动取消 / Runtime 停止不走 detach
-            // （`cancelGenerationHandler`），下面这条判据不会放行它们。
-            let settleAfterDetach = context.detachedByClient
-            guard
-                !context.closed || settleAfterDetach,
-                !Task.isCancelled
-            else {
+            // A granted detach slot lets a naturally completed generation
+            // retain its answer after the client watchdog closes the socket.
+            // The settlement claim is atomic with ConnectionContext cancellation
+            // state; manual/runtime cancellation and orphan-yield cannot pass it.
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 
@@ -1419,10 +1414,8 @@ extension HTTPServer {
 
             keepalive.settle()
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 

@@ -1385,10 +1385,8 @@ extension HTTPServer {
 
             keepalive.settle()
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 
@@ -1950,10 +1948,8 @@ extension HTTPServer {
                 { _ in }
             )
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 
