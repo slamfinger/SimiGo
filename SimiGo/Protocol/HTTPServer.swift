@@ -259,6 +259,11 @@ public final class HTTPServer: @unchecked Sendable {
         /// 一次性取走，避免重复取消。
         private var _detachedRequestTask: Task<Void, Never>?
 
+        /// 让位与结算认领互斥：一旦孤儿任务被取走准备取消，本轮就不能再
+        /// claim 结算。两件事在同一把锁里判定，谁先到谁定局；否则
+        /// 「生成刚返回、让位恰好同时发生」会既取消又结算。
+        private var _detachedTaskTaken = false
+
         /// Slice 8: this request's continuation admission result. Set by the
         /// pre-generation gate, read by the post-generation settlement of the
         /// SAME request — never looked up again from mutable ES state.
@@ -504,13 +509,16 @@ public final class HTTPServer: @unchecked Sendable {
 
         /// Atomically claim the completed-generation finalization window. This
         /// admits an otherwise-valid detached completion, but refuses ordinary
-        /// cancellation and Runtime shutdown. Once claimed, a later client close
-        /// cannot cancel the already-completed generation while ES/IS is written.
+        /// cancellation, Runtime shutdown, and a turn an orphan-yield pass has
+        /// already taken. Once claimed, a later client close cannot cancel the
+        /// already-completed generation while ES/IS is written.
         func claimCompletedTurnSettlement() -> Bool {
             stateLock.withLock {
                 guard _generationStarted,
                       !_cancellationSignalled,
                       !_cancelledByRuntime,
+                      !_settlementClaimed,
+                      !_detachedTaskTaken,
                       (!_closed || _detachedByClient) else {
                     return false
                 }
@@ -539,6 +547,7 @@ public final class HTTPServer: @unchecked Sendable {
                 }
 
                 _detachedRequestTask = nil
+                _detachedTaskTaken = true
                 return task
             }
         }
@@ -604,7 +613,12 @@ public final class HTTPServer: @unchecked Sendable {
                 _closed = true
                 _peerCloseWatcherArmed = false
 
-                let task = _requestTask
+                // A claimed finalization has already crossed the generation
+                // boundary: handing its task back would let a late close cancel
+                // the ES/IS writes. Runtime shutdown remains the one authority
+                // allowed to override the claim.
+                let task = (_settlementClaimed && !_cancelledByRuntime)
+                    ? nil : _requestTask
                 _requestTask = nil
 
                 return (

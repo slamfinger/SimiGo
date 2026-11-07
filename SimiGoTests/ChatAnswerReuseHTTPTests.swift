@@ -325,6 +325,84 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         XCTAssertTrue(runtimeClose.shouldCancelGeneration)
     }
 
+    /// An orphan-yield pass that already took the detached task wins over a
+    /// later completion claim, and a claimed finalization can no longer be
+    /// taken for yield. Both decisions share one lock, so the loser must
+    /// observe the winner's result instead of both proceeding.
+    @MainActor
+    func testOrphanYieldAndSettlementClaimAreMutuallyExclusive() throws {
+        func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
+            let connection = NWConnection(
+                to: .hostPort(
+                    host: NWEndpoint.Host("127.0.0.1"),
+                    port: NWEndpoint.Port(rawValue: 9)!),
+                using: .tcp)
+            connection.start(queue: DispatchQueue(label: "detach-race-" + label + "-" + UUID().uuidString))
+            return (HTTPServer.ConnectionContext(connection: connection), connection)
+        }
+        func sleepingTask() -> Task<Void, Never> {
+            Task {
+                do { try await Task.sleep(nanoseconds: 60_000_000_000) } catch {}
+            }
+        }
+
+        // Yield wins: its task was taken, so the completed turn must not settle.
+        let (yielded, yieldedConnection) = makeContext("yielded")
+        defer { yieldedConnection.cancel() }
+        let yieldedTask = sleepingTask()
+        XCTAssertTrue(yielded.setRequestTask(yieldedTask))
+        XCTAssertTrue(yielded.markGenerationStarted())
+        let yieldedClose = yielded.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(yieldedClose.detached)
+        XCTAssertNotNil(yielded.takeDetachedRequestTask())
+        yieldedTask.cancel()
+        XCTAssertFalse(
+            yielded.claimCompletedTurnSettlement(),
+            "a yielded orphan must not settle after its task was taken")
+
+        // Claim wins over yield: the finalization is no longer a candidate.
+        let (claimed, claimedConnection) = makeContext("claimed-before-yield")
+        defer { claimedConnection.cancel() }
+        let claimedTask = sleepingTask()
+        XCTAssertTrue(claimed.setRequestTask(claimedTask))
+        XCTAssertTrue(claimed.markGenerationStarted())
+        let claimedClose = claimed.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(claimedClose.detached)
+        XCTAssertTrue(claimed.claimCompletedTurnSettlement())
+        XCTAssertNil(
+            claimed.takeDetachedRequestTask(),
+            "a claimed finalization is no longer an orphan candidate")
+        XCTAssertFalse(
+            claimed.claimCompletedTurnSettlement(),
+            "the finalization claim is one-shot")
+        claimedTask.cancel()
+
+        // A close that arrives after the claim (client was still connected when
+        // the claim was taken) must neither cancel the generation nor hand its
+        // task back for cancellation; only Runtime shutdown may override.
+        let (late, lateConnection) = makeContext("late-close-after-claim")
+        defer { lateConnection.cancel() }
+        let lateTask = sleepingTask()
+        XCTAssertTrue(late.setRequestTask(lateTask))
+        XCTAssertTrue(late.markGenerationStarted())
+        XCTAssertTrue(late.claimCompletedTurnSettlement())
+        var lateSlotClaimed = false
+        let lateClose = late.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: {
+                lateSlotClaimed = true
+                return true
+            })
+        XCTAssertFalse(lateClose.shouldCancelGeneration)
+        XCTAssertFalse(lateClose.detached)
+        XCTAssertFalse(lateSlotClaimed)
+        XCTAssertNil(
+            lateClose.requestTask,
+            "a late close must not hand a claimed finalization to cancellation")
+        lateTask.cancel()
+    }
+
     /// Exact wording is not enough: reuse is bound to the demand resolved for
     /// THIS turn. An answer's own question and answer rows are excluded from
     /// that basis, so only information the turn did not itself publish moves it.
