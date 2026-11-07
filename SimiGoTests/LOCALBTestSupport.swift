@@ -32,6 +32,7 @@ class LOCALBTestCase: XCTestCase {
         let store: LOCALBRegistryStore?
         let coordinator: LOCALBPairingCoordinator?
         let trustedCheckpoint: LOCALBTrustedCheckpointBox?
+        let server: HTTPServer?
 
         init(
             port: UInt16,
@@ -41,7 +42,8 @@ class LOCALBTestCase: XCTestCase {
             clientKeyID: String,
             store: LOCALBRegistryStore? = nil,
             coordinator: LOCALBPairingCoordinator? = nil,
-            trustedCheckpoint: LOCALBTrustedCheckpointBox? = nil
+            trustedCheckpoint: LOCALBTrustedCheckpointBox? = nil,
+            server: HTTPServer? = nil
         ) {
             self.port = port
             self.plaintextCompatPort = plaintextCompatPort
@@ -51,6 +53,7 @@ class LOCALBTestCase: XCTestCase {
             self.store = store
             self.coordinator = coordinator
             self.trustedCheckpoint = trustedCheckpoint
+            self.server = server
         }
     }
 
@@ -114,7 +117,10 @@ class LOCALBTestCase: XCTestCase {
         branchFixture.seed(sessionId: sessionId, branchId: branchId)
     }
 
-    func makeServer(port: UInt16) -> HTTPServer {
+    func makeServer(
+        port: UInt16,
+        requestLimits: HTTPServer.RequestLimits = .production
+    ) -> HTTPServer {
         HTTPServer(
             port: Int(port),
             modelId: "localb-b3-wiring-test",
@@ -141,7 +147,8 @@ class LOCALBTestCase: XCTestCase {
                 (live: self?.branchFixture.listBranches(sessionId: sessionId) ?? [],
                  checkpoints: [])
             },
-            checkHealthHandler: { true }
+            checkHealthHandler: { true },
+            requestLimits: requestLimits
         )
     }
 
@@ -155,7 +162,8 @@ class LOCALBTestCase: XCTestCase {
     /// listener with an explicit loopback plaintext-compatibility port, and
     /// the B3 request-authorization wiring.
     func makeAuthorizedHost(
-        configureAuthorization: Bool = true
+        configureAuthorization: Bool = true,
+        requestLimits: HTTPServer.RequestLimits = .production
     ) throws -> Host {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -243,7 +251,7 @@ class LOCALBTestCase: XCTestCase {
 
         let port = randomPort()
         let plaintextCompatPort = randomPort()
-        let server = makeServer(port: port)
+        let server = makeServer(port: port, requestLimits: requestLimits)
         server.configureLOCALBTransport(
             identity: identity,
             plaintextCompatibilityPort: Int(plaintextCompatPort)
@@ -266,7 +274,8 @@ class LOCALBTestCase: XCTestCase {
             clientKeyID: clientKeyID,
             store: store,
             coordinator: coordinator,
-            trustedCheckpoint: trustedCheckpointBox
+            trustedCheckpoint: trustedCheckpointBox,
+            server: server
         )
     }
 

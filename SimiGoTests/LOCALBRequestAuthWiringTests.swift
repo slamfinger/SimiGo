@@ -2,6 +2,7 @@ import CryptoKit
 import Foundation
 import LOCALBCore
 import Network
+import Security
 import XCTest
 
 @testable import SimiGo
@@ -572,6 +573,224 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
                 challengeStatus.contains(" 400 "),
                 "P-SRS-WRITE is not delegable to paired LAN clients; got \(challengeStatus)")
         }
+    }
+
+    func testSlowRequestHeadAndBodyAreClosedAtAbsoluteDeadlines() throws {
+        let limits = HTTPServer.RequestLimits(
+            maxConnections: 8,
+            headerTimeout: .milliseconds(250),
+            bodyTimeout: .milliseconds(250))
+        let host = try makeAuthorizedHost(requestLimits: limits)
+
+        let slowHead = try openPinnedTLSConnection(host, expectReady: true)
+        try sendPartialBytes(
+            "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1\r\n",
+            over: slowHead)
+        assertPeerClosed(slowHead, timeout: 3)
+
+        let slowBody = try openPinnedTLSConnection(host, expectReady: true)
+        let partialBodyRequest =
+            "POST /v1/simigo/search HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.port)\r\n"
+            + "Content-Type: application/json\r\n"
+            + "Content-Length: 128\r\n"
+            + "Connection: close\r\n\r\n"
+            + "{"
+        try sendPartialBytes(partialBodyRequest, over: slowBody)
+        assertPeerClosed(slowBody, timeout: 3)
+        waitForActiveConnections(0, server: try XCTUnwrap(host.server))
+    }
+
+    func testConnectionCapRejectsExcessAndTeardownReleasesCapacity() throws {
+        let limits = HTTPServer.RequestLimits(
+            maxConnections: 2,
+            headerTimeout: .seconds(30),
+            bodyTimeout: .seconds(30))
+        let host = try makeAuthorizedHost(requestLimits: limits)
+        let server = try XCTUnwrap(host.server)
+
+        // Admission is enforced before TLS negotiation, so hold raw TCP peers
+        // before ClientHello. This proves the cap covers handshake-pending
+        // sockets rather than only authenticated HTTP requests.
+        let first = try openTCPConnection(host, expectReady: true)
+        let second = try openTCPConnection(host, expectReady: true)
+        waitForActiveConnections(2, server: server)
+
+        let excess = try openTCPConnection(host, expectReady: false)
+        assertPeerClosed(excess, timeout: 3)
+        XCTAssertEqual(
+            server.activeConnectionCount, 2,
+            "the excess pre-TLS socket must be rejected without consuming a slot")
+
+        first.cancel()
+        waitForActiveConnections(1, server: server)
+        let replacement = try openTCPConnection(host, expectReady: true)
+        waitForActiveConnections(2, server: server)
+
+        server.stop()
+        XCTAssertEqual(
+            server.activeConnectionCount, 0,
+            "stop must synchronously release every accepted connection slot")
+        assertPeerClosed(second, timeout: 3)
+        assertPeerClosed(replacement, timeout: 3)
+    }
+
+    private func openTCPConnection(
+        _ host: LOCALBTestCase.Host,
+        expectReady: Bool
+    ) throws -> NWConnection {
+        let connection = NWConnection(
+            host: "127.0.0.1",
+            port: NWEndpoint.Port(rawValue: host.port)!,
+            using: .tcp)
+        let reachedExpectedState = expectation(
+            description: expectReady
+                ? "raw TCP connection ready before TLS handshake"
+                : "raw TCP rejection or ready-before-reset")
+        let stateLock = NSLock()
+        var fulfilled = false
+        connection.stateUpdateHandler = { state in
+            let matched: Bool
+            switch state {
+            case .ready:
+                matched = true
+            case .failed, .cancelled:
+                matched = !expectReady
+            default:
+                matched = false
+            }
+            guard matched else { return }
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { reachedExpectedState.fulfill() }
+        }
+        connection.start(queue: DispatchQueue.global())
+        wait(for: [reachedExpectedState], timeout: 5)
+        return connection
+    }
+
+    private func openPinnedTLSConnection(
+        _ host: LOCALBTestCase.Host,
+        expectReady: Bool
+    ) throws -> NWConnection {
+        let options = NWProtocolTLS.Options()
+        sec_protocol_options_set_verify_block(
+            options.securityProtocolOptions,
+            { _, secTrust, complete in
+                guard
+                    let trust = sec_trust_copy_ref(secTrust)
+                        .takeRetainedValue() as SecTrust?,
+                    let certificate = SecTrustGetCertificateAtIndex(trust, 0),
+                    let hex = try? LOCALBTransportIdentityStore
+                        .spkiSHA256Hex(of: certificate)
+                else {
+                    complete(false)
+                    return
+                }
+                complete(hex == host.spkiHex)
+            },
+            DispatchQueue.global())
+
+        let connection = NWConnection(
+            host: "127.0.0.1",
+            port: NWEndpoint.Port(rawValue: host.port)!,
+            using: NWParameters(tls: options))
+        let reachedExpectedState = expectation(
+            description: expectReady
+                ? "pinned TLS connection ready"
+                : "pinned TLS rejection or ready-before-reset")
+        let stateLock = NSLock()
+        var fulfilled = false
+        connection.stateUpdateHandler = { state in
+            let matched: Bool
+            switch state {
+            case .ready:
+                // The listener can cancel an over-cap socket after TLS has
+                // reached ready. The caller then proves the peer reset via
+                // assertPeerClosed instead of treating readiness as admission.
+                matched = true
+            case .failed, .cancelled:
+                // .waiting is not a rejection: Network.framework may remain
+                // there while the TLS listener is still negotiating. Wait for
+                // a terminal state or .ready, then observe the peer close.
+                matched = !expectReady
+            default:
+                matched = false
+            }
+            guard matched else { return }
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { reachedExpectedState.fulfill() }
+        }
+        connection.start(queue: DispatchQueue.global())
+        wait(for: [reachedExpectedState], timeout: 5)
+        return connection
+    }
+
+    private func sendPartialBytes(_ request: String, over connection: NWConnection) throws {
+        let sent = expectation(description: "partial request bytes sent")
+        connection.send(content: Data(request.utf8), completion: .contentProcessed { error in
+            XCTAssertNil(error)
+            sent.fulfill()
+        })
+        wait(for: [sent], timeout: 3)
+    }
+
+    private func assertPeerClosed(
+        _ connection: NWConnection,
+        timeout: TimeInterval
+    ) {
+        let closed = expectation(description: "server closed incomplete connection")
+        let stateLock = NSLock()
+        var fulfilled = false
+        func fulfillClosed() {
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { closed.fulfill() }
+        }
+
+        // An excess socket can reach TLS ready and then be reset; some Network
+        //.framework releases report that as a connection state transition,
+        // others as a receive error/EOF. Accept either actual peer-close signal.
+        connection.stateUpdateHandler = { state in
+            switch state {
+            case .failed, .cancelled:
+                fulfillClosed()
+            default:
+                break
+            }
+        }
+        if case .failed = connection.state { fulfillClosed() }
+        if case .cancelled = connection.state { fulfillClosed() }
+        connection.receive(
+            minimumIncompleteLength: 1,
+            maximumLength: 1
+        ) { _, _, isComplete, error in
+            if error != nil || isComplete {
+                fulfillClosed()
+            }
+        }
+        wait(for: [closed], timeout: timeout)
+        connection.cancel()
+    }
+
+    private func waitForActiveConnections(
+        _ expected: Int,
+        server: HTTPServer,
+        timeout: TimeInterval = 3
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if server.activeConnectionCount == expected { return }
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        XCTAssertEqual(server.activeConnectionCount, expected)
     }
 
     func testBranchOperationsRequireBranchControlPermission() throws {
