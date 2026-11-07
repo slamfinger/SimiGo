@@ -1559,14 +1559,6 @@ extension HTTPServer {
             _ = HTTPServer.recordHTTPFailureAudit(
                 executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
                 requestID: context.requestId,
-                wire: "responses.stream",
-                terminal: "context_demand_exceeded",
-                modelCalls: 0,
-                settlementsWritten: 0,
-                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
-            _ = HTTPServer.recordHTTPFailureAudit(
-                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
-                requestID: context.requestId,
                 wire: "responses.non_streaming",
                 terminal: "context_demand_exceeded",
                 modelCalls: 0,
@@ -1586,14 +1578,6 @@ extension HTTPServer {
         } catch {
             keepalive.settle()
             failureReason = "model_execution_error: \(error.localizedDescription)"
-            _ = HTTPServer.recordHTTPFailureAudit(
-                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
-                requestID: context.requestId,
-                wire: "responses.stream",
-                terminal: "model_execution_error",
-                modelCalls: 1,
-                settlementsWritten: 0,
-                evidence: [:])
             _ = HTTPServer.recordHTTPFailureAudit(
                 executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
                 requestID: context.requestId,
@@ -2163,6 +2147,14 @@ extension HTTPServer {
             // CONTEXT SAFETY：SSE 头已发出，以可识别错误类型收尾，
             // 客户端（Codex 等）据此压缩上下文重试而非无限等待。
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: "context_demand_exceeded",
+                modelCalls: 0,
+                settlementsWritten: 0,
+                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else {
                 return
             }
@@ -2193,6 +2185,14 @@ extension HTTPServer {
             )
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: "model_execution_error",
+                modelCalls: 1,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
