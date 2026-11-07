@@ -553,4 +553,122 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
         await activated.stop()
         XCTAssertFalse(activated.isRunning)
     }
+
+    /// The current MCP HTTP surface must not offer a previously settled answer
+    /// after another session commits new information into the shared IS. The
+    /// source retrieval remains valid: this is a current-demand freshness check,
+    /// not a test of dependency invalidation.
+    func testRealHTTPMCPBeginRefusesAnswerAfterSharedInformationChanges() async throws {
+        let home = try requireIsolatedHome()
+        useLoopbackNode()
+        setTransportEnvironment(nil)
+
+        let port = randomPort()
+        let runtime = try await startHost(port: port)
+        XCTAssertTrue(runtime.isRunning)
+        let session = "mcp-freshness-\(UUID().uuidString)"
+        let query = "where is the exit"
+
+        let search = try mcpTool(
+            port: port, id: 20, name: "simigo_is_search",
+            arguments: [
+                "query": query, "session_id": session, "include_chat": true,
+            ])
+        let demandID = try XCTUnwrap(search["demand_id"] as? String)
+        let retrievalID = try XCTUnwrap(search["retrieval_settlement_id"] as? String)
+        XCTAssertFalse(demandID.isEmpty)
+        XCTAssertFalse(retrievalID.isEmpty)
+
+        let begun = try mcpTool(
+            port: port, id: 21, name: "simigo_es_begin",
+            arguments: ["model": modelIdentity, "tokenizer": tokenizerIdentity])
+        let sourceStateID = try XCTUnwrap(begun["state_id"] as? String)
+        let settled = try mcpTool(
+            port: port, id: 22, name: "simigo_es_settle",
+            arguments: [
+                "state_id": sourceStateID,
+                "model": modelIdentity,
+                "tokenizer": tokenizerIdentity,
+                "output": "The exit is in the west wing.",
+                "session_id": session,
+                "query": query,
+                "demand_id": demandID,
+                "retrieval_settlement_id": retrievalID,
+            ])
+        XCTAssertFalse(
+            (settled["advancement_id"] as? String ?? "").isEmpty,
+            "the source answer must advance the named retrieval demand")
+
+        let dbURL = home.appendingPathComponent("simigo.sqlite3")
+        let db = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        let outsideSession = "mcp-new-fact-\(UUID().uuidString)"
+        let userID = try db.appendChatMessage(
+            sessionID: outsideSession, role: "user",
+            content: "exit location update", model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: outsideSession, userMessageID: userID,
+            assistantText: "The exit has moved to the east wing.",
+            model: nil, createdAt: Date())
+        XCTAssertEqual(try db.settlementValidity(retrievalID), "valid",
+                       "the old retrieval remains valid; new chat is not its dependency")
+        db.close()
+
+        let again = try mcpTool(
+            port: port, id: 23, name: "simigo_es_begin",
+            arguments: [
+                "model": modelIdentity,
+                "tokenizer": tokenizerIdentity,
+                "session_id": session,
+                "query": query,
+                "include_chat": true,
+            ])
+        XCTAssertTrue(
+            again["reusable_answer"] is NSNull,
+            "a new shared-space fact changes the current demand and blocks stale reuse: \(again)")
+
+        // The new demand can now be answered and should be reusable on its own
+        // unchanged exact repeat; the older answer remains outside this basis.
+        let refreshedSearch = try mcpTool(
+            port: port, id: 24, name: "simigo_is_search",
+            arguments: [
+                "query": query, "session_id": session, "include_chat": true,
+            ])
+        let refreshedDemand = try XCTUnwrap(refreshedSearch["demand_id"] as? String)
+        let refreshedRetrieval = try XCTUnwrap(
+            refreshedSearch["retrieval_settlement_id"] as? String)
+        let refreshedState = try mcpTool(
+            port: port, id: 25, name: "simigo_es_begin",
+            arguments: ["model": modelIdentity, "tokenizer": tokenizerIdentity])
+        let refreshedStateID = try XCTUnwrap(refreshedState["state_id"] as? String)
+        let refreshedAnswer = try mcpTool(
+            port: port, id: 26, name: "simigo_es_settle",
+            arguments: [
+                "state_id": refreshedStateID,
+                "model": modelIdentity,
+                "tokenizer": tokenizerIdentity,
+                "output": "The exit is now in the east wing.",
+                "session_id": session,
+                "query": query,
+                "demand_id": refreshedDemand,
+                "retrieval_settlement_id": refreshedRetrieval,
+            ])
+        XCTAssertFalse(
+            (refreshedAnswer["advancement_id"] as? String ?? "").isEmpty)
+        let finalRepeat = try mcpTool(
+            port: port, id: 27, name: "simigo_es_begin",
+            arguments: [
+                "model": modelIdentity,
+                "tokenizer": tokenizerIdentity,
+                "session_id": session,
+                "query": query,
+                "include_chat": true,
+            ])
+        let reused = try XCTUnwrap(
+            finalRepeat["reusable_answer"] as? [String: Any],
+            "the replacement answer must be reusable after its own demand is unchanged")
+        XCTAssertEqual(reused["text"] as? String, "The exit is now in the east wing.")
+        XCTAssertEqual(reused["model_calls"] as? Int, 0)
+        await runtime.stop()
+    }
+
 }

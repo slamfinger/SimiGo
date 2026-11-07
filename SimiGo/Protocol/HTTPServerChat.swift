@@ -238,15 +238,10 @@ extension HTTPServer {
         let declaration = Self.settlementDeclaration(from: json, headers: headers)
         Self.traceClientProvenance(headers: headers)
         let loop = SimiGoInformationLoop(database: db)
-        // Default retrieval scope: every eligible committed entry in this
-        // personal space (files, settled summaries and any session's committed
-        // chat), not just the live session. This is the cross-Agent, cross-
-        // session memory the IS exists for; session identifiers narrow it when
-        // a caller supplies them.
-        // Exclude the exact question/answer pairs already published in this
-        // session before computing the current demand watermark. If exclusion
-        // lookup fails, an empty set is conservative: prior rows remain in the
-        // basis and the current-demand gate refuses historical answer reuse.
+        let producer = informationTurnProducer?()
+        // Exclude all previously answered instances of this exact question and
+        // their own summaries from the freshness snapshot. New information in
+        // any other session, file, or settlement remains part of the demand.
         let reuseExclusions = (try? loop.answerReuseExclusions(
             sessionID: infoSession, query: query)) ?? []
         let candidateResolution = try? loop.resolve(.init(
@@ -309,7 +304,6 @@ extension HTTPServer {
             sessionID: infoSession, role: "user", content: query,
             model: modelId, createdAt: Date(), eligibility: eligibility)) ?? -1
 
-        let producer = informationTurnProducer?()
         let parent = (try? db.currentChatStateID(sessionID: infoSession)) ?? nil
         let position = parent
             .flatMap { (try? db.executionStatePosition($0)) ?? nil }

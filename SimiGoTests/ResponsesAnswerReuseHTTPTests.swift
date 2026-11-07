@@ -16,7 +16,7 @@ import SimiGoRuntimeContract
 ///   signed HTTPS POST /v1/responses
 ///     -> HTTPServer.route -> handleResponses(Non)Streaming
 ///     -> prepareInformationTurn (real ES demand + IS resolve)
-///     -> reusableAnswer gate (settlement validity + producer identity)
+///     -> reusableAnswer gate (current demand + settlement validity + producer identity)
 ///     -> completed response carrying `simigo.model_calls = 0`
 ///
 /// The only substituted component is generation (a counter, never a model).
@@ -422,4 +422,49 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
             XCTAssertTrue(streamContinuationSSE.contains("response.completed"))
         }
     }
+
+    /// A newly committed fact in the shared information space must force this
+    /// response through the current demand path instead of serving an older
+    /// answer merely because its historical settlement remains valid.
+    @MainActor
+    func testNewCommittedInformationDoesNotReuseOlderAnswer() async throws {
+        let session = "responses-reuse-freshness-\(UUID().uuidString)"
+
+        try await withServer {
+            let first = try await dispatch(
+                requestBody(session: session, input: "where is the vault"))
+            XCTAssertEqual(first.status, 200, String(decoding: first.raw, as: UTF8.self))
+            XCTAssertEqual(first.generate, 1)
+            XCTAssertNil(first.simigo)
+
+            let db = try XCTUnwrap(ExecutionStateGraphStore().esis)
+            let externalSession = "new-information-\(UUID().uuidString)"
+            let userID = try db.appendChatMessage(
+                sessionID: externalSession, role: "user",
+                content: "The vault location has changed", model: nil, createdAt: Date())
+            try db.commitChatTurn(
+                sessionID: externalSession, userMessageID: userID,
+                assistantText: "The vault is now in the east wing.",
+                model: nil, createdAt: Date())
+            stub.text = "FRESH-RESPONSES-ANSWER-AFTER-IS-CHANGE"
+
+            let second = try await dispatch(
+                requestBody(session: session, input: "where is the vault"))
+            XCTAssertEqual(second.status, 200, String(decoding: second.raw, as: UTF8.self))
+            XCTAssertEqual(second.generate, 2,
+                           "a changed information scope must reach generation")
+            XCTAssertNil(second.simigo,
+                         "the previous answer cannot stand in for the changed demand")
+            XCTAssertEqual(second.outputText, "FRESH-RESPONSES-ANSWER-AFTER-IS-CHANGE")
+
+            let third = try await dispatch(
+                requestBody(session: session, input: "where is the vault"))
+            XCTAssertEqual(third.status, 200, String(decoding: third.raw, as: UTF8.self))
+            XCTAssertEqual(third.generate, 2,
+                           "the replacement answer is reusable on the next exact repeat")
+            XCTAssertEqual(third.simigo?["answer_reuse"] as? Bool, true)
+            XCTAssertEqual(third.outputText, "FRESH-RESPONSES-ANSWER-AFTER-IS-CHANGE")
+        }
+    }
+
 }

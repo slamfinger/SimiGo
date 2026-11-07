@@ -255,7 +255,11 @@ extension HTTPServer {
                     + "When query + session_id are supplied, the answer already settled "
                     + "for that same question in that same session is returned as "
                     + "`reusable_answer` — a read, so the agent may skip its own model "
-                    + "call when the producer identity also matches.",
+                    + "call when the producer identity also matches. For a sourced answer, "
+                    + "the current demand is resolved again before the shortcut; pass the "
+                    + "same root_ids, include_chat, session_ids, limit and request_id used "
+                    + "for simigo_is_search so the demand snapshot is comparable. If it "
+                    + "changed or cannot be resolved, no reusable answer is returned.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -266,6 +270,11 @@ extension HTTPServer {
                         "position": ["type": "integer"],
                         "session_id": ["type": "string"],
                         "query": ["type": "string"],
+                        "request_id": ["type": "string"],
+                        "root_ids": ["type": "array", "items": ["type": "string"]],
+                        "include_chat": ["type": "boolean"],
+                        "session_ids": ["type": "array", "items": ["type": "string"]],
+                        "limit": ["type": "integer"],
                     ],
                     "required": ["model", "tokenizer"],
                 ],
