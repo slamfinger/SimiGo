@@ -401,6 +401,30 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             lateClose.requestTask,
             "a late close must not hand a claimed finalization to cancellation")
         lateTask.cancel()
+
+        // A claimed detached finalization retains its task for Runtime shutdown.
+        let (claimedDetached, claimedDetachedConnection) = makeContext("claimed-detached")
+        defer { claimedDetachedConnection.cancel() }
+        let detachedTask = sleepingTask()
+        XCTAssertTrue(claimedDetached.setRequestTask(detachedTask))
+        XCTAssertTrue(claimedDetached.markGenerationStarted())
+        let detachedClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(detachedClose.detached)
+        XCTAssertTrue(claimedDetached.claimCompletedTurnSettlement())
+        let ordinaryLateClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertNil(
+            ordinaryLateClose.requestTask,
+            "an ordinary late close must not receive a claimed finalization task")
+        claimedDetached.markCancelledByRuntime()
+        let runtimeClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertNotNil(
+            runtimeClose.requestTask,
+            "Runtime shutdown must still receive the retained detached task")
+        runtimeClose.requestTask?.cancel()
+        detachedTask.cancel()
     }
 
     /// Exact wording is not enough: reuse is bound to the demand resolved for

@@ -511,7 +511,9 @@ public final class HTTPServer: @unchecked Sendable {
         /// admits an otherwise-valid detached completion, but refuses ordinary
         /// cancellation, Runtime shutdown, and a turn an orphan-yield pass has
         /// already taken. Once claimed, a later client close cannot cancel the
-        /// already-completed generation while ES/IS is written.
+        /// already-completed generation while ES/IS is written. The detached
+        /// task handle is retained for Runtime shutdown, which remains the one
+        /// authority allowed to override the claim.
         func claimCompletedTurnSettlement() -> Bool {
             stateLock.withLock {
                 guard _generationStarted,
@@ -523,9 +525,6 @@ public final class HTTPServer: @unchecked Sendable {
                     return false
                 }
                 _settlementClaimed = true
-                // Once the finalization window is claimed, no orphan-yield pass
-                // may cancel it; release the detached-task retention reference.
-                _detachedRequestTask = nil
                 return true
             }
         }
@@ -614,12 +613,22 @@ public final class HTTPServer: @unchecked Sendable {
                 _peerCloseWatcherArmed = false
 
                 // A claimed finalization has already crossed the generation
-                // boundary: handing its task back would let a late close cancel
-                // the ES/IS writes. Runtime shutdown remains the one authority
-                // allowed to override the claim.
-                let task = (_settlementClaimed && !_cancelledByRuntime)
-                    ? nil : _requestTask
+                // boundary: an ordinary late close must not cancel the ES/IS
+                // writes. Runtime shutdown is the one authority that overrides
+                // the claim, and a detached request has no `_requestTask` left,
+                // so it must receive the retained detached handle instead.
+                let task: Task<Void, Never>?
+                if _cancelledByRuntime {
+                    task = _requestTask ?? _detachedRequestTask
+                } else if _settlementClaimed {
+                    task = nil
+                } else {
+                    task = _requestTask
+                }
                 _requestTask = nil
+                if _cancelledByRuntime {
+                    _detachedRequestTask = nil
+                }
 
                 return (
                     shouldCancel,
@@ -1055,9 +1064,14 @@ public final class HTTPServer: @unchecked Sendable {
         requestAdmission.beginShutdown()
 
         let contexts: [ConnectionContext] = connectionLock.withLock {
-            let values = Array(connections.values)
+            let live = Array(connections.values)
+            let orphans = Array(detachedOrphans.values)
             connections.removeAll()
-            return values
+            // A detached request left `connections` when its client closed;
+            // shutdown must reclaim it from the orphan registry too, or the
+            // generation keeps running past Runtime stop.
+            let liveKeys = Set(live.map(\.key))
+            return live + orphans.filter { !liveKeys.contains($0.key) }
         }
 
         for context in contexts {
