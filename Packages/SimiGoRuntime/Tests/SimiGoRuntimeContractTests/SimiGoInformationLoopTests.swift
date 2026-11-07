@@ -919,7 +919,7 @@ final class SimiGoInformationLoopTests: XCTestCase {
         BEFORE INSERT ON settlement_bindings
         BEGIN SELECT RAISE(ABORT, 'injected settlement binding failure'); END;
         """
-        XCTAssertEqual(sqlite3_exec(sqlite, trigger, nil, nil, nil), SQLITE_OK)
+        XCTAssertEqual(sqlite3_exec(handle, trigger, nil, nil, nil), SQLITE_OK)
         XCTAssertThrowsError(try SimiGoInformationLoop(database: db).settleTurn(
             generatedText: "the answer", resolution: resolution,
             stateID: "S-rollback", parentStateID: nil, position: 0,

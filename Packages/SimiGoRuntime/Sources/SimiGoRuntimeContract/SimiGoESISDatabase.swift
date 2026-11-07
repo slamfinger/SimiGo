@@ -4512,12 +4512,6 @@ public final class SimiGoESISDatabase {
         case sourceNotValid(String)
     }
 
-    /// Record that `demandID` was answered by an ALREADY-SETTLED result with zero
-    /// model calls. The lookup gate ran before generation; validity is re-read
-    /// inside this write, so a settlement invalidated in between can never be
-    /// recorded as reused. `(sessionID, query)` is the exact key the lookup used;
-    /// only its digest is stored because the demand row already carries the text.
-    /// Re-recording the same demand returns the existing row unchanged.
     /// Commit the reused assistant transcript and the zero-model-call reuse
     /// event together. A reader cannot observe one without the other.
     @discardableResult
