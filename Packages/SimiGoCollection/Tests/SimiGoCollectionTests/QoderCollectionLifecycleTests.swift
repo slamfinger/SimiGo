@@ -256,6 +256,32 @@ final class QoderCollectionLifecycleTests: XCTestCase {
             atPath: external.appendingPathComponent(QoderCandidateInbox.databaseFileName).path))
     }
 
+    func testInboxRejectsSymlinkedLegacyCursorWithoutChangingTarget() throws {
+        let externalState = root.appendingPathComponent(
+            "external-legacy-state", isDirectory: true)
+        let externalCursor = externalState.appendingPathComponent("cursor.json")
+        try QoderFileCursorStore(directoryURL: externalState).save(
+            QoderCursorState(initializedAt: Date(timeIntervalSinceNow: -3600)))
+        let original = try Data(contentsOf: externalCursor)
+
+        let linkedState = root.appendingPathComponent(
+            "linked-legacy-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: linkedState, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            at: linkedState.appendingPathComponent("cursor.json"),
+            withDestinationURL: externalCursor)
+
+        let inbox = QoderCandidateInbox(directoryURL: linkedState)
+        XCTAssertThrowsError(
+            try inbox.loadCursorState(),
+            "legacy migration must fail closed on a symlinked cursor")
+        XCTAssertEqual(try Data(contentsOf: externalCursor), original)
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: inbox.databaseURL.path),
+            "a rejected legacy cursor must not create an empty authoritative inbox")
+    }
+
     func testInboxRejectsSymlinkedSQLiteFileWithoutChangingTarget() throws {
         let external = root.appendingPathComponent("external-state", isDirectory: true)
         try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
