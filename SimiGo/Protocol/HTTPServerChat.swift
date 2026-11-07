@@ -888,6 +888,7 @@ extension HTTPServer {
         })
         defer { heartbeat.cancel() }
 
+        var modelCallAttempted = false
         do {
             // P0-3 补位：RUNNING 由推理 gate 闭包置位，协议层必须先完成
             // CREATED→QUEUED，否则 gate 闭包撞非法迁移、请求被当作取消静默丢弃。
@@ -900,6 +901,7 @@ extension HTTPServer {
                 return
             }
 
+            modelCallAttempted = true
             let result = try await generateHandler(
                 context.requestId,
                 agentId,
@@ -1100,7 +1102,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "chat.completions.stream",
                 terminal: terminal,
-                modelCalls: 1,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: [:])
             guard !context.closed else { return }
@@ -1130,7 +1132,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "chat.completions.stream",
                 terminal: "context_demand_exceeded",
-                modelCalls: 0,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else { return }
@@ -1160,7 +1162,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "chat.completions.stream",
                 terminal: "model_execution_error",
-                modelCalls: 1,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: [:])
             guard !context.closed else {
@@ -1462,6 +1464,7 @@ extension HTTPServer {
         let reasoning =
             ReasoningBuffer()
 
+        var modelCallAttempted = false
         do {
             try await context.transitionToQueued()
 
@@ -1472,6 +1475,7 @@ extension HTTPServer {
                 return
             }
 
+            modelCallAttempted = true
             let result = try await generateHandler(
                 context.requestId,
                 agentId,
@@ -1613,7 +1617,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "chat.completions.non_streaming",
                 terminal: terminal,
-                modelCalls: 1,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: [:])
             guard !context.closed else { return }
@@ -1635,7 +1639,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "chat.completions.non_streaming",
                 terminal: "context_demand_exceeded",
-                modelCalls: 0,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else { return }
@@ -1655,7 +1659,7 @@ extension HTTPServer {
                 requestID: context.requestId,
                 wire: "chat.completions.non_streaming",
                 terminal: "model_execution_error",
-                modelCalls: 1,
+                modelCalls: modelCallAttempted ? 1 : 0,
                 settlementsWritten: 0,
                 evidence: [:])
             guard !context.closed else {
