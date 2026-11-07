@@ -1088,6 +1088,11 @@ public final class HTTPServer: @unchecked Sendable {
             return context
         }
         guard let context else {
+            // An accepted NWConnection is still in setup until it is started.
+            // Starting then immediately cancelling makes the over-cap refusal
+            // observable to a TLS peer; cancelling an unstarted accepted
+            // connection can leave the remote handshake waiting indefinitely.
+            connection.start(queue: queue)
             connection.cancel()
             return
         }
