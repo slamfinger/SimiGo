@@ -4001,6 +4001,16 @@ public final class SimiGoESISDatabase {
         public let state: String
     }
 
+    public enum InformationDemandError: Error, Equatable {
+        case missingDemand(String)
+        case invalidTransition(demandID: String, from: String, to: String)
+        case retrievalBindingMismatch(demandID: String, expected: String, actual: String)
+        case retrievalSettlementUnavailable(String)
+        case producerSettlementUnavailable(String)
+        case advancementConflict(
+            demandID: String, existingSettlementID: String, requestedSettlementID: String)
+    }
+
     /// The settlement that most recently answered this exact question in this
     /// information scope, together with the retrieval settlement the demand was
     /// resolved against. Read-only: the protocol-layer gate decides whether the
@@ -4350,6 +4360,23 @@ public final class SimiGoESISDatabase {
         var resultObjectID = ""
         let now = Self.stamp(write.evaluatedAt)
         try transaction {
+            if let existing = try informationDemand(demandID: write.demandID) {
+                guard existing.state == "RESOLVED" else {
+                    throw InformationDemandError.invalidTransition(
+                        demandID: write.demandID, from: existing.state, to: "RESOLVED")
+                }
+                guard existing.retrievalSettlementID == settlementID else {
+                    throw InformationDemandError.retrievalBindingMismatch(
+                        demandID: write.demandID,
+                        expected: settlementID,
+                        actual: existing.retrievalSettlementID ?? "")
+                }
+                // An invalidated or corrupt retrieval is not revived by writing
+                // the same demand key again. A changed basis must get a new id.
+                guard try informationRetrievalPayload(demandID: write.demandID) != nil else {
+                    throw InformationDemandError.retrievalSettlementUnavailable(settlementID)
+                }
+            }
             resultObjectID = try ensureObject(write.payload)
             try execBinding("""
             INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status, payload_object_id)
@@ -4401,7 +4428,7 @@ public final class SimiGoESISDatabase {
             let itemsJSON = (try? JSONSerialization.data(
                 withJSONObject: write.itemIDs, options: [.sortedKeys, .withoutEscapingSlashes]))
                 .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
-            try execBinding("""
+            let demandRows = try execBinding("""
             INSERT INTO information_demands(
                 demand_id, state_id, session_id, continuation_point, query,
                 required_item_ids_json, pending_obligations_json,
@@ -4416,7 +4443,8 @@ public final class SimiGoESISDatabase {
                 retrieval_demand_id=excluded.retrieval_demand_id,
                 retrieval_settlement_id=excluded.retrieval_settlement_id,
                 request_identity=excluded.request_identity,
-                state='RESOLVED';
+                state='RESOLVED'
+            WHERE information_demands.state='RESOLVED';
             """) { stmt in
                 bind(stmt, 1, write.demandID)
                 bind(stmt, 2, write.stateID)
@@ -4428,6 +4456,11 @@ public final class SimiGoESISDatabase {
                 bind(stmt, 8, settlementID)
                 bind(stmt, 9, now)
                 bind(stmt, 10, write.requestIdentity)
+            }
+            guard demandRows == 1 else {
+                let current = try informationDemand(demandID: write.demandID)?.state ?? "missing"
+                throw InformationDemandError.invalidTransition(
+                    demandID: write.demandID, from: current, to: "RESOLVED")
             }
             // A newer resolution of the same question IN THE SAME REQUEST
             // supersedes the old one. Knowledge is shared across sessions, but
@@ -4507,10 +4540,9 @@ public final class SimiGoESISDatabase {
         _ write: InformationAdvancementWrite
     ) throws -> String {
         let advancementID = UUID().uuidString
-        try transaction {
+        return try transactionResult {
             try insertInformationAdvancementRows(write, advancementID: advancementID)
         }
-        return advancementID
     }
 
     /// Caller owns the transaction so advancement can commit atomically with the
@@ -4525,6 +4557,79 @@ public final class SimiGoESISDatabase {
             .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
         let resultJSON = String(decoding: write.result, as: UTF8.self)
         let now = Self.stamp(write.advancedAt)
+
+        guard let demand = try informationDemand(demandID: write.demandID) else {
+            throw InformationDemandError.missingDemand(write.demandID)
+        }
+        guard demand.retrievalSettlementID == write.retrievalSettlementID else {
+            throw InformationDemandError.retrievalBindingMismatch(
+                demandID: write.demandID,
+                expected: demand.retrievalSettlementID ?? "",
+                actual: write.retrievalSettlementID)
+        }
+        guard let retrieval = try settlementReceipt(write.retrievalSettlementID),
+              retrieval.validity == "valid",
+              retrieval.validationStatus == "IS_RETRIEVAL",
+              try informationRetrievalPayload(demandID: write.demandID) != nil else {
+            throw InformationDemandError.retrievalSettlementUnavailable(
+                write.retrievalSettlementID)
+        }
+        guard let producer = try settlementReceipt(write.settlementID),
+              producer.validity == "valid",
+              producer.stateID == write.stateID else {
+            throw InformationDemandError.producerSettlementUnavailable(write.settlementID)
+        }
+
+        // A retry of the same answer is idempotent. A different answer cannot
+        // take over a demand that has already advanced.
+        let existing = try prepare("""
+        SELECT advancement_id, state_id, settlement_id,
+               retrieval_settlement_id, actions_json, result_json
+        FROM information_advancements
+        WHERE demand_id=? ORDER BY rowid DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(existing) }
+        bind(existing, 1, write.demandID)
+        if try stepRowOrDone(existing) {
+            func text(_ index: Int32) -> String {
+                sqlite3_column_text(existing, index)
+                    .map { String(cString: $0) } ?? ""
+            }
+            let existingID = text(0)
+            let existingState = text(1)
+            let existingSettlement = text(2)
+            let existingRetrieval = text(3)
+            let existingActions = text(4)
+            let existingResult = text(5)
+            guard demand.state == "ADVANCED",
+                  existingState == write.stateID,
+                  existingSettlement == write.settlementID,
+                  existingRetrieval == write.retrievalSettlementID,
+                  existingActions == actionsJSON,
+                  existingResult == resultJSON else {
+                throw InformationDemandError.advancementConflict(
+                    demandID: write.demandID,
+                    existingSettlementID: existingSettlement,
+                    requestedSettlementID: write.settlementID)
+            }
+            return existingID
+        }
+        guard demand.state == "RESOLVED" else {
+            throw InformationDemandError.invalidTransition(
+                demandID: write.demandID, from: demand.state, to: "ADVANCED")
+        }
+        let changed = try execBinding("""
+        UPDATE information_demands SET state='ADVANCED'
+        WHERE demand_id=? AND state='RESOLVED' AND retrieval_settlement_id=?;
+        """) { stmt in
+            bind(stmt, 1, write.demandID)
+            bind(stmt, 2, write.retrievalSettlementID)
+        }
+        guard changed == 1 else {
+            let current = try informationDemand(demandID: write.demandID)?.state ?? "missing"
+            throw InformationDemandError.invalidTransition(
+                demandID: write.demandID, from: current, to: "ADVANCED")
+        }
         try execBinding("""
         INSERT INTO information_advancements(
             advancement_id, demand_id, state_id, settlement_id,
@@ -4540,9 +4645,6 @@ public final class SimiGoESISDatabase {
             bind(stmt, 7, resultJSON)
             bind(stmt, 8, now)
         }
-        try execBinding("""
-        UPDATE information_demands SET state='ADVANCED' WHERE demand_id=?;
-        """) { stmt in bind(stmt, 1, write.demandID) }
         try execBinding("""
         INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
         SELECT ?,?,?
@@ -4681,7 +4783,7 @@ public final class SimiGoESISDatabase {
         }
 
         let itemsJSON = "[]"
-        try execBinding("""
+        let demandRows = try execBinding("""
         INSERT INTO information_demands(
             demand_id, state_id, session_id, continuation_point, query,
             required_item_ids_json, pending_obligations_json,
@@ -4690,7 +4792,8 @@ public final class SimiGoESISDatabase {
         VALUES(?,?,NULL,'settlement-consumption',?,?,'[]','[]',?,NULL,NULL,'ADVANCED',?)
         ON CONFLICT(demand_id) DO UPDATE SET
             state_id=excluded.state_id, query=excluded.query,
-            input_digest=excluded.input_digest, state='ADVANCED';
+            input_digest=excluded.input_digest, state='ADVANCED'
+        WHERE information_demands.state='ADVANCED';
         """) { stmt in
             bind(stmt, 1, plan.demandID)
             bind(stmt, 2, plan.consumerState.id)
@@ -4698,6 +4801,11 @@ public final class SimiGoESISDatabase {
             bind(stmt, 4, itemsJSON)
             bind(stmt, 5, plan.canonicalDigest)
             bind(stmt, 6, Self.stamp(plan.consumedAt))
+        }
+        guard demandRows == 1 else {
+            let current = try informationDemand(demandID: plan.demandID)?.state ?? "missing"
+            throw InformationDemandError.invalidTransition(
+                demandID: plan.demandID, from: current, to: "ADVANCED")
         }
         try execBinding("""
         INSERT INTO information_advancements(
