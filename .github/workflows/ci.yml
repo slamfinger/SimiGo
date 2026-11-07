@@ -129,9 +129,10 @@ jobs:
           echo "SCOPE|this lane covers Packages/SimiGoCollection only"
           echo "SCOPE|collection-only mode: candidates stay in the inbox; no sink, no IS/ES writes"
 
-  # Blocking remote coverage for the P0 answer-demand and P1 MCP tokenizer changes.
-  # These are deliberately separate from the ExecutionStateGraph witness lane:
-  # a green graph test cannot stand in for HTTP/MCP behavior or Runtime migrations.
+  # Blocking remote coverage for P0/P1 answer-demand + MCP behavior and the
+  # P2 detached-completion DB assertions. These remain separate from the
+  # ExecutionStateGraph witness lane: a green graph test cannot stand in for
+  # real HTTP lifecycle/persistence behavior or Runtime migrations.
   macos-p0-p1-app-tests:
     name: macOS P0/P1 HTTP and MCP tests
     # Xcode 27 is required by the pinned MLX dependency for the app test target.
@@ -157,6 +158,7 @@ jobs:
           core_files = [
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
+              Path("SimiGoTests/CancelPathStubHTTPTests.swift"),
           ]
           localb_file = Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift")
           missing = [str(p) for p in [*core_files, localb_file] if not p.is_file()]
@@ -189,6 +191,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/CancelPathStubHTTPTests \
             -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests
       - name: Generate isolated App test xctestrun
         run: |
@@ -216,6 +219,7 @@ jobs:
             -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
+            -only-testing:SimiGoTests/CancelPathStubHTTPTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
       - name: Generate isolated secure LOCALB App test xctestrun
         run: |
@@ -355,7 +359,8 @@ jobs:
       - name: Scope note
         if: always()
         run: |
-          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests run in the default isolated process"
+          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests + CancelPathStubHTTPTests run in the default isolated process"
+          echo "SCOPE|includes four-path detached settlement DB assertions and negative controls"
           echo "SCOPE|LOCALBRequestAuthWiringTests run separately with SIMIGO_TRANSPORT=secure"
           echo "SCOPE|no claim about external models, Qoder, or end-to-end Agent execution"
   runtime-contract-tests:

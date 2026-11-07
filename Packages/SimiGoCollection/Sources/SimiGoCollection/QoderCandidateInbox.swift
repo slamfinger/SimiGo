@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 import SQLite3
 
@@ -179,11 +180,13 @@ final class QoderCandidateInbox {
             ON candidates(seq) WHERE delivered_at IS NULL;
         """
 
-    let directoryURL: URL
+    private(set) var directoryURL: URL
     private var connection: QoderSQLiteConnection?
 
     init(directoryURL: URL) {
-        self.directoryURL = directoryURL
+        // Parent aliases are resolved only after they exist in prepareDirectory.
+        // The final component is kept intact for the O_NOFOLLOW directory check.
+        self.directoryURL = directoryURL.standardizedFileURL
     }
 
     deinit {
@@ -430,8 +433,8 @@ final class QoderCandidateInbox {
         if connection != nil { return }
         try prepareDirectory()
         let fileManager = FileManager.default
-        let databaseExists = fileManager.fileExists(atPath: databaseURL.path)
-        let legacyExists = fileManager.fileExists(atPath: legacyCursorURL.path)
+        let databaseExists = try validateRegularFileIfPresent(at: databaseURL)
+        let legacyExists = try validateRegularFileIfPresent(at: legacyCursorURL)
 
         if databaseExists {
             try validateHeader(at: databaseURL.path)
@@ -477,34 +480,91 @@ final class QoderCandidateInbox {
     }
 
     private func prepareDirectory() throws {
-        let fileManager = FileManager.default
         do {
-            try fileManager.createDirectory(
+            try FileManager.default.createDirectory(
                 at: directoryURL, withIntermediateDirectories: true)
-            try fileManager.setAttributes(
-                [.posixPermissions: 0o700], ofItemAtPath: directoryURL.path)
         } catch {
             throw QoderCollectionStateError.unreadableState(
                 path: directoryURL.path, detail: String(describing: error))
         }
+
+        // macOS SQLite canonicalizes the entire database path before applying
+        // SQLITE_OPEN_NOFOLLOW. Resolve all existing parent components now,
+        // after directory creation, but preserve the final state-directory
+        // component so a symlink at that boundary is still rejected below.
+        let parentURL = directoryURL.deletingLastPathComponent()
+        var resolvedParent = [CChar](repeating: 0, count: Int(PATH_MAX))
+        let parentResolved = parentURL.path.withCString { source in
+            resolvedParent.withUnsafeMutableBufferPointer { target in
+                Darwin.realpath(source, target.baseAddress) != nil
+            }
+        }
+        guard parentResolved else {
+            throw QoderCollectionStateError.unreadableState(
+                path: parentURL.path,
+                detail: "cannot resolve existing state parent: \(String(cString: strerror(errno)))")
+        }
+        let finalComponent = directoryURL.lastPathComponent
+        directoryURL = URL(fileURLWithPath: String(cString: resolvedParent), isDirectory: true)
+            .appendingPathComponent(finalComponent, isDirectory: true)
+
+        let descriptor = open(
+            directoryURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else {
+            throw QoderCollectionStateError.unreadableState(
+                path: directoryURL.path, detail: "state directory is linked or unreadable")
+        }
+        defer { close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFDIR,
+              info.st_uid == getuid(),
+              fchmod(descriptor, 0o700) == 0
+        else {
+            throw QoderCollectionStateError.unreadableState(
+                path: directoryURL.path,
+                detail: "state directory is not a private directory owned by this user")
+        }
+    }
+
+    private func validateRegularFileIfPresent(at url: URL) throws -> Bool {
+        var info = stat()
+        if lstat(url.path, &info) == 0 {
+            guard (info.st_mode & S_IFMT) == S_IFREG, info.st_uid == getuid() else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: url.path, detail: "state entry is not a regular owned file")
+            }
+            return true
+        }
+        guard errno == ENOENT else {
+            throw QoderCollectionStateError.unreadableState(
+                path: url.path, detail: String(cString: strerror(errno)))
+        }
+        return false
     }
 
     /// A file that exists must be a real SQLite database. Zero bytes, foreign
     /// content, or a damaged header all mean damage, never "fresh".
     private func validateHeader(at path: String) throws {
-        let url = URL(fileURLWithPath: path)
-        guard let handle = try? FileHandle(forReadingFrom: url) else {
+        let descriptor = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
-                path: path, detail: "cannot open database file")
+                path: path, detail: "cannot open database without following links")
         }
-        defer { try? handle.close() }
-        let header: Data
-        do {
-            header = try handle.read(upToCount: 16) ?? Data()
-        } catch {
+        defer { close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_uid == getuid()
+        else {
             throw QoderCollectionStateError.unreadableState(
-                path: path, detail: String(describing: error))
+                path: path, detail: "database entry is not a regular owned file")
         }
+        var bytes = [UInt8](repeating: 0, count: 16)
+        let count = bytes.withUnsafeMutableBytes {
+            Darwin.read(descriptor, $0.baseAddress, $0.count)
+        }
+        let header = count == 16 ? Data(bytes) : Data()
         guard header == Self.sqliteHeader else {
             throw QoderCollectionStateError.corruptState(
                 path: path, detail: "missing SQLite header")
@@ -623,7 +683,8 @@ final class QoderSQLiteConnection {
         var handle: OpaquePointer?
         let code = sqlite3_open_v2(
             path, &handle,
-            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nil)
+            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX
+                | SQLITE_OPEN_NOFOLLOW, nil)
         guard code == SQLITE_OK, let handle else {
             let detail =
                 handle.map { String(cString: sqlite3_errmsg($0)) }

@@ -1385,10 +1385,8 @@ extension HTTPServer {
 
             keepalive.settle()
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 
@@ -1907,15 +1905,18 @@ extension HTTPServer {
                     guard
                         let self,
                         let context,
-                        !context.closed,
                         !text.isEmpty
                     else {
                         return
                     }
 
+                    // Accumulate the full answer for settlement even after the
+                    // peer closed; only the outbound events stay blocked.
                     let events =
                         streamState
                             .appendAssistantText(text)
+
+                    guard !context.closed else { return }
 
                     self.enqueueResponsesEvents(
                         context: context,
@@ -1924,11 +1925,7 @@ extension HTTPServer {
                     )
                 },
                 { [weak self, weak context] call in
-                    guard
-                        let self,
-                        let context,
-                        !context.closed
-                    else {
+                    guard let self, let context else {
                         return
                     }
 
@@ -1940,6 +1937,8 @@ extension HTTPServer {
                         streamState
                             .appendToolCall(call)
 
+                    guard !context.closed else { return }
+
                     self.enqueueResponsesEvents(
                         context: context,
                         events: events,
@@ -1950,10 +1949,8 @@ extension HTTPServer {
                 { _ in }
             )
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 

@@ -264,6 +264,169 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         }
     }
 
+    /// Disconnect after generation start may detach only when an orphan slot
+    /// is granted; manual cancellation and Runtime shutdown still win. Once a
+    /// completed turn claims finalization, later disconnects cannot orphan-yield it.
+    @MainActor
+    func testCompletedTurnClaimAllowsGrantedDetachButRejectsCancellation() throws {
+        func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
+            let connection = NWConnection(
+                to: .hostPort(
+                    host: NWEndpoint.Host("127.0.0.1"),
+                    port: NWEndpoint.Port(rawValue: 9)!),
+                using: .tcp)
+            connection.start(queue: DispatchQueue(label: "detach-policy-" + label + "-" + UUID().uuidString))
+            return (HTTPServer.ConnectionContext(connection: connection), connection)
+        }
+
+        // An acquired orphan slot preserves a naturally completed generation.
+        let (detached, detachedConnection) = makeContext("detached")
+        defer { detachedConnection.cancel() }
+        XCTAssertTrue(detached.markGenerationStarted())
+        let detachedClose = detached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(detachedClose.detached)
+        XCTAssertFalse(detachedClose.shouldCancelGeneration)
+        XCTAssertTrue(detached.claimCompletedTurnSettlement())
+
+        // A normal cancellation sets the cancellation latch and cannot claim.
+        let (cancelled, cancelledConnection) = makeContext("cancelled")
+        defer { cancelledConnection.cancel() }
+        XCTAssertTrue(cancelled.markGenerationStarted())
+        let cancelledClose = cancelled.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertTrue(cancelledClose.shouldCancelGeneration)
+        XCTAssertFalse(cancelled.claimCompletedTurnSettlement())
+
+        // A later client close cannot cancel a generation already finalizing.
+        let (claimed, claimedConnection) = makeContext("claimed")
+        defer { claimedConnection.cancel() }
+        XCTAssertTrue(claimed.markGenerationStarted())
+        XCTAssertTrue(claimed.claimCompletedTurnSettlement())
+        var lateSlotClaimed = false
+        let lateClose = claimed.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: {
+                lateSlotClaimed = true
+                return true
+            })
+        XCTAssertFalse(lateClose.shouldCancelGeneration)
+        XCTAssertFalse(lateClose.detached)
+        XCTAssertFalse(lateSlotClaimed,
+                       "completed finalization is no longer an inference orphan")
+        
+        // Runtime shutdown still overrides a previously claimed finalization.
+        let (runtimeCancelled, runtimeConnection) = makeContext("runtime-cancelled")
+        defer { runtimeConnection.cancel() }
+        XCTAssertTrue(runtimeCancelled.markGenerationStarted())
+        XCTAssertTrue(runtimeCancelled.claimCompletedTurnSettlement())
+        runtimeCancelled.markCancelledByRuntime()
+        let runtimeClose = runtimeCancelled.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertTrue(runtimeClose.shouldCancelGeneration)
+    }
+
+    /// An orphan-yield pass that already took the detached task wins over a
+    /// later completion claim, and a claimed finalization can no longer be
+    /// taken for yield. Both decisions share one lock, so the loser must
+    /// observe the winner's result instead of both proceeding.
+    @MainActor
+    func testOrphanYieldAndSettlementClaimAreMutuallyExclusive() throws {
+        func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
+            let connection = NWConnection(
+                to: .hostPort(
+                    host: NWEndpoint.Host("127.0.0.1"),
+                    port: NWEndpoint.Port(rawValue: 9)!),
+                using: .tcp)
+            connection.start(queue: DispatchQueue(label: "detach-race-" + label + "-" + UUID().uuidString))
+            return (HTTPServer.ConnectionContext(connection: connection), connection)
+        }
+        func sleepingTask() -> Task<Void, Never> {
+            Task {
+                do { try await Task.sleep(nanoseconds: 60_000_000_000) } catch {}
+            }
+        }
+
+        // Yield wins: its task was taken, so the completed turn must not settle.
+        let (yielded, yieldedConnection) = makeContext("yielded")
+        defer { yieldedConnection.cancel() }
+        let yieldedTask = sleepingTask()
+        XCTAssertTrue(yielded.setRequestTask(yieldedTask))
+        XCTAssertTrue(yielded.markGenerationStarted())
+        let yieldedClose = yielded.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(yieldedClose.detached)
+        XCTAssertNotNil(yielded.takeDetachedRequestTask())
+        yieldedTask.cancel()
+        XCTAssertFalse(
+            yielded.claimCompletedTurnSettlement(),
+            "a yielded orphan must not settle after its task was taken")
+
+        // Claim wins over yield: the finalization is no longer a candidate.
+        let (claimed, claimedConnection) = makeContext("claimed-before-yield")
+        defer { claimedConnection.cancel() }
+        let claimedTask = sleepingTask()
+        XCTAssertTrue(claimed.setRequestTask(claimedTask))
+        XCTAssertTrue(claimed.markGenerationStarted())
+        let claimedClose = claimed.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(claimedClose.detached)
+        XCTAssertTrue(claimed.claimCompletedTurnSettlement())
+        XCTAssertNil(
+            claimed.takeDetachedRequestTask(),
+            "a claimed finalization is no longer an orphan candidate")
+        XCTAssertFalse(
+            claimed.claimCompletedTurnSettlement(),
+            "the finalization claim is one-shot")
+        claimedTask.cancel()
+
+        // A close that arrives after the claim (client was still connected when
+        // the claim was taken) must neither cancel the generation nor hand its
+        // task back for cancellation; only Runtime shutdown may override.
+        let (late, lateConnection) = makeContext("late-close-after-claim")
+        defer { lateConnection.cancel() }
+        let lateTask = sleepingTask()
+        XCTAssertTrue(late.setRequestTask(lateTask))
+        XCTAssertTrue(late.markGenerationStarted())
+        XCTAssertTrue(late.claimCompletedTurnSettlement())
+        var lateSlotClaimed = false
+        let lateClose = late.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: {
+                lateSlotClaimed = true
+                return true
+            })
+        XCTAssertFalse(lateClose.shouldCancelGeneration)
+        XCTAssertFalse(lateClose.detached)
+        XCTAssertFalse(lateSlotClaimed)
+        XCTAssertNil(
+            lateClose.requestTask,
+            "a late close must not hand a claimed finalization to cancellation")
+        lateTask.cancel()
+
+        // A claimed detached finalization retains its task for Runtime shutdown.
+        let (claimedDetached, claimedDetachedConnection) = makeContext("claimed-detached")
+        defer { claimedDetachedConnection.cancel() }
+        let detachedTask = sleepingTask()
+        XCTAssertTrue(claimedDetached.setRequestTask(detachedTask))
+        XCTAssertTrue(claimedDetached.markGenerationStarted())
+        let detachedClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(detachedClose.detached)
+        XCTAssertTrue(claimedDetached.claimCompletedTurnSettlement())
+        let ordinaryLateClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertNil(
+            ordinaryLateClose.requestTask,
+            "an ordinary late close must not receive a claimed finalization task")
+        claimedDetached.markCancelledByRuntime()
+        let runtimeClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertNotNil(
+            runtimeClose.requestTask,
+            "Runtime shutdown must still receive the retained detached task")
+        runtimeClose.requestTask?.cancel()
+        detachedTask.cancel()
+    }
+
     /// Exact wording is not enough: reuse is bound to the demand resolved for
     /// THIS turn. An answer's own question and answer rows are excluded from
     /// that basis, so only information the turn did not itself publish moves it.
