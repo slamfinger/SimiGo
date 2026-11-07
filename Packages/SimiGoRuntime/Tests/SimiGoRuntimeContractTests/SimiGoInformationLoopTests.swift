@@ -856,14 +856,16 @@ final class SimiGoInformationLoopTests: XCTestCase {
             model: nil, createdAt: Date())
 
         var handle: OpaquePointer?
-        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
-        defer { sqlite3_close(handle) }
+        let openRC = sqlite3_open(url.path, &handle)
+        XCTAssertEqual(openRC, SQLITE_OK)
+        let sqlite = try XCTUnwrap(handle)
+        defer { sqlite3_close(sqlite) }
         let trigger = """
         CREATE TRIGGER abort_atomic_reuse_event
         BEFORE INSERT ON information_reuse_events
         BEGIN SELECT RAISE(ABORT, 'injected reuse event failure'); END;
         """
-        XCTAssertEqual(sqlite3_exec(handle, trigger, nil, nil, nil), SQLITE_OK)
+        XCTAssertEqual(sqlite3_exec(sqlite, trigger, nil, nil, nil), SQLITE_OK)
 
         let chatTurn = SimiGoESISDatabase.ChatTurnCommit(
             sessionID: "s-reuse", userMessageID: userID,
@@ -883,7 +885,7 @@ final class SimiGoInformationLoopTests: XCTestCase {
             "SELECT COUNT(*) FROM information_reuse_events WHERE demand_id='D-reuse';"),
             "0")
 
-        XCTAssertEqual(sqlite3_exec(handle, "DROP TRIGGER abort_atomic_reuse_event;", nil, nil, nil), SQLITE_OK)
+        XCTAssertEqual(sqlite3_exec(sqlite, "DROP TRIGGER abort_atomic_reuse_event;", nil, nil, nil), SQLITE_OK)
         _ = try db.commitReusedChatTurn(
             chatTurn, sourceSettlementID: source.settlementID,
             sourceStateID: "S-reuse-source", demandID: "D-reuse",
@@ -891,7 +893,9 @@ final class SimiGoInformationLoopTests: XCTestCase {
         let transcript = try db.listChatMessages(sessionID: "s-reuse")
         XCTAssertEqual(transcript.count, 2)
         XCTAssertEqual(transcript[0].content, "repeat question")
-        XCTAssertEqual(transcript[0].turnState, "committed")
+        XCTAssertEqual(try rawText(url,
+            "SELECT turn_state FROM chat_messages WHERE id=" + String(userID) + ";"),
+            "committed")
         XCTAssertEqual(transcript[1].content, "previous settled answer")
         XCTAssertEqual(try db.informationReuseEvent(demandID: "D-reuse")?.sourceSettlementID,
                        source.settlementID)
@@ -915,7 +919,7 @@ final class SimiGoInformationLoopTests: XCTestCase {
         BEFORE INSERT ON settlement_bindings
         BEGIN SELECT RAISE(ABORT, 'injected settlement binding failure'); END;
         """
-        XCTAssertEqual(sqlite3_exec(handle, trigger, nil, nil, nil), SQLITE_OK)
+        XCTAssertEqual(sqlite3_exec(sqlite, trigger, nil, nil, nil), SQLITE_OK)
         XCTAssertThrowsError(try SimiGoInformationLoop(database: db).settleTurn(
             generatedText: "the answer", resolution: resolution,
             stateID: "S-rollback", parentStateID: nil, position: 0,
