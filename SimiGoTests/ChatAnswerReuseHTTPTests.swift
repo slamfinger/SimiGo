@@ -264,7 +264,6 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         }
     }
 
-<<<<<<< HEAD
     /// Disconnect after generation start may detach only when an orphan slot
     /// is granted; manual cancellation and Runtime shutdown still win. Once a
     /// completed turn claims finalization, later disconnects cannot orphan-yield it.
@@ -428,15 +427,6 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         detachedTask.cancel()
     }
 
-    /// Exact wording is not enough: reuse is bound to the demand resolved for
-    /// THIS turn. An answer's own question and answer rows are excluded from
-    /// that basis, so only information the turn did not itself publish moves it.
-    /// Committing a turn in another session does, and the settled answer must
-    /// then not be served for the same words.
-    @MainActor
-
-=======
->>>>>>> 2d59395 (test(audit): fix test isolation and interpolation)
     func testHTTPFailureAuditPersistsSafeAppendOnlyTerminalFact() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-http-failure-audit-\(UUID().uuidString).sqlite3")
@@ -489,6 +479,11 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         XCTAssertEqual(try db.failureAuditHistory(executionID: executionID).count, 1)
     }
 
+    /// Exact wording is not enough: reuse is bound to the demand resolved for
+    /// THIS turn. An answer's own question and answer rows are excluded from
+    /// that basis, so only information the turn did not itself publish moves it.
+    /// Committing a turn in another session does, and the settled answer must
+    /// then not be served for the same words.
     @MainActor
     func testChangedCurrentDemandIsNotServedByReuse() async throws {
         let session = "chat-demand-change-\(UUID().uuidString)"
