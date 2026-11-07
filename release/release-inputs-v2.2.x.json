@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 584,
+    "tracked": 591,
     "research_not_declared": 0,
-    "non_research_candidates": 584,
-    "declared": 526,
+    "non_research_candidates": 591,
+    "declared": 533,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -1328,6 +1328,14 @@
       "output": "docs/architecture/MLX_LM_REFERENCE_AND_EXPERIMENTAL_ROADMAP_20260918.md"
     },
     {
+      "path": "docs/audit/ARCH-MECHANISM-PROJECTION-20261107.md",
+      "output": "docs/audit/ARCH-MECHANISM-PROJECTION-20261107.md"
+    },
+    {
+      "path": "docs/audit/AUDIT-FREEZE-20261107.md",
+      "output": "docs/audit/AUDIT-FREEZE-20261107.md"
+    },
+    {
       "path": "docs/audit/BETA4_PROD_FINDINGS_20260929.md",
       "output": "docs/audit/BETA4_PROD_FINDINGS_20260929.md"
     },
@@ -1360,6 +1368,14 @@
       "output": "docs/audit/CHATSESSION_REUSE_PREFIX_AUDIT_2026-09-11.md"
     },
     {
+      "path": "docs/audit/CODE-AUDIT-STEP3-397-20261107.md",
+      "output": "docs/audit/CODE-AUDIT-STEP3-397-20261107.md"
+    },
+    {
+      "path": "docs/audit/CODE-AUDIT-STEPS-1-2-20261107.md",
+      "output": "docs/audit/CODE-AUDIT-STEPS-1-2-20261107.md"
+    },
+    {
       "path": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-18.md",
       "output": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-18.md"
     },
@@ -1386,6 +1402,10 @@
     {
       "path": "docs/audit/OFFICIAL_MLX_CAPABILITY_MATRIX_2026-09-11.md",
       "output": "docs/audit/OFFICIAL_MLX_CAPABILITY_MATRIX_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/P391-CONSOLIDATED-20261107.md",
+      "output": "docs/audit/P391-CONSOLIDATED-20261107.md"
     },
     {
       "path": "docs/audit/PERF_CONVERGENCE_20260929.md",
@@ -1418,6 +1438,14 @@
     {
       "path": "docs/audit/STREAM_TOKEN_FILTER_AUDIT_2026-09-11.md",
       "output": "docs/audit/STREAM_TOKEN_FILTER_AUDIT_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/V4-FINDINGS-20261107.md",
+      "output": "docs/audit/V4-FINDINGS-20261107.md"
+    },
+    {
+      "path": "docs/audit/V7-FINDINGS-20261107.md",
+      "output": "docs/audit/V7-FINDINGS-20261107.md"
     },
     {
       "path": "docs/benchmarks/README.md",
