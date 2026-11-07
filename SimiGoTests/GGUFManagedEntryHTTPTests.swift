@@ -594,7 +594,13 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
             forkBranchHandler: { _, _, _, _ in
                 throw RuntError.generationFailed("GGUF 后端不提供分支快照")
             },
-            deleteBranchHandler: { _, _, _ in },
+            deleteBranchHandler: { _, _, _, _ in
+                BranchDeletionOutcome(
+                    deletedBranch: "", hadLiveSession: false,
+                    hadCheckpointFile: false, generation: 1,
+                    remainingLiveBranches: [],
+                    remainingCheckpointBranches: [])
+            },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { true },
             cancelGenerationHandler: { requestId in

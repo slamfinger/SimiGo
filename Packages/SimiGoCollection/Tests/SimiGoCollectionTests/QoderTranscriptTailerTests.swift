@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import SimiGoCollection
@@ -72,6 +73,33 @@ final class QoderTranscriptTailerTests: XCTestCase {
         tailer.cursorState.cursors.values.first
     }
 
+    func testCursorStoreDoesNotFollowSymlinkAndAtomicSavePreservesTarget() throws {
+        let stateDirectory = root.appendingPathComponent("cursor-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        let external = root.appendingPathComponent("external-cursor.json")
+        let original = try JSONEncoder().encode(pastState())
+        try original.write(to: external)
+        let cursor = stateDirectory.appendingPathComponent("cursor.json")
+        try FileManager.default.createSymbolicLink(at: cursor, withDestinationURL: external)
+        let store = QoderFileCursorStore(directoryURL: stateDirectory)
+
+        XCTAssertThrowsError(
+            try store.load(),
+            "legacy cursor loading must not follow a symlink to an external file")
+        XCTAssertEqual(try Data(contentsOf: external), original)
+
+        // A normal atomic save replaces the directory entry, not its target.
+        // The subsequent no-follow chmod must apply to the newly written file.
+        let replacement = pastState()
+        try store.save(replacement)
+        XCTAssertThrowsError(
+            try FileManager.default.destinationOfSymbolicLink(atPath: cursor.path),
+            "save must leave a regular cursor file rather than a symlink")
+        XCTAssertEqual(try Data(contentsOf: external), original)
+        XCTAssertNotNil(try store.load())
+    }
+
     func testFirstPollBaselinesExistingFileAtEnd() throws {
         let file = mainFile()
         try Fixture.writeLines(Fixture.turnLines(), to: file)
@@ -90,6 +118,63 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertFalse(baseline.isSubagent)
         XCTAssertEqual(
             cursor(tailer)?.offset, size)
+    }
+
+    /// 采集桥语义：`readExisting` 把启用前就存在的会话从头读进来，而不是
+    /// 在 EOF 立一个空基线。默认策略的对照在上面那条测试里。
+    func testReadExistingPolicyBackfillsExistingFileFromStart() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            Fixture.turnLines(prompt: "first prompt", answer: "first answer"),
+            to: file)
+
+        let tailer = QoderTranscriptTailer(
+            scanRoot: root, now: Date(), baselinePolicy: .readExisting)
+        let result = poll(tailer)
+
+        XCTAssertEqual(result.report.scannedFiles, 1)
+        XCTAssertEqual(result.report.backfilledFiles, 1)
+        XCTAssertEqual(result.report.baselinedFiles, 0)
+        let baseline = try XCTUnwrap(Fixture.baselines(result.events).first)
+        XCTAssertEqual(baseline.reason, .existingFileFromStart)
+        XCTAssertEqual(baseline.offset, 0)
+        let turns = Fixture.turns(result.events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.promptText, "first prompt")
+        XCTAssertEqual(turns.first?.answerText, "first answer")
+        XCTAssertGreaterThan(result.report.readBytes, 0)
+
+        // 第二轮不再回填：游标已存在，只走增量。
+        let second = poll(tailer)
+        XCTAssertTrue(second.events.isEmpty)
+        XCTAssertEqual(second.report.backfilledFiles, 0)
+    }
+
+    /// 采集桥是**后来**打开的：先前的 `skip_existing` 已在 EOF 立了游标，
+    /// 换成 `read_existing` 必须把那段既有会话读出来，而不是继承旧位置。
+    func testSwitchingPolicyRetiresCursorsMadeAtEndOfFile() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            Fixture.turnLines(prompt: "before enable", answer: "old answer"), to: file)
+
+        let skipped = QoderTranscriptTailer(scanRoot: root, now: Date())
+        let first = poll(skipped)
+        XCTAssertTrue(Fixture.turns(first.events).isEmpty)
+
+        let reader = QoderTranscriptTailer(
+            scanRoot: root, state: skipped.cursorState, baselinePolicy: .readExisting)
+        let result = poll(reader)
+
+        let turns = Fixture.turns(result.events)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.promptText, "before enable")
+        XCTAssertEqual(result.report.backfilledFiles, 1)
+        XCTAssertEqual(result.report.baselinedFiles, 0)
+        XCTAssertEqual(reader.cursorState.policy, QoderBaselinePolicy.readExisting.rawValue)
+
+        // 策略稳定后不再重复回填。
+        let second = poll(reader)
+        XCTAssertTrue(second.events.isEmpty)
     }
 
     func testAppendedTurnIsCollectedAfterBaseline() throws {
@@ -459,6 +544,34 @@ final class QoderTranscriptTailerTests: XCTestCase {
             Int64(try Data(contentsOf: file).count))
     }
 
+    func testSymlinkedSubagentsDirectoryIsNotTraversed() throws {
+        let sessionDirectory = project.appendingPathComponent(
+            Fixture.sessionID, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: sessionDirectory, withIntermediateDirectories: true)
+
+        let external = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "qoder-external-subagents-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: external) }
+        try FileManager.default.createDirectory(
+            at: external, withIntermediateDirectories: true)
+        try Fixture.writeLines(
+            Fixture.turnLines(), to: external.appendingPathComponent("outside.jsonl"))
+
+        let link = sessionDirectory.appendingPathComponent(
+            "subagents", isDirectory: true)
+        try FileManager.default.createSymbolicLink(
+            at: link, withDestinationURL: external)
+
+        let result = QoderTranscriptScanner(root: root).scan()
+        guard case .complete(let files) = result else {
+            return XCTFail("symlinked subagents directory should be ignored, got \(result)")
+        }
+        XCTAssertTrue(
+            files.isEmpty,
+            "transcripts outside the configured scan root must not be returned")
+    }
+
     func testSubagentTurnsAreCollectedAsInternalRecords() throws {
         let file = try subagentFile()
         try Fixture.writeLines(Fixture.turnLines(), to: file)
@@ -607,6 +720,56 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertEqual(resumed.cursorState, state)
     }
 
+    func testNoFollowReaderRejectsSymlinkHardlinkAndIntermediateDirectories() throws {
+        let fileManager = FileManager.default
+        let nestedDirectory = project.appendingPathComponent("nested", isDirectory: true)
+        try fileManager.createDirectory(at: nestedDirectory, withIntermediateDirectories: true)
+        let regularFile = nestedDirectory.appendingPathComponent("session.jsonl")
+        try Data("{\"type\":\"message\"}\n".utf8).write(to: regularFile)
+
+        let outside = fileManager.temporaryDirectory
+            .appendingPathComponent("qoder-nofollow-outside-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
+        let outsideFile = outside.appendingPathComponent("session.jsonl")
+        try Data("{\"type\":\"outside\"}\n".utf8).write(to: outsideFile)
+        defer { try? fileManager.removeItem(at: outside) }
+
+        let canonicalRoot = QoderTranscriptPathAccess.canonicalPath(root.path)
+        let rootFD = try QoderTranscriptPathAccess.openDirectoryPathNoFollow(canonicalRoot)
+        defer { Darwin.close(rootFD) }
+        let relative = "\(Fixture.projectID)/nested/session.jsonl"
+        let opened = try QoderTranscriptPathAccess.openFile(
+            rootDirectoryFD: rootFD, relativePath: relative)
+        Darwin.close(opened.descriptor)
+
+        try fileManager.removeItem(at: regularFile)
+        try fileManager.linkItem(at: outsideFile, to: regularFile)
+        XCTAssertThrowsError(
+            try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootFD, relativePath: relative),
+            "a hard-linked external file must not be read as a transcript")
+
+        try fileManager.removeItem(at: regularFile)
+        try Data("{\"type\":\"message\"}\n".utf8).write(to: regularFile)
+        try fileManager.removeItem(at: regularFile)
+        try fileManager.createSymbolicLink(at: regularFile, withDestinationURL: outsideFile)
+        XCTAssertThrowsError(
+            try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootFD, relativePath: relative),
+            "a symlink leaf must never be read")
+
+        try fileManager.removeItem(at: regularFile)
+        try Data("{\"type\":\"message\"}\n".utf8).write(to: regularFile)
+        try fileManager.moveItem(
+            at: nestedDirectory,
+            to: project.appendingPathComponent("nested-original", isDirectory: true))
+        try fileManager.createSymbolicLink(at: nestedDirectory, withDestinationURL: outside)
+        XCTAssertThrowsError(
+            try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootFD, relativePath: relative),
+            "a symlinked parent directory must never be traversed")
+    }
+
     func testScannerDistinguishesAbsentFromComplete() throws {
         let scanner = QoderTranscriptScanner(root: root)
         guard case .complete(let empty) = scanner.scan() else {
@@ -645,7 +808,7 @@ final class QoderTranscriptTailerTests: XCTestCase {
             return XCTFail("an unreadable root must be partial, not absent")
         }
         XCTAssertTrue(files.isEmpty)
-        XCTAssertTrue(errors.contains { $0.contains("cannot list") })
+        XCTAssertFalse(errors.isEmpty, "an unreadable root must report its listing/open error")
     }
 
     func testScannerReportsPartialWhenAProjectCannotBeListed() throws {

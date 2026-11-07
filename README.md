@@ -3,7 +3,7 @@
 > **Execution continuity beyond a model's KV cache**  
 > **让已完成的计算脱离旧执行载体，在新的执行链中被验证、恢复和继续使用。**
 
-SimiGo studies how a completed computation can outlive the model process and its KV cache. It separates **Execution State (ES)**—the authority for continuation—from **Information Space (IS / PALACE)**—the ledger for settled results, provenance, dependencies, and validity. A fresh execution may consume a prior result only when its declared contract and dependency closure still verify. The central open proof is to release the original model carrier and KV cache, then demonstrate reuse from a genuinely new execution state.
+SimiGo studies how a completed computation can outlive the model process and its KV cache. It separates **Execution State (ES)**—the authority for continuation—from **Information Space (IS / PALACE)**—the ledger for settled results, provenance, dependencies, and validity. A fresh execution may consume a prior result when the result's own integrity, validity, dependency closure and declared semantic contract still verify. Producer model or Agent identity is recorded as provenance and does not by itself gate semantic reuse; only a physical KV representation is identity-bound. The central open proof is to release the original model carrier and KV cache, then demonstrate reuse from a genuinely new execution state.
 
 SimiGo 是一个围绕 **Execution State（ES）** 与 **Information Space（IS / PALACE）** 的 AI Runtime 与系统研究项目。它探索一个比缓存复用更根本的问题：
 
@@ -24,14 +24,22 @@ SimiGo 将问题拆成两个不同的状态：
 
 ```text
 R = payload
-  + source / producer identity
+  + source / producer provenance
   + version
   + dependency closure
   + validity basis
   + settlement contract
 ```
 
-只有当消费请求满足声明的合同、来源和身份约束，且结果及其依赖闭包仍然有效时，新的执行才能复用该结果。缺失、失效、输入变化或身份不匹配时，系统必须拒绝这次消费；对显式消费合同，只有调用方授权重算时才进入重算路径。
+这里必须区分三种身份，不能把它们合并成一道“生产者身份”准入锁：
+
+- **信息来源身份**：结果由谁产生。用于溯源与审计，不作为语义复用的默认条件。
+- **执行主体身份**：谁正在使用这份信息。记录本次消费；除显式权限或任务策略外，不垄断信息。
+- **物理表示身份**：某个 KV 表示能否被当前引擎直接恢复。必须严格验证模型、tokenizer、KV 布局、命名空间与前缀边界。
+
+因此，语义复用的准入是：**完整性 ∧ 有效性 ∧ 依赖闭包 ∧ 语义合同 ∧ 权限策略**。只有物理 KV 恢复才额外要求**表示兼容**。生产者身份不能替代信息自身的事实：同一个模型不证明结果仍然有效，不同的模型也不证明结果失效；只有当任务显式声明“必须由某个模型、执行环境或工具版本产生”时，该身份才成为一项依赖。
+
+只有当消费请求满足上述准入条件时，新的执行才能复用该结果。缺失、失效、输入变化、依赖不满足或显式合同不匹配时，系统必须拒绝这次消费；对显式消费合同，只有调用方授权重算时才进入重算路径。
 
 ## ES / IS / Backend：三种不同的权威边界
 
@@ -98,7 +106,7 @@ SimiGo 并不排斥 KV Cache，也不把所有缓存优化都称为 ES/IS 连续
 
 ### 2. Information Settlement：让结果成为可验证对象
 
-研究如何判断一个结果是否语义充分、来源明确、版本可识别、依赖闭包完整。结算不仅保存输出，还要保存后续核验所需的合同、摘要和身份绑定。未通过验证的输出不能升级为可复用结果。
+研究如何判断一个结果是否语义充分、来源明确、版本可识别、依赖闭包完整。结算不仅保存输出，还要保存后续核验所需的合同、摘要与身份溯源。未通过验证的输出不能升级为可复用结果。
 
 ### 3. Dependency-aware Validity：只失效受影响的结果
 
@@ -117,13 +125,13 @@ SimiGo 并不排斥 KV Cache，也不把所有缓存优化都称为 ES/IS 连续
 | 主题 | 当前证据支持的结论 | 证据边界 |
 |---|---|---|
 | ES 生命周期 | 产品与 Runtime 中已有状态记录、分支/continuation 与受管推进路径；早期实验覆盖 fork、隔离、迁移/reattach 等生命周期场景 | 早期实验只对其登记的模型、配置和范围成立，不等于所有 backend 的统一 conformance |
-| IS / PALACE | 当前实现包含内容寻址对象、摘要校验、结算记录、来源/身份绑定、依赖边和失效机制 | 存在账本与验证逻辑，不等于所有语义资格均已在真实 Agent 工作流中证明 |
-| 新 ES 消费已结算结果 | `SimiGoSettlementConsumption` 创建新的 consumer ES、派生结算和依赖边；合同测试覆盖零模型调用、身份/依赖/输入变化拒绝 | 当前明确合同是 `exact-repeat` v1；测试通过不等于真实模型卸载后的载体独立性验收 |
+| IS / PALACE | 当前实现包含内容寻址对象、摘要校验、结算记录、来源与身份溯源、依赖边和失效机制 | 存在账本与验证逻辑，不等于所有语义资格均已在真实 Agent 工作流中证明 |
+| 新 ES 消费已结算结果 | `SimiGoSettlementConsumption` 创建新的 consumer ES、派生结算和依赖边；合同测试覆盖零模型调用、显式身份约束/依赖/输入变化拒绝 | 当前明确合同是 `exact-repeat` v1；测试通过不等于真实模型卸载后的载体独立性验收 |
 | 真实 GGUF 请求复用 | 真实 llama.cpp/GGUF E2E 覆盖首次生成、结算，以及同一运行中相同问题再次请求时零模型调用 | 该测试没有卸载模型、销毁旧 KV Cache 或重启模型进程 |
 | MLX / llama.cpp | 产品源码包含两类受管执行路径及各自的实验/测试 | 不能把单个 backend 的测试结论扩展为跨 backend 的完整证明 |
 | Qoder collection | 可选、只读的 transcript collection 已进入主线 | collection-only；采集候选到受控 ES/IS 结算消费尚未完成端到端验收 |
 
-**当前最重要的未闭环证据**：真实模型完成并结算结果 → 旧模型执行载体及 KV Cache 确实释放 → 新模型执行上下文建立新的 ES → IS 重新验证来源、身份与依赖 → 新 ES 消费结果且不重跑已完成工作。这个实验必须分别在目标 backend 上给出可复核读数。
+**当前最重要的未闭环证据**：真实模型完成并结算结果 → 旧模型执行载体及 KV Cache 确实释放 → 新模型执行上下文建立新的 ES → IS 重新验证完整性、有效性、依赖闭包与显式合同（身份仅作溯源或显式依赖） → 新 ES 消费结果且不重跑已完成工作。这个实验必须分别在目标 backend 上给出可复核读数。
 
 ## 当前产品形态
 

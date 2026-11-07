@@ -40,6 +40,12 @@ enum SimiGoLocalBManagementRole: String {
     case pairApprove = "pair-approve"
     case serve
     case serveService = "serve-service"
+    // S3-B (owner ruling 2026-11-05): the LOCALB owner management roles.
+    // Local CLI operations only — no HTTP surface, no remote delegation,
+    // no self-service elevation path for paired agents.
+    case clientsList = "clients-list"
+    case permissionsSet = "permissions-set"
+    case clientRevoke = "client-revoke"
 }
 
 enum SimiGoLocalBManagementEntry {
@@ -115,6 +121,23 @@ enum SimiGoLocalBManagementEntry {
             guard env["SIMIGO_LOCALB_SERVE_MODEL"]?.isEmpty == false else {
                 return missing("SIMIGO_LOCALB_SERVE_MODEL")
             }
+        case .clientsList:
+            break
+        case .permissionsSet:
+            for key in [
+                "SIMIGO_LOCALB_CLIENT_KEY_ID",
+                "SIMIGO_LOCALB_PERMISSIONS",
+                "SIMIGO_LOCALB_REASON"
+            ] where env[key]?.isEmpty != false {
+                return missing(key)
+            }
+        case .clientRevoke:
+            for key in [
+                "SIMIGO_LOCALB_CLIENT_KEY_ID",
+                "SIMIGO_LOCALB_REASON"
+            ] where env[key]?.isEmpty != false {
+                return missing(key)
+            }
         }
         return Decision(requested: true, role: role, error: nil)
     }
@@ -131,6 +154,20 @@ enum SimiGoLocalBManagementEntry {
             case .pairApprove: try runPairApprove()
             case .serve: try await runServe()
             case .serveService: try await runServeService()
+            case .clientsList:
+                emit(try clientsListPayload(
+                    context: try requireOperationalContext()
+                ))
+            case .permissionsSet:
+                emit(try permissionsSetPayload(
+                    context: try requireOperationalContext(),
+                    env: ProcessInfo.processInfo.environment
+                ))
+            case .clientRevoke:
+                emit(try clientRevokePayload(
+                    context: try requireOperationalContext(),
+                    env: ProcessInfo.processInfo.environment
+                ))
             }
             return 0
         } catch let status as LOCALBStatus {
@@ -374,6 +411,202 @@ enum SimiGoLocalBManagementEntry {
             return String(token)
         }
         return text
+    }
+
+    // MARK: - S3-B owner management roles
+
+    /// CSV permission list → enum set. Unknown names fail closed; an empty
+    /// list fails closed (a whole-set replacement with nothing is a revoke,
+    /// and revocation has its own role).
+    static func parsePermissionList(_ csv: String) throws -> Set<LOCALBPermission> {
+        var result = Set<LOCALBPermission>()
+        for token in csv.split(separator: ",").map({
+            $0.trimmingCharacters(in: .whitespaces)
+        }) {
+            guard !token.isEmpty,
+                  let permission = LOCALBPermission(rawValue: token) else {
+                throw LOCALBStatus.invalidConfiguration
+            }
+            result.insert(permission)
+        }
+        guard !result.isEmpty else { throw LOCALBStatus.invalidConfiguration }
+        return result
+    }
+
+    private static func requireClient(
+        _ coordinator: LOCALBPairingCoordinator,
+        clientKeyID: String,
+        checkpoint: LOCALBRegistryCheckpoint
+    ) throws -> LOCALBClientRegistryEntry {
+        guard let client = try coordinator.listClients(checkpoint: checkpoint)
+            .first(where: { $0.clientKeyID == clientKeyID }) else {
+            throw LOCALBStatus.clientUnknown
+        }
+        return client
+    }
+
+    /// T1: the full client listing — read-only, no journal event.
+    static func clientsListPayload(
+        context: LOCALBHostRuntimeContext
+    ) throws -> [String: Any] {
+        let clients = try context.pairingCoordinator().listClients(
+            checkpoint: try context.currentTrustedCheckpoint()
+        )
+        return [
+            "role": "clients-list",
+            "result": "ok",
+            "clients": clients.map {
+                [
+                    "client_key_id": $0.clientKeyID,
+                    "status": $0.status.rawValue,
+                    "permissions": $0.permissions.map(\.rawValue).sorted(),
+                    "registered_at_milliseconds": $0.registeredAtMilliseconds
+                ]
+            }
+        ]
+    }
+
+    /// T2/T3/T7: permissions-set — a WHOLE-SET replacement. The current set
+    /// is read and displayed (`from`), the target shown (`to`), and the
+    /// journal is touched ONLY under SIMIGO_LOCALB_MGMT_CONFIRM=1. A
+    /// confirmed write verifies that the journal sequence advanced by one
+    /// and the head hash moved, then proves persistence through a fresh
+    /// store opened over the same root (the restart-equivalent read).
+    /// Unknown clients, empty/oversized reasons, and unknown permission
+    /// names all fail closed before any write.
+    static func permissionsSetPayload(
+        context: LOCALBHostRuntimeContext,
+        env: [String: String]
+    ) throws -> [String: Any] {
+        let coordinator = context.pairingCoordinator()
+        let checkpoint = try context.currentTrustedCheckpoint()
+        let clientKeyID = env["SIMIGO_LOCALB_CLIENT_KEY_ID"] ?? ""
+        let reason = env["SIMIGO_LOCALB_REASON"] ?? ""
+        let client = try requireClient(coordinator, clientKeyID: clientKeyID,
+                                       checkpoint: checkpoint)
+        guard !reason.isEmpty, reason.utf8.count <= 512 else {
+            throw LOCALBStatus.invalidConfiguration
+        }
+        let to = try parsePermissionList(env["SIMIGO_LOCALB_PERMISSIONS"] ?? "")
+        let from = client.permissions
+        let confirm = env["SIMIGO_LOCALB_MGMT_CONFIRM"] == "1"
+
+        var payload: [String: Any] = [
+            "role": "permissions-set",
+            "client_key_id": clientKeyID,
+            "from": from.map(\.rawValue).sorted(),
+            "to": to.map(\.rawValue).sorted(),
+            "reason": reason,
+            "confirmed": confirm
+        ]
+
+        if !confirm {
+            // Dry-run: the journal MUST be untouched. The checkpoint values
+            // reported are the pre-write head — the proof that nothing was
+            // written is that they are unchanged afterwards.
+            payload["result"] = "dry-run"
+            payload["sequence"] = checkpoint.sequence
+            payload["head_hash_hex"] = checkpoint.headHashHex
+            return payload
+        }
+
+        let written = try coordinator.setClientPermissions(
+            clientKeyID: clientKeyID, permissions: to, reason: reason,
+            checkpoint: checkpoint
+        )
+        // Audit: the journal advanced by exactly one event and the head
+        // moved. A write that reports success without both is a defect.
+        guard written.sequence == checkpoint.sequence + 1,
+              written.headHashHex != checkpoint.headHashHex else {
+            throw LOCALBStatus.registryCorrupt
+        }
+        // Advance the persisted anchor: the next confirmed operation (and
+        // the next process) must chain from THIS head, not the stale one.
+        try LOCALBHostRuntime.persistTrustedCheckpoint(
+            written, in: LOCALBHostRuntime.defaultHostDirectory()
+        )
+        // Restart-equivalent read: a fresh registry store + coordinator over
+        // the same root, public surface only.
+        let freshStore = LOCALBRegistryStore(
+            rootURL: LOCALBHostRuntime.registryRoot(
+                in: LOCALBHostRuntime.defaultHostDirectory()
+            )
+        )
+        let freshCoordinator = LOCALBPairingCoordinator(registryStore: freshStore)
+        let reloaded = try freshCoordinator.listClients(checkpoint: written)
+        guard reloaded.first(where: { $0.clientKeyID == clientKeyID })?
+            .permissions == to else {
+            throw LOCALBStatus.registryCorrupt
+        }
+        payload["result"] = "written"
+        payload["sequence"] = written.sequence
+        payload["head_hash_hex"] = written.headHashHex
+        payload["persisted"] = true
+        return payload
+    }
+
+    /// T5: client-revoke — confirm-gated like permissions-set. A revoked
+    /// client is terminal and observable through the fresh reload; the
+    /// revoke of an unknown client fails closed.
+    static func clientRevokePayload(
+        context: LOCALBHostRuntimeContext,
+        env: [String: String]
+    ) throws -> [String: Any] {
+        let coordinator = context.pairingCoordinator()
+        let checkpoint = try context.currentTrustedCheckpoint()
+        let clientKeyID = env["SIMIGO_LOCALB_CLIENT_KEY_ID"] ?? ""
+        let reason = env["SIMIGO_LOCALB_REASON"] ?? ""
+        let client = try requireClient(coordinator, clientKeyID: clientKeyID,
+                                       checkpoint: checkpoint)
+        guard !reason.isEmpty, reason.utf8.count <= 512 else {
+            throw LOCALBStatus.invalidConfiguration
+        }
+        let confirm = env["SIMIGO_LOCALB_MGMT_CONFIRM"] == "1"
+
+        var payload: [String: Any] = [
+            "role": "client-revoke",
+            "client_key_id": clientKeyID,
+            "status_before": client.status.rawValue,
+            "reason": reason,
+            "confirmed": confirm
+        ]
+
+        if !confirm {
+            payload["result"] = "dry-run"
+            payload["sequence"] = checkpoint.sequence
+            payload["head_hash_hex"] = checkpoint.headHashHex
+            return payload
+        }
+
+        let written = try coordinator.revokeClient(
+            clientKeyID: clientKeyID, reason: reason, checkpoint: checkpoint
+        )
+        guard written.sequence == checkpoint.sequence + 1,
+              written.headHashHex != checkpoint.headHashHex else {
+            throw LOCALBStatus.registryCorrupt
+        }
+        // Advance the persisted anchor: the next confirmed operation (and
+        // the next process) must chain from THIS head, not the stale one.
+        try LOCALBHostRuntime.persistTrustedCheckpoint(
+            written, in: LOCALBHostRuntime.defaultHostDirectory()
+        )
+        let freshStore = LOCALBRegistryStore(
+            rootURL: LOCALBHostRuntime.registryRoot(
+                in: LOCALBHostRuntime.defaultHostDirectory()
+            )
+        )
+        let freshCoordinator = LOCALBPairingCoordinator(registryStore: freshStore)
+        let reloaded = try freshCoordinator.listClients(checkpoint: written)
+        guard reloaded.first(where: { $0.clientKeyID == clientKeyID })?.status
+            == .revoked else {
+            throw LOCALBStatus.registryCorrupt
+        }
+        payload["result"] = "written"
+        payload["status_after"] = LOCALBClientStatus.revoked.rawValue
+        payload["sequence"] = written.sequence
+        payload["head_hash_hex"] = written.headHashHex
+        payload["persisted"] = true
+        return payload
     }
 
     // MARK: - Helpers

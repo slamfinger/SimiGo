@@ -61,7 +61,9 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             forkBranchHandler: { _, _, _, _ in
                 throw RuntError.generationFailed("信息空间服务宿主不提供模型分支")
             },
-            deleteBranchHandler: { _, _, _ in },
+            deleteBranchHandler: { _, _, _, _ in
+                throw RuntError.generationFailed("信息空间服务宿主不提供模型分支")
+            },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { [weak self] in
                 await self?.checkHealth() ?? false

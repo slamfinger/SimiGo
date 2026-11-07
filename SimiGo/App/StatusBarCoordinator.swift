@@ -71,7 +71,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
-        QoderCollectionLifecycle.shared.startIfEnabled()
         StatusBarCoordinator.shared.start()
         if FirstRunWizard.isNeeded() {
             // First-run install wizard (owner acceptance 2026-10-26): work
@@ -189,7 +188,10 @@ final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate 
             name = "exclamationmark.triangle.fill"
             color = .systemYellow
         } else if !svc.isRunning {
-            name = "bolt"
+            // 无模型：信息空间宿主仍在跑（App 启动即建），所以是「填充但
+            // 中性」的图标——填充=有东西在服务，灰色=没有原生 IS/ES 写入。
+            // 绿色只留给「模型在跑 + 原生 IS/ES」那条路径。
+            name = "bolt.fill"
             color = .labelColor
         } else {
             name = "bolt.fill"

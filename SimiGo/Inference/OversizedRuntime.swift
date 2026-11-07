@@ -108,8 +108,11 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
             forkBranchHandler: { _, _, _, _ in
                 throw RuntError.notLoaded
             },
-            deleteBranchHandler: { _, _, _ in
-                // Beta: branching is a no-op for the oversized path.
+            deleteBranchHandler: { _, _, _, _ in
+                // Beta: branching is a no-op for the oversized path — the
+                // S3-A contract turns that into an explicit failure, never
+                // a silent ok.
+                throw RuntError.generationFailed("oversized 路径不提供分支生命周期")
             },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { [weak self] in

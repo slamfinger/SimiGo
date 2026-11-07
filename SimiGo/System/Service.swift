@@ -550,6 +550,8 @@ public final class Service: ObservableObject {
 
     private let runtimeState = Mutex<Runtime?>(nil)
     private var healthTask: Task<Void, Never>?
+    /// Invalidates delayed restart work as soon as a health loop is cancelled or replaced.
+    private var healthTaskGeneration = UUID()
     private var backendKind: ModelKind?
     private var isStarting = false
     private var isRestarting = false
@@ -665,7 +667,13 @@ public final class Service: ObservableObject {
         }
 
         let line = "\(icon) \(message)"
-        RuntimeTraceLogger.shared.trace(line)
+        // debug 档归入 verbose（2026-11-05）：逐帧轮询类提示默认不落档，
+        // `SIMIGO_TRACE_VERBOSE=1` 时与旧行为一致。
+        if level == .debug {
+            RuntimeTraceLogger.shared.traceVerbose(line)
+        } else {
+            RuntimeTraceLogger.shared.trace(line)
+        }
 
         if consoleLoggingEnabled || level.rawValue >= LogLevel.warning.rawValue {
             print(line)
@@ -690,25 +698,28 @@ public final class Service: ObservableObject {
 
     private nonisolated func resolveConfig(for path: String) -> ModelConfig {
         if let saved = AppConfig.savedConfig(for: path) {
-            Self.log("[CFG] source=saved model=\(modelName(from: path))")
             return saved
         }
 
         if let recommended = AppConfig.recommendedConfig(for: path) {
-            Self.log("[CFG] source=recommended model=\(modelName(from: path))")
             return recommended
         }
 
-        let modelDefault = ModelConfig.fromModel(path)
-        Self.log("[CFG] source=default model=\(modelName(from: path))")
-        return modelDefault
+        return ModelConfig.fromModel(path)
     }
 
     // MARK: Config Logging
 
+    /// 启动配置收口为一行（2026-11-05 日志瘦身）：此前 source= 与 ctx= 是
+    /// 两行、且 source 每次 resolve 都打一遍（含不加载模型的恢复路径）；
+    /// 现在 1 行带齐 model/source/ctx/采样开关，逐次启动仍是独立证据。
     private func logResolvedConfig(_ config: ModelConfig, path: String) {
+        let source = AppConfig.savedConfig(for: path) != nil
+            ? "saved"
+            : (AppConfig.recommendedConfig(for: path) != nil ? "recommended" : "default")
         Self.log(
-            "[CFG] ctx=\(config.ctxSize) gpu=\(config.gpuLayers)" +
+            "[CFG] source=\(source) model=\(modelName(from: path))"
+            + " ctx=\(config.ctxSize) gpu=\(config.gpuLayers)" +
             " temp=\(config.temperature) topP=\(config.topP) topK=\(config.topK) minP=\(config.minP)" +
             " rep=\(config.repeatPenalty) pres=\(config.presencePenalty) flash=\(config.flashAttention)" +
             " jinja=\(config.jinja) codex=\(config.codexMode) mtp=\(config.useMTP)" +
@@ -936,6 +947,12 @@ public final class Service: ObservableObject {
             hostMode = .model
             status = "● 运行中 (\(statusLabel))"
 
+            // 结构化状态快照的后端身份（2026-11-06）：外部工具从
+            // state/runtime.json 读引擎内部端口，不从 trace 文本反推。
+            RuntimeStateReporter.shared.setContext(
+                backend: info.backendName,
+                model: modelName(from: info.path),
+                enginePort: (runtime as? ManagedGGUFRuntime)?.enginePort)
             Self.log("[READY] \(node.apiBaseURLString)")
 
             if info.kind == .gguf {
@@ -995,6 +1012,9 @@ public final class Service: ObservableObject {
     public func stop() async {
         stopHealthCheck()
 
+        // 归零前先记住是否真有运行实体：停两次（stopModelService 后再调
+        // stop）此前会打两遍「服务已停止」，第二遍是空操作噪音。
+        let wasRunning = isRunning || runtimeState.withLock { $0 != nil }
         let runtime = runtimeState.withLock { state -> Runtime? in
             let runtime = state
             state = nil
@@ -1016,8 +1036,11 @@ public final class Service: ObservableObject {
         backendKind = nil
         memoryPressure = "normal"
         status = "已停止"
+        RuntimeStateReporter.shared.clearContext()
 
-        Self.log("✅ 服务已停止，显存/内存已清空", level: .info)
+        if wasRunning {
+            Self.log("✅ 服务已停止，显存/内存已清空", level: .info)
+        }
     }
 
     /// 用户停止模型：卸载模型后把同一端口交还无模型的信息空间宿主，
@@ -1072,36 +1095,10 @@ public final class Service: ObservableObject {
 
     // MARK: Slot State
 
-    private func areSlotsIdle() async -> Bool? {
-        let endpoint = inferenceNode
-        let urlString = endpoint.internalBaseURLString + "/slots"
-
-        guard let url = URL(string: urlString) else {
-            return nil
-        }
-
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 1.0
-
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200,
-                  let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-                return nil
-            }
-
-            for slot in jsonArray {
-                if let state = slot["state"] as? Int, state != 0 {
-                    return false
-                }
-            }
-
-            return true
-        } catch {
-            return nil
-        }
+    /// Slot activity is read from the current runtime's own engine port, not
+    /// from the product listener. Non-GGUF runtimes answer `unknown`.
+    private func slotActivity(for runtime: Runtime?) async -> SlotActivity {
+        await SlotActivityResolver.activity(for: runtime)
     }
 
     private func waitForIdle(timeout: TimeInterval = 10) async -> Bool {
@@ -1112,7 +1109,8 @@ public final class Service: ObservableObject {
                 return false
             }
 
-            if let idle = await areSlotsIdle(), idle {
+            let runtime = runtimeState.withLock { $0 }
+            if await slotActivity(for: runtime) == .idle {
                 return true
             }
 
@@ -1128,66 +1126,167 @@ public final class Service: ObservableObject {
 
     // MARK: Health Check
 
+    #if SIMIGO_HEALTH_CHECK_FAILURE_INJECTION
+    /// Validation-build-only, one-shot health failure. The environment is read
+    /// inside this compile condition, so a normal Release build has neither the
+    /// state nor the symbol.
+    ///
+    /// This injects a *result*, it does not make the engine's `/health`
+    /// endpoint answer 503. The real endpoint is not contacted on the cycle
+    /// that consumes this flag.
+    private static let injectedHealthFailureState = Mutex(false)
+
+    nonisolated static func consumeInjectedHealthFailureIfRequested() -> Bool {
+        guard
+            ProcessInfo.processInfo.environment["SIMIGO_HEALTH_CHECK_FAIL_NEXT"]
+                == "fail-next-health-check"
+        else { return false }
+        return injectedHealthFailureState.withLock { consumed in
+            guard !consumed else { return false }
+            consumed = true
+            return true
+        }
+    }
+    #endif
+
     private func startHealthCheck() {
+        let generation = UUID()
+        healthTaskGeneration = generation
         healthTask?.cancel()
 
         healthTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 10_000_000_000)
+            guard !Task.isCancelled else { return }
 
             while !Task.isCancelled {
                 guard let self else { break }
-                guard self.isRunning else { break }
+                guard self.healthTaskGeneration == generation, self.isRunning else { break }
 
                 let currentRuntime = self.runtimeState.withLock { $0 }
+                #if SIMIGO_HEALTH_CHECK_FAILURE_INJECTION
+                var injectedHealthFailure = false
+                #else
+                let injectedHealthFailure = false
+                #endif
 
                 if let runtime = currentRuntime {
                     if runtime.isGenerating {
                         try? await Task.sleep(nanoseconds: 30_000_000_000)
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === runtime })
+                        else { return }
                         continue
                     }
 
-                    // NativeMLX: 空闲超时挂起模型（Phase 1 实验）。
-                    // 仅释放模型驻留内存，HTTPServer 保持运行——不触发 restart。
-                    // 超时为自适应：min(cap=360s, max(floor=240s, 最贵会话重建时长估算+60s 容错))
-                    // —— 2026-10-23 由原 max(600s…) 收紧为带上限的收敛窗口，缓解推理结束后内存压力长时间黄色。
+                    #if SIMIGO_HEALTH_CHECK_FAILURE_INJECTION
+                    if self.backendKind == .gguf {
+                        injectedHealthFailure =
+                            Self.consumeInjectedHealthFailureIfRequested()
+                    }
+                    if injectedHealthFailure {
+                        Self.log(
+                            "🧪 [VALIDATION] 一次性注入健康检查失败结果；"
+                                + "本轮未请求引擎 /health。",
+                            level: .warning)
+                    }
+                    #endif
+
+                    // NativeMLX: suspend is best-effort, but cancellation or
+                    // replacement during the await ends this loop immediately.
                     if self.backendKind == .mlx,
                        let nativeMLX = runtime as? NativeMLX {
-                        // 健康循环只需“尝试挂起”，返回值用于静默处理。
                         let _ = await nativeMLX.suspendIfIdle()
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === runtime })
+                        else { return }
                     }
 
-                    // GGUF：外部进程无 isGenerating 信号（恒 false），slot 忙时
-                    // /health 可能 503——先跳过本轮，防止生成中途误判无响应触发重启。
-                    if !runtime.isInProcess && self.backendKind == .gguf {
-                        if let slotsIdle = await self.areSlotsIdle(), !slotsIdle {
-                            Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
+                    // GGUF: a confirmed busy slot skips this health probe.
+                    // Unknown is not treated as idle; injected failures still
+                    // exercise the post-failure busy-slot protection below.
+                    if !injectedHealthFailure,
+                       !runtime.isInProcess,
+                       self.backendKind == .gguf {
+                        let activity = await self.slotActivity(for: runtime)
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === runtime })
+                        else { return }
+
+                        if GGUFHealthCheckPolicy.shouldSkipPreflight(
+                            isGGUF: true, isInProcess: false,
+                            injectedFailure: false, slotActivity: activity) {
+                            Self.log(
+                                "⏸ llama.cpp 当前存在活动 slot，跳过健康检查。",
+                                level: .debug)
                             try? await Task.sleep(nanoseconds: 30_000_000_000)
+                            guard !Task.isCancelled,
+                                  self.healthTaskGeneration == generation,
+                                  self.runtimeState.withLock({ $0 === runtime })
+                            else { return }
                             continue
                         }
                     }
                 }
 
-                let healthy = await currentRuntime?.checkHealth() ?? false
+                let healthy = injectedHealthFailure
+                    ? false
+                    : (await currentRuntime?.checkHealth() ?? false)
+
+                // Do not act on an obsolete health result. A cancelled loop or
+                // a runtime replaced while checkHealth was suspended has no
+                // authority to restart anything.
+                guard !Task.isCancelled,
+                      self.healthTaskGeneration == generation,
+                      self.runtimeState.withLock({ $0 === currentRuntime })
+                else { return }
 
                 if !healthy {
+                    var activity = SlotActivity.unknown
                     if self.backendKind == .gguf {
-                        if let slotsIdle = await self.areSlotsIdle(), !slotsIdle {
-                            Self.log("⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。", level: .warning)
-                            try? await Task.sleep(nanoseconds: 30_000_000_000)
-                            continue
-                        }
+                        activity = await self.slotActivity(for: currentRuntime)
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === currentRuntime })
+                        else { return }
+                    }
+
+                    guard GGUFHealthCheckPolicy.shouldRestartAfterFailure(
+                        isCancelled: Task.isCancelled,
+                        runtimeIsCurrent: self.runtimeState.withLock({ $0 === currentRuntime }),
+                        isGGUF: self.backendKind == .gguf,
+                        slotActivity: activity)
+                    else {
+                        Self.log(
+                            "⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。",
+                            level: .warning)
+                        try? await Task.sleep(nanoseconds: 30_000_000_000)
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === currentRuntime })
+                        else { return }
+                        continue
                     }
 
                     Self.log("⚠ 模型服务无响应，触发解耦重启...", level: .warning)
 
                     Task { @MainActor [weak self] in
-                        await self?.forceRestart()
+                        guard let self,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === currentRuntime })
+                        else { return }
+                        await self.forceRestart()
                     }
-
                     return
                 }
 
                 try? await Task.sleep(nanoseconds: 30_000_000_000)
+                guard !Task.isCancelled,
+                      self.healthTaskGeneration == generation,
+                      self.runtimeState.withLock({ $0 === currentRuntime })
+                else { return }
             }
         }
     }
@@ -1201,6 +1300,7 @@ public final class Service: ObservableObject {
     // 健康检查循环周期 30s，实际挂起延迟收敛到 idleTimeout～idleTimeout+30s（≤ 6.5 分钟）。
 
     private func stopHealthCheck() {
+        healthTaskGeneration = UUID()
         healthTask?.cancel()
         healthTask = nil
     }

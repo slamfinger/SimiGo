@@ -14,6 +14,7 @@ public enum AppKey: String, CaseIterable, Sendable {
     case apiPort = "APIPort"
     case bonjourName = "BonjourName"
     case qoderCollectionEnabled = "QoderCollectionEnabled"
+    case qoderScanRoot = "QoderScanRoot"
 
     nonisolated public var defaultValue: String? {
         switch self {
@@ -43,6 +44,10 @@ public enum AppKey: String, CaseIterable, Sendable {
             // Off unless the operator turns it on: the collector reads a live
             // third-party transcript tree, so it must never start implicitly.
             return "0"
+        case .qoderScanRoot:
+            // nil = Qoder 自己的默认根（~/.qoder-cn/projects）。用户在采集桥
+            // 窗口里选过的目录才落盘。
+            return nil
         }
     }
 }
@@ -192,6 +197,18 @@ public struct AppConfig: Sendable {
         }
         set {
             set(newValue ? "1" : "0", for: .qoderCollectionEnabled)
+        }
+    }
+
+    /// 采集桥的扫描根。nil = Qoder 默认 `~/.qoder-cn/projects`。
+    nonisolated public static var qoderScanRootPath: String? {
+        get {
+            guard let raw = get(.qoderScanRoot) else { return nil }
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        set {
+            set(newValue, for: .qoderScanRoot)
         }
     }
 

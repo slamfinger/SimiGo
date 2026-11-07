@@ -7,6 +7,7 @@ public enum LOCALBPermission: String, CaseIterable, Hashable, Sendable, Comparab
     case srsWrite = "P-SRS-WRITE"
     case adminPairing = "P-ADMIN-PAIRING"
     case adminTrust = "P-ADMIN-TRUST"
+    case branchControl = "P-BRANCH-CONTROL"
 
     public static func < (lhs: LOCALBPermission, rhs: LOCALBPermission) -> Bool {
         lhs.rawValue < rhs.rawValue
@@ -608,7 +609,11 @@ enum LOCALBPairingEventCodec {
 
     private static func decodePermissions(_ bytes: [UInt8]) throws -> Set<LOCALBPermission> {
         var offset = 0
-        guard let count = LOCALBBinary.readU16(bytes, &offset), count <= 5 else {
+        // The cap derives from the live permission enum: journals written by
+        // older builds (fewer cases) keep decoding, while any count beyond the
+        // current case space — or any unknown rawValue — fails closed.
+        guard let count = LOCALBBinary.readU16(bytes, &offset),
+              count <= UInt16(LOCALBPermission.allCases.count) else {
             throw LOCALBStatus.registryCorrupt
         }
         var result = Set<LOCALBPermission>()
@@ -627,7 +632,11 @@ enum LOCALBPairingEventCodec {
             previous = raw
             offset += size
         }
-        guard offset == bytes.count, !result.contains(.srsWrite) else {
+        // srsWrite stays out of the *change* path (encode/decodePermissionChange
+        // keep their own guards); the journal-level rejection here is lifted so
+        // a pairing-time grant of the full case space round-trips. The registry
+        // store independently pins pairing commits to the default set.
+        guard offset == bytes.count else {
             throw LOCALBStatus.registryCorrupt
         }
         return result

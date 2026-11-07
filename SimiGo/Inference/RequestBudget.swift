@@ -204,8 +204,65 @@ public final class RequestBudgetController: @unchecked Sendable {
     /// Bumped whenever the evidence a verdict can be derived from changes
     /// (new rate sample, new per-payload observation, calibration seeds).
     private var evidenceEpoch: UInt64 = 0
+    /// 判定留档（2026-11-06）：`[BUDGET]` 文本行是给人看的事后证据；判定
+    /// 本身以类型化记录留在进程内，验收/校准读这里。日志格式可以变、可以被
+    /// 降噪，但判定不能因此变得不可读——那是把副作用当状态机。
+    private var verdictRecords: [VerdictRecord] = []
+    private var verdictSerial: UInt64 = 0
 
     private init() {}
+
+    // MARK: Structured verdict ledger
+
+    /// 一次预算判定的完整留档。字段与 `RequestBudgetVerdict` 同源，不重新
+    /// 推导——这里只是把它按到达顺序存下来。
+    public struct VerdictRecord: Sendable {
+        public let serial: UInt64
+        public let requestID: String
+        public let verdict: RequestBudgetVerdict
+        /// 冷桶是本轮全量渲染 token；热桶是活会话没覆盖的 delta。
+        public let fullTokens: Int
+        public let deltaTokens: Int
+        public let at: Date
+    }
+
+    /// 只留最近这些条：留档是为了验收能读到“本轮之后的判定”，不是长期流水。
+    private static let verdictWindow = 64
+
+    /// 记录一次判定。`serial` 单调递增，调用方先取 `verdictCursor()`，
+    /// 再用 `verdicts(after:)` 取自己那一轮。
+    public func recordVerdict(
+        requestID: String,
+        verdict: RequestBudgetVerdict,
+        fullTokens: Int,
+        deltaTokens: Int,
+        at now: Date = Date()
+    ) {
+        lock.lock()
+        verdictSerial &+= 1
+        verdictRecords.append(
+            VerdictRecord(
+                serial: verdictSerial, requestID: requestID, verdict: verdict,
+                fullTokens: fullTokens, deltaTokens: deltaTokens, at: now))
+        if verdictRecords.count > Self.verdictWindow {
+            verdictRecords.removeFirst(verdictRecords.count - Self.verdictWindow)
+        }
+        lock.unlock()
+    }
+
+    /// 当前留档游标。之后发生的判定 `serial` 都大于它。
+    public var verdictCursor: UInt64 {
+        lock.lock()
+        defer { lock.unlock() }
+        return verdictSerial
+    }
+
+    /// 游标之后（含窗口内）的判定，按到达顺序。
+    public func verdicts(after serial: UInt64) -> [VerdictRecord] {
+        lock.lock()
+        defer { lock.unlock() }
+        return verdictRecords.filter { $0.serial > serial }
+    }
 
     // MARK: Recording
 
@@ -627,6 +684,8 @@ public final class RequestBudgetController: @unchecked Sendable {
         observations.removeAll()
         rejectCache.removeAll()
         promptDigestsByRequest.removeAll()
+        verdictRecords.removeAll()
+        verdictSerial = 0
         evidenceEpoch = 0
         lastCalibrationWrite = .distantPast
         calibrationLoaded = false

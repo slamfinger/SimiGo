@@ -1,13 +1,12 @@
-import CryptoKit
 import Foundation
 
 public enum QoderDigest {
     public static func sha256Hex(_ string: String) -> String {
-        sha256Hex(Data(string.utf8))
+        CollectionDigest.sha256Hex(string)
     }
 
     public static func sha256Hex(_ data: Data) -> String {
-        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        CollectionDigest.sha256Hex(data)
     }
 }
 
@@ -25,14 +24,12 @@ public enum QoderAttributionRelation: String, Sendable, Equatable, Codable {
     case parentChain = "parent_chain"
     case fileOrderAfterCompaction = "file_order_after_compaction"
     case fileOrderNoChain = "file_order_no_chain"
-    case unattached
 }
 
 public enum QoderReviewReason: String, Sendable, Equatable, Codable {
     case fileOrderAfterCompaction = "file_order_after_compaction"
     case fileOrderNoChain = "file_order_no_chain"
     case interrupted
-    case unattached
 }
 
 public enum QoderTurnDisposition: Sendable, Equatable {
@@ -101,18 +98,17 @@ public struct QoderSourceIdentity: Sendable, Equatable, Hashable, Codable {
     /// A stable idempotency key for the cross-path settlement store. It names
     /// the source message and revision, never the text, so two different
     /// messages with identical content stay distinct.
+    ///
+    /// The namespace comes from `sourceType`. Qoder is the source that produced
+    /// the rows already in the information space, and it is the only value the
+    /// accumulator ever passes, so its key stays `SIM.qoder.collect.v1:` byte
+    /// for byte while other carriers get their own namespace.
     public var operationKey: String {
-        let payload: [String: String] = [
-            "adapter_version": adapterVersion,
-            "source_message_id": sourceMessageID,
-            "source_revision": String(sourceRevision),
-            "source_session_id": sourceSessionID,
-            "source_turn_id": sourceTurnID,
-            "source_type": sourceType,
-        ]
-        let data = (try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]))
-            ?? Data()
-        return "SIM.qoder.collect.v1:" + QoderDigest.sha256Hex(data)
+        CollectionSourceIdentity(
+            sourceType: sourceType, sourceSessionID: sourceSessionID,
+            sourceTurnID: sourceTurnID, sourceMessageID: sourceMessageID,
+            sourceRevision: sourceRevision, adapterVersion: adapterVersion
+        ).operationKey
     }
 }
 
@@ -160,6 +156,9 @@ public struct QoderBaselineEvent: Sendable, Equatable, Codable {
     public enum Reason: String, Sendable, Equatable, Codable {
         case existingFileAtEnd = "existing_file_at_end"
         case newFileFromStart = "new_file_from_start"
+        /// 启用前就存在的文件，按「回填」策略从头读：采集的正是它已有的
+        /// 会话内容，不是一个从 EOF 开始的空基线。
+        case existingFileFromStart = "existing_file_from_start"
         case truncatedReset = "truncated_reset"
         case identityReset = "identity_reset"
         case fingerprintReset = "fingerprint_reset"

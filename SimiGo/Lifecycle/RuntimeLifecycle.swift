@@ -31,6 +31,12 @@ public struct RuntimeTransitionRule {
     /// 请求全部死于 INVALID_TRANSITION CREATED→RUNNING → cancelled_internally），
     /// 请求既已持有 generation gate，事实状态即 RUNNING；trace 线 from=CREATED to=RUNNING
     /// 即漏补位入口的定位标记。
+    /// QUEUED→COMPLETING（2026-11-06）：不占引擎窗口就完成的路径客观存在——
+    /// IS 复用（model_calls=0）、工具调用轮被跳过结算、`max_tokens` 直发收口。
+    /// 这些请求从未拿到引擎，事实状态就该停在 QUEUED；若表不承认这条边，
+    /// 每次复用答案都触发 FORCE_RELEASED，把「表拒绝」这个异常信号稀释成噪音。
+    /// 注意：这条边**不**用来掩盖「真跑了引擎却没置 RUNNING」——那条由推理层
+    /// 收口（NativeMLX 在拿到 gate 后置位，ManagedGGUFRuntime 自 2026-11-06 起同法）。
     public nonisolated static func isValid(
         from: RuntimeState,
         to: RuntimeState
@@ -44,6 +50,7 @@ public struct RuntimeTransitionRule {
         case (.created, .queued),
              (.created, .running),
              (.created, .completing),
+             (.queued, .completing),
              (.queued, .running),
              (.running, .streaming),
              (.running, .completing),
@@ -184,11 +191,37 @@ private struct RequestIdentity: Sendable {
     }
 }
 
+/// 生命周期聚合快照（2026-11-06）。
+///
+/// 状态是**运行期事实**：任何需要"现在有没有在途请求""这次取消走的是哪条
+/// 管道"的判断，都从这份快照读，不要求调用方（测试、外部工具）去解析
+/// `native_mlx_trace.log` 的文本。日志只承担事后取证，不承担判定。
+public struct LifecycleSnapshot: Sendable, Equatable {
+    /// 当前各状态的在册请求数（RELEASED 超过上限即逐出，不进这里）。
+    public let byState: [String: Int]
+    /// 累计迁移计数，键形如 `queued→running`；异常兜底另记 `forced`。
+    public let transitions: [String: Int]
+    /// 本进程注册过的请求总数。
+    public let registered: Int
+
+    /// 已进队或已在跑、尚未收口的请求数——"有没有在途生成"的唯一判据。
+    public var inFlight: Int {
+        (byState[RuntimeState.queued.rawValue] ?? 0)
+            + (byState[RuntimeState.running.rawValue] ?? 0)
+    }
+}
+
 public actor RuntimeLifecycleCoordinator {
     public static let shared = RuntimeLifecycleCoordinator()
 
     private var states: [String: RuntimeState] = [:]
     private var identities: [String: RequestIdentity] = [:]
+    /// 每请求的迁移路径（`finish` 时一次写入），供进程内读取；
+    /// 与 `states` 同寿命，随 RELEASED 逐出一并清理。
+    private var paths: [String: [String]] = [:]
+    private var transitionCounts: [String: Int] = [:]
+    private var forcedCount = 0
+    private var registeredCount = 0
 
     public init() {}
 
@@ -208,7 +241,9 @@ public actor RuntimeLifecycleCoordinator {
             agentID: agentID,
             sessionID: sessionID
         )
+        registeredCount += 1
         trace(requestID, event: "REGISTER", to: RuntimeState.created.rawValue)
+        publishSnapshot()
     }
 
     /// 受状态机校验的迁移（收敛文档 §3）：表外迁移一律 INVALID 并记录 Trace。
@@ -232,7 +267,10 @@ public actor RuntimeLifecycleCoordinator {
         }
 
         states[requestID] = target
+        paths[requestID, default: [current.rawValue]].append(target.rawValue)
+        bump("\(current.rawValue)→\(target.rawValue)")
         trace(requestID, event: "STATE_TRANSITION", from: current.rawValue, to: target.rawValue)
+        publishSnapshot()
         return target
     }
 
@@ -260,19 +298,26 @@ public actor RuntimeLifecycleCoordinator {
                : [.completing, .completed, .releasing, .released])
             : [.cancelling, .draining, .releasing, .released]
 
+        // 收尾路径一次成型（2026-11-05 日志瘦身）：取消/完成的逐跳迁移由
+        // 迁移表本身保证，逐跳 trace 没有独立信息量，只留一行带 `path=`
+        // 的 RELEASED。异常（表外迁移被拒）照旧单独告警，不合并。
+        var hops: [String] = [current.rawValue]
         for step in path {
             let from = states[requestID] ?? .released
-            if RuntimeTransitionRule.isValid(from: from, to: step) {
-                trace(requestID, event: "STATE_TRANSITION", from: from.rawValue, to: step.rawValue)
-            } else {
+            if !RuntimeTransitionRule.isValid(from: from, to: step) {
                 // 迁移表意外拒绝时不允许卡死：收敛文档最终原则 —— 活跃 Runtime 必须收敛到 RELEASED
+                forcedCount += 1
                 trace(requestID, event: "FORCE_RELEASED", from: from.rawValue, reason: "unexpected table rejection")
             }
             states[requestID] = step
+            hops.append(step.rawValue)
+            bump("\(from.rawValue)→\(step.rawValue)")
         }
-        trace(requestID, event: "RELEASED", reason: reason)
+        paths[requestID] = hops
+        trace(requestID, event: "RELEASED", reason: reason, path: hops.joined(separator: "→"))
 
         evictReleasedIfNeeded()
+        publishSnapshot()
     }
 
     /// 收敛文档 §9 Invariant 1 观测点：NativeMLX 请求任务真实收尾时回报。
@@ -294,6 +339,35 @@ public actor RuntimeLifecycleCoordinator {
         states[requestID]
     }
 
+    /// 该请求已走过的迁移路径（含起点）。收口后仍可读，直到被逐出。
+    public func path(of requestID: String) -> [String] {
+        paths[requestID] ?? []
+    }
+
+    /// 进程内聚合快照：判定"有没有在途生成""取消走了哪条管道"的唯一入口。
+    public func snapshot() -> LifecycleSnapshot {
+        var byState: [String: Int] = [:]
+        for state in states.values {
+            byState[state.rawValue, default: 0] += 1
+        }
+        var transitions = transitionCounts
+        if forcedCount > 0 { transitions["forced"] = forcedCount }
+        return LifecycleSnapshot(
+            byState: byState,
+            transitions: transitions,
+            registered: registeredCount
+        )
+    }
+
+    private func bump(_ key: String) {
+        transitionCounts[key, default: 0] += 1
+    }
+
+    /// 结构化状态外发：跨进程消费者读 JSON，不解析 trace 文本。
+    private func publishSnapshot() {
+        RuntimeStateReporter.shared.report(snapshot())
+    }
+
     /// 防状态积累：RELEASED 条目只用于短期审计，超过上限即逐出（收敛目标：Runtime 归零）。
     private func evictReleasedIfNeeded() {
         guard states.count > 512 else { return }
@@ -301,6 +375,7 @@ public actor RuntimeLifecycleCoordinator {
         for (id, state) in states where state == .released {
             states.removeValue(forKey: id)
             identities.removeValue(forKey: id)
+            paths.removeValue(forKey: id)
         }
     }
 
@@ -309,28 +384,24 @@ public actor RuntimeLifecycleCoordinator {
         event: String,
         from: String? = nil,
         to: String? = nil,
-        reason: String? = nil
+        reason: String? = nil,
+        path: String? = nil
     ) {
         // 拒绝风暴成员（2026-10-16）：REJECT 语义已由风暴头笔 +
         // burstSuppressed 聚合尾行承载，成员笔的收尾流水抑制。
-        // 只抑制收尾白名单（RELEASED 与取消管道三跳）；异常路径
-        // （表外迁移/FORCE_RELEASED/INVALID_*/*_UNKNOWN）事件名不
-        // 匹配，永不抑制。
-        if event == "RELEASED"
-            || (event == "STATE_TRANSITION"
-                && (from == "RUNNING"
-                    || from == "CANCELLING"
-                    || from == "DRAINING")) {
+        // 收尾已合并为单行 RELEASED（2026-11-05），此处只剩这一处抑制点；
+        // 异常路径（表外迁移/FORCE_RELEASED/INVALID_*/*_UNKNOWN）事件名
+        // 不匹配，永不抑制。
+        if event == "RELEASED" {
             if RejectBurstTracker.shared.isQuiet(requestID: requestID) {
                 return
             }
         }
 
         // 生产降噪（2026-09-29）：正常路径只留两条定位锚——QUEUED→RUNNING
-        // （在途标记：execution_bench preflight 与在途生成判别依赖 " to=RUNNING"，
-        // 排队计时依赖 CREATED→QUEUED / QUEUED→RUNNING 两条，故保留）
-        // 和 RELEASED（带 reason 收口）。被抑制的 REGISTER / CREATED→QUEUED /
-        // RUNNING→COMPLETING / CREATED→COMPLETING 及成功尾段：回归时签名仍在
+        // （在途标记：execution_bench preflight 与在途生成判别依赖 " to=RUNNING"）
+        // 和 RELEASED（带 reason + path 收口）。被抑制的 REGISTER / CREATED→QUEUED /
+        // RUNNING→COMPLETING / CREATED→COMPLETING 及收尾各跳：回归时签名仍在
         // ——漏 QUEUED 会以 from=CREATED to=RUNNING 现形（2026-09-12 实证），
         // 表外迁移/取消/FORCE_RELEASED 等异常路径永不抑制。
         if event == "REGISTER" {
@@ -375,6 +446,9 @@ public actor RuntimeLifecycleCoordinator {
         }
         if let reason {
             parts.append("reason=\(reason)")
+        }
+        if let path {
+            parts.append("path=\(path)")
         }
 
         RuntimeTraceLogger.shared.trace(

@@ -65,7 +65,12 @@ extension HTTPServer {
         let sessionID: String
         let query: String
         let userMessageID: Int64
-        let resolution: SimiGoInformationLoop.Resolution
+        /// Latest retrieval candidate for this request. It may differ from the
+        /// frozen snapshot while an engine prefix must remain byte-identical.
+        let candidateResolution: SimiGoInformationLoop.Resolution?
+        /// The demand represented by the exact Information-Space bytes rendered
+        /// into the model input. Reuse and settlement must bind to this demand.
+        let renderedResolution: SimiGoInformationLoop.Resolution
         let modelIdentity: String
         let identity: SimiGoSettlementIdentityBinding.Identity
         let parentStateID: String?
@@ -73,6 +78,42 @@ extension HTTPServer {
         let eligibility: SimiGoESISDatabase.ChatTurnEligibility
         let sourceIdentity: SimiGoESISDatabase.DeclaredSourceIdentity
         let operationKey: String?
+    }
+
+    /// Close only an uncompleted local user row. Successful settlement, reuse,
+    /// incomplete and tool-loop chat writes have already moved the row out of
+    /// pending, so this terminalization is intentionally idempotent.
+    func terminalizePendingInformationTurn(
+        _ turn: InformationTurn?,
+        terminal: SimiGoESISDatabase.ChatTurnTerminal?,
+        context: ConnectionContext
+    ) {
+        guard let turn else { return }
+        let reason = terminal ?? (
+            context.detachedByClient ? .detached : (context.closed ? .cancelled : .failed))
+        do {
+            guard try turn.db.closePendingChatTurn(
+                sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                terminal: reason) else { return }
+            RuntimeTraceLogger.shared.trace(
+                "[CHAT_TURN_TERMINAL] session="
+                    + RuntimeTraceLogger.short(turn.sessionID)
+                    + " state=" + reason.rawValue + " committed=0")
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[CHAT_TURN_TERMINAL] session="
+                    + RuntimeTraceLogger.short(turn.sessionID)
+                    + " state=" + reason.rawValue + " persisted=0")
+        }
+    }
+
+    /// Preserve the terminal distinction for a detached generation that is later
+    /// cancelled by orphan-yield. Runtime shutdown and ordinary/manual cancellation
+    /// still take the cancelled standing.
+    static func chatTurnTerminalForCancellation(
+        _ context: ConnectionContext
+    ) -> SimiGoESISDatabase.ChatTurnTerminal {
+        context.cancellationFailureReason() == "detached_by_client" ? .detached : .cancelled
     }
 
     /// Cross-path source identity: every wire accepts the same declaration, so
@@ -202,13 +243,19 @@ extension HTTPServer {
         // chat), not just the live session. This is the cross-Agent, cross-
         // session memory the IS exists for; session identifiers narrow it when
         // a caller supplies them.
-        let resolution = try? loop.resolve(.init(
+        // Exclude the exact question/answer pairs already published in this
+        // session before computing the current demand watermark. If exclusion
+        // lookup fails, an empty set is conservative: prior rows remain in the
+        // basis and the current-demand gate refuses historical answer reuse.
+        let reuseExclusions = (try? loop.answerReuseExclusions(
+            sessionID: infoSession, query: query)) ?? []
+        let candidateResolution = try? loop.resolve(.init(
             sessionID: infoSession, query: query, includeChat: true,
-            chatSessionIDs: [], limit: 30))
-        let retrieval = resolution ?? SimiGoInformationLoop.Resolution(
+            chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))
+        let retrieval = candidateResolution ?? SimiGoInformationLoop.Resolution(
             demandID: "", stateID: nil, reused: false, hits: [], inputDigest: "",
             resultSHA256: "", retrievalSettlementID: "", itemIDs: [], staleItemIDs: [])
-        let candidate = resolution.map { loop.contextBlock($0) } ?? ""
+        let candidate = candidateResolution.map { loop.contextBlock($0) } ?? ""
         // The turn this block is attached to. Inside a tool loop the client
         // repeats the same trailing user message every request, so this is a
         // mid-chain position the engine has already committed.
@@ -227,14 +274,31 @@ extension HTTPServer {
         // One readable line per turn: the landed index is the fact that decides
         // whether the committed prefix drifts — a mid-chain index sits inside
         // what the engine already rendered, `tail` does not.
-        RuntimeTraceLogger.shared.trace(
-            "[IS] contextInject scope=\(infoSession)"
-                + " index=\(target.map { String($0) } ?? "tail")"
-                + " bytes=\(context.utf8.count) candidateBytes=\(candidate.utf8.count)"
-                + " replay=\(snapshot.isReplay ? 1 : 0)"
-                + (snapshot.candidateChanged ? " frozenStale=1" : "")
-                + (eligibility == .internalOperation ? " eligibility=internal" : "")
-        )
+        let targetIndex = target.map { String($0) } ?? "tail"
+        let candidateDemandID = candidateResolution?.demandID ?? "none"
+        let renderedDemandID = snapshot.resolution.demandID.isEmpty
+            ? "none" : snapshot.resolution.demandID
+        let demandOrigin = Self.contextFreezingEnabled
+            ? "rendered_snapshot" : "current_candidate"
+        // 6 字符压缩（2026-11-05）：scope 与 demand 全是 32/64 位十六进制，
+        // 全量只把行拉长，不增加可分辨性；两者相等时只留一份。
+        let shortRenderedDemand = RuntimeTraceLogger.short(renderedDemandID)
+        let shortCandidateDemand = RuntimeTraceLogger.short(candidateDemandID)
+        var traceFields = [
+            "[IS] contextInject scope=\(RuntimeTraceLogger.short(infoSession))",
+            "index=\(targetIndex)",
+            "bytes=\(context.utf8.count)",
+            "candidateBytes=\(candidate.utf8.count)",
+            "replay=\(snapshot.isReplay ? 1 : 0)",
+            "demand=\(shortRenderedDemand)",
+            "demand_origin=\(demandOrigin)"
+        ]
+        if shortCandidateDemand != shortRenderedDemand {
+            traceFields.append("candidate_demand=\(shortCandidateDemand)")
+        }
+        if snapshot.candidateChanged { traceFields.append("frozenStale=1") }
+        if eligibility == .internalOperation { traceFields.append("eligibility=internal") }
+        RuntimeTraceLogger.shared.trace(traceFields.joined(separator: " "))
 
         // Persist only this turn's user text, not the whole request envelope:
         // re-storing the accumulated history would make every later retrieval
@@ -253,7 +317,8 @@ extension HTTPServer {
         let turn = InformationTurn(
             db: db, loop: loop, sessionID: infoSession, query: query,
             userMessageID: userMessageID,
-            resolution: snapshot.resolution,
+            candidateResolution: candidateResolution,
+            renderedResolution: snapshot.resolution,
             modelIdentity: producer?.modelIdentity ?? modelId,
             identity: producer?.identity ?? .absent,
             parentStateID: parent, position: position,
@@ -317,32 +382,39 @@ extension HTTPServer {
     ) {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        try? turn.db.commitChatTurn(
-            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-            assistantText: text, model: modelId, createdAt: Date(),
-            eligibility: turn.eligibility)
-        guard turn.eligibility == .ordinary else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=chat reason=internal_operation "
-                    + "session=\(turn.sessionID) settlement_written=0")
-            return
-        }
-        guard completion.isSettleable else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=chat completion=\(completion.wireName) "
-                    + "session=\(turn.sessionID) settlement_written=0")
-            return
-        }
-        guard !producedToolCalls else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=chat reason=tool_calls "
-                    + "session=\(turn.sessionID) settlement_written=0")
+        // Non-settled turns remain ordinary conversation history, but a final
+        // ordinary answer commits only with its authoritative ES/IS rows.
+        if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
+            do {
+                _ = try turn.db.commitChatTurn(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility)
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[CHAT_COMMIT_REJECT] wire=chat reason=\"\(error)\" "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) committed=0")
+                return
+            }
+            if turn.eligibility != .ordinary {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=chat reason=internal_operation "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            } else if !completion.isSettleable {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=chat completion=\(completion.wireName) "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            } else {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=chat reason=tool_calls "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            }
             return
         }
         do {
             let committed = try turn.loop.settleTurn(
                 generatedText: text,
-                resolution: turn.resolution,
+                resolution: turn.renderedResolution,
                 stateID: "chat-\(UUID().uuidString.lowercased())",
                 parentStateID: turn.parentStateID,
                 position: turn.position,
@@ -352,16 +424,20 @@ extension HTTPServer {
                 summaryQuery: turn.query,
                 actions: ["chat.completion"],
                 sourceIdentity: turn.sourceIdentity.isAbsent ? nil : turn.sourceIdentity,
-                operationKey: turn.operationKey)
+                operationKey: turn.operationKey,
+                chatTurn: .init(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
-                    "[SETTLE_REUSE] wire=chat settlement=\(committed.settlementID) "
-                        + "session=\(turn.sessionID) reused=1 settlement_written=0")
+                    "[SETTLE_REUSE] wire=chat settlement=\(RuntimeTraceLogger.short(committed.settlementID)) "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) reused=1 settlement_written=0")
             }
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=chat reason=\"\(error)\" "
-                    + "session=\(turn.sessionID) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
         }
     }
 
@@ -480,6 +556,7 @@ extension HTTPServer {
         guard Self.isAnswerReuseEnabled,
             let reuse = turn.loop.reusableAnswer(
                 sessionID: turn.sessionID, query: turn.query,
+                expectedDemandID: turn.renderedResolution.demandID,
                 identity: turn.identity)
         else { return nil }
         return ReusableAnswer(
@@ -494,23 +571,30 @@ extension HTTPServer {
     /// so a later reader can verify the zero-model-call path from the database
     /// alone.
     func recordReusedAnswer(_ reuse: ReusableAnswer, turn: InformationTurn) {
-        try? turn.db.commitChatTurn(
-            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-            assistantText: reuse.text, model: modelId, createdAt: Date(),
-            eligibility: turn.eligibility)
-        let demandID = turn.resolution.demandID.isEmpty
-            ? reuse.demandID : turn.resolution.demandID
-        _ = try? turn.db.recordInformationReuse(
-            sourceSettlementID: reuse.settlementID,
-            sourceStateID: reuse.sourceStateID,
-            demandID: demandID,
-            sessionID: turn.sessionID,
-            query: turn.query)
-        RuntimeTraceLogger.shared.trace(
-            "[IS_REUSE] settlement=\(reuse.settlementID) demand=\(demandID) "
-                + "state=\(reuse.sourceStateID) model_calls=0")
+        let demandID = reuse.demandID
+        do {
+            _ = try turn.db.commitReusedChatTurn(
+                .init(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: reuse.text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility),
+                sourceSettlementID: reuse.settlementID,
+                sourceStateID: reuse.sourceStateID,
+                demandID: demandID,
+                query: turn.query)
+            RuntimeTraceLogger.shared.trace(
+                "[IS_REUSE] settlement=\(RuntimeTraceLogger.short(reuse.settlementID))"
+                    + " demand=\(RuntimeTraceLogger.short(demandID))"
+                    + " state=\(RuntimeTraceLogger.short(reuse.sourceStateID)) model_calls=0"
+                    + " candidate_demand="
+                    + "\(RuntimeTraceLogger.short(turn.candidateResolution?.demandID ?? "none"))")
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[IS_REUSE_REJECT] reason=\(error) "
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                    + "chat_committed=0 reuse_recorded=0")
+        }
     }
-
     /// The wire shape a stream client expects for a reused answer: one content
     /// chunk, one stop chunk, `[DONE]`. Most OpenAI-compatible agents stream by
     /// default, so a short-circuit that only existed on the non-streaming path
@@ -625,6 +709,11 @@ extension HTTPServer {
 
         let information = prepareInformationTurn(
             json: json, headers: headers, agentId: agentId, messages: messages)
+        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        defer {
+            terminalizePendingInformationTurn(
+                information.turn, terminal: chatTurnTerminal, context: context)
+        }
         let turnMessages = information.messages
 
         if let forkFrom =
@@ -828,13 +917,17 @@ extension HTTPServer {
                     guard
                         let self,
                         let context,
-                        !text.isEmpty,
-                        !context.closed
+                        !text.isEmpty
                     else {
                         return
                     }
 
+                    // Keep accumulating the answer after a client disconnect:
+                    // a detached completion settles the full generation, while
+                    // outbound events stay fail-closed.
                     streamedContent.mutate { $0.append(text) }
+
+                    guard !context.closed else { return }
 
                     self.sendImmediateSSEChunk(
                         [
@@ -856,15 +949,15 @@ extension HTTPServer {
                 },
 
                 { [weak self, weak context] call in
-                    guard
-                        let self,
-                        let context,
-                        !context.closed
-                    else {
+                    guard let self, let context else {
                         return
                     }
 
+                    // A post-disconnect tool call still marks the turn as a tool
+                    // round, so a detached completion cannot settle as an answer.
                     hasToolCalls.set(true)
+
+                    guard !context.closed else { return }
 
                     let toolIndex =
                         toolCallIndexCounter
@@ -936,14 +1029,24 @@ extension HTTPServer {
                 }
             )
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            // A granted detach slot lets a naturally completed generation
+            // retain its answer after the client watchdog closes the socket.
+            // The settlement claim is atomic with ConnectionContext cancellation
+            // state; manual/runtime cancellation and orphan-yield cannot pass it.
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 
             if let turn = information.turn {
+                if context.closed {
+                    // 出处单独留痕：这一笔没有送达客户端，是看门狗超时而非
+                    // 用户取消，后续同 query 的复用必须能追溯到这里。
+                    RuntimeTraceLogger.shared.trace(
+                        "[IS] settleAfterDetach r=\(RuntimeTraceLogger.short(context.requestId))"
+                            + " session=\(RuntimeTraceLogger.short(turn.sessionID))"
+                            + " reason=client_watchdog_not_user_cancel")
+                }
                 settleInformationTurn(
                     turn,
                     assistantText: streamedContent.value,
@@ -989,6 +1092,7 @@ extension HTTPServer {
         } catch is CancellationError {
             // 取消契约：SSE 头已发出且客户端仍在连接时必须给出终态
             // （error chunk + [DONE] + close），否则客户端将无限等待。
+            chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
             failureReason = context.cancellationFailureReason()
             guard !context.closed else { return }
 
@@ -1191,6 +1295,11 @@ extension HTTPServer {
 
         let information = prepareInformationTurn(
             json: json, headers: headers, agentId: agentId, messages: messages)
+        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        defer {
+            terminalizePendingInformationTurn(
+                information.turn, terminal: chatTurnTerminal, context: context)
+        }
         let turnMessages = information.messages
 
         if let forkFrom =
@@ -1372,10 +1481,8 @@ extension HTTPServer {
 
             keepalive.settle()
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 
@@ -1473,6 +1580,7 @@ extension HTTPServer {
             // 取消契约：非流式尚未发出任何字节（keepalive 未提交头）时，
             // 客户端仍连接必须给出 HTTP 终态。
             keepalive.settle()
+            chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
             failureReason = context.cancellationFailureReason()
             guard !context.closed else { return }
 

@@ -16,7 +16,8 @@ est≈10k tok > 8192 ⇒ 门拒 → extend)。extend 臂即「同深度 live-ext
 度量源:trace 完成行(mode/promptTokens/promptTime/ttft/cacheEff/cacheTokens)
 + admission 行 swap + 驱动侧 wall + sysctl vm.swapusage / 进程 RSS。
 
-前置:SimiGo 运行中、无进行中生成(最后一条 LC 行为 RELEASED)。
+前置:SimiGo 运行中、无进行中生成(读 state/runtime.json 的 in_flight,
+不解析 trace 文本 —— 日志只作事后证据)。
 用法:
     python3 tools/execution_bench.py --plan          # 打印轮次计划不执行
     python3 tools/execution_bench.py --execute       # 执行并写结果 JSON
@@ -36,6 +37,13 @@ BASE = "http://127.0.0.1:8000/v1/chat/completions"
 MODEL = "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e"
 SESSION = "ecbench"
 TRACE = Path.home() / ".simigo/logs/native_mlx_trace.log"
+# 运行期状态的判定位面(结构化):日志不参与任何"能不能开跑"的判断。
+def _simigo_root() -> Path:
+    override = __import__("os").environ.get("SIMIGO_HOME")
+    if override:
+        return Path(override)
+    return Path.home() / ".simigo"
+STATE = _simigo_root() / "state/runtime.json"
 BENCH_KEY = None  # 运行时发现:traceKey 会被收短(ecbench→cbench/main)
 
 TOOLS = [{
@@ -69,16 +77,24 @@ def preflight():
     r = subprocess.run(["pgrep", "-x", "SimiGo"], capture_output=True, text=True)
     if not r.stdout.strip():
         sys.exit("preflight 失败:SimiGo 未运行")
-    tail = TRACE.read_text(errors="replace").splitlines()[-40:]
-    lc = [ln for ln in tail if "[LC]" in ln]
-    if lc and (" to=RUNNING" in lc[-1] or "CANCELLING" in lc[-1]):
-        # 旧实例被重启时在途请求的 RUNNING 行会永久残留在 trace 里;
-        # ready 行晚于最后 LC 行 ⇒ 当前进程尚未服务过请求,无在途生成。
-        ready_after = any("NativeMLX ready" in ln
-                          for ln in tail[tail.index(lc[-1]) + 1:])
-        if not ready_after:
-            sys.exit(f"preflight 失败:有进行中的生成:{lc[-1][:100]}")
-    print("preflight ✓ app 运行中,无进行中生成")
+    if not STATE.exists():
+        sys.exit(f"preflight 失败:缺少结构化状态 {STATE}(先启动一次 SimiGo)")
+    try:
+        doc = json.loads(STATE.read_text())
+    except (OSError, ValueError) as exc:
+        sys.exit(f"preflight 失败:{STATE} 不可解析:{exc}")
+
+    live_pid = int(r.stdout.split()[0])
+    if doc.get("pid") != live_pid:
+        # 状态文件属于上一进程:内容已过期,不能据此判定在途。
+        print(f"preflight ! 状态快照来自 pid={doc.get('pid')},当前 {live_pid};"
+              "按无在途处理")
+        return
+    if int(doc.get("in_flight", 0)) > 0:
+        sys.exit(f"preflight 失败:有进行中的生成 in_flight={doc['in_flight']} "
+                 f"by_state={doc.get('by_state')}")
+    print(f"preflight ✓ app 运行中,无进行中生成"
+          f"(registered={doc.get('registered', 0)})")
 
 
 def chat_round(messages, max_tokens=512, timeout=900, session=SESSION):

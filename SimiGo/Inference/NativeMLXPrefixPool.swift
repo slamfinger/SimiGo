@@ -47,6 +47,92 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// does not (a restored session re-binds on its poolBind).
     let bindings = ExecutionBindingRegistry()
 
+    // MARK: - Structured pool ledger (2026-11-06)
+
+    /// 池事件的结构化留档：`[MLX] poolHit/poolBind/...` 文本行是给人看的
+    /// 事后证据；真机验收要断言「这一轮到底导出/命中/掐断在哪个边界」，
+    /// 应当读这里的类型化记录，而不是从日志文本反解。日志可以改格式、可以
+    /// 被降噪，判定不能因此失效。
+    enum PoolEventKind: String, Sendable {
+        case export
+        case exportFailed
+        case tokenExport
+        case tokenExportFailed
+        case bind
+        case bindFailed
+        case hit
+        case tokenHit
+        case tokenHitRejected
+        case capture
+        case captureSkip
+        case captureRejected
+        case captureRefused
+        case captureFailed
+    }
+
+    struct PoolEvent: Sendable {
+        let seq: Int
+        let at: Date
+        let kind: PoolEventKind
+        /// 会话 traceKey（`child/main` 这类）；无会话归属时为 `-`。
+        let session: String
+        /// 边界 token 数（export/capture/tokenHit）；消息级事件为 0。
+        let tokens: Int
+        /// 消息级事件的覆盖消息数；token 级事件为 0。
+        let messages: Int
+        /// 失败原因 / 补充说明；成功路径为空。
+        let detail: String
+    }
+
+    private var poolEvents: [PoolEvent] = []
+    private var poolEventSeq = 0
+    /// 只留最近这些条：验收关心“本轮之后发生了什么”，不是长期流水。
+    private static let poolEventWindow = 128
+
+    /// 记录一条池事件。调用方要么已在 `lock` 内，要么不持有（见 `note`）。
+    private func appendLocked(_ event: PoolEvent) {
+        poolEvents.append(event)
+        if poolEvents.count > Self.poolEventWindow {
+            poolEvents.removeFirst(poolEvents.count - Self.poolEventWindow)
+        }
+    }
+
+    /// 记录一条池事件（自取锁）。
+    func note(
+        _ kind: PoolEventKind, session: String = "-", tokens: Int = 0,
+        messages: Int = 0, detail: String = ""
+    ) {
+        lock.lock()
+        poolEventSeq += 1
+        appendLocked(
+            PoolEvent(
+                seq: poolEventSeq, at: Date(), kind: kind, session: session,
+                tokens: tokens, messages: messages, detail: detail))
+        lock.unlock()
+    }
+
+    /// 当前游标。之后发生的事件 `seq` 都大于它。
+    func eventCursor() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return poolEventSeq
+    }
+
+    /// 游标之后（窗口内）的事件，按发生顺序。
+    func events(after cursor: Int) -> [PoolEvent] {
+        lock.lock()
+        defer { lock.unlock() }
+        return poolEvents.filter { $0.seq > cursor }
+    }
+
+    /// 测试/验收：清空留档（池的持久状态在磁盘上，不动）。
+    func resetEventLedger() {
+        lock.lock()
+        poolEvents.removeAll()
+        poolEventSeq = 0
+        lock.unlock()
+    }
+
     /// Deterministic Ref derivation for a pool boundary (R-I1): the entry's
     /// own chain hash is the content claim; message-level boundaries use the
     /// message-chain position as boundLength so the exporting parent and the
@@ -107,6 +193,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         let result = store.pool.admit(
             namespace: namespace, promptTokens: PrefixMessageChain.stream(incoming))
         if result != nil {
+            note(.hit, messages: result!.entry.tokenCount / 2)
             RuntimeTraceLogger.shared.trace(
                 "[MLX] poolHit messages=\(result!.entry.tokenCount / 2)")
         }
@@ -151,10 +238,12 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             else { return nil }
             do {
                 let snapshot = try self.makeStore().loadSync(admission)
+                self.note(.tokenHit, tokens: admission.entry.tokenCount)
                 RuntimeTraceLogger.shared.trace(
                     "[MLX] poolTokenHit tokens=\(admission.entry.tokenCount)")
                 return (snapshot, admission.entry.tokenCount)
             } catch {
+                self.note(.tokenHitRejected, detail: String(describing: error))
                 RuntimeTraceLogger.shared.trace(
                     "[MLX] poolTokenHitRejected err=\(String(describing: error))")
                 return nil
@@ -180,6 +269,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         let namespace = Self.namespace(
             modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
         guard namespace == installedNamespace else {
+            note(.captureSkip, session: traceKey, detail: "notBaseNamespace")
             RuntimeTraceLogger.shared.trace(
                 "[MLX] memPoolCaptureSkip session=\(traceKey) reason=notBaseNamespace")
             return 0
@@ -189,11 +279,15 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             guard let entry = PrefixMemoryPool.shared.capture(
                 boundary, namespace: namespace, esStateID: esStateID)
             else {
+                note(.captureRejected, session: traceKey, tokens: boundary.tokenCount)
                 RuntimeTraceLogger.shared.trace(
                     "[MLX] memPoolCaptureRejected session=\(traceKey)"
                         + " tokens=\(boundary.tokenCount) bytes=\(boundary.bytes)")
                 return 0
             }
+            note(
+                .capture, session: traceKey, tokens: boundary.tokenCount,
+                detail: esStateID ?? "-")
             RuntimeTraceLogger.shared.trace(
                 "[MLX] memPoolCapture session=\(traceKey) tokens=\(boundary.tokenCount)"
                     + " bytes=\(boundary.bytes)"
@@ -202,10 +296,12 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             return entry.tokenCount
         } catch let error as ChatSession.InterruptedPrefixBoundaryError {
             // 不能恢复——按原因记录，不伪造 PASS，也不动既有驱逐。
+            note(.captureRefused, session: traceKey, detail: error.description)
             RuntimeTraceLogger.shared.trace(
                 "[MLX] memPoolCaptureRefused session=\(traceKey) reason=\(error.description)")
             return 0
         } catch {
+            note(.captureFailed, session: traceKey, detail: String(describing: error))
             RuntimeTraceLogger.shared.trace(
                 "[MLX] memPoolCaptureFailed session=\(traceKey) err=\(String(describing: error))")
             return 0
@@ -257,6 +353,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                     try await session.savePrefixSnapshot(to: url, upTo: count)
                 }
                 _ = lock.withLock { exportedTokenBoundaries.insert(key) }
+                note(.tokenExport, tokens: count)
                 RuntimeTraceLogger.shared.trace(
                     "[MLX] poolTokenExport tokens=\(count)")
             } catch {
@@ -274,6 +371,9 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                 return alreadyReported
             }
             if !alreadyReported {
+                note(
+                    .tokenExportFailed, tokens: failedCounts.min() ?? 0,
+                    detail: signature)
                 // first/last 按边界值升序（boundaries 数组以全量边界开头，
                 // 尝试序≠升序；2026-09-30 实证 count=3 first=4638 last=4096）。
                 RuntimeTraceLogger.shared.trace(
@@ -322,8 +422,13 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             RuntimeTraceLogger.shared.trace(
                 "[MLX] poolExport messages=\(entry.tokenCount / 2) "
                     + "refHash=\(String(entry.boundaryHash, radix: 16))")
+            note(
+                .export, session: branchID ?? "-", tokens: entry.tokenCount,
+                messages: entry.tokenCount / 2,
+                detail: String(entry.boundaryHash, radix: 16))
             return entry
         } catch {
+            note(.exportFailed, session: branchID ?? "-", detail: String(describing: error))
             RuntimeTraceLogger.shared.trace(
                 "[MLX] poolExportFailed err=\(String(describing: error))")
             return nil

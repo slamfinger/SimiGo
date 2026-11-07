@@ -118,7 +118,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(row?.createdOrder, 1)
 
         let report = try db.carrierReport(deepVerify: true)
-        XCTAssertEqual(report.schemaVersion, 17)
+        XCTAssertEqual(report.schemaVersion, 21)
         XCTAssertEqual(report.objectCount, 1)
         XCTAssertEqual(report.objectBytes, Int64(data.count))
         XCTAssertEqual(report.corruptObjects, 0)
@@ -299,26 +299,26 @@ final class SimiGoESISCarrierTests: XCTestCase {
         // migration head back so the v8 backfill runs on this same file.
         try rawExec(url, """
         INSERT INTO roots(root_id, category, display_name, locator_type, status, created_at, last_scanned_at)
-            VALUES('work','work',NULL,'path','present','t','t');
+            VALUES('work','work',NULL,'path','present','2026-11-06T00:00:00Z','2026-11-06T00:00:00Z');
         INSERT INTO file_contents(root_id, relative_path, content_sha256, content, settled_at)
-            VALUES('work','a.md','stale-digest','legacy file','t');
+            VALUES('work','a.md','stale-digest','legacy file','2026-11-06T00:00:00Z');
         INSERT INTO external_files(
             root_id, relative_path, kind, size, modified_at, content_digest,
             indexed_at, last_seen_at, status)
-            VALUES('work','a.md','md',11,NULL,'stale-digest','t','t','present');
+            VALUES('work','a.md','md',11,NULL,'stale-digest','2026-11-06T00:00:00Z','2026-11-06T00:00:00Z','present');
         INSERT INTO chat_messages(session_id, role, content, model, content_sha256, created_at)
-            VALUES('s','user','legacy chat',NULL,'stale-digest','t');
+            VALUES('s','user','legacy chat',NULL,'stale-digest','2026-11-06T00:00:00Z');
         INSERT INTO retrieval_settlements(
             demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
             hit_count, status, settled_at)
             VALUES('d','q','work','i','stale-digest',
                    '[{"rootID":"work","relativePath":"a.md","lineNo":1,"lineText":"legacy file"}]',
-                   1,'valid','t');
+                   1,'valid','2026-11-06T00:00:00Z');
         INSERT INTO settlements(
             settlement_id, state_id, schema_version, payload, payload_digest, signature,
             contract_version, settled_at, validation_status)
             VALUES('11111111-1111-1111-1111-111111111111', NULL, 'v1', X'7061796C6F6164',
-                   'stale-digest', NULL, 'v', 't', 'VALID');
+                   'stale-digest', NULL, 'v', '2026-11-06T00:00:00Z', 'VALID');
         DELETE FROM schema_migrations WHERE version >= 8;
         """)
         XCTAssertEqual(try db.schemaVersion(), 7)
@@ -326,7 +326,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         try db.runMigrations()
         // v8 backfill re-applies on top of the rolled-back head, then the chain
         // runs through to the current head.
-        XCTAssertEqual(try db.schemaVersion(), 17)
+        XCTAssertEqual(try db.schemaVersion(), 21)
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedFileContents, 0)
@@ -354,6 +354,38 @@ final class SimiGoESISCarrierTests: XCTestCase {
     }
 
     // MARK: - Demand results
+
+    func testDemandCacheDoesNotReuseAStalePhysicalLocatorResult() throws {
+        let url = tempURL("stale-physical-cache")
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-stale-physical-cache-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            cleanup(url)
+        }
+        try Data("needle is initially here".utf8).write(
+            to: root.appendingPathComponent("source.md"))
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close() }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "stale-cache-root", rootURL: root, carryText: false)
+        let first = try db.executeInformationDemand(
+            query: "needle", rootID: "stale-cache-root", limit: 10)
+        XCTAssertEqual(first.hits.count, 1)
+        XCTAssertFalse(first.reused)
+
+        // Change physical bytes without advancing the settled root revision.
+        try Data("different content".utf8).write(
+            to: root.appendingPathComponent("source.md"))
+        XCTAssertThrowsError(
+            try db.executeInformationDemand(
+                query: "needle", rootID: "stale-cache-root", limit: 10),
+            "a stale physical source must fail closed before publishing a new retrieval")
+        XCTAssertEqual(
+            try db.count("retrieval_settlements"), 1,
+            "the stale demand must not append or replace a retrieval settlement")
+    }
 
     func testDemandResultIsCarriedAndReused() throws {
         let (url, db) = try open("demand")

@@ -59,6 +59,29 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Public Types
 
+    /// Resource limits for incomplete HTTP connections. Deadlines are absolute
+    /// per protocol phase and are not extended by trickle progress.
+    public struct RequestLimits: Sendable {
+        public let maxConnections: Int
+        public let headerTimeout: Duration
+        public let bodyTimeout: Duration
+
+        public init(
+            maxConnections: Int = 64,
+            headerTimeout: Duration = .seconds(10),
+            bodyTimeout: Duration = .seconds(60)
+        ) {
+            precondition(maxConnections > 0, "maxConnections must be positive")
+            precondition(headerTimeout > .zero, "headerTimeout must be positive")
+            precondition(bodyTimeout > .zero, "bodyTimeout must be positive")
+            self.maxConnections = maxConnections
+            self.headerTimeout = headerTimeout
+            self.bodyTimeout = bodyTimeout
+        }
+
+        public static let production = RequestLimits()
+    }
+
     public typealias GenerateHandler = @Sendable (
         _ requestId: String,
         _ agentId: String?,
@@ -83,11 +106,15 @@ public final class HTTPServer: @unchecked Sendable {
         _ targetBranch: String
     ) async throws -> SessionCacheMetadata
 
+    /// Branch deletion outcome/error types live at module scope next to the
+    /// runtime's own branch lifecycle implementation (NativeMLX.swift); the
+    /// handler below only carries the contract.
     public typealias DeleteBranchHandler = @Sendable (
         _ agentId: String?,
         _ sessionId: String,
-        _ logicalBranchId: String
-    ) async throws -> Void
+        _ logicalBranchId: String,
+        _ expectedGeneration: UInt64?
+    ) async throws -> BranchDeletionOutcome
 
     public typealias ListBranchesHandler = @Sendable (
         _ agentId: String?,
@@ -120,6 +147,7 @@ public final class HTTPServer: @unchecked Sendable {
 
     enum HTTPServerError: Error {
         case badRequest(String)
+        case requestReadTimedOut
         case payloadTooLarge
         case unsupportedTransferEncoding(String)
         case expectationFailed
@@ -133,6 +161,8 @@ public final class HTTPServer: @unchecked Sendable {
             switch self {
             case .badRequest, .clientDisconnected:
                 return 400
+            case .requestReadTimedOut:
+                return 408
             case .payloadTooLarge:
                 return 413
             case .unsupportedTransferEncoding:
@@ -154,6 +184,8 @@ public final class HTTPServer: @unchecked Sendable {
             switch self {
             case .badRequest(let message):
                 return message
+            case .requestReadTimedOut:
+                return "Request read deadline exceeded"
             case .payloadTooLarge:
                 return "Request body too large"
             case .unsupportedTransferEncoding(let value):
@@ -241,18 +273,24 @@ public final class HTTPServer: @unchecked Sendable {
 
         private var _generationStarted = false
         private var _cancellationSignalled = false
+        private var _settlementClaimed = false
         private var _closed = false
         private var _cancelledByRuntime = false
 
-        /// ADR 2026-10-30：客户端断连不再取消正在进行的生成。这一位置位
-        /// 表示本轮在断连后仍会跑完（detached）；它只影响生命周期归类与
-        /// 孤儿调度计数，不改变「关闭后不再出站、不再结算」的既有语义。
+        /// Client disconnect after generation start may detach the request if an
+        /// orphan slot is granted. A naturally completed generation may still
+        /// claim its final settlement; outbound sends remain blocked by `_closed`.
         private var _detachedByClient = false
 
         /// 孤儿轮让位用：detach 时被取出的请求任务另行留存一份，供
         /// 「另一个生成已在等引擎」时在 token 边界停止本轮（ADR 补充）。
         /// 一次性取走，避免重复取消。
         private var _detachedRequestTask: Task<Void, Never>?
+
+        /// 让位与结算认领互斥：一旦孤儿任务被取走准备取消，本轮就不能再
+        /// claim 结算。两件事在同一把锁里判定，谁先到谁定局；否则
+        /// 「生成刚返回、让位恰好同时发生」会既取消又结算。
+        private var _detachedTaskTaken = false
 
         /// Slice 8: this request's continuation admission result. Set by the
         /// pre-generation gate, read by the post-generation settlement of the
@@ -486,13 +524,36 @@ public final class HTTPServer: @unchecked Sendable {
         /// 落地由 `closeAndTakeRequestTask(detach:…)` 在同一把锁内完成。
         var canDetachGeneration: Bool {
             stateLock.withLock {
-                _generationStarted && !_cancellationSignalled && !_closed
+                _generationStarted && !_cancellationSignalled
+                    && !_settlementClaimed && !_closed
             }
         }
 
         var detachedByClient: Bool {
             stateLock.withLock {
                 _detachedByClient
+            }
+        }
+
+        /// Atomically claim the completed-generation finalization window. This
+        /// admits an otherwise-valid detached completion, but refuses ordinary
+        /// cancellation, Runtime shutdown, and a turn an orphan-yield pass has
+        /// already taken. Once claimed, a later client close cannot cancel the
+        /// already-completed generation while ES/IS is written. The detached
+        /// task handle is retained for Runtime shutdown, which remains the one
+        /// authority allowed to override the claim.
+        func claimCompletedTurnSettlement() -> Bool {
+            stateLock.withLock {
+                guard _generationStarted,
+                      !_cancellationSignalled,
+                      !_cancelledByRuntime,
+                      !_settlementClaimed,
+                      !_detachedTaskTaken,
+                      (!_closed || _detachedByClient) else {
+                    return false
+                }
+                _settlementClaimed = true
+                return true
             }
         }
 
@@ -507,11 +568,13 @@ public final class HTTPServer: @unchecked Sendable {
         /// 一次性取走 detach 时留存的请求任务；取走后再次调用返回 nil。
         func takeDetachedRequestTask() -> Task<Void, Never>? {
             stateLock.withLock {
-                guard _detachedByClient, let task = _detachedRequestTask else {
+                guard _detachedByClient, !_settlementClaimed,
+                      let task = _detachedRequestTask else {
                     return nil
                 }
 
                 _detachedRequestTask = nil
+                _detachedTaskTaken = true
                 return task
             }
         }
@@ -553,6 +616,7 @@ public final class HTTPServer: @unchecked Sendable {
                     detach &&
                     _generationStarted &&
                     !_cancellationSignalled &&
+                    !_settlementClaimed &&
                     !_closed
                 let detached = detachable && claimDetachSlot()
 
@@ -561,7 +625,8 @@ public final class HTTPServer: @unchecked Sendable {
                     _generationStarted &&
                     !_cancellationSignalled &&
                     !_closed &&
-                    !detached
+                    !detached &&
+                    (!_settlementClaimed || _cancelledByRuntime)
 
                 if shouldCancel {
                     _cancellationSignalled = true
@@ -575,8 +640,23 @@ public final class HTTPServer: @unchecked Sendable {
                 _closed = true
                 _peerCloseWatcherArmed = false
 
-                let task = _requestTask
+                // A claimed finalization has already crossed the generation
+                // boundary: an ordinary late close must not cancel the ES/IS
+                // writes. Runtime shutdown is the one authority that overrides
+                // the claim, and a detached request has no `_requestTask` left,
+                // so it must receive the retained detached handle instead.
+                let task: Task<Void, Never>?
+                if _cancelledByRuntime {
+                    task = _requestTask ?? _detachedRequestTask
+                } else if _settlementClaimed {
+                    task = nil
+                } else {
+                    task = _requestTask
+                }
                 _requestTask = nil
+                if _cancelledByRuntime {
+                    _detachedRequestTask = nil
+                }
 
                 return (
                     shouldCancel,
@@ -680,6 +760,7 @@ public final class HTTPServer: @unchecked Sendable {
     /// UI 模型设置兜底：请求未显式指定的字段（采样/maxTokens/thinking/kvCache）
     /// 落到 UI 值而非 ModelConfig 硬编码默认——模型页参数此前对协议请求不生效。
     private let baseConfigProvider: () -> ModelConfig
+    private let requestLimits: RequestLimits
 
     private let queue = DispatchQueue(
         label: "com.simigo.httpserver.connections",
@@ -690,6 +771,30 @@ public final class HTTPServer: @unchecked Sendable {
 
     private var connections: [ObjectIdentifier: ConnectionContext] = [:]
     private let connectionLock = NSLock()
+    private var refusedOverCapCount = 0
+
+    /// Lock-protected, authoritative view of connection admission.
+    ///
+    /// Tests observe capacity through this snapshot instead of inferring
+    /// admission from client TLS state: Network.framework may keep an
+    /// over-cap peer in `.waiting`/`.preparing` without surfacing the
+    /// reset, which says nothing about whether the server admitted it.
+    struct ConnectionSnapshot: Sendable, Equatable {
+        /// Sockets currently holding an admission slot.
+        let active: Int
+        /// Cumulative sockets refused because `active` was already at
+        /// `requestLimits.maxConnections`.
+        let refusedOverCap: Int
+    }
+
+    func connectionSnapshot() -> ConnectionSnapshot {
+        connectionLock.withLock {
+            ConnectionSnapshot(
+                active: connections.count,
+                refusedOverCap: refusedOverCapCount
+            )
+        }
+    }
 
     let responsesStore = ResponsesStateStore()
 
@@ -803,7 +908,8 @@ public final class HTTPServer: @unchecked Sendable {
         managedContinuation: ManagedContinuationHandler? = nil,
         informationTurnProducer: InformationTurnProducerProvider? = nil,
         requestBudget: RequestBudgetHandler? = nil,
-        requestAdmission: RequestAdmissionScheduler? = nil
+        requestAdmission: RequestAdmissionScheduler? = nil,
+        requestLimits: RequestLimits = .production
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -841,6 +947,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.requestBudget = requestBudget
         self.requestAdmission = requestAdmission
             ?? RequestAdmissionScheduler(limit: RuntimeTuning.requestConcurrencyLevel)
+        self.requestLimits = requestLimits
     }
 
     // MARK: - Lifecycle
@@ -1012,9 +1119,14 @@ public final class HTTPServer: @unchecked Sendable {
         requestAdmission.beginShutdown()
 
         let contexts: [ConnectionContext] = connectionLock.withLock {
-            let values = Array(connections.values)
+            let live = Array(connections.values)
+            let orphans = Array(detachedOrphans.values)
             connections.removeAll()
-            return values
+            // A detached request left `connections` when its client closed;
+            // shutdown must reclaim it from the orphan registry too, or the
+            // generation keeps running past Runtime stop.
+            let liveKeys = Set(live.map(\.key))
+            return live + orphans.filter { !liveKeys.contains($0.key) }
         }
 
         for context in contexts {
@@ -1034,13 +1146,29 @@ public final class HTTPServer: @unchecked Sendable {
         _ connection: NWConnection,
         transportSecurity: ConnectionContext.TransportSecurity = .plainHTTP
     ) {
-        let context = ConnectionContext(
-            connection: connection,
-            transportSecurity: transportSecurity
-        )
-
-        connectionLock.withLock {
+        // Bound sockets before allocating a ConnectionContext, receive task,
+        // or per-connection queue. The dictionary includes peers that have
+        // not sent a complete request header.
+        let context: ConnectionContext? = connectionLock.withLock {
+            guard connections.count < requestLimits.maxConnections else {
+                refusedOverCapCount += 1
+                return nil
+            }
+            let context = ConnectionContext(
+                connection: connection,
+                transportSecurity: transportSecurity
+            )
             connections[context.key] = context
+            return context
+        }
+        guard let context else {
+            // An accepted NWConnection is still in setup until it is started.
+            // Starting then immediately cancelling makes the over-cap refusal
+            // observable to a TLS peer; cancelling an unstarted accepted
+            // connection can leave the remote handshake waiting indefinitely.
+            connection.start(queue: queue)
+            connection.cancel()
+            return
         }
 
         connection.stateUpdateHandler = {
@@ -1115,6 +1243,18 @@ public final class HTTPServer: @unchecked Sendable {
                     context: context
                 )
 
+            } catch HTTPServerError.requestReadTimedOut {
+                // The receive deadline cancels the underlying NWConnection;
+                // terminate removes the context and releases its admission slot.
+                self.terminateForClientGone(context)
+
+            } catch HTTPServerError.clientDisconnected {
+                // A peer can close while the header/body read is suspended.
+                // This is not a malformed live request: no 400 response can be
+                // delivered, and the connection/admission slot must be released
+                // through the same idempotent disconnect lifecycle.
+                self.terminateForClientGone(context)
+
             } catch is CancellationError {
                 // terminate() owns cancellation.
 
@@ -1165,11 +1305,12 @@ public final class HTTPServer: @unchecked Sendable {
     // 连接队列调用点无警告，显式化会翻成硬警告）。本方法由连接队列
     // 回调进入时须跳主演员执行（见 onPeerClosed 注释）。
     //
-    // ADR 2026-10-30：`detach` 是客户端断连专用。本地离线模型的冷 prefill
-    // 是硬件事实，客户端 60 s 超时先到，不应把已经付出的 prefill 取消掉。
-    // detach 之后本轮不取消、不结算、不提交（recorded only）：生成继续，
-    // 协议层在出站与结算前按 `context.closed` fail-closed。手动取消
-    // （菜单栏停止 / Runtime stop）不走这条路径，语义不变。
+    // ADR 2026-10-30: detach is client-disconnect-only. A running local prefill
+    // is hardware work; a remote watchdog is not its semantic end. If the detached
+    // generation reaches its completed-turn boundary without cancellation/yield,
+    // it may claim and persist the answer, but the closed connection remains
+    // fail-closed for outbound events. Manual cancel, Runtime shutdown and a
+    // contended orphan yield do not acquire this settlement claim.
     func terminate(
         _ context: ConnectionContext,
         cancelGeneration: Bool,
@@ -1180,7 +1321,7 @@ public final class HTTPServer: @unchecked Sendable {
                 cancelGeneration: cancelGeneration,
                 detach: detach,
                 claimDetachSlot: { [weak self] in
-                    self?.beginDetachedRequest() ?? false
+                    self?.beginDetachedRequest(context) ?? false
                 }
             )
 
@@ -1193,14 +1334,21 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         if result.detached {
+            // 登记在途孤儿：detach 后连接已移出 `connections`，重试请求
+            // 无法再通过它找到孤儿——而让位必须发生在预填循环内部
+            // （见 yieldDetachedOrphansForContention）。
+            connectionLock.withLock {
+                detachedOrphans[context.key] = context
+            }
+
             // 名额随任务结束归还；任务在取出前已结束（或不存在）时立即归还。
             if let task = result.requestTask {
                 Task { [weak self] in
                     _ = await task.value
-                    self?.endDetachedRequest()
+                    self?.endDetachedRequest(context.key)
                 }
             } else {
-                endDetachedRequest()
+                endDetachedRequest(context.key)
             }
 
             RuntimeTraceLogger.shared.trace(
@@ -1241,21 +1389,72 @@ public final class HTTPServer: @unchecked Sendable {
 
     private let detachedLock = NSLock()
     private var detachedInFlight = 0
+    /// detach 记账的结构化视图（2026-11-06）：判定读这里，不解析 `[DETACH]` 文本。
+    struct DetachedSnapshot: Sendable, Equatable {
+        /// 当前在册、仍持有可能被让位的引擎窗口的孤儿数。
+        let active: Int
+        /// 累计登记次数（本轮被接受继续跑完的断连）。
+        let registered: Int
+        /// 累计因超过名额而被拒绝继续的断连（按旧语义取消）。
+        let refused: Int
+        /// 累计因竞争主动让出引擎的次数。
+        let yielded: Int
+        /// 最近登记继续跑的孤儿请求（短 id，最多 8 个）——保留
+        /// “哪个请求 detach 了”这一身份信息，替代原先从 `[DETACH] r=` 反读。
+        let ids: [String]
+    }
 
-    private func beginDetachedRequest() -> Bool {
+    private var detachedRegisteredCount = 0
+    private var detachedRefusedCount = 0
+    private var detachedYieldedCount = 0
+    private var detachedRegisteredIDs: [String] = []
+
+    func detachedSnapshot() -> DetachedSnapshot {
         detachedLock.lock()
         defer { detachedLock.unlock() }
-        guard detachedInFlight < Self.maxDetachedRequests else { return false }
+        return DetachedSnapshot(
+            active: detachedInFlight,
+            registered: detachedRegisteredCount,
+            refused: detachedRefusedCount,
+            yielded: detachedYieldedCount,
+            ids: detachedRegisteredIDs
+        )
+    }
+
+    /// 在途断连孤儿（`detachedByClient` 且仍持有引擎）。让位要抢在预填
+    /// 提交之前发生：vendor 的前缀证明 `interruptedPrefixBoundary()` 只在
+    /// 「本轮尚未提交」时成立，预填结束、提交之后再取消一律
+    /// `ledgerDisagrees`（rows ≠ ledger 0）→ 已付的 prefill 全丢，下一轮
+    /// 只能 rebuild。旧仓 2026-10-30 的真机对照正好两种都在：预填中被取消
+    /// 那次 `memPoolCapture tokens=24408` 成立并让重试 `memPoolHit`；预填
+    /// 完成后再取消那次 `memPoolCaptureRefused rows 26439 ≠ ledger 0`。
+    private var detachedOrphans: [ObjectIdentifier: ConnectionContext] = [:]
+
+    private func beginDetachedRequest(_ context: ConnectionContext) -> Bool {
+        detachedLock.lock()
+        defer { detachedLock.unlock() }
+        guard detachedInFlight < Self.maxDetachedRequests else {
+            detachedRefusedCount += 1
+            return false
+        }
         detachedInFlight += 1
+        detachedRegisteredCount += 1
+        detachedRegisteredIDs.append(RuntimeTraceLogger.short(context.requestId))
+        if detachedRegisteredIDs.count > 8 {
+            detachedRegisteredIDs.removeFirst(detachedRegisteredIDs.count - 8)
+        }
         return true
     }
 
-    private func endDetachedRequest() {
+    private func endDetachedRequest(_ key: ObjectIdentifier) {
         detachedLock.lock()
         if detachedInFlight > 0 {
             detachedInFlight -= 1
         }
         detachedLock.unlock()
+        connectionLock.withLock {
+            detachedOrphans.removeValue(forKey: key)
+        }
     }
 
     /// 孤儿轮让位（ADR 2026-10-30 补充裁定）：断连后本轮默认跑完；但若
@@ -1266,9 +1465,30 @@ public final class HTTPServer: @unchecked Sendable {
     nonisolated func stopDetachedOrphanIfContended(_ context: ConnectionContext) {
         guard context.detachedByClient else { return }
         guard otherGenerationInFlight() else { return }
+        stopDetachedOrphan(context)
+    }
+
+    /// 有新请求开始排队等引擎：在途孤儿立刻让位。
+    ///
+    /// 与 `stopDetachedOrphanIfContended` 的区别只在触发时机——那一支要等
+    /// 孤儿自己吐出第一个 chunk，而此刻预填早已结束并提交，取消只会把
+    /// 已付的 prefill 变成 `memPoolCaptureRefused`。这里在重试进入准入
+    /// 队列时就取消，取消点落在预填循环的 chunk 边界（`forEachChunk` 的
+    /// 唯一取消点），前缀可证明，重试才可能靠内存池只补算剩余部分。
+    nonisolated func yieldDetachedOrphansForContention() {
+        let orphans = connectionLock.withLock { Array(detachedOrphans.values) }
+        for orphan in orphans {
+            stopDetachedOrphan(orphan)
+        }
+    }
+
+    nonisolated private func stopDetachedOrphan(_ context: ConnectionContext) {
         guard let task = context.takeDetachedRequestTask() else { return }
 
         task.cancel()
+        detachedLock.lock()
+        detachedYieldedCount += 1
+        detachedLock.unlock()
         RuntimeTraceLogger.shared.trace(
             "[DETACH] stop=1 r=\(context.requestId) reason=generation_contended"
         )
@@ -1301,6 +1521,10 @@ public final class HTTPServer: @unchecked Sendable {
         endpoint: String
     ) async -> RequestAdmissionScheduler.Ticket? {
         context.armPeerCloseWatchWhileWaiting()
+        // 本请求即将占用引擎窗口：在途孤儿在预填阶段就让位，别让它把
+        // 已付的 prefill 跑完再被杀掉（那一段前缀已不可证明，见
+        // yieldDetachedOrphansForContention）。
+        yieldDetachedOrphansForContention()
         let started = Date()
         let result = await requestAdmission.acquire(requestId: context.requestId)
         let waitedMs = Int(Date().timeIntervalSince(started) * 1000)
@@ -1308,15 +1532,21 @@ public final class HTTPServer: @unchecked Sendable {
 
         switch result {
         case .admitted(let ticket):
+            RuntimeStateReporter.shared.setAdmission(
+                active: snapshot.active, waiting: snapshot.waiting)
+            // agent/branch 随准入行一起落（2026-11-06）：原 `[PROTOCOL] arrive`
+            // 就是为这两项存在，合并后每请求仍是一行可追溯身份。
             RuntimeTraceLogger.shared.trace(
-                "[ADMIT] grant r=\(context.requestId) endpoint=\(endpoint)"
+                "[ADMIT] grant r=\(RuntimeTraceLogger.short(context.requestId)) endpoint=\(endpoint)"
+                    + " agent=\(context.agentId ?? "default")"
+                    + " branch=\(context.logicalBranchId ?? "main")"
                     + " level=\(snapshot.capacity) active=\(snapshot.active)"
                     + " waiting=\(snapshot.waiting) waited=\(waitedMs)ms")
             return ticket
 
         case .queueFull:
             RuntimeTraceLogger.shared.trace(
-                "[ADMIT] reject r=\(context.requestId) endpoint=\(endpoint)"
+                "[ADMIT] reject r=\(RuntimeTraceLogger.short(context.requestId)) endpoint=\(endpoint)"
                     + " reason=queue_full level=\(snapshot.capacity)"
                     + " active=\(snapshot.active) waiting=\(snapshot.waiting)")
             sendError(
@@ -1328,12 +1558,12 @@ public final class HTTPServer: @unchecked Sendable {
 
         case .cancelled:
             RuntimeTraceLogger.shared.trace(
-                "[ADMIT] cancel r=\(context.requestId) endpoint=\(endpoint)")
+                "[ADMIT] cancel r=\(RuntimeTraceLogger.short(context.requestId)) endpoint=\(endpoint)")
             return nil
 
         case .shuttingDown:
             RuntimeTraceLogger.shared.trace(
-                "[ADMIT] reject r=\(context.requestId) endpoint=\(endpoint)"
+                "[ADMIT] reject r=\(RuntimeTraceLogger.short(context.requestId)) endpoint=\(endpoint)"
                     + " reason=shutting_down")
             sendError(
                 "Server is shutting down",
@@ -1350,10 +1580,12 @@ public final class HTTPServer: @unchecked Sendable {
     ) {
         requestAdmission.release(ticket)
         let snapshot = requestAdmission.debugSnapshot()
+        RuntimeStateReporter.shared.setAdmission(
+            active: snapshot.active, waiting: snapshot.waiting)
+        // 只留“谁释放了”。level/active/waiting 与 release 自身的含义重复，
+        // 真值在 `state/runtime.json` 的 admission 字段里。
         RuntimeTraceLogger.shared.trace(
-            "[ADMIT] release r=\(ticket.requestId) endpoint=\(endpoint)"
-                + " level=\(snapshot.capacity) active=\(snapshot.active)"
-                + " waiting=\(snapshot.waiting)")
+            "[ADMIT] release r=\(RuntimeTraceLogger.short(ticket.requestId)) endpoint=\(endpoint)")
     }
 
     // MARK: - SSE Heartbeat
@@ -1484,6 +1716,16 @@ public final class HTTPServer: @unchecked Sendable {
         case denied(reason: String)
     }
 
+    /// Owner ruling 2026-11-05 (S2): the plaintext loopback compatibility
+    /// surface serves protected routes WITHOUT the proof ceremony only for
+    /// this explicit allowlist. P-BRANCH-CONTROL is deliberately absent —
+    /// branch operations always run the full challenge → proof → consume
+    /// ceremony, on loopback too. The compatibility surface is never a
+    /// shortcut, and permissions added later do not silently join it.
+    nonisolated static let localbPlaintextLoopbackPermissions: Set<LOCALBPermission> = [
+        .inference, .informationRead, .srsWrite
+    ]
+
     /// The single trusted route→policy table. Challenge issuance and
     /// request authorization MUST both derive their decision through this
     /// function; a permission is never taken from a client header, query
@@ -1496,29 +1738,23 @@ public final class HTTPServer: @unchecked Sendable {
         case ("OPTIONS", _),
              ("GET", "/health"),
              ("HEAD", "/health"),
-             ("GET", "/v1/simigo/env"),
-             ("GET", "/v1/simigo/roots"),
-             ("GET", "/v1/simigo/is/status"),
-             ("GET", "/v1/simigo/search"),
-             ("POST", "/v1/simigo/search"),
-             ("PUT", "/v1/simigo/roots"),
-             ("POST", "/v1/simigo/roots"),
              ("POST", "/localb/auth/challenge"):
             return .open
-        case ("GET", "/v1/models"), ("GET", "/models"),
+        case ("GET", "/v1/simigo/env"),
+             ("GET", "/v1/simigo/roots"),
+             ("GET", "/v1/simigo/is/status"),
+             ("GET", "/v1/models"), ("GET", "/models"),
              ("GET", "/v1/simigo/is/settlement"),
              ("GET", "/v1/simigo/is/dependency"),
              ("GET", "/v1/simigo/is/file"),
              ("GET", "/v1/simigo/is/object"):
             return .protected(permission: .informationRead)
-        case ("POST", "/v1/simigo/is/reconcile"):
-            // Re-derives carried validity; it writes only derived IS state, so
-            // it needs the SRS-write permission rather than inference or admin.
-            return .protected(permission: .srsWrite)
-        case ("POST", "/mcp"), ("GET", "/mcp"):
-            // Agent-facing IS surface: the tools read the settled index and may
-            // register roots / re-derive validity, so the whole endpoint needs
-            // the SRS-write permission (never inference only).
+        case ("GET", "/v1/simigo/search"),
+             ("POST", "/v1/simigo/search"),
+             ("PUT", "/v1/simigo/roots"),
+             ("POST", "/v1/simigo/roots"),
+             ("POST", "/v1/simigo/is/reconcile"),
+             ("POST", "/mcp"), ("GET", "/mcp"):
             return .protected(permission: .srsWrite)
         case ("POST", "/v1/chat/completions"),
              ("POST", "/chat/completions"),
@@ -1529,16 +1765,14 @@ public final class HTTPServer: @unchecked Sendable {
         case ("POST", "/v1/branches/fork"),
              ("POST", "/v1/branches/delete"),
              ("POST", "/v1/branches/list"):
-            // Least-privilege fail-closed (B3 security review 2026-10-16):
-            // branch mutations are NOT part of P-INFERENCE, and no dedicated
-            // branch permission exists yet, so protected access is refused
-            // outright. This is an explicit denial, never a removal from the
-            // table — a missing entry would fall back to the fail-closed
-            // default below, and a nil-style "not listed" could be read as
-            // "no authorization required".
-            return .denied(
-                reason: "LOCALB_BRANCH_OPERATIONS_NOT_AUTHORIZED"
-            )
+            // Owner ruling 2026-11-05 (S2): branch operations carry their own
+            // least-privilege permission. This supersedes the B3 2026-10-16
+            // outright denial — with a dedicated permission the routes are
+            // protected: never open, never part of P-INFERENCE, and
+            // unauthorized clients are refused at challenge issuance and at
+            // dispatch by the same registry validation as every other
+            // protected route.
+            return .protected(permission: .branchControl)
         default:
             if method == "GET", routePath.hasPrefix("/v1/models/") {
                 return .protected(permission: .informationRead)
@@ -2466,6 +2700,10 @@ public final class HTTPServer: @unchecked Sendable {
         // served on it without the LOCALB proof ceremony (responses carry
         // "unprotected-by-LOCALB"). The TLS listener keeps the full B3
         // proof gate unchanged.
+        // Owner ruling 2026-11-05 (S2): the exemption is now an explicit
+        // allowlist (localbPlaintextLoopbackPermissions). Permissions off
+        // the allowlist — P-BRANCH-CONTROL first — fall through to the
+        // full proof ceremony even on plaintext loopback.
         let plaintextLoopback =
             !context.transportSecurity.isTLS
         switch Self.localbRoutePolicy(
@@ -2475,7 +2713,8 @@ public final class HTTPServer: @unchecked Sendable {
         case .open:
             break
         case .protected(let permission):
-            if plaintextLoopback {
+            if plaintextLoopback,
+               Self.localbPlaintextLoopbackPermissions.contains(permission) {
                 break
             }
             request = try verifyLOCALBProtectedRequest(
@@ -2731,22 +2970,62 @@ public final class HTTPServer: @unchecked Sendable {
                 )
                 return
             }
+            // S3-A: optional staleness guard — a client holding a stale view
+            // of the branch gets an explicit 409 instead of a silent delete.
+            let expectedGeneration = (json["expected_generation"] as? NSNumber)?.uint64Value
 
-            try await deleteBranchHandler(
-                resolveExplicitAgentId(
-                    from: json,
-                    headers: request.headers
-                ),
-                sessionId,
-                branchId
-            )
+            let outcome: BranchDeletionOutcome
+            do {
+                outcome = try await deleteBranchHandler(
+                    resolveExplicitAgentId(
+                        from: json,
+                        headers: request.headers
+                    ),
+                    sessionId,
+                    branchId,
+                    expectedGeneration
+                )
+            } catch let error as BranchLifecycleError {
+                // Owner ruling 2026-11-05 (S3-A): unknown / cross-session /
+                // generation-mismatch deletions fail OBSERVABLY — a typed
+                // error with its own status, never an `ok:true` body.
+                switch error {
+                case .branchUnknown(let unknownSession, let unknownBranch):
+                    sendError(
+                        "branch_unknown: no live session or checkpoint for "
+                            + "\(unknownSession)/\(unknownBranch)",
+                        status: 404,
+                        on: context.connection,
+                        context: context
+                    )
+                case .branchGenerationMismatch(let expected, let actual):
+                    sendError(
+                        "branch_generation_mismatch: expected \(expected), "
+                            + "actual \(actual)",
+                        status: 409,
+                        on: context.connection,
+                        context: context
+                    )
+                }
+                return
+            }
 
+            // The outcome carries the post-deletion listing (A.3): the
+            // caller verifies the target is gone without a second read.
+            // generation is reported only when the runtime tracks one
+            // (reserved for the llama.cpp ES integration).
+            var body: [String: Any] = [
+                "ok": true,
+                "session_id": sessionId,
+                "deleted_branch": outcome.deletedBranch,
+                "remaining_live": outcome.remainingLiveBranches,
+                "remaining_checkpoints": outcome.remainingCheckpointBranches,
+            ]
+            if let generation = outcome.generation {
+                body["generation"] = generation
+            }
             sendJSON(
-                [
-                    "ok": true,
-                    "session_id": sessionId,
-                    "deleted_branch": branchId,
-                ],
+                body,
                 status: 200,
                 on: context.connection,
                 context: context
@@ -3140,21 +3419,11 @@ public final class HTTPServer: @unchecked Sendable {
         context: ConnectionContext,
         stream: Bool? = nil
     ) {
-        // 到达锚点入 trace（2026-10-15）：GUI 进程 stdout 不可见，身份行
-        // 此前只在内存里「到达过」。10-15 事故取证时无法从 trace 区分
-        // 「活客户端管道化」与「孤儿请求排队放行」，每请求一行补齐。
-        // r=/s= 用 6 位短 ID，与 [LC] 行可直连。
-        // stream 标志（2026-10-16）：非流式请求死于此路径的零字节窗口
-        // （undici 300s 拆连），取证时首行即可分流。
-        RuntimeTraceLogger.shared.trace(
-            "[PROTOCOL] arrive" +
-            " r=\(String(context.requestId.dropFirst(4).prefix(6)))" +
-            " endpoint=\(endpoint)" +
-            (stream.map { " stream=\($0)" } ?? "") +
-            " agent=\(context.agentId ?? "default")" +
-            " s=\(context.sessionId.map { String($0.prefix(6)) } ?? "-")" +
-            " branch=\(context.logicalBranchId ?? "main")"
-        )
+        // 到达锚点不再单独落一行（2026-11-06）：`[LC] … to=RUNNING` 与
+        // `[ADMIT] grant` 已经逐请求覆盖，独立 arrive 行是同一事实的第三份
+        // 抄写；到达与否的**判定**改由 `RuntimeLifecycleCoordinator.state(of:)`
+        // 回答（例如取消链测试），不再要求测试 grep 日志。
+        // 机器判定需要的信息（r=/s=/agent/branch/stream）保留在协议行上。
 
         print(
             "[SimiGo Protocol] " +
@@ -3615,7 +3884,7 @@ public final class HTTPServer: @unchecked Sendable {
         context: ConnectionContext
     ) {
         RuntimeTraceLogger.shared.trace(
-            "[BUDGET] r=\(context.requestId) gate=withdrawn"
+            "[BUDGET] r=\(RuntimeTraceLogger.short(context.requestId)) gate=withdrawn"
                 + " verdict=\(verdict.kind.wireName)"
                 + " estMs=\(verdict.estimatedPrefillMs)"
                 + " prefillBudget=\(verdict.prefillBudgetMs)"
@@ -3628,7 +3897,7 @@ public final class HTTPServer: @unchecked Sendable {
     /// running a verdict it cannot enforce in time.
     func noteBudgetGateInactive(reason: String, context: ConnectionContext) {
         RuntimeTraceLogger.shared.trace(
-            "[BUDGET] r=\(context.requestId) gate=inactive reason=\(reason)")
+            "[BUDGET] r=\(RuntimeTraceLogger.short(context.requestId)) gate=inactive reason=\(reason)")
     }
 
     /// W4/A: the single terminal for a refused turn. HTTP 503 with a
@@ -3994,182 +4263,95 @@ public final class HTTPServer: @unchecked Sendable {
     private func readRequest(
         from connection: NWConnection
     ) async throws -> HTTPRequest {
+        let clock = ContinuousClock()
+        let headerDeadline = clock.now.advanced(by: requestLimits.headerTimeout)
+        var buffer = Data()
+        let delimiter = Data("\r\n\r\n".utf8)
 
-        var buffer =
-            Data()
-
-        let delimiter =
-            Data(
-                "\r\n\r\n".utf8
-            )
-
-        while
-            buffer.range(
-                of: delimiter
-            ) == nil {
-
+        while buffer.range(of: delimiter) == nil {
             guard
-                let chunk =
-                    try await connection.receiveAsync(
-                        min: 1,
-                        max:
-                            Self.receiveChunkSize
-                    ),
-
+                let chunk = try await receiveBeforeDeadline(
+                    from: connection,
+                    min: 1,
+                    max: Self.receiveChunkSize,
+                    deadline: headerDeadline),
                 !chunk.isEmpty
             else {
                 throw HTTPServerError.clientDisconnected
             }
 
             buffer.append(chunk)
-
-            if buffer.count >
-                Self.maxHeaderBytes {
-
+            if buffer.count > Self.maxHeaderBytes {
                 throw HTTPServerError.payloadTooLarge
             }
         }
 
-        guard
-            let headerRange =
-                buffer.range(
-                    of: delimiter
-                )
-        else {
-            throw HTTPServerError.badRequest(
-                "Malformed headers"
-            )
+        guard let headerRange = buffer.range(of: delimiter) else {
+            throw HTTPServerError.badRequest("Malformed headers")
         }
-
-        guard
-            headerRange.lowerBound <=
-                Self.maxHeaderBytes
-        else {
+        guard headerRange.lowerBound <= Self.maxHeaderBytes else {
             throw HTTPServerError.payloadTooLarge
         }
-
-        guard
-            let headerText =
-                String(
-                    data:
-                        buffer[
-                            ..<headerRange
-                                .lowerBound
-                        ],
-                    encoding: .utf8
-                )
+        guard let headerText = String(
+            data: buffer[..<headerRange.lowerBound], encoding: .utf8)
         else {
-            throw HTTPServerError.badRequest(
-                "Headers are not valid UTF-8"
-            )
+            throw HTTPServerError.badRequest("Headers are not valid UTF-8")
         }
 
-        let head = try Self.HTTPRequestHeadParser.parse(
-            headerText
-        )
+        let head = try Self.HTTPRequestHeadParser.parse(headerText)
 
-        if let expect =
-            head.headers["expect"] {
-
-            let normalizedExpect =
-                expect
-                    .trimmingCharacters(
-                        in:
-                            .whitespacesAndNewlines
-                    )
-                    .lowercased()
-
+        if let expect = head.headers["expect"] {
+            let normalizedExpect = expect
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
             if normalizedExpect.isEmpty {
-                // 无 Expect，继续
+                // No Expect header.
             } else if normalizedExpect == "100-continue" {
-                // HTTP/1.1 规范行为：告知客户端继续发送请求体。
-                // （curl 对 >1KB 请求体自动附带此头；拒绝会让部分 LAN 客户端超时）
                 connection.send(
-                    content:
-                        Data(
-                            "HTTP/1.1 100 Continue\r\n\r\n".utf8
-                        ),
-                    completion:
-                        .contentProcessed { _ in }
-                )
+                    content: Data("HTTP/1.1 100 Continue\r\n\r\n".utf8),
+                    completion: .contentProcessed { _ in })
             } else {
-                throw HTTPServerError
-                    .expectationFailed
+                throw HTTPServerError.expectationFailed
             }
         }
 
-        let bodyStart =
-            headerRange.upperBound
-
-        var body =
-            buffer.subdata(
-                in:
-                    bodyStart..<buffer.count
-            )
-
+        let bodyStart = headerRange.upperBound
+        var body = buffer.subdata(in: bodyStart..<buffer.count)
         let contentLength = head.contentLength
 
-        if contentLength == 0,
-           !body.isEmpty {
-
+        if contentLength == 0, !body.isEmpty {
             throw HTTPServerError.badRequest(
-                "Request body requires Content-Length"
-            )
+                "Request body requires Content-Length")
+        }
+        if body.count > contentLength {
+            body = body.prefix(contentLength)
         }
 
-        if body.count >
-            contentLength {
-
-            body =
-                body.prefix(
-                    contentLength
-                )
-        }
-
-        while
-            body.count <
-            contentLength {
-
+        // One absolute body deadline. Receiving small chunks never extends it.
+        let bodyDeadline = clock.now.advanced(by: requestLimits.bodyTimeout)
+        while body.count < contentLength {
             guard
-                let chunk =
-                    try await connection.receiveAsync(
-                        min: 1,
-                        max:
-                            min(
-                                Self.receiveChunkSize,
-                                contentLength -
-                                    body.count
-                            )
-                    ),
-
+                let chunk = try await receiveBeforeDeadline(
+                    from: connection,
+                    min: 1,
+                    max: min(
+                        Self.receiveChunkSize,
+                        contentLength - body.count),
+                    deadline: bodyDeadline),
                 !chunk.isEmpty
             else {
                 throw HTTPServerError.clientDisconnected
             }
 
-            let remaining =
-                contentLength -
-                body.count
-
-            if chunk.count >
-                remaining {
-
-                body.append(
-                    chunk.prefix(
-                        remaining
-                    )
-                )
-
+            let remaining = contentLength - body.count
+            if chunk.count > remaining {
+                body.append(chunk.prefix(remaining))
                 break
             }
-
             body.append(chunk)
         }
 
-        guard
-            body.count ==
-                contentLength
-        else {
+        guard body.count == contentLength else {
             throw HTTPServerError.clientDisconnected
         }
 
@@ -4179,8 +4361,45 @@ public final class HTTPServer: @unchecked Sendable {
             requestTarget: head.requestTarget,
             authority: head.authority,
             headers: head.headers,
-            body: body
-        )
+            body: body)
+    }
+
+    private func receiveBeforeDeadline(
+        from connection: NWConnection,
+        min: Int,
+        max: Int,
+        deadline: ContinuousClock.Instant
+    ) async throws -> Data? {
+        let clock = ContinuousClock()
+        let remaining = clock.now.duration(to: deadline)
+        guard remaining > .zero else {
+            connection.cancel()
+            throw HTTPServerError.requestReadTimedOut
+        }
+
+        return try await withThrowingTaskGroup(of: Data?.self) { group in
+            group.addTask {
+                try await connection.receiveAsync(min: min, max: max)
+            }
+            group.addTask {
+                try await Task.sleep(for: remaining)
+                throw HTTPServerError.requestReadTimedOut
+            }
+
+            do {
+                guard let result = try await group.next() else {
+                    throw CancellationError()
+                }
+                group.cancelAll()
+                return result
+            } catch {
+                group.cancelAll()
+                // receiveAsync's cancellation handler cancels NWConnection,
+                // forcing the outstanding Network.framework callback to resume.
+                connection.cancel()
+                throw error
+            }
+        }
     }
 }
 
@@ -4260,29 +4479,24 @@ private extension NWConnection {
         min: Int = 1,
         max: Int = 32 * 1024
     ) async throws -> Data? {
-
-        try await withCheckedThrowingContinuation {
-            continuation in
-
-            receive(
-                minimumIncompleteLength: min,
-                maximumLength: max
-            ) {
-                data,
-                _,
-                _,
-                error in
-
-                if let error {
-                    continuation.resume(
-                        throwing: error
-                    )
-                } else {
-                    continuation.resume(
-                        returning: data
-                    )
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation {
+                continuation in
+                receive(
+                    minimumIncompleteLength: min,
+                    maximumLength: max
+                ) { data, _, _, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: data)
+                    }
                 }
             }
+        } onCancel: {
+            // Cancelling the Swift task alone does not cancel Network.framework's
+            // pending receive. Cancel the connection so the callback resumes.
+            self.cancel()
         }
     }
 }
