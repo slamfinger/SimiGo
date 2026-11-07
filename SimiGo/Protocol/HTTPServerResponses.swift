@@ -1160,6 +1160,12 @@ extension HTTPServer {
             managedAnchor = anchor
         }
 
+        var pendingInformationTurn: InformationTurn?
+        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        defer {
+            terminalizePendingInformationTurn(
+                pendingInformationTurn, terminal: chatTurnTerminal, context: context)
+        }
         var isSuccess = false
         var failureReason: String?
         defer {
@@ -1305,6 +1311,7 @@ extension HTTPServer {
                     parsed: parsed, json: json, headers: headers),
                 queryOverride: Self.lastUserText(parsed.currentInputMessages)
                     ?? Self.lastUserText(parsed.canonicalMessages))
+            pendingInformationTurn = information.turn
             let turnMessages = information.messages
 
             // 「可以复用就不调用模型」: an exact repeat of an already-answered
@@ -1506,6 +1513,7 @@ extension HTTPServer {
             // 取消契约：keepalive 头未提交时客户端仍连接必须给 HTTP
             // 终态，否则将无限等待。
             keepalive.settle()
+            chatTurnTerminal = .cancelled
             failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return
@@ -1573,6 +1581,12 @@ extension HTTPServer {
         }
 
         // 2. Use defer to ensure lifecycle completion (success or failure)
+        var pendingInformationTurn: InformationTurn?
+        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        defer {
+            terminalizePendingInformationTurn(
+                pendingInformationTurn, terminal: chatTurnTerminal, context: context)
+        }
         var isSuccess = false
         var failureReason: String?
         defer {
@@ -1677,6 +1691,7 @@ extension HTTPServer {
                     ?? Self.lastUserText(parsed.canonicalMessages))
             hoistedContinuationMessages = gatedMessages
             hoistedInformation = (information.messages, information.turn)
+            pendingInformationTurn = information.turn
             // A settled answer never reaches the model, so it is never refused
             // by a prefill budget (「可以复用就不调用模型」 wins).
             let reuseWouldServe =
@@ -1846,6 +1861,7 @@ extension HTTPServer {
                     queryOverride: Self.lastUserText(parsed.currentInputMessages)
                         ?? Self.lastUserText(parsed.canonicalMessages))
             }
+            pendingInformationTurn = information.turn
             let turnMessages = information.messages
 
             // Most Agents stream by default, so the zero-call reuse has to exist
@@ -2046,6 +2062,7 @@ extension HTTPServer {
             // 客户端已断连（closed）→ 静默；客户端仍连接 →
             // 必须送达 terminal event 并关闭流，
             // 否则客户端会永远等待本轮 response。
+            chatTurnTerminal = .cancelled
             failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return
