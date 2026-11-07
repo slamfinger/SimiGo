@@ -546,7 +546,7 @@ final class QoderCandidateInbox {
     /// A file that exists must be a real SQLite database. Zero bytes, foreign
     /// content, or a damaged header all mean damage, never "fresh".
     private func validateHeader(at path: String) throws {
-        let descriptor = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        let descriptor = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: path, detail: "cannot open database without following links")
@@ -555,7 +555,8 @@ final class QoderCandidateInbox {
         var info = stat()
         guard fstat(descriptor, &info) == 0,
               (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_uid == getuid()
+              info.st_uid == getuid(),
+              info.st_nlink == 1
         else {
             throw QoderCollectionStateError.unreadableState(
                 path: path, detail: "database entry is not a regular owned file")

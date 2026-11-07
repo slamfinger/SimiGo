@@ -1,3 +1,4 @@
+import Darwin
 import Crypto
 import Foundation
 import XCTest
@@ -139,6 +140,26 @@ final class LOCALBRegistryStoreTests: XCTestCase {
             atPath: external.appendingPathComponent(".localb-registry.events").path))
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: external.appendingPathComponent(".localb-registry.lock").path))
+    }
+
+    func testRegistryRejectsFIFOJournalAndLockWithoutBlocking() throws {
+        let root = makeRoot()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let lock = root.appendingPathComponent(".localb-registry.lock")
+        let lockResult = lock.path.withCString { Darwin.mkfifo($0, mode_t(0o600)) }
+        XCTAssertEqual(lockResult, 0, "mkfifo lock failed: \\(String(cString: strerror(errno)))")
+        XCTAssertThrowsError(try LOCALBRegistryStore(rootURL: root).initializeNewLineage())
+
+        try FileManager.default.removeItem(at: lock)
+        let store = LOCALBRegistryStore(rootURL: root)
+        let checkpoint = try store.initializeNewLineage()
+        let journal = root.appendingPathComponent(".localb-registry.events")
+        try FileManager.default.removeItem(at: journal)
+        let journalResult = journal.path.withCString { Darwin.mkfifo($0, mode_t(0o600)) }
+        XCTAssertEqual(journalResult, 0, "mkfifo journal failed: \\(String(cString: strerror(errno)))")
+        XCTAssertThrowsError(
+            try store.loadVerified(checkpoint: checkpoint),
+            "a FIFO journal must be rejected rather than read or blocked on")
     }
 
     func testRegistryRejectsSymlinkedLockAndJournalWithoutChangingTargets() throws {

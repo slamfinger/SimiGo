@@ -41,8 +41,11 @@ final class QoderCollectionLease {
                 path: directoryURL.path, detail: "state directory is not a private owned directory")
         }
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
-        let descriptor = open(
-            fileURL.path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
+        let descriptor = Self.lockFileName.withCString {
+            openat(
+                directoryDescriptor, $0,
+                O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK, 0o600)
+        }
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path, detail: String(cString: strerror(errno)))
@@ -51,6 +54,7 @@ final class QoderCollectionLease {
         guard fstat(descriptor, &lockInfo) == 0,
               (lockInfo.st_mode & S_IFMT) == S_IFREG,
               lockInfo.st_uid == getuid(),
+              lockInfo.st_nlink == 1,
               fchmod(descriptor, 0o600) == 0
         else {
             close(descriptor)
@@ -59,6 +63,7 @@ final class QoderCollectionLease {
         }
         guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
             let code = errno
+            let holderPID = code == EWOULDBLOCK ? Self.holder(descriptor: descriptor) : nil
             close(descriptor)
             guard code == EWOULDBLOCK else {
                 throw QoderCollectionStateError.unreadableState(
@@ -66,7 +71,7 @@ final class QoderCollectionLease {
             }
             throw QoderCollectionStateError.stateAlreadyOwned(
                 path: fileURL.path,
-                detail: holder(of: fileURL).map { "held by pid \($0)" }
+                detail: holderPID.map { "held by pid \\($0)" }
                     ?? "held by another runner")
         }
         let pid = Data("\(getpid())\n".utf8)
@@ -78,18 +83,17 @@ final class QoderCollectionLease {
     }
 
     /// Best-effort diagnostic only; the lock, not the contents, is the truth.
-    private static func holder(of fileURL: URL) -> String? {
-        let descriptor = open(
-            fileURL.path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
-        guard descriptor >= 0 else { return nil }
-        defer { close(descriptor) }
+    /// Read through the already-open descriptor so a path replacement cannot
+    /// redirect the diagnostic and a FIFO cannot block this failure path.
+    private static func holder(descriptor: Int32) -> String? {
         var info = stat()
         guard fstat(descriptor, &info) == 0,
-              (info.st_mode & S_IFMT) == S_IFREG
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_nlink == 1
         else { return nil }
         var bytes = [UInt8](repeating: 0, count: 64)
         let count = bytes.withUnsafeMutableBytes {
-            Darwin.read(descriptor, $0.baseAddress, $0.count)
+            Darwin.pread(descriptor, $0.baseAddress, $0.count, 0)
         }
         guard count > 0,
               let text = String(bytes: bytes.prefix(count), encoding: .utf8)?

@@ -587,7 +587,7 @@ public struct LOCALBRegistryStore {
         let directoryFD = try openRootDirectory()
         defer { close(directoryFD) }
         let fd = name.withCString {
-            openat(directoryFD, $0, flags | O_NOFOLLOW | O_CLOEXEC, mode)
+            openat(directoryFD, $0, flags | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, mode)
         }
         guard fd >= 0 else {
             if errno == EEXIST && name == Self.journalFileName {
@@ -598,7 +598,8 @@ public struct LOCALBRegistryStore {
         var info = stat()
         guard fstat(fd, &info) == 0,
               (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_uid == getuid()
+              info.st_uid == getuid(),
+              info.st_nlink == 1
         else {
             close(fd)
             throw LOCALBStatus.registryPersistenceFailure
@@ -626,13 +627,14 @@ public struct LOCALBRegistryStore {
         let directoryFD = try openRootDirectory()
         defer { close(directoryFD) }
         let fd = Self.lockFileName.withCString {
-            openat(directoryFD, $0, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+            openat(directoryFD, $0, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
         }
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         var lockInfo = stat()
         guard fstat(fd, &lockInfo) == 0,
               (lockInfo.st_mode & S_IFMT) == S_IFREG,
               lockInfo.st_uid == getuid(),
+              lockInfo.st_nlink == 1,
               fchmod(fd, 0o600) == 0
         else {
             close(fd)
