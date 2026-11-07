@@ -135,10 +135,103 @@ final class SimiGoInformationLoopTests: XCTestCase {
 
     // MARK: - P1/P2: retrieval boundary (measured 2026-10-30)
 
+    // MARK: - Chat turn terminal standing
+
+    func testFailedAndCancelledTurnsAreTerminalAndSameTextRetriesCreateNewRows() throws {
+        let (url, db) = try open("chat-turn-terminal-standing")
+        defer { db.close(); cleanup(url) }
+
+        let failedText = "terminal-marker-failed-" + UUID().uuidString
+        let failedID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: failedText, model: nil, createdAt: Date())
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-failed").isEmpty,
+            "pending input must never be searchable before the request completes")
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: failedID, terminal: .failed))
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(failedID) + ";"),
+            "failed")
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-failed").isEmpty,
+            "failed user input must not be offered as completed conversation history")
+
+        let failedRetryID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: failedText, model: nil, createdAt: Date())
+        XCTAssertNotEqual(failedRetryID, failedID,
+                          "a retry after failure needs a fresh pending user row")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(failedRetryID) + ";"),
+            "pending")
+
+        let cancelledText = "terminal-marker-cancelled-" + UUID().uuidString
+        let cancelledID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: cancelledText, model: nil, createdAt: Date())
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: cancelledID, terminal: .cancelled))
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(cancelledID) + ";"),
+            "cancelled")
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-cancelled").isEmpty,
+            "cancelled user input must not be offered as completed conversation history")
+        XCTAssertFalse(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: failedID, terminal: .cancelled),
+            "a terminal row cannot be rewritten by a later cleanup pass")
+
+        let detachedText = "terminal-marker-detached-" + UUID().uuidString
+        let detachedID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: detachedText, model: nil, createdAt: Date())
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: detachedID, terminal: .detached))
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(detachedID) + ";"),
+            "detached")
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-detached").isEmpty,
+            "detached generation input is preserved as non-retrievable history")
+        let detachedRetryID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: detachedText, model: nil, createdAt: Date())
+        XCTAssertNotEqual(detachedRetryID, detachedID,
+                          "a retry after detach starts a new semantic turn")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(detachedRetryID) + ";"),
+            "pending")
+    }
+
+    func testCommittedTurnWithSameTextStartsANewSemanticTurn() throws {
+        let (url, db) = try open("chat-turn-committed-dedupe")
+        defer { db.close(); cleanup(url) }
+        let text = "same words after a completed answer"
+        let firstID = try db.appendChatMessage(
+            sessionID: "completed-session", role: "user",
+            content: text, model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: "completed-session", userMessageID: firstID,
+            assistantText: "first answer", model: nil, createdAt: Date())
+        let secondID = try db.appendChatMessage(
+            sessionID: "completed-session", role: "user",
+            content: text, model: nil, createdAt: Date())
+        XCTAssertNotEqual(secondID, firstID,
+                          "completed turns are history, not pending retry rows")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(firstID) + ";"),
+            "committed")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(secondID) + ";"),
+            "pending")
+    }
+
     /// A cited fragment must contain the match that produced it. Measured
     /// 2026-10-30: a 2,447-character rollout line matched on a term at
     /// character 566 while the injected citation was that line's first 240
     /// characters — text that never contained the query at all.
+
     func testCitationWindowContainsTheMatchThatSelectedIt() throws {
         let (url, db) = try open("snippet")
         let root = try makeWorkRoot()

@@ -481,4 +481,48 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
                 "the second turn resolved a NEW demand, so the old answer was out of scope")
         }
     }
+    
+    func testDetachedCancellationKeepsDetachedTerminalStandingUnlessRuntimeShutdownWins() {
+        func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
+            let connection = NWConnection(
+                to: .hostPort(
+                    host: NWEndpoint.Host("127.0.0.1"),
+                    port: NWEndpoint.Port(rawValue: 9)!),
+                using: .tcp)
+            connection.start(queue: DispatchQueue(label: "terminal-standing-" + label + "-" + UUID().uuidString))
+            return (HTTPServer.ConnectionContext(connection: connection), connection)
+        }
+
+        let (detached, detachedConnection) = makeContext("detached-yield")
+        defer { detachedConnection.cancel() }
+        XCTAssertTrue(detached.markGenerationStarted())
+        let detachedClose = detached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(detachedClose.detached)
+        XCTAssertEqual(
+            HTTPServer.chatTurnTerminalForCancellation(detached).rawValue,
+            "detached",
+            "an orphan-yield cancellation retains the client-detached standing")
+
+        let (runtime, runtimeConnection) = makeContext("runtime-shutdown")
+        defer { runtimeConnection.cancel() }
+        XCTAssertTrue(runtime.markGenerationStarted())
+        let runtimeClose = runtime.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(runtimeClose.detached)
+        runtime.markCancelledByRuntime()
+        XCTAssertEqual(
+            HTTPServer.chatTurnTerminalForCancellation(runtime).rawValue,
+            "cancelled",
+            "Runtime shutdown overrides the earlier client detach")
+
+        let (manual, manualConnection) = makeContext("manual-cancel")
+        defer { manualConnection.cancel() }
+        XCTAssertTrue(manual.markGenerationStarted())
+        _ = manual.closeAndTakeRequestTask(cancelGeneration: true, detach: false)
+        XCTAssertEqual(
+            HTTPServer.chatTurnTerminalForCancellation(manual).rawValue,
+            "cancelled",
+            "ordinary cancellation remains cancelled")
+    }
 }

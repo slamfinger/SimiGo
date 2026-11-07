@@ -3733,8 +3733,10 @@ public final class SimiGoESISDatabase {
     }
 
     /// The standings a line can hold, as stored in `turn_state`. They are
-    /// distinct questions: persisted (`pending`/`recorded`/`internal`),
-    /// verified (`committed`), and retrievable (ordinary retrieval reads
+    /// distinct questions: in flight (`pending`), externally recorded
+    /// (`recorded`), ended without completion (`failed`/`cancelled`/`detached`),
+    /// internal bookkeeping (`internal`), and verified/retrievable
+    /// (`committed`; ordinary retrieval reads
     /// `committed` rows only, further narrowed by request scope).
     public enum ChatTurnState: String, Sendable {
         /// Local input whose own request is still in flight.
@@ -3743,8 +3745,21 @@ public final class SimiGoESISDatabase {
         case recorded
         /// Verified/settled; eligible for ordinary retrieval.
         case committed
+        /// The request ended before the turn completed; never retrieval eligible.
+        case failed
+        /// The request was cancelled before the turn completed; never retrieval eligible.
+        case cancelled
+        /// The client detached while generation continued; never retrieval eligible.
+        case detached
         /// Client bookkeeping kept as a record, never ordinary memory.
         case internalOperation = "internal"
+    }
+
+    /// Terminal standing for a local request that did not complete.
+    public enum ChatTurnTerminal: String, Sendable {
+        case failed
+        case cancelled
+        case detached
     }
 
     /// Append one conversation line. A user row starts `pending` and only the
@@ -3753,9 +3768,9 @@ public final class SimiGoESISDatabase {
     /// Other roles are written at completion, so they are eligible at once.
     /// Internal-operation rows are written `internal` and stay there.
     ///
-    /// Returns the row id. A repeated trailing user message (tool-loop retry or
-    /// retry of a cancelled turn) reuses its existing row instead of appending
-    /// a duplicate, and the caller can still commit exactly that row.
+    /// Returns the row id. A same-text retry reuses the trailing row only
+    /// while that local user row is still pending. A completed, failed or
+    /// cancelled turn stays in history and the next request receives a new row.
     @discardableResult
     public func appendChatMessage(
         sessionID: String, role: String, content: String, model: String?, createdAt: Date,
@@ -3794,7 +3809,10 @@ public final class SimiGoESISDatabase {
     private static func sameEligibilityClass(_ existing: String, _ target: String) -> Bool {
         let internalState = ChatTurnEligibility.internalOperation.rawValue
         if target == internalState { return existing == internalState }
-        return existing != internalState
+        // Only an in-flight local retry may adopt the existing row. A completed,
+        // failed or cancelled turn is a distinct historical event even when the
+        // next request repeats the exact same words.
+        return existing == ChatTurnState.pending.rawValue
     }
 
     /// Commit this turn: store the reply and promote the user row that started
@@ -3823,6 +3841,29 @@ public final class SimiGoESISDatabase {
                 }
             }
             return assistantID
+        }
+    }
+
+    /// Close an uncompleted local user row without promoting it into retrieval
+    /// history. This is idempotent and touches only the exact pending user row.
+    @discardableResult
+    public func closePendingChatTurn(
+        sessionID: String,
+        userMessageID: Int64,
+        terminal: ChatTurnTerminal
+    ) throws -> Bool {
+        guard userMessageID > 0 else { return false }
+        return try transactionResult {
+            let changed = try execBinding("""
+            UPDATE chat_messages SET turn_state=?
+            WHERE id=? AND session_id=? AND role='user' AND source_kind='local'
+              AND turn_state='pending';
+            """) { stmt in
+                bind(stmt, 1, terminal.rawValue)
+                sqlite3_bind_int64(stmt, 2, userMessageID)
+                bind(stmt, 3, sessionID)
+            }
+            return changed == 1
         }
     }
 
@@ -4120,9 +4161,10 @@ public final class SimiGoESISDatabase {
                c.content_sha256, c.created_at
         FROM chat_messages c
         LEFT JOIN is_objects o ON o.object_id=c.content_object_id
+        WHERE c.turn_state='committed'
         """
         if let sessionID {
-            sql += " WHERE c.session_id='" + sessionID.replacingOccurrences(of: "'", with: "''") + "'"
+            sql += " AND c.session_id='" + sessionID.replacingOccurrences(of: "'", with: "''") + "'"
         }
         sql += " ORDER BY c.session_id, c.id;"
         let stmt = try prepare(sql)
