@@ -950,6 +950,54 @@ public final class HTTPServer: @unchecked Sendable {
         self.requestLimits = requestLimits
     }
 
+    /// Best-effort terminal fact for a failed HTTP generation attempt.
+    /// The raw engine error, prompt text and filesystem paths are deliberately
+    /// excluded: the append-only audit carries only controlled classifications,
+    /// request correlation, call count and settlement count.
+    @discardableResult
+    static func recordHTTPFailureAudit(
+        executionID: String,
+        requestID: String,
+        wire: String,
+        terminal: String,
+        modelCalls: Int,
+        settlementsWritten: Int,
+        evidence: [String: String] = [:],
+        databaseURL: URL = SimiGoPaths.databaseURL
+    ) -> SimiGoFailureAudit.WriteResult? {
+        do {
+            let db = try SimiGoESISDatabase(url: databaseURL, createIfNeeded: true)
+            defer { db.close() }
+            try db.runMigrations()
+
+            var safeEvidence = evidence
+            safeEvidence["request_id"] = requestID
+            safeEvidence["wire"] = wire
+            safeEvidence["terminal"] = terminal
+            let event = SimiGoFailureAudit.Event(
+                executionID: executionID,
+                attempt: 1,
+                phase: .g,
+                cause: nil,
+                origin: .request,
+                evidence: safeEvidence,
+                modelCalls: max(0, modelCalls),
+                settlementsWritten: max(0, settlementsWritten),
+                detail: "wire=\(wire) terminal=\(terminal)")
+            let result = db.recordFailureAudit(event)
+            RuntimeTraceLogger.shared.trace(
+                "[FAILURE_AUDIT] wire=\(wire) execution=\(RuntimeTraceLogger.short(executionID)) "
+                    + "persisted=\(result.auditPersisted ? 1 : 0) "
+                    + "failure_class=\(result.failureClass ?? "none")")
+            return result
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[FAILURE_AUDIT] wire=\(wire) execution=\(RuntimeTraceLogger.short(executionID)) "
+                    + "persisted=0 failure_class=database_unavailable")
+            return nil
+        }
+    }
+
     // MARK: - Lifecycle
 
     public func start() throws {

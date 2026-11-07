@@ -893,6 +893,7 @@ extension HTTPServer {
         })
         defer { heartbeat.cancel() }
 
+        var modelCallAttempted = false
         do {
             // P0-3 补位：RUNNING 由推理 gate 闭包置位，协议层必须先完成
             // CREATED→QUEUED，否则 gate 闭包撞非法迁移、请求被当作取消静默丢弃。
@@ -905,6 +906,7 @@ extension HTTPServer {
                 return
             }
 
+            modelCallAttempted = true
             let result = try await generateHandler(
                 context.requestId,
                 agentId,
@@ -1098,7 +1100,16 @@ extension HTTPServer {
             // 取消契约：SSE 头已发出且客户端仍在连接时必须给出终态
             // （error chunk + [DONE] + close），否则客户端将无限等待。
             chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
-            failureReason = context.cancellationFailureReason()
+            let terminal = context.cancellationFailureReason()
+            failureReason = terminal
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.stream",
+                terminal: terminal,
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else { return }
 
             sendImmediateSSEChunk(
@@ -1121,6 +1132,14 @@ extension HTTPServer {
             // CONTEXT SAFETY：SSE 头已发出，以可识别错误类型收尾，
             // 客户端（Codex 等）据此压缩上下文重试而非无限等待。
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.stream",
+                terminal: "context_demand_exceeded",
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else { return }
 
             sendImmediateSSEChunk(
@@ -1143,6 +1162,14 @@ extension HTTPServer {
 
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.stream",
+                terminal: "model_execution_error",
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
@@ -1442,6 +1469,7 @@ extension HTTPServer {
         let reasoning =
             ReasoningBuffer()
 
+        var modelCallAttempted = false
         do {
             try await context.transitionToQueued()
 
@@ -1452,6 +1480,7 @@ extension HTTPServer {
                 return
             }
 
+            modelCallAttempted = true
             let result = try await generateHandler(
                 context.requestId,
                 agentId,
@@ -1586,7 +1615,16 @@ extension HTTPServer {
             // 客户端仍连接必须给出 HTTP 终态。
             keepalive.settle()
             chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
-            failureReason = context.cancellationFailureReason()
+            let terminal = context.cancellationFailureReason()
+            failureReason = terminal
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.non_streaming",
+                terminal: terminal,
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else { return }
 
             sendNonStreamingError(
@@ -1601,6 +1639,14 @@ extension HTTPServer {
             // 未提交头（快失败路径）：直接给 HTTP 400 终态。
             keepalive.settle()
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.non_streaming",
+                terminal: "context_demand_exceeded",
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else { return }
 
             sendNonStreamingError(
@@ -1613,6 +1659,14 @@ extension HTTPServer {
         } catch {
             keepalive.settle()
             failureReason = "model_execution_error: \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.non_streaming",
+                terminal: "model_execution_error",
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }

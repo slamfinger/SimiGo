@@ -1299,6 +1299,7 @@ extension HTTPServer {
         let toolCalls =
             Locked<[ParsedToolCall]>([])
 
+        var modelCallAttempted = false
         do {
             try await context.transitionToQueued()
 
@@ -1378,6 +1379,7 @@ extension HTTPServer {
                 context: context
             )
 
+            modelCallAttempted = true
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
@@ -1531,7 +1533,16 @@ extension HTTPServer {
             // 终态，否则将无限等待。
             keepalive.settle()
             chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
-            failureReason = context.cancellationFailureReason()
+            let terminal = context.cancellationFailureReason()
+            failureReason = terminal
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.non_streaming",
+                terminal: terminal,
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
@@ -1547,6 +1558,14 @@ extension HTTPServer {
             // CONTEXT SAFETY：头未提交（快失败路径）直接给 HTTP 400 终态。
             keepalive.settle()
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.non_streaming",
+                terminal: "context_demand_exceeded",
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else {
                 return
             }
@@ -1561,6 +1580,14 @@ extension HTTPServer {
         } catch {
             keepalive.settle()
             failureReason = "model_execution_error: \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.non_streaming",
+                terminal: "model_execution_error",
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
@@ -1831,6 +1858,7 @@ extension HTTPServer {
             close: false
         )
 
+        var modelCallAttempted = false
         do {
             try await context.transitionToQueued()
 
@@ -1923,6 +1951,7 @@ extension HTTPServer {
                 context: context
             )
 
+            modelCallAttempted = true
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
@@ -2080,7 +2109,16 @@ extension HTTPServer {
             // 必须送达 terminal event 并关闭流，
             // 否则客户端会永远等待本轮 response。
             chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
-            failureReason = context.cancellationFailureReason()
+            let terminal = context.cancellationFailureReason()
+            failureReason = terminal
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: terminal,
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
@@ -2113,6 +2151,14 @@ extension HTTPServer {
             // CONTEXT SAFETY：SSE 头已发出，以可识别错误类型收尾，
             // 客户端（Codex 等）据此压缩上下文重试而非无限等待。
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: "context_demand_exceeded",
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: ["demand_tokens": String(demand), "budget_tokens": String(budget)])
             guard !context.closed else {
                 return
             }
@@ -2143,6 +2189,14 @@ extension HTTPServer {
             )
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: "model_execution_error",
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
             guard !context.closed else {
                 return
             }
