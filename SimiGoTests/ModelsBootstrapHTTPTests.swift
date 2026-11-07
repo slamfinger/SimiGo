@@ -39,7 +39,13 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
                     savedAt: Date(),
                     history: [])
             },
-            deleteBranchHandler: { _, _, _ in },
+            deleteBranchHandler: { _, _, _, _ in
+                BranchDeletionOutcome(
+                    deletedBranch: "", hadLiveSession: false,
+                    hadCheckpointFile: false, generation: 1,
+                    remainingLiveBranches: [],
+                    remainingCheckpointBranches: [])
+            },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { health.healthy }
         )
@@ -218,8 +224,9 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
                     keys.contains(forbidden),
                     "bootstrap must not expose \(forbidden)")
             }
+            let userRoot = (NSHomeDirectory() as NSString).deletingLastPathComponent + "/"
             for text in strings {
-                XCTAssertFalse(text.contains("/Users/"), "filesystem path leaked: \(text)")
+                XCTAssertFalse(text.contains(userRoot), "filesystem path leaked: \(text)")
                 XCTAssertFalse(text.contains(".sqlite"), "database location leaked: \(text)")
                 XCTAssertFalse(text.contains("tokenizer.adapter.json"), "file name leaked: \(text)")
             }

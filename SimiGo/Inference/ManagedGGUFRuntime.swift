@@ -13,6 +13,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
         var engine: ProcessRuntime?
         var server: HTTPServer?
         var client: GGUFEngineClient?
+        var enginePort: Int?
         var running = false
     }
 
@@ -25,6 +26,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
         state.withLock { $0.client?.activeRequestCount ?? 0 > 0 }
     }
     var isInProcess: Bool { false }
+    /// The loopback port the engine was started on, kept only so slot probes
+    /// can reach the engine directly instead of the product listener.
+    var enginePort: Int? { state.withLock { $0.enginePort } }
 
     init(config: ModelConfig, backendConfig: BackendConfig) {
         self.config = config
@@ -68,7 +72,17 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     bindHost: node.bindHost,
                     bonjourEnabled: node.bonjourEnabled,
                     generateHandler: { requestId, _, _, _, messages, tools, requestConfig, onChunk, onToolCall, onReasoning in
-                        try await client.generate(
+                        // P0-3 对齐（2026-11-06）：GGUF 此前从不置 RUNNING，
+                        // 于是每个跑满引擎的成功请求都以 `finish(from: QUEUED)`
+                        // 收尾（2026-10-30 实测 FORCE_RELEASED 32 次），
+                        // 在途标记缺失、真实占用与 LC 状态不一致。
+                        // MLX 在拿到 generation gate 后置位；GGUF 在这里拿到的是
+                        // 已 admission 的同一窗口，语义相同。转换失败不影响生成：
+                        // 已被取消的请求由 client.cancel 收口，重复调用则忽略。
+                        try? await RuntimeLifecycleCoordinator.shared.transition(
+                            requestID: requestId,
+                            to: .running)
+                        return try await client.generate(
                             requestId: requestId,
                             messages: messages,
                             tools: tools,
@@ -82,7 +96,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     forkBranchHandler: { _, _, _, _ in
                         throw RuntError.generationFailed("GGUF 后端不提供分支快照")
                     },
-                    deleteBranchHandler: { _, _, _ in },
+                    deleteBranchHandler: { _, _, _, _ in
+                        throw RuntError.generationFailed("GGUF 后端不提供分支快照")
+                    },
                     listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
                     checkHealthHandler: { [weak engine] in
                         await engine?.checkHealth() ?? false
@@ -105,6 +121,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                 $0.engine = engine
                 $0.server = server
                 $0.client = client
+                $0.enginePort = enginePort
                 $0.running = true
             }
         } catch {
@@ -120,6 +137,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
             current.server = nil
             current.client = nil
             current.engine = nil
+            current.enginePort = nil
             current.running = false
             return snapshot
         }

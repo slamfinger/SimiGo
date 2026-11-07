@@ -305,6 +305,7 @@ extension SimiGoSettlementConsumption.Refusal {
         case .sourceNotValid: return "source_not_valid"
         case .sourceTampered: return "source_tampered"
         case .identityUndeclared: return "identity_undeclared"
+        case .identityConstraintMismatch: return "identity_constraint_mismatch"
         case .contractUndeclared: return "contract_undeclared"
         case .contractMismatch: return "contract_mismatch"
         case .contractNotCovered: return "contract_not_covered"

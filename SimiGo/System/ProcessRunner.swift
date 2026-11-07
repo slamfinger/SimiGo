@@ -1,6 +1,18 @@
 import Foundation
 
 public struct ProcessRunner: Sendable {
+    /// Mainland mirror used when the ambient environment does not name an
+    /// endpoint. An explicit non-empty `HF_ENDPOINT` is preserved: it is the
+    /// operator's override, not something this app should silently replace.
+    nonisolated public static let defaultHFEndpoint = "https://hf-mirror.com"
+
+    nonisolated public static func hfEndpoint(
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> String {
+        let configured = environment["HF_ENDPOINT"] ?? ""
+        return configured.isEmpty ? defaultHFEndpoint : configured
+    }
+
     nonisolated public static func run(_ dir: URL, _ args: [String]) throws {
         let process = createProcess(dir: dir, args: args)
         try executeProcess(process)
@@ -46,7 +58,7 @@ public struct ProcessRunner: Sendable {
         var paths = (env["PATH"] ?? "").components(separatedBy: ":")
         if !paths.contains(simigoBin) { paths.insert(simigoBin, at: 0) }
         env["PATH"] = paths.joined(separator: ":")
-        if env["HF_ENDPOINT"] == nil { env["HF_ENDPOINT"] = "https://hf-mirror.com" }
+        env["HF_ENDPOINT"] = hfEndpoint(environment: env)
         return env
     }
     

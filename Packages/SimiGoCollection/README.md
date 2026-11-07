@@ -2,7 +2,11 @@
 
 独立的 **MLX-free Swift package**：只读采集 Qoder transcript，将增量重建的候选事件与读取游标写入本地 SQLite inbox。
 
-> **当前定位：collection-only。** App 集成默认关闭采集；即使开启，也只写 collector inbox，不配置 sink、不写 ES/IS、不执行 settlement 或复用。采集候选不等于 IS 结算资格，collection → ES/IS 尚无端到端验收。
+> **当前定位：采集 → 外部轮次合同。** App 集成默认关闭采集；开启后，sink 把轮次按
+> IS 外部轮次合同（`recordExternalTurn` / `recordExternalResponse` / `verifyExternalTurn`）
+> 写入权威库。本 package 自身仍不依赖 Runtime：sink 在 App 侧
+> （`SimiGo/App/QoderExternalTurnSink.swift`）。包测试只证明采集与 inbox 语义；
+> 「真实 transcript → 检索命中」的整链安装版读数尚未取得。
 
 ## 数据流
 
@@ -10,12 +14,15 @@
 Qoder transcript (read-only)
   → Scanner / Tailer / Turn Accumulator
   → SQLite inbox (candidate + cursor transaction)
-  → optional sink (at-least-once; not enabled by App integration)
+  → sink (at-least-once) → IS 外部轮次合同（App 侧实现）
 ```
 
 ## App 行为与数据位置
 
-- App 启动不自动采集；设置页「启用 Qoder 采集」显式开启，默认关闭。
+- App 启动不自动采集，也不在启动时重跑导入；设置页的采集桥显式触发。
+- 采集是**一次性导入**：把选定目录里**已有**的会话读进来（`readExisting`），扫到不再读出字节就结束并释放 lease。之后的会话由 agent 自己走 MCP 进 IS，不靠这里持续 tail。
+- 策略切换会让旧游标作废并从 0 重读；重复候选由 inbox 键吸收，重跑同一次导入不追加行。
+- 每轮按「答案完整 + 问答绑定成立」判检索资格：`eligible`、压缩后按文件顺序绑定的两类、排队命令 → `committed`（可检索）；被打断 / 未绑定 / agent 自造的续跑·通知·回调 → `recorded`（入库不检索）；子代理 / 侧链 → `internal`（只留审计）。
 - 关闭后停止轮询并释放状态目录 lease；菜单栏仅在开启时显示采集状态。
 - transcript 根只读；写入仅限 `$SIMIGO_HOME/collectors/qoder`。
 - 默认 `QODER_PROJECTS_DIR=~/.qoder-cn/projects`，`SIMIGO_HOME=~/.simigo`。

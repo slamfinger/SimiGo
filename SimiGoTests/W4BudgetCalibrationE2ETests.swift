@@ -168,66 +168,72 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
         func cancel() { task?.cancel() }
     }
 
-    // MARK: - Trace parsing
+    // MARK: - Structured readings (2026-11-06)
+    //
+    // 判定与引擎真值都从产品状态读：`RequestBudgetController.verdicts(after:)`
+    // 是判定自己的类型化留档，`runtime.observation.snapshot()` 是引擎侧认可
+    // 的逐轮真值。`native_mlx_trace.log` 只作事后审计证据，不参与判定——日志
+    // 格式一改、行一降噪，校准结论就失效，那是把副作用当状态机。
 
-    private func gateLine(since mark: Int, containing marker: String = "[BUDGET]") -> String? {
-        CancelTrace.lines(since: mark).first {
-            $0.contains(marker) && $0.contains("verdict=")
-        }
+    private func verdictCursor() -> UInt64 {
+        RequestBudgetController.shared.verdictCursor
     }
 
-    private func completionLine(since mark: Int) -> String? {
-        CancelTrace.lines(since: mark).last {
-            $0.contains("[MLX] session=") && $0.contains("promptTime=")
-        }
-    }
-
-    private func parseGate(_ line: String?) -> GateReading {
-        var reading = GateReading()
-        guard let line else { return reading }
-        var prior: String?
-        for token in line.split(separator: " ") {
-            let pair = token.split(separator: "=", maxSplits: 1).map(String.init)
-            guard pair.count == 2 else { continue }
-            switch pair[0] {
-            case "verdict": reading.kind = pair[1]
-            case "gate": reading.gate = pair[1]
-            case "bucket": reading.bucket = pair[1]
-            case "promptTokens": reading.promptTokens = Int(pair[1])
-            case "renderedTokens": reading.renderedTokens = Int(pair[1])
-            case "deltaTokens": reading.deltaTokens = Int(pair[1])
-            case "estMs": reading.estMs = Int(pair[1])
-            case "samples": reading.samples = Int(pair[1])
-            case "rate": reading.rate = Double(pair[1])
-            case "cached": reading.cached = pair[1] == "1"
-            case "priorAttempt": prior = pair[1]
-            default: break
+    /// 游标之后的第一条判定（判定在响应收口前同步登记，这里留短暂容忍）。
+    private func verdict(
+        since cursor: UInt64, timeout: TimeInterval = 5
+    ) -> RequestBudgetController.VerdictRecord? {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if let hit = RequestBudgetController.shared.verdicts(after: cursor).first {
+                return hit
             }
-        }
-        if let prior {
-            // processed/total@elapsedms
-            let parts = prior.split(separator: "@").map(String.init)
-            let fraction = parts.first?.split(separator: "/").map(String.init) ?? []
-            reading.priorProcessed = fraction.count == 2 ? Int(fraction[0]) : nil
-            reading.priorTotal = fraction.count == 2 ? Int(fraction[1]) : nil
-            reading.priorElapsedMs = parts.count == 2 ? Int(parts[1]) : nil
-        }
+            Thread.sleep(forTimeInterval: 0.1)
+        } while Date() < deadline
+        return RequestBudgetController.shared.verdicts(after: cursor).first
+    }
+
+    private func gateReading(_ record: RequestBudgetController.VerdictRecord?) -> GateReading {
+        var reading = GateReading()
+        guard let record else { return reading }
+        let verdict = record.verdict
+        reading.kind = verdict.kind.wireName
+        reading.gate = verdict.gateWasActive ? "active" : "inactive"
+        reading.bucket = verdict.bucket
+        reading.promptTokens = verdict.promptTokens
+        reading.renderedTokens = record.fullTokens
+        reading.deltaTokens = record.deltaTokens
+        reading.estMs = verdict.estimatedPrefillMs
+        reading.samples = verdict.samples
+        reading.rate = verdict.rateTokPerSecond
+        reading.cached = verdict.cached
+        reading.priorProcessed = verdict.priorProcessed
+        reading.priorTotal = verdict.priorTotal
+        reading.priorElapsedMs = verdict.priorElapsedMs
         return reading
     }
 
-    private func engineReading(_ line: String?) -> (tokens: Int?, seconds: Double?) {
-        guard let line else { return (nil, nil) }
-        var tokens: Int?
-        var seconds: Double?
-        for token in line.split(separator: " ") {
-            let pair = token.split(separator: "=", maxSplits: 1).map(String.init)
-            guard pair.count == 2 else { continue }
-            if pair[0] == "promptTokens" { tokens = Int(pair[1]) }
-            if pair[0] == "promptTime" {
-                seconds = Double(pair[1].replacingOccurrences(of: "s", with: ""))
-            }
-        }
-        return (tokens, seconds)
+    /// 上一轮引擎报的 promptTokens / promptTime（同一份逐轮真值）。
+    private func engineReading() -> (tokens: Int?, seconds: Double?) {
+        guard let snapshot = runtime?.observation.snapshot() else { return (nil, nil) }
+        return (
+            snapshot["prompt_tokens_engine_reported"] as? Int,
+            snapshot["prompt_seconds_engine_reported"] as? Double
+        )
+    }
+
+    /// 事件计数（取消轮不提交等），读观测面而不是 trace 文本。
+    private func eventCount(_ name: String) -> Int {
+        guard let snapshot = runtime?.observation.snapshot(),
+            let events = snapshot["events"] as? [String: Any]
+        else { return 0 }
+        return events[name] as? Int ?? 0
+    }
+
+    /// 引擎真的开始预填过：观测面记录了本轮预填总量。
+    private func prefillObserved() -> Bool {
+        guard let snapshot = runtime?.observation.snapshot() else { return false }
+        return snapshot["prefill_tokens_observed"] as? Int != nil
     }
 
     // MARK: - Records
@@ -306,11 +312,11 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
                     "disable_thinking": true,
                     "max_completion_tokens": 8,
                 ]
-                let mark = CancelTrace.size()
+                let mark = verdictCursor()
                 let outcome = try await send(
                     body: body, headers: ["X-Simigo-Deadline-Ms": "600000"])
-                let gate = parseGate(gateLine(since: mark))
-                let engine = engineReading(completionLine(since: mark))
+                let gate = gateReading(verdict(since: mark))
+                let engine = engineReading()
                 var entry: [String: Any] = [
                     "phase": "measure",
                     "tier": tier.name,
@@ -372,9 +378,9 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
             "disable_thinking": true,
             "max_completion_tokens": 8,
         ] as [String: Any]
-        var rejectionMark = CancelTrace.size()
+        var rejectionMark = verdictCursor()
         let firstReject = try await send(body: rejectedPayload, headers: [:])
-        let firstGate = parseGate(gateLine(since: rejectionMark))
+        let firstGate = gateReading(verdict(since: rejectionMark))
         record([
             "phase": "gate",
             "tier": "40k",
@@ -398,9 +404,9 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
         // server does and how long each attempt takes — never assume the
         // client stopped because the status was 503.
         for index in 1...3 {
-            rejectionMark = CancelTrace.size()
+            rejectionMark = verdictCursor()
             let repeatOutcome = try await send(body: rejectedPayload, headers: [:])
-            let repeatGate = parseGate(gateLine(since: rejectionMark))
+            let repeatGate = gateReading(verdict(since: rejectionMark))
             record([
                 "phase": "gate-replay",
                 "tier": "40k",
@@ -423,7 +429,7 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
 
         // 8K is the positive control inside the same budget: the gate must
         // admit it and the turn must complete normally.
-        let mark = CancelTrace.size()
+        let mark = verdictCursor()
         let smallTier = try await send(
             body: [
                 "model": "w4-budget-calibration",
@@ -435,8 +441,8 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
                 "max_completion_tokens": 8,
             ],
             headers: [:])
-        let smallGate = parseGate(gateLine(since: mark))
-        let smallEngine = engineReading(completionLine(since: mark))
+        let smallGate = gateReading(verdict(since: mark))
+        let smallEngine = engineReading()
         record([
             "phase": "gate-admit",
             "tier": "8k",
@@ -471,35 +477,34 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
             "temperature": 0,
             "max_completion_tokens": 8,
         ] as [String: Any]
-        let cancelMark = CancelTrace.size()
+        let cancelMark = verdictCursor()
         let stream = StreamHandle()
         stream.start(request(body: cancelPayload, headers: [:]))
         let started = await CancelPathWait.until(timeout: 300) { stream.status != nil }
         XCTAssertTrue(started, "the streaming attempt never produced a status")
         XCTAssertEqual(stream.status, 200, "no samples yet: the first attempt is admitted")
-        let prefill = await CancelTrace.waitForLine(
-            containing: ["[MLX] prefill "], since: cancelMark, timeout: 300)
-        XCTAssertNotNil(
-            prefill,
-            "no real prefill started; window:\n"
-                + String(CancelTrace.window(since: cancelMark).prefix(2000)))
-        let admittedGate = parseGate(gateLine(since: cancelMark))
+        let prefilling = await CancelPathWait.until(timeout: 300) { [self] in
+            prefillObserved()
+        }
+        XCTAssertTrue(
+            prefilling,
+            "no real prefill started: prefill_tokens_observed is still empty")
+        let admittedGate = gateReading(verdict(since: cancelMark))
         XCTAssertEqual(
             admittedGate.kind, "insufficient_samples",
             "with no samples the first 40K attempt is an honest gate-inactive pass")
         stream.cancel()
-        let cancelLine = await CancelTrace.waitForLine(
-            containing: ["[MLX] cancelCommitSkip"], since: cancelMark, timeout: 300)
-        XCTAssertNotNil(
-            cancelLine,
-            "the engine never observed the cancellation; window:\n"
-                + String(CancelTrace.window(since: cancelMark).prefix(2000)))
+        let skipped = await CancelPathWait.until(timeout: 300) { [self] in
+            eventCount("cancel_commit_skip") > 0
+        }
+        XCTAssertTrue(
+            skipped, "the engine never observed the cancellation")
 
         // The client retries the identical payload immediately (observed
         // #121 shape: ~0.2 s after the cancel).
-        let retryMark = CancelTrace.size()
+        let retryMark = verdictCursor()
         let retry = try await send(body: cancelPayload, headers: [:], timeout: 120)
-        let retryGate = parseGate(gateLine(since: retryMark))
+        let retryGate = gateReading(verdict(since: retryMark))
         record([
             "phase": "prior-attempt-retry",
             "status": retry.status,
@@ -509,7 +514,7 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
             "prior_processed": retryGate.priorProcessed ?? -1,
             "prior_total": retryGate.priorTotal ?? -1,
             "prior_elapsed_ms": retryGate.priorElapsedMs ?? -1,
-            "cancel_line": cancelLine ?? "missing",
+            "cancel_commit_skip": eventCount("cancel_commit_skip"),
         ])
         XCTAssertEqual(
             retry.status, 503,
@@ -527,7 +532,7 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
         // A4 inside the same no-sample state: a short prompt still completes.
         // The gate records that it was inactive instead of pretending to have
         // screened this turn.
-        let markAfter = CancelTrace.size()
+        let markAfter = verdictCursor()
         let small = try await send(
             body: [
                 "model": "w4-budget-calibration",
@@ -538,7 +543,7 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
                 "max_completion_tokens": 8,
             ],
             headers: [:])
-        let smallGateAfter = parseGate(gateLine(since: markAfter))
+        let smallGateAfter = gateReading(verdict(since: markAfter))
         record([
             "phase": "gate-insufficient",
             "status": small.status,

@@ -13,19 +13,114 @@ class LOCALBTestCase: XCTestCase {
 
     // MARK: - Fixture
 
+    /// Indirection so tests can move the registry head (permission grants,
+    /// revocations) and have the server's trusted-checkpoint closure follow
+    /// the new head instead of a snapshot pinned at pairing time.
+    final class LOCALBTrustedCheckpointBox {
+        var value: LOCALBRegistryCheckpoint
+        init(value: LOCALBRegistryCheckpoint) { self.value = value }
+    }
+
     struct Host {
         let port: UInt16
         let plaintextCompatPort: UInt16
         let spkiHex: String
         let clientKey: Curve25519.Signing.PrivateKey
         let clientKeyID: String
+        /// Present when the host was built through makeAuthorizedHost;
+        /// bootstrap-path fixtures wire their own registry instead.
+        let store: LOCALBRegistryStore?
+        let coordinator: LOCALBPairingCoordinator?
+        let trustedCheckpoint: LOCALBTrustedCheckpointBox?
+        let server: HTTPServer?
+
+        init(
+            port: UInt16,
+            plaintextCompatPort: UInt16,
+            spkiHex: String,
+            clientKey: Curve25519.Signing.PrivateKey,
+            clientKeyID: String,
+            store: LOCALBRegistryStore? = nil,
+            coordinator: LOCALBPairingCoordinator? = nil,
+            trustedCheckpoint: LOCALBTrustedCheckpointBox? = nil,
+            server: HTTPServer? = nil
+        ) {
+            self.port = port
+            self.plaintextCompatPort = plaintextCompatPort
+            self.spkiHex = spkiHex
+            self.clientKey = clientKey
+            self.clientKeyID = clientKeyID
+            self.store = store
+            self.coordinator = coordinator
+            self.trustedCheckpoint = trustedCheckpoint
+            self.server = server
+        }
     }
 
     func randomPort() -> UInt16 {
         UInt16.random(in: 42000...58000)
     }
 
-    func makeServer(port: UInt16) -> HTTPServer {
+    // MARK: - Branch lifecycle fixture (S3-A)
+
+    /// Stateful stand-in for the runtime's branch registry: the deletion
+    /// contract (existence check, generation guard, remaining listing) is
+    /// exercised end-to-end at the HTTP layer against real state.
+    private final class BranchFixture {
+        var live: [String: Set<String>] = [:]
+        var generations: [String: UInt64] = [:]
+        private let lock = NSLock()
+
+        func seed(sessionId: String, branchId: String) {
+            lock.lock(); defer { lock.unlock() }
+            live[sessionId, default: []].insert(branchId)
+            generations["\(sessionId)/\(branchId)", default: 0] += 1
+        }
+
+        func delete(
+            sessionId: String, branchId: String, expectedGeneration: UInt64?
+        ) throws -> BranchDeletionOutcome {
+            lock.lock(); defer { lock.unlock() }
+            guard let branches = live[sessionId], branches.contains(branchId) else {
+                throw BranchLifecycleError.branchUnknown(
+                    sessionId: sessionId, branchId: branchId)
+            }
+            // expected_generation is RESERVED for the llama.cpp ES
+            // integration; the fixture does not fabricate a generation
+            // source, so no mismatch refusal is raised here.
+            let key = "\(sessionId)/\(branchId)"
+            let generation = generations[key] ?? 1
+            var remaining = branches
+            remaining.remove(branchId)
+            live[sessionId] = remaining
+            generations[key] = nil
+            return BranchDeletionOutcome(
+                deletedBranch: branchId,
+                hadLiveSession: true,
+                hadCheckpointFile: false,
+                generation: generation,
+                remainingLiveBranches: remaining.sorted(),
+                remainingCheckpointBranches: []
+            )
+        }
+
+        func listBranches(sessionId: String) -> [String] {
+            lock.lock(); defer { lock.unlock() }
+            return (live[sessionId] ?? []).sorted()
+        }
+    }
+
+    private let branchFixture = BranchFixture()
+
+    /// Seeds a live branch into the deletion fixture before the request.
+    func seedBranch(sessionId: String, branchId: String) {
+        branchFixture.seed(sessionId: sessionId, branchId: branchId)
+    }
+
+    func makeServer(
+        port: UInt16,
+        requestLimits: HTTPServer.RequestLimits = .production
+    ) -> HTTPServer {
         HTTPServer(
             port: Int(port),
             modelId: "localb-b3-wiring-test",
@@ -40,9 +135,20 @@ class LOCALBTestCase: XCTestCase {
                     history: []
                 )
             },
-            deleteBranchHandler: { _, _, _ in },
-            listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
-            checkHealthHandler: { true }
+            deleteBranchHandler: { [weak self] _, sessionId, branchId, expectedGeneration in
+                guard let self else { throw BranchLifecycleError.branchUnknown(
+                    sessionId: sessionId, branchId: branchId) }
+                return try self.branchFixture.delete(
+                    sessionId: sessionId, branchId: branchId,
+                    expectedGeneration: expectedGeneration
+                )
+            },
+            listBranchesHandler: { [weak self] _, sessionId in
+                (live: self?.branchFixture.listBranches(sessionId: sessionId) ?? [],
+                 checkpoints: [])
+            },
+            checkHealthHandler: { true },
+            requestLimits: requestLimits
         )
     }
 
@@ -56,7 +162,8 @@ class LOCALBTestCase: XCTestCase {
     /// listener with an explicit loopback plaintext-compatibility port, and
     /// the B3 request-authorization wiring.
     func makeAuthorizedHost(
-        configureAuthorization: Bool = true
+        configureAuthorization: Bool = true,
+        requestLimits: HTTPServer.RequestLimits = .production
     ) throws -> Host {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -144,16 +251,16 @@ class LOCALBTestCase: XCTestCase {
 
         let port = randomPort()
         let plaintextCompatPort = randomPort()
-        let server = makeServer(port: port)
+        let server = makeServer(port: port, requestLimits: requestLimits)
         server.configureLOCALBTransport(
             identity: identity,
             plaintextCompatibilityPort: Int(plaintextCompatPort)
         )
+        let trustedCheckpointBox = LOCALBTrustedCheckpointBox(value: committed)
         if configureAuthorization {
-            var trustedCheckpoint = committed
             server.configureLOCALBRequestAuthorization(
                 coordinator: coordinator,
-                trustedCheckpoint: { trustedCheckpoint }
+                trustedCheckpoint: { trustedCheckpointBox.value }
             )
         }
         try server.start()
@@ -164,7 +271,11 @@ class LOCALBTestCase: XCTestCase {
             plaintextCompatPort: plaintextCompatPort,
             spkiHex: identity.spkiSHA256Hex,
             clientKey: clientKey,
-            clientKeyID: clientKeyID
+            clientKeyID: clientKeyID,
+            store: store,
+            coordinator: coordinator,
+            trustedCheckpoint: trustedCheckpointBox,
+            server: server
         )
     }
 

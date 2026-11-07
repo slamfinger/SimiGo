@@ -137,11 +137,8 @@ struct MenuPanelView: View {
     }
 
     private var qoderCollectionTitle: String {
-        guard qoderCollection.isRunning else { return "Qoder 采集 · 不可用" }
-        if let pending = qoderCollection.pendingCount, pending > 0 {
-            return "Qoder 采集 · 待投递 \(pending)"
-        }
-        return "Qoder 采集 · 运行中"
+        let status = qoderCollection.statusText
+        return status.isEmpty ? "Qoder 采集" : "Qoder 采集 · \(status)"
     }
 
     // MARK: - Network Slider

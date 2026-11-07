@@ -1,6 +1,27 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import SimiGoCollection
+
+/// Mirror SQLite's NOFOLLOW requirement for test fixture paths: resolve
+/// existing parent aliases (e.g. the platform temp-directory alias) while
+/// preserving the final database component for the no-follow open.
+private func canonicalParentFixturePath(_ url: URL) throws -> String {
+    var resolvedParent = [CChar](repeating: 0, count: Int(PATH_MAX))
+    let success = url.deletingLastPathComponent().path.withCString { source in
+        resolvedParent.withUnsafeMutableBufferPointer { target in
+            Darwin.realpath(source, target.baseAddress) != nil
+        }
+    }
+    guard success else {
+        throw NSError(
+            domain: "QoderCollectionRunnerTests",
+            code: Int(errno),
+            userInfo: [NSLocalizedDescriptionKey: "cannot resolve SQLite fixture parent"])
+    }
+    return URL(fileURLWithPath: String(cString: resolvedParent))
+        .appendingPathComponent(url.lastPathComponent).path
+}
 
 final class QoderCollectionIdentityTests: XCTestCase {
 
@@ -516,7 +537,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let cursorPayload = try encoder.encode(state)
 
         do {
-            let connection = try QoderSQLiteConnection.open(path: databaseURL.path)
+            let connection = try CollectionSQLiteConnection.open(path: try canonicalParentFixturePath(databaseURL))
             defer { connection.close() }
             try connection.execute(
                 """
@@ -559,7 +580,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(retried.insertedCandidates, 0)
         XCTAssertEqual(retried.duplicateCandidates, 1)
 
-        let upgraded = try QoderSQLiteConnection.open(path: databaseURL.path)
+        let upgraded = try CollectionSQLiteConnection.open(path: try canonicalParentFixturePath(databaseURL))
         defer { upgraded.close() }
         XCTAssertEqual(try upgraded.scalarInt64("PRAGMA user_version"), 2)
     }
@@ -580,7 +601,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let databaseURL = configuration.stateDirectory.appendingPathComponent(
             QoderCandidateInbox.databaseFileName)
         do {
-            let connection = try QoderSQLiteConnection.open(path: databaseURL.path)
+            let connection = try CollectionSQLiteConnection.open(path: try canonicalParentFixturePath(databaseURL))
             defer { connection.close() }
             let select = try connection.prepare(
                 "SELECT seq, payload FROM candidates WHERE key = ?")

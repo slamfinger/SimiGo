@@ -1,32 +1,33 @@
 # IS 外部轮次数据契约（2026-10-30）
 
-**性质**：保留的数据层合同与历史外部轮次检索资格规则；不是当前产品入口、云端代理能力或接入规划说明。
+**性质**：外部轮次的数据层合同与检索资格规则；当前产品调用方是 Qoder 采集桥（§3.1.1）。
+它不是云端代理能力说明：SimiGo 不代任何外部 provider 发请求。
 **权威实现**：`Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift`。
 **阅读边界（2026-11-05 复核）**：
 
-- §1–5 记录的是仍保留在 Runtime 数据层的外部轮次存储合同；其代码入口和合同测试仍在。它们不是当前 App 对外提供的云端代理能力，也不证明当前产品存在调用这些方法的生产路径。
-- 云端代理转发与 HTTP 自动捕获已删除；§3.1、§3.2、§6 中的转发流程和 E2E 只作历史说明。
-- §9–11 是 2026-10-30 的特定客户端 / 安装版窗口快照，不是 2026-11-05 当前安装版状态，也不能外推到其他版本、所有 Agent 或 collection → ES/IS 链路。
+- §1–5 是**来源无关**的存储合同：它约束「怎么把一条外部轮次写进 IS」，不约束「外部轮次从哪个口进来」。代码入口与合同测试仍在；2026-11-06 起产品侧调用方是采集桥（§3.1.1）。
+- 云端代理**转发**（`forwardToRemote`）与 HTTP 自动捕获已删除；§3.1 的转发流程、§3.2 的 `[REMOTE_IS]` trace、§6 的转发 E2E 只作历史说明。删除的是入口，不是合同。
+- §9–11 是 2026-10-30 的特定客户端 / 安装版窗口快照，不是当前安装版状态，也不能外推到其他版本或所有 Agent；采集桥的验收必须独立取得，不能拿 §9–11 的读数代替（见 §8）。
 - 本文中的“可检索”仅指 turn_state='committed' 的 chat 行可进入 InformationLoop 检索输入；不等于该内容已具备跨请求答案复用资格，更不等于已完成 ES continuation 消费验收。
 
 **边界**：本文只记录产品代码与测试层已经成立的事实。真机验收读数另见
 `research/agent-runs/simigo-es-is-realmodel-20261026/ACCEPTANCE-20261026-BUILD-97043902.md`
 （测试层读数不写入该文件）；W4、Agent 分类取证等未关闭项见 §8。
 
-**状态（2026-11-03，云端代理移除后）**：云端代理已从源码树删除 —— `RemoteOpenAIRuntime`、
+**状态（2026-11-06）**：云端代理已从源码树删除 —— `RemoteOpenAIRuntime`、
 `RemoteOpenAIBackend`、`forwardToRemote`、`HTTPServerRemoteIS.swift`（其中的请求/回答提取与
-自动外部轮次捕获路径）一并移除，当前树中**没有产品调用方**。
+自动外部轮次捕获路径）一并移除。**删掉的是唯一的自动入口，不是合同**：
+`recordExternalTurn` / `recordExternalResponse` / `verifyExternalTurn` 一字未改，
+数据层合同测试仍在。2026-11-06 起采集桥是这套合同的第一个产品调用方（§3.1.1）。
 
-本文因此分成两层，请勿混读：
+本文因此分成三层，请勿混读：
 
-- **仍成立的数据合同（历史外部轮次存储合同 + 兼容性守卫）**：§1 的三种状态、§2 的 schema
-  v16 与 `source_kind` / provenance 列、§3.3 的内部记账、§3.4 的本地重试不收养外部行、
-  §4 的并发不变量、§5 的检索资格。`recordExternalTurn` / `recordExternalResponse` /
-  `verifyExternalTurn` 与其合同测试
-  （`Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoExternalTurnContractTests.swift`）
-  保留，历史行仍须可读、可检索。
-- **已删除的代理机制（历史机制）**：§3.1 的转发流程、§3.2 的 `[REMOTE_IS]` trace、
-  §6 的转发 E2E。本节仅保留为历史行为的描述，供读历史行时对照，不是能力规划。
+- **仍成立的数据合同（来源无关）**：§1 的三种状态、§2 的 schema v16 与
+  `source_kind` / provenance 列、§3.3 的内部记账、§3.4 的本地重试不收养外部行、
+  §4 的并发不变量、§5 的检索资格。
+- **当前产品入口**：§3.1.1 的采集桥（transcript → 外部轮次）。
+- **已删除的代理入口（历史机制）**：§3.1.2 的转发流程、§3.2 的 `[REMOTE_IS]` trace、
+  §6 的转发 E2E。仅保留为历史行为的描述，供读历史行时对照。
 
 ## 1. 三个状态是三个问题
 
@@ -50,7 +51,7 @@
 | 列 | 类型 | 语义 |
 | --- | --- | --- |
 | `source_kind` | TEXT NOT NULL DEFAULT `'local'` | `local` / `external` |
-| `source_provider` | TEXT NULL | 上游识别名（当前为 `openai-compatible`） |
+| `source_provider` | TEXT NULL | 来源标识：转发期为 `openai-compatible`，采集期为来源 agent 名（当前 `qoder`） |
 | `request_id` | TEXT NULL | 生产方请求身份，同一请求的用户/回答两行共享 |
 | `verified_at` | TEXT NULL | 结算发生时刻 |
 
@@ -62,14 +63,68 @@
 
 ## 3. 写入与结算规则
 
-### 3.1 外部 API 转发（`forwardToRemote`）——历史机制
+### 3.1 写入规则（与入口无关）
+
+三个方法就是全部写入面，任何入口都只调用它们：
+
+1. `recordExternalTurn`：写用户行 `turn_state='recorded'`（`internalOperation` 声明则写
+   `internal`）。同 `(session_id, request_id)` 已存在用户行时返回既有行，不追加。
+2. `recordExternalResponse`：写回答行，同样 `recorded`（或 `internal`）。
+3. `verifyExternalTurn`：要求两侧都在，把该 `(session_id, request_id, source_kind='external')`
+   下 `turn_state='recorded'` 的两行改为 `committed` 并写 `verified_at`；只更新 `recorded` 行，
+   重复调用幂等。「两侧都在」是提交条件，不是入口条件。
+
+`recorded` 这一步与入口无关：它表达「已入库、未验证」，不是「转发中」。转发入口是
+「请求先到、答案后到」，所以会停在 `recorded`；采集入口是「两行同时到手」，record 完
+立即 verify 即可，合同不需要分叉。
+
+### 3.1.1 采集入口（2026-11-06 起的产品调用方）
+
+> 本地 agent（Qoder 等）的会话是它**用自己的云端 API** 产生的：SimiGo 没有发那个请求，
+> 也没有那次执行的状态。因此采集桥按外部轮次合同落库，**不借 ES 结算通道**——事后给一次
+> 外部调用补一个 ES，就是把观测冒充执行。
+
+入口是**一次性导入**：选目录 → 扫到不再读出字节 → 释放 lease 结束。它不是常驻 tail；
+之后的新会话由 agent 自己走 MCP（§3 方式 B）进 IS。
+
+`SimiGo/App/QoderExternalTurnSink.swift`：
+
+判据是**答案完整 + 问答绑定成立**，不是「归因是否完美」：采集的是已经结束的历史，
+`recorded` 原本的用途（防止在途文本被并发请求当成记忆）在这里不存在。
+
+| 候选 disposition | 写法 | 落到的状态 |
+| --- | --- | --- |
+| `eligible` | 两行 + verify | `committed`，可检索 |
+| `requiresReview(.fileOrderAfterCompaction)` / `(.fileOrderNoChain)` | 两行 + verify | `committed`，可检索 |
+| `deferredAutoTurn(.queuedCommand)` | 两行 + verify | `committed`，可检索 |
+| `requiresReview(.interrupted)` | 两行，不 verify | `recorded`，入库不检索 |
+| `deferredAutoTurn`（续跑 / 通知 / 回调） | 两行，不 verify | `recorded`，入库不检索 |
+| `internalRecord`（子代理 / 侧链） | 两行，`.internalOperation` | `internal`，只留审计 |
+
+不检索的两档各有一条理由：被打断的回答是残缺的，agent 自造的「继续 / 通知 / 回调」
+不是对话。压缩导致的 parent 链断裂不属于这两类——同一 segment 内 anchor 之后紧跟的
+终答仍是文件事实。
+
+归因关系只有三态：`parentChain` / `fileOrderAfterCompaction` / `fileOrderNoChain`。
+无绑定的回答走 `.orphanAssistant`，不产生轮次，也就不存在第四种 disposition。
+原先的 `unattached` 是从未可达的枚举值（`resolveRelation` 没有任何路径产出它），
+已删除：问答要成对才成立，IS 里没有「孤儿轮次」这种行。
+
+- `session_id` = `qoder:<project>/<session>`，与本地会话共用同一个信息空间。
+- `request_id` = `QoderSourceIdentity.operationKey`（源类型 / 会话 / 轮次 / 消息 / 修订的摘要），
+  重投同一候选只会读回既有行，不追加。
+- `source_provider` = `qoder`。
+- 采集器只读 transcript；写入面仅 `$SIMIGO_HOME/simigo.sqlite3` 的 `chat_messages` /
+  `information_items` 行，不写 `is_objects` 之外的新载体，也不新增路由。
+- 非轮次事件（基线、无答案闭合、解析失败、孤儿、压缩）没有问答对，不写 IS：它们是采集器的
+  诊断，不是信息。
+
+### 3.1.2 转发入口（`forwardToRemote`）——历史机制
 
 > **历史机制（已删除）**：以下转发流程随云端代理一并移除。当前源码树中不存在
-> `forwardToRemote`、不存在 `HTTPServerRemoteIS.swift` 的提取/捕获路径，也没有产品调用方；
+> `forwardToRemote`、不存在 `HTTPServerRemoteIS.swift` 的提取/捕获路径；
 > `SimiGoTests/RemoteISForwardingTests.swift` 随之退出。本节保留为历史行为的描述，
-> 供读历史 `source_kind='external'` 行时对照。**保留的合同在数据层**：
-> `recordExternalTurn` / `recordExternalResponse` / `verifyExternalTurn` 及其合同测试仍在，
-> 历史行继续可读、可检索。
+> 供读历史 `source_kind='external'` 行时对照。
 
 对 `POST /v1/chat/completions`、`/chat/completions`、`/v1/completions`、
 `/completions`、`/v1/responses`（仅当 `remoteBackend != nil` 时走转发）：
@@ -178,7 +233,11 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 
 ## 8. 未关闭项
 
-- **本文所述外部轮次数据层合同的完整生产接入 E2E 尚未取得**：§1–5 的保留合同由源码与隔离数据层测试支持；§9–11 的真实客户端 / 安装版观察验证了相邻的本地受管路径、检索与部分复用行为，但云端代理及自动外部轮次捕获已删除，不能拿这些相邻路径读数替代 `recordExternalTurn` → `verifyExternalTurn` 的当前生产调用链验收。本文也不主张当前存在该生产调用方。
+- **采集桥这条生产调用链的 E2E 尚未取得**：§1–5 的合同由源码与隔离数据层测试支持，
+  采集侧有 `SimiGoTests/QoderExternalTurnSinkTests.swift`（三档落库、重投不追加、
+  跨会话可引用）；但「真实 Qoder transcript → 采集器 → sink → 检索命中」的整链
+  安装版读数还没取。§9–11 的窗口读数验的是相邻的本地受管路径，**不能代替这条链的验收**。
+  在取得该读数之前，不得声称 collection → IS 已端到端验收。缺的是证据，不是链路。
 - Agent 分类取证（用户对话 / 后台 rollout / 工具调用 / 内部记账分别的
   发送、落库、检索行为）为路线 01。其中「请求实际发送了什么」已在 §9
   取到客户端侧证据；「服务端收到什么 / IS 存了什么 / 注入了什么」仍需安

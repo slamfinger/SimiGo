@@ -469,8 +469,6 @@ public final class QoderTurnAccumulator {
                 disposition = .requiresReview(.fileOrderAfterCompaction)
             case .fileOrderNoChain:
                 disposition = .requiresReview(.fileOrderNoChain)
-            case .unattached:
-                disposition = .requiresReview(.unattached)
             }
         }
 

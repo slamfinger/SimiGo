@@ -22,6 +22,15 @@ final class RuntimeTransitionRuleTests: XCTestCase {
         XCTAssertTrue(RuntimeTransitionRule.isValid(from: .created, to: .completing))
     }
 
+    /// 2026-10-30 实测：GGUF 后端从不置 RUNNING，每个跑满引擎的成功请求都以
+    /// `finish(from: QUEUED)` 收尾 → FORCE_RELEASED 32 次。真实生成路径已在
+    /// ManagedGGUFRuntime 收口置位；不占引擎窗口的完成路径（IS 复用 /
+    /// 工具轮跳过结算）仍从 QUEUED 收口，表必须承认这条边，否则异常信号被稀释。
+    func testQueuedToCompletingIsLegal() {
+        XCTAssertTrue(RuntimeTransitionRule.isValid(from: .queued, to: .completing))
+        XCTAssertFalse(RuntimeTransitionRule.isValid(from: .queued, to: .releasing))
+    }
+
     func testCancelPipeReachableFromAnyNonReleasedState() {
         for from in RuntimeState.allCases where from != .released {
             XCTAssertTrue(

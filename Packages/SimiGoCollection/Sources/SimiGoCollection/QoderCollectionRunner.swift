@@ -8,17 +8,22 @@ public struct QoderCollectionConfiguration: Sendable {
     /// inside the Qoder tree.
     public let stateDirectory: URL
     public let pollInterval: TimeInterval
+    /// 首次见到文件时的处理策略。默认 `.skipExisting`（不回溯既有内容）；
+    /// 采集桥传 `.readExisting`，选目录即采集该目录已有的会话。
+    public let baselinePolicy: QoderBaselinePolicy
     /// Invalid explicit environment configuration. The runner refuses to
     /// acquire a lease or create state while this value is non-nil.
     public let configurationError: String?
 
     public init(
         scanRoot: URL, stateDirectory: URL, pollInterval: TimeInterval = 2.0,
+        baselinePolicy: QoderBaselinePolicy = .skipExisting,
         configurationError: String? = nil
     ) {
         self.scanRoot = scanRoot
         self.stateDirectory = stateDirectory
         self.pollInterval = pollInterval
+        self.baselinePolicy = baselinePolicy
         self.configurationError = configurationError
     }
 
@@ -96,7 +101,11 @@ public struct QoderCollectionStatus: Sendable, Equatable {
 ///
 /// One runner owns the state directory at a time through an exclusive lease, so
 /// a second instance cannot commit an older cursor snapshot over a newer one.
-public final class QoderCollectionRunner {
+/// `@unchecked Sendable` is accurate rather than expedient: every accessor goes
+/// through `onQueue`, so the runner is safe to poll from a background queue and
+/// stop from the main one. Without it the one-shot importer cannot hand the
+/// collector to a worker closure without a warning.
+public final class QoderCollectionRunner: @unchecked Sendable {
     /// Receives durably committed candidates. The pair of `key` and `event`
     /// makes every delivery identifiable, so an accepted-but-not-marked crash
     /// redelivers under the same key instead of forcing consumers to re-derive
@@ -288,7 +297,8 @@ public final class QoderCollectionRunner {
             }
             let loaded = try inbox.loadCursorState()
             let created = QoderTranscriptTailer(
-                scanRoot: configuration.scanRoot, state: loaded)
+                scanRoot: configuration.scanRoot, state: loaded,
+                baselinePolicy: configuration.baselinePolicy)
             if loaded == nil {
                 // Freeze the initialization instant before the first scan so
                 // files created later are read from their first byte.
@@ -315,7 +325,8 @@ public final class QoderCollectionRunner {
                 tailer = nil
             } else {
                 tailer = QoderTranscriptTailer(
-                    scanRoot: configuration.scanRoot, state: loaded)
+                    scanRoot: configuration.scanRoot, state: loaded,
+                    baselinePolicy: configuration.baselinePolicy)
             }
         } catch {
             tailer = nil

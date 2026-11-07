@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 /// Process-level exclusive ownership of one collection state directory.
@@ -23,11 +24,38 @@ final class QoderCollectionLease {
         try FileManager.default.createDirectory(
             at: directoryURL, withIntermediateDirectories: true,
             attributes: [.posixPermissions: 0o700])
+        let directoryDescriptor = open(
+            directoryURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        guard directoryDescriptor >= 0 else {
+            throw QoderCollectionStateError.unreadableState(
+                path: directoryURL.path, detail: "state directory is linked or unreadable")
+        }
+        defer { close(directoryDescriptor) }
+        var directoryInfo = stat()
+        guard fstat(directoryDescriptor, &directoryInfo) == 0,
+              (directoryInfo.st_mode & S_IFMT) == S_IFDIR,
+              directoryInfo.st_uid == getuid(),
+              fchmod(directoryDescriptor, 0o700) == 0
+        else {
+            throw QoderCollectionStateError.unreadableState(
+                path: directoryURL.path, detail: "state directory is not a private owned directory")
+        }
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
-        let descriptor = open(fileURL.path, O_CREAT | O_RDWR | O_CLOEXEC, 0o600)
+        let descriptor = open(
+            fileURL.path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path, detail: String(cString: strerror(errno)))
+        }
+        var lockInfo = stat()
+        guard fstat(descriptor, &lockInfo) == 0,
+              (lockInfo.st_mode & S_IFMT) == S_IFREG,
+              lockInfo.st_uid == getuid(),
+              fchmod(descriptor, 0o600) == 0
+        else {
+            close(descriptor)
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path, detail: "lock entry is not a regular owned file")
         }
         guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
             let code = errno
@@ -51,11 +79,22 @@ final class QoderCollectionLease {
 
     /// Best-effort diagnostic only; the lock, not the contents, is the truth.
     private static func holder(of fileURL: URL) -> String? {
-        guard let data = try? Data(contentsOf: fileURL),
-            let text = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-            !text.isEmpty
+        let descriptor = open(
+            fileURL.path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else { return nil }
+        defer { close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG
         else { return nil }
+        var bytes = [UInt8](repeating: 0, count: 64)
+        let count = bytes.withUnsafeMutableBytes {
+            Darwin.read(descriptor, $0.baseAddress, $0.count)
+        }
+        guard count > 0,
+              let text = String(bytes: bytes.prefix(count), encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty else { return nil }
         return text
     }
 
