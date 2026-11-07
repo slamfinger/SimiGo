@@ -203,11 +203,13 @@ final class SimiGoInformationReuseTests: XCTestCase {
         let source = try settleAnsweredTurn()
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-b", query: query            expectedDemandID: source.demandID,
+            sessionID: "info-b", query: query,
+            expectedDemandID: source.demandID,
             identity: identity))
         // Case and whitespace are NOT normalized away — only exact repeats reuse.
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: "Where is the exit?"            expectedDemandID: source.demandID,
+            sessionID: "info-a", query: "Where is the exit?",
+            expectedDemandID: source.demandID,
             identity: identity))
     }
 
