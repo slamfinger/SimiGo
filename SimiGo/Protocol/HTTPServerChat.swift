@@ -107,6 +107,15 @@ extension HTTPServer {
         }
     }
 
+    /// Preserve the terminal distinction for a detached generation that is later
+    /// cancelled by orphan-yield. Runtime shutdown and ordinary/manual cancellation
+    /// still take the cancelled standing.
+    static func chatTurnTerminalForCancellation(
+        _ context: ConnectionContext
+    ) -> SimiGoESISDatabase.ChatTurnTerminal {
+        context.cancellationFailureReason() == "detached_by_client" ? .detached : .cancelled
+    }
+
     /// Cross-path source identity: every wire accepts the same declaration, so
     /// a result submitted through the model API and the same result submitted
     /// through MCP resolve to one settlement. A partial declaration is passed
@@ -1068,7 +1077,7 @@ extension HTTPServer {
         } catch is CancellationError {
             // 取消契约：SSE 头已发出且客户端仍在连接时必须给出终态
             // （error chunk + [DONE] + close），否则客户端将无限等待。
-            chatTurnTerminal = .cancelled
+            chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
             failureReason = context.cancellationFailureReason()
             guard !context.closed else { return }
 
@@ -1558,7 +1567,7 @@ extension HTTPServer {
             // 取消契约：非流式尚未发出任何字节（keepalive 未提交头）时，
             // 客户端仍连接必须给出 HTTP 终态。
             keepalive.settle()
-            chatTurnTerminal = .cancelled
+            chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
             failureReason = context.cancellationFailureReason()
             guard !context.closed else { return }
 
