@@ -135,10 +135,7 @@ final class SimiGoInformationLoopTests: XCTestCase {
 
     // MARK: - P1/P2: retrieval boundary (measured 2026-10-30)
 
-    /// A cited fragment must contain the match that produced it. Measured
-    /// 2026-10-30: a 2,447-character rollout line matched on a term at
-    /// character 566 while the injected citation was that line's first 240
-    /// characters — text that never contained the query at all.
+    // MARK: - Chat turn terminal standing
 
     func testFailedAndCancelledTurnsAreTerminalAndSameTextRetriesCreateNewRows() throws {
         let (url, db) = try open("chat-turn-terminal-standing")
@@ -205,6 +202,11 @@ final class SimiGoInformationLoopTests: XCTestCase {
             try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(secondID) + ";"),
             "pending")
     }
+
+    /// A cited fragment must contain the match that produced it. Measured
+    /// 2026-10-30: a 2,447-character rollout line matched on a term at
+    /// character 566 while the injected citation was that line's first 240
+    /// characters — text that never contained the query at all.
 
     func testCitationWindowContainsTheMatchThatSelectedIt() throws {
         let (url, db) = try open("snippet")
