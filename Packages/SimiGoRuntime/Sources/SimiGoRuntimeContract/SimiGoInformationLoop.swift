@@ -387,7 +387,6 @@ public struct SimiGoInformationLoop {
                 // next user row starts a different turn.
                 excluded.insert(questionID)
                 excluded.insert(row.itemID)
-                matchingQuestionID = nil
             }
         }
         return excluded
@@ -606,7 +605,8 @@ public struct SimiGoInformationLoop {
         declaredDependencies: [SimiGoESISDatabase.DeclaredDependency] = [],
         sourceIdentity: SimiGoESISDatabase.DeclaredSourceIdentity? = nil,
         operationKey: String? = nil,
-        settledAt: Date = Date()
+        settledAt: Date = Date(),
+        chatTurn: SimiGoESISDatabase.ChatTurnCommit? = nil
     ) throws -> TurnSettlement {
         let settled = try SimiGoSettlementAuthority.authorize(
             generatedText: generatedText,
@@ -634,11 +634,10 @@ public struct SimiGoInformationLoop {
             advancement: advanced,
             declaredDependencies: declaredDependencies,
             sourceIdentity: sourceIdentity,
-            operationKey: operationKey)
-        if let sessionID {
-            try database.linkChatSession(
-                sessionID: sessionID, stateID: commit.stateID, modelIdentity: modelIdentity)
-        }
+            operationKey: operationKey,
+            chatTurn: chatTurn,
+            chatSessionID: sessionID,
+            chatModelIdentity: modelIdentity)
         // Post-settlement distillation: a separate, additive write. The
         // settlement above is already durable, so a summary failure never
         // invalidates the settled result. A reused settlement already has its

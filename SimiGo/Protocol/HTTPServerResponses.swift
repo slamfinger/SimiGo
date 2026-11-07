@@ -1006,51 +1006,65 @@ extension HTTPServer {
         assistantText: String,
         settlementID: String?,
         stateID: String?,
-        completion: GenerationCompletion
+        completion: GenerationCompletion,
+        producedToolCalls: Bool = false
     ) {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        try? turn.db.commitChatTurn(
-            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-            assistantText: text, model: modelId, createdAt: Date(),
-            eligibility: turn.eligibility)
-        guard turn.eligibility == .ordinary else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=responses reason=internal_operation "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
-            return
-        }
-        guard completion.isSettleable else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=responses completion=\(completion.wireName) "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+        if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
+            do {
+                _ = try turn.db.commitChatTurn(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility)
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[CHAT_COMMIT_REJECT] wire=responses reason=\"\(error)\" "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) committed=0")
+                return
+            }
+            if turn.eligibility != .ordinary {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=responses reason=internal_operation "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            } else if !completion.isSettleable {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=responses completion=\(completion.wireName) "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            } else {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=responses reason=tool_calls "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            }
             return
         }
 
         if let settlementID {
             guard !turn.renderedResolution.demandID.isEmpty,
-                !turn.renderedResolution.retrievalSettlementID.isEmpty
-            else { return }
-            let result = (try? turn.db.settlementReceipt(settlementID))?.payload
-                ?? Data(text.utf8)
-            _ = try? turn.db.recordInformationAdvancement(.init(
-                demandID: turn.renderedResolution.demandID,
-                stateID: stateID ?? turn.renderedResolution.stateID ?? "",
-                settlementID: settlementID,
-                retrievalSettlementID: turn.renderedResolution.retrievalSettlementID,
-                actions: ["responses.completion"],
-                result: result))
-            if let stateID {
-                try? turn.db.linkChatSession(
-                    sessionID: turn.sessionID, stateID: stateID,
-                    modelIdentity: turn.modelIdentity)
+                !turn.renderedResolution.retrievalSettlementID.isEmpty,
+                let linkedStateID = stateID ?? turn.renderedResolution.stateID,
+                !linkedStateID.isEmpty else {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=responses reason=incomplete_continuation_identity "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+                return
             }
-            // The continuation settlement is authoritative but was produced
-            // before this handler could name its demand: distill it now so a
-            // later demand can reuse the conclusion.
-            _ = try? turn.db.recordSettlementSummary(
-                settlementID: settlementID, sessionID: turn.sessionID,
-                query: turn.query)
+            do {
+                _ = try turn.db.commitChatTurnWithExistingSettlement(
+                    .init(
+                        sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                        assistantText: text, model: modelId, createdAt: Date(),
+                        eligibility: turn.eligibility),
+                    settlementID: settlementID, stateID: linkedStateID,
+                    modelIdentity: turn.modelIdentity,
+                    demandID: turn.renderedResolution.demandID,
+                    retrievalSettlementID: turn.renderedResolution.retrievalSettlementID,
+                    actions: ["responses.completion"], query: turn.query)
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+            }
             return
         }
 
@@ -1067,7 +1081,11 @@ extension HTTPServer {
                 summaryQuery: turn.query,
                 actions: ["responses.completion"],
                 sourceIdentity: turn.sourceIdentity.isAbsent ? nil : turn.sourceIdentity,
-                operationKey: turn.operationKey)
+                operationKey: turn.operationKey,
+                chatTurn: .init(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REUSE] wire=responses settlement=\(committed.settlementID) "
@@ -1076,7 +1094,7 @@ extension HTTPServer {
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
         }
     }
 
@@ -1160,6 +1178,12 @@ extension HTTPServer {
             managedAnchor = anchor
         }
 
+        var pendingInformationTurn: InformationTurn?
+        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        defer {
+            terminalizePendingInformationTurn(
+                pendingInformationTurn, terminal: chatTurnTerminal, context: context)
+        }
         var isSuccess = false
         var failureReason: String?
         defer {
@@ -1305,6 +1329,7 @@ extension HTTPServer {
                     parsed: parsed, json: json, headers: headers),
                 queryOverride: Self.lastUserText(parsed.currentInputMessages)
                     ?? Self.lastUserText(parsed.canonicalMessages))
+            pendingInformationTurn = information.turn
             let turnMessages = information.messages
 
             // 「可以复用就不调用模型」: an exact repeat of an already-answered
@@ -1385,10 +1410,8 @@ extension HTTPServer {
 
             keepalive.settle()
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 
@@ -1426,7 +1449,8 @@ extension HTTPServer {
                     assistantText: content,
                     settlementID: settlementOutcome?.settlementID,
                     stateID: settlementOutcome?.childESStateID,
-                    completion: result.completion)
+                    completion: result.completion,
+                    producedToolCalls: !toolCalls.value.isEmpty)
             }
 
             let calls =
@@ -1506,6 +1530,7 @@ extension HTTPServer {
             // 取消契约：keepalive 头未提交时客户端仍连接必须给 HTTP
             // 终态，否则将无限等待。
             keepalive.settle()
+            chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
             failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return
@@ -1573,6 +1598,12 @@ extension HTTPServer {
         }
 
         // 2. Use defer to ensure lifecycle completion (success or failure)
+        var pendingInformationTurn: InformationTurn?
+        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        defer {
+            terminalizePendingInformationTurn(
+                pendingInformationTurn, terminal: chatTurnTerminal, context: context)
+        }
         var isSuccess = false
         var failureReason: String?
         defer {
@@ -1677,6 +1708,7 @@ extension HTTPServer {
                     ?? Self.lastUserText(parsed.canonicalMessages))
             hoistedContinuationMessages = gatedMessages
             hoistedInformation = (information.messages, information.turn)
+            pendingInformationTurn = information.turn
             // A settled answer never reaches the model, so it is never refused
             // by a prefill budget (「可以复用就不调用模型」 wins).
             let reuseWouldServe =
@@ -1846,6 +1878,7 @@ extension HTTPServer {
                     queryOverride: Self.lastUserText(parsed.currentInputMessages)
                         ?? Self.lastUserText(parsed.canonicalMessages))
             }
+            pendingInformationTurn = information.turn
             let turnMessages = information.messages
 
             // Most Agents stream by default, so the zero-call reuse has to exist
@@ -1907,15 +1940,18 @@ extension HTTPServer {
                     guard
                         let self,
                         let context,
-                        !context.closed,
                         !text.isEmpty
                     else {
                         return
                     }
 
+                    // Accumulate the full answer for settlement even after the
+                    // peer closed; only the outbound events stay blocked.
                     let events =
                         streamState
                             .appendAssistantText(text)
+
+                    guard !context.closed else { return }
 
                     self.enqueueResponsesEvents(
                         context: context,
@@ -1924,11 +1960,7 @@ extension HTTPServer {
                     )
                 },
                 { [weak self, weak context] call in
-                    guard
-                        let self,
-                        let context,
-                        !context.closed
-                    else {
+                    guard let self, let context else {
                         return
                     }
 
@@ -1940,6 +1972,8 @@ extension HTTPServer {
                         streamState
                             .appendToolCall(call)
 
+                    guard !context.closed else { return }
+
                     self.enqueueResponsesEvents(
                         context: context,
                         events: events,
@@ -1950,10 +1984,8 @@ extension HTTPServer {
                 { _ in }
             )
 
-            guard
-                !context.closed,
-                !Task.isCancelled
-            else {
+            guard !Task.isCancelled,
+                  context.claimCompletedTurnSettlement() else {
                 return
             }
 
@@ -1976,7 +2008,8 @@ extension HTTPServer {
                     assistantText: finalContent,
                     settlementID: nil,
                     stateID: nil,
-                    completion: result.completion)
+                    completion: result.completion,
+                    producedToolCalls: !toolCalls.value.isEmpty)
             }
 
             let finalCalls =
@@ -2046,6 +2079,7 @@ extension HTTPServer {
             // 客户端已断连（closed）→ 静默；客户端仍连接 →
             // 必须送达 terminal event 并关闭流，
             // 否则客户端会永远等待本轮 response。
+            chatTurnTerminal = Self.chatTurnTerminalForCancellation(context)
             failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return

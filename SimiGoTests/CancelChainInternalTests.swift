@@ -11,8 +11,9 @@ import SimiGoRuntimeContract
 /// 的三段控制流。
 ///
 /// B1  peer close -> [PROTOCOL] peerClosed -> terminate -> **detach**：生成
-///     不被取消（无 cancel 回调、requestTask 不 cancel），本轮继续跑完并停
-///     在 fail-closed 的收尾路径（不结算、不提交）。
+///     不被取消（无 cancel 回调、requestTask 不 cancel），本轮继续跑完；
+///     自然完成时可在 claim 后结算/提交，连接保持 fail-closed 不出站；
+///     被孤儿让位打断的轮次不结算。
 /// B2a the SSE heartbeat keeps a silent-but-live stream alive (handler wiring).
 /// B2b a heartbeat send error escalates to terminate -> **detach**（手动取消
 ///     不经过此路径），with a deterministic RST peer instead of "wait 5 s and
@@ -153,6 +154,55 @@ final class CancelChainInternalTests: XCTestCase {
                 + "\(server.detachedSnapshot())")
         print("[TB-B1] closed=\(closed.byState) detach=\(detach) "
             + "callbacks=\(cancel.requestIds)")
+    }
+
+    // MARK: - Runtime shutdown reclaims detached orphans
+
+    /// A detached request leaves `connections` when its client closes, so
+    /// `stop()` must reclaim it from the orphan registry and cancel the
+    /// retained task. Without that path the generation keeps running past
+    /// Runtime shutdown.
+    @MainActor
+    func testRuntimeShutdownCancelsDetachedOrphan() async throws {
+        let session = "tb-shutdown-\(UUID().uuidString)"
+        let question = "does runtime shutdown stop a detached orphan"
+
+        let engine = BlockingStubEngine(
+            .streamUntilCancelled(first: "SD-FIRST", interval: 0.2))
+        let cancel = RecordingCancelHandler()
+        let server = try await startServer(engine, cancel)
+        defer { server.stop() }
+
+        let baseline = server.detachedSnapshot()
+        let client = StreamingClient(host: host, port: port)
+        try await client.start(
+            path: "/v1/responses",
+            body: responsesBody(session: session, input: question))
+        XCTAssertEqual(client.status, 200, client.sse)
+        let firstDelta = await client.waitForLine(
+            containing: ["output_text.delta", "SD-FIRST"], timeout: 15)
+        XCTAssertNotNil(
+            firstDelta, "the stream must be live before the close: \(client.sse)")
+        XCTAssertTrue(engine.started)
+
+        client.cancelReading()
+        let detached = await CancelPathWait.until(timeout: 10) {
+            server.detachedSnapshot().registered > baseline.registered
+        }
+        XCTAssertTrue(
+            detached,
+            "the orphan never entered the detach ledger: \(server.detachedSnapshot())")
+
+        // The orphan is still generating. Runtime shutdown must reach it even
+        // though it is no longer in `connections`.
+        server.stop()
+        let cancelObserved = await engine.waitForCancelObserved(timeout: 10)
+        XCTAssertTrue(
+            cancelObserved,
+            "Runtime shutdown left the detached generation running")
+        let exited = await engine.waitForExit(timeout: 10)
+        XCTAssertTrue(
+            exited, "the detached generation never exited after stop()")
     }
 
     // MARK: - B2a) The heartbeat keeps a silent-but-live stream alive

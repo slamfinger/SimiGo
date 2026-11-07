@@ -1,13 +1,12 @@
 import Foundation
 
-/// Producer-identity binding for settled Information-Space rows.
+/// Producer/consumer identity provenance for settled Information-Space rows.
 ///
-/// A settlement records a semantic result, but a consumer that recovers it in a
-/// fresh process must also know WHICH engine produced it: a different model or
-/// tokenizer may not silently inherit another engine's settled value. This type
-/// is the pure evaluation step used by the headless producer (to publish its
-/// identity with the settlement) and by the consumer (to refuse a settlement
-/// bound to a different engine) BEFORE any model work happens.
+/// A settlement records a semantic result and may also record which engine
+/// produced it or derived it. These identity rows support provenance and audit.
+/// They do not grant trust and do not restrict general semantic reuse across
+/// models, Agents, or backends. Compare an identity only when a task explicitly
+/// declares that identity to be a semantic dependency or contract condition.
 ///
 /// Scope limit, stated on purpose: these bindings are recorded by the producer
 /// itself and are therefore an integrity/binding check, not an attestation. They
@@ -25,8 +24,8 @@ public enum SimiGoSettlementIdentityBinding {
     public static let consumerModelKey = "consumer.model_identity"
     public static let consumerTokenizerKey = "consumer.tokenizer_identity"
 
-    /// The identity a producer publishes and a consumer must match. Both members
-    /// are the product's own identity strings (`modelIdentity(fromPath:)` /
+    /// The identity a producer publishes as provenance. These are the product's
+    /// own identity strings (`modelIdentity(fromPath:)` /
     /// `tokenizerIdentity(fromPath:)`), never user-supplied values.
     public struct Identity: Equatable, Sendable {
         public let model: String
@@ -97,9 +96,9 @@ public enum SimiGoSettlementIdentityBinding {
          consumerTokenizerKey: digest(identity.tokenizer)]
     }
 
-    /// Compare what the Information Space recorded against the consumer's own
-    /// identity. Fail-closed: an absent binding is a refusal, not a pass, so a
-    /// settlement written by an older producer can never be consumed silently.
+    /// Explicit identity-dependent comparison only. This is not the general IS
+    /// admission predicate. When a task declares producer identity as a semantic
+    /// dependency, an absent or mismatched binding remains a fail-closed refusal.
     public static func evaluate(recorded: [String: String], consumer: Identity) -> Verdict {
         guard consumer.isSpecified else {
             return Verdict(status: .blocked, code: Refusal.consumerAbsent.rawValue,
@@ -136,9 +135,9 @@ public enum SimiGoSettlementIdentityBinding {
                        boundModel: true, boundTokenizer: true)
     }
 
-    /// Compare the CONSUMER identity a derived consumption recorded against the
-    /// engine that wants to continue from it. Same fail-closed rule: an absent
-    /// binding is a refusal, not a pass.
+    /// Explicit identity-dependent comparison for a DERIVED_CONSUMPTION row.
+    /// This remains provenance metadata by default; use this comparison as a
+    /// refusal condition only when the consuming engine is a declared dependency.
     public static func evaluateConsumer(
         recorded: [String: String], consumer: Identity
     ) -> Verdict {

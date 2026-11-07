@@ -41,6 +41,33 @@ nonisolated enum SlotActivityParser {
     }
 }
 
+/// Pure decisions used by the health loop. `unknown` is deliberately not
+/// equivalent to idle: it permits the health check, but never protects a
+/// failed engine from restart. Cancellation and runtime freshness override all
+/// slot observations.
+nonisolated enum GGUFHealthCheckPolicy {
+    static func shouldSkipPreflight(
+        isGGUF: Bool, isInProcess: Bool, injectedFailure: Bool,
+        slotActivity: SlotActivity
+    ) -> Bool {
+        isGGUF && !isInProcess && !injectedFailure && slotActivity == .busy
+    }
+
+    static func shouldDeferRestart(
+        isGGUF: Bool, slotActivity: SlotActivity
+    ) -> Bool {
+        isGGUF && slotActivity == .busy
+    }
+
+    static func shouldRestartAfterFailure(
+        isCancelled: Bool, runtimeIsCurrent: Bool,
+        isGGUF: Bool, slotActivity: SlotActivity
+    ) -> Bool {
+        !isCancelled && runtimeIsCurrent
+            && !shouldDeferRestart(isGGUF: isGGUF, slotActivity: slotActivity)
+    }
+}
+
 /// A runtime that can report its engine's slot activity without going through
 /// the product listener.
 protocol SlotActivityProviding: AnyObject {
@@ -66,15 +93,23 @@ nonisolated enum SlotActivityResolver {
 nonisolated enum GGUFSlotActivityProbe {
     /// Reads the engine's own loopback `/slots`. The product listener is never
     /// used: there is no route, no auth surface and no LAN exposure added.
+    static func makeRequest(port: Int) -> URLRequest? {
+        guard let url = URL(string: "http://127.0.0.1:\(port)/slots") else {
+            return nil
+        }
+        return URLRequest(
+            url: url,
+            cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: 1.0)
+    }
+
     static func activity(
         port: Int,
         session: URLSession = .shared
     ) async -> SlotActivity {
-        guard let url = URL(string: "http://127.0.0.1:\(port)/slots") else {
+        guard let request = makeRequest(port: port) else {
             return .unknown
         }
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 1.0
         do {
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else {

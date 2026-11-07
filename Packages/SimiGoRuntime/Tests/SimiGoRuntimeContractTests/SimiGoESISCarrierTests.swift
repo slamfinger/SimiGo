@@ -118,7 +118,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         XCTAssertEqual(row?.createdOrder, 1)
 
         let report = try db.carrierReport(deepVerify: true)
-        XCTAssertEqual(report.schemaVersion, 20)
+        XCTAssertEqual(report.schemaVersion, 21)
         XCTAssertEqual(report.objectCount, 1)
         XCTAssertEqual(report.objectBytes, Int64(data.count))
         XCTAssertEqual(report.corruptObjects, 0)
@@ -326,7 +326,7 @@ final class SimiGoESISCarrierTests: XCTestCase {
         try db.runMigrations()
         // v8 backfill re-applies on top of the rolled-back head, then the chain
         // runs through to the current head.
-        XCTAssertEqual(try db.schemaVersion(), 20)
+        XCTAssertEqual(try db.schemaVersion(), 21)
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedFileContents, 0)

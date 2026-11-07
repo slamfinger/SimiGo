@@ -8,7 +8,7 @@ import Foundation
 /// rather than adding a second mechanism:
 ///   * `SimiGoESISDatabase`                 — IS read, validity, dependency closure
 ///   * `SimiGoSettlementAuthority`          — canonical digest verification (seal)
-///   * `SimiGoSettlementIdentityBinding`    — producer model/tokenizer binding
+///   * `SimiGoSettlementIdentityBinding`    — producer/consumer provenance metadata
 ///
 /// Before this type existed, the same sequence was assembled inline in the
 /// headless gate driver and could not be called from the product request path;
@@ -34,8 +34,8 @@ public enum SimiGoISAdmission {
         /// no authority to act on and must fall back to a cold prefill.
         ///
         /// This is the read half of A-2: the KV boundary a continuation is allowed
-        /// to reuse is the one IS already verified (digest, validity, dependency
-        /// closure, producer identity), never one the engine infers on its own.
+        /// to reuse is the one recorded by the settlement and independently checked
+        /// by the engine against its concrete model/KV namespace and prefix boundary.
         public let kvBindings: [String: String]
 
         public init(
@@ -62,6 +62,8 @@ public enum SimiGoISAdmission {
         case invalidated(settlementID: String)
         case dependencyMissing(settlementID: String, dependency: String)
         case dependencyInvalid(settlementID: String, dependency: String)
+        /// Legacy refusal retained for source compatibility. Producer/consumer
+        /// identity mismatch is no longer a general IS semantic-admission refusal.
         case producerBinding(SimiGoSettlementIdentityBinding.Verdict)
         case emptyValue(settlementID: String)
 
@@ -95,8 +97,12 @@ public enum SimiGoISAdmission {
     ///   3. canonical digest integrity via the SAME production seal digest
     ///   4. dynamic validity of the settlement itself
     ///   5. full upstream dependency closure — every member present AND valid
-    ///   6. producer model/tokenizer identity binding (absent → refuse)
-    ///   7. recover the settled semantic value and mint the bindings
+    ///   6. recover the settled semantic value and mint the bindings
+    ///
+    /// Producer identity remains provenance metadata. It is not a universal gate:
+    /// semantically valid results may be reused by another model/Agent. A task that
+    /// truly depends on a particular engine must express that as an explicit
+    /// semantic dependency or result-contract constraint.
     ///
     /// - Parameters:
     ///   - bindingName: key the new ES's result contract expects for this value
@@ -130,6 +136,9 @@ public enum SimiGoISAdmission {
         bindingName: String = "next_input",
         valueField: String = "content"
     ) throws -> Admitted {
+        // Kept in the signature for existing callers; semantic IS admission does
+        // not compare consumer identity with producer provenance.
+        _ = consumer
         // 2. its receipt row (payload + recorded digest + producer/derivation status).
         guard let row = try db.settlementAdmissionRow(settlementID: settlementID),
             row.validationStatus != "MIGRATED_LEGACY"
@@ -158,26 +167,18 @@ public enum SimiGoISAdmission {
                 throw Refusal.dependencyInvalid(settlementID: settlementID, dependency: dependency)
             }
         }
-        // 6. identity binding, by row kind. A DERIVED_CONSUMPTION row binds the
-        // consumer that produced its derived value; verifying a producer binding
-        // on it would attribute generation to an engine that generated nothing.
+        // 6. Read provenance and representation bindings. Producer/consumer
+        // identity is retained for audit, not used as a universal semantic gate.
+        // If identity is semantically material to a task, it must be declared by
+        // that task's dependency/contract rather than inferred from its backend.
         let recorded = try db.settlementBindings(settlementID: settlementID)
         let derived = row.validationStatus == "DERIVED_CONSUMPTION"
-        let verdict = derived
-            ? SimiGoSettlementIdentityBinding.evaluateConsumer(
-                recorded: recorded, consumer: consumer)
-            : SimiGoSettlementIdentityBinding.evaluate(
-                recorded: recorded, consumer: consumer)
-        if verdict.status != .ok {
-            throw Refusal.producerBinding(verdict)
-        }
-        // 6b. carry the settled prefix representation binding forward. No check
-        // runs here: the KV binding is a claim about a model representation, and
-        // only the engine (which can recompute the boundary hash) can verify it.
-        // Verification is the engine's own fail-closed gate; handing it the
-        // already-validated rows keeps ONE authority (this admission) deciding
-        // which settlement the KV path may act on. A derived consumption never
-        // records a representation, so it can never authorize one.
+        // 6b. carry the settled prefix representation binding forward. No KV
+        // compatibility is inferred here: the engine must recompute and verify the
+        // concrete representation before restore. A mismatch declines KV reuse
+        // and falls back to cold prefill without discarding the admitted IS value.
+        // A derived consumption never records a representation, so it cannot
+        // authorize restoration of a producer's KV artifact.
         let kvBindings = derived
             ? [:]
             : SimiGoSettlementKVBinding.recordedBindings(from: recorded)
@@ -216,8 +217,8 @@ public enum SimiGoISAdmission {
     ///
     /// Ordering guarantees the acceptance invariants:
     ///   * admission runs BEFORE the child contract, so a missing/tampered/
-    ///     invalidated/dependency-broken/identity-mismatched parent throws before
-    ///     the child result is even processed — no generation, no settlement.
+    ///     invalidated/dependency-broken parent throws before the child result is
+    ///     processed — no child settlement is created.
     ///   * the native contract runs BEFORE `recordNativeSettlement`, so a contract
     ///     failure throws with nothing written — no partially settled record.
     public static func settleContinuation(
