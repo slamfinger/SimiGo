@@ -264,6 +264,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         }
     }
 
+<<<<<<< HEAD
     /// Disconnect after generation start may detach only when an orphan slot
     /// is granted; manual cancellation and Runtime shutdown still win. Once a
     /// completed turn claims finalization, later disconnects cannot orphan-yield it.
@@ -434,16 +435,18 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     /// then not be served for the same words.
     @MainActor
 
+=======
+>>>>>>> 2d59395 (test(audit): fix test isolation and interpolation)
     func testHTTPFailureAuditPersistsSafeAppendOnlyTerminalFact() throws {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-http-failure-audit-\\(UUID().uuidString).sqlite3")
+            .appendingPathComponent("simigo-http-failure-audit-\(UUID().uuidString).sqlite3")
         defer {
             for suffix in ["", "-wal", "-shm"] {
                 try? FileManager.default.removeItem(at: URL(fileURLWithPath: url.path + suffix))
             }
         }
 
-        let executionID = "http-failure-audit-test-\\(UUID().uuidString)"
+        let executionID = "http-failure-audit-test-\(UUID().uuidString)"
         let first = try XCTUnwrap(HTTPServer.recordHTTPFailureAudit(
             executionID: executionID,
             requestID: "req-test-1234",
@@ -486,6 +489,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         XCTAssertEqual(try db.failureAuditHistory(executionID: executionID).count, 1)
     }
 
+    @MainActor
     func testChangedCurrentDemandIsNotServedByReuse() async throws {
         let session = "chat-demand-change-\(UUID().uuidString)"
         let previous = ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"]
