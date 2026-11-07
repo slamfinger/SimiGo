@@ -3,6 +3,7 @@
 **Status**: 活文档 — ①②③④⑤已定案；真机执行授权未授予。本文档是配置决策的唯一权威记录，**不授权任何执行**。
 **上游**: `P2_EXPERIMENT_PLAN_20261105.md`（G1 PASS · CLOSED）
 **授权边界（持续有效）**: 零实现改动、零模型加载、零真机执行、零对外发送——每一项均须用户单独授权后解除。
+**外迁注记（2026-11-07，用户裁定：本文件属治理线留仓）**: 本记录引用的研究线产出文档——`P2_DERIVATION_TECHNICAL_REPORT_20261106.md`、`P2_EVIDENCE_MAINLINE_MAPPING_20261107.md`、`P2_TECH_EXCHANGE_BRIEF_20261106.md`——已按 2026-11-07 裁定正本外迁至 `slamfinger/ES-IS-research`（PRIVATE），simigo 仓剥离并禁入。正文各条目为账本史实，原文保留不动；上述文件名现仅指研究仓正本。
 
 ---
 
