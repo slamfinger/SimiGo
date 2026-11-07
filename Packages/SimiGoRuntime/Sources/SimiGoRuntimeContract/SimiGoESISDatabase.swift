@@ -1933,7 +1933,10 @@ public final class SimiGoESISDatabase {
         inputSnapshotObjectID: String? = nil,
         declaredDependencies: [DeclaredDependency] = [],
         sourceIdentity: DeclaredSourceIdentity? = nil,
-        operationKey: String? = nil
+        operationKey: String? = nil,
+        chatTurn: ChatTurnCommit? = nil,
+        chatSessionID: String? = nil,
+        chatModelIdentity: String? = nil
     ) throws -> SettlementWithAdvancement {
         let declared = try sourceIdentity?.normalized()
         let key = Self.cleanedOperationKey(operationKey)
@@ -1951,6 +1954,12 @@ public final class SimiGoESISDatabase {
                     declaredDependencies: declaredDependencies)
                 {
                     reuse = hit
+                    if let chatTurn { _ = try insertChatTurnRows(chatTurn) }
+                    if let chatSessionID, let chatModelIdentity {
+                        try insertChatSessionLink(
+                            sessionID: chatSessionID, stateID: hit.stateID,
+                            modelIdentity: chatModelIdentity)
+                    }
                     return
                 }
                 if let declared {
@@ -1962,6 +1971,8 @@ public final class SimiGoESISDatabase {
                         "state \(stateID) already carries settlement \(existing)")
                 }
             }
+            // The conversation row and its standing share the settlement transaction.
+            if let chatTurn { _ = try insertChatTurnRows(chatTurn) }
             if let childState {
                 try insertExecutionStateRow(
                     id: childState.id, parentID: childState.parentID,
@@ -2007,6 +2018,11 @@ public final class SimiGoESISDatabase {
                 try insertOperationKeyRow(
                     key, payloadDigest: settled.payloadDigest,
                     settlementID: settlementID)
+            }
+            if let chatSessionID, let chatModelIdentity {
+                try insertChatSessionLink(
+                    sessionID: chatSessionID, stateID: stateID,
+                    modelIdentity: chatModelIdentity)
             }
         }
         if let reuse {
@@ -3762,6 +3778,27 @@ public final class SimiGoESISDatabase {
         case detached
     }
 
+    /// Chat write set to commit with an authoritative model settlement.
+    public struct ChatTurnCommit: Sendable {
+        public let sessionID: String
+        public let userMessageID: Int64
+        public let assistantText: String
+        public let model: String?
+        public let createdAt: Date
+        public let eligibility: ChatTurnEligibility
+
+        public init(sessionID: String, userMessageID: Int64, assistantText: String,
+                    model: String?, createdAt: Date,
+                    eligibility: ChatTurnEligibility = .ordinary) {
+            self.sessionID = sessionID
+            self.userMessageID = userMessageID
+            self.assistantText = assistantText
+            self.model = model
+            self.createdAt = createdAt
+            self.eligibility = eligibility
+        }
+    }
+
     /// Append one conversation line. A user row starts `pending` and only the
     /// turn that produced it can promote it (`commitChatTurn`): ordinary
     /// retrieval must never treat another request's in-flight input as memory.
@@ -3824,24 +3861,38 @@ public final class SimiGoESISDatabase {
         model: String?, createdAt: Date,
         eligibility: ChatTurnEligibility = .ordinary
     ) throws -> Int64 {
-        let data = Data(assistantText.utf8)
-        let digest = NativeSHA256.hexDigest(data)
-        return try transactionResult {
-            let assistantID = try insertChatMessage(
-                sessionID: sessionID, role: "assistant", data: data, digest: digest,
-                model: model, createdAt: createdAt,
-                state: Self.completedState(for: eligibility))
-            if userMessageID > 0, eligibility == .ordinary {
-                try execBinding("""
-                UPDATE chat_messages SET turn_state='committed'
-                WHERE id=? AND session_id=? AND role='user' AND turn_state='pending';
-                """) { stmt in
-                    sqlite3_bind_int64(stmt, 1, userMessageID)
-                    bind(stmt, 2, sessionID)
-                }
-            }
-            return assistantID
+        try transactionResult {
+            try insertChatTurnRows(.init(
+                sessionID: sessionID, userMessageID: userMessageID,
+                assistantText: assistantText, model: model, createdAt: createdAt,
+                eligibility: eligibility))
         }
+    }
+
+    /// Caller owns the transaction.
+    @discardableResult
+    private func insertChatTurnRows(_ write: ChatTurnCommit) throws -> Int64 {
+        let data = Data(write.assistantText.utf8)
+        let digest = NativeSHA256.hexDigest(data)
+        let assistantID = try insertChatMessage(
+            sessionID: write.sessionID, role: "assistant", data: data, digest: digest,
+            model: write.model, createdAt: write.createdAt,
+            state: Self.completedState(for: write.eligibility))
+        if write.userMessageID > 0, write.eligibility == .ordinary {
+            let promotedRows = try execBinding("""
+            UPDATE chat_messages SET turn_state='committed'
+            WHERE id=? AND session_id=? AND role='user'
+              AND source_kind='local' AND turn_state='pending';
+            """) { stmt in
+                sqlite3_bind_int64(stmt, 1, write.userMessageID)
+                bind(stmt, 2, write.sessionID)
+            }
+            guard promotedRows == 1 else {
+                throw DatabaseError.sql(
+                    "commitChatTurn: expected one pending local user row; updated \\(promotedRows)")
+            }
+        }
+        return assistantID
     }
 
     /// Close an uncompleted local user row without promoting it into retrieval
@@ -4807,6 +4858,43 @@ public final class SimiGoESISDatabase {
         }
     }
 
+    /// Commit a Responses continuation whose child settlement already exists.
+    /// Chat, advancement, the session link and summary are committed together
+    /// against that exact valid settlement.
+    @discardableResult
+    public func commitChatTurnWithExistingSettlement(
+        _ chatTurn: ChatTurnCommit, settlementID: String, stateID: String,
+        modelIdentity: String, demandID: String, retrievalSettlementID: String,
+        actions: [String], query: String
+    ) throws -> Int64 {
+        guard !settlementID.isEmpty, !stateID.isEmpty,
+              !demandID.isEmpty, !retrievalSettlementID.isEmpty else {
+            throw DatabaseError.sql("existing-settlement chat commit requires complete identity")
+        }
+        return try transactionResult {
+            guard let producer = try settlementReceipt(settlementID),
+                  producer.validity == "valid", producer.stateID == stateID else {
+                throw DatabaseError.sql("existing Responses settlement is missing, invalid or bound to another state")
+            }
+            guard let retrieval = try settlementReceipt(retrievalSettlementID),
+                  retrieval.validity == "valid",
+                  retrieval.validationStatus == "IS_RETRIEVAL" else {
+                throw DatabaseError.sql("Responses retrieval settlement is missing, invalid or not an IS retrieval")
+            }
+            let assistantID = try insertChatTurnRows(chatTurn)
+            _ = try insertInformationAdvancementRows(.init(
+                demandID: demandID, stateID: stateID, settlementID: settlementID,
+                retrievalSettlementID: retrievalSettlementID,
+                actions: actions, result: producer.payload))
+            try insertChatSessionLink(
+                sessionID: chatTurn.sessionID, stateID: stateID, modelIdentity: modelIdentity)
+            _ = try recordSettlementSummaryInTransaction(
+                settlementID: settlementID, sessionID: chatTurn.sessionID,
+                query: query, settledAt: chatTurn.createdAt)
+            return assistantID
+        }
+    }
+
     /// Caller owns the transaction so advancement can commit atomically with the
     /// settlement and child state that produced it.
     @discardableResult
@@ -5333,6 +5421,13 @@ public final class SimiGoESISDatabase {
 
     public func linkChatSession(sessionID: String, stateID: String,
                                 modelIdentity: String) throws {
+        try insertChatSessionLink(sessionID: sessionID, stateID: stateID, modelIdentity: modelIdentity)
+    }
+
+    /// Caller owns the transaction when this helper is part of a larger write.
+    private func insertChatSessionLink(
+        sessionID: String, stateID: String, modelIdentity: String
+    ) throws {
         try execBinding("""
         INSERT INTO chat_execution_links(session_id, current_state_id, model_identity, updated_at)
         VALUES(?,?,?,?)
