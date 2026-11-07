@@ -680,7 +680,10 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
                 // reached ready. The caller then proves the peer reset via
                 // assertPeerClosed instead of treating readiness as admission.
                 matched = true
-            case .waiting, .failed, .cancelled:
+            case .failed, .cancelled:
+                // .waiting is not a rejection: Network.framework may remain
+                // there while the TLS listener is still negotiating. Wait for
+                // a terminal state or .ready, then observe the peer close.
                 matched = !expectReady
             default:
                 matched = false
@@ -711,12 +714,35 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         timeout: TimeInterval
     ) {
         let closed = expectation(description: "server closed incomplete connection")
+        let stateLock = NSLock()
+        var fulfilled = false
+        func fulfillClosed() {
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { closed.fulfill() }
+        }
+
+        // An excess socket can reach TLS ready and then be reset; some Network
+        //.framework releases report that as a connection state transition,
+        // others as a receive error/EOF. Accept either actual peer-close signal.
+        connection.stateUpdateHandler = { state in
+            switch state {
+            case .failed, .cancelled:
+                fulfillClosed()
+            default:
+                break
+            }
+        }
+        if case .failed = connection.state { fulfillClosed() }
+        if case .cancelled = connection.state { fulfillClosed() }
         connection.receive(
             minimumIncompleteLength: 1,
             maximumLength: 1
         ) { _, _, isComplete, error in
             if error != nil || isComplete {
-                closed.fulfill()
+                fulfillClosed()
             }
         }
         wait(for: [closed], timeout: timeout)
