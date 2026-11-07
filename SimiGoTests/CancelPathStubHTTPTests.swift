@@ -284,12 +284,14 @@ final class CancelPathStubHTTPTests: XCTestCase {
             file: file, line: line)
         XCTAssertEqual(receipt.stateID, stateID, file: file, line: line)
         XCTAssertEqual(receipt.validity, "valid", file: file, line: line)
-        // The chat result contract declares only "content" and has no
-        // verified external binding constraints. It must not manufacture
-        // producer binding rows merely to make a settlement look reusable.
-        XCTAssertTrue(
-            receipt.bindings.isEmpty,
-            "the chat result contract has no external bindings", file: file, line: line)
+        // The chat result contract declares only "content": it must not
+        // manufacture external constraint or KV bindings. Producer identity is
+        // provenance, retained for audit and not used as a reuse gate.
+        XCTAssertEqual(
+            Set(receipt.bindings.keys),
+            ["producer.model_identity", "producer.tokenizer_identity"],
+            "the content-only chat contract keeps producer provenance and no external bindings",
+            file: file, line: line)
         XCTAssertNotNil(
             receipt.summary,
             "the durable answer has its reusable summary", file: file, line: line)
@@ -302,9 +304,13 @@ final class CancelPathStubHTTPTests: XCTestCase {
             file: file, line: line)
 
         let bindings = ESISSweep.newAnswerBindingIDs(before: before, after: after)
+        XCTAssertEqual(
+            bindings.count, 2,
+            "the two producer provenance rows are persisted once: \(bindings)",
+            file: file, line: line)
         XCTAssertTrue(
-            bindings.isEmpty,
-            "the content-only chat contract must not invent answer bindings",
+            bindings.allSatisfy { $0.hasPrefix("\(settlementID)|producer.") },
+            "new bindings are producer provenance for this settlement only: \(bindings)",
             file: file, line: line)
 
         XCTAssertEqual(
