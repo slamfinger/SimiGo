@@ -860,13 +860,17 @@ extension HTTPServer {
                     guard
                         let self,
                         let context,
-                        !text.isEmpty,
-                        !context.closed
+                        !text.isEmpty
                     else {
                         return
                     }
 
+                    // Keep accumulating the answer after a client disconnect:
+                    // a detached completion settles the full generation, while
+                    // outbound events stay fail-closed.
                     streamedContent.mutate { $0.append(text) }
+
+                    guard !context.closed else { return }
 
                     self.sendImmediateSSEChunk(
                         [
@@ -888,15 +892,15 @@ extension HTTPServer {
                 },
 
                 { [weak self, weak context] call in
-                    guard
-                        let self,
-                        let context,
-                        !context.closed
-                    else {
+                    guard let self, let context else {
                         return
                     }
 
+                    // A post-disconnect tool call still marks the turn as a tool
+                    // round, so a detached completion cannot settle as an answer.
                     hasToolCalls.set(true)
+
+                    guard !context.closed else { return }
 
                     let toolIndex =
                         toolCallIndexCounter
