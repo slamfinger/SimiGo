@@ -516,7 +516,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let cursorPayload = try encoder.encode(state)
 
         do {
-            let connection = try QoderSQLiteConnection.open(path: databaseURL.path)
+            let connection = try CollectionSQLiteConnection.open(path: databaseURL.path)
             defer { connection.close() }
             try connection.execute(
                 """
@@ -559,7 +559,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         XCTAssertEqual(retried.insertedCandidates, 0)
         XCTAssertEqual(retried.duplicateCandidates, 1)
 
-        let upgraded = try QoderSQLiteConnection.open(path: databaseURL.path)
+        let upgraded = try CollectionSQLiteConnection.open(path: databaseURL.path)
         defer { upgraded.close() }
         XCTAssertEqual(try upgraded.scalarInt64("PRAGMA user_version"), 2)
     }
@@ -580,7 +580,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
         let databaseURL = configuration.stateDirectory.appendingPathComponent(
             QoderCandidateInbox.databaseFileName)
         do {
-            let connection = try QoderSQLiteConnection.open(path: databaseURL.path)
+            let connection = try CollectionSQLiteConnection.open(path: databaseURL.path)
             defer { connection.close() }
             let select = try connection.prepare(
                 "SELECT seq, payload FROM candidates WHERE key = ?")
