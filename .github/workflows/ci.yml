@@ -217,11 +217,28 @@ jobs:
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
+      - name: Generate isolated secure LOCALB App test xctestrun
+        run: |
+          set -euo pipefail
+          products=".build/ci-p0-p1/Build/Products"
+          app="$products/Debug/SimiGo.app"
+          isolation="$RUNNER_TEMP/p0-p1-isolation"
+          python3 tools/make_isolated_xctestrun.py \
+            --app "$app" \
+            --isolation-root "$isolation" \
+            --base-xctestrun "$ISOLATED_XCTESTRUN" \
+            --out "$products/xctestrun_localb_secure.xctestrun" \
+            --record "$RUNNER_TEMP/p0-p1-localb-secure-isolation.json" \
+            --secure-localb
+          xr="$products/xctestrun_localb_secure.xctestrun"
+          test -f "$xr"
+          echo "ISOLATED_LOCALB_XCTESTRUN=$xr" >> "$GITHUB_ENV"
+          echo "ISOLATION|secure LOCALB xctestrun=$xr"
       - name: Run LOCALB request authorization in secure mode
         run: |
           set -o pipefail
-          SIMIGO_TRANSPORT=secure xcodebuild test-without-building \
-            -xctestrun "$ISOLATED_XCTESTRUN" \
+          xcodebuild test-without-building \
+            -xctestrun "$ISOLATED_LOCALB_XCTESTRUN" \
             -destination 'platform=macOS,arch=arm64' \
             -resultBundlePath "$RUNNER_TEMP/p0-p1-localb-secure.xcresult" \
             -enableCodeCoverage NO \
@@ -233,10 +250,10 @@ jobs:
           python3 - \
             "$RUNNER_TEMP/p0-p1-core.log" \
             "$RUNNER_TEMP/p0-p1-core.xcresult" \
-            "\${EXPECTED_CORE_CASES:-}" \
+            "${EXPECTED_CORE_CASES:-}" \
             "$RUNNER_TEMP/p0-p1-localb-secure.log" \
             "$RUNNER_TEMP/p0-p1-localb-secure.xcresult" \
-            "\${EXPECTED_LOCALB_CASES:-}" <<'PY'
+            "${EXPECTED_LOCALB_CASES:-}" <<'PY'
           import json, os, re, subprocess, sys
 
           def out(tag, detail):
