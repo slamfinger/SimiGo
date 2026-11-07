@@ -622,6 +622,13 @@ struct ESISSweep {
         return rows.first
     }
 
+    /// Demand identities are scoped to one test path's unique session/question.
+    static func demandIDs(sessionID: String, query: String) -> Set<String> {
+        stringColumn(
+            "SELECT demand_id FROM information_demands WHERE session_id = '\(sqlEscaped(sessionID))' AND query = '\(sqlEscaped(query))';"
+        )
+    }
+
     @MainActor
     static func answeredDemand(
         sessionID: String, query: String
@@ -649,7 +656,7 @@ struct ESISSweep {
 
     // MARK: - SQLite helpers
 
-    private static func sqlEscaped(_ value: String) -> String {
+    static func sqlEscaped(_ value: String) -> String {
         value.replacingOccurrences(of: "'", with: "''")
     }
 
@@ -701,6 +708,33 @@ struct ESISSweep {
         defer { sqlite3_close(handle) }
         sqlite3_busy_timeout(handle, 3_000)
         return stringColumn(handle, sql)
+    }
+
+    /// A failed read is distinct from a legitimate zero-row result.
+    static func countRows(_ sql: String) -> Int? {
+        guard FileManager.default.fileExists(atPath: SimiGoPaths.databaseURL.path) else {
+            return nil
+        }
+        var handle: OpaquePointer?
+        guard sqlite3_open_v2(
+            SimiGoPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
+        ) == SQLITE_OK, let handle else {
+            sqlite3_close(handle)
+            return nil
+        }
+        defer { sqlite3_close(handle) }
+        sqlite3_busy_timeout(handle, 3_000)
+
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &statement, nil) == SQLITE_OK,
+              let statement
+        else {
+            sqlite3_finalize(statement)
+            return nil
+        }
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+        return Int(sqlite3_column_int64(statement, 0))
     }
 }
 

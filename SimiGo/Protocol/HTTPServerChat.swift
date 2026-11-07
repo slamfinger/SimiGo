@@ -382,26 +382,33 @@ extension HTTPServer {
     ) {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        try? turn.db.commitChatTurn(
-            sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-            assistantText: text, model: modelId, createdAt: Date(),
-            eligibility: turn.eligibility)
-        guard turn.eligibility == .ordinary else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=chat reason=internal_operation "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
-            return
-        }
-        guard completion.isSettleable else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=chat completion=\(completion.wireName) "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
-            return
-        }
-        guard !producedToolCalls else {
-            RuntimeTraceLogger.shared.trace(
-                "[SETTLE_SKIP] wire=chat reason=tool_calls "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+        // Non-settled turns remain ordinary conversation history, but a final
+        // ordinary answer commits only with its authoritative ES/IS rows.
+        if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
+            do {
+                _ = try turn.db.commitChatTurn(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility)
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[CHAT_COMMIT_REJECT] wire=chat reason=\"\(error)\" "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) committed=0")
+                return
+            }
+            if turn.eligibility != .ordinary {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=chat reason=internal_operation "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            } else if !completion.isSettleable {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=chat completion=\(completion.wireName) "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            } else {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_SKIP] wire=chat reason=tool_calls "
+                        + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+            }
             return
         }
         do {
@@ -417,7 +424,11 @@ extension HTTPServer {
                 summaryQuery: turn.query,
                 actions: ["chat.completion"],
                 sourceIdentity: turn.sourceIdentity.isAbsent ? nil : turn.sourceIdentity,
-                operationKey: turn.operationKey)
+                operationKey: turn.operationKey,
+                chatTurn: .init(
+                    sessionID: turn.sessionID, userMessageID: turn.userMessageID,
+                    assistantText: text, model: modelId, createdAt: Date(),
+                    eligibility: turn.eligibility))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REUSE] wire=chat settlement=\(RuntimeTraceLogger.short(committed.settlementID)) "
@@ -426,7 +437,7 @@ extension HTTPServer {
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=chat reason=\"\(error)\" "
-                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
+                    + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
         }
     }
 

@@ -228,55 +228,69 @@ final class CancelPathStubHTTPTests: XCTestCase {
         }
     }
 
-    /// Positive database proof for a naturally completed detached turn. Each
-    /// caller takes its own before/after snapshot and supplies a unique session,
-    /// so one route cannot borrow another route's state or settlement as evidence.
-    /// This checks the durable ES/IS rows, not the HTTP terminal event (the peer
-    /// has already gone away by design).
-    ///
-    /// `expectedAnswer` is the text actually delivered to the client: these
-    /// managed paths accumulate the streamed chunks and persist that text, so
-    /// it is the concatenation of the stub's chunks, not the stub's final-text
-    /// field (which the protocol path does not consume).
+    /// Positive database proof for one naturally completed detached turn.
+    /// Every read is filtered by this path's unique session, state, demand and
+    /// settlement IDs; global before/after snapshots are diagnostics only.
     @MainActor
     private func assertSettledAnswerLifecycle(
-        before: ESISSweep.Snapshot,
-        after: ESISSweep.Snapshot,
         session: String,
         query: String,
         expectedAnswer: String,
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
-        let states = ESISSweep.newChatStateIDs(before: before, after: after)
-        XCTAssertEqual(
-            states.count, 1,
-            "one naturally completed turn creates exactly one chat state: \(states)",
-            file: file, line: line)
-        let stateID = try XCTUnwrap(
-            states.first, "the completed turn has no new chat state",
-            file: file, line: line)
-        XCTAssertEqual(
-            ESISSweep.chatStateID(sessionID: session), stateID,
-            "the session points to this path's state", file: file, line: line)
+        func assertCount(
+            _ sql: String,
+            equals expected: Int,
+            _ message: String
+        ) throws {
+            let actual = try XCTUnwrap(
+                ESISSweep.countRows(sql),
+                "\(message): the isolated SQLite read failed",
+                file: file, line: line)
+            XCTAssertEqual(actual, expected, message, file: file, line: line)
+        }
 
-        let settlements = ESISSweep.newAnswerSettlementIDs(
-            before: before, after: after)
+        let sessionSQL = ESISSweep.sqlEscaped(session)
+        let querySQL = ESISSweep.sqlEscaped(query)
+        let stateID = try XCTUnwrap(
+            ESISSweep.chatStateID(sessionID: session),
+            "this path's session has no durable chat-state link",
+            file: file, line: line)
+        let stateSQL = ESISSweep.sqlEscaped(stateID)
+        XCTAssertTrue(stateID.hasPrefix("chat-"), stateID, file: file, line: line)
+        try assertCount(
+            "SELECT COUNT(*) FROM chat_execution_links WHERE session_id='\(sessionSQL)' AND current_state_id='\(stateSQL)';",
+            equals: 1,
+            "this session links to exactly this chat state")
+        try assertCount(
+            "SELECT COUNT(*) FROM execution_states WHERE state_id='\(stateSQL)';",
+            equals: 1,
+            "this path's chat state exists exactly once")
+
+        let settlementIDs = ESISSweep.answerSettlementIDs(forState: stateID)
         XCTAssertEqual(
-            settlements.count, 1,
-            "one detached completion creates exactly one answer settlement: \(settlements)",
+            settlementIDs.count, 1,
+            "this state has exactly one non-retrieval answer settlement: \(settlementIDs)",
             file: file, line: line)
         let settlementID = try XCTUnwrap(
-            settlements.first, "the detached completion wrote no answer settlement",
+            settlementIDs.first,
+            "this path wrote no answer settlement",
             file: file, line: line)
-        XCTAssertEqual(
-            ESISSweep.answerSettlementIDs(forState: stateID), Set([settlementID]),
-            "the answer settlement belongs to the new state",
+        let settlementSQL = ESISSweep.sqlEscaped(settlementID)
+        XCTAssertFalse(
+            settlementID.hasPrefix("is-retrieval:"),
+            "the answer settlement cannot be the retrieval receipt",
             file: file, line: line)
+        try assertCount(
+            "SELECT COUNT(*) FROM settlements WHERE state_id='\(stateSQL)' AND settlement_id NOT LIKE 'is-retrieval:%';",
+            equals: 1,
+            "this state has one answer settlement and no cross-path count dependency")
 
         let store = ExecutionStateGraphStore()
         let db = try XCTUnwrap(
-            store.esis, "the isolated authoritative ES/IS database is unavailable",
+            store.esis,
+            "the isolated authoritative ES/IS database is unavailable",
             file: file, line: line)
         let receipt = try XCTUnwrap(
             db.settlementReceipt(settlementID),
@@ -284,64 +298,118 @@ final class CancelPathStubHTTPTests: XCTestCase {
             file: file, line: line)
         XCTAssertEqual(receipt.stateID, stateID, file: file, line: line)
         XCTAssertEqual(receipt.validity, "valid", file: file, line: line)
-        // The chat result contract declares only "content": it must not
-        // manufacture external constraint or KV bindings. Producer identity is
-        // provenance, retained for audit and not used as a reuse gate.
+        let expectedProducerBindings: Set<String> = [
+            "producer.model_identity",
+            "producer.tokenizer_identity",
+        ]
         XCTAssertEqual(
             Set(receipt.bindings.keys),
-            ["producer.model_identity", "producer.tokenizer_identity"],
+            expectedProducerBindings,
             "the content-only chat contract keeps producer provenance and no external bindings",
             file: file, line: line)
-        XCTAssertNotNil(
+        XCTAssertTrue(
+            receipt.bindings.values.allSatisfy { !$0.isEmpty },
+            "producer provenance digests must be present",
+            file: file, line: line)
+        // The answer's only dependency is its exact IS retrieval settlement.
+        // That provenance edge is not an invented external-file or KV binding.
+        let summary = try XCTUnwrap(
             receipt.summary,
-            "the durable answer has its reusable summary", file: file, line: line)
+            "the durable answer has its reusable summary",
+            file: file, line: line)
+        XCTAssertEqual(summary.settlementID, settlementID, file: file, line: line)
+        XCTAssertEqual(summary.sessionID, session, file: file, line: line)
+        XCTAssertEqual(summary.query, query, file: file, line: line)
+
         let payload = try XCTUnwrap(
             try JSONSerialization.jsonObject(with: receipt.payload) as? [String: Any],
-            "the durable answer payload is not valid JSON", file: file, line: line)
+            "the durable answer payload is not valid JSON",
+            file: file, line: line)
         XCTAssertEqual(
             payload["content"] as? String, expectedAnswer,
-            "the database holds the actual generated result, not only an admission row",
+            "the database holds the exact accumulated answer text",
             file: file, line: line)
+        try assertCount(
+            "SELECT COUNT(*) FROM settlement_bindings WHERE settlement_id='\(settlementSQL)';",
+            equals: 2,
+            "this answer persists exactly its two producer-provenance bindings")
 
-        let bindings = ESISSweep.newAnswerBindingIDs(before: before, after: after)
+        let demandIDs = ESISSweep.demandIDs(sessionID: session, query: query)
         XCTAssertEqual(
-            bindings.count, 2,
-            "the two producer provenance rows are persisted once: \(bindings)",
+            demandIDs.count, 1,
+            "this path owns exactly one information demand: \(demandIDs)",
             file: file, line: line)
-        XCTAssertTrue(
-            bindings.allSatisfy { $0.hasPrefix("\(settlementID)|producer.") },
-            "new bindings are producer provenance for this settlement only: \(bindings)",
+        let demandID = try XCTUnwrap(
+            demandIDs.first,
+            "this path wrote no information demand",
             file: file, line: line)
+        let demandSQL = ESISSweep.sqlEscaped(demandID)
+        try assertCount(
+            "SELECT COUNT(*) FROM information_demands WHERE demand_id='\(demandSQL)' AND session_id='\(sessionSQL)' AND query='\(querySQL)' AND state='ADVANCED' AND retrieval_settlement_id IS NOT NULL;",
+            equals: 1,
+            "this path's demand is advanced and has a retrieval basis")
+        try assertCount(
+            "SELECT COUNT(*) FROM retrieval_settlements WHERE demand_id='\(demandSQL)';",
+            equals: 1,
+            "this demand has exactly one retrieval settlement")
 
+        let answeredRows = try db.answeredDemands(sessionID: session, query: query)
         XCTAssertEqual(
-            ESISSweep.added("information_demands", before: before, after: after).count,
-            1, "the path creates one demand", file: file, line: line)
-        XCTAssertEqual(
-            ESISSweep.newRetrievalSettlementIDs(before: before, after: after).count,
-            1, "the demand has its own retrieval settlement", file: file, line: line)
-        XCTAssertEqual(
-            ESISSweep.added("information_advancements", before: before, after: after).count,
-            1, "the answer advances exactly one demand", file: file, line: line)
-        XCTAssertEqual(
-            ESISSweep.added("settlement_summaries", before: before, after: after).count,
-            1, "the path persists one answer summary", file: file, line: line)
-
+            answeredRows.count, 1,
+            "the exact session/question has one published answer",
+            file: file, line: line)
         let answered = try XCTUnwrap(
-            try db.answeredDemand(sessionID: session, query: query),
+            answeredRows.first,
             "the completed answer is not published against this path's demand",
             file: file, line: line)
+        XCTAssertEqual(answered.demandID, demandID, file: file, line: line)
         XCTAssertEqual(answered.answerSettlementID, settlementID, file: file, line: line)
         XCTAssertEqual(answered.stateID, stateID, file: file, line: line)
+        let retrievalID = try XCTUnwrap(
+            answered.retrievalSettlementID,
+            "the answered demand has no retrieval-settlement identity",
+            file: file, line: line)
+        let retrievalSQL = ESISSweep.sqlEscaped(retrievalID)
+        XCTAssertEqual(receipt.dependencies.count, 1,
+                       "the answer depends only on its exact retrieval settlement",
+                       file: file, line: line)
+        let retrievalDependency = try XCTUnwrap(
+            receipt.dependencies.first, "the retrieval dependency is missing",
+            file: file, line: line)
+        XCTAssertEqual(
+            retrievalDependency.dependencyID,
+            "settlement:\(settlementID) -> settlement:\(retrievalID)",
+            file: file, line: line)
+        XCTAssertEqual(retrievalDependency.reason, "information-demand",
+                       file: file, line: line)
+        try assertCount(
+            "SELECT COUNT(*) FROM information_advancements WHERE demand_id='\(demandSQL)' AND state_id='\(stateSQL)' AND settlement_id='\(settlementSQL)' AND retrieval_settlement_id='\(retrievalSQL)';",
+            equals: 1,
+            "one advancement links this demand, state, answer and retrieval settlement")
+        try assertCount(
+            "SELECT COUNT(*) FROM settlement_summaries WHERE settlement_id='\(settlementSQL)' AND session_id='\(sessionSQL)' AND query='\(querySQL)';",
+            equals: 1,
+            "this answer has exactly one session-scoped summary")
 
         let transcript = try db.listChatMessages(sessionID: session)
         let userRows = transcript.filter { $0.role == "user" && $0.content == query }
         let answerRows = transcript.filter {
             $0.role == "assistant" && $0.content == expectedAnswer
         }
+        XCTAssertEqual(transcript.count, 2, "the path commits only its user/assistant pair",
+                       file: file, line: line)
         XCTAssertEqual(userRows.count, 1, "the user turn is committed once",
                        file: file, line: line)
         XCTAssertEqual(answerRows.count, 1, "the answer turn is committed once",
                        file: file, line: line)
+        try assertCount(
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id='\(sessionSQL)' AND role='user' AND turn_state='committed' AND content_object_id IS NOT NULL;",
+            equals: 1,
+            "this path persists one exact user message")
+        try assertCount(
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id='\(sessionSQL)' AND role='assistant' AND turn_state='committed' AND content_object_id IS NOT NULL;",
+            equals: 1,
+            "this path persists one exact assistant message")
     }
 
     /// A client disconnect must leave the turn running under the orphan budget:
@@ -563,7 +631,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         let after = await ESISSweep.stable()
         reportDelta("A2", before: before, after: after)
         try assertSettledAnswerLifecycle(
-            before: before, after: after, session: session,
+            session: session,
             query: question, expectedAnswer: "FIRST-DELTASECOND-DELTA")
     }
 
@@ -604,7 +672,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         let after = await ESISSweep.stable()
         reportDelta("A2b", before: before, after: after)
         try assertSettledAnswerLifecycle(
-            before: before, after: after, session: session,
+            session: session,
             query: question, expectedAnswer: "A2B-FIRSTA2B-SECOND")
     }
 
@@ -692,7 +760,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         let after = await ESISSweep.stable()
         reportDelta("A4", before: before, after: after)
         try assertSettledAnswerLifecycle(
-            before: before, after: after, session: session,
+            session: session,
             query: question, expectedAnswer: "A4-FIRSTA4-SECOND")
     }
 
@@ -735,7 +803,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
         let after = await ESISSweep.stable()
         reportDelta("A4b", before: before, after: after)
         try assertSettledAnswerLifecycle(
-            before: before, after: after, session: session,
+            session: session,
             query: question, expectedAnswer: "A4B-FIRSTA4B-SECOND")
     }
 
