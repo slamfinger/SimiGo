@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 /// Durable read position for one transcript file.
@@ -110,14 +111,46 @@ public final class QoderFileCursorStore {
     }
 
     public func load() throws -> QoderCursorState? {
-        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
-        let data: Data
-        do {
-            data = try Data(contentsOf: fileURL)
-        } catch {
-            throw QoderCollectionStateError.unreadableState(
-                path: fileURL.path, detail: String(describing: error))
+        // lstat + Data(contentsOf:) would leave a pathname race in which a
+        // checked regular file could be replaced by a symlink before the read.
+        // Open once without following the final component, then validate and
+        // consume bytes through that same descriptor.
+        let descriptor = fileURL.path.withCString {
+            Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
         }
+        guard descriptor >= 0 else {
+            if errno == ENOENT { return nil }
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path, detail: "cannot open cursor without following links: "
+                    + String(cString: strerror(errno)))
+        }
+        defer { Darwin.close(descriptor) }
+
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_uid == getuid()
+        else {
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path, detail: "cursor is not a regular owned file")
+        }
+
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 64 * 1024)
+        while true {
+            let count = buffer.withUnsafeMutableBytes { raw in
+                Darwin.read(descriptor, raw.baseAddress, raw.count)
+            }
+            if count > 0 {
+                data.append(contentsOf: buffer.prefix(count))
+            } else if count == 0 {
+                break
+            } else if errno != EINTR {
+                throw QoderCollectionStateError.unreadableState(
+                    path: fileURL.path, detail: String(cString: strerror(errno)))
+            }
+        }
+
         do {
             return try JSONDecoder().decode(QoderCursorState.self, from: data)
         } catch {
@@ -134,9 +167,28 @@ public final class QoderFileCursorStore {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(state)
+        // Atomic replacement never opens an existing cursor target. Apply the
+        // restrictive mode through a no-follow descriptor as well, so a late
+        // symlink swap cannot redirect chmod to an external file.
         try data.write(to: fileURL, options: [.atomic])
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
+        let descriptor = fileURL.path.withCString {
+            Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        guard descriptor >= 0 else {
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path, detail: "cannot open saved cursor without following links: "
+                    + String(cString: strerror(errno)))
+        }
+        defer { Darwin.close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_uid == getuid(),
+              fchmod(descriptor, 0o600) == 0
+        else {
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path, detail: "saved cursor is not a regular owned file")
+        }
     }
 }
 
