@@ -245,18 +245,24 @@ public final class HTTPServer: @unchecked Sendable {
 
         private var _generationStarted = false
         private var _cancellationSignalled = false
+        private var _settlementClaimed = false
         private var _closed = false
         private var _cancelledByRuntime = false
 
-        /// ADR 2026-10-30：客户端断连不再取消正在进行的生成。这一位置位
-        /// 表示本轮在断连后仍会跑完（detached）；它只影响生命周期归类与
-        /// 孤儿调度计数，不改变「关闭后不再出站、不再结算」的既有语义。
+        /// Client disconnect after generation start may detach the request if an
+        /// orphan slot is granted. A naturally completed generation may still
+        /// claim its final settlement; outbound sends remain blocked by `_closed`.
         private var _detachedByClient = false
 
         /// 孤儿轮让位用：detach 时被取出的请求任务另行留存一份，供
         /// 「另一个生成已在等引擎」时在 token 边界停止本轮（ADR 补充）。
         /// 一次性取走，避免重复取消。
         private var _detachedRequestTask: Task<Void, Never>?
+
+        /// 让位与结算认领互斥：一旦孤儿任务被取走准备取消，本轮就不能再
+        /// claim 结算。两件事在同一把锁里判定，谁先到谁定局；否则
+        /// 「生成刚返回、让位恰好同时发生」会既取消又结算。
+        private var _detachedTaskTaken = false
 
         /// Slice 8: this request's continuation admission result. Set by the
         /// pre-generation gate, read by the post-generation settlement of the
@@ -490,13 +496,36 @@ public final class HTTPServer: @unchecked Sendable {
         /// 落地由 `closeAndTakeRequestTask(detach:…)` 在同一把锁内完成。
         var canDetachGeneration: Bool {
             stateLock.withLock {
-                _generationStarted && !_cancellationSignalled && !_closed
+                _generationStarted && !_cancellationSignalled
+                    && !_settlementClaimed && !_closed
             }
         }
 
         var detachedByClient: Bool {
             stateLock.withLock {
                 _detachedByClient
+            }
+        }
+
+        /// Atomically claim the completed-generation finalization window. This
+        /// admits an otherwise-valid detached completion, but refuses ordinary
+        /// cancellation, Runtime shutdown, and a turn an orphan-yield pass has
+        /// already taken. Once claimed, a later client close cannot cancel the
+        /// already-completed generation while ES/IS is written. The detached
+        /// task handle is retained for Runtime shutdown, which remains the one
+        /// authority allowed to override the claim.
+        func claimCompletedTurnSettlement() -> Bool {
+            stateLock.withLock {
+                guard _generationStarted,
+                      !_cancellationSignalled,
+                      !_cancelledByRuntime,
+                      !_settlementClaimed,
+                      !_detachedTaskTaken,
+                      (!_closed || _detachedByClient) else {
+                    return false
+                }
+                _settlementClaimed = true
+                return true
             }
         }
 
@@ -511,11 +540,13 @@ public final class HTTPServer: @unchecked Sendable {
         /// 一次性取走 detach 时留存的请求任务；取走后再次调用返回 nil。
         func takeDetachedRequestTask() -> Task<Void, Never>? {
             stateLock.withLock {
-                guard _detachedByClient, let task = _detachedRequestTask else {
+                guard _detachedByClient, !_settlementClaimed,
+                      let task = _detachedRequestTask else {
                     return nil
                 }
 
                 _detachedRequestTask = nil
+                _detachedTaskTaken = true
                 return task
             }
         }
@@ -557,6 +588,7 @@ public final class HTTPServer: @unchecked Sendable {
                     detach &&
                     _generationStarted &&
                     !_cancellationSignalled &&
+                    !_settlementClaimed &&
                     !_closed
                 let detached = detachable && claimDetachSlot()
 
@@ -565,7 +597,8 @@ public final class HTTPServer: @unchecked Sendable {
                     _generationStarted &&
                     !_cancellationSignalled &&
                     !_closed &&
-                    !detached
+                    !detached &&
+                    (!_settlementClaimed || _cancelledByRuntime)
 
                 if shouldCancel {
                     _cancellationSignalled = true
@@ -579,8 +612,23 @@ public final class HTTPServer: @unchecked Sendable {
                 _closed = true
                 _peerCloseWatcherArmed = false
 
-                let task = _requestTask
+                // A claimed finalization has already crossed the generation
+                // boundary: an ordinary late close must not cancel the ES/IS
+                // writes. Runtime shutdown is the one authority that overrides
+                // the claim, and a detached request has no `_requestTask` left,
+                // so it must receive the retained detached handle instead.
+                let task: Task<Void, Never>?
+                if _cancelledByRuntime {
+                    task = _requestTask ?? _detachedRequestTask
+                } else if _settlementClaimed {
+                    task = nil
+                } else {
+                    task = _requestTask
+                }
                 _requestTask = nil
+                if _cancelledByRuntime {
+                    _detachedRequestTask = nil
+                }
 
                 return (
                     shouldCancel,
@@ -1016,9 +1064,14 @@ public final class HTTPServer: @unchecked Sendable {
         requestAdmission.beginShutdown()
 
         let contexts: [ConnectionContext] = connectionLock.withLock {
-            let values = Array(connections.values)
+            let live = Array(connections.values)
+            let orphans = Array(detachedOrphans.values)
             connections.removeAll()
-            return values
+            // A detached request left `connections` when its client closed;
+            // shutdown must reclaim it from the orphan registry too, or the
+            // generation keeps running past Runtime stop.
+            let liveKeys = Set(live.map(\.key))
+            return live + orphans.filter { !liveKeys.contains($0.key) }
         }
 
         for context in contexts {
@@ -1169,11 +1222,12 @@ public final class HTTPServer: @unchecked Sendable {
     // 连接队列调用点无警告，显式化会翻成硬警告）。本方法由连接队列
     // 回调进入时须跳主演员执行（见 onPeerClosed 注释）。
     //
-    // ADR 2026-10-30：`detach` 是客户端断连专用。本地离线模型的冷 prefill
-    // 是硬件事实，客户端 60 s 超时先到，不应把已经付出的 prefill 取消掉。
-    // detach 之后本轮不取消、不结算、不提交（recorded only）：生成继续，
-    // 协议层在出站与结算前按 `context.closed` fail-closed。手动取消
-    // （菜单栏停止 / Runtime stop）不走这条路径，语义不变。
+    // ADR 2026-10-30: detach is client-disconnect-only. A running local prefill
+    // is hardware work; a remote watchdog is not its semantic end. If the detached
+    // generation reaches its completed-turn boundary without cancellation/yield,
+    // it may claim and persist the answer, but the closed connection remains
+    // fail-closed for outbound events. Manual cancel, Runtime shutdown and a
+    // contended orphan yield do not acquire this settlement claim.
     func terminate(
         _ context: ConnectionContext,
         cancelGeneration: Bool,

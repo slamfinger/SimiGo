@@ -14,10 +14,10 @@ import SimiGoRuntimeContract
 /// and only then checks the callback count, the generation-task exit, the
 /// post-cancel chunk count and the per-table ES/IS deltas.
 ///
-/// 2026-10-30 ADR: a client disconnect now **detaches** the turn — no cancel
-/// callback, no generation cancel, the turn runs to completion and stops at the
-/// fail-closed guard before settlement. A2/A4/A5 assert that shape; A3 keeps
-/// the server-internal cancel shape.
+/// 2026-11-07 settlement-after-detach: a client disconnect detaches the turn;
+/// if generation naturally completes, all four managed Chat/Responses paths
+/// claim finalization and persist one answer. Manual/runtime cancellation and
+/// orphan-yield remain fail-closed. Legacy text Completions stays unmanaged.
 ///
 /// Evidence level of this file: control flow and ES/IS rows under a stub engine.
 /// It does NOT prove that a real model execution stopped or completed; that is
@@ -228,6 +228,122 @@ final class CancelPathStubHTTPTests: XCTestCase {
         }
     }
 
+    /// Positive database proof for a naturally completed detached turn. Each
+    /// caller takes its own before/after snapshot and supplies a unique session,
+    /// so one route cannot borrow another route's state or settlement as evidence.
+    /// This checks the durable ES/IS rows, not the HTTP terminal event (the peer
+    /// has already gone away by design).
+    ///
+    /// `expectedAnswer` is the text actually delivered to the client: these
+    /// managed paths accumulate the streamed chunks and persist that text, so
+    /// it is the concatenation of the stub's chunks, not the stub's final-text
+    /// field (which the protocol path does not consume).
+    @MainActor
+    private func assertSettledAnswerLifecycle(
+        before: ESISSweep.Snapshot,
+        after: ESISSweep.Snapshot,
+        session: String,
+        query: String,
+        expectedAnswer: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let states = ESISSweep.newChatStateIDs(before: before, after: after)
+        XCTAssertEqual(
+            states.count, 1,
+            "one naturally completed turn creates exactly one chat state: \(states)",
+            file: file, line: line)
+        let stateID = try XCTUnwrap(
+            states.first, "the completed turn has no new chat state",
+            file: file, line: line)
+        XCTAssertEqual(
+            ESISSweep.chatStateID(sessionID: session), stateID,
+            "the session points to this path's state", file: file, line: line)
+
+        let settlements = ESISSweep.newAnswerSettlementIDs(
+            before: before, after: after)
+        XCTAssertEqual(
+            settlements.count, 1,
+            "one detached completion creates exactly one answer settlement: \(settlements)",
+            file: file, line: line)
+        let settlementID = try XCTUnwrap(
+            settlements.first, "the detached completion wrote no answer settlement",
+            file: file, line: line)
+        XCTAssertEqual(
+            ESISSweep.answerSettlementIDs(forState: stateID), Set([settlementID]),
+            "the answer settlement belongs to the new state",
+            file: file, line: line)
+
+        let store = ExecutionStateGraphStore()
+        let db = try XCTUnwrap(
+            store.esis, "the isolated authoritative ES/IS database is unavailable",
+            file: file, line: line)
+        let receipt = try XCTUnwrap(
+            db.settlementReceipt(settlementID),
+            "the answer settlement cannot be read back from the database",
+            file: file, line: line)
+        XCTAssertEqual(receipt.stateID, stateID, file: file, line: line)
+        XCTAssertEqual(receipt.validity, "valid", file: file, line: line)
+        // The chat result contract declares only "content": it must not
+        // manufacture external constraint or KV bindings. Producer identity is
+        // provenance, retained for audit and not used as a reuse gate.
+        XCTAssertEqual(
+            Set(receipt.bindings.keys),
+            ["producer.model_identity", "producer.tokenizer_identity"],
+            "the content-only chat contract keeps producer provenance and no external bindings",
+            file: file, line: line)
+        XCTAssertNotNil(
+            receipt.summary,
+            "the durable answer has its reusable summary", file: file, line: line)
+        let payload = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: receipt.payload) as? [String: Any],
+            "the durable answer payload is not valid JSON", file: file, line: line)
+        XCTAssertEqual(
+            payload["content"] as? String, expectedAnswer,
+            "the database holds the actual generated result, not only an admission row",
+            file: file, line: line)
+
+        let bindings = ESISSweep.newAnswerBindingIDs(before: before, after: after)
+        XCTAssertEqual(
+            bindings.count, 2,
+            "the two producer provenance rows are persisted once: \(bindings)",
+            file: file, line: line)
+        XCTAssertTrue(
+            bindings.allSatisfy { $0.hasPrefix("\(settlementID)|producer.") },
+            "new bindings are producer provenance for this settlement only: \(bindings)",
+            file: file, line: line)
+
+        XCTAssertEqual(
+            ESISSweep.added("information_demands", before: before, after: after).count,
+            1, "the path creates one demand", file: file, line: line)
+        XCTAssertEqual(
+            ESISSweep.newRetrievalSettlementIDs(before: before, after: after).count,
+            1, "the demand has its own retrieval settlement", file: file, line: line)
+        XCTAssertEqual(
+            ESISSweep.added("information_advancements", before: before, after: after).count,
+            1, "the answer advances exactly one demand", file: file, line: line)
+        XCTAssertEqual(
+            ESISSweep.added("settlement_summaries", before: before, after: after).count,
+            1, "the path persists one answer summary", file: file, line: line)
+
+        let answered = try XCTUnwrap(
+            try db.answeredDemand(sessionID: session, query: query),
+            "the completed answer is not published against this path's demand",
+            file: file, line: line)
+        XCTAssertEqual(answered.answerSettlementID, settlementID, file: file, line: line)
+        XCTAssertEqual(answered.stateID, stateID, file: file, line: line)
+
+        let transcript = try db.listChatMessages(sessionID: session)
+        let userRows = transcript.filter { $0.role == "user" && $0.content == query }
+        let answerRows = transcript.filter {
+            $0.role == "assistant" && $0.content == expectedAnswer
+        }
+        XCTAssertEqual(userRows.count, 1, "the user turn is committed once",
+                       file: file, line: line)
+        XCTAssertEqual(answerRows.count, 1, "the answer turn is committed once",
+                       file: file, line: line)
+    }
+
     /// A client disconnect must leave the turn running under the orphan budget:
     /// the stub leaves its closure on its own, no cancel callback fires, and the
     /// engine never observes `Task.isCancelled`.
@@ -407,14 +523,12 @@ final class CancelPathStubHTTPTests: XCTestCase {
             "serving a reuse creates no ES state")
     }
 
-    // MARK: - A2) Streaming Responses: client disconnect detaches generation
+    // MARK: - A2) Streaming Responses: client disconnect detaches, then settles
 
     @MainActor
-    func testStreamingResponsesClientDisconnectDetachesGenerationWithoutSettlement() async throws {
+    func testStreamingResponsesClientDisconnectDetachesGenerationAndSettles() async throws {
         let session = "ta2-\(UUID().uuidString)"
         let question = "what happens to the streaming turn that is abandoned"
-
-        // Outlives the close: first delta, silent gap, second delta, return.
         let engine = BlockingStubEngine(
             .complete(chunks: ["FIRST-DELTA", "SECOND-DELTA"],
                       text: "ABANDONED-ANSWER", silenceAfterFirst: 2))
@@ -424,7 +538,6 @@ final class CancelPathStubHTTPTests: XCTestCase {
 
         let before = await ESISSweep.stable()
         let detachBaseline = server.detachedSnapshot()
-
         let client = StreamingClient(host: host, port: port)
         try await client.start(
             path: "/v1/responses",
@@ -433,15 +546,13 @@ final class CancelPathStubHTTPTests: XCTestCase {
         let firstDelta = await client.waitForLine(
             containing: ["output_text.delta", "FIRST-DELTA"], timeout: 15)
         XCTAssertNotNil(
-            firstDelta,
-            "the disconnect must happen after the stream is live: \(client.sse)")
+            firstDelta, "the disconnect must happen after the stream is live: \(client.sse)")
         XCTAssertEqual(engine.generateCount, 1)
         XCTAssertTrue(engine.started)
 
         let disconnectAt = client.cancelReading()
         await assertGenerationDetached(
             engine, cancel, server: server, baseline: detachBaseline)
-
         XCTAssertEqual(engine.generateCount, 1, "the detached turn must not restart")
         XCTAssertTrue(engine.exitObserved, "the detached turn must run to completion")
         print(
@@ -449,24 +560,52 @@ final class CancelPathStubHTTPTests: XCTestCase {
                 + "callbacks=\(cancel.requestIds) "
                 + "chunksAfterCancel=\(engine.chunksAfterCancel)")
 
-        // Allow any trailing async write to land, then take a stable snapshot.
         let after = await ESISSweep.stable()
         reportDelta("A2", before: before, after: after)
-        try assertNoAnswerLifecycle(
-            before: before, after: after, session: session, query: question)
+        try assertSettledAnswerLifecycle(
+            before: before, after: after, session: session,
+            query: question, expectedAnswer: "FIRST-DELTASECOND-DELTA")
+    }
 
-        // The only rows a detached turn may add on the ES/IS side: the user
-        // message and the resolve-stage retrieval demand/settlement. They are
-        // reported as their own class and are NOT counted as an answer.
+    // MARK: - A2b) Non-streaming Responses: client disconnect detaches, then settles
+
+    @MainActor
+    func testNonStreamingResponsesClientDisconnectDetachesGenerationAndSettles() async throws {
+        let session = "ta2b-\(UUID().uuidString)"
+        let question = "what happens to the non streaming responses turn that is abandoned"
+        let engine = BlockingStubEngine(
+            .complete(chunks: ["A2B-FIRST", "A2B-SECOND"],
+                      text: "A2B-ANSWER", silenceAfterFirst: 2))
+        let cancel = RecordingCancelHandler()
+        let server = try await startServer(engine, cancel)
+        defer { server.stop() }
+
+        let before = await ESISSweep.stable()
+        let detachBaseline = server.detachedSnapshot()
+        let request = try await StreamingClient.makeRequest(
+            host: host, port: port, path: "/v1/responses",
+            body: responsesBody(session: session, input: question, stream: false))
+        let dataTask = host.session.dataTask(with: request)
+        dataTask.resume()
+
+        let started = await engine.waitForStarted(timeout: 10)
+        XCTAssertTrue(
+            started, "the request must reach generation before it is disconnected")
+        let disconnectAt = Date()
+        dataTask.cancel()
+        await assertGenerationDetached(
+            engine, cancel, server: server, baseline: detachBaseline)
+        XCTAssertEqual(engine.generateCount, 1, "the detached turn must not restart")
+        XCTAssertTrue(engine.exitObserved, "the detached turn must run to completion")
         print(
-            "[TA-A2] allowed rows: chat_messages+="
-                + "\(ESISSweep.added("chat_messages", before: before, after: after).count)"
-                + " information_demands+="
-                + "\(ESISSweep.added("information_demands", before: before, after: after).count)"
-                + " retrieval_settlements+="
-                + "\(ESISSweep.added("retrieval_settlements", before: before, after: after).count)"
-                + " information_items+="
-                + "\(ESISSweep.added("information_items", before: before, after: after))")
+            "[TA-A2b] disconnectAt=\(disconnectAt.timeIntervalSince1970) "
+                + "callbacks=\(cancel.requestIds)")
+
+        let after = await ESISSweep.stable()
+        reportDelta("A2b", before: before, after: after)
+        try assertSettledAnswerLifecycle(
+            before: before, after: after, session: session,
+            query: question, expectedAnswer: "A2B-FIRSTA2B-SECOND")
     }
 
     // MARK: - A3) Streaming Responses: server-internal cancel keeps the client connected
@@ -516,13 +655,12 @@ final class CancelPathStubHTTPTests: XCTestCase {
             before: before, after: after, session: session, query: question)
     }
 
-    // MARK: - A4) Chat non-streaming: client disconnect detaches generation
+    // MARK: - A4) Chat non-streaming: client disconnect detaches, then settles
 
     @MainActor
-    func testChatNonStreamingClientDisconnectDetachesGenerationWithoutSettlement() async throws {
+    func testChatNonStreamingClientDisconnectDetachesGenerationAndSettles() async throws {
         let session = "ta4-\(UUID().uuidString)"
         let question = "what happens to the non streaming chat that is abandoned"
-
         let engine = BlockingStubEngine(
             .complete(chunks: ["A4-FIRST", "A4-SECOND"], text: "A4-ANSWER",
                       silenceAfterFirst: 2))
@@ -532,7 +670,6 @@ final class CancelPathStubHTTPTests: XCTestCase {
 
         let before = await ESISSweep.stable()
         let detachBaseline = server.detachedSnapshot()
-
         let request = try await StreamingClient.makeRequest(
             host: host, port: port, path: "/v1/chat/completions",
             body: chatBody(session: session, input: question, stream: false))
@@ -541,11 +678,9 @@ final class CancelPathStubHTTPTests: XCTestCase {
 
         let started = await engine.waitForStarted(timeout: 10)
         XCTAssertTrue(
-            started,
-            "the request must reach generation before it is disconnected")
+            started, "the request must reach generation before it is disconnected")
         let disconnectAt = Date()
         dataTask.cancel()
-
         await assertGenerationDetached(
             engine, cancel, server: server, baseline: detachBaseline)
         XCTAssertEqual(engine.generateCount, 1, "the detached turn must not restart")
@@ -556,8 +691,52 @@ final class CancelPathStubHTTPTests: XCTestCase {
 
         let after = await ESISSweep.stable()
         reportDelta("A4", before: before, after: after)
-        try assertNoAnswerLifecycle(
-            before: before, after: after, session: session, query: question)
+        try assertSettledAnswerLifecycle(
+            before: before, after: after, session: session,
+            query: question, expectedAnswer: "A4-FIRSTA4-SECOND")
+    }
+
+    // MARK: - A4b) Chat streaming: client disconnect detaches, then settles
+
+    @MainActor
+    func testChatStreamingClientDisconnectDetachesGenerationAndSettles() async throws {
+        let session = "ta4b-\(UUID().uuidString)"
+        let question = "what happens to the streaming chat turn that is abandoned"
+        let engine = BlockingStubEngine(
+            .complete(chunks: ["A4B-FIRST", "A4B-SECOND"],
+                      text: "A4B-ANSWER", silenceAfterFirst: 2))
+        let cancel = RecordingCancelHandler()
+        let server = try await startServer(engine, cancel)
+        defer { server.stop() }
+
+        let before = await ESISSweep.stable()
+        let detachBaseline = server.detachedSnapshot()
+        let client = StreamingClient(host: host, port: port)
+        try await client.start(
+            path: "/v1/chat/completions",
+            body: chatBody(session: session, input: question, stream: true))
+        XCTAssertEqual(client.status, 200, client.sse)
+        let firstDelta = await client.waitForLine(
+            containing: ["A4B-FIRST"], timeout: 15)
+        XCTAssertNotNil(
+            firstDelta, "the disconnect must happen after Chat streaming is live: \(client.sse)")
+        XCTAssertEqual(engine.generateCount, 1)
+        XCTAssertTrue(engine.started)
+
+        let disconnectAt = client.cancelReading()
+        await assertGenerationDetached(
+            engine, cancel, server: server, baseline: detachBaseline)
+        XCTAssertEqual(engine.generateCount, 1, "the detached turn must not restart")
+        XCTAssertTrue(engine.exitObserved, "the detached turn must run to completion")
+        print(
+            "[TA-A4b] disconnectAt=\(disconnectAt.timeIntervalSince1970) "
+                + "callbacks=\(cancel.requestIds)")
+
+        let after = await ESISSweep.stable()
+        reportDelta("A4b", before: before, after: after)
+        try assertSettledAnswerLifecycle(
+            before: before, after: after, session: session,
+            query: question, expectedAnswer: "A4B-FIRSTA4B-SECOND")
     }
 
     // MARK: - A5) Completions streaming: client disconnect detaches generation
@@ -610,7 +789,7 @@ final class CancelPathStubHTTPTests: XCTestCase {
 
     /// Owner authorization (2026-10-30): reduce the wasted decoding of orphan
     /// turns — "stop generating, keep the prefix". The orphan still runs when
-    /// nobody is waiting (A2/A4/A5); the moment another generation is in the
+    /// nobody is waiting (A2/A2b/A4/A4b); the moment another generation is in the
     /// engine window, the orphan stops at a token boundary through the standard
     /// cancel wiring (so #134/#136 prefix retention applies), and stays
     /// fail-closed: no settlement, no commit.
