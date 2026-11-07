@@ -305,9 +305,26 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         defer { claimedConnection.cancel() }
         XCTAssertTrue(claimed.markGenerationStarted())
         XCTAssertTrue(claimed.claimCompletedTurnSettlement())
+        var lateSlotClaimed = false
         let lateClose = claimed.closeAndTakeRequestTask(
-            cancelGeneration: true, detach: false)
+            cancelGeneration: true, detach: true, claimDetachSlot: {
+                lateSlotClaimed = true
+                return true
+            })
         XCTAssertFalse(lateClose.shouldCancelGeneration)
+        XCTAssertFalse(lateClose.detached)
+        XCTAssertFalse(lateSlotClaimed,
+                       "completed finalization is no longer an inference orphan")
+        
+        // Runtime shutdown still overrides a previously claimed finalization.
+        let (runtimeCancelled, runtimeConnection) = makeContext("runtime-cancelled")
+        defer { runtimeConnection.cancel() }
+        XCTAssertTrue(runtimeCancelled.markGenerationStarted())
+        XCTAssertTrue(runtimeCancelled.claimCompletedTurnSettlement())
+        runtimeCancelled.markCancelledByRuntime()
+        let runtimeClose = runtimeCancelled.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertTrue(runtimeClose.shouldCancelGeneration)
     }
     @MainActor
     func testChangedCurrentDemandIsNotServedByReuse() async throws {
