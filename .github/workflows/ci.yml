@@ -136,10 +136,11 @@ jobs:
   macos-p0-p1-app-tests:
     name: macOS P0/P1 HTTP and MCP tests
     # Xcode 27 is required by the pinned MLX dependency for the app test target.
-    # Unlike the graph-only preview witness, this lane is blocking and gates on
-    # executed == discovered, skipped == 0, failed == 0.
+    # The core HTTP/MCP suites run in the default isolated process. LOCALB's real
+    # TLS/default-host tests run in a second process with secure mode explicitly set.
+    # Both invocations are blocking and independently gate on executed test counts.
     runs-on: xcode-27
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - name: Show toolchain
@@ -148,29 +149,35 @@ jobs:
           swift --version
           echo "DEVELOPER_DIR=$(xcode-select -p)"
           echo "ARCH=$(uname -m)  IMAGE=$ImageVersion"
-      - name: Derive the P0/P1 App test count
+      - name: Derive P0/P1 App test counts
         run: |
           python3 - >> "$GITHUB_ENV" <<'PY'
           from pathlib import Path
           import re
-          files = [
+
+          core_files = [
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
               Path("SimiGoTests/CancelPathStubHTTPTests.swift"),
           ]
-          missing = [str(p) for p in files if not p.is_file()]
+          localb_file = Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift")
+          missing = [str(p) for p in [*core_files, localb_file] if not p.is_file()]
           if missing:
               raise SystemExit("missing P0/P1 App test file(s): " + ", ".join(missing))
-          count = sum(
-              len(re.findall(r"^\s*func test\w+", p.read_text(), re.M))
-              for p in files
-          )
-          if count <= 0:
-              raise SystemExit("no P0/P1 App test methods discovered")
-          print(f"EXPECTED_CASES={count}")
-          print(f"DISCOVERY|P0/P1 App test methods={count}")
+
+          def count(path):
+              return len(re.findall(r"^\s*func test\w+", path.read_text(), re.M))
+
+          core_count = sum(count(path) for path in core_files)
+          localb_count = count(localb_file)
+          if core_count <= 0 or localb_count <= 0:
+              raise SystemExit("P0/P1 core or LOCALB test discovery returned zero methods")
+          print(f"EXPECTED_CORE_CASES={core_count}")
+          print(f"EXPECTED_LOCALB_CASES={localb_count}")
+          print(f"DISCOVERY|P0/P1 core HTTP/MCP test methods={core_count}")
+          print(f"DISCOVERY|LOCALB secure transport test methods={localb_count}")
           PY
-      - name: Build P0/P1 HTTP and MCP tests
+      - name: Build P0/P1 HTTP, MCP and LOCALB tests
         run: |
           set -o pipefail
           xcodebuild build-for-testing \
@@ -184,7 +191,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
-            -only-testing:SimiGoTests/CancelPathStubHTTPTests
+            -only-testing:SimiGoTests/CancelPathStubHTTPTests \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests
       - name: Generate isolated App test xctestrun
         run: |
           set -euo pipefail
@@ -201,117 +209,160 @@ jobs:
           echo "ISOLATED_XCTESTRUN=$xr" >> "$GITHUB_ENV"
           echo "ISOLATION|fresh root=$isolation"
           echo "ISOLATION|xctestrun=$xr"
-      - name: Run isolated P0/P1 HTTP and MCP XCTest
+      - name: Run isolated core HTTP and MCP XCTest
         run: |
           set -o pipefail
           xcodebuild test-without-building \
             -xctestrun "$ISOLATED_XCTESTRUN" \
             -destination 'platform=macOS,arch=arm64' \
-            -resultBundlePath "$RUNNER_TEMP/p0-p1-app.xcresult" \
+            -resultBundlePath "$RUNNER_TEMP/p0-p1-core.xcresult" \
             -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/CancelPathStubHTTPTests \
-            2>&1 | tee "$RUNNER_TEMP/p0-p1-app.log"
-      - name: Gate on executed cases and xcresult counts
+            2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
+      - name: Generate isolated secure LOCALB App test xctestrun
+        run: |
+          set -euo pipefail
+          products=".build/ci-p0-p1/Build/Products"
+          app="$products/Debug/SimiGo.app"
+          isolation="$RUNNER_TEMP/p0-p1-isolation"
+          python3 tools/make_isolated_xctestrun.py \
+            --app "$app" \
+            --isolation-root "$isolation" \
+            --base-xctestrun "$ISOLATED_XCTESTRUN" \
+            --out "$products/xctestrun_localb_secure.xctestrun" \
+            --record "$RUNNER_TEMP/p0-p1-localb-secure-isolation.json" \
+            --secure-localb
+          xr="$products/xctestrun_localb_secure.xctestrun"
+          test -f "$xr"
+          echo "ISOLATED_LOCALB_XCTESTRUN=$xr" >> "$GITHUB_ENV"
+          echo "ISOLATION|secure LOCALB xctestrun=$xr"
+      - name: Run LOCALB request authorization in secure mode
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -xctestrun "$ISOLATED_LOCALB_XCTESTRUN" \
+            -destination 'platform=macOS,arch=arm64' \
+            -resultBundlePath "$RUNNER_TEMP/p0-p1-localb-secure.xcresult" \
+            -enableCodeCoverage NO \
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
+            2>&1 | tee "$RUNNER_TEMP/p0-p1-localb-secure.log"
+      - name: Gate both isolated test invocations and xcresult counts
         if: always()
         run: |
-          python3 - "$RUNNER_TEMP/p0-p1-app.log" "$RUNNER_TEMP/p0-p1-app.xcresult" "$EXPECTED_CASES" <<'PY'
+          python3 - \
+            "$RUNNER_TEMP/p0-p1-core.log" \
+            "$RUNNER_TEMP/p0-p1-core.xcresult" \
+            "${EXPECTED_CORE_CASES:-}" \
+            "$RUNNER_TEMP/p0-p1-localb-secure.log" \
+            "$RUNNER_TEMP/p0-p1-localb-secure.xcresult" \
+            "${EXPECTED_LOCALB_CASES:-}" <<'PY'
           import json, os, re, subprocess, sys
 
-          log_path, bundle_path, expected_raw = sys.argv[1:4]
           def out(tag, detail):
               print("GATE|%s|%s" % (tag, detail))
-          try:
-              expected = int(expected_raw)
-          except ValueError:
-              expected = 0
-          if expected <= 0:
-              out("expected_cases", "absent_or_invalid")
-              out("verdict", "NO_EXPECTATION")
-              sys.exit(1)
-          if not os.path.isfile(log_path):
-              out("log", "absent")
-              out("verdict", "STEP_NOT_STARTED")
-              sys.exit(1)
-          text = open(log_path, errors="replace").read()
-          statuses = re.findall(r"Test Case '[^']*' (passed|failed|skipped) ", text)
-          passed = statuses.count("passed")
-          failed = statuses.count("failed")
-          skipped = statuses.count("skipped")
-          executed = passed + failed + skipped
-          out("expected_cases", str(expected))
-          out("log", "executed=%d passed=%d failed=%d skipped=%d" %
-              (executed, passed, failed, skipped))
-          if executed == 0:
-              for line in [x.strip() for x in text.splitlines() if "error:" in x][:5]:
-                  out("blocked_error", line[:220])
-              out("verdict", "BUILD_BLOCKED_OR_NO_CASES_EXECUTED")
-              sys.exit(1)
-          aggregate = re.findall(
-              r"Executed (\d+) tests?, with (?:(\d+) tests? skipped and )?(\d+) failures?",
-              text
-          )
-          if not aggregate:
-              out("aggregate", "missing Executed summary")
-              out("verdict", "NO_AGGREGATE")
-              sys.exit(1)
-          a_exec, a_skip, a_fail = (int(x or 0) for x in aggregate[-1])
-          out("aggregate", "executed=%d failed=%d skipped=%d" % (a_exec, a_fail, a_skip))
-          if (a_exec, a_fail, a_skip) != (executed, failed, skipped):
-              out("verdict", "LOG_COUNT_DISAGREEMENT")
-              sys.exit(1)
 
-          if not os.path.isdir(bundle_path):
-              out("xcresulttool", "bundle_absent")
-              out("verdict", "NO_RESULT_BUNDLE")
-              sys.exit(1)
-          raw = subprocess.run(
-              ["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", bundle_path],
-              capture_output=True, text=True, timeout=120
-          )
-          if raw.returncode != 0 or not raw.stdout.strip():
-              out("xcresulttool", "unreadable rc=%s" % raw.returncode)
-              out("verdict", "NO_XCRESULT_SUMMARY")
-              sys.exit(1)
-          data = json.loads(raw.stdout)
-          found = []
-          stack = [data]
-          while stack:
-              node = stack.pop()
-              if isinstance(node, dict):
-                  counts = {
-                      k.lower().replace("tests", ""): v
-                      for k, v in node.items()
-                      if isinstance(v, int) and not isinstance(v, bool)
-                  }
-                  if {"passed", "failed", "skipped"} <= set(counts):
-                      found.append(counts)
-                  stack.extend(node.values())
-              elif isinstance(node, list):
-                  stack.extend(node)
-          if not found:
-              out("xcresulttool", "no passed/failed/skipped count object")
-              out("verdict", "NO_XCRESULT_COUNTS")
-              sys.exit(1)
-          xc = max(found, key=lambda x: x["passed"] + x["failed"] + x["skipped"])
-          x_exec = xc["passed"] + xc["failed"] + xc["skipped"]
-          out("xcresulttool", json.dumps(xc, sort_keys=True))
-          if (x_exec, xc["failed"], xc["skipped"]) != (executed, failed, skipped):
-              out("verdict", "LOG_XCRESULT_DISAGREEMENT")
-              sys.exit(1)
-          if executed != expected or skipped != 0 or failed != 0:
-              out("verdict", "NOT_PASS")
-              sys.exit(1)
-          out("verdict", "PASS - executed==expected, skipped==0, failed==0")
+          def validate(label, log_path, bundle_path, expected_raw):
+              ok = True
+              try:
+                  expected = int(expected_raw)
+              except ValueError:
+                  expected = 0
+              out(label + "_expected_cases", str(expected))
+              if expected <= 0:
+                  out(label + "_verdict", "NO_EXPECTATION")
+                  return False
+              if not os.path.isfile(log_path):
+                  out(label + "_log", "absent")
+                  out(label + "_verdict", "STEP_NOT_STARTED")
+                  return False
+
+              text = open(log_path, errors="replace").read()
+              statuses = re.findall(r"Test Case '[^']*' (passed|failed|skipped) ", text)
+              passed = statuses.count("passed")
+              failed = statuses.count("failed")
+              skipped = statuses.count("skipped")
+              executed = passed + failed + skipped
+              out(label + "_log", "executed=%d passed=%d failed=%d skipped=%d" %
+                  (executed, passed, failed, skipped))
+              if executed == 0:
+                  for line in [x.strip() for x in text.splitlines() if "error:" in x][:5]:
+                      out(label + "_blocked_error", line[:220])
+                  out(label + "_verdict", "BUILD_BLOCKED_OR_NO_CASES_EXECUTED")
+                  return False
+
+              aggregate = re.findall(
+                  r"Executed (\d+) tests?, with (?:(\d+) tests? skipped and )?(\d+) failures?",
+                  text
+              )
+              if not aggregate:
+                  out(label + "_aggregate", "missing Executed summary")
+                  out(label + "_verdict", "NO_AGGREGATE")
+                  return False
+              a_exec, a_skip, a_fail = (int(x or 0) for x in aggregate[-1])
+              out(label + "_aggregate", "executed=%d failed=%d skipped=%d" %
+                  (a_exec, a_fail, a_skip))
+              if (a_exec, a_fail, a_skip) != (executed, failed, skipped):
+                  out(label + "_verdict", "LOG_COUNT_DISAGREEMENT")
+                  return False
+
+              if not os.path.isdir(bundle_path):
+                  out(label + "_xcresult", "bundle_absent")
+                  out(label + "_verdict", "NO_RESULT_BUNDLE")
+                  return False
+              raw = subprocess.run(
+                  ["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", bundle_path],
+                  capture_output=True, text=True, timeout=120
+              )
+              if raw.returncode != 0 or not raw.stdout.strip():
+                  out(label + "_xcresult", "unreadable rc=%s" % raw.returncode)
+                  out(label + "_verdict", "NO_XCRESULT_SUMMARY")
+                  return False
+              data = json.loads(raw.stdout)
+              found = []
+              stack = [data]
+              while stack:
+                  node = stack.pop()
+                  if isinstance(node, dict):
+                      counts = {
+                          k.lower().replace("tests", ""): v
+                          for k, v in node.items()
+                          if isinstance(v, int) and not isinstance(v, bool)
+                      }
+                      if {"passed", "failed", "skipped"} <= set(counts):
+                          found.append(counts)
+                      stack.extend(node.values())
+                  elif isinstance(node, list):
+                      stack.extend(node)
+              if not found:
+                  out(label + "_xcresult", "no passed/failed/skipped count object")
+                  out(label + "_verdict", "NO_XCRESULT_COUNTS")
+                  return False
+              xc = max(found, key=lambda x: x["passed"] + x["failed"] + x["skipped"])
+              x_exec = xc["passed"] + xc["failed"] + xc["skipped"]
+              out(label + "_xcresult", json.dumps(xc, sort_keys=True))
+              if (x_exec, xc["failed"], xc["skipped"]) != (executed, failed, skipped):
+                  out(label + "_verdict", "LOG_XCRESULT_DISAGREEMENT")
+                  return False
+              if executed != expected or skipped != 0 or failed != 0:
+                  out(label + "_verdict", "NOT_PASS")
+                  return False
+              out(label + "_verdict", "PASS - executed==expected, skipped==0, failed==0")
+              return True
+
+          core_ok = validate("core", sys.argv[1], sys.argv[2], sys.argv[3])
+          localb_ok = validate("localb_secure", sys.argv[4], sys.argv[5], sys.argv[6])
+          out("overall_verdict", "PASS" if core_ok and localb_ok else "NOT_PASS")
+          sys.exit(0 if core_ok and localb_ok else 1)
           PY
       - name: Scope note
         if: always()
         run: |
-          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests + CancelPathStubHTTPTests"
+          echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests + CancelPathStubHTTPTests run in the default isolated process"
           echo "SCOPE|includes four-path detached settlement DB assertions and negative controls"
+          echo "SCOPE|LOCALBRequestAuthWiringTests run separately with SIMIGO_TRANSPORT=secure"
           echo "SCOPE|no claim about external models, Qoder, or end-to-end Agent execution"
-
   runtime-contract-tests:
     name: SimiGoRuntime contract tests (isolated source target)
     # SwiftPM currently builds the package's MLX experimental target even when
