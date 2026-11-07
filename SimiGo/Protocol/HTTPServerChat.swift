@@ -244,17 +244,6 @@ extension HTTPServer {
         // any other session, file, or settlement remains part of the demand.
         let reuseExclusions = (try? loop.answerReuseExclusions(
             sessionID: infoSession, query: query)) ?? []
-        // Default retrieval scope: every eligible committed entry in this
-        // personal space (files, settled summaries and any session's committed
-        // chat), not just the live session. This is the cross-Agent, cross-
-        // session memory the IS exists for; session identifiers narrow it when
-        // a caller supplies them.
-        // Exclude the exact question/answer pairs already published in this
-        // session before computing the current demand watermark. If exclusion
-        // lookup fails, an empty set is conservative: prior rows remain in the
-        // basis and the current-demand gate refuses historical answer reuse.
-        let reuseExclusions = (try? loop.answerReuseExclusions(
-            sessionID: infoSession, query: query)) ?? []
         let candidateResolution = try? loop.resolve(.init(
             sessionID: infoSession, query: query, includeChat: true,
             chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))

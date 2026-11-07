@@ -220,7 +220,7 @@ final class SimiGoInformationReuseTests: XCTestCase {
         let resolution = try loop.resolve(.init(
             sessionID: "info-a", query: query, includeChat: false, limit: 5))
         _ = try loop.settleTurn(
-            generatedText: answer, resolution: resolution,
+            generatedText: "the exit is in the east wing", resolution: resolution,
             stateID: "S-absent", parentStateID: nil, position: 1,
             modelIdentity: "unresolved", identity: .absent,
             sessionID: "info-a", summaryQuery: query)
