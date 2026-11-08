@@ -2671,6 +2671,7 @@ public final class SimiGoESISDatabase {
     public func settleWorkRootContents(
         rootID: String, rootURL: URL, category: String = "work",
         fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
+        maxFiles: Int = 20_000, maxTotalBytesRead: Int = 128 << 20,
         carryText: Bool = true
     ) throws -> ContentSettleReport {
         // Serialize the baseline snapshot, filesystem observation and all index
@@ -2678,7 +2679,8 @@ public final class SimiGoESISDatabase {
         // and let an older observation overwrite a newer settlement.
         return try transactionResult {
         let fm = FileManager.default
-        guard fileByteCap >= 0, maxDepth >= 0 else {
+        guard fileByteCap >= 0, maxDepth >= 0,
+              maxFiles >= 0, maxTotalBytesRead >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
         }
         let requestedRootPath = try canonicalDirectoryPath(atPath: rootURL.path)
@@ -2796,12 +2798,23 @@ public final class SimiGoESISDatabase {
                     "settleWorkRootContents: refuses symbolic or non-regular source \(relative)")
             }
 
+            // Bound both the number of indexed files and the aggregate bytes
+            // retained for digesting/settlement. The remaining-byte limit is
+            // passed into the no-follow reader, so one file cannot allocate past
+            // the remaining scan budget.
+            guard scanned < maxFiles else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxFiles limit exceeded (\\(maxFiles))")
+            }
+            let remainingBytes = maxTotalBytesRead - entityBytesRead
+            let readLimit = min(fileByteCap, remainingBytes)
+
             // Every component is opened relative to the pinned root FD; no
             // symlink can redirect either an intermediate directory or the leaf.
             let read = try readRootFileNoFollow(
                 rootDirectoryFD: rootDirectoryFD,
                 relativePath: relative,
-                maximumBytes: fileByteCap)
+                maximumBytes: readLimit)
             guard read.device == Int64(enumeratedInfo.st_dev),
                   read.inode == UInt64(enumeratedInfo.st_ino) else {
                 throw DatabaseError.sql(
@@ -2815,6 +2828,14 @@ public final class SimiGoESISDatabase {
                 modifiedFormatter.string(from: $0)
             }
             guard let data = read.data else {
+                // A file larger than the per-file cap is intentionally indexed
+                // without content. A file that fits the per-file cap but exceeds
+                // the remaining global byte budget aborts the entire transaction.
+                if read.size <= Int64(fileByteCap),
+                   read.size > Int64(remainingBytes) {
+                    throw DatabaseError.sql(
+                        "settleWorkRootContents: maxTotalBytesRead limit exceeded (\\(maxTotalBytesRead))")
+                }
                 skipped += 1
                 indexedFiles.append((relative, file, size, modified, nil))
                 if let old = previous[relative] {

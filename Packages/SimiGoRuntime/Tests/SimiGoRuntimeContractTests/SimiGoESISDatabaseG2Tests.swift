@@ -105,6 +105,61 @@ final class SimiGoESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.validSettlementCount(), 1)
     }
 
+    // MARK: - Global scan resource bounds
+
+    func testRootScanGlobalLimitsAbortWithoutChangingInventoryOrValidity() throws {
+        let (url, db) = try open("scan-limits")
+        defer { db.close(); cleanup(url) }
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-limit-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fileA = root.appendingPathComponent("a.md")
+        try Data("alpha".utf8).write(to: fileA)
+        let initial = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, maxFiles: 10,
+            maxTotalBytesRead: 64, carryText: false)
+        XCTAssertEqual(initial.scanned, 1)
+
+        let settlement = try mkSettlement(db, stateID: "S-LIMIT", value: "limit")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "work", relativePath: "a.md")
+        let originalDigest = try XCTUnwrap(
+            db.externalFileDigest(rootID: "work", relativePath: "a.md"))
+
+        // A second file exceeds the count cap after one entry has been observed.
+        // The whole scan must roll back, including root inventory and invalidation.
+        let fileB = root.appendingPathComponent("b.md")
+        try Data("beta".utf8).write(to: fileB)
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, maxFiles: 1,
+            maxTotalBytesRead: 64, carryText: false))
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "work").map { $0.relativePath }, ["a.md"])
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "work", relativePath: "a.md"),
+            originalDigest)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+
+        try FileManager.default.removeItem(at: fileB)
+        try Data(repeating: 0x78, count: 16).write(to: fileA)
+
+        // The file fits the per-file cap but not the remaining global byte budget.
+        // It must abort rather than silently classify the file as oversized.
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, maxFiles: 10,
+            maxTotalBytesRead: 8, carryText: false))
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "work", relativePath: "a.md"),
+            originalDigest)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+    }
+
     // MARK: - Repeat-scan idempotency
 
     func testG2RepeatScanIdempotentNoInvalidationWhenUnchanged() throws {
