@@ -260,3 +260,28 @@ Automatic restart remains unauthorised and unimplemented.
 detection) end-to-end; Q1/Q3/Q4 were validated on the decision table via
 unit sequences. A live passthrough-with-real-generation run to observe
 non-stall behaviour end-to-end is staged for the next window.
+
+## Evidence redaction record (2026-11-08, release hygiene)
+
+Four captures below carried this machine's local home-directory prefix.
+`Release hygiene` scans the tracked tree, so that single token — in its
+plain and JSON-escaped spellings — was replaced with the stable placeholder
+`<HOME>`. Nothing else changed: 159 lines carry one replacement each, and
+commands, results, timestamps, task ids, counters and error text are
+byte-identical; line counts are unchanged. `<HOME>` is the placeholder the
+release sanitizer already emits for home paths, so the tracked source and
+the publishable copy now agree (sanitizing these files is a no-op).
+
+The pre-redaction bytes stay retrievable from git and are the provenance
+baseline: `git show 6c8e116:<path>` (the final head before this redaction;
+those blobs are byte-identical to `main` at `98dea418`). Both hashes are
+recorded here so a reviewer can trace redacted → original without putting
+the machine identifier back into the tree. This is a tracked-tree change
+only, not a Git history rewrite.
+
+| file | original SHA-256 | bytes | redacted SHA-256 | bytes |
+|---|---|---|---|---|
+| `r2a_evidence/A1_process_snapshots.txt` | `0904317eb728c969625d78e197a9ecf0983c4186d74da079332865792bb83cf3` | 7825 | `8e4a72999d64362d9cf8f18a30f17ec97ce71436119b7986c47dc26b8c22b0be` | 7561 |
+| `r2a_evidence/A2_app_stdout.log` | `064f8b035a8ec8f400b0888578870e81b9487d223841f31d6d4d32edafd6e33d` | 29061 | `3f2ca2ba5fb953d0580e1fffcb24e499d72a3c35eb3ec7c66acfc62dbc1d2b7e` | 28627 |
+| `r2a_evidence/A2_process_snapshots.txt` | `89ae137a7c24b1427a37d0bdb95735e7d59649a580101ada922421d3e3ebfe9a` | 8540 | `b22e568805be7c75c445f632f55e09ba2b25670e3ee59d92946474bafb7745e2` | 8252 |
+| `r2b_evidence/R2B_process_snapshots.txt` | `5b902582336d16c0d900d318a2b83e142f6eda1acd298ffbd48a2bfcef919b51` | 8504 | `f6adde78a9450e44cb8e3bc2593ad22472a30ac973342431b3b6f8601b76e202` | 8216 |

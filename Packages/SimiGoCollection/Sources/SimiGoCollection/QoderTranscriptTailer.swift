@@ -491,6 +491,14 @@ public struct QoderTranscriptScanner {
 
                     let agents: [URL]
                     do {
+                        let subagentValues = try subagents.resourceValues(
+                            forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+                        // The directory entry itself must be a real directory.
+                        // contentsOfDirectory follows a symlink otherwise.
+                        guard subagentValues.isDirectory == true,
+                              subagentValues.isSymbolicLink != true else {
+                            continue
+                        }
                         agents = try listDirectory(subagents)
                     } catch {
                         if !isNoSuchFileError(error) {

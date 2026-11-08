@@ -115,15 +115,7 @@ public struct LOCALBRegistryStore {
     /// independently by the operator before any trusted service is activated.
     public func initializeNewLineage(lineageID: String = UUID().uuidString.lowercased()) throws -> LOCALBRegistryCheckpoint {
         guard localBIsCanonicalUUID(lineageID) else { throw LOCALBStatus.invalidConfiguration }
-        return try withLock(exclusive: true, createRootIfMissing: true) {
-            let journalFD: Int32
-            do {
-                journalFD = try openRegistryFile(
-                    Self.journalFileName, flags: O_WRONLY | O_CREAT | O_EXCL, mode: 0o600)
-            } catch let error as LOCALBStatus where error == .registryAlreadyInitialized {
-                throw error
-            }
-            defer { close(journalFD) }
+        return try withLock(exclusive: true, createRootIfMissing: true) { directoryFD in
             let event = Event(
                 sequence: 1,
                 timestampMilliseconds: Self.nowMilliseconds(),
@@ -133,16 +125,28 @@ public struct LOCALBRegistryStore {
                 previousHash: Self.zeroHash
             )
             let frame = try Self.encodeEventFrame(event)
+            let fd = openat(
+                directoryFD, ".localb-registry.events",
+                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
+            guard fd >= 0 else {
+                if errno == EEXIST { throw LOCALBStatus.registryAlreadyInitialized }
+                throw LOCALBStatus.registryPersistenceFailure
+            }
+            guard Self.isRegularFile(fd: fd) else {
+                close(fd)
+                throw LOCALBStatus.registryPersistenceFailure
+            }
+            defer { close(fd) }
             do {
-                try Self.writeAll(fd: journalFD, bytes: frame)
-                guard fsync(journalFD) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
-                try syncRootDirectory()
+                try Self.writeAll(fd: fd, bytes: frame)
+                guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
+                try syncRootDirectory(directoryFD: directoryFD)
             } catch {
                 // A partial first write is intentionally left fail-closed for
                 // explicit recovery; it is never silently deleted or recreated.
                 throw error
             }
-            let state = try replayJournal()
+            let state = try replayJournal(directoryFD: directoryFD)
             guard state.sequence == 1, state.lineageID == lineageID else {
                 throw LOCALBStatus.registryCorrupt
             }
@@ -154,8 +158,8 @@ public struct LOCALBRegistryStore {
     /// Passing nil is B2 and always fails closed.
     public func loadVerified(checkpoint: LOCALBRegistryCheckpoint?) throws -> LOCALBRegistrySnapshot {
         guard let checkpoint else { throw LOCALBStatus.registryCheckpointUnavailable }
-        return try withLock(exclusive: false, createRootIfMissing: false) {
-            let state = try replayJournal()
+        return try withLock(exclusive: false, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let lineageID = state.lineageID else { throw LOCALBStatus.registryLineageUninitialized }
             let entries = state.entries.values.sorted { $0.keyID < $1.keyID }
@@ -168,8 +172,8 @@ public struct LOCALBRegistryStore {
     /// operator-held checkpoint. Pairing and per-request auth must call this
     /// rather than retaining stale authority snapshots.
     func loadPairingState(checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBPairingStateView {
-        try withLock(exclusive: false, createRootIfMissing: false) {
-            let state = try replayJournal()
+        try withLock(exclusive: false, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let lineageID = state.lineageID else { throw LOCALBStatus.registryLineageUninitialized }
             return LOCALBPairingStateView(
@@ -185,8 +189,8 @@ public struct LOCALBRegistryStore {
     /// supplied externally trusted checkpoint. Callers must not persist the
     /// returned head inside the registry and then treat it as an external anchor.
     func currentCheckpoint(extending trustedCheckpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: false, createRootIfMissing: false) {
-            let state = try replayJournal()
+        try withLock(exclusive: false, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(trustedCheckpoint, against: state)
             return try Self.checkpoint(for: state)
         }
@@ -199,8 +203,8 @@ public struct LOCALBRegistryStore {
                                       checkpoint: LOCALBRegistryCheckpoint?) throws -> LOCALBRegistryCheckpoint {
         guard publicKeyRaw.count == 32 else { throw LOCALBStatus.invalidConfiguration }
         guard let checkpoint else { throw LOCALBStatus.registryCheckpointUnavailable }
-        return try withLock(exclusive: true, createRootIfMissing: false) {
-            let state = try replayJournal()
+        return try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let lineageID = state.lineageID else { throw LOCALBStatus.registryLineageUninitialized }
             let keyID = try LOCALBSigningInputV1.keyID(publicKeyRaw: publicKeyRaw)
@@ -225,8 +229,8 @@ public struct LOCALBRegistryStore {
                 payload: payload,
                 previousHash: state.headHash
             )
-            try appendEventLocked(event)
-            let updated = try replayJournal()
+            try appendEventLocked(event, directoryFD: directoryFD)
+            let updated = try replayJournal(directoryFD: directoryFD)
             guard updated.sequence == event.sequence else { throw LOCALBStatus.registryCorrupt }
             return try Self.checkpoint(for: updated)
         }
@@ -244,8 +248,8 @@ public struct LOCALBRegistryStore {
         guard !reasonBytes.isEmpty, reasonBytes.count <= 512 else {
             throw LOCALBStatus.registryInvalidTransition
         }
-        return try withLock(exclusive: true, createRootIfMissing: false) {
-            let state = try replayJournal()
+        return try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let entry = state.entries[keyID] else { throw LOCALBStatus.issuerUnknown }
             guard Self.allowedTransition(from: entry.status, to: newStatus) else {
@@ -266,8 +270,8 @@ public struct LOCALBRegistryStore {
                 payload: statusPayload,
                 previousHash: state.headHash
             )
-            try appendEventLocked(event)
-            let updated = try replayJournal()
+            try appendEventLocked(event, directoryFD: directoryFD)
+            let updated = try replayJournal(directoryFD: directoryFD)
             return try Self.checkpoint(for: updated)
         }
     }
@@ -276,8 +280,8 @@ public struct LOCALBRegistryStore {
     /// operation, never as a side effect of an unauthenticated Phase-V failure.
     @discardableResult
     func expireDuePairingCredentials(checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false) {
-            var state = try replayJournal()
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            var state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             let now = Self.nowMilliseconds()
             let expiredIDs = state.credentials.values
@@ -298,8 +302,8 @@ public struct LOCALBRegistryStore {
                     payload: payload,
                     previousHash: state.headHash
                 )
-                try appendEventLocked(event)
-                state = try replayJournal()
+                try appendEventLocked(event, directoryFD: directoryFD)
+                state = try replayJournal(directoryFD: directoryFD)
             }
             return try Self.checkpoint(for: state)
         }
@@ -309,8 +313,8 @@ public struct LOCALBRegistryStore {
     @discardableResult
     func appendPairingCredentialIssued(_ credential: LOCALBPairingCredentialEntry,
                                       checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false) {
-            var state = try replayJournal()
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            var state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
 
             guard credential.status == .issued,
@@ -353,8 +357,8 @@ public struct LOCALBRegistryStore {
                 payload: payload,
                 previousHash: state.headHash
             )
-            try appendEventLocked(event)
-            return try Self.checkpoint(for: replayJournal())
+            try appendEventLocked(event, directoryFD: directoryFD)
+            return try Self.checkpoint(for: replayJournal(directoryFD: directoryFD))
         }
     }
 
@@ -363,8 +367,8 @@ public struct LOCALBRegistryStore {
     @discardableResult
     func expirePairingCredentialIfDue(credentialID: String, digest: [UInt8],
                                       checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false) {
-            let state = try replayJournal()
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let credential = state.credentials[credentialID] else {
                 throw LOCALBStatus.pairingCredentialUnknown
@@ -384,8 +388,8 @@ public struct LOCALBRegistryStore {
             let event = Event(sequence: state.sequence + 1, timestampMilliseconds: now,
                               kind: .pairingCredentialExpired, subjectID: credentialID,
                               payload: payload, previousHash: state.headHash)
-            try appendEventLocked(event)
-            return try Self.checkpoint(for: replayJournal())
+            try appendEventLocked(event, directoryFD: directoryFD)
+            return try Self.checkpoint(for: replayJournal(directoryFD: directoryFD))
         }
     }
 
@@ -395,8 +399,8 @@ public struct LOCALBRegistryStore {
     func commitPairing(_ pending: LOCALBPairingApprovalRequest,
                        operatorAuthorizationReference: String?,
                        checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false) {
-            let state = try replayJournal()
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let credential = state.credentials[pending.credentialID] else {
                 throw LOCALBStatus.pairingCredentialUnknown
@@ -478,16 +482,16 @@ public struct LOCALBRegistryStore {
             let event = Event(sequence: state.sequence + 1, timestampMilliseconds: now,
                               kind: .pairingCommitted, subjectID: credential.credentialID,
                               payload: payload, previousHash: state.headHash)
-            try appendEventLocked(event)
-            return try Self.checkpoint(for: replayJournal())
+            try appendEventLocked(event, directoryFD: directoryFD)
+            return try Self.checkpoint(for: replayJournal(directoryFD: directoryFD))
         }
     }
 
     @discardableResult
     func appendPairingCredentialRevocation(credentialID: String, reason: String,
                                            checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false) {
-            let state = try replayJournal()
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard let credential = state.credentials[credentialID] else {
                 throw LOCALBStatus.pairingCredentialUnknown
@@ -506,8 +510,8 @@ public struct LOCALBRegistryStore {
                     kind: .pairingCredentialExpired, subjectID: credentialID,
                     payload: expiredPayload, previousHash: state.headHash
                 )
-                try appendEventLocked(expiredEvent)
-                return try Self.checkpoint(for: replayJournal())
+                try appendEventLocked(expiredEvent, directoryFD: directoryFD)
+                return try Self.checkpoint(for: replayJournal(directoryFD: directoryFD))
             }
             guard state.sequence < UInt64.max else { throw LOCALBStatus.registryCorrupt }
             let payload = try LOCALBPairingEventCodec.encodeCredentialDisposition(
@@ -516,16 +520,16 @@ public struct LOCALBRegistryStore {
             let event = Event(sequence: state.sequence + 1, timestampMilliseconds: now,
                               kind: .pairingCredentialRevoked, subjectID: credentialID,
                               payload: payload, previousHash: state.headHash)
-            try appendEventLocked(event)
-            return try Self.checkpoint(for: replayJournal())
+            try appendEventLocked(event, directoryFD: directoryFD)
+            return try Self.checkpoint(for: replayJournal(directoryFD: directoryFD))
         }
     }
 
     @discardableResult
     func appendClientRevocation(clientKeyID: String, reason: String,
                                 checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false) {
-            let state = try replayJournal()
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard state.clients[clientKeyID]?.status == .active else {
                 throw LOCALBStatus.clientUnknown
@@ -537,8 +541,8 @@ public struct LOCALBRegistryStore {
             let event = Event(sequence: state.sequence + 1, timestampMilliseconds: Self.nowMilliseconds(),
                               kind: .clientRevoked, subjectID: clientKeyID,
                               payload: payload, previousHash: state.headHash)
-            try appendEventLocked(event)
-            return try Self.checkpoint(for: replayJournal())
+            try appendEventLocked(event, directoryFD: directoryFD)
+            return try Self.checkpoint(for: replayJournal(directoryFD: directoryFD))
         }
     }
 
@@ -546,8 +550,8 @@ public struct LOCALBRegistryStore {
     func appendClientPermissions(clientKeyID: String, permissions: Set<LOCALBPermission>,
                                 reason: String,
                                 checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBRegistryCheckpoint {
-        try withLock(exclusive: true, createRootIfMissing: false) {
-            let state = try replayJournal()
+        try withLock(exclusive: true, createRootIfMissing: false) { directoryFD in
+            let state = try replayJournal(directoryFD: directoryFD)
             try Self.verifyCheckpoint(checkpoint, against: state)
             guard state.clients[clientKeyID]?.status == .active else {
                 throw LOCALBStatus.clientUnknown
@@ -559,82 +563,60 @@ public struct LOCALBRegistryStore {
             let event = Event(sequence: state.sequence + 1, timestampMilliseconds: Self.nowMilliseconds(),
                               kind: .clientPermissionsSet, subjectID: clientKeyID,
                               payload: payload, previousHash: state.headHash)
-            try appendEventLocked(event)
-            return try Self.checkpoint(for: replayJournal())
+            try appendEventLocked(event, directoryFD: directoryFD)
+            return try Self.checkpoint(for: replayJournal(directoryFD: directoryFD))
         }
     }
 
     // MARK: Locking and durable append
 
-    private func openRootDirectory() throws -> Int32 {
-        let fd = open(rootURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
-        guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
-        var info = stat()
-        guard fstat(fd, &info) == 0,
-              (info.st_mode & S_IFMT) == S_IFDIR,
-              info.st_uid == getuid(),
-              fchmod(fd, 0o700) == 0
-        else {
-            close(fd)
-            throw LOCALBStatus.registryPersistenceFailure
-        }
-        return fd
-    }
-
-    private func openRegistryFile(
-        _ name: String, flags: Int32, mode: mode_t = 0o600
-    ) throws -> Int32 {
-        let directoryFD = try openRootDirectory()
-        defer { close(directoryFD) }
-        let fd = name.withCString {
-            openat(directoryFD, $0, flags | O_NOFOLLOW | O_CLOEXEC, mode)
-        }
-        guard fd >= 0 else {
-            if errno == EEXIST && name == Self.journalFileName {
-                throw LOCALBStatus.registryAlreadyInitialized
-            }
-            throw LOCALBStatus.registryPersistenceFailure
-        }
-        var info = stat()
-        guard fstat(fd, &info) == 0,
-              (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_uid == getuid()
-        else {
-            close(fd)
-            throw LOCALBStatus.registryPersistenceFailure
-        }
-        return fd
-    }
-
-    private static let journalFileName = ".localb-registry.events"
-    private static let lockFileName = ".localb-registry.lock"
-
     private func withLock<T>(exclusive: Bool, createRootIfMissing: Bool,
-                             _ body: () throws -> T) throws -> T {
-        if createRootIfMissing {
+                             _ body: (Int32) throws -> T) throws -> T {
+        var rootInfo = stat()
+        if lstat(rootURL.path, &rootInfo) == 0 {
+            guard (rootInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw LOCALBStatus.registryPersistenceFailure
+            }
+        } else {
+            let code = errno
+            guard code == ENOENT, createRootIfMissing else {
+                if !createRootIfMissing, code == ENOENT {
+                    throw LOCALBStatus.registryLineageUninitialized
+                }
+                throw LOCALBStatus.registryPersistenceFailure
+            }
             try FileManager.default.createDirectory(
                 at: rootURL, withIntermediateDirectories: true,
                 attributes: [.posixPermissions: 0o700]
             )
-        } else {
-            var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: rootURL.path, isDirectory: &isDirectory),
-                  isDirectory.boolValue else {
-                throw LOCALBStatus.registryLineageUninitialized
+            guard lstat(rootURL.path, &rootInfo) == 0,
+                  (rootInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw LOCALBStatus.registryPersistenceFailure
             }
         }
-        let directoryFD = try openRootDirectory()
-        defer { close(directoryFD) }
-        let fd = Self.lockFileName.withCString {
-            openat(directoryFD, $0, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
+        // Anchor the lock open to the validated directory; O_NOFOLLOW on the
+        // final lock component alone does not protect a symlinked root.
+        let rootFD = open(
+            rootURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        guard rootFD >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        defer { close(rootFD) }
+        var openedRoot = stat()
+        guard fstat(rootFD, &openedRoot) == 0,
+              (openedRoot.st_mode & S_IFMT) == S_IFDIR,
+              openedRoot.st_dev == rootInfo.st_dev,
+              openedRoot.st_ino == rootInfo.st_ino,
+              openedRoot.st_uid == geteuid(),
+              (openedRoot.st_mode & (S_IWGRP | S_IWOTH)) == 0,
+              fchmod(rootFD, 0o700) == 0 else {
+            throw LOCALBStatus.registryPersistenceFailure
         }
+        // O_NONBLOCK matters only for a non-regular file planted at the lock
+        // name: a FIFO must be rejected by the type check, never waited on.
+        let fd = openat(
+            rootFD, ".localb-registry.lock",
+            O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
-        var lockInfo = stat()
-        guard fstat(fd, &lockInfo) == 0,
-              (lockInfo.st_mode & S_IFMT) == S_IFREG,
-              lockInfo.st_uid == getuid(),
-              fchmod(fd, 0o600) == 0
-        else {
+        guard Self.isRegularFile(fd: fd) else {
             close(fd)
             throw LOCALBStatus.registryPersistenceFailure
         }
@@ -643,23 +625,42 @@ public struct LOCALBRegistryStore {
             throw LOCALBStatus.registryPersistenceFailure
         }
         defer { _ = flock(fd, LOCK_UN) }
-        return try body()
+        return try body(rootFD)
     }
 
-    private func appendEventLocked(_ event: Event) throws {
+    private func appendEventLocked(_ event: Event, directoryFD: Int32) throws {
         let frame = try Self.encodeEventFrame(event)
         guard frame.count <= Self.maxEventBytes else { throw LOCALBStatus.resourceLimit }
-        let fd = try openRegistryFile(Self.journalFileName, flags: O_WRONLY | O_APPEND | O_NONBLOCK)
+        let fd = openat(
+            directoryFD, ".localb-registry.events",
+            O_WRONLY | O_APPEND | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
+        guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
+        guard Self.isRegularFile(fd: fd) else {
+            close(fd)
+            throw LOCALBStatus.registryPersistenceFailure
+        }
         defer { close(fd) }
         try Self.writeAll(fd: fd, bytes: frame)
         guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
-        try syncRootDirectory()
+        try syncRootDirectory(directoryFD: directoryFD)
     }
 
-    private func syncRootDirectory() throws {
-        let fd = try openRootDirectory()
-        defer { close(fd) }
-        guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
+    /// A journal/lock must be a private inode owned by this process user.
+    /// O_NOFOLLOW rejects symlinks; link-count and mode checks additionally
+    /// reject hard links and files another user can modify through permissions.
+    private static func isRegularFile(fd: Int32) -> Bool {
+        var info = stat()
+        guard fstat(fd, &info) == 0 else { return false }
+        return (info.st_mode & S_IFMT) == S_IFREG
+            && info.st_uid == geteuid()
+            && info.st_nlink == 1
+            && (info.st_mode & (S_IWGRP | S_IWOTH)) == 0
+    }
+
+    private func syncRootDirectory(directoryFD: Int32) throws {
+        guard fsync(directoryFD) == 0 else {
+            throw LOCALBStatus.registryPersistenceFailure
+        }
     }
 
     private static func writeAll(fd: Int32, bytes: [UInt8]) throws {
@@ -711,30 +712,36 @@ public struct LOCALBRegistryStore {
         return output
     }
 
-    private func replayJournal() throws -> ReplayedState {
-        let fd = try openRegistryFile(Self.journalFileName, flags: O_RDONLY | O_NONBLOCK)
+    private func replayJournal(directoryFD: Int32) throws -> ReplayedState {
+        let fd = openat(
+            directoryFD, ".localb-registry.events",
+            O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
+        guard fd >= 0 else { throw LOCALBStatus.registryCorrupt }
         defer { close(fd) }
-        var info = stat()
-        guard fstat(fd, &info) == 0,
-              (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_size >= 0,
-              info.st_size <= off_t(Self.maxJournalBytes)
-        else { throw LOCALBStatus.registryCorrupt }
-        var data = Data()
-        var buffer = [UInt8](repeating: 0, count: 64 * 1024)
-        while true {
-            let count = buffer.withUnsafeMutableBytes {
-                Darwin.read(fd, $0.baseAddress, $0.count)
+        var fileInfo = stat()
+        guard Self.isRegularFile(fd: fd),
+              fstat(fd, &fileInfo) == 0,
+              fileInfo.st_size >= 0,
+              fileInfo.st_size <= off_t(Self.maxJournalBytes) else {
+            throw LOCALBStatus.registryCorrupt
+        }
+        let byteCount = Int(fileInfo.st_size)
+        var data = Data(count: byteCount)
+        let readComplete = data.withUnsafeMutableBytes { raw -> Bool in
+            var offset = 0
+            while offset < byteCount {
+                guard let base = raw.baseAddress else { return false }
+                let amount = Darwin.read(fd, base.advanced(by: offset), byteCount - offset)
+                if amount < 0 && errno == EINTR { continue }
+                guard amount > 0 else { return false }
+                offset += amount
             }
-            if count == 0 { break }
-            if count < 0 {
-                if errno == EINTR { continue }
-                throw LOCALBStatus.registryCorrupt
-            }
-            guard data.count <= Self.maxJournalBytes - count else {
-                throw LOCALBStatus.resourceLimit
-            }
-            data.append(contentsOf: buffer.prefix(count))
+            return true
+        }
+        guard readComplete else { throw LOCALBStatus.registryCorrupt }
+        var extraByte: UInt8 = 0
+        guard Darwin.read(fd, &extraByte, 1) == 0 else {
+            throw LOCALBStatus.registryCorrupt
         }
         let bytes = Array(data)
         var cursor = 0

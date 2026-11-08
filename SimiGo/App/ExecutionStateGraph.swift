@@ -710,41 +710,38 @@ final class ExecutionStateGraphStore: ObservableObject {
     }
 
     private func persist(_ document: ExecutionGraphDocument) throws {
-        // Write authority: the live execution graph (ES) is committed to SQLite.
-        // Settlements (IS) are owned by the native gate and written separately, so
-        // they are intentionally NOT part of this graph write.
-        if let db = ensureESIS() {
-            do {
-                let states = document.states.map {
-                    SimiGoESISDatabase.GraphState(
-                        id: $0.id, parentID: $0.parentID, modelIdentity: $0.modelIdentity,
-                        createdAt: $0.createdAt, position: $0.position,
-                        continuationID: $0.continuationID, nextInput: $0.nextInput,
-                        anchor: $0.anchor, prefix: $0.prefix, lifecycle: $0.lifecycle.rawValue,
-                        checkpointIDs: $0.checkpointIDs)
-                }
-                let cps = document.checkpoints.map {
-                    SimiGoESISDatabase.GraphCheckpoint(
-                        id: $0.id, stateID: $0.stateID, modelIdentity: $0.modelIdentity,
-                        position: $0.position, continuationID: $0.continuationID,
-                        nextInput: $0.nextInput, anchor: $0.anchor, prefix: $0.prefix,
-                        createdAt: $0.createdAt, checksum: $0.checksum)
-                }
-                try db.writeGraph(states: states, checkpoints: cps)
-                persistError = nil
-                retireLegacyJSONIfNeeded(authoritativeIDs: document.states.map { $0.id })
-                return
-            } catch {
-                persistError = "执行图未能写入 SQLite 权威库：\(error.localizedDescription)"
-                // Fall through to the JSON safety net so no durable state is lost.
-            }
+        // SQLite is the authoritative graph store. The legacy JSON file is a
+        // read-only migration source, never a fallback write authority.
+        guard let db = ensureESIS() else {
+            let detail = persistError ?? "SQLite ES/IS authoritative database unavailable"
+            throw ExecutionGraphError.storeUnavailable(detail)
         }
+
         do {
-            let directory = storeURL.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            try encoder.encode(document).write(to: storeURL, options: [.atomic])
+            let states = document.states.map {
+                SimiGoESISDatabase.GraphState(
+                    id: $0.id, parentID: $0.parentID, modelIdentity: $0.modelIdentity,
+                    createdAt: $0.createdAt, position: $0.position,
+                    continuationID: $0.continuationID, nextInput: $0.nextInput,
+                    anchor: $0.anchor, prefix: $0.prefix, lifecycle: $0.lifecycle.rawValue,
+                    checkpointIDs: $0.checkpointIDs)
+            }
+            let cps = document.checkpoints.map {
+                SimiGoESISDatabase.GraphCheckpoint(
+                    id: $0.id, stateID: $0.stateID, modelIdentity: $0.modelIdentity,
+                    position: $0.position, continuationID: $0.continuationID,
+                    nextInput: $0.nextInput, anchor: $0.anchor, prefix: $0.prefix,
+                    createdAt: $0.createdAt, checksum: $0.checksum)
+            }
+            try db.writeGraph(states: states, checkpoints: cps)
+            persistError = nil
+            retireLegacyJSONIfNeeded(authoritativeIDs: document.states.map { $0.id })
         } catch {
-            throw ExecutionGraphError.storeUnavailable(error.localizedDescription)
+            let detail = "执行图未能写入 SQLite 权威库：\(error.localizedDescription)"
+            persistError = detail
+            // Do not publish a JSON-only mutation: the next launch rebuilds
+            // from SQLite and would otherwise silently discard this success.
+            throw ExecutionGraphError.storeUnavailable(detail)
         }
     }
 
