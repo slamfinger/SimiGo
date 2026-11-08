@@ -439,10 +439,10 @@ final class SimiGoInformationLoopTests: XCTestCase {
             rootID: "work", rootURL: root, carryText: false)
         XCTAssertEqual(report.invalidatedSettlements, 1)
         XCTAssertEqual(try rawText(url, """
-        SELECT validity FROM settlements WHERE settlement_id='\(omega.retrievalSettlementID)';
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omega.retrievalSettlementID)';
         """), "invalid")
         XCTAssertEqual(try rawText(url, """
-        SELECT validity FROM settlements WHERE settlement_id='\(zeta.retrievalSettlementID)';
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(zeta.retrievalSettlementID)';
         """), "valid", "an unrelated settled result keeps its validity")
 
         // The stale result is refused, not replayed.
@@ -502,13 +502,13 @@ final class SimiGoInformationLoopTests: XCTestCase {
         // Closure = the retrieval settlement plus the turn that consumed it.
         XCTAssertEqual(report.invalidatedSettlements, 2)
         XCTAssertEqual(try rawText(url, """
-        SELECT validity FROM settlements WHERE settlement_id='\(omegaRetrieval)';
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaRetrieval)';
         """), "invalid")
         XCTAssertEqual(try rawText(url, """
-        SELECT validity FROM settlements WHERE settlement_id='\(omegaTurn)';
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaTurn)';
         """), "invalid", "a conclusion built from stale evidence does not stay citable")
         XCTAssertEqual(try rawText(url, """
-        SELECT validity FROM settlements WHERE settlement_id='\(zetaTurn)';
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(zetaTurn)';
         """), "valid", "an unrelated turn keeps its validity")
 
         // The demand-side view has to flip with the authoritative row: readers

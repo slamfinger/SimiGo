@@ -117,6 +117,29 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                         client.cancel(requestId: requestId)
                     },
                     baseConfigProvider: { baseConfig },
+                    // Continuation over llama.cpp: the prefix cells live inside
+                    // llama-server, so this runtime exports no prefix
+                    // representation and the settlement records no KV claim. The
+                    // settlement itself is the same authority as on MLX — the
+                    // value, payload digest, validity and dependency closure are
+                    // verified identically; only the carrier-specific KV lookup
+                    // is nil. That is why a continuation can be resumed here by
+                    // injecting the recovered value, and why it cannot inherit
+                    // KV state produced by another engine.
+                    continuationAdmission: { esStateID in
+                        let modelPath = info.path
+                        let admitted = try await MainActor.run {
+                            try SimiGoProducerIdentity.recoverForContinuation(
+                                stateID: esStateID, modelPath: modelPath)
+                        }
+                        return ContinuationAdmissionOutcome(
+                            esStateID: esStateID,
+                            recoveredValue: admitted.recoveredValue,
+                            verifiedBindings: admitted.verifiedBindings,
+                            kvBindings: admitted.kvBindings)
+                    },
+                    continuationSettlement: makeContinuationSettlementHandler(
+                        modelPath: info.path) { _ in nil },
                     informationTurnProducer: { producer },
                     requestAdmission: RequestAdmissionScheduler(limit: admissionLimit)
                 )

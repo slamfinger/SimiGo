@@ -334,7 +334,7 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
         // Invalidate the dependency WITHOUT cascading, so the downstream row is
         // still locally valid: only the closure re-check can catch this.
         try rawExec(fixture.dbURL,
-            "UPDATE settlements SET validity='invalid' WHERE settlement_id='\(upstream)';")
+            "INSERT INTO settlement_validity_events(settlement_id, validity, cause, recorded_at) VALUES('\(upstream)','invalid','test',datetime('now'));")
         XCTAssertEqual(try fixture.db.settlementValidity(downstream), "valid")
 
         XCTAssertThrowsError(try SimiGoSettlementConsumption.consume(
@@ -455,7 +455,7 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
                 // re-admission and the commit.
                 writeRC = self.attemptImmediateWrite(
                     fixture.dbURL,
-                    "UPDATE settlements SET validity='invalid' WHERE settlement_id='\(source)';")
+                    "INSERT INTO settlement_validity_events(settlement_id, validity, cause, recorded_at) VALUES('\(source)','invalid','test',datetime('now'));")
             }))
 
         XCTAssertEqual(writeRC, SQLITE_BUSY)
@@ -466,7 +466,7 @@ final class SimiGoSettlementConsumptionTests: XCTestCase {
         // After commit the same external write succeeds — the lock, not a
         // permission rule, is what blocked it above.
         try rawExec(fixture.dbURL,
-            "UPDATE settlements SET validity='invalid' WHERE settlement_id='\(source)';")
+            "INSERT INTO settlement_validity_events(settlement_id, validity, cause, recorded_at) VALUES('\(source)','invalid','test',datetime('now'));")
         XCTAssertEqual(try fixture.db.settlementValidity(source), "invalid")
 
         // A failure after admission rolls back every write.

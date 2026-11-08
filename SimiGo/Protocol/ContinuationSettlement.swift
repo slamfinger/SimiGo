@@ -251,15 +251,27 @@ enum ContinuationSettlementStep {
 func makeNativeMLXContinuationSettlementHandler(
     modelPath: String
 ) -> ContinuationSettlementHandler {
+    // A-2 write side: the engine exported this branch's prefix representation at
+    // the end of the turn that generated THIS text (the export is awaited before
+    // generation returns), and it is looked up by THIS request's child ES id —
+    // never taken from the request body or from another execution.
+    return makeContinuationSettlementHandler(modelPath: modelPath) { childESStateID in
+        NativeMLXPrefixPool.shared.representation(forBranch: childESStateID)
+    }
+}
+
+/// Carrier-neutral builder for the same authority. Only the KV lookup is
+/// carrier-specific: a runtime that exports a prefix representation supplies it,
+/// and a runtime that holds none (llama.cpp keeps its own prefix cells) supplies
+/// `nil`. A nil representation records no KV claim, so the settlement stays fully
+/// authoritative at the value level and the next admission simply has no KV
+/// authority to grant — it still verifies the payload, validity and closure.
+func makeContinuationSettlementHandler(
+    modelPath: String,
+    kvRepresentationProvider: @escaping @Sendable (String) -> SimiGoSettlementKVBinding.Representation?
+) -> ContinuationSettlementHandler {
     return { request in
-        // A-2 write side: the engine exported this branch's prefix representation
-        // at the end of the turn that generated THIS text (the export is awaited
-        // before generation returns), and it is looked up by THIS request's child
-        // ES id — never taken from the request body or from another execution.
-        // `nil` means the turn produced no KV boundary claim, so the settlement
-        // records none and the next admission has no KV authority to grant.
-        let kvRepresentation = NativeMLXPrefixPool.shared.representation(
-            forBranch: request.childESStateID)
+        let kvRepresentation = kvRepresentationProvider(request.childESStateID)
         return try await MainActor.run {
             try settleForNativeMLXContinuation(
                 store: ExecutionStateGraphStore(),

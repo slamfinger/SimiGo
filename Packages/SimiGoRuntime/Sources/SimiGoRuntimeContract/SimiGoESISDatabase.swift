@@ -934,7 +934,161 @@ public final class SimiGoESISDatabase {
                 try recordMigrationRow(21, "simigo-es-legacy-null-graph-columns-v21")
             }
         }
+        if try schemaVersion() < 22 {
+            try transaction {
+                // The two producers of dependency_edges (advancement and
+                // consumption) already guard with NOT EXISTS; the public
+                // addDependency did not, so a caller repeating a pair could
+                // inflate the graph. Collapse the historical duplicates first,
+                // then let the constraint hold for every future writer.
+                try Self.rawExec(handle, """
+                DELETE FROM dependency_edges
+                WHERE edge_id NOT IN (
+                    SELECT MIN(edge_id) FROM dependency_edges
+                    GROUP BY from_settlement, to_settlement, kind
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_dependency_edges_unique
+                    ON dependency_edges(from_settlement, to_settlement, kind);
+                """)
+                // Invalidation recorded when a row stopped being eligible but
+                // never why. The cause is what makes "typed invalidation" a
+                // statement about the data rather than about our intentions.
+                if try !columnExists("settlements", "invalidated_cause") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE settlements ADD COLUMN invalidated_cause TEXT;
+                    """)
+                }
+                try recordMigrationRow(22, "simigo-dependency-edge-unique-v22")
+            }
+        }
+        if try schemaVersion() < 23 {
+            try transaction {
+                // v3 put dynamic validity on the settlement row itself, so
+                // "this result no longer holds" was a mutation of the result.
+                // Split the two axes: a settlement row carries only sealed
+                // content and provenance; validity is an append-only event
+                // ledger, and the current value is derived from it. Nothing
+                // rewrites a settlement to record that its evidence moved,
+                // and a settlement that was never invalidated carries one
+                // 'valid' event and no invalid one.
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS settlement_validity_events(
+                    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    settlement_id TEXT NOT NULL,
+                    validity TEXT NOT NULL,
+                    cause TEXT,
+                    recorded_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_settlement_validity_events_settlement
+                    ON settlement_validity_events(settlement_id, event_id);
+                INSERT INTO settlement_validity_events(
+                    settlement_id, validity, cause, recorded_at)
+                SELECT settlement_id, 'valid', NULL, settled_at FROM settlements
+                 WHERE NOT EXISTS (
+                    SELECT 1 FROM settlement_validity_events e
+                     WHERE e.settlement_id = settlements.settlement_id);
+                """)
+                // A database whose tables were rebuilt out of order may have
+                // skipped v3 and never gained the columns at all; there is
+                // nothing to migrate from in that case.
+                if try columnExists("settlements", "validity") {
+                    let hasAt = try columnExists("settlements", "invalidated_at")
+                    let hasCause = try columnExists("settlements", "invalidated_cause")
+                    let at = hasAt ? "ifnull(invalidated_at, settled_at)" : "settled_at"
+                    let cause = hasCause ? "invalidated_cause" : "NULL"
+                    try Self.rawExec(handle, """
+                    INSERT INTO settlement_validity_events(
+                        settlement_id, validity, cause, recorded_at)
+                    SELECT settlement_id, 'invalid', \(cause), \(at)
+                      FROM settlements WHERE validity = 'invalid';
+                    """)
+                }
+                try Self.rawExec(handle, """
+                CREATE VIEW IF NOT EXISTS settlement_current_validity AS
+                SELECT s.settlement_id,
+                       ifnull(v.validity, 'valid') AS validity,
+                       CASE WHEN v.validity = 'invalid'
+                            THEN v.recorded_at END AS invalidated_at,
+                       CASE WHEN v.validity = 'invalid'
+                            THEN v.cause END AS invalidated_cause
+                  FROM settlements s
+                  LEFT JOIN settlement_validity_events v
+                    ON v.event_id = (
+                        SELECT MAX(e.event_id) FROM settlement_validity_events e
+                         WHERE e.settlement_id = s.settlement_id);
+                """)
+                // No second source of truth: the columns go away once their
+                // contents live in the ledger. The old index references the
+                // column, so it must be dropped first.
+                try Self.rawExec(handle, "DROP INDEX IF EXISTS idx_settlements_validity;")
+                for column in ["validity", "invalidated_at", "invalidated_cause"] {
+                    if try columnExists("settlements", column) {
+                        try Self.rawExec(
+                            handle, "ALTER TABLE settlements DROP COLUMN \(column);")
+                    }
+                }
+                try recordMigrationRow(23, "simigo-settlement-validity-ledger-v23")
+            }
+        }
+        if try schemaVersion() < 24 {
+            try transaction {
+                // MCP rounds arrive one call at a time and nothing in the
+                // protocol forces every round to arrive: the caller decides.
+                // A ledger of "which round numbers were seen" turns that from
+                // an assumption into a reading — a gap is a number missing from
+                // this table, not a fact nobody recorded.
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS chat_turn_ledger(
+                    session_id TEXT NOT NULL,
+                    turn_index INTEGER NOT NULL,
+                    request_id TEXT NOT NULL,
+                    seen_at TEXT NOT NULL,
+                    PRIMARY KEY(session_id, turn_index)
+                );
+                CREATE INDEX IF NOT EXISTS idx_chat_turn_ledger_session
+                    ON chat_turn_ledger(session_id, turn_index);
+                """)
+                try recordMigrationRow(24, "simigo-chat-turn-ledger-v24")
+            }
+        }
+        if try schemaVersion() < 25 {
+            try transaction {
+                // A project brief is a judgement, not a document. Documents are
+                // appended and then superseded by newer documents of the same
+                // name; a judgement that is rewritten in place loses the record
+                // of what was believed before. So each note is immutable, and
+                // "current" is derived: the note of a kind that nothing later
+                // supersedes. Nothing is overwritten and nothing is deleted.
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS project_notes(
+                    note_id TEXT PRIMARY KEY,
+                    kind TEXT NOT NULL,
+                    claim TEXT NOT NULL,
+                    supersedes TEXT,
+                    object_id TEXT NOT NULL,
+                    recorded_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_project_notes_kind
+                    ON project_notes(kind, recorded_at);
+                """)
+                try recordMigrationRow(25, "simigo-project-notes-v25")
+            }
+        }
+
+        // The declared head and the applied head must agree. A migration gate
+        // that was written but never reached, or a version bumped in the
+        // constant but not in a gate, otherwise shows up as a store that is
+        // simply one version behind — quiet, and indistinguishable from an old
+        // file. This turns both directions into a failure at open time.
+        let head = try schemaVersion()
+        guard head == Self.currentSchemaVersion else {
+            throw DatabaseError.sql(
+                "migration head \(head) != declared \(Self.currentSchemaVersion)")
+        }
     }
+
+    /// The version `runMigrations` brings a store to.
+    public static let currentSchemaVersion = 25
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
@@ -2354,6 +2508,9 @@ public final class SimiGoESISDatabase {
             bind(stmt, 10, payloadObject)
             bind(stmt, 11, inputSnapshotObjectID)
         }
+        try recordSettlementValidityEventInTransaction(
+            settlementID: settlementID, validity: "valid", cause: nil,
+            at: Self.stamp(settled.settledAt))
         _ = try appendIndexEntryInTransaction(
             identity: "settlement:\(settlementID)", objectID: payloadObject)
         for ct in settled.trace.constraintChecks {
@@ -2574,6 +2731,12 @@ public final class SimiGoESISDatabase {
     }
 
     /// Newest settlement recorded for a state, or nil when the state never settled.
+    ///
+    /// This is a recency pointer inside ONE state's own lifecycle. It never
+    /// ranks two settlements of the same question against each other: those
+    /// live under different states and different settlement ids, and retrieval
+    /// (`citableSettlementSummaries`) returns all of them. The IS holds both;
+    /// it does not pick which one is right.
     public func latestSettlementID(forStateID stateID: String) throws -> String? {
         let stmt = try prepare("""
         SELECT settlement_id FROM settlements WHERE state_id=?
@@ -2670,7 +2833,7 @@ public final class SimiGoESISDatabase {
     @discardableResult
     public func settleWorkRootContents(
         rootID: String, rootURL: URL, category: String = "work",
-        fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
+        fileByteCap: Int = 1 << 20, tailBytes: Int = 256 << 10, maxDepth: Int = 4,
         carryText: Bool = true
     ) throws -> ContentSettleReport {
         // Serialize the baseline snapshot, filesystem observation and all index
@@ -2678,7 +2841,7 @@ public final class SimiGoESISDatabase {
         // and let an older observation overwrite a newer settlement.
         return try transactionResult {
         let fm = FileManager.default
-        guard fileByteCap >= 0, maxDepth >= 0 else {
+        guard fileByteCap >= 0, tailBytes >= 0, maxDepth >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
         }
         let requestedRootPath = try canonicalDirectoryPath(atPath: rootURL.path)
@@ -2801,7 +2964,8 @@ public final class SimiGoESISDatabase {
             let read = try readRootFileNoFollow(
                 rootDirectoryFD: rootDirectoryFD,
                 relativePath: relative,
-                maximumBytes: fileByteCap)
+                maximumBytes: fileByteCap,
+                tailBytes: tailBytes)
             guard read.device == Int64(enumeratedInfo.st_dev),
                   read.inode == UInt64(enumeratedInfo.st_ino) else {
                 throw DatabaseError.sql(
@@ -2823,10 +2987,25 @@ public final class SimiGoESISDatabase {
                 continue
             }
 
-            let digest = NativeSHA256.hexDigest(data)
-            entityBytesRead += data.count
+            // A tail window is not the whole document: bind the digest to the
+            // file's size so an append always reads as a change, and so a tail
+            // digest can never collide with a whole-file digest of the same
+            // bytes.
+            var indexedData = data
+            if read.isTail {
+                if let firstBreak = indexedData.firstIndex(of: 0x0A) {
+                    // The window may start inside a multi-byte character or a
+                    // half-written JSONL line; the first complete line is the
+                    // first thing this window can honestly state.
+                    indexedData = indexedData[indexedData.index(after: firstBreak)...]
+                }
+            }
+            let digest = read.isTail
+                ? NativeSHA256.hexDigest(Data("tail:\(size):".utf8) + indexedData)
+                : NativeSHA256.hexDigest(indexedData)
+            entityBytesRead += indexedData.count
             indexedFiles.append((relative, file, size, modified, digest))
-            guard String(data: data, encoding: .utf8) != nil else {
+            guard String(data: indexedData, encoding: .utf8) != nil else {
                 skipped += 1
                 if let old = previous[relative] {
                     cleared.append((relative, old, false))
@@ -2840,7 +3019,7 @@ public final class SimiGoESISDatabase {
                 continue
             }
             pending.append(PendingSettlement(
-                relativePath: relative, url: file, data: data, digest: digest,
+                relativePath: relative, url: file, data: indexedData, digest: digest,
                 size: size, modified: modified, previous: previous[relative]))
         }
 
@@ -2982,7 +3161,8 @@ public final class SimiGoESISDatabase {
                     size: file.size, modifiedAt: file.modified,
                     contentDigest: file.digest)
             }
-            try markSettlementsInvalidInTransaction(Array(invalidated))
+            try markSettlementsInvalidInTransaction(
+                Array(invalidated), cause: "source-changed:\(rootID)")
             try markRootScanned(rootID)
 
         return ContentSettleReport(
@@ -3002,6 +3182,10 @@ public final class SimiGoESISDatabase {
         let modificationDate: Date?
         let device: Int64
         let inode: UInt64
+        /// True when `data` is the last `tailBytes` of a file that exceeded
+        /// the whole-file cap. The digest then covers (size, tail), so an
+        /// append still changes it.
+        var isTail: Bool = false
     }
 
     private func canonicalDirectoryPath(atPath path: String) throws -> String {
@@ -3059,7 +3243,8 @@ public final class SimiGoESISDatabase {
     private func readRootFileNoFollow(
         rootDirectoryFD: Int32,
         relativePath: String,
-        maximumBytes: Int?
+        maximumBytes: Int?,
+        tailBytes: Int? = nil
     ) throws -> NoFollowFileRead {
         if let maximumBytes, maximumBytes < 0 {
             throw DatabaseError.sql("readRootFileNoFollow: negative byte limit")
@@ -3132,10 +3317,40 @@ public final class SimiGoESISDatabase {
         }
 
         if let maximumBytes, initialSize > Int64(maximumBytes) {
+            // Append-only logs (agent session transcripts) grow past any cap;
+            // the last window still answers "what was said recently", and the
+            // ledger keeps its own full-size + digest bookkeeping.
+            guard let tailBytes, tailBytes > 0 else {
+                try verifyUnchanged()
+                return NoFollowFileRead(
+                    data: nil, size: initialSize,
+                    modificationDate: modificationDate, device: device, inode: inode)
+            }
+            let start = max(0, initialSize - Int64(tailBytes))
+            guard Darwin.lseek(fileFD, off_t(start), SEEK_SET) == off_t(start) else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: seek failed: \(String(cString: strerror(errno)))")
+            }
+            var tail = Data()
+            var tailBuffer = [UInt8](repeating: 0, count: 64 * 1024)
+            while true {
+                let amount = tailBuffer.withUnsafeMutableBytes { raw -> Int in
+                    guard let base = raw.baseAddress else { return -1 }
+                    return Darwin.read(fileFD, base, raw.count)
+                }
+                if amount < 0 && errno == EINTR { continue }
+                guard amount >= 0 else {
+                    throw DatabaseError.sql(
+                        "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
+                }
+                if amount == 0 { break }
+                tail.append(contentsOf: tailBuffer.prefix(amount))
+            }
             try verifyUnchanged()
             return NoFollowFileRead(
-                data: nil, size: initialSize,
-                modificationDate: modificationDate, device: device, inode: inode)
+                data: tail, size: initialSize,
+                modificationDate: modificationDate, device: device, inode: inode,
+                isTail: true)
         }
 
         var data = Data()
@@ -3374,6 +3589,12 @@ public final class SimiGoESISDatabase {
             digest: NativeSHA256.hexDigest(Data(canonical.utf8)))
     }
 
+    /// Legacy demand resolution. No production caller remains: the live path is
+    /// `SimiGoInformationLoop.resolve`, which adds the source bindings this
+    /// function does not write. Kept because the tests and the stored-basis
+    /// format (see `invalidateRetrievalSettlementsInTransaction`) still refer to
+    /// it; do not wire new callers to it.
+    ///
     /// 执行一次信息需求（demand）：
     ///   demand_id = SHA256(query + 注册根集合 + 全部已结算内容摘要的规范串联)
     /// 同一 demand 且结算有效 → 直接返回已结算结果（**不再重复计算**，即
@@ -4136,6 +4357,275 @@ public final class SimiGoESISDatabase {
         return rows
     }
 
+    /// One completed external turn as text, for cross-carrier content dedupe.
+    public struct ExternalTurnText: Sendable, Equatable {
+        public let sessionID: String
+        public let prompt: String
+        public let answer: String
+    }
+
+    /// Whether this (session, request) pair already has its user row. The
+    /// recorder is idempotent, so the caller needs this only to report an
+    /// existing row as skipped rather than as newly written.
+    public func externalTurnExists(sessionID: String, requestID: String) throws -> Bool {
+        try externalRowID(sessionID: sessionID, requestID: requestID, role: "user") != nil
+    }
+
+    /// Every completed external turn whose session id begins with one of
+    /// `prefixes`. The body is read back through `is_objects` because a
+    /// committed row's inline `content` is emptied once it is object-addressed;
+    /// comparing the emptied column would make every turn look different.
+    ///
+    /// This is a read-only aid for a carrier that re-describes history another
+    /// carrier already delivered (an export of a session the native collector
+    /// owns): identity by request id cannot see that duplication, only content
+    /// can.
+    public func externalTurnTexts(sessionPrefixes: [String]) throws -> [ExternalTurnText] {
+        guard !sessionPrefixes.isEmpty else { return [] }
+        let clause = sessionPrefixes.map { _ in "u.session_id LIKE ?" }
+            .joined(separator: " OR ")
+        let stmt = try prepare("""
+        SELECT u.session_id,
+               COALESCE(CAST(ou.content AS TEXT), u.content),
+               COALESCE(CAST(oa.content AS TEXT), a.content)
+        FROM chat_messages u
+        JOIN chat_messages a
+          ON a.session_id=u.session_id AND a.request_id=u.request_id
+         AND a.role='assistant'
+        LEFT JOIN is_objects ou ON ou.object_id=u.content_object_id
+        LEFT JOIN is_objects oa ON oa.object_id=a.content_object_id
+        WHERE u.role='user' AND u.source_kind='external' AND (\(clause));
+        """)
+        defer { sqlite3_finalize(stmt) }
+        for (offset, prefix) in sessionPrefixes.enumerated() {
+            bind(stmt, Int32(offset + 1), prefix + "%")
+        }
+        var rows: [ExternalTurnText] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            rows.append(
+                ExternalTurnText(sessionID: text(0), prompt: text(1), answer: text(2)))
+        }
+        return rows
+    }
+
+    // MARK: - MCP turn ledger
+
+    /// What the ledger knows after recording one round number.
+    ///
+    /// `missing` is the number of round indices below the highest seen index
+    /// that never arrived. It is a fact about calls, not about the agent's
+    /// internals: a gap means the caller skipped a number it itself chose.
+    public struct TurnLedgerReport: Sendable, Equatable {
+        public let sessionID: String
+        public let turnIndex: Int
+        public let entered: Int
+        public let highest: Int
+        public let missing: [Int]
+        /// Set when this round number already belongs to a different request.
+        /// The ledger keeps the first owner; the second one is not silently
+        /// merged, because two agents sharing a session id would otherwise
+        /// lose a round each time their numbers collided.
+        public let conflict: String?
+
+        public var isContinuous: Bool { missing.isEmpty }
+
+        func withConflict(_ owner: String) -> TurnLedgerReport {
+            TurnLedgerReport(
+                sessionID: sessionID, turnIndex: turnIndex, entered: entered,
+                highest: highest, missing: missing, conflict: owner)
+        }
+    }
+
+    /// Record that `turnIndex` arrived for `sessionID`, then report the ledger.
+    /// Re-recording the same index is a no-op; the request id is kept from the
+    /// first arrival so a retry cannot rewrite the round it named.
+    public func recordTurnIndex(
+        sessionID: String, turnIndex: Int, requestID: String, at: Date = Date()
+    ) throws -> TurnLedgerReport {
+        try transactionResult {
+            if let owner = try turnLedgerOwner(sessionID: sessionID, turnIndex: turnIndex),
+                owner != requestID
+            {
+                // Same slot, different owner. Refusing is the only honest
+                // outcome: overwriting would rewrite history, and ignoring
+                // would drop a round while the count still looked right.
+                return try turnLedger(sessionID: sessionID, turnIndex: turnIndex)
+                    .withConflict(owner)
+            }
+            try execBinding("""
+            INSERT OR IGNORE INTO chat_turn_ledger(
+                session_id, turn_index, request_id, seen_at) VALUES(?,?,?,?);
+            """) { stmt in
+                bind(stmt, 1, sessionID)
+                bind(stmt, 2, Int64(turnIndex))
+                bind(stmt, 3, requestID)
+                bind(stmt, 4, Self.stamp(at))
+            }
+            return try turnLedger(sessionID: sessionID, turnIndex: turnIndex)
+        }
+    }
+
+    private func turnLedgerOwner(sessionID: String, turnIndex: Int) throws -> String? {
+        let stmt = try prepare("""
+        SELECT request_id FROM chat_turn_ledger
+        WHERE session_id=? AND turn_index=? LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID)
+        bind(stmt, 2, Int64(turnIndex))
+        guard try stepRowOrDone(stmt), let text = sqlite3_column_text(stmt, 0)
+        else { return nil }
+        return String(cString: text)
+    }
+
+    /// Read-only ledger state for one session and the round just recorded.
+    public func turnLedger(
+        sessionID: String, turnIndex: Int = 0
+    ) throws -> TurnLedgerReport {
+        let stmt = try prepare("""
+        SELECT turn_index FROM chat_turn_ledger
+        WHERE session_id=? ORDER BY turn_index;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID)
+        var seen: [Int] = []
+        while try stepRowOrDone(stmt) {
+            seen.append(Int(sqlite3_column_int64(stmt, 0)))
+        }
+        let highest = seen.last ?? 0
+        let present = Set(seen)
+        let missing = (1...max(highest, 1)).filter { !present.contains($0) }
+        return TurnLedgerReport(
+            sessionID: sessionID, turnIndex: turnIndex, entered: seen.count,
+            highest: highest, missing: missing, conflict: nil)
+    }
+
+    /// The session whose round arrived most recently, for a status display.
+    public func latestTurnLedgerSessionID() throws -> String? {
+        let stmt = try prepare("""
+        SELECT session_id FROM chat_turn_ledger ORDER BY seen_at DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        guard try stepRowOrDone(stmt), let text = sqlite3_column_text(stmt, 0)
+        else { return nil }
+        return String(cString: text)
+    }
+
+    // MARK: - Project notes
+
+    /// One recorded judgement. The row is immutable: a later note may supersede
+    /// it, but nothing edits it, so the claim that was believed at a time stays
+    /// readable after that time has passed.
+    public struct ProjectNote: Equatable, Sendable {
+        public let noteID: String
+        public let kind: String
+        public let claim: String
+        public let supersedes: String?
+        public let objectID: String
+        public let recordedAt: String
+    }
+
+    /// Append a judgement of `kind` and supersede the current one of the same
+    /// kind. "Current" is derived from the supersede pointers, never stored as a
+    /// flag: a status bit is a second place that can disagree with the history.
+    ///
+    /// Recording a byte-identical claim again is a no-op — the object is already
+    /// the current answer, so a second pointer would add history without adding
+    /// a claim.
+    @discardableResult
+    public func recordProjectNote(
+        kind: String, claim: String, at: Date = Date()
+    ) throws -> (note: ProjectNote, superseded: String?, created: Bool) {
+        let text = claim.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            throw DatabaseError.sql("project note claim is empty")
+        }
+        let trimmedKind = kind.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedKind.isEmpty else {
+            throw DatabaseError.sql("project note kind is empty")
+        }
+        return try transactionResult {
+            let current = try currentProjectNote(kind: trimmedKind)
+            let objectID = try ensureObject(Data(text.utf8))
+            if let current, current.objectID == objectID {
+                return (current, nil, false)
+            }
+            let noteID = UUID().uuidString
+            let recordedAt = Self.stamp(at)
+            try execBinding("""
+            INSERT INTO project_notes(
+                note_id, kind, claim, supersedes, object_id, recorded_at)
+            VALUES(?,?,?,?,?,?);
+            """) { stmt in
+                bind(stmt, 1, noteID)
+                bind(stmt, 2, trimmedKind)
+                bind(stmt, 3, text)
+                bind(stmt, 4, current?.noteID)
+                bind(stmt, 5, objectID)
+                bind(stmt, 6, recordedAt)
+            }
+            let note = ProjectNote(
+                noteID: noteID, kind: trimmedKind, claim: text,
+                supersedes: current?.noteID, objectID: objectID,
+                recordedAt: recordedAt)
+            return (note, current?.noteID, true)
+        }
+    }
+
+    /// The note of `kind` that nothing later supersedes, if one was recorded.
+    public func currentProjectNote(kind: String) throws -> ProjectNote? {
+        let stmt = try prepare("""
+        SELECT note_id, kind, claim, supersedes, object_id, recorded_at
+          FROM project_notes
+         WHERE kind = ?
+           AND note_id NOT IN (
+               SELECT supersedes FROM project_notes WHERE supersedes IS NOT NULL)
+         ORDER BY rowid DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, kind)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return projectNote(from: stmt)
+    }
+
+    /// Newest first. The whole history of a kind is what makes a changed
+    /// judgement visible as a change instead of as a fact that was always so.
+    public func projectNoteHistory(
+        kind: String, limit: Int = 20
+    ) throws -> [ProjectNote] {
+        let stmt = try prepare("""
+        SELECT note_id, kind, claim, supersedes, object_id, recorded_at
+          FROM project_notes WHERE kind = ? ORDER BY rowid DESC LIMIT ?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, kind)
+        bind(stmt, 2, Int64(max(limit, 1)))
+        var notes: [ProjectNote] = []
+        while try stepRowOrDone(stmt) { notes.append(projectNote(from: stmt)) }
+        return notes
+    }
+
+    public func projectNoteCount(kind: String) throws -> Int {
+        let stmt = try prepare("SELECT COUNT(*) FROM project_notes WHERE kind = ?;")
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, kind)
+        guard try stepRowOrDone(stmt) else { return 0 }
+        return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    private func projectNote(from stmt: OpaquePointer) -> ProjectNote {
+        func text(_ i: Int32) -> String {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        }
+        let supersedes = sqlite3_column_text(stmt, 3).map { String(cString: $0) }
+        return ProjectNote(
+            noteID: text(0), kind: text(1), claim: text(2), supersedes: supersedes,
+            objectID: text(4), recordedAt: text(5))
+    }
+
     /// Most recent user row of a session, if it has one. Only local rows take
     /// part in retry reuse: an external row belongs to another producer's
     /// request and must never be adopted (or promoted) by a local turn.
@@ -4758,6 +5248,8 @@ public final class SimiGoESISDatabase {
                 bind(stmt, 7, "IS_RETRIEVAL")
                 bind(stmt, 8, resultObjectID)
             }
+            try recordSettlementValidityEventInTransaction(
+                settlementID: settlementID, validity: "valid", cause: nil, at: now)
             _ = try appendIndexEntryInTransaction(
                 identity: "settlement:\(settlementID)", objectID: resultObjectID)
             _ = try appendIndexEntryInTransaction(
@@ -4860,8 +5352,9 @@ public final class SimiGoESISDatabase {
         SELECT s.payload_digest, s.payload_object_id
         FROM retrieval_settlements r
         JOIN settlements s ON s.settlement_id=r.bridged_settlement_id
+        JOIN settlement_current_validity v ON v.settlement_id=s.settlement_id
         WHERE r.demand_id=? AND r.status='valid'
-          AND s.validity='valid' AND s.invalidated_at IS NULL;
+          AND v.validity='valid' AND v.invalidated_at IS NULL;
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, demandID)
@@ -5748,13 +6241,29 @@ public final class SimiGoESISDatabase {
 
     /// Record that `fromSettlement` depends on `toSettlement`. Invalidating a
     /// depended-on settlement cascades to its (transitive) dependents.
+    ///
+    /// Low-level entry: it performs no lifecycle check, so prefer the two
+    /// internal writers (`insertInformationAdvancementRows` for
+    /// information-demand, `recordSettlementConsumption` for
+    /// settlement-consumption) on the paths they own. Repeating the same
+    /// (from, to, kind) is a no-op, which keeps in-degree equal to the number of
+    /// distinct dependencies.
     public func addDependency(fromSettlement: String, toSettlement: String,
                               kind: String = "depends") throws {
         try transaction {
-            try execBinding("INSERT INTO dependency_edges(from_settlement, to_settlement, kind) VALUES(?,?,?);") { stmt in
+            try execBinding("""
+            INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
+            SELECT ?,?,?
+            WHERE NOT EXISTS (
+                SELECT 1 FROM dependency_edges
+                WHERE from_settlement=? AND to_settlement=? AND kind=?);
+            """) { stmt in
                 bind(stmt, 1, fromSettlement)
                 bind(stmt, 2, toSettlement)
                 bind(stmt, 3, kind)
+                bind(stmt, 4, fromSettlement)
+                bind(stmt, 5, toSettlement)
+                bind(stmt, 6, kind)
             }
             if let address = try settlementPayloadObject(toSettlement) {
                 _ = try appendDependencyInTransaction(
@@ -5829,24 +6338,21 @@ public final class SimiGoESISDatabase {
         let ids = try affectedClosure(rootID: rootID, relativePath: relativePath)
         guard !ids.isEmpty else { return [] }
         try transaction {
-            try markSettlementsInvalidInTransaction(ids)
+            try markSettlementsInvalidInTransaction(
+                ids, cause: "source-file:\(rootID)/\(relativePath)")
         }
         return ids
     }
 
     /// Caller owns the transaction. Flips only valid rows so repeated
     /// invalidation is idempotent and never rewrites an earlier timestamp.
-    private func markSettlementsInvalidInTransaction(_ ids: [String]) throws {
+    private func markSettlementsInvalidInTransaction(_ ids: [String],
+                                                     cause: String) throws {
         guard !ids.isEmpty else { return }
         let now = Self.stamp(Date())
         for id in ids {
-            try execBinding("""
-            UPDATE settlements SET validity='invalid', invalidated_at=?
-            WHERE settlement_id=? AND validity<>'invalid';
-            """) { stmt in
-                bind(stmt, 1, now)
-                bind(stmt, 2, id)
-            }
+            try recordSettlementValidityEventInTransaction(
+                settlementID: id, validity: "invalid", cause: cause, at: now)
             // A bridged retrieval row is the demand-side view of the same
             // settlement. Leaving it 'valid' would advertise reuse to every
             // reader that keys on status alone.
@@ -5859,9 +6365,41 @@ public final class SimiGoESISDatabase {
         }
     }
 
+    /// Append one validity event unless the settlement is already in that
+    /// state. This is the only way validity changes; the settlement row itself
+    /// is never rewritten for it. The ledger is the record and
+    /// `settlement_current_validity` is the derived read.
+    private func recordSettlementValidityEventInTransaction(
+        settlementID: String, validity: String, cause: String?, at stamp: String
+    ) throws {
+        try execBinding("""
+        INSERT INTO settlement_validity_events(
+            settlement_id, validity, cause, recorded_at)
+        SELECT ?,?,?,?
+         WHERE NOT EXISTS (
+            SELECT 1 FROM settlement_validity_events
+             WHERE settlement_id=? AND validity=?);
+        """) { stmt in
+            bind(stmt, 1, settlementID)
+            bind(stmt, 2, validity)
+            bind(stmt, 3, cause)
+            bind(stmt, 4, stamp)
+            bind(stmt, 5, settlementID)
+            bind(stmt, 6, validity)
+        }
+    }
+
     /// Caller owns the transaction. A demand is stale when its recorded input
     /// basis contains the changed file's previous address. The demand id itself
     /// will differ after the change; this only makes the recorded state honest.
+    ///
+    /// The two needles below match only rows whose basis is stored in the
+    /// legacy shape — the canonical string and filename list written by
+    /// `executeInformationDemand`. Rows written by `recordInformationRetrieval`
+    /// carry `v2:<demand hash>`, which contains neither needle, so they are
+    /// invalidated through their bridged settlement instead (see
+    /// `markSettlementsInvalidInTransaction`). Both routes are needed while
+    /// legacy databases exist; neither is a substitute for the other.
     private func invalidateRetrievalSettlementsInTransaction(
         rootID: String, relativePath: String, oldDigest: String
     ) throws {
@@ -5980,7 +6518,8 @@ public final class SimiGoESISDatabase {
                 }
             }
             let invalidatedIDs = invalidated.sorted()
-            try markSettlementsInvalidInTransaction(invalidatedIDs)
+            try markSettlementsInvalidInTransaction(
+                invalidatedIDs, cause: "reconcile-missing:\(rootID)")
             return invalidatedIDs
         }
     }
@@ -6021,7 +6560,8 @@ public final class SimiGoESISDatabase {
         let ids = try transitiveDependents(seeds: [settlementID])
         guard !ids.isEmpty else { return [] }
         try transaction {
-            try markSettlementsInvalidInTransaction(ids)
+            try markSettlementsInvalidInTransaction(
+                ids, cause: "upstream:\(settlementID)")
         }
         return ids
     }
@@ -6042,9 +6582,13 @@ public final class SimiGoESISDatabase {
         return false
     }
 
-    /// Current validity of a settlement ('valid' or 'invalid').
+    /// Current validity of a settlement ('valid' or 'invalid'), derived from the
+    /// append-only validity ledger. The settlement row carries no mutable
+    /// validity state of its own.
     public func settlementValidity(_ settlementID: String) throws -> String {
-        let stmt = try prepare("SELECT validity FROM settlements WHERE settlement_id=?;")
+        let stmt = try prepare("""
+        SELECT validity FROM settlement_current_validity WHERE settlement_id=?;
+        """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
         let rc = sqlite3_step(stmt)
@@ -6062,8 +6606,10 @@ public final class SimiGoESISDatabase {
     /// output would overstate how much work the engine actually did.
     public func validSettlementCount() throws -> Int {
         let stmt = try prepare("""
-        SELECT COUNT(*) FROM settlements
-        WHERE validity='valid' AND ifnull(validation_status,'')<>'DERIVED_CONSUMPTION';
+        SELECT COUNT(*) FROM settlements s
+        JOIN settlement_current_validity v ON v.settlement_id=s.settlement_id
+        WHERE v.validity='valid'
+          AND ifnull(s.validation_status,'')<>'DERIVED_CONSUMPTION';
         """)
         defer { sqlite3_finalize(stmt) }
         if try stepRowOrDone(stmt) { return Int(sqlite3_column_int64(stmt, 0)) }
@@ -6086,8 +6632,11 @@ public final class SimiGoESISDatabase {
         settlementID: String
     ) throws -> SettlementAdmissionRow? {
         let stmt = try prepare("""
-        SELECT state_id, payload, payload_digest, validation_status, validity, payload_object_id
-        FROM settlements WHERE settlement_id=?;
+        SELECT s.state_id, s.payload, s.payload_digest, s.validation_status,
+               v.validity, s.payload_object_id
+        FROM settlements s
+        JOIN settlement_current_validity v ON v.settlement_id=s.settlement_id
+        WHERE s.settlement_id=?;
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
@@ -6151,9 +6700,12 @@ public final class SimiGoESISDatabase {
         var found = false
 
         let stmt = try prepare("""
-        SELECT state_id, payload, schema_version, contract_version, settled_at,
-               validation_status, validity, invalidated_at, payload_object_id
-        FROM settlements WHERE settlement_id=?;
+        SELECT s.state_id, s.payload, s.schema_version, s.contract_version,
+               s.settled_at, s.validation_status, v.validity, v.invalidated_at,
+               s.payload_object_id
+        FROM settlements s
+        JOIN settlement_current_validity v ON v.settlement_id=s.settlement_id
+        WHERE s.settlement_id=?;
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
@@ -6363,6 +6915,10 @@ public final class SimiGoESISDatabase {
     /// `DERIVED_CONSUMPTION` summary IS citable, but it carries its derivation
     /// type and source settlement so a consumer cannot present it as independent
     /// generation evidence. Newest first.
+    /// Every valid, model-produced settlement summary in scope. There is no
+    /// per-question dedup: two mutually exclusive answers to the same question
+    /// are returned side by side, each under its own `settlement:<id>`. Picking
+    /// one would be a truth judgement, which the IS does not make.
     public func citableSettlementSummaries(
         sessionID: String?, limit: Int = 200
     ) throws -> [SettlementSummaryRecord] {
@@ -6372,7 +6928,8 @@ public final class SimiGoESISDatabase {
                m.derivation_type, m.provenance_settlement_id
         FROM settlement_summaries m
         JOIN settlements s ON s.settlement_id=m.settlement_id
-        WHERE s.validity='valid' AND s.invalidated_at IS NULL
+        JOIN settlement_current_validity v ON v.settlement_id=s.settlement_id
+        WHERE v.validity='valid' AND v.invalidated_at IS NULL
           AND ifnull(s.validation_status,'') NOT IN ('IS_RETRIEVAL','MIGRATED_LEGACY')
           AND (m.session_id IS NULL OR m.session_id<>?)
         ORDER BY m.created_at DESC, m.settlement_id
@@ -6723,6 +7280,9 @@ public final class SimiGoESISDatabase {
                     bind(stmt, 9, "MIGRATED_LEGACY")
                     bind(stmt, 10, payloadObject)
                 }
+                try recordSettlementValidityEventInTransaction(
+                    settlementID: c.id.uuidString, validity: "valid", cause: nil,
+                    at: Self.stamp(c.createdAt))
                 _ = try appendIndexEntryInTransaction(
                     identity: "settlement:\(c.id.uuidString)", objectID: payloadObject)
                 // Also land the checkpoint in the ES-owned checkpoints table so a

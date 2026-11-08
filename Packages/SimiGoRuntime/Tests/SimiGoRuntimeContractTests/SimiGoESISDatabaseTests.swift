@@ -42,14 +42,14 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.schemaVersion(), 0)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 21)   // v21 backfills legacy NULL graph columns
+        XCTAssertEqual(try db.schemaVersion(), SimiGoESISDatabase.currentSchemaVersion)
         XCTAssertTrue(try db.integrityCheck())
         XCTAssertEqual(try db.count("chat_messages"), 0)
         XCTAssertEqual(try db.count("file_contents"), 0)
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
         // Idempotent: re-running does not error or double-apply.
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 21)
+        XCTAssertEqual(try db.schemaVersion(), SimiGoESISDatabase.currentSchemaVersion)
     }
 
     /// A database stamped v6 by the old out-of-order gates reports the head
@@ -60,7 +60,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { cleanup(url) }
         let db = try SimiGoESISDatabase(url: url)
         try db.runMigrations()
-        XCTAssertEqual(try db.schemaVersion(), 21)
+        XCTAssertEqual(try db.schemaVersion(), SimiGoESISDatabase.currentSchemaVersion)
         db.close()
 
         try rawExec(url, """
@@ -76,12 +76,44 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { repaired.close() }
         XCTAssertEqual(try repaired.schemaVersion(), 6)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 21)
+        XCTAssertEqual(try repaired.schemaVersion(), SimiGoESISDatabase.currentSchemaVersion)
         XCTAssertEqual(try repaired.count("chat_messages"), 0)
         XCTAssertEqual(try repaired.count("file_contents"), 0)
         XCTAssertEqual(try repaired.count("retrieval_settlements"), 0)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 21)
+        XCTAssertEqual(try repaired.schemaVersion(), SimiGoESISDatabase.currentSchemaVersion)
+    }
+
+    /// A project note is a judgement, not a document: the new note becomes
+    /// current by being the one nothing supersedes, and the old wording stays
+    /// readable. Re-recording the same claim adds no pointer.
+    func testProjectNotesSupersedeWithoutRewriting() throws {
+        let url = tempURL("project-notes")
+        defer { cleanup(url) }
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close() }
+        try db.runMigrations()
+
+        let first = try db.recordProjectNote(kind: "brief", claim: "v1")
+        XCTAssertTrue(first.created)
+        XCTAssertNil(first.superseded)
+        XCTAssertEqual(try db.currentProjectNote(kind: "brief")?.claim, "v1")
+
+        let second = try db.recordProjectNote(kind: "brief", claim: "v2")
+        XCTAssertEqual(second.superseded, first.note.noteID)
+        XCTAssertEqual(try db.currentProjectNote(kind: "brief")?.claim, "v2")
+        XCTAssertEqual(
+            try db.projectNoteHistory(kind: "brief").map(\.claim), ["v2", "v1"],
+            "the superseded note is still there, in time order")
+
+        let again = try db.recordProjectNote(kind: "brief", claim: "v2")
+        XCTAssertFalse(again.created, "an identical claim is already current")
+        XCTAssertEqual(try db.projectNoteCount(kind: "brief"), 2)
+
+        try db.recordProjectNote(kind: "status", claim: "open")
+        XCTAssertEqual(
+            try db.currentProjectNote(kind: "brief")?.claim, "v2",
+            "superseding one kind leaves the others alone")
     }
 
     private func rawExec(_ url: URL, _ sql: String) throws {
@@ -140,15 +172,65 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         defer { upgraded.close() }
         XCTAssertEqual(try upgraded.schemaVersion(), 17)
         try upgraded.runMigrations()
-        XCTAssertEqual(try upgraded.schemaVersion(), 21)
+        XCTAssertEqual(try upgraded.schemaVersion(), SimiGoESISDatabase.currentSchemaVersion)
         XCTAssertNil(
             try upgraded.executionStateTokenizerIdentity("legacy-state"),
             "a pre-v18 state carries no claim and must keep failing closed")
         XCTAssertEqual(
             try rawText(url, "SELECT graph_managed FROM execution_states WHERE state_id='legacy-state';"),
             "1", "legacy rows default to native graph ownership")
+        // One migration row per version from 18 to the declared head — derived,
+        // so adding a migration does not turn this into a stale literal.
         XCTAssertEqual(
-            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version >= 18;"), "4")
+            try rawText(url, "SELECT COUNT(*) FROM schema_migrations WHERE version >= 18;"),
+            "\(SimiGoESISDatabase.currentSchemaVersion - 17)")
+    }
+
+    /// v23 把结算行上的 validity 三列拆进只追加的事件账本。已经在 v22 库里
+    /// 失效过的行必须带着原因迁过去，而不是被当成“从未失效”；行上也不再
+    /// 保留第二份 validity。
+    func testV23MovesRowValidityIntoAppendOnlyLedger() throws {
+        let url = tempURL("v23-validity-ledger")
+        defer { cleanup(url) }
+        let db = try SimiGoESISDatabase(url: url)
+        try db.runMigrations()
+        let id = UUID().uuidString
+        try rawExec(url, """
+        INSERT INTO settlements(settlement_id, state_id, schema_version, payload,
+            payload_digest, signature, contract_version, settled_at, validation_status)
+        VALUES('\(id)', NULL, 's', X'', 'd', NULL, 'c', '2026-01-01T00:00:00Z', 'MODEL');
+        """)
+        db.close()
+
+        // 回到 v22 的形状：三列在行上，账本不存在。
+        try rawExec(url, """
+        DROP VIEW settlement_current_validity;
+        DROP TABLE settlement_validity_events;
+        ALTER TABLE settlements ADD COLUMN validity TEXT NOT NULL DEFAULT 'valid';
+        ALTER TABLE settlements ADD COLUMN invalidated_at TEXT;
+        ALTER TABLE settlements ADD COLUMN invalidated_cause TEXT;
+        UPDATE settlements SET validity='invalid',
+               invalidated_at='2026-01-02T00:00:00Z',
+               invalidated_cause='source-changed:work'
+         WHERE settlement_id='\(id)';
+        DELETE FROM schema_migrations WHERE version >= 23;
+        """)
+
+        let upgraded = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        defer { upgraded.close() }
+        XCTAssertEqual(try upgraded.schemaVersion(), 22)
+        try upgraded.runMigrations()
+        XCTAssertEqual(try upgraded.schemaVersion(), SimiGoESISDatabase.currentSchemaVersion)
+
+        XCTAssertEqual(try upgraded.settlementValidity(id), "invalid")
+        XCTAssertEqual(try rawText(url, """
+        SELECT cause FROM settlement_validity_events
+         WHERE settlement_id='\(id)' AND validity='invalid';
+        """), "source-changed:work")
+        XCTAssertEqual(try rawText(url, """
+        SELECT COUNT(*) FROM pragma_table_info('settlements')
+         WHERE name IN ('validity','invalidated_at','invalidated_cause');
+        """), "0", "the row keeps no second copy of the validity axis")
     }
 
     /// Re-running the v19 migration — including after reopening the store —
@@ -163,7 +245,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
 
         let reopened = try SimiGoESISDatabase(url: url, createIfNeeded: false)
         try reopened.runMigrations()
-        XCTAssertEqual(try reopened.schemaVersion(), 21)
+        XCTAssertEqual(try reopened.schemaVersion(), SimiGoESISDatabase.currentSchemaVersion)
         reopened.close()
 
         XCTAssertEqual(

@@ -301,17 +301,47 @@ public struct SimiGoInformationLoop {
                 hitCount: items.count, itemIDs: items.map(\.itemID),
                 inputs: addresses))
 
-        // The retrieval result is derived from these files, so the demand must
-        // carry the edge that lets a later content change invalidate it. Without
-        // the binding the invalidation closure has nothing to walk and a settled
-        // demand would keep being reused after its source moved.
+        // Only a source that can change in place gets a binding. A demand
+        // resolved from chat turns or from the collection bridge has nothing to
+        // bind, and that absence is a property of the source, not a gap in the
+        // evidence: chat rows are append-only and enter the basis through the
+        // scope watermark, so a changed conversation produces a different demand
+        // instead of a stale one. An information result and its settlement are
+        // therefore independent of where they came from; identity is a separate
+        // question, asked only where the artefact is model-specific.
         var boundSources = Set<String>()
         for hit in items where hit.kind == "file" {
-            guard let sourceRoot = hit.rootID, let sourcePath = hit.relativePath else { continue }
+            guard let sourceRoot = hit.rootID, let sourcePath = hit.relativePath else {
+                // A file hit without a locator cannot be bound, so no later
+                // change could ever withdraw it. Fail here rather than leave a
+                // result that is silently permanent.
+                throw SimiGoESISDatabase.DatabaseError.sql(
+                    "information-loop: file hit without a locator: \(hit.itemID)")
+            }
             guard boundSources.insert("\(sourceRoot)/\(sourcePath)").inserted else { continue }
             try database.linkSettlementToExternalFile(
                 settlementID: commit.retrievalSettlementID, binding: "content",
                 rootID: sourceRoot, relativePath: sourcePath)
+        }
+
+        // A cited settlement is a dependency, not a source: it carries no bytes
+        // to bind, but if the cited result stops being eligible then this answer
+        // no longer follows from it. Without the edge a settlement-to-settlement
+        // citation is invisible to the invalidation closure.
+        var citedSettlements = Set<String>()
+        for hit in items where hit.kind == "settlement" {
+            // `sourceSettlementID` is only set for derived consumptions; a plain
+            // summary leaves it empty, and an empty string would otherwise stop
+            // the fallback below from ever running.
+            let declared = hit.sourceSettlementID?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let cited = (declared?.isEmpty == false)
+                ? declared!
+                : String(hit.itemID.dropFirst("settlement:".count))
+            guard !cited.isEmpty, citedSettlements.insert(cited).inserted else { continue }
+            try database.addDependency(
+                fromSettlement: commit.retrievalSettlementID,
+                toSettlement: cited, kind: "citation")
         }
 
         return Resolution(

@@ -369,7 +369,7 @@ final class SimiGoRefusalSideEffectTests: XCTestCase {
         // 3. The closure catches a locally-valid source over an invalidated
         //    upstream.
         try rawExec(fixture.dbURL,
-            "UPDATE settlements SET validity='invalid' WHERE settlement_id='\(upstream)';")
+            "INSERT INTO settlement_validity_events(settlement_id, validity, cause, recorded_at) VALUES('\(upstream)','invalid','test',datetime('now'));")
         XCTAssertEqual(try fixture.db.settlementValidity(downstream), "valid")
         XCTAssertThrowsError(try SimiGoSettlementConsumption.consume(
             db: fixture.db, request: consumptionRequest(source: downstream, consumer: "c-downstream")))
