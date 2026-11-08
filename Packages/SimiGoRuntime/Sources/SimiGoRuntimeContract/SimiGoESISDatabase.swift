@@ -3478,7 +3478,7 @@ public final class SimiGoESISDatabase {
             } else {
                 sqlite3_finalize(settled)
                 guard settledRC == SQLITE_DONE else {
-                    throw Self.sqliteFailure(handle, resultCode: rc)
+                    throw Self.sqliteFailure(handle, resultCode: settledRC)
                 }
             }
 
