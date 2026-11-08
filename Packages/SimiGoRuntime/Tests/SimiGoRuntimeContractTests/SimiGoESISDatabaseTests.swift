@@ -55,14 +55,47 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         XCTAssertThrowsError(
             try SimiGoESISDatabase(url: alias, createIfNeeded: false)
         ) { error in
-            guard case SimiGoESISDatabase.DatabaseError.cannotOpen = error else {
+            guard let databaseError = error as? SimiGoESISDatabase.DatabaseError,
+                  case .cannotOpen = databaseError else {
                 return XCTFail("expected symlinked database open to fail closed, got \\(error)")
             }
         }
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: alias.path))
-        let direct = try SimiGoESISDatabase(url: target, createIfNeeded: false)
-        XCTAssertTrue(try direct.integrityCheck())
+        do {
+            let direct = try SimiGoESISDatabase(url: target, createIfNeeded: false)
+            XCTAssertTrue(try direct.integrityCheck())
+        }
+    }
+
+    func testStatementFailurePreservesPrimaryAndExtendedSQLiteCodes() throws {
+        let url = tempURL("statement-error")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        try rawExec(url, """
+        CREATE TRIGGER reject_execution_state_insert
+        BEFORE INSERT ON execution_states
+        BEGIN
+            SELECT RAISE(ABORT, 'forced statement failure');
+        END;
+        """)
+
+        XCTAssertThrowsError(
+            try db.recordExecutionState(
+                id: "forced-failure", parentID: nil, modelIdentity: "test-model",
+                position: 0, continuationID: "C-1", anchor: "a",
+                lifecycle: "active", createdAt: Date())
+        ) { error in
+            guard let databaseError = error as? SimiGoESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, _) = databaseError else {
+                return XCTFail("expected preserved SQLite execution failure, got \\(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_CONSTRAINT)
+            XCTAssertEqual(extended, SQLITE_CONSTRAINT_TRIGGER)
+        }
+        XCTAssertEqual(try db.count("execution_states"), 0)
     }
 
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {

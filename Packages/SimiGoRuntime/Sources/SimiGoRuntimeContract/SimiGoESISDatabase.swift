@@ -69,12 +69,9 @@ public final class SimiGoESISDatabase {
         case staleExternalSource(rootID: String, relativePath: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
-        /// Init-time PRAGMA execution failure — an execution condition, NOT a
-        /// corruption diagnostic. Preserves the primary and extended SQLite
-        /// result codes (e.g. SQLITE_BUSY after the busy handler has waited up
-        /// to busy_timeout, or SQLITE_LOCKED, which busy handlers do not
-        /// cover — explicit return) so callers can classify without parsing
-        /// strings.
+        /// SQLite API execution failure. Preserves primary and extended result
+        /// codes (including BUSY/LOCKED, I/O, and extended constraint codes) so
+        /// callers can classify without parsing localized message strings.
         case executionFailure(primary: Int32, extended: Int32, message: String)
     }
 
@@ -150,10 +147,21 @@ public final class SimiGoESISDatabase {
         var err: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(db, sql, nil, nil, &err)
         if rc != SQLITE_OK {
-            let m = err.map { String(cString: $0) } ?? "code \(rc)"
+            let m = err.map { String(cString: $0) } ?? "code \\(rc)"
             sqlite3_free(err)
-            throw DatabaseError.sql(m)
+            throw sqliteFailure(db, resultCode: rc, message: m)
         }
+    }
+
+    private static func sqliteFailure(
+        _ db: OpaquePointer, resultCode: Int32? = nil, message: String? = nil
+    ) -> DatabaseError {
+        let reportedExtended = sqlite3_extended_errcode(db)
+        let reportedCode = resultCode ?? reportedExtended
+        let primary = reportedCode & 0xff
+        let extended = reportedExtended == SQLITE_OK ? reportedCode : reportedExtended
+        let detail = message ?? String(cString: sqlite3_errmsg(db))
+        return .executionFailure(primary: primary, extended: extended, message: detail)
     }
 
     private enum IntegrityOutcome {
@@ -1555,7 +1563,7 @@ public final class SimiGoESISDatabase {
         let rc = sqlite3_step(stmt)
         if rc == SQLITE_ROW { return true }
         if rc == SQLITE_DONE { return false }
-        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+        throw Self.sqliteFailure(handle, resultCode: rc)
     }
 
     private func prepare(_ sql: String) throws -> OpaquePointer {
@@ -1564,7 +1572,7 @@ public final class SimiGoESISDatabase {
         guard rc == SQLITE_OK, let prepared = stmt else {
             let message = String(cString: sqlite3_errmsg(handle))
             if let stmt { sqlite3_finalize(stmt) }
-            throw DatabaseError.sql(message)
+            throw Self.sqliteFailure(handle, resultCode: rc, message: message)
         }
         return prepared
     }
@@ -1596,9 +1604,10 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         apply(stmt)
-        if sqlite3_step(stmt) != SQLITE_DONE {
+        let rc = sqlite3_step(stmt)
+        if rc != SQLITE_DONE {
             let m = sqlite3_errmsg(handle).map { String(cString: $0) } ?? "step failed"
-            throw DatabaseError.sql(m)
+            throw Self.sqliteFailure(handle, resultCode: rc, message: m)
         }
         return Int(sqlite3_changes(handle))
     }
@@ -2744,7 +2753,7 @@ public final class SimiGoESISDatabase {
                     continue
                 }
                 guard rc == SQLITE_DONE else {
-                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    throw Self.sqliteFailure(handle, resultCode: rc)
                 }
                 break
             }
@@ -3469,7 +3478,7 @@ public final class SimiGoESISDatabase {
             } else {
                 sqlite3_finalize(settled)
                 guard settledRC == SQLITE_DONE else {
-                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    throw Self.sqliteFailure(handle, resultCode: rc)
                 }
             }
 
@@ -3549,7 +3558,7 @@ public final class SimiGoESISDatabase {
                 continue
             }
             guard rc == SQLITE_DONE else {
-                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                throw Self.sqliteFailure(handle, resultCode: rc)
             }
             return hits
         }
@@ -3649,7 +3658,7 @@ public final class SimiGoESISDatabase {
                 continue
             }
             guard rc == SQLITE_DONE else {
-                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                throw Self.sqliteFailure(handle, resultCode: rc)
             }
             return rows
         }
@@ -5928,7 +5937,7 @@ public final class SimiGoESISDatabase {
                     continue
                 }
                 guard rc == SQLITE_DONE else {
-                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    throw Self.sqliteFailure(handle, resultCode: rc)
                 }
                 break
             }
@@ -5959,7 +5968,7 @@ public final class SimiGoESISDatabase {
                         // legitimately has no carried file_contents digest.
                         oldDigest = ""
                     } else {
-                        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                        throw Self.sqliteFailure(handle, resultCode: rc)
                     }
                 }
 
@@ -6054,7 +6063,7 @@ public final class SimiGoESISDatabase {
             return String(cString: c)
         }
         if rc != SQLITE_DONE {
-            throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            throw Self.sqliteFailure(handle, resultCode: rc)
         }
         throw DatabaseError.sql("settlementValidity: unknown settlement \(settlementID)")
     }
