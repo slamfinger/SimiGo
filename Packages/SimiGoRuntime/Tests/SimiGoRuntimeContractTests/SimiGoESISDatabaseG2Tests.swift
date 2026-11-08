@@ -56,7 +56,7 @@ final class SimiGoESISDatabaseG2Tests: XCTestCase {
     func testRootSettlementGlobalLimitsAbortWithoutChangingInventoryOrSettlementState() throws {
         let (databaseURL, db) = try open("scan-limits")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-g2-scan-limits-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-g2-scan-limits-\(UUID().uuidString)", isDirectory: true)
         let fm = FileManager.default
         try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: rootURL) }
@@ -67,7 +67,7 @@ final class SimiGoESISDatabaseG2Tests: XCTestCase {
             rootID: "bounded-scan-root", rootURL: rootURL,
             maxObservedFiles: 4, maxTotalBytesRead: 32)
         let baselineInventory = try db.listExternalFiles(rootID: "bounded-scan-root")
-        XCTAssertEqual(baselineInventory.map(\\.relativePath), ["a.txt"])
+        XCTAssertEqual(baselineInventory.map(\.relativePath), ["a.txt"])
 
         let settlement = try mkSettlement(db, stateID: "S-SCAN-LIMIT", value: "ok")
         try db.linkSettlementToExternalFile(
