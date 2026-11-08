@@ -1,0 +1,56 @@
+{
+ "collector": "v2 — n_decoded from slot.next_token[0].n_decoded (b11720 schema); v1 collector read a non-existent top-level field (always null) and is RETRACTED for decode claims",
+ "analysis": "v2 — per-id_task baselines; phase attribution prefill=n_prompt_tokens_processed advance, decode=next_token[0].n_decoded advance; counter-reset/phase-change never counted as stall; transition regions reported separately",
+ "model": "gemma-4-12b-it-Q4_K_M, Metal -ngl 99, production flag skeleton",
+ "runs": {
+  "v2_run1": {
+   "decode_heavy": {
+    "ticks": 157,
+    "same_task_static_max_s": 0.0,
+    "decode_tok_s": 12.9
+   },
+   "prefill_heavy": {
+    "same_task_static_max_s": 1.95,
+    "static_context": "post-prefill, pre-first-token boundary (next_token present, no advance for 1.95s)"
+   },
+   "cancel_release_latency_s": 0.5,
+   "concurrent": {
+    "per_task_static_max_s": [
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "decode_throughput_tok_s": 12.9
+  },
+  "v2_run2": {
+   "decode_heavy": {
+    "same_task_static_max_s": 0.0,
+    "decode_tok_s": 13.3
+   },
+   "prefill_heavy": {
+    "same_task_static_max_s": 0.51
+   },
+   "cancel_release_latency_s": 0.47,
+   "prefill_throughput_tok_s": 651.4,
+   "prefill_throughput_caveat": "second run of the same prompt hits --cache-prompt; the 651 tok/s sample-derived number reflects cache hits, cold-run engine self-report (print_timing) was ~330 tok/s",
+   "decode_throughput_tok_s": 13.3
+  }
+ },
+ "combined_threshold_evidence": {
+  "decode_throughput_range_tok_s": [
+   11.9,
+   13.9
+  ],
+  "expected_inter_token_ms": 72,
+  "max_true_same_task_stall_s": 1.95,
+  "max_true_stall_context": "prefill-complete -> first-decode-token boundary, one occurrence in one run; run 2 max was tick-bound (0.51s)",
+  "cancel_release_latency_s": [
+   0.47,
+   0.5
+  ],
+  "watchdog_implication": "threshold must be rate-relative: no-progress > max(10s, K x median inter-token). With ~72ms median inter-token, 10s = ~139 median intervals = ~5x the largest observed boundary stall. Single-model single-machine evidence; re-derive per model."
+ },
+ "retraction": "a1457df's 10s-threshold and decode no-progress conclusions are RETRACTED: its collector read a non-existent top-level n_decoded (all null) and its cancel sampling had a 10s blind window. Raw a1457df data is preserved untouched as the v1 archive."
+}

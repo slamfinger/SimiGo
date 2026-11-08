@@ -1,0 +1,24 @@
+{
+ "normal": {
+  "wall": 2.34,
+  "samples": 5
+ },
+ "decode_heavy": {
+  "wall": 77.24,
+  "samples": 154
+ },
+ "prefill_heavy": {
+  "wall": 19.26,
+  "samples": 33
+ },
+ "cancel": {
+  "client_close_t": 1794106203.7916522,
+  "first_idle_t": 1794106204.257059,
+  "release_latency_s": 0.47,
+  "samples": 14
+ },
+ "concurrent": {
+  "wall": 15.84,
+  "samples": 32
+ }
+}

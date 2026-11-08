@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 591,
+    "tracked": 608,
     "research_not_declared": 0,
-    "non_research_candidates": 591,
-    "declared": 533,
+    "non_research_candidates": 608,
+    "declared": 550,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -1566,6 +1566,74 @@
     {
       "path": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md",
       "output": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/README.md",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/README.md"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel_post.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel_post.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_concurrent.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_concurrent.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_decode_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_decode_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_normal.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_normal.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_prefill_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_prefill_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_scenarios.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_scenarios.json"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_cancel.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_cancel.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_cancel_post.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_cancel_post.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_concurrent.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_concurrent.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_decode_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_decode_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_normal.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_normal.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_prefill_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_prefill_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/threshold_summary.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/threshold_summary.json"
     },
     {
       "path": "docs/experiments/MODEL_COMPATIBILITY_MATRIX.md",

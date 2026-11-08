@@ -1,5 +1,51 @@
 # Issue #15 Round 1 — real llama.cpp slot-progress measurement (2026-11-08)
 
+> ## CORRECTION (2026-11-08 review — read this first)
+>
+> The original collector below read `n_decoded` from the slot TOP LEVEL. In
+> the b11720 schema that field lives at **`slot.next_token[0].n_decoded`**;
+> the top-level key does not exist, so every v1 decode sample was `null` and
+> the v1 decode claims (0.51–0.57 s decode no-progress intervals, the 10 s
+> watchdog threshold with 4× margin) are **RETRACTED**. The 1.87 s / 2.29 s
+> "transition gaps" were also not proven stalls: the raw prefill-heavy data
+> shows `n_prompt_tokens_processed` advancing during those windows (3416→3420),
+> and the v1 cancel sampling had a 10 s blind window right after client close,
+> so the "≤2 s release" claim was unproven.
+>
+> **What stands from v1**: both binary layouts ran real models, busy state and
+> prefill counters were captured, cancellation and concurrency scenarios
+> executed. The raw v1 data below is preserved untouched as the archive.
+>
+> **Corrected re-run** (`measure_slots_v2.py` / `analyze_slots_v2.py` /
+> `corrected_summary.json` / `evidence_v2/`): reads
+> `next_token[0].n_decoded`; analyses segment per `id_task` with phase
+> attribution (prefill = prompt counter advanced, decode = n_decoded
+> advanced); the cancel scenario samples continuously from the exact
+> client-close timestamp until idle.
+>
+> Corrected results: decode throughput **11.9–13.9 tok/s** (from
+> `next_token[0].n_decoded` deltas); decode-heavy same-task true stalls
+> **0** across both runs (counter advanced every tick); the one true
+> same-task no-progress window was **1.95 s** at the prefill-complete →
+> first-token boundary (run 1; run 2 max was tick-bound 0.51 s);
+> **cancel → idle release latency 0.47–0.50 s** (client close → first idle
+> sample, tick-bound upper bound); concurrent requests hold per-task
+> baselines with no cross-task counter confusion. A no-progress watchdog
+> threshold must be **rate-relative** (`max(10 s, K × median inter-token)`);
+> with ~72 ms median inter-token, 10 s ≈ 139 median intervals ≈ 5× the
+> largest observed boundary stall — single-model, single-machine evidence.
+>
+> **R2 split (revised)**: the current Service only parses `is_processing` and
+> cannot see progress counters, so R2 is two phases — **R2-A** proves the
+> existing defect (engine-port proxy: `/health` 200 + frozen busy `/slots`;
+> record the Service deferring recovery indefinitely); **R2-B** validates the
+> NEW counter-monitoring (pass-through must not false-kill; frozen snapshot
+> must be detected; id_task change resets the baseline; phase transitions are
+> not stalls). Detecting a stall and authorising a restart are separate
+> decisions; recovery policy stays under separate ruling.
+
+
+
 Measurement-only run for Issue #15: while llama.cpp reports `is_processing`
 indefinitely, the Service health loop defers recovery forever (pre-probe skip +
 post-failure busy protection). A no-progress watchdog needs real thresholds;
