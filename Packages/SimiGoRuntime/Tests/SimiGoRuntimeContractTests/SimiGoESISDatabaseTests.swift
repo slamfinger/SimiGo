@@ -39,9 +39,9 @@ final class SimiGoESISDatabaseTests: XCTestCase {
     func testOpenResolvesParentSymlinkAliasButStillRejectsSymlinkedLeaf() throws {
         let fm = FileManager.default
         let realParent = fm.temporaryDirectory
-            .appendingPathComponent("simigo-db-parent-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-db-parent-\(UUID().uuidString)", isDirectory: true)
         let aliasParent = fm.temporaryDirectory
-            .appendingPathComponent("simigo-db-parent-alias-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-db-parent-alias-\(UUID().uuidString)", isDirectory: true)
         let databaseURL = aliasParent.appendingPathComponent("store.sqlite3")
         let targetURL = realParent.appendingPathComponent("target.sqlite3")
         let leafAlias = aliasParent.appendingPathComponent("leaf.sqlite3")
