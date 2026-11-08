@@ -1,0 +1,87 @@
+{
+ "model": "gemma-4-12b-it-Q4_K_M (8.1GB, Metal -ngl 99, ctx 8192, production flag skeleton)",
+ "engine": "llama-server 0.8.0-dev b11720 family, /slots enabled",
+ "runs": [
+  "evidence_run1 (server from ~/.simigo/bin)",
+  "evidence (server from /private/tmp/fifteen/bin)"
+ ],
+ "scenarios": {
+  "normal": {
+   "run1": {
+    "busy_samples": 4,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 0.51
+   },
+   "run2": {
+    "busy_samples": 5,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 0.51
+   }
+  },
+  "decode_heavy": {
+   "run1": {
+    "busy_samples": 147,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 0.51
+   },
+   "run2": {
+    "busy_samples": 159,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 0.51
+   }
+  },
+  "prefill_heavy": {
+   "run1": {
+    "busy_samples": 29,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 1.87
+   },
+   "run2": {
+    "busy_samples": 33,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 2.29
+   }
+  },
+  "cancel": {
+   "run1": {
+    "busy_samples": 12,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 0.51
+   },
+   "run2": {
+    "busy_samples": 12,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 0.51
+   }
+  },
+  "concurrent": {
+   "run1": {
+    "busy_samples": 31,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 0.52
+   },
+   "run2": {
+    "busy_samples": 30,
+    "max_prefill_stall_s": 0.51,
+    "max_decode_stall_s": 0.57
+   }
+  }
+ },
+ "cancellation": {
+  "slot_busy_after_client_close_s": "<=2 (busy window ended within the 13-sample/6.5s post-close tail in both runs); no lingering is_processing"
+ },
+ "transition_gap": {
+  "max_prefill_to_decode_gap_s": 2.29,
+  "note": "one 1.87-2.29s no-decode gap at the prefill->decode boundary per run; all other busy stalls equal the 0.5s sampling tick"
+ },
+ "throughput": {
+  "decode_tok_s": 13.5,
+  "prefill_tok_s": 330.0
+ },
+ "threshold_evidence": {
+  "observed_max_no_progress_s": 2.29,
+  "observed_p99_stall_s": 0.6,
+  "sampling_tick_s": 0.5,
+  "implication": "a busy-slot no-progress watchdog threshold of 10s (=4x observed max, ~16x p99) has no false-kill exposure in these profiles; final threshold must also be rate-relative (max(10s, K*expected inter-token time)) and re-derived for larger/slower models"
+ }
+}

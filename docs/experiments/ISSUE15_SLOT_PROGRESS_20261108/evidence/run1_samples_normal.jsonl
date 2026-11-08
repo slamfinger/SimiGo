@@ -1,0 +1,5 @@
+{"t": 1794104749.750968, "slots": [{"id_task": null, "is_processing": false, "n_prompt_tokens_processed": null, "n_prompt_tokens": null, "n_decoded": null, "prompt": ""}]}
+{"t": 1794104750.260512, "slots": [{"id_task": 1, "is_processing": true, "n_prompt_tokens_processed": 20, "n_prompt_tokens": 24, "n_decoded": null, "prompt": ""}]}
+{"t": 1794104750.7665799, "slots": [{"id_task": 1, "is_processing": true, "n_prompt_tokens_processed": 20, "n_prompt_tokens": 31, "n_decoded": null, "prompt": ""}]}
+{"t": 1794104751.2700748, "slots": [{"id_task": 1, "is_processing": true, "n_prompt_tokens_processed": 20, "n_prompt_tokens": 38, "n_decoded": null, "prompt": ""}]}
+{"t": 1794104751.776242, "slots": [{"id_task": 1, "is_processing": true, "n_prompt_tokens_processed": 20, "n_prompt_tokens": 45, "n_decoded": null, "prompt": ""}]}
