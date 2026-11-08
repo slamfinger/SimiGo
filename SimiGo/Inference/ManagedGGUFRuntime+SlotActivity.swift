@@ -107,25 +107,93 @@ nonisolated enum GGUFSlotActivityProbe {
         port: Int,
         session: URLSession = .shared
     ) async -> SlotActivity {
-        guard let request = makeRequest(port: port) else {
+        guard let raw = await rawSlots(port: port, session: session) else {
             return .unknown
+        }
+        return SlotActivityParser.activity(
+            from: raw.data, statusCode: raw.status)
+    }
+
+    /// The raw /slots payload plus its status: one fetch serves both the
+    /// health loop's lossy classification and the R2-B progress monitor, so
+    /// monitoring adds no request and changes no busy-protection timing.
+    static func rawSlots(
+        port: Int,
+        session: URLSession = .shared
+    ) async -> (data: Data, status: Int)? {
+        guard let request = makeRequest(port: port) else {
+            return nil
         }
         do {
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else {
-                return .unknown
+                return nil
             }
-            return SlotActivityParser.activity(
-                from: data, statusCode: http.statusCode)
+            return (data, http.statusCode)
         } catch {
-            return .unknown
+            return nil
         }
     }
 }
 
 extension ManagedGGUFRuntime: SlotActivityProviding {
+    /// Stable per runtime instance: every internalStart creates a fresh
+    /// runtime, so an engine restart necessarily changes the generation and
+    /// the monitor re-baselines (owner ruling: identity is generation x slot
+    /// x task).
+    var engineGeneration: UInt64 {
+        UInt64(bitPattern: Int64(ObjectIdentifier(self).hashValue))
+    }
+
     func slotActivity() async -> SlotActivity {
         guard let port = enginePort else { return .unknown }
-        return await GGUFSlotActivityProbe.activity(port: port)
+        guard let raw = await GGUFSlotActivityProbe.rawSlots(port: port) else {
+            _ = progressMonitor.observeProbeFailure(
+                engineGeneration: engineGeneration)
+            return .unknown
+        }
+        let activity = SlotActivityParser.activity(
+            from: raw.data, statusCode: raw.status)
+        feedProgressMonitor(from: raw.data, statusCode: raw.status)
+        return activity
+    }
+
+    private func feedProgressMonitor(from data: Data, statusCode: Int) {
+        _ = statusCode
+        guard let object = try? JSONSerialization.jsonObject(with: data),
+              let slots = object as? [[String: Any]] else {
+            _ = progressMonitor.observeProbeFailure(
+                engineGeneration: engineGeneration)
+            return
+        }
+        var seen: Set<Int> = []
+        for s in slots {
+            let nextToken = (s["next_token"] as? [[String: Any]])?.first
+            let o = SlotProgressMonitor.Observation(
+                slotID: s["id"] as? Int ?? 0,
+                engineGeneration: engineGeneration,
+                idTask: s["id_task"] as? Int,
+                isProcessing: (s["is_processing"] as? NSNumber).map {
+                    CFGetTypeID($0) == CFBooleanGetTypeID() && $0.boolValue
+                },
+                promptProcessed: (s["n_prompt_tokens_processed"] as? NSNumber)?.intValue,
+                promptTotal: (s["n_prompt_tokens"] as? NSNumber)?.intValue,
+                decoded: (nextToken?["n_decoded"] as? NSNumber)?.intValue,
+                observedAtMonotonicMS: UInt64(
+                    DispatchTime.now().uptimeNanoseconds / 1_000_000))
+            seen.insert(o.slotID)
+            let v = progressMonitor.observe(o)
+            if v.state == .candidateStall {
+                RuntimeTraceLogger.shared.trace(
+                    "[SLOT-PROGRESS] slot=\(v.slotID) state=\(v.state.rawValue) "
+                        + "phase=\(v.phase.rawValue) noProgressMs=\(v.noProgressMS ?? 0) "
+                        + "\(v.reason) — monitor only; no restart is authorised")
+            }
+        }
+        for absent in progressMonitor.trackedSlots(
+            engineGeneration: engineGeneration) where !seen.contains(absent) {
+            _ = progressMonitor.observeAbsence(
+                slotID: absent, engineGeneration: engineGeneration)
+        }
     }
 }

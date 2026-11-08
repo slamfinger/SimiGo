@@ -9,6 +9,16 @@ import Synchronization
 /// therefore passes the same ES/IS, answer-reuse and admission path as an
 /// in-process MLX turn instead of reaching the engine directly.
 final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
+    /// MONITOR ONLY (Issue #15 R2-B, owner ruling 2026-11-08): classifies
+    /// /slots samples into structured progress states — progressing /
+    /// observing_no_progress / candidate_stall / baseline_reset / unobservable
+    /// / phase_transition_or_unknown. It never restarts, never terminates a
+    /// task and never touches the busy-protection policy; a candidate stall
+    /// is labelled evidence only, and the window is a label threshold
+    /// (default 30s, deliberately wider than R1's observed normal maximum of
+    /// 4.04s), not a production restart threshold.
+    let progressMonitor = SlotProgressMonitor.productionDefault()
+
     private struct State: @unchecked Sendable {
         var engine: ProcessRuntime?
         var server: HTTPServer?

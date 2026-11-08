@@ -218,3 +218,45 @@ window until R2-style fault injection runs against the real monitor.
 trace), `A1/A2_run_timeline_extract.txt` (auxiliary timeline extracts),
 `A1/A2_process_snapshots.txt` (10 s ps + port-listen snapshots; A1 66 lines,
 A2 72 lines, timestamps aligned with the traces).
+
+## R2-B IMPLEMENTED (2026-11-08) — monitor-only, four-quadrant acceptance green
+
+`SimiGo/Inference/SlotProgressMonitor.swift` (MONITOR ONLY — never restarts,
+never terminates, never touches busy-protection policy) +
+`SimiGoTests/SlotProgressMonitorTests.swift` (10 unit tests, all green).
+
+Observation semantics per the owner ruling: identity = (engineGeneration,
+slotID, idTask); prefill/decode/mixed progress with ONE progress per tick;
+counter regression -> baseline_reset (never a stall); missing counters and
+probe failures -> unobservable (they can neither create nor confirm a
+stall — a span containing an unobservable sample is barred from
+candidate_stall); prefill->decode boundary -> phase_transition_or_unknown
+while accumulating monotonic time; idle/slot-gone/generation-change ->
+baseline_reset.
+
+Acceptance:
+- Q1 normal progression (prefill -> boundary -> decode sequence): no
+  candidate_stall anywhere; boundary labelled phase_transition_or_unknown. UNIT PASS.
+- Q2 frozen counters: observing_no_progress then candidate_stall after the
+  explicitly passed test window. UNIT PASS + **live PASS on the real
+  Service**: candidate_stall at 30.1 s / 61.1 s / 92.7 s through the frozen
+  shim on the running app, with the log line stating "monitor only; no
+  restart is authorised" (`r2b_evidence/R2B_frozen_trace.log`).
+- Q3 id_task change: baseline_reset, no inherited static time. UNIT PASS.
+- Q4 phase transitions (sequential + mixed tick): progressing, phase
+  correctly prefill/decode/mixed, no false stall. UNIT PASS.
+- Protection: missing counters -> unobservable and candidate-barred;
+  counter regression -> baseline_reset. UNIT PASS.
+
+Wiring: `ManagedGGUFRuntime.slotActivity()` feeds the SAME `/slots` response
+to the monitor (zero extra requests, busy-protection decisions untouched);
+the runtime owns one monitor per engine instance (an engine restart changes
+the generation and re-baselines). The candidate window is a LABEL — default
+30 s via `SIMIGO_SLOT_PROGRESS_WINDOW_MS` (deliberately wider than R1's
+observed 4.04 s normal maximum) and NOT a production restart threshold.
+Automatic restart remains unauthorised and unimplemented.
+
+**Known limitation (live coverage)**: the live E2E validated Q2 (frozen
+detection) end-to-end; Q1/Q3/Q4 were validated on the decision table via
+unit sequences. A live passthrough-with-real-generation run to observe
+non-stall behaviour end-to-end is staged for the next window.
