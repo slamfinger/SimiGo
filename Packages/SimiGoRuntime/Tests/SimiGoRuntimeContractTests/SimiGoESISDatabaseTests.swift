@@ -36,6 +36,32 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         return Data(json.utf8)
     }
 
+    func testBindFailurePreservesSQLiteCodesAndDoesNotCommit() throws {
+        let url = tempURL("bind-failure")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        // SQLITE_LIMIT_LENGTH is category 0; 64 bytes makes the anchor bind fail
+        // deterministically with SQLITE_TOOBIG without allocating a huge payload.
+        db.setSQLiteLimitForTesting(category: 0, value: 64)
+        XCTAssertThrowsError(
+            try db.recordExecutionState(
+                id: "bind-failure", parentID: nil, modelIdentity: "test-model",
+                position: 0, continuationID: "C-1",
+                anchor: String(repeating: "x", count: 256),
+                lifecycle: "active", createdAt: Date())
+        ) { error in
+            guard let databaseError = error as? SimiGoESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, _) = databaseError else {
+                return XCTFail("expected SQLite bind failure, got \\(error)")
+            }
+            XCTAssertEqual(primary, 18) // SQLITE_TOOBIG
+            XCTAssertEqual(extended, 18) // SQLITE_TOOBIG
+        }
+        XCTAssertEqual(try db.count("execution_states"), 0)
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try SimiGoESISDatabase(url: url)
