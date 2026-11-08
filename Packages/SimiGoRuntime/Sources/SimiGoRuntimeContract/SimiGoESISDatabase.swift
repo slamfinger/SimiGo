@@ -91,7 +91,9 @@ public final class SimiGoESISDatabase {
             try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
                                                      withIntermediateDirectories: true)
         }
-        var flags: Int32 = SQLITE_OPEN_READWRITE
+        // The database leaf is part of the authoritative persistence boundary.
+        // SQLite must refuse a symlink here rather than following it to another store.
+        var flags: Int32 = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOFOLLOW
         if createIfNeeded { flags |= SQLITE_OPEN_CREATE }
         var db: OpaquePointer?
         let rc = sqlite3_open_v2(url.path, &db, flags, nil)

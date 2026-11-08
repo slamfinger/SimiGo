@@ -36,6 +36,35 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         return Data(json.utf8)
     }
 
+    func testOpenRefusesSymlinkedDatabaseLeafWithoutTouchingTarget() throws {
+        let target = tempURL("symlink-target")
+        let alias = target.deletingLastPathComponent()
+            .appendingPathComponent("symlink-alias.sqlite3")
+        defer {
+            cleanup(alias)
+            cleanup(target)
+        }
+
+        do {
+            let database = try SimiGoESISDatabase(url: target)
+            try database.runMigrations()
+        }
+        try FileManager.default.createSymbolicLink(
+            at: alias, withDestinationURL: target)
+
+        XCTAssertThrowsError(
+            try SimiGoESISDatabase(url: alias, createIfNeeded: false)
+        ) { error in
+            guard case SimiGoESISDatabase.DatabaseError.cannotOpen = error else {
+                return XCTFail("expected symlinked database open to fail closed, got \\(error)")
+            }
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: alias.path))
+        let direct = try SimiGoESISDatabase(url: target, createIfNeeded: false)
+        XCTAssertTrue(try direct.integrityCheck())
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try SimiGoESISDatabase(url: url)
