@@ -1,0 +1,26 @@
+[2026-11-08 12:30:44.984] ℹ️ [CFG] source=recommended model=gemma-4-12b-it-Q4_K_M ctx=131072 gpu=99 temp=1.0 topP=0.9 topK=20 minP=0.05 rep=1.05 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-11-08 12:30:44.985] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:30:44.985] ℹ️ 🧩 llama.cpp 受管入口: public=8000 engine=127.0.0.1:56229 parallel=1
+[2026-11-08 12:30:44.985] ℹ️ 🌐 llama.cpp Endpoint: bind=127.0.0.1:56229
+[2026-11-08 12:30:44.988] ℹ️ 🚀 启动外部推理后端 llama.cpp | 端口: 56229
+[2026-11-08 12:30:45.051] [llama.cpp] [shim] listening on 56229, real engine on 56230, slots mode=frozen
+[2026-11-08 12:30:45.274] [llama.cpp] [shim-access] 12:30:45 GET /health
+[2026-11-08 12:30:45.685] [llama.cpp] [shim-access] 12:30:45 GET /health
+[2026-11-08 12:30:46.109] [llama.cpp] [shim-access] 12:30:46 GET /health
+[2026-11-08 12:30:46.523] [llama.cpp] [shim-access] 12:30:46 GET /health
+[2026-11-08 12:30:46.937] [llama.cpp] [shim-access] 12:30:46 GET /health
+[2026-11-08 12:30:47.353] [llama.cpp] [shim-access] 12:30:47 GET /health
+[2026-11-08 12:30:47.353] ℹ️ ✅ llama.cpp 后端就绪 (2.4秒)
+[2026-11-08 12:30:47.364] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:30:47.364] ℹ️ 🧩 llama.cpp 性能配置: parallel=1 | ngl=99 | specNMax=2 | flash-attn=on
+[2026-11-08 12:30:57.502] [llama.cpp] [shim-access] 12:30:57 GET /slots
+[2026-11-08 12:30:57.503] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:31:27.629] [llama.cpp] [shim-access] 12:31:27 GET /slots
+[2026-11-08 12:31:27.630] [SLOT-PROGRESS] slot=0 state=candidate_stall phase=unknown noProgressMs=30127 candidate stall: no counter advance within the window — monitor only; no restart is authorised
+[2026-11-08 12:31:27.630] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:31:58.565] [llama.cpp] [shim-access] 12:31:58 GET /slots
+[2026-11-08 12:31:58.565] [SLOT-PROGRESS] slot=0 state=candidate_stall phase=unknown noProgressMs=61062 candidate stall: no counter advance within the window — monitor only; no restart is authorised
+[2026-11-08 12:31:58.565] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:32:30.206] [llama.cpp] [shim-access] 12:32:30 GET /slots
+[2026-11-08 12:32:30.206] [SLOT-PROGRESS] slot=0 state=candidate_stall phase=unknown noProgressMs=92703 candidate stall: no counter advance within the window — monitor only; no restart is authorised
+[2026-11-08 12:32:30.206] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。

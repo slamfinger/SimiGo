@@ -214,8 +214,8 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 
 ```
 simigo_es_begin(model, tokenizer, [session_id, query])
-  └─ reusable_answer 非 null  → 可直接跳过自己的云端调用（只读，不写任何东西）
-  └─ reusable_answer 为 null  → 调用自己的云端 API 产出 output
+  └─ 创建/恢复一个 begun-but-unsettled 的 ES state；永不返回历史答案（`reusable_answer` 恒为 null）
+  └─ Agent 调用自己的云端 API 产出 output
 simigo_es_settle(state_id, model, tokenizer, output,
                  [session_id, query], [demand_id + retrieval_settlement_id], [dependencies])
   或
@@ -228,11 +228,12 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 
 1. 只有 `simigo_es_settle` 会写入**可被当作回答复用**的结算：payload 含顶层 `content`，且在
    给出 `session_id`+`query`（发布一条新的已答 demand）或 `demand_id`+`retrieval_settlement_id`
-   （推进该检索 demand）时被置为 `ADVANCED`；两者都不给时结算仍然权威，但不会被
-   `reusable_answer` 找到。`simigo_is_search` 也会写一条结算，但那是**检索结算**
+   （推进该检索 demand）时被置为 `ADVANCED`；两者都不给时结算仍然权威，只是不发布已答
+   demand。MCP 面当前不提供答案复用：`reusable_answer` 恒为 null，已答 demand 只会被
+   Chat/Responses 的复用门在各自线上消费。`simigo_is_search` 也会写一条结算，但那是**检索结算**
    （id 为 `is-retrieval:<demand_id>`，`validation_status = IS_RETRIEVAL`，payload 是检索结果
    JSON）：demand 停在 `RESOLVED`、不产生 advancement，且复用门控要求载荷含非空顶层
-   `content`，所以它只能被引用为 `retrieval_settlement_id`，永远不会变成 `reusable_answer`；
+   `content`，所以它只能被引用为 `retrieval_settlement_id`；
 2. 只 `begin` 不 `settle` 的执行保持 begun-but-unsettled，不会出现在可复用答案里；
 3. `simigo_es_fail` 只落审计，不产生结算，不改变该执行「未结算」的状态。
 
@@ -248,18 +249,21 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 - 返回的 `state_id` 是本次结算产生的**子执行状态**，不是入参里 begin 的 `state_id`；
   继续续跑或对结果再次引用时用返回的这个值（入参的那个 state 已结算、不可复用）。
 
-### 3.6 `reusable_answer` 是读
+### 3.6 begin 不做答案复用（`reusable_answer` 恒为 null）
 
-`simigo_es_begin` 在同时给出 `session_id` 与 `query` 时，会按 2.4 的同一套门控检查是否已有
-可复用的已结算回答。命中时返回 `reusable_answer{text, settlement_id, demand_id, source_state_id, model_calls: 0}`，
-且**不写入任何东西**；是否跳过云端调用由 Agent 自己决定。
+`simigo_es_begin` **从不返回历史答案**，即使同一 `session_id`+`query` 已有可复用的已结算
+回答：返回值里 `reusable_answer` 恒为 null。begin 只创建（或恢复）一个 begun-but-unsettled
+的 ES state；把一个已结算结果变成新 ES 的内容需要一次**显式消费**——来源结算、派生结算与
+新 ES 推进三件事一起发生。若 Agent 拿到历史答案提示就直接跳过模型调用而不 settle，该 state
+仍是 begun-but-unsettled——把只读提示包装成已完成的 ES 消费正是 begin 不做复用的原因。
+当前的显式零模型调用消费走 Responses 的 `settlement_consumption` opt-in；MCP 面未来的
+零模型路径也必须以显式消费操作的形式设计，而不是恢复一个无消费语义的提示。
 
-> 原缺陷 **D-2**（`simigo_is_search` 不接受 `session_id`，检索 demand 不带会话身份，导致
-> 「先 search、再带来源 settle、再 begin 复用」拿不到 `reusable_answer`）已关闭：该工具现在接受
-> `session_id`（只设置 demand 的归属）、`request_id`（同 id 重试复用同一 demand）与
-> `session_ids`（选择被检索的存储会话），并把这些参数传入 `SimiGoInformationLoop.resolve`
-> （`SimiGo/Protocol/HTTPServerMCP.swift:175`、`:355`）。原始分析见
-> `research/agent-runs/simigo-es-is-realmodel-20261026/STAGE1-GAP-MATRIX-20261028.md` §4.11 / §4.16。
+> 历史注记：早期版本的 begin 曾按 session+query 返回过 `reusable_answer` 只读提示（缺陷
+> **D-2** 记录了 `simigo_is_search` 不接受 `session_id` 时的复用失配，已随该工具接受
+> `session_id`/`request_id`/`session_ids` 而关闭，见
+> `SimiGo/Protocol/HTTPServerMCP.swift`）。该只读提示行为已按 2026-11-08 合同裁定移除：
+> begin 不暴露历史答案，本节与工具描述以当前代码为准。
 
 ## 4. 首版明确不支持 / 未验证
 

@@ -32,6 +32,7 @@ class LOCALBTestCase: XCTestCase {
         let store: LOCALBRegistryStore?
         let coordinator: LOCALBPairingCoordinator?
         let trustedCheckpoint: LOCALBTrustedCheckpointBox?
+        let server: HTTPServer?
 
         init(
             port: UInt16,
@@ -41,7 +42,8 @@ class LOCALBTestCase: XCTestCase {
             clientKeyID: String,
             store: LOCALBRegistryStore? = nil,
             coordinator: LOCALBPairingCoordinator? = nil,
-            trustedCheckpoint: LOCALBTrustedCheckpointBox? = nil
+            trustedCheckpoint: LOCALBTrustedCheckpointBox? = nil,
+            server: HTTPServer? = nil
         ) {
             self.port = port
             self.plaintextCompatPort = plaintextCompatPort
@@ -51,6 +53,7 @@ class LOCALBTestCase: XCTestCase {
             self.store = store
             self.coordinator = coordinator
             self.trustedCheckpoint = trustedCheckpoint
+            self.server = server
         }
     }
 
@@ -114,7 +117,10 @@ class LOCALBTestCase: XCTestCase {
         branchFixture.seed(sessionId: sessionId, branchId: branchId)
     }
 
-    func makeServer(port: UInt16) -> HTTPServer {
+    func makeServer(
+        port: UInt16,
+        requestLimits: HTTPServer.RequestLimits = .production
+    ) -> HTTPServer {
         HTTPServer(
             port: Int(port),
             modelId: "localb-b3-wiring-test",
@@ -141,7 +147,8 @@ class LOCALBTestCase: XCTestCase {
                 (live: self?.branchFixture.listBranches(sessionId: sessionId) ?? [],
                  checkpoints: [])
             },
-            checkHealthHandler: { true }
+            checkHealthHandler: { true },
+            requestLimits: requestLimits
         )
     }
 
@@ -156,7 +163,7 @@ class LOCALBTestCase: XCTestCase {
     /// the B3 request-authorization wiring.
     func makeAuthorizedHost(
         configureAuthorization: Bool = true,
-        additionalPermissions: Set<LOCALBPermission> = []
+        requestLimits: HTTPServer.RequestLimits = .production
     ) throws -> Host {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -244,24 +251,12 @@ class LOCALBTestCase: XCTestCase {
 
         let port = randomPort()
         let plaintextCompatPort = randomPort()
-        let server = makeServer(port: port)
+        let server = makeServer(port: port, requestLimits: requestLimits)
         server.configureLOCALBTransport(
             identity: identity,
             plaintextCompatibilityPort: Int(plaintextCompatPort)
         )
-        let authorizedCheckpoint: LOCALBRegistryCheckpoint
-        if additionalPermissions.isEmpty {
-            authorizedCheckpoint = committed
-        } else {
-            // Test fixtures opt into only the additional route permission
-            // they are exercising; production defaults remain unchanged.
-            authorizedCheckpoint = try coordinator.setClientPermissions(
-                clientKeyID: clientKeyID,
-                permissions: Set([.inference, .informationRead]).union(additionalPermissions),
-                reason: "LOCALB HTTP route permission coverage",
-                checkpoint: committed)
-        }
-        let trustedCheckpointBox = LOCALBTrustedCheckpointBox(value: authorizedCheckpoint)
+        let trustedCheckpointBox = LOCALBTrustedCheckpointBox(value: committed)
         if configureAuthorization {
             server.configureLOCALBRequestAuthorization(
                 coordinator: coordinator,
@@ -279,7 +274,8 @@ class LOCALBTestCase: XCTestCase {
             clientKeyID: clientKeyID,
             store: store,
             coordinator: coordinator,
-            trustedCheckpoint: trustedCheckpointBox
+            trustedCheckpoint: trustedCheckpointBox,
+            server: server
         )
     }
 

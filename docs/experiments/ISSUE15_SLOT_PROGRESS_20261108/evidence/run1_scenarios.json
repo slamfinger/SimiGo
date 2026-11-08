@@ -1,0 +1,23 @@
+{
+ "normal": {
+  "wall": 2.316757917404175,
+  "samples": 5
+ },
+ "decode_heavy": {
+  "wall": 74.27329516410828,
+  "samples": 148
+ },
+ "prefill_heavy": {
+  "wall": 17.31224489212036,
+  "samples": 30
+ },
+ "cancel": {
+  "client_read_s": 6.039257287979126,
+  "samples": 13,
+  "post_samples": 6
+ },
+ "concurrent": {
+  "wall": 15.712054014205933,
+  "samples": 32
+ }
+}

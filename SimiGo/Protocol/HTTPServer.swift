@@ -59,6 +59,29 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Public Types
 
+    /// Resource limits for incomplete HTTP connections. Deadlines are absolute
+    /// per protocol phase and are not extended by trickle progress.
+    public struct RequestLimits: Sendable {
+        public let maxConnections: Int
+        public let headerTimeout: Duration
+        public let bodyTimeout: Duration
+
+        public init(
+            maxConnections: Int = 64,
+            headerTimeout: Duration = .seconds(10),
+            bodyTimeout: Duration = .seconds(60)
+        ) {
+            precondition(maxConnections > 0, "maxConnections must be positive")
+            precondition(headerTimeout > .zero, "headerTimeout must be positive")
+            precondition(bodyTimeout > .zero, "bodyTimeout must be positive")
+            self.maxConnections = maxConnections
+            self.headerTimeout = headerTimeout
+            self.bodyTimeout = bodyTimeout
+        }
+
+        public static let production = RequestLimits()
+    }
+
     public typealias GenerateHandler = @Sendable (
         _ requestId: String,
         _ agentId: String?,
@@ -124,6 +147,7 @@ public final class HTTPServer: @unchecked Sendable {
 
     enum HTTPServerError: Error {
         case badRequest(String)
+        case requestReadTimedOut
         case payloadTooLarge
         case unsupportedTransferEncoding(String)
         case expectationFailed
@@ -137,6 +161,8 @@ public final class HTTPServer: @unchecked Sendable {
             switch self {
             case .badRequest, .clientDisconnected:
                 return 400
+            case .requestReadTimedOut:
+                return 408
             case .payloadTooLarge:
                 return 413
             case .unsupportedTransferEncoding:
@@ -158,6 +184,8 @@ public final class HTTPServer: @unchecked Sendable {
             switch self {
             case .badRequest(let message):
                 return message
+            case .requestReadTimedOut:
+                return "Request read deadline exceeded"
             case .payloadTooLarge:
                 return "Request body too large"
             case .unsupportedTransferEncoding(let value):
@@ -245,18 +273,24 @@ public final class HTTPServer: @unchecked Sendable {
 
         private var _generationStarted = false
         private var _cancellationSignalled = false
+        private var _settlementClaimed = false
         private var _closed = false
         private var _cancelledByRuntime = false
 
-        /// ADR 2026-10-30：客户端断连不再取消正在进行的生成。这一位置位
-        /// 表示本轮在断连后仍会跑完（detached）；它只影响生命周期归类与
-        /// 孤儿调度计数，不改变「关闭后不再出站、不再结算」的既有语义。
+        /// Client disconnect after generation start may detach the request if an
+        /// orphan slot is granted. A naturally completed generation may still
+        /// claim its final settlement; outbound sends remain blocked by `_closed`.
         private var _detachedByClient = false
 
         /// 孤儿轮让位用：detach 时被取出的请求任务另行留存一份，供
         /// 「另一个生成已在等引擎」时在 token 边界停止本轮（ADR 补充）。
         /// 一次性取走，避免重复取消。
         private var _detachedRequestTask: Task<Void, Never>?
+
+        /// 让位与结算认领互斥：一旦孤儿任务被取走准备取消，本轮就不能再
+        /// claim 结算。两件事在同一把锁里判定，谁先到谁定局；否则
+        /// 「生成刚返回、让位恰好同时发生」会既取消又结算。
+        private var _detachedTaskTaken = false
 
         /// Slice 8: this request's continuation admission result. Set by the
         /// pre-generation gate, read by the post-generation settlement of the
@@ -490,13 +524,36 @@ public final class HTTPServer: @unchecked Sendable {
         /// 落地由 `closeAndTakeRequestTask(detach:…)` 在同一把锁内完成。
         var canDetachGeneration: Bool {
             stateLock.withLock {
-                _generationStarted && !_cancellationSignalled && !_closed
+                _generationStarted && !_cancellationSignalled
+                    && !_settlementClaimed && !_closed
             }
         }
 
         var detachedByClient: Bool {
             stateLock.withLock {
                 _detachedByClient
+            }
+        }
+
+        /// Atomically claim the completed-generation finalization window. This
+        /// admits an otherwise-valid detached completion, but refuses ordinary
+        /// cancellation, Runtime shutdown, and a turn an orphan-yield pass has
+        /// already taken. Once claimed, a later client close cannot cancel the
+        /// already-completed generation while ES/IS is written. The detached
+        /// task handle is retained for Runtime shutdown, which remains the one
+        /// authority allowed to override the claim.
+        func claimCompletedTurnSettlement() -> Bool {
+            stateLock.withLock {
+                guard _generationStarted,
+                      !_cancellationSignalled,
+                      !_cancelledByRuntime,
+                      !_settlementClaimed,
+                      !_detachedTaskTaken,
+                      (!_closed || _detachedByClient) else {
+                    return false
+                }
+                _settlementClaimed = true
+                return true
             }
         }
 
@@ -511,11 +568,13 @@ public final class HTTPServer: @unchecked Sendable {
         /// 一次性取走 detach 时留存的请求任务；取走后再次调用返回 nil。
         func takeDetachedRequestTask() -> Task<Void, Never>? {
             stateLock.withLock {
-                guard _detachedByClient, let task = _detachedRequestTask else {
+                guard _detachedByClient, !_settlementClaimed,
+                      let task = _detachedRequestTask else {
                     return nil
                 }
 
                 _detachedRequestTask = nil
+                _detachedTaskTaken = true
                 return task
             }
         }
@@ -557,6 +616,7 @@ public final class HTTPServer: @unchecked Sendable {
                     detach &&
                     _generationStarted &&
                     !_cancellationSignalled &&
+                    !_settlementClaimed &&
                     !_closed
                 let detached = detachable && claimDetachSlot()
 
@@ -565,7 +625,8 @@ public final class HTTPServer: @unchecked Sendable {
                     _generationStarted &&
                     !_cancellationSignalled &&
                     !_closed &&
-                    !detached
+                    !detached &&
+                    (!_settlementClaimed || _cancelledByRuntime)
 
                 if shouldCancel {
                     _cancellationSignalled = true
@@ -579,8 +640,23 @@ public final class HTTPServer: @unchecked Sendable {
                 _closed = true
                 _peerCloseWatcherArmed = false
 
-                let task = _requestTask
+                // A claimed finalization has already crossed the generation
+                // boundary: an ordinary late close must not cancel the ES/IS
+                // writes. Runtime shutdown is the one authority that overrides
+                // the claim, and a detached request has no `_requestTask` left,
+                // so it must receive the retained detached handle instead.
+                let task: Task<Void, Never>?
+                if _cancelledByRuntime {
+                    task = _requestTask ?? _detachedRequestTask
+                } else if _settlementClaimed {
+                    task = nil
+                } else {
+                    task = _requestTask
+                }
                 _requestTask = nil
+                if _cancelledByRuntime {
+                    _detachedRequestTask = nil
+                }
 
                 return (
                     shouldCancel,
@@ -684,6 +760,7 @@ public final class HTTPServer: @unchecked Sendable {
     /// UI 模型设置兜底：请求未显式指定的字段（采样/maxTokens/thinking/kvCache）
     /// 落到 UI 值而非 ModelConfig 硬编码默认——模型页参数此前对协议请求不生效。
     private let baseConfigProvider: () -> ModelConfig
+    private let requestLimits: RequestLimits
 
     private let queue = DispatchQueue(
         label: "com.simigo.httpserver.connections",
@@ -694,6 +771,30 @@ public final class HTTPServer: @unchecked Sendable {
 
     private var connections: [ObjectIdentifier: ConnectionContext] = [:]
     private let connectionLock = NSLock()
+    private var refusedOverCapCount = 0
+
+    /// Lock-protected, authoritative view of connection admission.
+    ///
+    /// Tests observe capacity through this snapshot instead of inferring
+    /// admission from client TLS state: Network.framework may keep an
+    /// over-cap peer in `.waiting`/`.preparing` without surfacing the
+    /// reset, which says nothing about whether the server admitted it.
+    struct ConnectionSnapshot: Sendable, Equatable {
+        /// Sockets currently holding an admission slot.
+        let active: Int
+        /// Cumulative sockets refused because `active` was already at
+        /// `requestLimits.maxConnections`.
+        let refusedOverCap: Int
+    }
+
+    func connectionSnapshot() -> ConnectionSnapshot {
+        connectionLock.withLock {
+            ConnectionSnapshot(
+                active: connections.count,
+                refusedOverCap: refusedOverCapCount
+            )
+        }
+    }
 
     let responsesStore = ResponsesStateStore()
 
@@ -807,7 +908,8 @@ public final class HTTPServer: @unchecked Sendable {
         managedContinuation: ManagedContinuationHandler? = nil,
         informationTurnProducer: InformationTurnProducerProvider? = nil,
         requestBudget: RequestBudgetHandler? = nil,
-        requestAdmission: RequestAdmissionScheduler? = nil
+        requestAdmission: RequestAdmissionScheduler? = nil,
+        requestLimits: RequestLimits = .production
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -845,6 +947,55 @@ public final class HTTPServer: @unchecked Sendable {
         self.requestBudget = requestBudget
         self.requestAdmission = requestAdmission
             ?? RequestAdmissionScheduler(limit: RuntimeTuning.requestConcurrencyLevel)
+        self.requestLimits = requestLimits
+    }
+
+    /// Best-effort terminal fact for a failed HTTP generation attempt.
+    /// The raw engine error, prompt text and filesystem paths are deliberately
+    /// excluded: the append-only audit carries only controlled classifications,
+    /// request correlation, call count and settlement count.
+    @discardableResult
+    static func recordHTTPFailureAudit(
+        executionID: String,
+        requestID: String,
+        wire: String,
+        terminal: String,
+        modelCalls: Int,
+        settlementsWritten: Int,
+        evidence: [String: String] = [:],
+        databaseURL: URL = SimiGoPaths.databaseURL
+    ) -> SimiGoFailureAudit.WriteResult? {
+        do {
+            let db = try SimiGoESISDatabase(url: databaseURL, createIfNeeded: true)
+            defer { db.close() }
+            try db.runMigrations()
+
+            var safeEvidence = evidence
+            safeEvidence["request_id"] = requestID
+            safeEvidence["wire"] = wire
+            safeEvidence["terminal"] = terminal
+            let event = SimiGoFailureAudit.Event(
+                executionID: executionID,
+                attempt: 1,
+                phase: .g,
+                cause: nil,
+                origin: .request,
+                evidence: safeEvidence,
+                modelCalls: max(0, modelCalls),
+                settlementsWritten: max(0, settlementsWritten),
+                detail: "wire=\(wire) terminal=\(terminal)")
+            let result = db.recordFailureAudit(event)
+            RuntimeTraceLogger.shared.trace(
+                "[FAILURE_AUDIT] wire=\(wire) execution=\(RuntimeTraceLogger.short(executionID)) "
+                    + "persisted=\(result.auditPersisted ? 1 : 0) "
+                    + "failure_class=\(result.failureClass ?? "none")")
+            return result
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[FAILURE_AUDIT] wire=\(wire) execution=\(RuntimeTraceLogger.short(executionID)) "
+                    + "persisted=0 failure_class=database_unavailable")
+            return nil
+        }
     }
 
     // MARK: - Lifecycle
@@ -1016,9 +1167,14 @@ public final class HTTPServer: @unchecked Sendable {
         requestAdmission.beginShutdown()
 
         let contexts: [ConnectionContext] = connectionLock.withLock {
-            let values = Array(connections.values)
+            let live = Array(connections.values)
+            let orphans = Array(detachedOrphans.values)
             connections.removeAll()
-            return values
+            // A detached request left `connections` when its client closed;
+            // shutdown must reclaim it from the orphan registry too, or the
+            // generation keeps running past Runtime stop.
+            let liveKeys = Set(live.map(\.key))
+            return live + orphans.filter { !liveKeys.contains($0.key) }
         }
 
         for context in contexts {
@@ -1038,13 +1194,29 @@ public final class HTTPServer: @unchecked Sendable {
         _ connection: NWConnection,
         transportSecurity: ConnectionContext.TransportSecurity = .plainHTTP
     ) {
-        let context = ConnectionContext(
-            connection: connection,
-            transportSecurity: transportSecurity
-        )
-
-        connectionLock.withLock {
+        // Bound sockets before allocating a ConnectionContext, receive task,
+        // or per-connection queue. The dictionary includes peers that have
+        // not sent a complete request header.
+        let context: ConnectionContext? = connectionLock.withLock {
+            guard connections.count < requestLimits.maxConnections else {
+                refusedOverCapCount += 1
+                return nil
+            }
+            let context = ConnectionContext(
+                connection: connection,
+                transportSecurity: transportSecurity
+            )
             connections[context.key] = context
+            return context
+        }
+        guard let context else {
+            // An accepted NWConnection is still in setup until it is started.
+            // Starting then immediately cancelling makes the over-cap refusal
+            // observable to a TLS peer; cancelling an unstarted accepted
+            // connection can leave the remote handshake waiting indefinitely.
+            connection.start(queue: queue)
+            connection.cancel()
+            return
         }
 
         connection.stateUpdateHandler = {
@@ -1119,6 +1291,18 @@ public final class HTTPServer: @unchecked Sendable {
                     context: context
                 )
 
+            } catch HTTPServerError.requestReadTimedOut {
+                // The receive deadline cancels the underlying NWConnection;
+                // terminate removes the context and releases its admission slot.
+                self.terminateForClientGone(context)
+
+            } catch HTTPServerError.clientDisconnected {
+                // A peer can close while the header/body read is suspended.
+                // This is not a malformed live request: no 400 response can be
+                // delivered, and the connection/admission slot must be released
+                // through the same idempotent disconnect lifecycle.
+                self.terminateForClientGone(context)
+
             } catch is CancellationError {
                 // terminate() owns cancellation.
 
@@ -1169,11 +1353,12 @@ public final class HTTPServer: @unchecked Sendable {
     // 连接队列调用点无警告，显式化会翻成硬警告）。本方法由连接队列
     // 回调进入时须跳主演员执行（见 onPeerClosed 注释）。
     //
-    // ADR 2026-10-30：`detach` 是客户端断连专用。本地离线模型的冷 prefill
-    // 是硬件事实，客户端 60 s 超时先到，不应把已经付出的 prefill 取消掉。
-    // detach 之后本轮不取消、不结算、不提交（recorded only）：生成继续，
-    // 协议层在出站与结算前按 `context.closed` fail-closed。手动取消
-    // （菜单栏停止 / Runtime stop）不走这条路径，语义不变。
+    // ADR 2026-10-30: detach is client-disconnect-only. A running local prefill
+    // is hardware work; a remote watchdog is not its semantic end. If the detached
+    // generation reaches its completed-turn boundary without cancellation/yield,
+    // it may claim and persist the answer, but the closed connection remains
+    // fail-closed for outbound events. Manual cancel, Runtime shutdown and a
+    // contended orphan yield do not acquire this settlement claim.
     func terminate(
         _ context: ConnectionContext,
         cancelGeneration: Bool,
@@ -1605,32 +1790,19 @@ public final class HTTPServer: @unchecked Sendable {
             return .open
         case ("GET", "/v1/simigo/env"),
              ("GET", "/v1/simigo/roots"),
-             ("GET", "/v1/simigo/is/status"):
-            // These disclose host configuration, registered roots, and
-            // Information-Space status. LAN TLS authenticates the server,
-            // not the connecting client; require a paired read permission.
-            return .protected(permission: .informationRead)
-        case ("GET", "/v1/simigo/search"),
-             ("POST", "/v1/simigo/search"),
-             ("PUT", "/v1/simigo/roots"),
-             ("POST", "/v1/simigo/roots"):
-            // Search writes a retrieval settlement; root registration scans
-            // and settles external content. Both require the SRS-write gate.
-            return .protected(permission: .srsWrite)
-        case ("GET", "/v1/models"), ("GET", "/models"),
+             ("GET", "/v1/simigo/is/status"),
+             ("GET", "/v1/models"), ("GET", "/models"),
              ("GET", "/v1/simigo/is/settlement"),
              ("GET", "/v1/simigo/is/dependency"),
              ("GET", "/v1/simigo/is/file"),
              ("GET", "/v1/simigo/is/object"):
             return .protected(permission: .informationRead)
-        case ("POST", "/v1/simigo/is/reconcile"):
-            // Re-derives carried validity; it writes only derived IS state, so
-            // it needs the SRS-write permission rather than inference or admin.
-            return .protected(permission: .srsWrite)
-        case ("POST", "/mcp"), ("GET", "/mcp"):
-            // Agent-facing IS surface: the tools read the settled index and may
-            // register roots / re-derive validity, so the whole endpoint needs
-            // the SRS-write permission (never inference only).
+        case ("GET", "/v1/simigo/search"),
+             ("POST", "/v1/simigo/search"),
+             ("PUT", "/v1/simigo/roots"),
+             ("POST", "/v1/simigo/roots"),
+             ("POST", "/v1/simigo/is/reconcile"),
+             ("POST", "/mcp"), ("GET", "/mcp"):
             return .protected(permission: .srsWrite)
         case ("POST", "/v1/chat/completions"),
              ("POST", "/chat/completions"),
@@ -4139,182 +4311,95 @@ public final class HTTPServer: @unchecked Sendable {
     private func readRequest(
         from connection: NWConnection
     ) async throws -> HTTPRequest {
+        let clock = ContinuousClock()
+        let headerDeadline = clock.now.advanced(by: requestLimits.headerTimeout)
+        var buffer = Data()
+        let delimiter = Data("\r\n\r\n".utf8)
 
-        var buffer =
-            Data()
-
-        let delimiter =
-            Data(
-                "\r\n\r\n".utf8
-            )
-
-        while
-            buffer.range(
-                of: delimiter
-            ) == nil {
-
+        while buffer.range(of: delimiter) == nil {
             guard
-                let chunk =
-                    try await connection.receiveAsync(
-                        min: 1,
-                        max:
-                            Self.receiveChunkSize
-                    ),
-
+                let chunk = try await receiveBeforeDeadline(
+                    from: connection,
+                    min: 1,
+                    max: Self.receiveChunkSize,
+                    deadline: headerDeadline),
                 !chunk.isEmpty
             else {
                 throw HTTPServerError.clientDisconnected
             }
 
             buffer.append(chunk)
-
-            if buffer.count >
-                Self.maxHeaderBytes {
-
+            if buffer.count > Self.maxHeaderBytes {
                 throw HTTPServerError.payloadTooLarge
             }
         }
 
-        guard
-            let headerRange =
-                buffer.range(
-                    of: delimiter
-                )
-        else {
-            throw HTTPServerError.badRequest(
-                "Malformed headers"
-            )
+        guard let headerRange = buffer.range(of: delimiter) else {
+            throw HTTPServerError.badRequest("Malformed headers")
         }
-
-        guard
-            headerRange.lowerBound <=
-                Self.maxHeaderBytes
-        else {
+        guard headerRange.lowerBound <= Self.maxHeaderBytes else {
             throw HTTPServerError.payloadTooLarge
         }
-
-        guard
-            let headerText =
-                String(
-                    data:
-                        buffer[
-                            ..<headerRange
-                                .lowerBound
-                        ],
-                    encoding: .utf8
-                )
+        guard let headerText = String(
+            data: buffer[..<headerRange.lowerBound], encoding: .utf8)
         else {
-            throw HTTPServerError.badRequest(
-                "Headers are not valid UTF-8"
-            )
+            throw HTTPServerError.badRequest("Headers are not valid UTF-8")
         }
 
-        let head = try Self.HTTPRequestHeadParser.parse(
-            headerText
-        )
+        let head = try Self.HTTPRequestHeadParser.parse(headerText)
 
-        if let expect =
-            head.headers["expect"] {
-
-            let normalizedExpect =
-                expect
-                    .trimmingCharacters(
-                        in:
-                            .whitespacesAndNewlines
-                    )
-                    .lowercased()
-
+        if let expect = head.headers["expect"] {
+            let normalizedExpect = expect
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
             if normalizedExpect.isEmpty {
-                // 无 Expect，继续
+                // No Expect header.
             } else if normalizedExpect == "100-continue" {
-                // HTTP/1.1 规范行为：告知客户端继续发送请求体。
-                // （curl 对 >1KB 请求体自动附带此头；拒绝会让部分 LAN 客户端超时）
                 connection.send(
-                    content:
-                        Data(
-                            "HTTP/1.1 100 Continue\r\n\r\n".utf8
-                        ),
-                    completion:
-                        .contentProcessed { _ in }
-                )
+                    content: Data("HTTP/1.1 100 Continue\r\n\r\n".utf8),
+                    completion: .contentProcessed { _ in })
             } else {
-                throw HTTPServerError
-                    .expectationFailed
+                throw HTTPServerError.expectationFailed
             }
         }
 
-        let bodyStart =
-            headerRange.upperBound
-
-        var body =
-            buffer.subdata(
-                in:
-                    bodyStart..<buffer.count
-            )
-
+        let bodyStart = headerRange.upperBound
+        var body = buffer.subdata(in: bodyStart..<buffer.count)
         let contentLength = head.contentLength
 
-        if contentLength == 0,
-           !body.isEmpty {
-
+        if contentLength == 0, !body.isEmpty {
             throw HTTPServerError.badRequest(
-                "Request body requires Content-Length"
-            )
+                "Request body requires Content-Length")
+        }
+        if body.count > contentLength {
+            body = body.prefix(contentLength)
         }
 
-        if body.count >
-            contentLength {
-
-            body =
-                body.prefix(
-                    contentLength
-                )
-        }
-
-        while
-            body.count <
-            contentLength {
-
+        // One absolute body deadline. Receiving small chunks never extends it.
+        let bodyDeadline = clock.now.advanced(by: requestLimits.bodyTimeout)
+        while body.count < contentLength {
             guard
-                let chunk =
-                    try await connection.receiveAsync(
-                        min: 1,
-                        max:
-                            min(
-                                Self.receiveChunkSize,
-                                contentLength -
-                                    body.count
-                            )
-                    ),
-
+                let chunk = try await receiveBeforeDeadline(
+                    from: connection,
+                    min: 1,
+                    max: min(
+                        Self.receiveChunkSize,
+                        contentLength - body.count),
+                    deadline: bodyDeadline),
                 !chunk.isEmpty
             else {
                 throw HTTPServerError.clientDisconnected
             }
 
-            let remaining =
-                contentLength -
-                body.count
-
-            if chunk.count >
-                remaining {
-
-                body.append(
-                    chunk.prefix(
-                        remaining
-                    )
-                )
-
+            let remaining = contentLength - body.count
+            if chunk.count > remaining {
+                body.append(chunk.prefix(remaining))
                 break
             }
-
             body.append(chunk)
         }
 
-        guard
-            body.count ==
-                contentLength
-        else {
+        guard body.count == contentLength else {
             throw HTTPServerError.clientDisconnected
         }
 
@@ -4324,8 +4409,45 @@ public final class HTTPServer: @unchecked Sendable {
             requestTarget: head.requestTarget,
             authority: head.authority,
             headers: head.headers,
-            body: body
-        )
+            body: body)
+    }
+
+    private func receiveBeforeDeadline(
+        from connection: NWConnection,
+        min: Int,
+        max: Int,
+        deadline: ContinuousClock.Instant
+    ) async throws -> Data? {
+        let clock = ContinuousClock()
+        let remaining = clock.now.duration(to: deadline)
+        guard remaining > .zero else {
+            connection.cancel()
+            throw HTTPServerError.requestReadTimedOut
+        }
+
+        return try await withThrowingTaskGroup(of: Data?.self) { group in
+            group.addTask {
+                try await connection.receiveAsync(min: min, max: max)
+            }
+            group.addTask {
+                try await Task.sleep(for: remaining)
+                throw HTTPServerError.requestReadTimedOut
+            }
+
+            do {
+                guard let result = try await group.next() else {
+                    throw CancellationError()
+                }
+                group.cancelAll()
+                return result
+            } catch {
+                group.cancelAll()
+                // receiveAsync's cancellation handler cancels NWConnection,
+                // forcing the outstanding Network.framework callback to resume.
+                connection.cancel()
+                throw error
+            }
+        }
     }
 }
 
@@ -4405,29 +4527,24 @@ private extension NWConnection {
         min: Int = 1,
         max: Int = 32 * 1024
     ) async throws -> Data? {
-
-        try await withCheckedThrowingContinuation {
-            continuation in
-
-            receive(
-                minimumIncompleteLength: min,
-                maximumLength: max
-            ) {
-                data,
-                _,
-                _,
-                error in
-
-                if let error {
-                    continuation.resume(
-                        throwing: error
-                    )
-                } else {
-                    continuation.resume(
-                        returning: data
-                    )
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation {
+                continuation in
+                receive(
+                    minimumIncompleteLength: min,
+                    maximumLength: max
+                ) { data, _, _, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: data)
+                    }
                 }
             }
+        } onCancel: {
+            // Cancelling the Swift task alone does not cancel Network.framework's
+            // pending receive. Cancel the connection so the callback resumes.
+            self.cancel()
         }
     }
 }

@@ -1,0 +1,72 @@
+=== 12:30:43 ===
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+=== 12:30:53 ===
+  pid=73742 cpu=1.2% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:31:03 ===
+  pid=73742 cpu=1.2% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:31:13 ===
+  pid=73742 cpu=0.6% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:31:23 ===
+  pid=73742 cpu=0.8% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:31:33 ===
+  pid=73742 cpu=1.3% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:31:43 ===
+  pid=73742 cpu=1.2% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:31:54 ===
+  pid=73742 cpu=1.2% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:32:04 ===
+  pid=73742 cpu=1.2% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:32:14 ===
+  pid=73742 cpu=1.2% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:32:24 ===
+  pid=73742 cpu=1.2% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:32:34 ===
+  pid=73742 cpu=1.2% /private/tmp/fifteen/bin/llama-server --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf --port
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73728 cpu=0.0% /private/tmp/fifteen/r2a-app-current/Contents/MacOS/SimiGo -LlamaServerBin /private/tmp/fifteen/issue15_engine_shim.py 
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'
+  listen: SimiGo pid=73728 port=*:8000
+=== 12:32:50 ===
+  pid=73741 cpu=0.0% /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /tmp/fifteen/issue15_engine_shim.py --model /Users/mr.simi/.cache/huggingface/hub/gemma-4-12b-it-Q4_K_M.gguf
+  pid=73717 cpu=0.0% /bin/zsh -c . '/Users/mr.simi/.zcode/cli/exec/shell-snapshots/snapshot-zsh-1794065014943-r1tho1.sh'

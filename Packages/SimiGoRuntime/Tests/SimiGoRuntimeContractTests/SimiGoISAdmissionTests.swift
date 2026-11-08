@@ -1,13 +1,15 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
 /// Directed tests for the native IS admission authority. These prove the gap is
 /// closed at the native, MLX-free layer: a fresh consumer can recover a settled
 /// IS value and mint `verifiedBindings` for a new ES ONLY when the settlement
-/// identity, canonical digest, dynamic validity, full upstream dependency
-/// closure, and producer model/tokenizer binding all verify. Every unmet
-/// precondition is refused fail-closed, before any value or binding is returned
+/// canonical digest, dynamic validity, and full upstream dependency closure
+/// all verify. Producer identity remains provenance rather than a universal
+/// admission precondition. Every unmet semantic precondition is refused before
+/// any value or binding is returned
 /// (and therefore before any model work — generation_call_count stays 0).
 ///
 /// All cases run on isolated temporary SQLite IS files. No model, no Keychain,
@@ -181,27 +183,33 @@ final class SimiGoISAdmissionTests: XCTestCase {
         )
     }
 
-    func testAdmitRefusesProducerIdentityMismatch() throws {
-        let (url, db) = try open("idmismatch")
+    func testAdmitAllowsCrossModelAndTokenizerConsumer() throws {
+        let (url, db) = try open("cross-model")
         defer { db.close(); cleanup(url) }
-        try mkSettlement(db, stateID: "S-m", value: "hello")
-        let other = SimiGoSettlementIdentityBinding.Identity(model: "mlx:different-model", tokenizer: producer.tokenizer)
+        let sid = try mkSettlement(db, stateID: "S-cross", value: "hello")
+        let other = SimiGoSettlementIdentityBinding.Identity(
+            model: "cloud:remote-model", tokenizer: "cloud:remote-tokenizer")
 
-        expectRefusal(
-            { try SimiGoISAdmission.admit(db: db, stateID: "S-m", consumer: other) },
-            { if case .producerBinding(let v) = $0 { return v.code == SimiGoSettlementIdentityBinding.Refusal.modelMismatch.rawValue }; return false }
-        )
+        let admitted = try SimiGoISAdmission.admit(
+            db: db, stateID: "S-cross", consumer: other)
+        XCTAssertEqual(admitted.settlementID, sid)
+        XCTAssertEqual(admitted.recoveredValue, "hello")
+        XCTAssertEqual(admitted.verifiedBindings["next_input"], .string("hello"))
+        let provenance = try db.settlementBindings(settlementID: sid)
+        XCTAssertNotNil(provenance[SimiGoSettlementIdentityBinding.modelKey])
+        XCTAssertNotNil(provenance[SimiGoSettlementIdentityBinding.tokenizerKey])
     }
 
-    func testAdmitRefusesAbsentProducerBinding() throws {
+    func testAdmitAllowsSettlementWithoutProducerIdentityBinding() throws {
         let (url, db) = try open("idabsent")
         defer { db.close(); cleanup(url) }
         try mkSettlement(db, stateID: "S-noid", value: "hello", bindIdentity: false)
 
-        expectRefusal(
-            { try SimiGoISAdmission.admit(db: db, stateID: "S-noid", consumer: producer) },
-            { if case .producerBinding(let v) = $0 { return v.code == SimiGoSettlementIdentityBinding.Refusal.modelAbsent.rawValue }; return false }
-        )
+        let admitted = try SimiGoISAdmission.admit(
+            db: db, stateID: "S-noid",
+            consumer: SimiGoSettlementIdentityBinding.Identity.absent)
+        XCTAssertEqual(admitted.recoveredValue, "hello")
+        XCTAssertEqual(admitted.verifiedBindings["next_input"], .string("hello"))
     }
 
     func testAdmitRefusesEmptyValue() throws {
@@ -278,19 +286,85 @@ final class SimiGoISAdmissionTests: XCTestCase {
         XCTAssertEqual(reAdmitted.recoveredValue, "delta9")
     }
 
+    func testSettleContinuationRollsBackChildStateAndSettlementWhenIdentityBindingWriteFails() throws {
+        let (url, db) = try open("cont-atomic-binding-failure")
+        defer { db.close(); cleanup(url) }
+        let parentSettlement = try mkSettlement(db, stateID: "P-atomic", value: "hello")
+
+        let statesBefore = try db.count("execution_states")
+        let settlementsBefore = try db.count("settlements")
+        let bindingsBefore = try db.count("settlement_bindings")
+        let objectsBefore = try db.count("is_objects")
+        let itemsBefore = try db.count("information_items")
+
+        // Fail only the producer identity rows, after the continuation has
+        // inserted its child Execution State, payload object, settlement row,
+        // and contract binding. This proves rollback crosses the whole edge.
+        var writer: OpaquePointer?
+        guard sqlite3_open(url.path, &writer) == SQLITE_OK, let writer else {
+            sqlite3_close(writer)
+            throw SimiGoESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(writer) }
+        let trigger = """
+        CREATE TRIGGER fail_producer_identity_binding
+        BEFORE INSERT ON settlement_bindings
+        WHEN NEW.name LIKE 'producer.%'
+        BEGIN
+            SELECT RAISE(ABORT, 'injected producer identity binding failure');
+        END;
+        """
+        var message: UnsafeMutablePointer<CChar>?
+        let triggerRC = sqlite3_exec(writer, trigger, nil, nil, &message)
+        guard triggerRC == SQLITE_OK else {
+            let detail = message.map { String(cString: $0) } ?? "unknown SQLite error"
+            sqlite3_free(message)
+            throw SimiGoESISDatabase.DatabaseError.sql(detail)
+        }
+
+        XCTAssertThrowsError(try SimiGoISAdmission.settleContinuation(
+            db: db, parentStateID: "P-atomic", consumer: producer,
+            childStateID: "C-atomic", generatedText: "RESULT=hello",
+            contractJSON: Data(Self.referenceContract.utf8)))
+
+        XCTAssertNil(try db.latestSettlementID(forStateID: "C-atomic"))
+        XCTAssertEqual(try db.count("execution_states"), statesBefore,
+                       "the child ES row must roll back with the failed identity write")
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore,
+                       "the child settlement must roll back with the failed identity write")
+        XCTAssertEqual(try db.count("settlement_bindings"), bindingsBefore,
+                       "the child contract binding must roll back too")
+        XCTAssertEqual(try db.count("is_objects"), objectsBefore,
+                       "the child payload object must not leak from the failed transaction")
+        XCTAssertEqual(try db.count("information_items"), itemsBefore,
+                       "the child settlement index must not leak from the failed transaction")
+        XCTAssertEqual(try db.latestSettlementID(forStateID: "P-atomic"), parentSettlement,
+                       "the parent settlement remains intact")
+    }
     // Admission runs BEFORE the child contract/persist: an unverified parent is
     // refused with the admission Refusal, and no child settlement appears.
-    func testSettleContinuationRefusesInvalidParentBeforeProducingAnySettlement() throws {
-        let (url, db) = try open("cont-refuse")
+    func testSettleContinuationAllowsCrossModelParentAndRecordsChildProvenance() throws {
+        let (url, db) = try open("cont-cross-model")
         defer { db.close(); cleanup(url) }
-        try mkSettlement(db, stateID: "PB", value: "hello", bindIdentity: false)   // no producer identity bound
+        try mkSettlement(db, stateID: "PB", value: "hello", bindIdentity: false)
+        let cloud = SimiGoSettlementIdentityBinding.Identity(
+            model: "cloud:remote-model", tokenizer: "cloud:remote-tokenizer")
 
-        expectRefusal(
-            { try SimiGoISAdmission.settleContinuation(
-                db: db, parentStateID: "PB", consumer: producer, childStateID: "CB",
-                generatedText: "RESULT=hello", contractJSON: Data(Self.referenceContract.utf8)) },
-            { if case .producerBinding = $0 { return true }; return false }
-        )
-        XCTAssertNil(try db.latestSettlementID(forStateID: "CB"))
+        let done = try SimiGoISAdmission.settleContinuation(
+            db: db, parentStateID: "PB", consumer: cloud, childStateID: "CB",
+            generatedText: "RESULT=hello", contractJSON: Data(Self.referenceContract.utf8))
+        XCTAssertEqual(done.admission.recoveredValue, "hello")
+        XCTAssertEqual(try db.latestSettlementID(forStateID: "CB"), done.settlementID)
+
+        // The child keeps its actual producer identity as provenance, but a later
+        // consumer with another identity may still reuse the semantic result.
+        let childProvenance = try db.settlementBindings(settlementID: done.settlementID)
+        XCTAssertEqual(childProvenance[SimiGoSettlementIdentityBinding.modelKey],
+                       SimiGoSettlementIdentityBinding.digest(cloud.model))
+        XCTAssertEqual(childProvenance[SimiGoSettlementIdentityBinding.tokenizerKey],
+                       SimiGoSettlementIdentityBinding.digest(cloud.tokenizer))
+        let next = try SimiGoISAdmission.admit(
+            db: db, stateID: "CB", consumer: producer)
+        XCTAssertEqual(next.recoveredValue, "hello")
     }
 }

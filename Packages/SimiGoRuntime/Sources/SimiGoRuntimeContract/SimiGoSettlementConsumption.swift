@@ -118,6 +118,7 @@ public enum SimiGoSettlementConsumption {
         case sourceNotValid(String)
         case sourceTampered(String)
         case identityUndeclared(String)
+        case identityConstraintMismatch(settlementID: String)
         case contractUndeclared(settlementID: String)
         case contractMismatch(field: String, expected: String, actual: String)
         case contractNotCovered(demandClass: String, allowed: String)
@@ -139,7 +140,9 @@ public enum SimiGoSettlementConsumption {
             case .sourceTampered(let s):
                 return "settlement consumption: source settlement \(s) failed digest verification"
             case .identityUndeclared(let s):
-                return "settlement consumption: source settlement \(s) declares no identity binding"
+                return "settlement consumption: explicit identity requirement for settlement \(s) is absent"
+            case .identityConstraintMismatch(let s):
+                return "settlement consumption: consumer identity does not satisfy the explicit contract requirement for \(s)"
             case .contractUndeclared(let s):
                 return "settlement \(s) declared no reuse contract; it is not consumable"
             case .contractMismatch(let f, let e, let a):
@@ -163,7 +166,7 @@ public enum SimiGoSettlementConsumption {
     }
 
     /// Consume a settled unit. The source must be named explicitly; validity,
-    /// closure, identity, contract and the canonical input basis are all
+    /// dependency closure, any explicitly declared identity constraint, the contract and canonical input basis are all
     /// re-checked inside the write transaction, never from an earlier read.
     public static func consume(
         db: SimiGoESISDatabase, request: Request
@@ -200,12 +203,18 @@ public enum SimiGoSettlementConsumption {
             }
 
             // 1. Re-admit the NAMED source inside the write transaction. A
-            // refusal here (missing/tampered/invalid/dependency/identity) is
-            // final: no row is written and no recompute is silently substituted.
+            // refusal here (missing/tampered/invalid/dependency) is final. Any
+            // identity restriction is checked only when explicitly recorded by
+            // this reuse contract; no recompute is silently substituted.
             let admitted = try SimiGoISAdmission.admit(
                 db: db, settlementID: request.sourceSettlementID,
                 consumer: request.consumerIdentity,
                 valueField: declaration.extractField)
+            guard Self.requiredIdentityMatches(
+                declaration.requiredIdentityJSON, consumer: request.consumerIdentity) else {
+                throw Refusal.identityConstraintMismatch(
+                    settlementID: request.sourceSettlementID)
+            }
             try afterAdmission?()
 
             // 2. Contract terms.
@@ -360,6 +369,22 @@ public enum SimiGoSettlementConsumption {
                 modelCalls: 0,
                 reusedExisting: false))
         }
+    }
+
+    /// Empty-object declarations impose no engine identity constraint. Non-empty
+    /// declarations are explicit/legacy constraints and remain fail-closed.
+    private static func requiredIdentityMatches(
+        _ json: String, consumer: SimiGoSettlementIdentityBinding.Identity
+    ) -> Bool {
+        guard json != "{}" else { return true }
+        guard consumer.isSpecified,
+              let data = json.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+              let model = object["model"],
+              let tokenizer = object["tokenizer"]
+        else { return false }
+        return model == SimiGoSettlementIdentityBinding.digest(consumer.model)
+            && tokenizer == SimiGoSettlementIdentityBinding.digest(consumer.tokenizer)
     }
 
     private static func demandID(

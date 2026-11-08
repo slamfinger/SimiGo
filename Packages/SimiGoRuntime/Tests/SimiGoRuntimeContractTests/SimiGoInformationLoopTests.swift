@@ -135,10 +135,103 @@ final class SimiGoInformationLoopTests: XCTestCase {
 
     // MARK: - P1/P2: retrieval boundary (measured 2026-10-30)
 
+    // MARK: - Chat turn terminal standing
+
+    func testFailedAndCancelledTurnsAreTerminalAndSameTextRetriesCreateNewRows() throws {
+        let (url, db) = try open("chat-turn-terminal-standing")
+        defer { db.close(); cleanup(url) }
+
+        let failedText = "terminal-marker-failed-" + UUID().uuidString
+        let failedID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: failedText, model: nil, createdAt: Date())
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-failed").isEmpty,
+            "pending input must never be searchable before the request completes")
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: failedID, terminal: .failed))
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(failedID) + ";"),
+            "failed")
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-failed").isEmpty,
+            "failed user input must not be offered as completed conversation history")
+
+        let failedRetryID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: failedText, model: nil, createdAt: Date())
+        XCTAssertNotEqual(failedRetryID, failedID,
+                          "a retry after failure needs a fresh pending user row")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(failedRetryID) + ";"),
+            "pending")
+
+        let cancelledText = "terminal-marker-cancelled-" + UUID().uuidString
+        let cancelledID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: cancelledText, model: nil, createdAt: Date())
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: cancelledID, terminal: .cancelled))
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(cancelledID) + ";"),
+            "cancelled")
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-cancelled").isEmpty,
+            "cancelled user input must not be offered as completed conversation history")
+        XCTAssertFalse(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: failedID, terminal: .cancelled),
+            "a terminal row cannot be rewritten by a later cleanup pass")
+
+        let detachedText = "terminal-marker-detached-" + UUID().uuidString
+        let detachedID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: detachedText, model: nil, createdAt: Date())
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "terminal-session", userMessageID: detachedID, terminal: .detached))
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(detachedID) + ";"),
+            "detached")
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "terminal-marker-detached").isEmpty,
+            "detached generation input is preserved as non-retrievable history")
+        let detachedRetryID = try db.appendChatMessage(
+            sessionID: "terminal-session", role: "user",
+            content: detachedText, model: nil, createdAt: Date())
+        XCTAssertNotEqual(detachedRetryID, detachedID,
+                          "a retry after detach starts a new semantic turn")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(detachedRetryID) + ";"),
+            "pending")
+    }
+
+    func testCommittedTurnWithSameTextStartsANewSemanticTurn() throws {
+        let (url, db) = try open("chat-turn-committed-dedupe")
+        defer { db.close(); cleanup(url) }
+        let text = "same words after a completed answer"
+        let firstID = try db.appendChatMessage(
+            sessionID: "completed-session", role: "user",
+            content: text, model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: "completed-session", userMessageID: firstID,
+            assistantText: "first answer", model: nil, createdAt: Date())
+        let secondID = try db.appendChatMessage(
+            sessionID: "completed-session", role: "user",
+            content: text, model: nil, createdAt: Date())
+        XCTAssertNotEqual(secondID, firstID,
+                          "completed turns are history, not pending retry rows")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(firstID) + ";"),
+            "committed")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(secondID) + ";"),
+            "pending")
+    }
+
     /// A cited fragment must contain the match that produced it. Measured
     /// 2026-10-30: a 2,447-character rollout line matched on a term at
     /// character 566 while the injected citation was that line's first 240
     /// characters — text that never contained the query at all.
+
     func testCitationWindowContainsTheMatchThatSelectedIt() throws {
         let (url, db) = try open("snippet")
         let root = try makeWorkRoot()
@@ -521,6 +614,360 @@ final class SimiGoInformationLoopTests: XCTestCase {
         XCTAssertEqual(
             bindings[SimiGoSettlementIdentityBinding.tokenizerKey],
             expected[SimiGoSettlementIdentityBinding.tokenizerKey])
+    }
+
+
+    func testAdvancedDemandCannotBeReopenedAsResolved() throws {
+        let (url, db) = try open("demand-no-regression")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let loop = SimiGoInformationLoop(database: db)
+        let resolution = try loop.resolve(.init(
+            sessionID: "s-demand", requestIdentity: "request-1",
+            query: "needle", includeChat: false))
+        let settled = try loop.settleTurn(
+            generatedText: "answer", resolution: resolution,
+            stateID: "S-demand", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-demand")
+        XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
+
+        let replay = SimiGoESISDatabase.InformationRetrievalWrite(
+            demandID: resolution.demandID, stateID: nil,
+            sessionID: "s-demand", requestIdentity: "request-1",
+            query: "needle", rootIDs: ["work"], includeChat: false,
+            inputDigest: resolution.inputDigest,
+            payload: Data("replacement retrieval".utf8),
+            hitCount: 0, itemIDs: [], inputs: [])
+        XCTAssertThrowsError(try db.recordInformationRetrieval(replay)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.InformationDemandError,
+                .invalidTransition(
+                    demandID: resolution.demandID, from: "ADVANCED", to: "RESOLVED"))
+        }
+        XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+        XCTAssertEqual(try db.settlementValidity(settled.settlementID), "valid")
+    }
+
+    func testSupersededOrMissingDemandCannotBeAdvanced() throws {
+        let (url, db) = try open("demand-advance-guards")
+        defer { db.close(); cleanup(url) }
+        func retrieval(_ id: String) throws {
+            _ = try db.recordInformationRetrieval(.init(
+                demandID: id, stateID: nil, sessionID: "s-supersede",
+                requestIdentity: "request-shared", query: "same question",
+                rootIDs: [], includeChat: false, inputDigest: id,
+                payload: Data("{\"result\":\"ok\"}".utf8),
+                hitCount: 0, itemIDs: [], inputs: []))
+        }
+        try retrieval("demand-old")
+        try retrieval("demand-new")
+        XCTAssertEqual(try db.informationDemand(demandID: "demand-old")?.state, "SUPERSEDED")
+        XCTAssertEqual(try db.informationDemand(demandID: "demand-new")?.state, "RESOLVED")
+
+        let producer = try SimiGoInformationLoop(database: db).settleTurn(
+            generatedText: "answer", resolution: nil,
+            stateID: "S-advance-guard", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let oldWrite = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: "demand-old", stateID: "S-advance-guard",
+            settlementID: producer.settlementID,
+            retrievalSettlementID: "is-retrieval:demand-old",
+            actions: ["chat.completion"], result: Data("answer".utf8))
+        XCTAssertThrowsError(try db.recordInformationAdvancement(oldWrite)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.InformationDemandError,
+                .invalidTransition(
+                    demandID: "demand-old", from: "SUPERSEDED", to: "ADVANCED"))
+        }
+        let missingWrite = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: "does-not-exist", stateID: "S-advance-guard",
+            settlementID: producer.settlementID,
+            retrievalSettlementID: "is-retrieval:does-not-exist",
+            actions: ["chat.completion"], result: Data("answer".utf8))
+        XCTAssertThrowsError(try db.recordInformationAdvancement(missingWrite)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.InformationDemandError,
+                .missingDemand("does-not-exist"))
+        }
+        XCTAssertEqual(try db.count("information_advancements"), 0)
+
+        let newWrite = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: "demand-new", stateID: "S-advance-guard",
+            settlementID: producer.settlementID,
+            retrievalSettlementID: "is-retrieval:demand-new",
+            actions: ["chat.completion"], result: Data("answer".utf8))
+        _ = try db.recordInformationAdvancement(newWrite)
+        XCTAssertEqual(try db.informationDemand(demandID: "demand-new")?.state, "ADVANCED")
+    }
+
+    func testInformationAdvancementReplayIsIdempotentAndCannotReplaceAnswer() throws {
+        let (url, db) = try open("demand-advance-idempotent")
+        defer { db.close(); cleanup(url) }
+        let loop = SimiGoInformationLoop(database: db)
+        let resolution = try loop.resolve(.init(
+            sessionID: "s-idempotent", requestIdentity: "request-idempotent",
+            query: "a question", includeChat: false))
+        let first = try loop.settleTurn(
+            generatedText: "answer one", resolution: nil,
+            stateID: "S-answer-one", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let write = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: resolution.demandID, stateID: "S-answer-one",
+            settlementID: first.settlementID,
+            retrievalSettlementID: resolution.retrievalSettlementID,
+            actions: ["chat.completion"], result: Data("answer one".utf8))
+        let advancementID = try db.recordInformationAdvancement(write)
+        let replayID = try db.recordInformationAdvancement(write)
+        XCTAssertEqual(replayID, advancementID)
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+
+        let second = try loop.settleTurn(
+            generatedText: "answer two", resolution: nil,
+            stateID: "S-answer-two", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let replacement = SimiGoESISDatabase.InformationAdvancementWrite(
+            demandID: resolution.demandID, stateID: "S-answer-two",
+            settlementID: second.settlementID,
+            retrievalSettlementID: resolution.retrievalSettlementID,
+            actions: ["chat.completion"], result: Data("answer two".utf8))
+        XCTAssertThrowsError(try db.recordInformationAdvancement(replacement)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.InformationDemandError,
+                .advancementConflict(
+                    demandID: resolution.demandID,
+                    existingSettlementID: first.settlementID,
+                    requestedSettlementID: second.settlementID))
+        }
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+        XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
+    }
+
+
+    func testSettleTurnCommitsChatAndESISAtomically() throws {
+        let (url, db) = try open("atomic-chat-settlement")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let userID = try db.appendChatMessage(
+            sessionID: "s-atomic", role: "user", content: "needle?", model: nil, createdAt: Date())
+        let loop = SimiGoInformationLoop(database: db)
+        let resolution = try loop.resolve(.init(
+            sessionID: "s-atomic", query: "needle", includeChat: false))
+        let turn = try loop.settleTurn(
+            generatedText: "the answer", resolution: resolution,
+            stateID: "S-atomic", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-atomic",
+            chatTurn: .init(
+                sessionID: "s-atomic", userMessageID: userID,
+                assistantText: "the answer", model: "model-a", createdAt: Date()))
+        XCTAssertEqual(try rawText(url,
+            "SELECT turn_state FROM chat_messages WHERE id=" + String(userID) + ";"), "committed")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM settlements WHERE settlement_id='" + turn.settlementID + "';"), "1")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM information_advancements WHERE settlement_id='" + turn.settlementID + "';"), "1")
+        XCTAssertEqual(try db.currentChatStateID(sessionID: "s-atomic"), "S-atomic")
+    }
+
+    func testSettlementRefusesChatCommitWhenUserRowIsNotOwnedBySession() throws {
+        let (url, db) = try open("atomic-chat-user-row-mismatch")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let foreignUserID = try db.appendChatMessage(
+            sessionID: "s-foreign", role: "user", content: "needle?",
+            model: nil, createdAt: Date())
+        let resolution = try SimiGoInformationLoop(database: db).resolve(
+            .init(sessionID: "s-atomic", query: "needle", includeChat: false))
+
+        XCTAssertThrowsError(try SimiGoInformationLoop(database: db).settleTurn(
+            generatedText: "the answer", resolution: resolution,
+            stateID: "S-atomic-user-row-mismatch", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-atomic",
+            chatTurn: .init(
+                sessionID: "s-atomic", userMessageID: foreignUserID,
+                assistantText: "the answer", model: "model-a", createdAt: Date())))
+
+        XCTAssertEqual(try rawText(url,
+            "SELECT turn_state FROM chat_messages WHERE id=" + String(foreignUserID) + ";"),
+            "pending")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id='s-atomic' AND role='assistant';"),
+            "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM execution_states WHERE state_id='S-atomic-user-row-mismatch';"),
+            "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM settlements WHERE state_id='S-atomic-user-row-mismatch';"),
+            "0")
+    }
+
+    func testSettlementRefusesChatCommitWhenPendingUserRowIsMissing() throws {
+        let (url, db) = try open("atomic-chat-user-row-missing")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let resolution = try SimiGoInformationLoop(database: db).resolve(
+            .init(sessionID: "s-missing", query: "needle", includeChat: false))
+
+        XCTAssertThrowsError(try SimiGoInformationLoop(database: db).settleTurn(
+            generatedText: "the answer", resolution: resolution,
+            stateID: "S-atomic-user-row-missing", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-missing",
+            chatTurn: .init(
+                sessionID: "s-missing", userMessageID: -1,
+                assistantText: "the answer", model: "model-a", createdAt: Date())))
+
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id='s-missing' AND role='assistant';"),
+            "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM execution_states WHERE state_id='S-atomic-user-row-missing';"),
+            "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM settlements WHERE state_id='S-atomic-user-row-missing';"),
+            "0")
+    }
+
+    func testReusedChatTurnAndReuseEventCommitAtomically() throws {
+        let (url, db) = try open("atomic-chat-reuse")
+        defer { db.close(); cleanup(url) }
+        let loop = SimiGoInformationLoop(database: db)
+        let source = try loop.settleTurn(
+            generatedText: "previous settled answer", resolution: nil,
+            stateID: "S-reuse-source", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let userID = try db.appendChatMessage(
+            sessionID: "s-reuse", role: "user", content: "repeat question",
+            model: nil, createdAt: Date())
+
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open(url.path, &handle)
+        XCTAssertEqual(openRC, SQLITE_OK)
+        let sqlite = try XCTUnwrap(handle)
+        defer { sqlite3_close(sqlite) }
+        let trigger = """
+        CREATE TRIGGER abort_atomic_reuse_event
+        BEFORE INSERT ON information_reuse_events
+        BEGIN SELECT RAISE(ABORT, 'injected reuse event failure'); END;
+        """
+        XCTAssertEqual(sqlite3_exec(sqlite, trigger, nil, nil, nil), SQLITE_OK)
+
+        let chatTurn = SimiGoESISDatabase.ChatTurnCommit(
+            sessionID: "s-reuse", userMessageID: userID,
+            assistantText: "previous settled answer", model: "model-a",
+            createdAt: Date())
+        XCTAssertThrowsError(try db.commitReusedChatTurn(
+            chatTurn, sourceSettlementID: source.settlementID,
+            sourceStateID: "S-reuse-source", demandID: "D-reuse",
+            query: "repeat question"))
+        XCTAssertEqual(try rawText(url,
+            "SELECT turn_state FROM chat_messages WHERE id=" + String(userID) + ";"),
+            "pending")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id='s-reuse' AND role='assistant';"),
+            "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM information_reuse_events WHERE demand_id='D-reuse';"),
+            "0")
+
+        XCTAssertEqual(sqlite3_exec(sqlite, "DROP TRIGGER abort_atomic_reuse_event;", nil, nil, nil), SQLITE_OK)
+        _ = try db.commitReusedChatTurn(
+            chatTurn, sourceSettlementID: source.settlementID,
+            sourceStateID: "S-reuse-source", demandID: "D-reuse",
+            query: "repeat question")
+        let transcript = try db.listChatMessages(sessionID: "s-reuse")
+        XCTAssertEqual(transcript.count, 2)
+        XCTAssertEqual(transcript[0].content, "repeat question")
+        XCTAssertEqual(try rawText(url,
+            "SELECT turn_state FROM chat_messages WHERE id=" + String(userID) + ";"),
+            "committed")
+        XCTAssertEqual(transcript[1].content, "previous settled answer")
+        XCTAssertEqual(try db.informationReuseEvent(demandID: "D-reuse")?.sourceSettlementID,
+                       source.settlementID)
+    }
+
+    func testSettlementFailureRollsBackChatPromotionAndAssistantRow() throws {
+        let (url, db) = try open("atomic-chat-rollback")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let userID = try db.appendChatMessage(
+            sessionID: "s-rollback", role: "user", content: "needle?", model: nil, createdAt: Date())
+        let resolution = try SimiGoInformationLoop(database: db).resolve(
+            .init(sessionID: "s-rollback", query: "needle", includeChat: false))
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+        defer { sqlite3_close(handle) }
+        let trigger = """
+        CREATE TRIGGER abort_atomic_settlement_binding
+        BEFORE INSERT ON settlement_bindings
+        BEGIN SELECT RAISE(ABORT, 'injected settlement binding failure'); END;
+        """
+        XCTAssertEqual(sqlite3_exec(handle, trigger, nil, nil, nil), SQLITE_OK)
+        XCTAssertThrowsError(try SimiGoInformationLoop(database: db).settleTurn(
+            generatedText: "the answer", resolution: resolution,
+            stateID: "S-rollback", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-rollback",
+            chatTurn: .init(
+                sessionID: "s-rollback", userMessageID: userID,
+                assistantText: "the answer", model: "model-a", createdAt: Date())))
+        XCTAssertEqual(try rawText(url,
+            "SELECT turn_state FROM chat_messages WHERE id=" + String(userID) + ";"), "pending")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id='s-rollback' AND role='assistant';"), "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM execution_states WHERE state_id='S-rollback';"), "0")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM settlements WHERE state_id='S-rollback';"), "0")
+    }
+
+    func testExistingContinuationSettlementCommitsResponsesChatAndAdvancementAtomically() throws {
+        let (url, db) = try open("atomic-existing-settlement")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let loop = SimiGoInformationLoop(database: db)
+        let resolution = try loop.resolve(.init(
+            sessionID: "s-existing", query: "needle", includeChat: false))
+        let producer = try loop.settleTurn(
+            generatedText: "continuation result", resolution: nil,
+            stateID: "S-existing", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil, summaryQuery: "continuation result")
+        let userID = try db.appendChatMessage(
+            sessionID: "s-existing", role: "user", content: "needle?", model: nil, createdAt: Date())
+        _ = try db.commitChatTurnWithExistingSettlement(
+            .init(
+                sessionID: "s-existing", userMessageID: userID,
+                assistantText: "continuation result", model: "model-a", createdAt: Date()),
+            settlementID: producer.settlementID, stateID: "S-existing",
+            modelIdentity: "model-a", demandID: resolution.demandID,
+            retrievalSettlementID: resolution.retrievalSettlementID,
+            actions: ["responses.completion"], query: "needle")
+        XCTAssertEqual(try rawText(url,
+            "SELECT turn_state FROM chat_messages WHERE id=" + String(userID) + ";"), "committed")
+        XCTAssertEqual(try rawText(url,
+            "SELECT COUNT(*) FROM information_advancements WHERE settlement_id='" + producer.settlementID + "';"), "1")
+        XCTAssertEqual(try db.currentChatStateID(sessionID: "s-existing"), "S-existing")
+        XCTAssertNotNil(try db.settlementSummary(settlementID: producer.settlementID))
     }
 
     func testSettlementSummaryIsRecordedAndCitedByLaterDemand() throws {

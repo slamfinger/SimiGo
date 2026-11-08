@@ -2,6 +2,7 @@ import CryptoKit
 import Foundation
 import LOCALBCore
 import Network
+import Security
 import XCTest
 
 @testable import SimiGo
@@ -497,6 +498,293 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
     /// dispatch attempt over a branch target dies at challenge consumption
     /// (401), never reaching the branch handlers. Ordinary inference keeps
     /// its authorized behavior.
+    func testLANInformationReadRoutesRequireRealTLSProofAndReachDispatch() throws {
+        let host = try makeAuthorizedHost()
+        let routes = [
+            ("GET", "/v1/simigo/env"),
+            ("GET", "/v1/simigo/roots"),
+            ("GET", "/v1/simigo/is/status"),
+        ]
+
+        for (method, target) in routes {
+            let noProof = "\(method) \(target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + "Connection: close\r\n\r\n"
+            let refused = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: noProof)
+            XCTAssertTrue(
+                try XCTUnwrap(statusLine(of: refused)).contains(" 401 "),
+                "\(method) \(target) must reject a TLS peer without LOCALB proof")
+
+            let (challenge, permission) = try fetchChallenge(
+                host, method: method, target: target)
+            XCTAssertEqual(permission, LOCALBPermission.informationRead.rawValue)
+            let authorized = try protectedRequest(
+                host, method: method, target: target, contentType: nil, body: "",
+                challenge: challenge, permission: .informationRead)
+            let response = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: authorized)
+            let status = try XCTUnwrap(statusLine(of: response))
+            XCTAssertFalse(
+                status.contains(" 401 "),
+                "\(method) \(target) with P-INFO-READ must pass request authorization; got \(status)")
+        }
+    }
+
+    func testSearchAndRootMutationRoutesRejectNoProofOverRealTLS() throws {
+        let host = try makeAuthorizedHost()
+        let requests: [(method: String, target: String, body: String)] = [
+            ("GET", "/v1/simigo/search?q=proof-boundary", ""),
+            ("POST", "/v1/simigo/search", ""),
+            ("PUT", "/v1/simigo/roots", ""),
+            ("POST", "/v1/simigo/roots", ""),
+        ]
+
+        for item in requests {
+            let contentType = item.body.isEmpty ? "" : "Content-Type: application/json\r\n"
+            let noProof = "\(item.method) \(item.target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + contentType
+                + "Content-Length: \(item.body.utf8.count)\r\n"
+                + "Connection: close\r\n\r\n"
+                + item.body
+            let response = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: noProof)
+            let status = try XCTUnwrap(statusLine(of: response))
+            XCTAssertTrue(
+                status.contains(" 401 "),
+                "\(item.method) \(item.target) must reject a TLS peer without LOCALB proof; got \(status)")
+
+            // P-SRS-WRITE is host-owned and intentionally absent from the
+            // paired-client grant set. The public TLS challenge path must not
+            // issue a proof that the registry cannot authorize.
+            let challengeBody = "{\"method\":\"\(item.method)\","
+                + "\"requestTarget\":\"\(item.target)\"}"
+            let challengeRequest = "POST /localb/auth/challenge HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + "X-SimiGo-LocalB-Client-Key-ID: \(host.clientKeyID)\r\n"
+                + "Content-Type: application/json\r\n"
+                + "Content-Length: \(challengeBody.utf8.count)\r\n"
+                + "Connection: close\r\n\r\n" + challengeBody
+            let challengeResponse = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: challengeRequest)
+            let challengeStatus = try XCTUnwrap(statusLine(of: challengeResponse))
+            XCTAssertTrue(
+                challengeStatus.contains(" 400 "),
+                "P-SRS-WRITE is not delegable to paired LAN clients; got \(challengeStatus)")
+        }
+    }
+
+    func testSlowRequestHeadAndBodyAreClosedAtAbsoluteDeadlines() throws {
+        let limits = HTTPServer.RequestLimits(
+            maxConnections: 8,
+            headerTimeout: .milliseconds(250),
+            bodyTimeout: .milliseconds(250))
+        let host = try makeAuthorizedHost(requestLimits: limits)
+
+        let slowHead = try openPinnedTLSConnection(host)
+        try sendPartialBytes(
+            "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1\r\n",
+            over: slowHead)
+        assertPeerClosed(slowHead, timeout: 3)
+
+        let slowBody = try openPinnedTLSConnection(host)
+        let partialBodyRequest =
+            "POST /v1/simigo/search HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.port)\r\n"
+            + "Content-Type: application/json\r\n"
+            + "Content-Length: 128\r\n"
+            + "Connection: close\r\n\r\n"
+            + "{"
+        try sendPartialBytes(partialBodyRequest, over: slowBody)
+        assertPeerClosed(slowBody, timeout: 3)
+        waitForConnectionSnapshot(
+            try XCTUnwrap(host.server), active: 0, refusedOverCap: 0)
+    }
+
+    func testConnectionCapRefusesExcessAndReleasesIncompleteRequestSlots() throws {
+        let limits = HTTPServer.RequestLimits(
+            maxConnections: 2,
+            headerTimeout: .seconds(30),
+            bodyTimeout: .seconds(30))
+        let host = try makeAuthorizedHost(requestLimits: limits)
+        let server = try XCTUnwrap(host.server)
+
+        // Capacity is observed through the server's admission accounting,
+        // never through client TLS state: an over-cap peer may sit in
+        // .waiting/.preparing without surfacing a reset, which proves nothing
+        // about whether the server spent a slot on it.
+        let first = try openPinnedTLSConnection(host)
+        let second = try openPinnedTLSConnection(host)
+        waitForConnectionSnapshot(server, active: 2, refusedOverCap: 0)
+
+        // Keep both accepted sockets inside the real header-read path, so the
+        // later disconnect is an incomplete-request disconnect rather than an
+        // idle-socket teardown.
+        let partialHead = "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1:\(host.port)\r\n"
+        try sendPartialBytes(partialHead, over: first)
+        try sendPartialBytes(partialHead, over: second)
+
+        let excess = startPinnedTLSConnection(host)
+        waitForConnectionSnapshot(server, active: 2, refusedOverCap: 1)
+        excess.cancel()
+
+        // The decisive check: a peer that vanished mid-header must return its
+        // slot, or the cap converts one aborted request into permanent
+        // capacity loss. Prove reuse by admitting a replacement afterwards.
+        first.cancel()
+        waitForConnectionSnapshot(server, active: 1, refusedOverCap: 1)
+        let replacement = try openPinnedTLSConnection(host)
+        waitForConnectionSnapshot(server, active: 2, refusedOverCap: 1)
+        try sendPartialBytes(partialHead, over: replacement)
+
+        server.stop()
+        waitForConnectionSnapshot(
+            server,
+            active: 0,
+            refusedOverCap: 1,
+            timeout: 0.5,
+            message: "stop must synchronously release every accepted slot")
+        second.cancel()
+        replacement.cancel()
+    }
+
+    private func openPinnedTLSConnection(
+        _ host: LOCALBTestCase.Host
+    ) throws -> NWConnection {
+        let connection = startPinnedTLSConnection(host)
+        let ready = expectation(description: "pinned TLS connection ready")
+        let stateLock = NSLock()
+        var fulfilled = false
+        connection.stateUpdateHandler = { state in
+            guard case .ready = state else { return }
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { ready.fulfill() }
+        }
+        // A connection can already be ready before the handler is installed.
+        if case .ready = connection.state {
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { ready.fulfill() }
+        }
+        wait(for: [ready], timeout: 5)
+        return connection
+    }
+
+    /// Starts a pinned TLS socket without waiting for any state: the caller
+    /// observes capacity on the server, where admission is decided.
+    private func startPinnedTLSConnection(
+        _ host: LOCALBTestCase.Host
+    ) -> NWConnection {
+        let options = NWProtocolTLS.Options()
+        sec_protocol_options_set_verify_block(
+            options.securityProtocolOptions,
+            { _, secTrust, complete in
+                guard
+                    let trust = sec_trust_copy_ref(secTrust)
+                        .takeRetainedValue() as SecTrust?,
+                    let certificate = SecTrustGetCertificateAtIndex(trust, 0),
+                    let hex = try? LOCALBTransportIdentityStore
+                        .spkiSHA256Hex(of: certificate)
+                else {
+                    complete(false)
+                    return
+                }
+                complete(hex == host.spkiHex)
+            },
+            DispatchQueue.global())
+
+        let connection = NWConnection(
+            host: "127.0.0.1",
+            port: NWEndpoint.Port(rawValue: host.port)!,
+            using: NWParameters(tls: options))
+        connection.start(queue: DispatchQueue.global())
+        return connection
+    }
+
+    private func sendPartialBytes(_ request: String, over connection: NWConnection) throws {
+        let sent = expectation(description: "partial request bytes sent")
+        connection.send(content: Data(request.utf8), completion: .contentProcessed { error in
+            XCTAssertNil(error)
+            sent.fulfill()
+        })
+        wait(for: [sent], timeout: 3)
+    }
+
+    private func assertPeerClosed(
+        _ connection: NWConnection,
+        timeout: TimeInterval
+    ) {
+        let closed = expectation(description: "server closed incomplete connection")
+        let stateLock = NSLock()
+        var fulfilled = false
+        func fulfillClosed() {
+            stateLock.lock()
+            let shouldFulfill = !fulfilled
+            fulfilled = true
+            stateLock.unlock()
+            if shouldFulfill { closed.fulfill() }
+        }
+
+        // An excess socket can reach TLS ready and then be reset; some Network
+        //.framework releases report that as a connection state transition,
+        // others as a receive error/EOF. Accept either actual peer-close signal.
+        connection.stateUpdateHandler = { state in
+            switch state {
+            case .failed, .cancelled:
+                fulfillClosed()
+            default:
+                break
+            }
+        }
+        if case .failed = connection.state { fulfillClosed() }
+        if case .cancelled = connection.state { fulfillClosed() }
+        connection.receive(
+            minimumIncompleteLength: 1,
+            maximumLength: 1
+        ) { _, _, isComplete, error in
+            if error != nil || isComplete {
+                fulfillClosed()
+            }
+        }
+        wait(for: [closed], timeout: timeout)
+        connection.cancel()
+    }
+
+    private func waitForConnectionSnapshot(
+        _ server: HTTPServer,
+        active: Int,
+        refusedOverCap: Int,
+        timeout: TimeInterval = 3,
+        message: @autoclosure () -> String = ""
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        var snapshot = server.connectionSnapshot()
+        while Date() < deadline {
+            snapshot = server.connectionSnapshot()
+            if snapshot.active == active,
+               snapshot.refusedOverCap == refusedOverCap {
+                return
+            }
+            // This module defaults to MainActor isolation, so slot release
+            // runs on the main actor. Blocking the main thread with
+            // Thread.sleep would starve terminate() and make a healthy
+            // release look like a leak; spin the run loop instead.
+            RunLoop.current.run(until: Date().addingTimeInterval(0.01))
+        }
+        XCTAssertEqual(
+            snapshot,
+            HTTPServer.ConnectionSnapshot(
+                active: active,
+                refusedOverCap: refusedOverCap),
+            message())
+    }
+
     func testBranchOperationsRequireBranchControlPermission() throws {
         let host = try makeAuthorizedHost()
 
@@ -662,7 +950,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
     }
 
     func testInformationAndManagementRoutesRefuseUnpairedTLSClients() throws {
-        let host = try makeAuthorizedHost(additionalPermissions: [.srsWrite])
+        let host = try makeAuthorizedHost()
         let requests: [(String, String)] = [
             ("GET", "/v1/simigo/env"),
             ("GET", "/v1/simigo/roots"),
@@ -692,10 +980,31 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         XCTAssertEqual(readPermission, LOCALBPermission.informationRead.rawValue)
         XCTAssertEqual(readChallenge.count, 32)
 
-        let (writeChallenge, writePermission) = try fetchChallenge(
-            host, method: "POST", target: "/v1/simigo/roots")
-        XCTAssertEqual(writePermission, LOCALBPermission.srsWrite.rawValue)
-        XCTAssertEqual(writeChallenge.count, 32)
+        // P-SRS-WRITE is host-exclusive: the route is protected, but a
+        // paired LAN client can never be granted the permission, so the
+        // challenge is refused instead of issued. This is the same
+        // invariant main asserts in
+        // testSearchAndRootMutationRoutesRejectNoProofOverRealTLS and in
+        // InformationSpaceHostE2ETests (`/mcp` challenge denial).
+        let writeBody = "{\"method\":\"POST\",\"requestTarget\":\"/v1/simigo/roots\"}"
+        let writeChallengeRequest = "POST /localb/auth/challenge HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.port)\r\n"
+            + "X-SimiGo-LocalB-Client-Key-ID: \(host.clientKeyID)\r\n"
+            + "Content-Type: application/json\r\n"
+            + "Content-Length: \(writeBody.utf8.count)\r\n"
+            + "Connection: close\r\n\r\n" + writeBody
+        let writeChallengeResponse = sendRequest(
+            port: host.port, spkiHex: host.spkiHex,
+            request: writeChallengeRequest)
+        let writeStatus = try XCTUnwrap(statusLine(of: writeChallengeResponse))
+        XCTAssertTrue(
+            writeStatus.contains(" 400 "),
+            "P-SRS-WRITE is not delegable to paired LAN clients; got: \(writeStatus)")
+        let writeText = String(
+            decoding: writeChallengeResponse ?? Data(), as: UTF8.self)
+        XCTAssertTrue(
+            writeText.contains("LOCALB_PERMISSION_DENIED"),
+            "expected an explicit permission denial; got: \(writeText.prefix(300))")
     }
 
     // MARK: - S2: plaintext allowlist and permission independence

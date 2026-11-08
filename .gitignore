@@ -50,3 +50,14 @@ research/**/*.p12
 research/**/*.pem
 research/lab/vendor/
 research/lab/.transfer/
+
+# ── 研究线文件外迁至 slamfinger/ES-IS-research（2026-11-07 裁定：禁止入 simigo 仓）──
+/docs/research/BASELINE_DESIGN_V0.1_20261107.md
+/docs/research/ESIS_CORE_SHELL_MAPPING_V0.2_20261107.md
+/docs/research/INVARIANT_PROPOSITIONS_V0.1_20261107.md
+/docs/research/LITERATURE_MAP_V0.1_20261107.md
+/tools/baseline/
+/SimiGoTests/BaselineRehearsalHTTPTests.swift
+/docs/upstream/P2_DERIVATION_TECHNICAL_REPORT_20261106.md
+/docs/upstream/P2_EVIDENCE_MAINLINE_MAPPING_20261107.md
+/docs/upstream/P2_TECH_EXCHANGE_BRIEF_20261106.md

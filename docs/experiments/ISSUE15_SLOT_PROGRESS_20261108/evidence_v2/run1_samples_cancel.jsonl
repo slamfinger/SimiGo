@@ -1,0 +1,14 @@
+{"t": 1794105872.6648839, "slots": [{"id_task": 1225, "is_processing": false, "n_prompt_tokens_processed": 0, "n_prompt_tokens": 3490, "n_decoded": 0, "n_remain": -1}]}
+{"t": 1794105873.17009, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 24, "n_decoded": 2, "n_remain": 1022}]}
+{"t": 1794105873.671048, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 31, "n_decoded": 9, "n_remain": 1015}]}
+{"t": 1794105874.1767402, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 38, "n_decoded": 16, "n_remain": 1008}]}
+{"t": 1794105874.6823318, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 45, "n_decoded": 23, "n_remain": 1001}]}
+{"t": 1794105875.1863291, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 52, "n_decoded": 30, "n_remain": 994}]}
+{"t": 1794105875.692101, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 59, "n_decoded": 37, "n_remain": 987}]}
+{"t": 1794105876.19796, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 66, "n_decoded": 44, "n_remain": 980}]}
+{"t": 1794105876.7035031, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 73, "n_decoded": 51, "n_remain": 973}]}
+{"t": 1794105877.209014, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 80, "n_decoded": 58, "n_remain": 966}]}
+{"t": 1794105877.7147882, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 87, "n_decoded": 65, "n_remain": 959}]}
+{"t": 1794105878.2211158, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 94, "n_decoded": 72, "n_remain": 952}]}
+{"t": 1794105878.727093, "slots": [{"id_task": 1327, "is_processing": true, "n_prompt_tokens_processed": 15, "n_prompt_tokens": 100, "n_decoded": 78, "n_remain": 946}]}
+{"t": 1794105879.2283819, "slots": [{"id_task": 1327, "is_processing": false, "n_prompt_tokens_processed": 0, "n_prompt_tokens": 102, "n_decoded": 0, "n_remain": -1}]}

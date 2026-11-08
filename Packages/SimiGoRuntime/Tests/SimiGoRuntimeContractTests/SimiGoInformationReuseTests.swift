@@ -37,24 +37,47 @@ final class SimiGoInformationReuseTests: XCTestCase {
     /// advancement that ties the two together.
     @discardableResult
     private func settleAnsweredTurn(
-        sessionID: String = "info-a", stateID: String = "S-1"
+        sessionID: String = "info-a", stateID: String = "S-1",
+        answer: String = "the exit is north"
     ) throws -> SimiGoInformationLoop.Resolution {
+        let exclusions = try loop.answerReuseExclusions(
+            sessionID: sessionID, query: query)
         let resolution = try loop.resolve(.init(
-            sessionID: sessionID, query: query, includeChat: false, limit: 5))
+            sessionID: sessionID, query: query, includeChat: true,
+            chatSessionIDs: [], excludeItemIDs: exclusions, limit: 5))
         XCTAssertFalse(resolution.demandID.isEmpty)
         XCTAssertFalse(resolution.retrievalSettlementID.isEmpty)
+        // Match the product order: resolve first, then commit the user/assistant
+        // chat rows and settle the generated answer against that exact demand.
+        let userID = try db.appendChatMessage(
+            sessionID: sessionID, role: "user", content: query,
+            model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: sessionID, userMessageID: userID, assistantText: answer,
+            model: nil, createdAt: Date())
         _ = try loop.settleTurn(
-            generatedText: "the exit is north", resolution: resolution,
+            generatedText: answer, resolution: resolution,
             stateID: stateID, parentStateID: nil, position: 1,
             modelIdentity: identity.model, identity: identity,
             sessionID: sessionID, summaryQuery: query)
         return resolution
     }
 
+    private func currentReuseResolution(
+        sessionID: String = "info-a"
+    ) throws -> SimiGoInformationLoop.Resolution {
+        let exclusions = try loop.answerReuseExclusions(
+            sessionID: sessionID, query: query)
+        return try loop.resolve(.init(
+            sessionID: sessionID, query: query, includeChat: true,
+            chatSessionIDs: [], excludeItemIDs: exclusions, limit: 5))
+    }
+
     func testExactRepeatInSameScopeIsServableWithoutWritingASettlement() throws {
-        try settleAnsweredTurn()
-        let current = try loop.resolve(.init(
-            sessionID: "info-a", query: query, includeChat: false, limit: 5))
+        let source = try settleAnsweredTurn()
+        let current = try currentReuseResolution()
+        XCTAssertEqual(current.demandID, source.demandID,
+                       "the source answer’s question, answer, and summary do not change its exact-repeat demand")
         let settlementsBefore = try db.count("settlements")
 
         let reuse = try XCTUnwrap(loop.reusableAnswer(
@@ -84,6 +107,39 @@ final class SimiGoInformationReuseTests: XCTestCase {
             expectedDemandID: changed.demandID, identity: identity))
     }
 
+    func testNewSharedChatInformationInvalidatesReuseButReplacementStaysStable() throws {
+        let original = try settleAnsweredTurn()
+        XCTAssertEqual(try currentReuseResolution().demandID, original.demandID)
+
+        let externalSession = "new-information-\(UUID().uuidString)"
+        let externalUser = try db.appendChatMessage(
+            sessionID: externalSession, role: "user",
+            content: "The exit location changed", model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: externalSession, userMessageID: externalUser,
+            assistantText: "The exit is now in the east wing.",
+            model: nil, createdAt: Date())
+
+        let changed = try currentReuseResolution()
+        XCTAssertNotEqual(changed.demandID, original.demandID,
+                          "new committed information in another session changes shared-space demand")
+        XCTAssertNil(loop.reusableAnswer(
+            sessionID: "info-a", query: query,
+            expectedDemandID: changed.demandID, identity: identity))
+
+        let replacement = try settleAnsweredTurn(
+            sessionID: "info-a", stateID: "S-2",
+            answer: "the exit moved to the east wing")
+        let stableRepeat = try currentReuseResolution()
+        XCTAssertEqual(stableRepeat.demandID, replacement.demandID,
+                       "all prior exact answers stay excluded after a replacement is settled")
+        let latest = try XCTUnwrap(loop.reusableAnswer(
+            sessionID: "info-a", query: query,
+            expectedDemandID: stableRepeat.demandID, identity: identity))
+        XCTAssertEqual(latest.sourceStateID, "S-2")
+        XCTAssertEqual(latest.text, "the exit moved to the east wing")
+    }
+
     func testMissingCurrentDemandCannotReuseHistoricalAnswer() throws {
         try settleAnsweredTurn()
         XCTAssertNil(loop.reusableAnswer(
@@ -97,11 +153,12 @@ final class SimiGoInformationReuseTests: XCTestCase {
             position: 1, continuationID: "C-1", anchor: "a1",
             lifecycle: "active", createdAt: Date())
         // A demand resolved but never settled: retrieval alone is not an answer.
-        _ = try loop.resolve(.init(
+        let resolution = try loop.resolve(.init(
             sessionID: "info-a", query: query, includeChat: false, limit: 5))
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: identity))
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
     }
 
     /// Rule 2 (and the dependency rule with it): once the settled chain is
@@ -117,35 +174,43 @@ final class SimiGoInformationReuseTests: XCTestCase {
             try db.settlementValidity(answer.answerSettlementID), "invalid")
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: identity))
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
     }
 
     /// Rule 4: a different engine never inherits settled text, and neither does
     /// an engine whose identity was not resolved.
     func testDifferentOrUnresolvedProducerIdentityIsNotServable() throws {
-        try settleAnsweredTurn()
+        let source = try settleAnsweredTurn()
 
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query,
+            expectedDemandID: source.demandID,
             identity: .init(model: "other-model", tokenizer: identity.tokenizer)))
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query,
+            expectedDemandID: source.demandID,
             identity: .init(model: identity.model, tokenizer: "other-tokenizer")))
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query,
+            expectedDemandID: source.demandID,
             identity: .init(model: "unspecified", tokenizer: "unspecified")))
     }
 
     /// Scope isolation: the same wording in a different information scope is a
     /// different demand and must not be answered from another scope's settlement.
     func testSameQuestionInAnotherScopeIsNotServable() throws {
-        try settleAnsweredTurn()
+        let source = try settleAnsweredTurn()
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-b", query: query, identity: identity))
+            sessionID: "info-b", query: query,
+            expectedDemandID: source.demandID,
+            identity: identity))
         // Case and whitespace are NOT normalized away — only exact repeats reuse.
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: "Where is the exit?", identity: identity))
+            sessionID: "info-a", query: "Where is the exit?",
+            expectedDemandID: source.demandID,
+            identity: identity))
     }
 
     /// An unresolved producer identity is an absence of a claim, not a wildcard:
@@ -155,15 +220,17 @@ final class SimiGoInformationReuseTests: XCTestCase {
         let resolution = try loop.resolve(.init(
             sessionID: "info-a", query: query, includeChat: false, limit: 5))
         _ = try loop.settleTurn(
-            generatedText: "the exit is north", resolution: resolution,
+            generatedText: "the exit is in the east wing", resolution: resolution,
             stateID: "S-absent", parentStateID: nil, position: 1,
             modelIdentity: "unresolved", identity: .absent,
             sessionID: "info-a", summaryQuery: query)
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: .absent))
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: .absent))
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: identity))
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
 
         // The refusal is in the binding rule itself, not only in the gate.
         let absentOnly = SimiGoSettlementIdentityBinding.evaluate(

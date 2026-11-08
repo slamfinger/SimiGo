@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 567,
+    "tracked": 636,
     "research_not_declared": 0,
-    "non_research_candidates": 567,
-    "declared": 509,
+    "non_research_candidates": 636,
+    "declared": 578,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -104,6 +104,38 @@
       "output": "Packages/SimiGoCollection/README.md"
     },
     {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/AIStudioSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/AIStudioSource.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/DeepSeekSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/DeepSeekSource.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/FlatMessageExportSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/FlatMessageExportSource.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/CollectionCandidateInbox.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/CollectionCandidateInbox.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/CollectionTurn.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/CollectionTurn.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/SnapshotReimport.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/SnapshotReimport.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/SnapshotSupport.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/SnapshotSupport.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/TranscriptSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/TranscriptSource.swift"
+    },
+    {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCandidateInbox.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCandidateInbox.swift"
     },
@@ -128,12 +160,32 @@
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptClassifier.swift"
     },
     {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptSource.swift"
+    },
+    {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptTailer.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptTailer.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTurnAccumulator.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTurnAccumulator.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/AIStudioSourceTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/AIStudioSourceTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionQoderCompatibilityTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionQoderCompatibilityTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/DeepSeekSourceTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/DeepSeekSourceTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/FlatMessageExportSourceTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/FlatMessageExportSourceTests.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderCollectionConfigurationTests.swift",
@@ -152,12 +204,24 @@
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptClassifierTests.swift"
     },
     {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptSourceTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptSourceTests.swift"
+    },
+    {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptTailerTests.swift",
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptTailerTests.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTurnAccumulatorTests.swift",
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTurnAccumulatorTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/SnapshotCarrierRoutingTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/SnapshotCarrierRoutingTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/SnapshotReimportTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/SnapshotReimportTests.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TestSupport.swift",
@@ -600,6 +664,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoPathsTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoRefusalSideEffectTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoRefusalSideEffectTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementAuthorityTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementAuthorityTests.swift"
     },
@@ -798,6 +866,10 @@
     {
       "path": "SimiGo/Inference/RequestBudget.swift",
       "output": "SimiGo/Inference/RequestBudget.swift"
+    },
+    {
+      "path": "SimiGo/Inference/SlotProgressMonitor.swift",
+      "output": "SimiGo/Inference/SlotProgressMonitor.swift"
     },
     {
       "path": "SimiGo/Inference/StreamTokenFilter.swift",
@@ -1004,6 +1076,10 @@
       "output": "SimiGoTests/HTTPRequestBoundaryTests.swift"
     },
     {
+      "path": "SimiGoTests/HTTPServerLOCALBRoutePolicyTests.swift",
+      "output": "SimiGoTests/HTTPServerLOCALBRoutePolicyTests.swift"
+    },
+    {
       "path": "SimiGoTests/ISKVBindAuthorityTests.swift",
       "output": "SimiGoTests/ISKVBindAuthorityTests.swift"
     },
@@ -1184,6 +1260,10 @@
       "output": "SimiGoTests/SlotActivityTests.swift"
     },
     {
+      "path": "SimiGoTests/SlotProgressMonitorTests.swift",
+      "output": "SimiGoTests/SlotProgressMonitorTests.swift"
+    },
+    {
       "path": "SimiGoTests/StaleAdmissionCacheEvictionTests.swift",
       "output": "SimiGoTests/StaleAdmissionCacheEvictionTests.swift"
     },
@@ -1260,6 +1340,14 @@
       "output": "docs/architecture/MLX_LM_REFERENCE_AND_EXPERIMENTAL_ROADMAP_20260918.md"
     },
     {
+      "path": "docs/audit/ARCH-MECHANISM-PROJECTION-20261107.md",
+      "output": "docs/audit/ARCH-MECHANISM-PROJECTION-20261107.md"
+    },
+    {
+      "path": "docs/audit/AUDIT-FREEZE-20261107.md",
+      "output": "docs/audit/AUDIT-FREEZE-20261107.md"
+    },
+    {
       "path": "docs/audit/BETA4_PROD_FINDINGS_20260929.md",
       "output": "docs/audit/BETA4_PROD_FINDINGS_20260929.md"
     },
@@ -1292,6 +1380,14 @@
       "output": "docs/audit/CHATSESSION_REUSE_PREFIX_AUDIT_2026-09-11.md"
     },
     {
+      "path": "docs/audit/CODE-AUDIT-STEP3-397-20261107.md",
+      "output": "docs/audit/CODE-AUDIT-STEP3-397-20261107.md"
+    },
+    {
+      "path": "docs/audit/CODE-AUDIT-STEPS-1-2-20261107.md",
+      "output": "docs/audit/CODE-AUDIT-STEPS-1-2-20261107.md"
+    },
+    {
       "path": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-18.md",
       "output": "docs/audit/CONDITIONAL_RESTORE_EXTERNAL_AUDIT_2026-09-18.md"
     },
@@ -1318,6 +1414,10 @@
     {
       "path": "docs/audit/OFFICIAL_MLX_CAPABILITY_MATRIX_2026-09-11.md",
       "output": "docs/audit/OFFICIAL_MLX_CAPABILITY_MATRIX_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/P391-CONSOLIDATED-20261107.md",
+      "output": "docs/audit/P391-CONSOLIDATED-20261107.md"
     },
     {
       "path": "docs/audit/PERF_CONVERGENCE_20260929.md",
@@ -1350,6 +1450,14 @@
     {
       "path": "docs/audit/STREAM_TOKEN_FILTER_AUDIT_2026-09-11.md",
       "output": "docs/audit/STREAM_TOKEN_FILTER_AUDIT_2026-09-11.md"
+    },
+    {
+      "path": "docs/audit/V4-FINDINGS-20261107.md",
+      "output": "docs/audit/V4-FINDINGS-20261107.md"
+    },
+    {
+      "path": "docs/audit/V7-FINDINGS-20261107.md",
+      "output": "docs/audit/V7-FINDINGS-20261107.md"
     },
     {
       "path": "docs/benchmarks/README.md",
@@ -1470,6 +1578,174 @@
     {
       "path": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md",
       "output": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/README.md",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/README.md"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots_v2.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots_v2.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/corrected_summary.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/corrected_summary.json"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel_post.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel_post.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_concurrent.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_concurrent.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_decode_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_decode_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_normal.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_normal.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_prefill_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_prefill_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_scenarios.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_scenarios.json"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_cancel.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_cancel.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_cancel_post.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_cancel_post.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_concurrent.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_concurrent.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_decode_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_decode_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_normal.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_normal.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_prefill_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_prefill_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_cancel.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_cancel.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_concurrent.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_concurrent.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_decode_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_decode_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_normal.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_normal.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_prefill_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_prefill_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_scenarios.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_scenarios.json"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_cancel.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_cancel.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_concurrent.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_concurrent.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_decode_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_decode_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_normal.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_normal.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_prefill_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_prefill_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_scenarios.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_scenarios.json"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/issue15_engine_shim.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/issue15_engine_shim.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots_v2.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots_v2.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A1_process_snapshots.txt",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A1_process_snapshots.txt"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A1_run_timeline_extract.txt",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A1_run_timeline_extract.txt"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A1_trace.log",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A1_trace.log"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_app_stdout.log",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_app_stdout.log"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_process_snapshots.txt",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_process_snapshots.txt"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_run_timeline_extract.txt",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_run_timeline_extract.txt"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_trace.log",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_trace.log"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2b_evidence/R2B_frozen_trace.log",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2b_evidence/R2B_frozen_trace.log"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2b_evidence/R2B_process_snapshots.txt",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2b_evidence/R2B_process_snapshots.txt"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/threshold_summary.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/threshold_summary.json"
     },
     {
       "path": "docs/experiments/MODEL_COMPATIBILITY_MATRIX.md",

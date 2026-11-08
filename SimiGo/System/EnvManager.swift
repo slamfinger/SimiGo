@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import Darwin
 import Combine
@@ -8,6 +9,10 @@ import SimiGoRuntimeContract
 @MainActor
 public final class EnvManager: ObservableObject {
     public static let shared = EnvManager()
+
+    /// Default cap for externally installed executables (512 MiB).
+    /// Callers may supply a different explicit policy to the installer.
+    public static let defaultExternalBinaryDownloadLimitBytes: Int64 = 512 * 1_048_576
 
     // MARK: - Environment
                 @Published public var statusMessage = "未构建"
@@ -673,7 +678,10 @@ public final class EnvManager: ObservableObject {
     /// (0755), then DELETE the download cache (owner 2026-10-26: 选择后
     /// 自动安装、转移并清理缓存). Named by the URL's last path component.
     @MainActor
-    public func installExternalBinary(from url: URL) async -> [String: Any] {
+    public func installExternalBinary(
+        from url: URL,
+        maximumBytes: Int64 = EnvManager.defaultExternalBinaryDownloadLimitBytes
+    ) async -> [String: Any] {
         let name = url.lastPathComponent.isEmpty ? "tool" : url.lastPathComponent
         let cacheDir = SimiGoPaths.staging
         let tmp = cacheDir.appendingPathComponent("dl-\(UUID().uuidString)-\(name)")
@@ -682,12 +690,17 @@ public final class EnvManager: ObservableObject {
         binaryInstallMessage = "连接 \(url.host ?? url.absoluteString)…"
         defer { binaryInstallProgress = nil }
         do {
+            guard maximumBytes > 0 else {
+                throw BinaryDownloaderError.invalidMaximumBytes
+            }
             try fm.createDirectory(at: cacheDir, withIntermediateDirectories: true)
-            let bytes = try await BinaryDownloader.download(from: url, to: tmp) { [weak self] written, expected in
+            let bytes = try await BinaryDownloader.download(
+                from: url, to: tmp, maximumBytes: maximumBytes) { [weak self] written, expected in
                 Task { @MainActor in
                     self?.reportBinaryDownload(written: written, expected: expected, name: name)
                 }
             }
+            try Task.checkCancellation()
             binaryInstallProgress = 1
             binaryInstallMessage = "校验 \(name) 的 Mach-O 头…"
             // executable check: Mach-O magic (MH_MAGIC_64 / FAT)
@@ -702,10 +715,8 @@ public final class EnvManager: ObservableObject {
             }
             let target = SimiGoPaths.bin.appendingPathComponent(name)
             try fm.createDirectory(at: SimiGoPaths.bin, withIntermediateDirectories: true)
-            // Prepare permissions on the staged file, then atomically replace
-            // the installed path. Never unlink the previous binary before the
-            // replacement is known to be publishable.
-            try BinaryDownloader.publishDownloadedBinary(at: tmp, to: target)
+            try Task.checkCancellation()
+            try BinaryDownloader.installAtomically(stagedAt: tmp, to: target)
             binaryInstallMessage = "已安装 \(target.path)（\(Self.byteText(bytes))）"
             return ["status": "installed", "path": target.path, "bytes": bytes]
         } catch {
@@ -1207,107 +1218,107 @@ public final class EnvManager: ObservableObject {
     }
 }
 
-/// Streams a binary to disk while reporting progress. `URLSession.data(from:)`
-/// buffered the whole executable in memory and exposed no progress at all.
+/// Streams an external executable to a staging file. Cancellation, size
+/// enforcement, delegate completion and late callbacks share one locked
+/// single-settlement transition.
+enum BinaryDownloaderError: Error, LocalizedError, Equatable {
+    case invalidMaximumBytes
+    case maximumSizeExceeded(limit: Int64, actual: Int64)
+    case unreadableDownloadedFile
+    case destinationAlreadyExists
+    case httpStatus(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidMaximumBytes:
+            return "maximum download size must be positive"
+        case .maximumSizeExceeded(let limit, let actual):
+            return "download size \(actual) exceeds configured limit \(limit)"
+        case .unreadableDownloadedFile:
+            return "downloaded file size could not be verified"
+        case .destinationAlreadyExists:
+            return "download staging destination already exists"
+        case .httpStatus(let status):
+            return "HTTP \(status)"
+        }
+    }
+}
+
 final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private struct Completion {
         let continuation: CheckedContinuation<Int64, Error>?
         let session: URLSession?
         let task: URLSessionDownloadTask?
-        let result: Result<Int64, Error>
     }
 
     private let destination: URL
+    private let maximumBytes: Int64
     private let progress: @Sendable (Int64, Int64) -> Void
     private let configuration: URLSessionConfiguration
-    private let maximumDownloadBytes: Int64
     private let lock = NSLock()
     private var continuation: CheckedContinuation<Int64, Error>?
     private var session: URLSession?
-    private var downloadTask: URLSessionDownloadTask?
+    private var task: URLSessionDownloadTask?
     private var settled = false
 
     init(
-        destination: URL, configuration: URLSessionConfiguration,
-        maximumDownloadBytes: Int64 = 2_000_000_000,
+        destination: URL,
+        maximumBytes: Int64,
+        configuration: URLSessionConfiguration = .default,
         progress: @escaping @Sendable (Int64, Int64) -> Void
     ) {
         self.destination = destination
+        self.maximumBytes = maximumBytes
         self.configuration = configuration
-        self.maximumDownloadBytes = max(0, maximumDownloadBytes)
         self.progress = progress
         super.init()
     }
 
     static func download(
         from url: URL, to destination: URL,
+        maximumBytes: Int64,
         configuration: URLSessionConfiguration = .default,
-        maximumDownloadBytes: Int64 = defaultMaximumDownloadBytes,
         progress: @escaping @Sendable (Int64, Int64) -> Void
     ) async throws -> Int64 {
-        try await BinaryDownloader(
-            destination: destination, configuration: configuration,
-            maximumDownloadBytes: maximumDownloadBytes, progress: progress
-        ).run(url: url)
+        guard maximumBytes > 0 else {
+            throw BinaryDownloaderError.invalidMaximumBytes
+        }
+        let downloader = BinaryDownloader(
+            destination: destination, maximumBytes: maximumBytes,
+            configuration: configuration, progress: progress)
+        return try await downloader.run(url: url)
     }
 
     func run(url: URL) async throws -> Int64 {
         try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
-                begin(continuation: continuation, url: url)
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Int64, Error>) in
+                lock.lock()
+                guard !settled else {
+                    lock.unlock()
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
+                self.continuation = continuation
+                let session = URLSession(
+                    configuration: configuration, delegate: self, delegateQueue: nil)
+                self.session = session
+                let task = session.downloadTask(with: url)
+                self.task = task
+                task.resume()
+                lock.unlock()
             }
         } onCancel: {
-            settle(.failure(CancellationError()))
+            self.cancel()
         }
     }
 
-    private func begin(
-        continuation: CheckedContinuation<Int64, Error>, url: URL
-    ) {
+    func cancel() {
         lock.lock()
-        guard !settled else {
-            lock.unlock()
-            continuation.resume(throwing: CancellationError())
-            return
-        }
-        self.continuation = continuation
-        let session = URLSession(
-            configuration: configuration, delegate: self, delegateQueue: nil)
-        let task = session.downloadTask(with: url)
-        self.session = session
-        self.downloadTask = task
+        let completion = takeCompletionLocked()
         lock.unlock()
-        task.resume()
-    }
-
-    /// Refuse downloads that exceed a hard disk-consumption ceiling. This is
-    /// deliberately enforced while streaming (not after the temporary file has
-    /// already consumed the disk). The cap is for installer payloads, not model
-    /// weights, which use the separate Hugging Face workflow.
-    static let defaultMaximumDownloadBytes: Int64 = 2_000_000_000
-
-    /// Publish a fully downloaded and validated file with one same-volume
-    /// rename. Preparing its executable mode before the rename means readers
-    /// never observe a partial or temporarily non-executable destination; a
-    /// failed rename leaves any existing installed binary untouched.
-    static func publishDownloadedBinary(at stagedURL: URL, to destinationURL: URL) throws {
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o755], ofItemAtPath: stagedURL.path)
-        let result = stagedURL.path.withCString { source in
-            destinationURL.path.withCString { destination in
-                Darwin.rename(source, destination)
-            }
-        }
-        guard result == 0 else {
-            let code = errno
-            throw NSError(
-                domain: NSPOSIXErrorDomain, code: Int(code),
-                userInfo: [NSLocalizedDescriptionKey: String(cString: strerror(code))])
-        }
-    }
-
-    private var maximumSizeErrorDescription: String {
-        "Binary download exceeds the configured \(maximumDownloadBytes)-byte limit"
+        guard let completion else { return }
+        publish(completion, result: .failure(CancellationError()))
     }
 
     func urlSession(
@@ -1315,129 +1326,147 @@ final class BinaryDownloader: NSObject, URLSessionDownloadDelegate, @unchecked S
         didWriteData bytesWritten: Int64, totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64
     ) {
-        let expectedExceedsLimit =
-            totalBytesExpectedToWrite > 0
-                && totalBytesExpectedToWrite > maximumDownloadBytes
-        guard totalBytesWritten <= maximumDownloadBytes, !expectedExceedsLimit else {
-            settle(.failure(NSError(
-                domain: "EnvManager", code: 413,
-                userInfo: [NSLocalizedDescriptionKey:
-                    maximumSizeErrorDescription])))
+        if totalBytesWritten > maximumBytes
+            || (totalBytesExpectedToWrite > 0 && totalBytesExpectedToWrite > maximumBytes)
+        {
+            settle(.failure(BinaryDownloaderError.maximumSizeExceeded(
+                limit: maximumBytes,
+                actual: max(totalBytesWritten, totalBytesExpectedToWrite))))
             return
         }
+
         lock.lock()
-        let active = !settled
+        let mayReport = !settled
         lock.unlock()
-        if active { progress(totalBytesWritten, totalBytesExpectedToWrite) }
+        if mayReport {
+            progress(totalBytesWritten, totalBytesExpectedToWrite)
+        }
     }
 
     func urlSession(
         _ session: URLSession, downloadTask: URLSessionDownloadTask,
         didFinishDownloadingTo location: URL
     ) {
-        lock.lock()
-        let active = !settled
-        lock.unlock()
-        guard active else { return }
+        finishDownloadedFile(
+            at: location, statusCode: (downloadTask.response as? HTTPURLResponse)?.statusCode)
+    }
 
-        if let http = downloadTask.response as? HTTPURLResponse,
-            !(200...299).contains(http.statusCode)
-        {
-            settle(.failure(NSError(
-                domain: "EnvManager", code: http.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode)"])))
+    /// Shared by the delegate and focused race tests. The state lock is held
+    /// through size validation and the staging move: cancellation either wins
+    /// first (and this callback publishes nothing), or this completion wins once.
+    func finishDownloadedFile(at location: URL, statusCode: Int?) {
+        lock.lock()
+        guard !settled else {
+            lock.unlock()
             return
         }
 
-        let stagingURL = destination.deletingLastPathComponent().appendingPathComponent(
-            ".\(destination.lastPathComponent).\(UUID().uuidString).download")
-        do {
-            let values = try location.resourceValues(forKeys: [.fileSizeKey])
-            guard let fileSize = values.fileSize, fileSize >= 0 else {
-                throw NSError(
-                    domain: "EnvManager", code: 500,
-                    userInfo: [NSLocalizedDescriptionKey: "Downloaded binary size is unavailable"])
-            }
-            let size = Int64(fileSize)
-            guard size <= maximumDownloadBytes else {
-                throw NSError(
-                    domain: "EnvManager", code: 413,
-                    userInfo: [NSLocalizedDescriptionKey:
-                        maximumSizeErrorDescription])
-            }
-
-            // Stage beside the destination. The final rename is atomic and
-            // never deletes a previously installed binary before replacement.
-            try FileManager.default.copyItem(at: location, to: stagingURL)
-            let stagedValues = try stagingURL.resourceValues(forKeys: [.fileSizeKey])
-            guard stagedValues.fileSize == fileSize else {
-                throw NSError(
-                    domain: "EnvManager", code: 500,
-                    userInfo: [NSLocalizedDescriptionKey: "Staged binary size changed"])
-            }
-
-            lock.lock()
-            guard !settled else {
-                lock.unlock()
-                try? FileManager.default.removeItem(at: stagingURL)
-                return
-            }
-            let renameResult = stagingURL.path.withCString { source in
-                destination.path.withCString { target in
-                    Darwin.rename(source, target)
-                }
-            }
-            let result: Result<Int64, Error>
-            if renameResult == 0 {
-                result = .success(size)
-            } else {
-                let code = errno
-                result = .failure(NSError(
-                    domain: NSPOSIXErrorDomain, code: Int(code),
-                    userInfo: [NSLocalizedDescriptionKey: String(cString: strerror(code))]))
-            }
-            let completion = takeCompletionLocked(result)
-            lock.unlock()
-
-            if renameResult != 0 { try? FileManager.default.removeItem(at: stagingURL) }
-            deliver(completion)
-        } catch {
-            try? FileManager.default.removeItem(at: stagingURL)
-            settle(.failure(error))
-        }
-    }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        if let error { settle(.failure(error)) }
-    }
-
-    private func takeCompletionLocked(_ result: Result<Int64, Error>) -> Completion? {
-        guard !settled else { return nil }
-        settled = true
-        let completion = Completion(
-            continuation: continuation, session: session,
-            task: downloadTask, result: result)
-        continuation = nil
-        session = nil
-        downloadTask = nil
-        return completion
-    }
-
-    private func deliver(_ completion: Completion?) {
-        guard let completion else { return }
-        if case .success = completion.result {
-            completion.session?.finishTasksAndInvalidate()
+        let result: Result<Int64, Error>
+        if let statusCode, !(200...299).contains(statusCode) {
+            result = .failure(BinaryDownloaderError.httpStatus(statusCode))
         } else {
-            completion.task?.cancel()
-            completion.session?.invalidateAndCancel()
+            do {
+                let attributes = try FileManager.default.attributesOfItem(
+                    atPath: location.path)
+                guard let sizeNumber = attributes[.size] as? NSNumber else {
+                    throw BinaryDownloaderError.unreadableDownloadedFile
+                }
+                let size = sizeNumber.int64Value
+                guard size >= 0 else {
+                    throw BinaryDownloaderError.unreadableDownloadedFile
+                }
+                guard size <= maximumBytes else {
+                    throw BinaryDownloaderError.maximumSizeExceeded(
+                        limit: maximumBytes, actual: size)
+                }
+                guard !FileManager.default.fileExists(atPath: destination.path) else {
+                    throw BinaryDownloaderError.destinationAlreadyExists
+                }
+                try FileManager.default.moveItem(at: location, to: destination)
+                result = .success(size)
+            } catch {
+                result = .failure(error)
+            }
         }
-        completion.continuation?.resume(with: completion.result)
+
+        let completion = takeCompletionLocked()
+        lock.unlock()
+        guard let completion else { return }
+        publish(completion, result: result)
+    }
+
+    func urlSession(
+        _ session: URLSession, task: URLSessionTask,
+        didCompleteWithError error: Error?
+    ) {
+        if let error {
+            settle(.failure(error))
+        } else {
+            // URLSession normally delivers didFinishDownloadingTo first.
+            // An empty success without that callback is not trusted.
+            lock.lock()
+            let unfinished = !settled
+            lock.unlock()
+            if unfinished {
+                settle(.failure(BinaryDownloaderError.unreadableDownloadedFile))
+            }
+        }
     }
 
     private func settle(_ result: Result<Int64, Error>) {
         lock.lock()
-        let completion = takeCompletionLocked(result)
+        let completion = takeCompletionLocked()
         lock.unlock()
-        deliver(completion)
+        guard let completion else { return }
+        publish(completion, result: result)
+    }
+
+    /// Must be called with the state lock held.
+    private func takeCompletionLocked() -> Completion? {
+        guard !settled else { return nil }
+        settled = true
+        let result = Completion(
+            continuation: continuation, session: session, task: task)
+        continuation = nil
+        session = nil
+        task = nil
+        return result
+    }
+
+    /// Applies executable permissions to the staged file, then atomically
+    /// replaces the managed target with POSIX rename. The source and target
+    /// are expected to be in the same application-support volume. On any
+    /// error the prior target is never removed first.
+    static func installAtomically(stagedAt source: URL, to target: URL) throws {
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755], ofItemAtPath: source.path)
+        let result = source.path.withCString { sourcePath in
+            target.path.withCString { targetPath in
+                Darwin.rename(sourcePath, targetPath)
+            }
+        }
+        guard result == 0 else {
+            let code = errno
+            throw NSError(
+                domain: NSPOSIXErrorDomain, code: Int(code),
+                userInfo: [NSFilePathErrorKey: target.path])
+        }
+    }
+
+    private func publish(
+        _ completion: Completion,
+        result: Result<Int64, Error>
+    ) {
+        // The destination only exists after a successful, lock-protected move.
+        // On failure it may be a caller-owned pre-existing file, so never remove
+        // it merely because this transfer failed or was cancelled.
+        switch result {
+        case .success:
+            completion.session?.finishTasksAndInvalidate()
+        case .failure:
+            completion.task?.cancel()
+            completion.session?.invalidateAndCancel()
+        }
+        completion.continuation?.resume(with: result)
     }
 }

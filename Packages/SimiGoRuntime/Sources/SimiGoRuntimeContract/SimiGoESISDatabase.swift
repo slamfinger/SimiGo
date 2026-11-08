@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import SQLite3
 
@@ -64,6 +65,8 @@ public final class SimiGoESISDatabase {
         case cannotOpen(String)
         case notADatabase(String)
         case sql(String)
+        /// The registered locator has changed since its last settled digest.
+        case staleExternalSource(rootID: String, relativePath: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
         /// Init-time PRAGMA execution failure — an execution condition, NOT a
@@ -175,18 +178,28 @@ public final class SimiGoESISDatabase {
                 primary: primary, extended: sqlite3_extended_errcode(db), message: message)
         }
         defer { sqlite3_finalize(stmt) }
-        let stepRC = sqlite3_step(stmt)
-        if stepRC == SQLITE_ROW {
-            let text = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
-            return text == "ok" ? .ok : .corrupted(text)
+        var messages: [String] = []
+        while true {
+            let stepRC = sqlite3_step(stmt)
+            if stepRC == SQLITE_ROW {
+                messages.append(
+                    sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+                continue
+            }
+            if stepRC == SQLITE_DONE { break }
+
+            let primary = sqlite3_errcode(db)
+            let message = String(cString: sqlite3_errmsg(db))
+            if primary == SQLITE_NOTADB {
+                return .corrupted(message)
+            }
+            return .executionError(
+                primary: primary, extended: sqlite3_extended_errcode(db), message: message)
         }
-        let primary = sqlite3_errcode(db)
-        let message = String(cString: sqlite3_errmsg(db))
-        if primary == SQLITE_NOTADB {
-            return .corrupted(message)
+        guard !messages.isEmpty else {
+            return .corrupted("integrity_check returned no rows")
         }
-        return .executionError(
-            primary: primary, extended: sqlite3_extended_errcode(db), message: message)
+        return messages == ["ok"] ? .ok : .corrupted(messages.joined(separator: "\n"))
     }
 
     private static func integrityOK(_ db: OpaquePointer) -> Bool {
@@ -200,15 +213,23 @@ public final class SimiGoESISDatabase {
 
     /// Highest applied schema version, or 0 if none.
     public func schemaVersion() throws -> Int {
-        var stmt: OpaquePointer?
-        guard sqlite3_prepare_v2(handle, "SELECT MAX(version) FROM schema_migrations;", -1, &stmt, nil) == SQLITE_OK else {
-            // Table absent → version 0 (fresh DB).
-            sqlite3_finalize(stmt)
-            return 0
+        // Only a missing migration table identifies a fresh database. A prepare
+        // or step error on an existing schema must never downgrade it to v0.
+        do {
+            let table = try prepare("""
+            SELECT 1 FROM sqlite_master
+            WHERE type='table' AND name='schema_migrations' LIMIT 1;
+            """)
+            defer { sqlite3_finalize(table) }
+            guard try stepRowOrDone(table) else { return 0 }
         }
+
+        let stmt = try prepare("SELECT MAX(version) FROM schema_migrations;")
         defer { sqlite3_finalize(stmt) }
-        if sqlite3_step(stmt) == SQLITE_ROW { return Int(sqlite3_column_int64(stmt, 0)) }
-        return 0
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql("schemaVersion: MAX(version) returned no row")
+        }
+        return Int(sqlite3_column_int64(stmt, 0))
     }
 
     private static let v1 = """
@@ -869,12 +890,56 @@ public final class SimiGoESISDatabase {
                 try recordMigrationRow(19, "simigo-es-graph-ownership-v19")
             }
         }
+        if try schemaVersion() < 20 {
+            try transaction {
+                // Historical InformationLoop rows stored an opaque demand hash,
+                // so their source paths cannot be identified selectively. Mark
+                // those rows for conservative invalidation; v2 rows are explicit.
+                try Self.rawExec(handle, """
+                UPDATE retrieval_settlements
+                SET inputs_digest='legacy-v1:' || inputs_digest
+                WHERE inputs_digest NOT LIKE '{%'
+                  AND inputs_digest NOT LIKE 'v2:%'
+                  AND inputs_digest NOT LIKE 'legacy-v1:%';
+                """)
+                try recordMigrationRow(20, "simigo-retrieval-input-basis-version-v20")
+            }
+        }
+        if try schemaVersion() < 21 {
+            try transaction {
+                // v2 added these two columns with `ALTER TABLE ... ADD COLUMN` and
+                // no DEFAULT, and `insertExecutionStateRow` never listed
+                // checkpoint_ids_json, so a NULL here is a legacy write, not
+                // corruption. readGraph() fails closed on NULL, so rewrite each
+                // list from the authoritative `checkpoints` rows for that state and
+                // fall back to the serialized empty collection. Blank or malformed
+                // values are deliberately left alone: they stay corruption.
+                // The ordering is explicit rather than left to the scan, so the
+                // rebuilt list matches the `created_at` order readGraph() gives the
+                // checkpoints it joins to, whatever physical order the rows live in.
+                try Self.rawExec(handle, """
+                UPDATE execution_states
+                SET checkpoint_ids_json = COALESCE(
+                        (SELECT json_group_array(ordered.checkpoint_id)
+                           FROM (SELECT checkpoint_id, created_at
+                                   FROM checkpoints
+                                  WHERE checkpoints.state_id = execution_states.state_id
+                                  ORDER BY created_at, checkpoint_id) AS ordered),
+                        '[]')
+                WHERE checkpoint_ids_json IS NULL;
+                UPDATE execution_states
+                SET prefix_json = '[]'
+                WHERE prefix_json IS NULL;
+                """)
+                try recordMigrationRow(21, "simigo-es-legacy-null-graph-columns-v21")
+            }
+        }
     }
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
         defer { sqlite3_finalize(stmt) }
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             if let c = sqlite3_column_text(stmt, 1), String(cString: c) == column {
                 return true
             }
@@ -951,7 +1016,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT byte_size, content FROM is_objects WHERE object_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, objectID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else {
+        guard try stepRowOrDone(stmt) else {
             throw DatabaseError.sql("readObject: missing object \(objectID)")
         }
         let size = Int(sqlite3_column_int64(stmt, 0))
@@ -974,7 +1039,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, objectID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         let bytes = Int(sqlite3_column_bytes(stmt, 2))
         let data: Data
         if let base = sqlite3_column_blob(stmt, 2), bytes > 0 {
@@ -1018,7 +1083,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, identity)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return IndexEntry(
             appendOrder: Int(sqlite3_column_int64(stmt, 0)),
             identity: sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
@@ -1078,7 +1143,7 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, SimiGoFailureAudit.identity(executionID: executionID))
         var out: [IndexEntry] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             out.append(IndexEntry(
                 appendOrder: Int(sqlite3_column_int64(stmt, 0)),
                 identity: sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
@@ -1116,7 +1181,7 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, dependencyID)
         var out: [DependencyEntry] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
             }
@@ -1134,18 +1199,22 @@ public final class SimiGoESISDatabase {
     public func carrierReport(deepVerify: Bool = false) throws -> CarrierReport {
         var objectCount = 0, objectBytes: Int64 = 0
         let obj = try prepare("SELECT COUNT(*), COALESCE(SUM(byte_size),0) FROM is_objects;")
-        if sqlite3_step(obj) == SQLITE_ROW {
+        defer { sqlite3_finalize(obj) }
+        if try stepRowOrDone(obj) {
             objectCount = Int(sqlite3_column_int64(obj, 0))
             objectBytes = sqlite3_column_int64(obj, 1)
         }
-        sqlite3_finalize(obj)
+        _ = sqlite3_reset(obj)
 
         var corrupt = 0
         if deepVerify {
             let all = try prepare("SELECT object_id FROM is_objects;")
             defer { sqlite3_finalize(all) }
             var ids: [String] = []
-            while sqlite3_step(all) == SQLITE_ROW, let c = sqlite3_column_text(all, 0) {
+            while try stepRowOrDone(all) {
+                guard let c = sqlite3_column_text(all, 0) else {
+                    throw DatabaseError.sql("carrierReport: NULL object_id in object inventory")
+                }
                 ids.append(String(cString: c))
             }
             for id in ids {
@@ -1156,7 +1225,7 @@ public final class SimiGoESISDatabase {
         func scalar(_ sql: String) throws -> Int {
             let stmt = try prepare(sql)
             defer { sqlite3_finalize(stmt) }
-            return sqlite3_step(stmt) == SQLITE_ROW ? Int(sqlite3_column_int64(stmt, 0)) : 0
+            return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
         }
 
         return CarrierReport(
@@ -1214,7 +1283,7 @@ public final class SimiGoESISDatabase {
         let existing = try prepare("SELECT byte_size, content FROM is_objects WHERE object_id=?;")
         defer { sqlite3_finalize(existing) }
         bind(existing, 1, objectID)
-        if sqlite3_step(existing) == SQLITE_ROW {
+        if try stepRowOrDone(existing) {
             let size = Int(sqlite3_column_int64(existing, 0))
             let bytes = Int(sqlite3_column_bytes(existing, 1))
             let stored: Data
@@ -1229,13 +1298,14 @@ public final class SimiGoESISDatabase {
             return (objectID, false)
         }
         let orderStmt = try prepare("SELECT COALESCE(MAX(created_order),0)+1 FROM is_objects;")
+        defer { sqlite3_finalize(orderStmt) }
         let nextOrder: Int
-        if sqlite3_step(orderStmt) == SQLITE_ROW {
+        if try stepRowOrDone(orderStmt) {
             nextOrder = Int(sqlite3_column_int64(orderStmt, 0))
         } else {
             nextOrder = 1
         }
-        sqlite3_finalize(orderStmt)
+        _ = sqlite3_reset(orderStmt)
         try execBinding("""
         INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
         VALUES(?,?,?,?,?);
@@ -1267,14 +1337,15 @@ public final class SimiGoESISDatabase {
         let revisionStmt = try prepare("""
         SELECT COALESCE(MAX(revision),0)+1 FROM is_dependency_entries WHERE dependency_id=?;
         """)
+        defer { sqlite3_finalize(revisionStmt) }
         bind(revisionStmt, 1, dependencyID)
         let revision: Int
-        if sqlite3_step(revisionStmt) == SQLITE_ROW {
+        if try stepRowOrDone(revisionStmt) {
             revision = Int(sqlite3_column_int64(revisionStmt, 0))
         } else {
             revision = 1
         }
-        sqlite3_finalize(revisionStmt)
+        _ = sqlite3_reset(revisionStmt)
         try execBinding("""
         INSERT INTO is_dependency_entries(
             dependency_id, content_address, revision, reason, recorded_at)
@@ -1300,13 +1371,14 @@ public final class SimiGoESISDatabase {
         let fileStmt = try prepare("""
         SELECT root_id, relative_path, content FROM file_contents WHERE object_id IS NULL;
         """)
-        while sqlite3_step(fileStmt) == SQLITE_ROW {
+        defer { sqlite3_finalize(fileStmt) }
+        while try stepRowOrDone(fileStmt) {
             files.append(InlineFile(
                 root: sqlite3_column_text(fileStmt, 0).map { String(cString: $0) } ?? "",
                 path: sqlite3_column_text(fileStmt, 1).map { String(cString: $0) } ?? "",
                 content: sqlite3_column_text(fileStmt, 2).map { String(cString: $0) } ?? ""))
         }
-        sqlite3_finalize(fileStmt)
+        _ = sqlite3_reset(fileStmt)
         for file in files {
             let objectID = try ensureObject(Data(file.content.utf8))
             try execBinding("""
@@ -1340,13 +1412,14 @@ public final class SimiGoESISDatabase {
         let chatStmt = try prepare("""
         SELECT id, session_id, content FROM chat_messages WHERE content_object_id IS NULL;
         """)
-        while sqlite3_step(chatStmt) == SQLITE_ROW {
+        defer { sqlite3_finalize(chatStmt) }
+        while try stepRowOrDone(chatStmt) {
             chats.append(InlineChat(
                 id: sqlite3_column_int64(chatStmt, 0),
                 session: sqlite3_column_text(chatStmt, 1).map { String(cString: $0) } ?? "",
                 content: sqlite3_column_text(chatStmt, 2).map { String(cString: $0) } ?? ""))
         }
-        sqlite3_finalize(chatStmt)
+        _ = sqlite3_reset(chatStmt)
         for chat in chats {
             let objectID = try ensureObject(Data(chat.content.utf8))
             try execBinding("""
@@ -1368,12 +1441,13 @@ public final class SimiGoESISDatabase {
         let retrievalStmt = try prepare("""
         SELECT demand_id, result_json FROM retrieval_settlements WHERE result_object_id IS NULL;
         """)
-        while sqlite3_step(retrievalStmt) == SQLITE_ROW {
+        defer { sqlite3_finalize(retrievalStmt) }
+        while try stepRowOrDone(retrievalStmt) {
             retrievals.append(InlineRetrieval(
                 demandID: sqlite3_column_text(retrievalStmt, 0).map { String(cString: $0) } ?? "",
                 resultJSON: sqlite3_column_text(retrievalStmt, 1).map { String(cString: $0) } ?? ""))
         }
-        sqlite3_finalize(retrievalStmt)
+        _ = sqlite3_reset(retrievalStmt)
         for retrieval in retrievals {
             let objectID = try ensureObject(Data(retrieval.resultJSON.utf8))
             try execBinding("""
@@ -1395,7 +1469,8 @@ public final class SimiGoESISDatabase {
         let settlementStmt = try prepare("""
         SELECT settlement_id, payload FROM settlements WHERE payload_object_id IS NULL;
         """)
-        while sqlite3_step(settlementStmt) == SQLITE_ROW {
+        defer { sqlite3_finalize(settlementStmt) }
+        while try stepRowOrDone(settlementStmt) {
             let bytes = Int(sqlite3_column_bytes(settlementStmt, 1))
             let payload: Data
             if let base = sqlite3_column_blob(settlementStmt, 1), bytes > 0 {
@@ -1407,14 +1482,16 @@ public final class SimiGoESISDatabase {
                 id: sqlite3_column_text(settlementStmt, 0).map { String(cString: $0) } ?? "",
                 payload: payload))
         }
-        sqlite3_finalize(settlementStmt)
+        _ = sqlite3_reset(settlementStmt)
         for settlement in settlements {
             let objectID = try ensureObject(settlement.payload)
             try execBinding("""
-            UPDATE settlements SET payload_object_id=?, payload=X'' WHERE settlement_id=?;
+            UPDATE settlements SET payload_object_id=?, payload_digest=?, payload=X''
+            WHERE settlement_id=?;
             """) { stmt in
                 bind(stmt, 1, objectID)
-                bind(stmt, 2, settlement.id)
+                bind(stmt, 2, objectID)
+                bind(stmt, 3, settlement.id)
             }
             _ = try appendIndexEntryInTransaction(
                 identity: "settlement:\(settlement.id)", objectID: objectID)
@@ -1457,26 +1534,37 @@ public final class SimiGoESISDatabase {
     }
 
     public func count(_ table: String) throws -> Int {
-        var stmt: OpaquePointer?
-        // table name is internal constant only, never user input.
-        guard sqlite3_prepare_v2(handle, "SELECT COUNT(*) FROM \(table);", -1, &stmt, nil) == SQLITE_OK
-        else { sqlite3_finalize(stmt); throw DatabaseError.sql("count prepare failed") }
+        // Table names are internal constants only, never user input.
+        let stmt = try prepare("SELECT COUNT(*) FROM \(table);")
         defer { sqlite3_finalize(stmt) }
-        if sqlite3_step(stmt) == SQLITE_ROW { return Int(sqlite3_column_int64(stmt, 0)) }
-        return 0
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql("count: SELECT COUNT(*) returned no row")
+        }
+        return Int(sqlite3_column_int64(stmt, 0))
     }
 
     // MARK: - Statement binding helpers
 
     private static let transient: sqlite3_destructor_type? = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
+    /// Advance a SELECT statement without confusing SQLITE_DONE with an
+    /// execution failure. All row collections must consume through SQLITE_DONE.
+    private func stepRowOrDone(_ stmt: OpaquePointer) throws -> Bool {
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW { return true }
+        if rc == SQLITE_DONE { return false }
+        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+    }
+
     private func prepare(_ sql: String) throws -> OpaquePointer {
         var stmt: OpaquePointer?
-        if sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) != SQLITE_OK || stmt == nil {
-            let m = sqlite3_errmsg(handle).map { String(cString: $0) } ?? "prepare failed"
-            throw DatabaseError.sql(m)
+        let rc = sqlite3_prepare_v2(handle, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let prepared = stmt else {
+            let message = String(cString: sqlite3_errmsg(handle))
+            if let stmt { sqlite3_finalize(stmt) }
+            throw DatabaseError.sql(message)
         }
-        return stmt!
+        return prepared
     }
 
     private func bind(_ stmt: OpaquePointer, _ i: Int32, _ text: String) {
@@ -1567,6 +1655,9 @@ public final class SimiGoESISDatabase {
     ///
     /// `tokenizerIdentity` is written only by the insert that creates the row;
     /// the conflict update leaves any existing value (including NULL) untouched.
+    /// `checkpoint_ids_json` follows the same rule, but always serializes: a
+    /// state this writer creates owns an explicit empty list, never SQL NULL, and
+    /// an existing list is left to the graph writer that owns it.
     private func insertExecutionStateRow(id: String, parentID: String?, modelIdentity: String,
                                          tokenizerIdentity: String? = nil,
                                          graphManaged: Bool = true,
@@ -1574,10 +1665,11 @@ public final class SimiGoESISDatabase {
                                          lifecycle: String, createdAt: Date,
                                          nextInput: String? = nil,
                                          prefixJSON: String? = nil,
+                                         checkpointIDsJSON: String? = nil,
                                          idempotencyKey: String? = nil) throws {
         try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, idempotency_key, tokenizer_identity, graph_managed)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
@@ -1596,10 +1688,11 @@ public final class SimiGoESISDatabase {
             bind(stmt, 7, lifecycle)
             bind(stmt, 8, Self.stamp( createdAt))
             bind(stmt, 9, nextInput)
-            bind(stmt, 10, prefixJSON)
-            bind(stmt, 11, idempotencyKey)
-            bind(stmt, 12, tokenizerIdentity)
-            bind(stmt, 13, Int64(graphManaged ? 1 : 0))
+            bind(stmt, 10, prefixJSON ?? "[]")
+            bind(stmt, 11, checkpointIDsJSON ?? "[]")
+            bind(stmt, 12, idempotencyKey)
+            bind(stmt, 13, tokenizerIdentity)
+            bind(stmt, 14, Int64(graphManaged ? 1 : 0))
         }
     }
 
@@ -1840,7 +1933,10 @@ public final class SimiGoESISDatabase {
         inputSnapshotObjectID: String? = nil,
         declaredDependencies: [DeclaredDependency] = [],
         sourceIdentity: DeclaredSourceIdentity? = nil,
-        operationKey: String? = nil
+        operationKey: String? = nil,
+        chatTurn: ChatTurnCommit? = nil,
+        chatSessionID: String? = nil,
+        chatModelIdentity: String? = nil
     ) throws -> SettlementWithAdvancement {
         let declared = try sourceIdentity?.normalized()
         let key = Self.cleanedOperationKey(operationKey)
@@ -1858,6 +1954,12 @@ public final class SimiGoESISDatabase {
                     declaredDependencies: declaredDependencies)
                 {
                     reuse = hit
+                    if let chatTurn { _ = try insertChatTurnRows(chatTurn) }
+                    if let chatSessionID, let chatModelIdentity {
+                        try insertChatSessionLink(
+                            sessionID: chatSessionID, stateID: hit.stateID,
+                            modelIdentity: chatModelIdentity)
+                    }
                     return
                 }
                 if let declared {
@@ -1869,6 +1971,8 @@ public final class SimiGoESISDatabase {
                         "state \(stateID) already carries settlement \(existing)")
                 }
             }
+            // The conversation row and its standing share the settlement transaction.
+            if let chatTurn { _ = try insertChatTurnRows(chatTurn) }
             if let childState {
                 try insertExecutionStateRow(
                     id: childState.id, parentID: childState.parentID,
@@ -1914,6 +2018,11 @@ public final class SimiGoESISDatabase {
                 try insertOperationKeyRow(
                     key, payloadDigest: settled.payloadDigest,
                     settlementID: settlementID)
+            }
+            if let chatSessionID, let chatModelIdentity {
+                try insertChatSessionLink(
+                    sessionID: chatSessionID, stateID: stateID,
+                    modelIdentity: chatModelIdentity)
             }
         }
         if let reuse {
@@ -2084,7 +2193,7 @@ public final class SimiGoESISDatabase {
         bind(stmt, 3, identity.sourceTurnID)
         bind(stmt, 4, identity.sourceMessageID)
         bind(stmt, 5, Int64(identity.revision))
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return StoredSourceIdentityRow(
             settlementID: sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
             payloadDigest: sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
@@ -2107,7 +2216,7 @@ public final class SimiGoESISDatabase {
         bind(stmt, 2, identity.sourceSessionID)
         bind(stmt, 3, identity.sourceTurnID)
         bind(stmt, 4, identity.sourceMessageID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return StoredSourceIdentityRow(
             settlementID: sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
             payloadDigest: sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
@@ -2124,7 +2233,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, key)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return (
             sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
             sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "")
@@ -2177,7 +2286,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT state_id FROM settlements WHERE settlement_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
@@ -2188,7 +2297,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
@@ -2200,7 +2309,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
@@ -2330,7 +2439,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT input_snapshot_object_id FROM settlements WHERE settlement_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
@@ -2341,7 +2450,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT payload_digest FROM settlements WHERE settlement_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
@@ -2350,7 +2459,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT idempotency_key FROM execution_states WHERE state_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
@@ -2359,7 +2468,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT state_id FROM execution_states WHERE idempotency_key=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, idempotencyKey)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
@@ -2456,7 +2565,7 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
         var out: [String: String] = [:]
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             let name = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
             let value = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
             if !name.isEmpty { out[name] = value }
@@ -2472,7 +2581,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        if sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        if try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) {
             return String(cString: c)
         }
         return nil
@@ -2506,7 +2615,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [RootRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func col(_ i: Int32) -> String {
                 guard let c = sqlite3_column_text(stmt, i) else { return "" }
                 return String(cString: c)
@@ -2564,20 +2673,43 @@ public final class SimiGoESISDatabase {
         fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
         carryText: Bool = true
     ) throws -> ContentSettleReport {
+        // Serialize the baseline snapshot, filesystem observation and all index
+        // mutations. Otherwise two overlapping scans can commit in reverse order
+        // and let an older observation overwrite a newer settlement.
+        return try transactionResult {
         let fm = FileManager.default
+        guard fileByteCap >= 0, maxDepth >= 0 else {
+            throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
+        }
+        let requestedRootPath = try canonicalDirectoryPath(atPath: rootURL.path)
+        let requestedRoot = URL(fileURLWithPath: requestedRootPath, isDirectory: true)
+        let scanRoot: URL
+        if let registeredPath = try rootLocatorPath(rootID) {
+            let registeredRoot = URL(fileURLWithPath: registeredPath).standardizedFileURL
+            guard registeredRoot.path == requestedRoot.path else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: registered root locator changed for \(rootID)")
+            }
+            scanRoot = registeredRoot
+        } else {
+            scanRoot = requestedRoot
+        }
+        let rootDirectoryFD = try openDirectoryNoFollow(atPath: scanRoot.path)
+        defer { Darwin.close(rootDirectoryFD) }
         // file_contents references roots, so the root must exist before any
         // content row is written (new roots start here, not in the index pass).
         // Recording the absolute path here is what makes the locator evidence
         // durable: later metadata-only upserts must not erase it.
         try upsertRoot(rootID: rootID, category: category,
-                       displayName: rootURL.path,
+                       displayName: scanRoot.path,
                        locatorType: "path", status: "present")
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
         SELECT relative_path, content_sha256, object_id FROM file_contents WHERE root_id=?;
         """)
+        defer { sqlite3_finalize(prevStmt) }
         bind(prevStmt, 1, rootID)
-        while sqlite3_step(prevStmt) == SQLITE_ROW {
+        while try stepRowOrDone(prevStmt) {
             func text(_ i: Int32) -> String {
                 sqlite3_column_text(prevStmt, i).map { String(cString: $0) } ?? ""
             }
@@ -2585,7 +2717,36 @@ public final class SimiGoESISDatabase {
                 digest: text(1),
                 objectID: sqlite3_column_type(prevStmt, 2) == SQLITE_NULL ? nil : text(2))
         }
-        sqlite3_finalize(prevStmt)
+
+        // Some indexed files (binary, oversized, or non-UTF8) intentionally
+        // have no file_contents row. Keep their external-file inventory too,
+        // otherwise a later root scan cannot detect their disappearance.
+        var previousExternalFiles: [String: String] = [:]
+        do {
+            let externalStmt = try prepare("""
+            SELECT relative_path, content_digest FROM external_files
+            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
+            """)
+            defer { sqlite3_finalize(externalStmt) }
+            bind(externalStmt, 1, rootID)
+            while true {
+                let rc = sqlite3_step(externalStmt)
+                if rc == SQLITE_ROW {
+                    guard let path = sqlite3_column_text(externalStmt, 0) else {
+                        throw DatabaseError.sql("external_files contains a NULL relative_path")
+                    }
+                    let relativePath = String(cString: path)
+                    let digest = sqlite3_column_text(externalStmt, 1)
+                        .map { String(cString: $0) } ?? ""
+                    previousExternalFiles[relativePath] = digest
+                    continue
+                }
+                guard rc == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
+                break
+            }
+        }
 
         var scanned = 0, reused = 0, skipped = 0
         var entityBytesRead = 0
@@ -2595,13 +2756,20 @@ public final class SimiGoESISDatabase {
         var indexedFiles: [(rel: String, url: URL, size: Int64, modified: String?, digest: String?)] = []
         let modifiedFormatter = ISO8601DateFormatter()
 
-        let scanRoot = rootURL.resolvingSymlinksInPath()
+        var enumerationFailure: (path: String, message: String)?
         guard let enumerator = fm.enumerator(
             at: scanRoot,
             includingPropertiesForKeys: [
                 .isRegularFileKey, .fileSizeKey, .contentModificationDateKey,
             ],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants])
+            options: [.skipsHiddenFiles, .skipsPackageDescendants],
+            errorHandler: { url, error in
+                if enumerationFailure == nil {
+                    enumerationFailure = (url.path, error.localizedDescription)
+                }
+                // A skipped subtree would make the observed path set incomplete.
+                return false
+            })
         else {
             // Enumerating an unreadable root must not look like "every file was
             // deleted" — that would strand the carried content behind a mass
@@ -2610,64 +2778,94 @@ public final class SimiGoESISDatabase {
                 "settleWorkRootContents: cannot enumerate root \(rootID)")
         }
         while let file = enumerator.nextObject() as? URL {
-            var isDir: ObjCBool = false
-            guard fm.fileExists(atPath: file.path, isDirectory: &isDir),
-                !isDir.boolValue
+            var enumeratedInfo = stat()
+            let lstatResult = file.path.withCString { Darwin.lstat($0, &enumeratedInfo) }
+            guard lstatResult == 0 else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: cannot inspect \(file.path): \(String(cString: strerror(errno)))")
+            }
+            let relative = relativePath(of: file, under: scanRoot)
+            guard !relative.isEmpty,
+                relative.split(separator: "/").count <= maxDepth
             else { continue }
-            let rel = relativePath(of: file, under: scanRoot)
-            guard !rel.isEmpty,
-                rel.split(separator: "/").count <= maxDepth
-            else { continue }
-            scanned += 1
-            seen.insert(rel)
-            let values = try? file.resourceValues(forKeys: [
-                .fileSizeKey, .contentModificationDateKey,
-            ])
-            let size = Int64(values?.fileSize ?? 0)
-            let modified = values?.contentModificationDate.map {
-                modifiedFormatter.string(from: $0)
+
+            let fileType = enumeratedInfo.st_mode & S_IFMT
+            if fileType == S_IFDIR { continue }
+            guard fileType == S_IFREG else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: refuses symbolic or non-regular source \(relative)")
             }
 
-            // Size from metadata first: a multi-GB root is mostly binaries, and
-            // reading them only to discard them made a stale scan I/O bound.
-            guard size <= Int64(fileByteCap),
-                let data = try? Data(contentsOf: file), data.count <= fileByteCap
-            else {
+            // Every component is opened relative to the pinned root FD; no
+            // symlink can redirect either an intermediate directory or the leaf.
+            let read = try readRootFileNoFollow(
+                rootDirectoryFD: rootDirectoryFD,
+                relativePath: relative,
+                maximumBytes: fileByteCap)
+            guard read.device == Int64(enumeratedInfo.st_dev),
+                  read.inode == UInt64(enumeratedInfo.st_ino) else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: source changed during scan: \(relative)")
+            }
+
+            scanned += 1
+            seen.insert(relative)
+            let size = read.size
+            let modified = read.modificationDate.map {
+                modifiedFormatter.string(from: $0)
+            }
+            guard let data = read.data else {
                 skipped += 1
-                indexedFiles.append((rel, file, size, modified, nil))
-                if let old = previous[rel] {
-                    cleared.append((rel, old, false))
+                indexedFiles.append((relative, file, size, modified, nil))
+                if let old = previous[relative] {
+                    cleared.append((relative, old, false))
                 }
                 continue
             }
+
             let digest = NativeSHA256.hexDigest(data)
             entityBytesRead += data.count
-            indexedFiles.append((rel, file, size, modified, digest))
+            indexedFiles.append((relative, file, size, modified, digest))
             guard String(data: data, encoding: .utf8) != nil else {
                 skipped += 1
-                if let old = previous[rel] {
-                    cleared.append((rel, old, false))
+                if let old = previous[relative] {
+                    cleared.append((relative, old, false))
                 }
                 continue
             }
-            // Reuse only when the settled digest still matches AND the row is in
-            // the mode being settled now. An index-only pass over a text-carrying
-            // row must re-settle once to drop the copied bytes.
-            if let old = previous[rel], old.digest == digest,
+            if let old = previous[relative], old.digest == digest,
                 carryText ? old.objectID != nil : old.objectID == nil
             {
                 reused += 1
                 continue
             }
             pending.append(PendingSettlement(
-                relativePath: rel, url: file, data: data, digest: digest,
-                size: size, modified: modified, previous: previous[rel]))
+                relativePath: relative, url: file, data: data, digest: digest,
+                size: size, modified: modified, previous: previous[relative]))
         }
 
-        // Indexed rows whose file disappeared from the latest scan.
+        // Enumeration errors can occur after some descendants were yielded.
+        // Abort before computing removals or opening the settlement transaction.
+        if let failure = enumerationFailure {
+            throw DatabaseError.sql(
+                "settleWorkRootContents: cannot enumerate \(failure.path): \(failure.message)")
+        }
+
+        // Indexed rows whose file disappeared from the latest scan. The
+        // file_contents snapshot misses intentionally uncarried files, so also
+        // reconcile every previously-present external_files path.
         var removed = 0
+        var clearedPaths = Set<String>()
         for (rel, old) in previous where !seen.contains(rel) {
             cleared.append((rel, old, true))
+            clearedPaths.insert(rel)
+            removed += 1
+        }
+        for (rel, digest) in previousExternalFiles
+        where !seen.contains(rel) && !clearedPaths.contains(rel) {
+            cleared.append((
+                rel, FileContentState(digest: digest, objectID: nil), true))
+            clearedPaths.insert(rel)
             removed += 1
         }
 
@@ -2675,7 +2873,6 @@ public final class SimiGoESISDatabase {
         var created = 0, deduplicated = 0, bytesAddressed = 0
         let now = Self.stamp(Date())
 
-        try transaction {
             for item in cleared {
                 invalidated.formUnion(try affectedClosure(
                     rootID: rootID, relativePath: item.relativePath))
@@ -2786,8 +2983,7 @@ public final class SimiGoESISDatabase {
                     contentDigest: file.digest)
             }
             try markSettlementsInvalidInTransaction(Array(invalidated))
-        }
-        try markRootScanned(rootID)
+            try markRootScanned(rootID)
 
         return ContentSettleReport(
             scanned: scanned, reused: reused, settled: pending.count,
@@ -2797,6 +2993,187 @@ public final class SimiGoESISDatabase {
             objectsCreated: created, deduplicated: deduplicated,
             bytesAddressed: bytesAddressed,
             indexOnly: !carryText, entityBytesRead: entityBytesRead)
+        }
+    }
+
+    private struct NoFollowFileRead {
+        let data: Data?
+        let size: Int64
+        let modificationDate: Date?
+        let device: Int64
+        let inode: UInt64
+    }
+
+    private func canonicalDirectoryPath(atPath path: String) throws -> String {
+        let resolved = path.withCString { Darwin.realpath($0, nil) }
+        guard let resolved else {
+            throw DatabaseError.sql(
+                "canonicalDirectoryPath: \(String(cString: strerror(errno)))")
+        }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
+            .standardizedFileURL.path
+    }
+
+    private func openDirectoryNoFollow(atPath path: String) throws -> Int32 {
+        let canonicalPath = try canonicalDirectoryPath(atPath: path)
+        guard canonicalPath == URL(fileURLWithPath: path, isDirectory: true)
+            .standardizedFileURL.path else {
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: registered directory path now resolves elsewhere")
+        }
+
+        // macOS temporary roots can traverse APFS firmlink/alias components
+        // which are canonicalized by realpath but are not all traversable via
+        // a strict component-by-component O_NOFOLLOW walk. Resolve once, then
+        // bind the opened directory descriptor to the exact lstat identity of
+        // that canonical leaf. Descendant paths remain component-wise no-follow.
+        var pathInfo = stat()
+        let statResult = canonicalPath.withCString { Darwin.lstat($0, &pathInfo) }
+        guard statResult == 0, (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
+            let code = errno
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: canonical root is not a directory: \(String(cString: strerror(code)))")
+        }
+        let descriptor = canonicalPath.withCString {
+            Darwin.open($0, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        }
+        guard descriptor >= 0 else {
+            let code = errno
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: canonical root open failed: \(String(cString: strerror(code)))")
+        }
+        var openedInfo = stat()
+        guard Darwin.fstat(descriptor, &openedInfo) == 0,
+              (openedInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedInfo.st_dev == pathInfo.st_dev,
+              openedInfo.st_ino == pathInfo.st_ino else {
+            let code = errno
+            Darwin.close(descriptor)
+            throw DatabaseError.sql(
+                "openDirectoryNoFollow: canonical root identity changed: \(String(cString: strerror(code)))")
+        }
+        return descriptor
+    }
+
+    private func readRootFileNoFollow(
+        rootDirectoryFD: Int32,
+        relativePath: String,
+        maximumBytes: Int?
+    ) throws -> NoFollowFileRead {
+        if let maximumBytes, maximumBytes < 0 {
+            throw DatabaseError.sql("readRootFileNoFollow: negative byte limit")
+        }
+        let components = relativePath.split(
+            separator: "/", omittingEmptySubsequences: false)
+        guard !components.isEmpty,
+              components.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }) else {
+            throw DatabaseError.sql("readRootFileNoFollow: invalid relative path")
+        }
+
+        var parentFD = Darwin.dup(rootDirectoryFD)
+        guard parentFD >= 0 else {
+            throw DatabaseError.sql(
+                "readRootFileNoFollow: dup failed: \(String(cString: strerror(errno)))")
+        }
+        for component in components.dropLast() {
+            let next = String(component).withCString {
+                Darwin.openat(
+                    parentFD, $0,
+                    O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+            }
+            guard next >= 0 else {
+                let code = errno
+                Darwin.close(parentFD)
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: parent is unavailable or symlinked: \(String(cString: strerror(code)))")
+            }
+            Darwin.close(parentFD)
+            parentFD = next
+        }
+
+        let leaf = String(components[components.count - 1])
+        let fileFD = leaf.withCString {
+            Darwin.openat(
+                parentFD, $0,
+                O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)
+        }
+        let openError = errno
+        Darwin.close(parentFD)
+        guard fileFD >= 0 else {
+            throw DatabaseError.sql(
+                "readRootFileNoFollow: leaf is unavailable or symlinked: \(String(cString: strerror(openError)))")
+        }
+        defer { Darwin.close(fileFD) }
+
+        var initial = stat()
+        guard Darwin.fstat(fileFD, &initial) == 0,
+              (initial.st_mode & S_IFMT) == S_IFREG,
+              initial.st_size >= 0 else {
+            throw DatabaseError.sql("readRootFileNoFollow: source is not a regular file")
+        }
+        let device = Int64(initial.st_dev)
+        let inode = UInt64(initial.st_ino)
+        let modificationDate = Date(
+            timeIntervalSince1970: Double(initial.st_mtimespec.tv_sec)
+                + Double(initial.st_mtimespec.tv_nsec) / 1_000_000_000)
+        let initialSize = Int64(initial.st_size)
+
+        func verifyUnchanged() throws {
+            var finalInfo = stat()
+            guard Darwin.fstat(fileFD, &finalInfo) == 0,
+                  finalInfo.st_dev == initial.st_dev,
+                  finalInfo.st_ino == initial.st_ino,
+                  finalInfo.st_size == initial.st_size,
+                  finalInfo.st_mtimespec.tv_sec == initial.st_mtimespec.tv_sec,
+                  finalInfo.st_mtimespec.tv_nsec == initial.st_mtimespec.tv_nsec else {
+                throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
+            }
+        }
+
+        if let maximumBytes, initialSize > Int64(maximumBytes) {
+            try verifyUnchanged()
+            return NoFollowFileRead(
+                data: nil, size: initialSize,
+                modificationDate: modificationDate, device: device, inode: inode)
+        }
+
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 64 * 1024)
+        while true {
+            let requestCount: Int
+            if let maximumBytes {
+                let remaining = maximumBytes - data.count
+                requestCount = remaining >= buffer.count
+                    ? buffer.count : max(1, remaining + 1)
+            } else {
+                requestCount = buffer.count
+            }
+            let amount = buffer.withUnsafeMutableBytes { raw -> Int in
+                guard let base = raw.baseAddress else { return -1 }
+                return Darwin.read(fileFD, base, requestCount)
+            }
+            if amount < 0 && errno == EINTR { continue }
+            guard amount >= 0 else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
+            }
+            if amount == 0 { break }
+            data.append(contentsOf: buffer.prefix(amount))
+            if let maximumBytes, data.count > maximumBytes {
+                try verifyUnchanged()
+                return NoFollowFileRead(
+                    data: nil, size: initialSize,
+                    modificationDate: modificationDate, device: device, inode: inode)
+            }
+        }
+        try verifyUnchanged()
+        guard Int64(data.count) == initialSize else {
+            throw DatabaseError.sql("readRootFileNoFollow: short or inconsistent file read")
+        }
+        return NoFollowFileRead(
+            data: data, size: initialSize,
+            modificationDate: modificationDate, device: device, inode: inode)
     }
 
     /// Component-aligned relative path. The enumerator can hand back a
@@ -2849,15 +3226,16 @@ public final class SimiGoESISDatabase {
         SELECT root_id, display_name, last_scanned_at FROM roots
         WHERE category=? ORDER BY root_id;
         """)
+        defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, category)
         var rows: [(id: String, path: String?, scanned: String?)] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
             rows.append((text(0) ?? "", text(1), text(2)))
         }
-        sqlite3_finalize(stmt)
+        _ = sqlite3_reset(stmt)
 
         var settledRoots = 0, freshRoots = 0, missingRoots = 0, failedRoots = 0
         var unlocatableRoots = 0
@@ -2976,7 +3354,7 @@ public final class SimiGoESISDatabase {
         var digests: [String] = []
         var roots: [String] = []
         var entries: [CanonicalDemandInput.Entry] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func col(_ i: Int32) -> String {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
             }
@@ -3005,73 +3383,100 @@ public final class SimiGoESISDatabase {
     public func executeInformationDemand(
         query: String, rootID: String? = nil, limit: Int = 200
     ) throws -> DemandRetrieval {
-        // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
-        let canonicalInput = try canonicalDemandInput(
-            query: query, rootIDs: rootID.map { [$0] })
-        var inputs: [(root: String, path: String, objectID: String)] = []
-        var unresolvedInputs: [(root: String, path: String)] = []
-        for entry in canonicalInput.entries {
-            if let objectID = entry.objectID {
-                inputs.append((entry.rootID, entry.relativePath, objectID))
-            } else {
-                // Index-only settlement: the address is the identity record's
-                // metadata object, not a copy of the entity bytes.
-                unresolvedInputs.append((entry.rootID, entry.relativePath))
+        // The input basis, cache check, result scan and publication must observe
+        // one database revision. BEGIN IMMEDIATE also prevents a competing root
+        // settlement from changing file_contents between these stages.
+        return try transactionResult {
+            // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
+            let canonicalInput = try canonicalDemandInput(
+                query: query, rootIDs: rootID.map { [$0] })
+            var inputs: [(root: String, path: String, objectID: String)] = []
+            var unresolvedInputs: [(root: String, path: String)] = []
+            for entry in canonicalInput.entries {
+                if let objectID = entry.objectID {
+                    inputs.append((entry.rootID, entry.relativePath, objectID))
+                } else {
+                    // Index-only settlement: the address is the identity record's
+                    // metadata object, not a copy of the entity bytes.
+                    unresolvedInputs.append((entry.rootID, entry.relativePath))
+                }
             }
-        }
-        for input in unresolvedInputs {
-            if let address = try latestIndexObjectID(
-                identity: "file:\(input.root)/\(input.path)")
-            {
+            for input in unresolvedInputs {
+                let identity = "file:\(input.root)/\(input.path)"
+                guard let address = try latestIndexObjectID(identity: identity) else {
+                    throw DatabaseError.sql(
+                        "executeInformationDemand: missing metadata object address for \(identity)")
+                }
                 inputs.append((input.root, input.path, address))
             }
-        }
-        let canonical = canonicalInput.canonical
-        let demandID = canonicalInput.digest
-        let roots = canonicalInput.rootIDs
+            let canonical = canonicalInput.canonical
+            // The result limit and filename-index matches both change the
+            // persisted hit set, so they are part of retrieval identity.
+            let effectiveLimit = max(0, limit)
+            let filenameHits = try fileNameHits(
+                query: query, rootID: rootID, limit: effectiveLimit)
+            let demandBasis = try Self.canonicalJSON([
+                "canonical_input": canonical,
+                "root_scope": rootID.map { $0 as Any } ?? NSNull(),
+                "result_limit": effectiveLimit,
+                "filename_hits": filenameHits.map {
+                    ["root_id": $0.rootID, "relative_path": $0.relativePath]
+                },
+            ])
+            let demandID = NativeSHA256.hexDigest(Data(demandBasis.utf8))
+            let roots = canonicalInput.rootIDs
 
-        // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
-        let settled = try prepare("""
-        SELECT result_object_id, result_sha256, result_json FROM retrieval_settlements
-        WHERE demand_id=? AND status='valid';
-        """)
-        bind(settled, 1, demandID)
-        if sqlite3_step(settled) == SQLITE_ROW {
-            func col(_ i: Int32) -> String {
-                sqlite3_column_text(settled, i).map { String(cString: $0) } ?? ""
-            }
-            let objectID = col(0)
-            let storedSHA = col(1)
-            let legacyJSON = col(2)
-            sqlite3_finalize(settled)
-            let data: Data?
-            if !objectID.isEmpty {
-                data = try? readObject(objectID)
+            // Validate locator-backed bytes before considering a cached result:
+            // settled database rows can be unchanged while physical files move.
+            var currentHits = try searchSettledContent(
+                query: query, rootID: rootID, limit: effectiveLimit,
+                strictSourceValidation: true)
+            if currentHits.isEmpty { currentHits = filenameHits }
+
+            // 2) 复用检查：同 demand 且结算有效 → 读回已结算对象
+            let settled = try prepare("""
+            SELECT result_object_id, result_sha256, result_json FROM retrieval_settlements
+            WHERE demand_id=? AND status='valid';
+            """)
+            bind(settled, 1, demandID)
+            let settledRC = sqlite3_step(settled)
+            if settledRC == SQLITE_ROW {
+                func col(_ i: Int32) -> String {
+                    sqlite3_column_text(settled, i).map { String(cString: $0) } ?? ""
+                }
+                let objectID = col(0)
+                let storedSHA = col(1)
+                let legacyJSON = col(2)
+                sqlite3_finalize(settled)
+
+                let data: Data?
+                if !objectID.isEmpty {
+                    data = try? readObject(objectID)
+                } else {
+                    data = Data(legacyJSON.utf8)
+                }
+                if let data,
+                    NativeSHA256.hexDigest(data) == storedSHA,
+                    let rows = try? JSONDecoder().decode([ContentHit].self, from: data),
+                    rows == currentHits
+                {
+                    return DemandRetrieval(
+                        demandID: demandID, reused: true, hits: rows,
+                        resultSHA256: storedSHA, status: "reused")
+                }
             } else {
-                data = Data(legacyJSON.utf8)
+                sqlite3_finalize(settled)
+                guard settledRC == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
             }
-            if let data,
-                let rows = try? JSONDecoder().decode([ContentHit].self, from: data)
-            {
-                return DemandRetrieval(
-                    demandID: demandID, reused: true, hits: rows,
-                    resultSHA256: storedSHA, status: "reused")
-            }
-        } else {
-            sqlite3_finalize(settled)
-        }
 
-        // 3) 重算：在已结算内容索引上检索（确定性 consumer：只绑定摘要与原文行）
-        var hits = try searchSettledContent(query: query, rootID: rootID, limit: limit)
-        if hits.isEmpty {
-            // 文件名命中（external_files 路径匹配）也纳入 demand 结果
-            hits = try fileNameHits(query: query, rootID: rootID, limit: limit)
-        }
-        let resultData = try JSONEncoder().encode(hits)
-        let resultSHA = NativeSHA256.hexDigest(resultData)
+            // 3) 重算：在同一数据库快照上、逐一校验 locator 后的检索结果
+            let hits = currentHits
+            let resultData = try JSONEncoder().encode(hits)
+            let resultSHA = NativeSHA256.hexDigest(resultData)
 
-        // 4) 结果写入对象库，结算行只保留引用；索引追加 demand 身份
-        try transaction {
+            // 4) 结果写入对象库，结算行只保留引用；索引追加 demand 身份
             let objectID = try ensureObject(resultData)
             try execBinding("""
             UPDATE retrieval_settlements SET status='invalidated'
@@ -3093,7 +3498,7 @@ public final class SimiGoESISDatabase {
                 bind(stmt, 1, demandID)
                 bind(stmt, 2, query)
                 bind(stmt, 3, roots.joined(separator: ","))
-                bind(stmt, 4, canonical)
+                bind(stmt, 4, demandBasis)
                 bind(stmt, 5, resultSHA)
                 bind(stmt, 6, Int64(hits.count))
                 bind(stmt, 7, "valid")
@@ -3108,30 +3513,46 @@ public final class SimiGoESISDatabase {
                     contentAddress: input.objectID,
                     reason: "demand-input")
             }
+
+            return DemandRetrieval(
+                demandID: demandID, reused: false, hits: hits,
+                resultSHA256: resultSHA, status: "settled")
         }
-        return DemandRetrieval(
-            demandID: demandID, reused: false, hits: hits,
-            resultSHA256: resultSHA, status: "settled")
     }
 
     /// 文件名/路径命中的确定性 consumer（demand 结果的一部分）。
     private func fileNameHits(query: String, rootID: String?, limit: Int) throws -> [ContentHit] {
-        var sql = "SELECT root_id, relative_path FROM external_files WHERE relative_path LIKE ?"
+        guard limit > 0 else { return [] }
+        var sql = """
+        SELECT root_id, relative_path FROM external_files
+        WHERE relative_path LIKE ? AND COALESCE(status,'present')='present'
+        """
         if rootID != nil { sql += " AND root_id='" + rootID!.replacingOccurrences(of: "'", with: "''") + "'" }
         sql += " ORDER BY relative_path LIMIT \(limit);"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        bind(stmt, 1, "%" + query.replacingOccurrences(of: "'", with: "''") + "%")
+        bind(stmt, 1, "%" + query + "%")
+        guard limit > 0 else { return [] }
         var hits: [ContentHit] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, hits.count < limit {
-            func col(_ i: Int32) -> String {
-                guard let c = sqlite3_column_text(stmt, i) else { return "" }
-                return String(cString: c)
+        while hits.count < limit {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func col(_ i: Int32) -> String {
+                    guard let c = sqlite3_column_text(stmt, i) else { return "" }
+                    return String(cString: c)
+                }
+                hits.append(ContentHit(
+                    rootID: col(0), relativePath: col(1), lineNo: 0,
+                    lineText: col(1)))
+                continue
             }
-            hits.append(ContentHit(
-                rootID: col(0), relativePath: col(1), lineNo: 0,
-                lineText: col(1)))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return hits
         }
+        // The SQL query has the same LIMIT, so reaching this count is a
+        // deliberate bounded completion rather than a partial error result.
         return hits
     }
 
@@ -3149,11 +3570,32 @@ public final class SimiGoESISDatabase {
     public func searchSettledContent(query: String, rootID: String? = nil, limit: Int = 200)
         throws -> [ContentHit]
     {
+        // Interactive search keeps its historical best-effort behavior: a
+        // source whose bytes no longer match the settled digest is not a hit.
+        // Demand settlement uses the strict overload below because publishing
+        // a partial result from an incomplete source basis would be unsound.
+        try searchSettledContent(
+            query: query, rootID: rootID, limit: limit,
+            strictSourceValidation: false)
+    }
+
+    private func searchSettledContent(
+        query: String, rootID: String?, limit: Int,
+        strictSourceValidation: Bool
+    ) throws -> [ContentHit] {
         guard !query.isEmpty, limit > 0 else { return [] }
         let rows = try settledFileRows(rootID: rootID)
         var hits: [ContentHit] = []
         for row in rows {
-            guard let body = try searchableFileText(row) else { continue }
+            let body: String
+            do {
+                body = try searchableFileText(row)
+            } catch let error as DatabaseError {
+                if case .staleExternalSource = error, !strictSourceValidation {
+                    continue
+                }
+                throw error
+            }
             for (idx, line) in body.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
             where line.localizedCaseInsensitiveContains(query) {
                 hits.append(ContentHit(
@@ -3171,55 +3613,105 @@ public final class SimiGoESISDatabase {
         let digest: String
         let objectID: String?
         let legacy: Data
+        let indexedSize: Int64?
     }
 
     func settledFileRows(rootID: String?) throws -> [SettledFileRow] {
         var sql = """
-        SELECT root_id, relative_path, content_sha256, object_id, content
-        FROM file_contents
+        SELECT f.root_id, f.relative_path, f.content_sha256, f.object_id, f.content, e.size
+        FROM file_contents f
+        LEFT JOIN external_files e
+          ON e.root_id=f.root_id AND e.relative_path=f.relative_path
         """
         if let rootID {
-            sql += " WHERE root_id='" + rootID.replacingOccurrences(of: "'", with: "''") + "'"
+            sql += " WHERE f.root_id='" + rootID.replacingOccurrences(of: "'", with: "''") + "'"
         }
-        sql += " ORDER BY root_id, relative_path;"
+        sql += " ORDER BY f.root_id, f.relative_path;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [SettledFileRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            func text(_ i: Int32) -> String? {
-                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW {
+                func text(_ i: Int32) -> String? {
+                    sqlite3_column_text(stmt, i).map { String(cString: $0) }
+                }
+                let bytes = Int(sqlite3_column_bytes(stmt, 4))
+                let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
+                let indexedSize: Int64? = sqlite3_column_type(stmt, 5) == SQLITE_NULL
+                    ? nil : sqlite3_column_int64(stmt, 5)
+                rows.append(SettledFileRow(
+                    rootID: text(0) ?? "", relativePath: text(1) ?? "",
+                    digest: text(2) ?? "", objectID: text(3),
+                    legacy: legacy, indexedSize: indexedSize))
+                continue
             }
-            let bytes = Int(sqlite3_column_bytes(stmt, 4))
-            let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
-            rows.append(SettledFileRow(
-                rootID: text(0) ?? "", relativePath: text(1) ?? "",
-                digest: text(2) ?? "", objectID: text(3), legacy: legacy))
+            guard rc == SQLITE_DONE else {
+                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            }
+            return rows
         }
-        return rows
     }
 
-    /// Settled text for a row, or nil when no source produces bytes matching
-    /// the settled digest. Object store first (legacy/carrier rows), then the
-    /// registered root locator (index-only rows).
-    func searchableFileText(_ row: SettledFileRow) throws -> String? {
-        if let objectID = row.objectID, !objectID.isEmpty,
-            let data = try? readObject(objectID),
-            NativeSHA256.hexDigest(data) == row.digest
-        {
+    /// Resolve and verify every settled text row. Missing, unreadable or changed
+    /// index-only sources are errors, not ordinary no-match results: silently
+    /// skipping one would let a partial retrieval be persisted under a full basis.
+    func searchableFileText(_ row: SettledFileRow) throws -> String {
+        if let objectID = row.objectID, !objectID.isEmpty {
+            let data = try readObject(objectID)
+            guard NativeSHA256.hexDigest(data) == row.digest else {
+                throw DatabaseError.sql(
+                    "searchableFileText: carried object digest mismatch for \(row.rootID)/\(row.relativePath)")
+            }
             return String(decoding: data, as: UTF8.self)
         }
-        if !row.legacy.isEmpty, NativeSHA256.hexDigest(row.legacy) == row.digest {
+        if !row.legacy.isEmpty {
+            guard NativeSHA256.hexDigest(row.legacy) == row.digest else {
+                throw DatabaseError.sql(
+                    "searchableFileText: legacy content digest mismatch for \(row.rootID)/\(row.relativePath)")
+            }
             return String(decoding: row.legacy, as: UTF8.self)
         }
-        guard let locator = try rootLocatorPath(row.rootID) else { return nil }
+        guard let locator = try rootLocatorPath(row.rootID) else {
+            throw DatabaseError.sql(
+                "searchableFileText: no locator for settled file \(row.rootID)/\(row.relativePath)")
+        }
         let relative = row.relativePath
         guard !relative.isEmpty,
             !relative.split(separator: "/").contains("..")
-        else { return nil }
-        let url = URL(fileURLWithPath: locator).appendingPathComponent(relative)
-        guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]),
-            NativeSHA256.hexDigest(data) == row.digest
-        else { return nil }
+        else {
+            throw DatabaseError.sql(
+                "searchableFileText: invalid relative path for \(row.rootID)/\(row.relativePath)")
+        }
+        let rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
+        defer { Darwin.close(rootDirectoryFD) }
+        // An index-only source is only eligible for a bounded re-read at the
+        // size recorded by the same root scan. If it has grown since indexing,
+        // reject it from its stat metadata before allocating or hashing the new
+        // bytes. Older rows without an external_files size use the historical
+        // 1 MiB default cap rather than an unbounded read.
+        let maximumBytes: Int
+        if let indexedSize = row.indexedSize {
+            guard indexedSize >= 0, indexedSize <= Int64(Int.max) else {
+                throw DatabaseError.sql(
+                    "searchableFileText: invalid indexed size for \(row.rootID)/\(row.relativePath)")
+            }
+            maximumBytes = Int(indexedSize)
+        } else {
+            maximumBytes = 1 << 20
+        }
+        let read = try readRootFileNoFollow(
+            rootDirectoryFD: rootDirectoryFD,
+            relativePath: relative,
+            maximumBytes: maximumBytes)
+        guard let data = read.data else {
+            throw DatabaseError.staleExternalSource(
+                rootID: row.rootID, relativePath: row.relativePath)
+        }
+        guard NativeSHA256.hexDigest(data) == row.digest else {
+            throw DatabaseError.staleExternalSource(
+                rootID: row.rootID, relativePath: row.relativePath)
+        }
         return String(decoding: data, as: UTF8.self)
     }
 
@@ -3230,10 +3722,10 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         let path = String(cString: c)
-        return path.isEmpty ? nil : path
+        return path.isEmpty ? nil : URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
     // MARK: - 对话落库（Information Space：会话即信息）
@@ -3257,8 +3749,10 @@ public final class SimiGoESISDatabase {
     }
 
     /// The standings a line can hold, as stored in `turn_state`. They are
-    /// distinct questions: persisted (`pending`/`recorded`/`internal`),
-    /// verified (`committed`), and retrievable (ordinary retrieval reads
+    /// distinct questions: in flight (`pending`), externally recorded
+    /// (`recorded`), ended without completion (`failed`/`cancelled`/`detached`),
+    /// internal bookkeeping (`internal`), and verified/retrievable
+    /// (`committed`; ordinary retrieval reads
     /// `committed` rows only, further narrowed by request scope).
     public enum ChatTurnState: String, Sendable {
         /// Local input whose own request is still in flight.
@@ -3267,8 +3761,42 @@ public final class SimiGoESISDatabase {
         case recorded
         /// Verified/settled; eligible for ordinary retrieval.
         case committed
+        /// The request ended before the turn completed; never retrieval eligible.
+        case failed
+        /// The request was cancelled before the turn completed; never retrieval eligible.
+        case cancelled
+        /// The client detached while generation continued; never retrieval eligible.
+        case detached
         /// Client bookkeeping kept as a record, never ordinary memory.
         case internalOperation = "internal"
+    }
+
+    /// Terminal standing for a local request that did not complete.
+    public enum ChatTurnTerminal: String, Sendable {
+        case failed
+        case cancelled
+        case detached
+    }
+
+    /// Chat write set to commit with an authoritative model settlement.
+    public struct ChatTurnCommit: Sendable {
+        public let sessionID: String
+        public let userMessageID: Int64
+        public let assistantText: String
+        public let model: String?
+        public let createdAt: Date
+        public let eligibility: ChatTurnEligibility
+
+        public init(sessionID: String, userMessageID: Int64, assistantText: String,
+                    model: String?, createdAt: Date,
+                    eligibility: ChatTurnEligibility = .ordinary) {
+            self.sessionID = sessionID
+            self.userMessageID = userMessageID
+            self.assistantText = assistantText
+            self.model = model
+            self.createdAt = createdAt
+            self.eligibility = eligibility
+        }
     }
 
     /// Append one conversation line. A user row starts `pending` and only the
@@ -3277,9 +3805,9 @@ public final class SimiGoESISDatabase {
     /// Other roles are written at completion, so they are eligible at once.
     /// Internal-operation rows are written `internal` and stay there.
     ///
-    /// Returns the row id. A repeated trailing user message (tool-loop retry or
-    /// retry of a cancelled turn) reuses its existing row instead of appending
-    /// a duplicate, and the caller can still commit exactly that row.
+    /// Returns the row id. A same-text retry reuses the trailing row only
+    /// while that local user row is still pending. A completed, failed or
+    /// cancelled turn stays in history and the next request receives a new row.
     @discardableResult
     public func appendChatMessage(
         sessionID: String, role: String, content: String, model: String?, createdAt: Date,
@@ -3318,7 +3846,10 @@ public final class SimiGoESISDatabase {
     private static func sameEligibilityClass(_ existing: String, _ target: String) -> Bool {
         let internalState = ChatTurnEligibility.internalOperation.rawValue
         if target == internalState { return existing == internalState }
-        return existing != internalState
+        // Only an in-flight local retry may adopt the existing row. A completed,
+        // failed or cancelled turn is a distinct historical event even when the
+        // next request repeats the exact same words.
+        return existing == ChatTurnState.pending.rawValue
     }
 
     /// Commit this turn: store the reply and promote the user row that started
@@ -3330,23 +3861,64 @@ public final class SimiGoESISDatabase {
         model: String?, createdAt: Date,
         eligibility: ChatTurnEligibility = .ordinary
     ) throws -> Int64 {
-        let data = Data(assistantText.utf8)
+        try transactionResult {
+            try insertChatTurnRows(.init(
+                sessionID: sessionID, userMessageID: userMessageID,
+                assistantText: assistantText, model: model, createdAt: createdAt,
+                eligibility: eligibility))
+        }
+    }
+
+    /// Caller owns the transaction.
+    @discardableResult
+    private func insertChatTurnRows(_ write: ChatTurnCommit) throws -> Int64 {
+        let data = Data(write.assistantText.utf8)
         let digest = NativeSHA256.hexDigest(data)
-        return try transactionResult {
-            let assistantID = try insertChatMessage(
-                sessionID: sessionID, role: "assistant", data: data, digest: digest,
-                model: model, createdAt: createdAt,
-                state: Self.completedState(for: eligibility))
-            if userMessageID > 0, eligibility == .ordinary {
-                try execBinding("""
-                UPDATE chat_messages SET turn_state='committed'
-                WHERE id=? AND session_id=? AND role='user' AND turn_state='pending';
-                """) { stmt in
-                    sqlite3_bind_int64(stmt, 1, userMessageID)
-                    bind(stmt, 2, sessionID)
-                }
+        let assistantID = try insertChatMessage(
+            sessionID: write.sessionID, role: "assistant", data: data, digest: digest,
+            model: write.model, createdAt: write.createdAt,
+            state: Self.completedState(for: write.eligibility))
+        if write.eligibility == .ordinary {
+            guard write.userMessageID > 0 else {
+                throw DatabaseError.sql(
+                    "commitChatTurn: ordinary turn requires a pending local user row")
             }
-            return assistantID
+            let promotedRows = try execBinding("""
+            UPDATE chat_messages SET turn_state='committed'
+            WHERE id=? AND session_id=? AND role='user'
+              AND source_kind='local' AND turn_state='pending';
+            """) { stmt in
+                sqlite3_bind_int64(stmt, 1, write.userMessageID)
+                bind(stmt, 2, write.sessionID)
+            }
+            guard promotedRows == 1 else {
+                throw DatabaseError.sql(
+                    "commitChatTurn: expected one pending local user row; updated \\(promotedRows)")
+            }
+        }
+        return assistantID
+    }
+
+    /// Close an uncompleted local user row without promoting it into retrieval
+    /// history. This is idempotent and touches only the exact pending user row.
+    @discardableResult
+    public func closePendingChatTurn(
+        sessionID: String,
+        userMessageID: Int64,
+        terminal: ChatTurnTerminal
+    ) throws -> Bool {
+        guard userMessageID > 0 else { return false }
+        return try transactionResult {
+            let changed = try execBinding("""
+            UPDATE chat_messages SET turn_state=?
+            WHERE id=? AND session_id=? AND role='user' AND source_kind='local'
+              AND turn_state='pending';
+            """) { stmt in
+                bind(stmt, 1, terminal.rawValue)
+                sqlite3_bind_int64(stmt, 2, userMessageID)
+                bind(stmt, 3, sessionID)
+            }
+            return changed == 1
         }
     }
 
@@ -3500,7 +4072,7 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, sessionID)
         bind(stmt, 2, requestID)
         bind(stmt, 3, role)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_int64(stmt, 0)
     }
 
@@ -3550,7 +4122,7 @@ public final class SimiGoESISDatabase {
             bind(stmt, Int32(offset + 1), argument)
         }
         var rows: [ChatTurnProvenance] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
@@ -3577,7 +4149,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, sessionID)
-        guard sqlite3_step(stmt) == SQLITE_ROW,
+        guard try stepRowOrDone(stmt),
             let text = sqlite3_column_text(stmt, 1)
         else { return nil }
         let state = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""
@@ -3609,7 +4181,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [ChatMessageRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func col(_ i: Int32) -> String {
                 guard let c = sqlite3_column_text(stmt, i) else { return "" }
                 return String(cString: c)
@@ -3644,15 +4216,16 @@ public final class SimiGoESISDatabase {
                c.content_sha256, c.created_at
         FROM chat_messages c
         LEFT JOIN is_objects o ON o.object_id=c.content_object_id
+        WHERE c.turn_state='committed'
         """
         if let sessionID {
-            sql += " WHERE c.session_id='" + sessionID.replacingOccurrences(of: "'", with: "''") + "'"
+            sql += " AND c.session_id='" + sessionID.replacingOccurrences(of: "'", with: "''") + "'"
         }
         sql += " ORDER BY c.session_id, c.id;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var hits: [ChatHit] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
@@ -3707,7 +4280,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [ChatIndexRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
@@ -3728,7 +4301,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, identity)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
     }
@@ -3743,6 +4316,16 @@ public final class SimiGoESISDatabase {
         public let inputDigest: String
         public let retrievalSettlementID: String?
         public let state: String
+    }
+
+    public enum InformationDemandError: Error, Equatable {
+        case missingDemand(String)
+        case invalidTransition(demandID: String, from: String, to: String)
+        case retrievalBindingMismatch(demandID: String, expected: String, actual: String)
+        case retrievalSettlementUnavailable(String)
+        case producerSettlementUnavailable(String)
+        case advancementConflict(
+            demandID: String, existingSettlementID: String, requestedSettlementID: String)
     }
 
     /// The settlement that most recently answered this exact question in this
@@ -3764,12 +4347,12 @@ public final class SimiGoESISDatabase {
         FROM information_demands d
         JOIN information_advancements a ON a.demand_id=d.demand_id
         WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
-        ORDER BY a.advanced_at DESC, a.advancement_id DESC LIMIT 1;
+        ORDER BY a.rowid DESC LIMIT 1;
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, sessionID)
         bind(stmt, 2, query)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         func text(_ i: Int32) -> String? {
             sqlite3_column_text(stmt, i).map { String(cString: $0) }
         }
@@ -3779,6 +4362,44 @@ public final class SimiGoESISDatabase {
             demandID: text(0) ?? "", answerSettlementID: settlementID,
             retrievalSettlementID: text(2), stateID: text(3) ?? "",
             advancedAt: text(4) ?? "")
+    }
+
+    /// Every published answer for one exact session/question pair, in
+    /// advancement order. Answer-reuse freshness excludes all of these
+    /// answer summaries and their exact question/answer chat rows: after a
+    /// replacement answer is committed, older answers must remain excluded too.
+    public func answeredDemands(
+        sessionID: String, query: String
+    ) throws -> [AnsweredDemand] {
+        let stmt = try prepare("""
+        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
+               a.state_id, a.advanced_at
+        FROM information_demands d
+        JOIN information_advancements a ON a.demand_id=d.demand_id
+        WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
+        ORDER BY a.rowid DESC;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, sessionID)
+        bind(stmt, 2, query)
+        var rows: [AnsweredDemand] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            let settlementID = text(1) ?? ""
+            guard !settlementID.isEmpty else {
+                throw DatabaseError.sql(
+                    "answeredDemands: published answer has an empty settlement identifier")
+            }
+            rows.append(AnsweredDemand(
+                demandID: text(0) ?? "",
+                answerSettlementID: settlementID,
+                retrievalSettlementID: text(2),
+                stateID: text(3) ?? "",
+                advancedAt: text(4) ?? ""))
+        }
+        return rows
     }
 
     /// Publish the demand a settlement answers, so an exact repeat of the same
@@ -3826,13 +4447,14 @@ public final class SimiGoESISDatabase {
               AND a.settlement_id=?
             ORDER BY a.advanced_at DESC, a.advancement_id DESC LIMIT 1;
             """)
+            defer { sqlite3_finalize(existing) }
             bind(existing, 1, sessionID)
             bind(existing, 2, query)
             bind(existing, 3, settlementID)
-            let found = sqlite3_step(existing) == SQLITE_ROW
+            let found = try stepRowOrDone(existing)
             let existingDemandID = found
                 ? sqlite3_column_text(existing, 0).map { String(cString: $0) } : nil
-            sqlite3_finalize(existing)
+            _ = sqlite3_reset(existing)
             if let existingDemandID {
                 publishedDemandID = existingDemandID
                 return
@@ -3890,6 +4512,31 @@ public final class SimiGoESISDatabase {
         case sourceNotValid(String)
     }
 
+    /// Commit the reused assistant transcript and the zero-model-call reuse
+    /// event together. A reader cannot observe one without the other.
+    @discardableResult
+    public func commitReusedChatTurn(
+        _ chatTurn: ChatTurnCommit,
+        sourceSettlementID: String,
+        sourceStateID: String,
+        demandID: String,
+        query: String,
+        reusedAt: Date = Date()
+    ) throws -> Int64 {
+        try transactionResult {
+            let assistantID = try insertChatTurnRows(chatTurn)
+            _ = try insertInformationReuseEvent(
+                sourceSettlementID: sourceSettlementID,
+                sourceStateID: sourceStateID,
+                demandID: demandID,
+                sessionID: chatTurn.sessionID,
+                query: query,
+                consumerStateID: nil,
+                reusedAt: reusedAt)
+            return assistantID
+        }
+    }
+
     /// Record that `demandID` was answered by an ALREADY-SETTLED result with zero
     /// model calls. The lookup gate ran before generation; validity is re-read
     /// inside this write, so a settlement invalidated in between can never be
@@ -3906,6 +4553,29 @@ public final class SimiGoESISDatabase {
         consumerStateID: String? = nil,
         reusedAt: Date = Date()
     ) throws -> InformationReuseEvent {
+        try transactionResult {
+            try insertInformationReuseEvent(
+                sourceSettlementID: sourceSettlementID,
+                sourceStateID: sourceStateID,
+                demandID: demandID,
+                sessionID: sessionID,
+                query: query,
+                consumerStateID: consumerStateID,
+                reusedAt: reusedAt)
+        }
+    }
+
+    /// Caller owns the transaction, allowing a reuse event to commit together
+    /// with the chat transcript that records the answer being served.
+    private func insertInformationReuseEvent(
+        sourceSettlementID: String,
+        sourceStateID: String,
+        demandID: String,
+        sessionID: String,
+        query: String,
+        consumerStateID: String?,
+        reusedAt: Date
+    ) throws -> InformationReuseEvent {
         guard !demandID.isEmpty else {
             throw InformationReuseError.emptyField("demand_id")
         }
@@ -3913,43 +4583,41 @@ public final class SimiGoESISDatabase {
             throw InformationReuseError.emptyField("source_settlement_id")
         }
         let digest = NativeSHA256.hexDigest(Data("\(sessionID)|\(query)".utf8))
-        return try transactionResult {
-            if let existing = try informationReuseEvent(demandID: demandID) {
-                return existing
-            }
-            guard let receipt = try settlementReceipt(sourceSettlementID),
-                receipt.validity == "valid"
-            else {
-                throw InformationReuseError.sourceNotValid(sourceSettlementID)
-            }
-            let reuseID = UUID().uuidString
-            let stamp = Self.stamp(reusedAt)
-            try execBinding("""
-            INSERT INTO information_reuse_events(
-                reuse_id, source_settlement_id, source_state_id, demand_id,
-                session_id, consumer_state_id, canonical_digest, model_calls,
-                reused_at)
-            VALUES(?,?,?,?,?,?,?,0,?);
-            """) { stmt in
-                bind(stmt, 1, reuseID)
-                bind(stmt, 2, sourceSettlementID)
-                bind(stmt, 3, sourceStateID)
-                bind(stmt, 4, demandID)
-                bind(stmt, 5, sessionID)
-                if let consumerStateID {
-                    bind(stmt, 6, consumerStateID)
-                } else {
-                    sqlite3_bind_null(stmt, 6)
-                }
-                bind(stmt, 7, digest)
-                bind(stmt, 8, stamp)
-            }
-            return InformationReuseEvent(
-                reuseID: reuseID, sourceSettlementID: sourceSettlementID,
-                sourceStateID: sourceStateID, demandID: demandID,
-                sessionID: sessionID, consumerStateID: consumerStateID,
-                canonicalDigest: digest, modelCalls: 0, reusedAt: stamp)
+        if let existing = try informationReuseEvent(demandID: demandID) {
+            return existing
         }
+        guard let receipt = try settlementReceipt(sourceSettlementID),
+            receipt.validity == "valid"
+        else {
+            throw InformationReuseError.sourceNotValid(sourceSettlementID)
+        }
+        let reuseID = UUID().uuidString
+        let stamp = Self.stamp(reusedAt)
+        try execBinding("""
+        INSERT INTO information_reuse_events(
+            reuse_id, source_settlement_id, source_state_id, demand_id,
+            session_id, consumer_state_id, canonical_digest, model_calls,
+            reused_at)
+        VALUES(?,?,?,?,?,?,?,0,?);
+        """) { stmt in
+            bind(stmt, 1, reuseID)
+            bind(stmt, 2, sourceSettlementID)
+            bind(stmt, 3, sourceStateID)
+            bind(stmt, 4, demandID)
+            bind(stmt, 5, sessionID)
+            if let consumerStateID {
+                bind(stmt, 6, consumerStateID)
+            } else {
+                sqlite3_bind_null(stmt, 6)
+            }
+            bind(stmt, 7, digest)
+            bind(stmt, 8, stamp)
+        }
+        return InformationReuseEvent(
+            reuseID: reuseID, sourceSettlementID: sourceSettlementID,
+            sourceStateID: sourceStateID, demandID: demandID,
+            sessionID: sessionID, consumerStateID: consumerStateID,
+            canonicalDigest: digest, modelCalls: 0, reusedAt: stamp)
     }
 
     public func informationReuseEvent(demandID: String) throws -> InformationReuseEvent? {
@@ -3961,7 +4629,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, demandID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         func text(_ i: Int32) -> String {
             sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
         }
@@ -3982,7 +4650,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, demandID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         func text(_ i: Int32) -> String? {
             sqlite3_column_text(stmt, i).map { String(cString: $0) }
         }
@@ -4055,6 +4723,23 @@ public final class SimiGoESISDatabase {
         var resultObjectID = ""
         let now = Self.stamp(write.evaluatedAt)
         try transaction {
+            if let existing = try informationDemand(demandID: write.demandID) {
+                guard existing.state == "RESOLVED" else {
+                    throw InformationDemandError.invalidTransition(
+                        demandID: write.demandID, from: existing.state, to: "RESOLVED")
+                }
+                guard existing.retrievalSettlementID == settlementID else {
+                    throw InformationDemandError.retrievalBindingMismatch(
+                        demandID: write.demandID,
+                        expected: settlementID,
+                        actual: existing.retrievalSettlementID ?? "")
+                }
+                // An invalidated or corrupt retrieval is not revived by writing
+                // the same demand key again. A changed basis must get a new id.
+                guard try informationRetrievalPayload(demandID: write.demandID) != nil else {
+                    throw InformationDemandError.retrievalSettlementUnavailable(settlementID)
+                }
+            }
             resultObjectID = try ensureObject(write.payload)
             try execBinding("""
             INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status, payload_object_id)
@@ -4094,7 +4779,7 @@ public final class SimiGoESISDatabase {
                 bind(stmt, 1, write.demandID)
                 bind(stmt, 2, write.query)
                 bind(stmt, 3, write.rootIDs.joined(separator: ","))
-                bind(stmt, 4, write.inputDigest)
+                bind(stmt, 4, "v2:\(write.inputDigest)")
                 bind(stmt, 5, resultSHA)
                 bind(stmt, 6, Int64(write.hitCount))
                 bind(stmt, 7, now)
@@ -4106,7 +4791,7 @@ public final class SimiGoESISDatabase {
             let itemsJSON = (try? JSONSerialization.data(
                 withJSONObject: write.itemIDs, options: [.sortedKeys, .withoutEscapingSlashes]))
                 .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
-            try execBinding("""
+            let demandRows = try execBinding("""
             INSERT INTO information_demands(
                 demand_id, state_id, session_id, continuation_point, query,
                 required_item_ids_json, pending_obligations_json,
@@ -4121,7 +4806,8 @@ public final class SimiGoESISDatabase {
                 retrieval_demand_id=excluded.retrieval_demand_id,
                 retrieval_settlement_id=excluded.retrieval_settlement_id,
                 request_identity=excluded.request_identity,
-                state='RESOLVED';
+                state='RESOLVED'
+            WHERE information_demands.state='RESOLVED';
             """) { stmt in
                 bind(stmt, 1, write.demandID)
                 bind(stmt, 2, write.stateID)
@@ -4133,6 +4819,11 @@ public final class SimiGoESISDatabase {
                 bind(stmt, 8, settlementID)
                 bind(stmt, 9, now)
                 bind(stmt, 10, write.requestIdentity)
+            }
+            guard demandRows == 1 else {
+                let current = try informationDemand(demandID: write.demandID)?.state ?? "missing"
+                throw InformationDemandError.invalidTransition(
+                    demandID: write.demandID, from: current, to: "RESOLVED")
             }
             // A newer resolution of the same question IN THE SAME REQUEST
             // supersedes the old one. Knowledge is shared across sessions, but
@@ -4174,7 +4865,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, demandID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         let digest = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
         guard let objectText = sqlite3_column_text(stmt, 1) else { return nil }
         let objectID = String(cString: objectText)
@@ -4212,10 +4903,46 @@ public final class SimiGoESISDatabase {
         _ write: InformationAdvancementWrite
     ) throws -> String {
         let advancementID = UUID().uuidString
-        try transaction {
+        return try transactionResult {
             try insertInformationAdvancementRows(write, advancementID: advancementID)
         }
-        return advancementID
+    }
+
+    /// Commit a Responses continuation whose child settlement already exists.
+    /// Chat, advancement, the session link and summary are committed together
+    /// against that exact valid settlement.
+    @discardableResult
+    public func commitChatTurnWithExistingSettlement(
+        _ chatTurn: ChatTurnCommit, settlementID: String, stateID: String,
+        modelIdentity: String, demandID: String, retrievalSettlementID: String,
+        actions: [String], query: String
+    ) throws -> Int64 {
+        guard !settlementID.isEmpty, !stateID.isEmpty,
+              !demandID.isEmpty, !retrievalSettlementID.isEmpty else {
+            throw DatabaseError.sql("existing-settlement chat commit requires complete identity")
+        }
+        return try transactionResult {
+            guard let producer = try settlementReceipt(settlementID),
+                  producer.validity == "valid", producer.stateID == stateID else {
+                throw DatabaseError.sql("existing Responses settlement is missing, invalid or bound to another state")
+            }
+            guard let retrieval = try settlementReceipt(retrievalSettlementID),
+                  retrieval.validity == "valid",
+                  retrieval.validationStatus == "IS_RETRIEVAL" else {
+                throw DatabaseError.sql("Responses retrieval settlement is missing, invalid or not an IS retrieval")
+            }
+            let assistantID = try insertChatTurnRows(chatTurn)
+            _ = try insertInformationAdvancementRows(.init(
+                demandID: demandID, stateID: stateID, settlementID: settlementID,
+                retrievalSettlementID: retrievalSettlementID,
+                actions: actions, result: producer.payload))
+            try insertChatSessionLink(
+                sessionID: chatTurn.sessionID, stateID: stateID, modelIdentity: modelIdentity)
+            _ = try recordSettlementSummaryInTransaction(
+                settlementID: settlementID, sessionID: chatTurn.sessionID,
+                query: query, settledAt: chatTurn.createdAt)
+            return assistantID
+        }
     }
 
     /// Caller owns the transaction so advancement can commit atomically with the
@@ -4230,6 +4957,79 @@ public final class SimiGoESISDatabase {
             .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
         let resultJSON = String(decoding: write.result, as: UTF8.self)
         let now = Self.stamp(write.advancedAt)
+
+        guard let demand = try informationDemand(demandID: write.demandID) else {
+            throw InformationDemandError.missingDemand(write.demandID)
+        }
+        guard demand.retrievalSettlementID == write.retrievalSettlementID else {
+            throw InformationDemandError.retrievalBindingMismatch(
+                demandID: write.demandID,
+                expected: demand.retrievalSettlementID ?? "",
+                actual: write.retrievalSettlementID)
+        }
+        guard let retrieval = try settlementReceipt(write.retrievalSettlementID),
+              retrieval.validity == "valid",
+              retrieval.validationStatus == "IS_RETRIEVAL",
+              try informationRetrievalPayload(demandID: write.demandID) != nil else {
+            throw InformationDemandError.retrievalSettlementUnavailable(
+                write.retrievalSettlementID)
+        }
+        guard let producer = try settlementReceipt(write.settlementID),
+              producer.validity == "valid",
+              producer.stateID == write.stateID else {
+            throw InformationDemandError.producerSettlementUnavailable(write.settlementID)
+        }
+
+        // A retry of the same answer is idempotent. A different answer cannot
+        // take over a demand that has already advanced.
+        let existing = try prepare("""
+        SELECT advancement_id, state_id, settlement_id,
+               retrieval_settlement_id, actions_json, result_json
+        FROM information_advancements
+        WHERE demand_id=? ORDER BY rowid DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(existing) }
+        bind(existing, 1, write.demandID)
+        if try stepRowOrDone(existing) {
+            func text(_ index: Int32) -> String {
+                sqlite3_column_text(existing, index)
+                    .map { String(cString: $0) } ?? ""
+            }
+            let existingID = text(0)
+            let existingState = text(1)
+            let existingSettlement = text(2)
+            let existingRetrieval = text(3)
+            let existingActions = text(4)
+            let existingResult = text(5)
+            guard demand.state == "ADVANCED",
+                  existingState == write.stateID,
+                  existingSettlement == write.settlementID,
+                  existingRetrieval == write.retrievalSettlementID,
+                  existingActions == actionsJSON,
+                  existingResult == resultJSON else {
+                throw InformationDemandError.advancementConflict(
+                    demandID: write.demandID,
+                    existingSettlementID: existingSettlement,
+                    requestedSettlementID: write.settlementID)
+            }
+            return existingID
+        }
+        guard demand.state == "RESOLVED" else {
+            throw InformationDemandError.invalidTransition(
+                demandID: write.demandID, from: demand.state, to: "ADVANCED")
+        }
+        let changed = try execBinding("""
+        UPDATE information_demands SET state='ADVANCED'
+        WHERE demand_id=? AND state='RESOLVED' AND retrieval_settlement_id=?;
+        """) { stmt in
+            bind(stmt, 1, write.demandID)
+            bind(stmt, 2, write.retrievalSettlementID)
+        }
+        guard changed == 1 else {
+            let current = try informationDemand(demandID: write.demandID)?.state ?? "missing"
+            throw InformationDemandError.invalidTransition(
+                demandID: write.demandID, from: current, to: "ADVANCED")
+        }
         try execBinding("""
         INSERT INTO information_advancements(
             advancement_id, demand_id, state_id, settlement_id,
@@ -4245,9 +5045,6 @@ public final class SimiGoESISDatabase {
             bind(stmt, 7, resultJSON)
             bind(stmt, 8, now)
         }
-        try execBinding("""
-        UPDATE information_demands SET state='ADVANCED' WHERE demand_id=?;
-        """) { stmt in bind(stmt, 1, write.demandID) }
         try execBinding("""
         INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
         SELECT ?,?,?
@@ -4386,7 +5183,7 @@ public final class SimiGoESISDatabase {
         }
 
         let itemsJSON = "[]"
-        try execBinding("""
+        let demandRows = try execBinding("""
         INSERT INTO information_demands(
             demand_id, state_id, session_id, continuation_point, query,
             required_item_ids_json, pending_obligations_json,
@@ -4395,7 +5192,8 @@ public final class SimiGoESISDatabase {
         VALUES(?,?,NULL,'settlement-consumption',?,?,'[]','[]',?,NULL,NULL,'ADVANCED',?)
         ON CONFLICT(demand_id) DO UPDATE SET
             state_id=excluded.state_id, query=excluded.query,
-            input_digest=excluded.input_digest, state='ADVANCED';
+            input_digest=excluded.input_digest, state='ADVANCED'
+        WHERE information_demands.state='ADVANCED';
         """) { stmt in
             bind(stmt, 1, plan.demandID)
             bind(stmt, 2, plan.consumerState.id)
@@ -4403,6 +5201,11 @@ public final class SimiGoESISDatabase {
             bind(stmt, 4, itemsJSON)
             bind(stmt, 5, plan.canonicalDigest)
             bind(stmt, 6, Self.stamp(plan.consumedAt))
+        }
+        guard demandRows == 1 else {
+            let current = try informationDemand(demandID: plan.demandID)?.state ?? "missing"
+            throw InformationDemandError.invalidTransition(
+                demandID: plan.demandID, from: current, to: "ADVANCED")
         }
         try execBinding("""
         INSERT INTO information_advancements(
@@ -4465,6 +5268,7 @@ public final class SimiGoESISDatabase {
         query: String,
         rootIDs: [String]? = nil,
         extractField: String = "content",
+        requiredConsumerIdentity: SimiGoSettlementIdentityBinding.Identity? = nil,
         declaredAt: Date = Date()
     ) throws -> SettlementReuseDeclaration {
         try transactionResult {
@@ -4489,24 +5293,22 @@ public final class SimiGoESISDatabase {
             let requestedRoots = (rootIDs?.isEmpty == false)
                 ? Array(Set(rootIDs!)).sorted()
                 : canonical.rootIDs
-            let bindings = try settlementBindings(settlementID: settlementID)
-            let derived = row.validationStatus == "DERIVED_CONSUMPTION"
-            let modelKey = derived
-                ? SimiGoSettlementIdentityBinding.consumerModelKey
-                : SimiGoSettlementIdentityBinding.modelKey
-            let tokenizerKey = derived
-                ? SimiGoSettlementIdentityBinding.consumerTokenizerKey
-                : SimiGoSettlementIdentityBinding.tokenizerKey
-            guard let model = bindings[modelKey], !model.isEmpty,
-                let tokenizer = bindings[tokenizerKey], !tokenizer.isEmpty
-            else {
-                throw SimiGoSettlementConsumption.Refusal.identityUndeclared(settlementID)
+            // Engine identity is provenance by default. It becomes a reuse
+            // restriction only when the task explicitly declares the consumer
+            // identity as semantically material.
+            let identityJSON: String
+            if let requiredConsumerIdentity {
+                guard requiredConsumerIdentity.isSpecified else {
+                    throw SimiGoSettlementConsumption.Refusal.identityUndeclared(settlementID)
+                }
+                identityJSON = try Self.canonicalJSON([
+                    "kind": "consumer",
+                    "model": SimiGoSettlementIdentityBinding.digest(requiredConsumerIdentity.model),
+                    "tokenizer": SimiGoSettlementIdentityBinding.digest(requiredConsumerIdentity.tokenizer),
+                ])
+            } else {
+                identityJSON = "{}"
             }
-            let identityJSON = try Self.canonicalJSON([
-                "kind": derived ? "consumer" : "producer",
-                "model": model,
-                "tokenizer": tokenizer,
-            ])
             let rootsJSON = try Self.canonicalJSON(requestedRoots)
 
             if let existing = try settlementReuseContract(settlementID: settlementID) {
@@ -4516,7 +5318,10 @@ public final class SimiGoESISDatabase {
                     && existing.query == query
                     && existing.rootIDs == requestedRoots
                     && existing.canonicalDigest == canonical.digest
-                    && existing.requiredIdentityJSON == identityJSON
+                    // Omitting an option preserves an existing declaration's
+                    // identity constraint; only an explicit replacement is compared.
+                    && (requiredConsumerIdentity == nil
+                        || existing.requiredIdentityJSON == identityJSON)
                     && existing.extractField == extractField
                 guard same else {
                     throw SimiGoSettlementConsumption.Refusal.contractMismatch(
@@ -4568,11 +5373,15 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         func text(_ i: Int32) -> String {
             sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
         }
-        let roots = (try? JSONDecoder().decode([String].self, from: Data(text(5).utf8))) ?? []
+        let roots = try JSONDecoder().decode([String].self, from: Data(text(5).utf8))
+        guard roots == Array(Set(roots)).sorted() else {
+            throw DatabaseError.sql(
+                "settlementReuseContract: root_ids_json is not a canonical sorted unique array")
+        }
         return SettlementReuseDeclaration(
             settlementID: text(0), contractID: text(1), demandClass: text(2),
             contractVersion: text(3), query: text(4), rootIDs: roots,
@@ -4610,7 +5419,7 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, sourceSettlementID)
         bind(stmt, 2, consumerStateID)
         bind(stmt, 3, demandID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return Self.consumptionRow(stmt)
     }
 
@@ -4627,7 +5436,7 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, consumerStateID)
         var out: [SettlementConsumptionRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             out.append(Self.consumptionRow(stmt))
         }
         return out
@@ -4662,6 +5471,13 @@ public final class SimiGoESISDatabase {
 
     public func linkChatSession(sessionID: String, stateID: String,
                                 modelIdentity: String) throws {
+        try insertChatSessionLink(sessionID: sessionID, stateID: stateID, modelIdentity: modelIdentity)
+    }
+
+    /// Caller owns the transaction when this helper is part of a larger write.
+    private func insertChatSessionLink(
+        sessionID: String, stateID: String, modelIdentity: String
+    ) throws {
         try execBinding("""
         INSERT INTO chat_execution_links(session_id, current_state_id, model_identity, updated_at)
         VALUES(?,?,?,?)
@@ -4683,7 +5499,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, sessionID)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
     }
@@ -4697,7 +5513,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
     }
@@ -4710,7 +5526,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
     }
@@ -4723,7 +5539,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
@@ -4733,7 +5549,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         return Int(sqlite3_column_int64(stmt, 0))
     }
 
@@ -4844,7 +5660,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [ExternalFileRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func col(_ i: Int32) -> String {
                 guard let c = sqlite3_column_text(stmt, i) else { return "" }
                 return String(cString: c)
@@ -4869,7 +5685,7 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
-        if sqlite3_step(stmt) == SQLITE_ROW { return sqlite3_column_int64(stmt, 0) }
+        if try stepRowOrDone(stmt) { return sqlite3_column_int64(stmt, 0) }
         return nil
     }
 
@@ -4879,7 +5695,7 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
-        if sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        if try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) {
             return String(cString: c)
         }
         return nil
@@ -4954,7 +5770,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT payload_object_id FROM settlements WHERE settlement_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) else {
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else {
             return nil
         }
         return String(cString: c)
@@ -4968,7 +5784,7 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) else {
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else {
             return nil
         }
         return String(cString: c)
@@ -4995,7 +5811,10 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
         var out: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("affectedClosure: NULL identifier")
+            }
             out.append(String(cString: c))
         }
         return out
@@ -5046,14 +5865,38 @@ public final class SimiGoESISDatabase {
     private func invalidateRetrievalSettlementsInTransaction(
         rootID: String, relativePath: String, oldDigest: String
     ) throws {
-        guard !oldDigest.isEmpty else { return }
-        let needle = "\(rootID)/\(relativePath)=\(oldDigest)"
+        // File-content rows contribute their previous digest to the canonical
+        // input string. Filename-only candidates (binary/oversized files) have
+        // no such digest, so their canonical root/path token must also invalidate
+        // the retrieval that cited the filename.
+        if !oldDigest.isEmpty {
+            let digestNeedle = "\(rootID)/\(relativePath)=\(oldDigest)"
+            try execBinding("""
+            UPDATE retrieval_settlements SET status='invalidated'
+            WHERE status='valid' AND instr(inputs_digest, ?) > 0;
+            """) { stmt in
+                bind(stmt, 1, digestNeedle)
+            }
+        }
+        let filenameNeedle = try Self.canonicalJSON([
+            "root_id": rootID,
+            "relative_path": relativePath,
+        ])
         try execBinding("""
         UPDATE retrieval_settlements SET status='invalidated'
         WHERE status='valid' AND instr(inputs_digest, ?) > 0;
         """) { stmt in
-            bind(stmt, 1, needle)
+            bind(stmt, 1, filenameNeedle)
         }
+        // Legacy v1 demand rows stored only the content digest string and did
+        // not persist filename-only candidates or explicit root scope. Their
+        // provenance cannot prove that a filename-only source was absent, so
+        // invalidate these legacy rows on any source-path change rather than
+        // leaving an unverifiable retrieval advertised as valid.
+        try execBinding("""
+        UPDATE retrieval_settlements SET status='invalidated'
+        WHERE status='valid' AND inputs_digest LIKE 'legacy-v1:%';
+        """) { _ in }
     }
 
     /// Reconciliation for lost watcher events: mark indexed files under a root
@@ -5062,47 +5905,84 @@ public final class SimiGoESISDatabase {
     /// settlement invalidated by the sweep.
     @discardableResult
     public func reconcileRoot(rootID: String, seenRelativePaths: Set<String>) throws -> [String] {
-        let stmt = try prepare("SELECT relative_path FROM external_files WHERE root_id=?;")
-        bind(stmt, 1, rootID)
-        var indexed: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
-            indexed.append(String(cString: c))
-        }
-        sqlite3_finalize(stmt)
-        let existing = indexed.filter { !seenRelativePaths.contains($0) }
-        guard !existing.isEmpty else { return [] }
-
-        var invalidated: [String] = []
-        try transaction {
-            for path in existing {
-                let digestStmt = try prepare("""
-                SELECT content_sha256 FROM file_contents WHERE root_id=? AND relative_path=?;
-                """)
-                var oldDigest = ""
-                if sqlite3_step(digestStmt) == SQLITE_ROW,
-                    let c = sqlite3_column_text(digestStmt, 0)
-                {
-                    oldDigest = String(cString: c)
+        // Hold the write lock for both the inventory snapshot and the missing-path
+        // mutations. A root settlement cannot update this inventory between them.
+        return try transactionResult {
+            let stmt = try prepare("""
+            SELECT relative_path FROM external_files
+            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
+            """)
+            defer { sqlite3_finalize(stmt) }
+            bind(stmt, 1, rootID)
+            var indexed: [String] = []
+            while true {
+                let rc = sqlite3_step(stmt)
+                if rc == SQLITE_ROW {
+                    guard let c = sqlite3_column_text(stmt, 0) else {
+                        throw DatabaseError.sql(
+                            "reconcileRoot: NULL relative_path for root \(rootID)")
+                    }
+                    indexed.append(String(cString: c))
+                    continue
                 }
-                sqlite3_finalize(digestStmt)
-                invalidated += try affectedClosure(rootID: rootID, relativePath: path)
+                guard rc == SQLITE_DONE else {
+                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                }
+                break
+            }
+
+            let existing = indexed.filter { !seenRelativePaths.contains($0) }
+            guard !existing.isEmpty else { return [] }
+
+            var invalidated = Set<String>()
+            for path in existing {
+                let oldDigest: String
+                do {
+                    let digestStmt = try prepare("""
+                    SELECT content_sha256 FROM file_contents
+                    WHERE root_id=? AND relative_path=?;
+                    """)
+                    defer { sqlite3_finalize(digestStmt) }
+                    bind(digestStmt, 1, rootID)
+                    bind(digestStmt, 2, path)
+                    let rc = sqlite3_step(digestStmt)
+                    if rc == SQLITE_ROW {
+                        guard let c = sqlite3_column_text(digestStmt, 0) else {
+                            throw DatabaseError.sql(
+                                "reconcileRoot: NULL content digest for \(rootID)/\(path)")
+                        }
+                        oldDigest = String(cString: c)
+                    } else if rc == SQLITE_DONE {
+                        // An external-file-only row (binary/oversized/non-UTF8)
+                        // legitimately has no carried file_contents digest.
+                        oldDigest = ""
+                    } else {
+                        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    }
+                }
+
+                invalidated.formUnion(try affectedClosure(
+                    rootID: rootID, relativePath: path))
                 try invalidateRetrievalSettlementsInTransaction(
                     rootID: rootID, relativePath: path, oldDigest: oldDigest)
                 try execBinding("""
                 DELETE FROM file_contents WHERE root_id=? AND relative_path=?;
-                """) { s in
-                    bind(s, 1, rootID); bind(s, 2, path)
+                """) { deleteStmt in
+                    bind(deleteStmt, 1, rootID)
+                    bind(deleteStmt, 2, path)
                 }
                 try execBinding("""
                 UPDATE external_files SET status='missing'
                 WHERE root_id=? AND relative_path=?;
-                """) { s in
-                    bind(s, 1, rootID); bind(s, 2, path)
+                """) { updateStmt in
+                    bind(updateStmt, 1, rootID)
+                    bind(updateStmt, 2, path)
                 }
             }
-            try markSettlementsInvalidInTransaction(invalidated)
+            let invalidatedIDs = invalidated.sorted()
+            try markSettlementsInvalidInTransaction(invalidatedIDs)
+            return invalidatedIDs
         }
-        return invalidated
     }
 
     /// Transitive dependents of a seed settlement set: the seeds themselves plus
@@ -5122,7 +6002,10 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         var out: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("transitiveDependents: NULL identifier")
+            }
             out.append(String(cString: c))
         }
         return out
@@ -5150,7 +6033,10 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT type FROM pragma_table_info(?);")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, table)
-        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("tableHasBlobColumn: NULL column type")
+            }
             if String(cString: c).uppercased().contains("BLOB") { return true }
         }
         return false
@@ -5161,8 +6047,12 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT validity FROM settlements WHERE settlement_id=?;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        if sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        let rc = sqlite3_step(stmt)
+        if rc == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
             return String(cString: c)
+        }
+        if rc != SQLITE_DONE {
+            throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
         }
         throw DatabaseError.sql("settlementValidity: unknown settlement \(settlementID)")
     }
@@ -5176,7 +6066,7 @@ public final class SimiGoESISDatabase {
         WHERE validity='valid' AND ifnull(validation_status,'')<>'DERIVED_CONSUMPTION';
         """)
         defer { sqlite3_finalize(stmt) }
-        if sqlite3_step(stmt) == SQLITE_ROW { return Int(sqlite3_column_int64(stmt, 0)) }
+        if try stepRowOrDone(stmt) { return Int(sqlite3_column_int64(stmt, 0)) }
         return 0
     }
 
@@ -5201,7 +6091,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         func text(_ i: Int32) -> String? {
             sqlite3_column_text(stmt, i).map { String(cString: $0) }
         }
@@ -5265,8 +6155,9 @@ public final class SimiGoESISDatabase {
                validation_status, validity, invalidated_at, payload_object_id
         FROM settlements WHERE settlement_id=?;
         """)
+        defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        if sqlite3_step(stmt) == SQLITE_ROW {
+        if try stepRowOrDone(stmt) {
             found = true
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
@@ -5284,7 +6175,7 @@ public final class SimiGoESISDatabase {
             invalidatedAt = text(7)
             payloadObjectID = text(8)
         }
-        sqlite3_finalize(stmt)
+        _ = sqlite3_reset(stmt)
         guard found else { return nil }
 
         let payload: Data
@@ -5371,7 +6262,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         if let c = sqlite3_column_text(stmt, 0) { payloadDigest = String(cString: c) }
         if let object = sqlite3_column_text(stmt, 2).map({ String(cString: $0) }),
             !object.isEmpty {
@@ -5452,7 +6343,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard try stepRowOrDone(stmt) else { return nil }
         func text(_ i: Int32) -> String {
             sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
         }
@@ -5491,7 +6382,7 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, sessionID ?? "")
         bind(stmt, 2, Int64(max(1, min(limit, 2000))))
         var out: [SettlementSummaryRecord] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
             }
@@ -5538,7 +6429,7 @@ public final class SimiGoESISDatabase {
         """)
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, consumerSettlementID)
-        guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
     }
@@ -5564,14 +6455,15 @@ public final class SimiGoESISDatabase {
           AND ifnull(s.validation_status,'') NOT IN ('IS_RETRIEVAL','MIGRATED_LEGACY')
         ORDER BY s.settled_at, s.settlement_id;
         """)
+        defer { sqlite3_finalize(stmt) }
         var pending: [(id: String, settledAt: String, status: String?)] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             let id = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
             let settledAt = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
             let status = sqlite3_column_text(stmt, 2).map { String(cString: $0) }
             if !id.isEmpty { pending.append((id, settledAt, status)) }
         }
-        sqlite3_finalize(stmt)
+        _ = sqlite3_reset(stmt)
 
         var written = 0
         for row in pending {
@@ -5584,12 +6476,13 @@ public final class SimiGoESISDatabase {
             WHERE a.settlement_id=?
             ORDER BY a.advanced_at DESC LIMIT 1;
             """)
+            defer { sqlite3_finalize(ctx) }
             bind(ctx, 1, row.id)
-            if sqlite3_step(ctx) == SQLITE_ROW {
+            if try stepRowOrDone(ctx) {
                 query = sqlite3_column_text(ctx, 0).map { String(cString: $0) } ?? ""
                 sessionID = sqlite3_column_text(ctx, 1).map { String(cString: $0) }
             }
-            sqlite3_finalize(ctx)
+            _ = sqlite3_reset(ctx)
             if let record = try recordSettlementSummaryInTransaction(
                 settlementID: row.id, sessionID: sessionID, query: query,
                 settledAt: parseISO8601(row.settledAt) ?? Date()),
@@ -5614,7 +6507,7 @@ public final class SimiGoESISDatabase {
         bind(stmt, 1, Int64(prefix.utf8.count))
         bind(stmt, 2, prefix)
         var out: [DependencyEntry] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
             }
@@ -5658,9 +6551,10 @@ public final class SimiGoESISDatabase {
           ON e.root_id=f.root_id AND e.relative_path=f.relative_path
         WHERE f.root_id=? AND f.relative_path=?;
         """)
+        defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, rootID)
         bind(stmt, 2, relativePath)
-        if sqlite3_step(stmt) == SQLITE_ROW {
+        if try stepRowOrDone(stmt) {
             found = true
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
@@ -5674,7 +6568,7 @@ public final class SimiGoESISDatabase {
             }
             status = text(4)
         }
-        sqlite3_finalize(stmt)
+        _ = sqlite3_reset(stmt)
         guard found else { return nil }
 
         let content: Data
@@ -5688,8 +6582,18 @@ public final class SimiGoESISDatabase {
             guard let locator = try rootLocatorPath(rootID),
                 !relativePath.split(separator: "/").contains("..")
             else { return nil }
-            let url = URL(fileURLWithPath: locator).appendingPathComponent(relativePath)
-            guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]),
+            let rootDirectoryFD: Int32
+            do {
+                rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
+            } catch {
+                return nil
+            }
+            defer { Darwin.close(rootDirectoryFD) }
+            guard let read = try? readRootFileNoFollow(
+                rootDirectoryFD: rootDirectoryFD,
+                relativePath: relativePath,
+                maximumBytes: nil),
+                let data = read.data,
                 NativeSHA256.hexDigest(data) == digest
             else { return nil }
             content = data
@@ -5721,7 +6625,10 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, settlementID)
         var out: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("upstreamDependencyClosure: NULL identifier")
+            }
             out.append(String(cString: c))
         }
         return out
@@ -5861,7 +6768,7 @@ public final class SimiGoESISDatabase {
             let stmt = try prepare("SELECT position, continuation_id, anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json FROM execution_states WHERE state_id=?;")
             defer { sqlite3_finalize(stmt) }
             bind(stmt, 1, s.id)
-            guard sqlite3_step(stmt) == SQLITE_ROW else {
+            guard try stepRowOrDone(stmt) else {
                 throw DatabaseError.migrationMismatch("state not read back: \(s.id)")
             }
             let pos = Int(sqlite3_column_int64(stmt, 0))
@@ -5870,11 +6777,18 @@ public final class SimiGoESISDatabase {
             let nextInput = sqlite3_column_text(stmt, 4).map { String(cString: $0) } ?? ""
             let prefixText = sqlite3_column_text(stmt, 5).map { String(cString: $0) } ?? "[]"
             let cpText = sqlite3_column_text(stmt, 6).map { String(cString: $0) } ?? "[]"
-            let prefixRead = (try? dec.decode([String].self, from: Data(prefixText.utf8))) ?? []
-            let cpRead = (try? dec.decode([String].self, from: Data(cpText.utf8))) ?? []
+            let prefixRead = try dec.decode([String].self, from: Data(prefixText.utf8))
+            let cpStrings = try dec.decode([String].self, from: Data(cpText.utf8))
+            let cpRead = try cpStrings.map { value -> UUID in
+                guard let id = UUID(uuidString: value) else {
+                    throw DatabaseError.migrationMismatch(
+                        "invalid checkpoint UUID in state \(s.id): \(value)")
+                }
+                return id
+            }
             guard pos == s.position, cont == s.continuationID, anchor == s.anchor,
                   nextInput == s.nextInput, prefixRead == s.prefix,
-                  cpRead == s.checkpointIDs.map({ $0.uuidString }) else {
+                  cpRead == s.checkpointIDs else {
                 throw DatabaseError.migrationMismatch("state field drift: \(s.id)")
             }
         }
@@ -5884,13 +6798,13 @@ public final class SimiGoESISDatabase {
             let stmt = try prepare("SELECT checksum, state_id, prefix_json FROM checkpoints WHERE checkpoint_id=?;")
             defer { sqlite3_finalize(stmt) }
             bind(stmt, 1, c.id.uuidString)
-            guard sqlite3_step(stmt) == SQLITE_ROW else {
+            guard try stepRowOrDone(stmt) else {
                 throw DatabaseError.migrationMismatch("checkpoint not read back: \(c.id)")
             }
             let sum = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
             let state = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
             let prefixText = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "[]"
-            let prefixRead = (try? dec.decode([String].self, from: Data(prefixText.utf8))) ?? []
+            let prefixRead = try dec.decode([String].self, from: Data(prefixText.utf8))
             guard sum == c.checksum, state == c.stateID, prefixRead == c.prefix else {
                 throw DatabaseError.migrationMismatch("checkpoint field drift: \(c.id)")
             }
@@ -5899,7 +6813,7 @@ public final class SimiGoESISDatabase {
             let stmt = try prepare("SELECT payload_digest, state_id FROM settlements WHERE settlement_id=?;")
             defer { sqlite3_finalize(stmt) }
             bind(stmt, 1, c.id.uuidString)
-            guard sqlite3_step(stmt) == SQLITE_ROW else {
+            guard try stepRowOrDone(stmt) else {
                 throw DatabaseError.migrationMismatch("settlement not read back: \(c.id)")
             }
             let digest = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
@@ -5993,7 +6907,7 @@ public final class SimiGoESISDatabase {
                     bind(stmt, 7, st.lifecycle)
                     bind(stmt, 8, Self.stamp( st.createdAt))
                     bind(stmt, 9, st.nextInput)
-                    bind(stmt, 10, prefixJSON)
+                    bind(stmt, 10, prefixJSON ?? "[]")
                     bind(stmt, 11, cpJSON)
                 }
             }
@@ -6052,16 +6966,32 @@ public final class SimiGoESISDatabase {
         func opt(_ stmt: OpaquePointer, _ i: Int32) -> String? {
             sqlite3_column_type(stmt, i) == SQLITE_NULL ? nil : txt(stmt, i)
         }
-        while sqlite3_step(sstmt) == SQLITE_ROW {
-            let prefix = (try? dec.decode([String].self, from: Data(txt(sstmt, 9).utf8))) ?? []
-            let cpStrings = (try? dec.decode([String].self, from: Data(txt(sstmt, 10).utf8))) ?? []
-            let created = parseISO8601(txt(sstmt, 3)) ?? Date(timeIntervalSince1970: 0)
+        while try stepRowOrDone(sstmt) {
+            let stateID = txt(sstmt, 0)
+            let prefixJSON = txt(sstmt, 9)
+            let checkpointJSON = txt(sstmt, 10)
+            // These columns are authoritative serialized state. An empty,
+            // NULL, or malformed value is corruption; never reconstruct an
+            // apparently complete graph by silently substituting empty arrays.
+            let prefix = try dec.decode([String].self, from: Data(prefixJSON.utf8))
+            let checkpointStrings = try dec.decode(
+                [String].self, from: Data(checkpointJSON.utf8))
+            let checkpointIDs = try checkpointStrings.map { value -> UUID in
+                guard let id = UUID(uuidString: value) else {
+                    throw DatabaseError.sql(
+                        "readGraph: invalid checkpoint UUID '\(value)' for state \(stateID)")
+                }
+                return id
+            }
+            guard let created = parseISO8601(txt(sstmt, 3)) else {
+                throw DatabaseError.sql("readGraph: invalid created_at for state \(stateID)")
+            }
             states.append(GraphState(
-                id: txt(sstmt, 0), parentID: opt(sstmt, 1), modelIdentity: txt(sstmt, 2),
+                id: stateID, parentID: opt(sstmt, 1), modelIdentity: txt(sstmt, 2),
                 createdAt: created, position: Int(sqlite3_column_int64(sstmt, 4)),
                 continuationID: txt(sstmt, 5), nextInput: txt(sstmt, 8),
                 anchor: txt(sstmt, 6), prefix: prefix, lifecycle: txt(sstmt, 7),
-                checkpointIDs: cpStrings.compactMap { UUID(uuidString: $0) }))
+                checkpointIDs: checkpointIDs))
         }
         var cps: [GraphCheckpoint] = []
         let cstmt = try prepare("""
@@ -6070,15 +7000,22 @@ public final class SimiGoESISDatabase {
         FROM checkpoints ORDER BY created_at;
         """)
         defer { sqlite3_finalize(cstmt) }
-        while sqlite3_step(cstmt) == SQLITE_ROW {
-            let prefix = (try? dec.decode([String].self, from: Data(txt(cstmt, 7).utf8))) ?? []
-            guard let uuid = UUID(uuidString: txt(cstmt, 0)) else { continue }
+        while try stepRowOrDone(cstmt) {
+            let checkpointIDText = txt(cstmt, 0)
+            guard let uuid = UUID(uuidString: checkpointIDText) else {
+                throw DatabaseError.sql(
+                    "readGraph: invalid checkpoint identifier '\(checkpointIDText)'")
+            }
+            let prefix = try dec.decode([String].self, from: Data(txt(cstmt, 7).utf8))
+            guard let created = parseISO8601(txt(cstmt, 8)) else {
+                throw DatabaseError.sql(
+                    "readGraph: invalid created_at for checkpoint \(checkpointIDText)")
+            }
             cps.append(GraphCheckpoint(
                 id: uuid, stateID: txt(cstmt, 1), modelIdentity: txt(cstmt, 2),
                 position: Int(sqlite3_column_int64(cstmt, 3)), continuationID: txt(cstmt, 4),
                 nextInput: txt(cstmt, 5), anchor: txt(cstmt, 6), prefix: prefix,
-                createdAt: parseISO8601(txt(cstmt, 8)) ?? Date(timeIntervalSince1970: 0),
-                checksum: txt(cstmt, 9)))
+                createdAt: created, checksum: txt(cstmt, 9)))
         }
         return (states, cps)
     }
@@ -6102,14 +7039,17 @@ public final class SimiGoESISDatabase {
         SELECT settlement_id, state_id, schema_version, payload, payload_digest, settled_at,
                payload_object_id
         FROM settlements
-        WHERE validation_status IS NULL OR validation_status != 'MIGRATED_LEGACY'
+        WHERE validation_status IS NULL
+           OR validation_status NOT IN ('MIGRATED_LEGACY','IS_RETRIEVAL')
         ORDER BY settled_at, settlement_id;
         """)
         defer { sqlite3_finalize(stmt) }
         func t(_ i: Int32) -> String { sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? "" }
         var out: [SettlementReceiptRow] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            guard let uuid = UUID(uuidString: t(0)) else { continue }
+        while try stepRowOrDone(stmt) {
+            guard let uuid = UUID(uuidString: t(0)) else {
+                throw DatabaseError.sql("readSettlementReceipts: invalid settlement UUID '\(t(0))'")
+            }
             let objectID = t(6)
             let payload: Data
             if !objectID.isEmpty {
@@ -6120,9 +7060,17 @@ public final class SimiGoESISDatabase {
                     payload = Data(bytes: base, count: bytes)
                 } else { payload = Data() }
             }
+            guard NativeSHA256.hexDigest(payload) == t(4) else {
+                throw DatabaseError.sql(
+                    "readSettlementReceipts: payload digest mismatch for \(uuid)")
+            }
+            guard let settledAt = parseISO8601(t(5)) else {
+                throw DatabaseError.sql(
+                    "readSettlementReceipts: invalid settled_at for \(uuid)")
+            }
             out.append(SettlementReceiptRow(
                 id: uuid, stateID: t(1), schemaVersion: t(2), payload: payload,
-                payloadDigest: t(4), settledAt: parseISO8601(t(5)) ?? Date(timeIntervalSince1970: 0)))
+                payloadDigest: t(4), settledAt: settledAt))
         }
         return out
     }
@@ -6131,7 +7079,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var out: [String] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
+        while try stepRowOrDone(stmt) {
             if let c = sqlite3_column_text(stmt, 0) { out.append(String(cString: c)) }
         }
         return out
@@ -6141,7 +7089,7 @@ public final class SimiGoESISDatabase {
         let stmt = try prepare("SELECT 1 FROM settlements WHERE state_id=? LIMIT 1;")
         defer { sqlite3_finalize(stmt) }
         bind(stmt, 1, stateID)
-        return sqlite3_step(stmt) == SQLITE_ROW
+        return try stepRowOrDone(stmt)
     }
 
     /// Lossless timestamp codec for the authoritative store. The legacy JSON graph

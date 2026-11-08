@@ -127,7 +127,7 @@ public struct LOCALBRegistryStore {
             let frame = try Self.encodeEventFrame(event)
             let fd = openat(
                 directoryFD, ".localb-registry.events",
-                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
+                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
             guard fd >= 0 else {
                 if errno == EEXIST { throw LOCALBStatus.registryAlreadyInitialized }
                 throw LOCALBStatus.registryPersistenceFailure
@@ -610,9 +610,11 @@ public struct LOCALBRegistryStore {
               fchmod(rootFD, 0o700) == 0 else {
             throw LOCALBStatus.registryPersistenceFailure
         }
+        // O_NONBLOCK matters only for a non-regular file planted at the lock
+        // name: a FIFO must be rejected by the type check, never waited on.
         let fd = openat(
             rootFD, ".localb-registry.lock",
-            O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+            O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         guard Self.isRegularFile(fd: fd) else {
             close(fd)
@@ -631,7 +633,7 @@ public struct LOCALBRegistryStore {
         guard frame.count <= Self.maxEventBytes else { throw LOCALBStatus.resourceLimit }
         let fd = openat(
             directoryFD, ".localb-registry.events",
-            O_WRONLY | O_APPEND | O_NOFOLLOW | O_CLOEXEC)
+            O_WRONLY | O_APPEND | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         guard Self.isRegularFile(fd: fd) else {
             close(fd)
@@ -713,7 +715,7 @@ public struct LOCALBRegistryStore {
     private func replayJournal(directoryFD: Int32) throws -> ReplayedState {
         let fd = openat(
             directoryFD, ".localb-registry.events",
-            O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+            O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
         guard fd >= 0 else { throw LOCALBStatus.registryCorrupt }
         defer { close(fd) }
         var fileInfo = stat()

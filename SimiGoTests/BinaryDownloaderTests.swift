@@ -24,7 +24,8 @@ final class BinaryDownloaderTests: XCTestCase {
 
         let sourceURL = URL(string: "https://simigo.invalid/engine")!
         let downloader = BinaryDownloader(
-            destination: destination, configuration: configuration) { _, _ in }
+            destination: destination, maximumBytes: 1024,
+            configuration: configuration) { _, _ in }
         let download = Task { try await downloader.run(url: sourceURL) }
 
         await fulfillment(of: [started], timeout: 5)
@@ -71,20 +72,19 @@ final class BinaryDownloaderTests: XCTestCase {
         let download = Task {
             try await BinaryDownloader.download(
                 from: URL(string: "https://simigo.invalid/engine")!,
-                to: destination, configuration: configuration,
-                maximumDownloadBytes: Int64(payload.count - 1)
+                to: destination, maximumBytes: Int64(payload.count - 1),
+                configuration: configuration
             ) { _, _ in }
         }
         await fulfillment(of: [started], timeout: 5)
         do {
             _ = try await download.value
             XCTFail("oversized payload unexpectedly replaced the installed binary")
-        } catch let error as NSError {
-            XCTAssertEqual(error.domain, "EnvManager")
-            XCTAssertEqual(error.code, 413)
-            XCTAssertEqual(
-                error.localizedDescription,
-                "Binary download exceeds the configured \(Int64(payload.count - 1))-byte limit")
+        } catch let error as BinaryDownloaderError {
+            guard case .maximumSizeExceeded(let limit, _) = error else {
+                return XCTFail("unexpected downloader error: \(error)")
+            }
+            XCTAssertEqual(limit, Int64(payload.count - 1))
         }
         XCTAssertEqual(try Data(contentsOf: destination), previous)
         let entries = try FileManager.default.contentsOfDirectory(
@@ -105,7 +105,8 @@ final class BinaryDownloaderTests: XCTestCase {
         let missingTemporaryFile = directory.appendingPathComponent("missing-download")
         let configuration = URLSessionConfiguration.ephemeral
         let downloader = BinaryDownloader(
-            destination: destination, configuration: configuration) { _, _ in }
+            destination: destination, maximumBytes: 1024,
+            configuration: configuration) { _, _ in }
         let session = URLSession(configuration: configuration)
         let task = session.downloadTask(
             with: URL(string: "https://simigo.invalid/engine")!)
@@ -120,7 +121,7 @@ final class BinaryDownloaderTests: XCTestCase {
         XCTAssertEqual(entries.map(\.lastPathComponent).sorted(), ["engine"])
     }
 
-    func testPublishDownloadedBinaryReplacesExistingFileWithExecutableMode() throws {
+    func testInstallAtomicallyReplacesExistingFileWithExecutableMode() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("binary-publish-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
@@ -133,7 +134,7 @@ final class BinaryDownloaderTests: XCTestCase {
         let expected = Data("validated-new-engine".utf8)
         try expected.write(to: staged)
 
-        try BinaryDownloader.publishDownloadedBinary(at: staged, to: destination)
+        try BinaryDownloader.installAtomically(stagedAt: staged, to: destination)
 
         XCTAssertEqual(try Data(contentsOf: destination), expected)
         XCTAssertFalse(FileManager.default.fileExists(atPath: staged.path))
@@ -142,7 +143,7 @@ final class BinaryDownloaderTests: XCTestCase {
             (attributes[.posixPermissions] as? NSNumber)?.intValue, 0o755)
     }
 
-    func testPublishDownloadedBinaryFailureLeavesExistingFileUntouched() throws {
+    func testInstallAtomicallyFailureLeavesExistingFileUntouched() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("binary-publish-failure-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
@@ -155,12 +156,12 @@ final class BinaryDownloaderTests: XCTestCase {
         try previous.write(to: destination)
 
         XCTAssertThrowsError(
-            try BinaryDownloader.publishDownloadedBinary(
-                at: missingStagedFile, to: destination))
+            try BinaryDownloader.installAtomically(
+                stagedAt: missingStagedFile, to: destination))
         XCTAssertEqual(try Data(contentsOf: destination), previous)
     }
 
-    func testSuccessfulDownloadAtomicallyReplacesExistingDestination() async throws {
+    func testSuccessfulDownloadWritesDestination() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("binary-downloader-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
@@ -168,7 +169,6 @@ final class BinaryDownloaderTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let destination = directory.appendingPathComponent("engine")
-        try Data("old".utf8).write(to: destination)
         let payload = Data("new-engine".utf8)
         let started = expectation(description: "download request started")
         ControlledBinaryDownloadURLProtocol.configure(
@@ -179,7 +179,8 @@ final class BinaryDownloaderTests: XCTestCase {
         let download = Task {
             try await BinaryDownloader.download(
                 from: URL(string: "https://simigo.invalid/engine")!,
-                to: destination, configuration: configuration
+                to: destination, maximumBytes: 1024,
+                configuration: configuration
             ) { _, _ in }
         }
         await fulfillment(of: [started], timeout: 5)

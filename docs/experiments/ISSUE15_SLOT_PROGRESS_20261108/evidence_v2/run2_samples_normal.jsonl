@@ -1,0 +1,5 @@
+{"t": 1794106098.863693, "slots": [{"id_task": null, "is_processing": false, "n_prompt_tokens_processed": null, "n_prompt_tokens": null, "n_decoded": null, "n_remain": null}]}
+{"t": 1794106099.367795, "slots": [{"id_task": 1, "is_processing": true, "n_prompt_tokens_processed": 20, "n_prompt_tokens": 24, "n_decoded": 4, "n_remain": 252}]}
+{"t": 1794106099.8727832, "slots": [{"id_task": 1, "is_processing": true, "n_prompt_tokens_processed": 20, "n_prompt_tokens": 31, "n_decoded": 11, "n_remain": 245}]}
+{"t": 1794106100.375485, "slots": [{"id_task": 1, "is_processing": true, "n_prompt_tokens_processed": 20, "n_prompt_tokens": 38, "n_decoded": 18, "n_remain": 238}]}
+{"t": 1794106100.8777869, "slots": [{"id_task": 1, "is_processing": true, "n_prompt_tokens_processed": 20, "n_prompt_tokens": 45, "n_decoded": 25, "n_remain": 231}]}

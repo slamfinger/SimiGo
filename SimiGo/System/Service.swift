@@ -550,9 +550,8 @@ public final class Service: ObservableObject {
 
     private let runtimeState = Mutex<Runtime?>(nil)
     private var healthTask: Task<Void, Never>?
-    /// Invalidates already-enqueued restart work when a health loop is stopped
-    /// or replaced. Unstructured MainActor tasks do not inherit cancellation.
-    private var healthCheckGeneration = UUID()
+    /// Invalidates delayed restart work as soon as a health loop is cancelled or replaced.
+    private var healthTaskGeneration = UUID()
     private var backendKind: ModelKind?
     private var isStarting = false
     private var isRestarting = false
@@ -1155,19 +1154,19 @@ public final class Service: ObservableObject {
     #endif
 
     private func startHealthCheck() {
-        healthTask?.cancel()
         let generation = UUID()
-        healthCheckGeneration = generation
+        healthTaskGeneration = generation
+        healthTask?.cancel()
 
-        healthTask = Task { [weak self, generation] in
+        healthTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 10_000_000_000)
+            guard !Task.isCancelled else { return }
 
             while !Task.isCancelled {
                 guard let self else { break }
-                guard self.isRunning else { break }
+                guard self.healthTaskGeneration == generation, self.isRunning else { break }
 
                 let currentRuntime = self.runtimeState.withLock { $0 }
-
                 #if SIMIGO_HEALTH_CHECK_FAILURE_INJECTION
                 var injectedHealthFailure = false
                 #else
@@ -1177,6 +1176,10 @@ public final class Service: ObservableObject {
                 if let runtime = currentRuntime {
                     if runtime.isGenerating {
                         try? await Task.sleep(nanoseconds: 30_000_000_000)
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === runtime })
+                        else { return }
                         continue
                     }
 
@@ -1193,97 +1196,101 @@ public final class Service: ObservableObject {
                     }
                     #endif
 
-                    // NativeMLX: 空闲超时挂起模型（Phase 1 实验）。
-                    // 仅释放模型驻留内存，HTTPServer 保持运行——不触发 restart。
-                    // 超时为自适应：min(cap=360s, max(floor=240s, 最贵会话重建时长估算+60s 容错))
-                    // —— 2026-10-23 由原 max(600s…) 收紧为带上限的收敛窗口，缓解推理结束后内存压力长时间黄色。
+                    // NativeMLX: suspend is best-effort, but cancellation or
+                    // replacement during the await ends this loop immediately.
                     if self.backendKind == .mlx,
                        let nativeMLX = runtime as? NativeMLX {
-                        // 健康循环只需“尝试挂起”，返回值用于静默处理。
                         let _ = await nativeMLX.suspendIfIdle()
-                        // stop()/runtime replacement cancels this task; never
-                        // let an older health iteration proceed after an await.
-                        if Task.isCancelled { break }
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === runtime })
+                        else { return }
                     }
 
-                    // GGUF：slot 忙时先跳过本轮，防止生成中途误判无响应触发重启。
-                    // 注入失败时故意走过这一跳，让“失败后仍有 busy slot”的
-                    // 保护分支成为被验证的对象。unknown 不当作空闲，也不阻断
-                    // 已死引擎的恢复——交给健康检查判定。
-                    if self.backendKind == .gguf, !runtime.isInProcess {
+                    // GGUF: a confirmed busy slot skips this health probe.
+                    // Unknown is not treated as idle; injected failures still
+                    // exercise the post-failure busy-slot protection below.
+                    if !injectedHealthFailure,
+                       !runtime.isInProcess,
+                       self.backendKind == .gguf {
                         let activity = await self.slotActivity(for: runtime)
-                        // The probe maps transport cancellation to .unknown.
-                        // Re-check task cancellation before interpreting that
-                        // value as a real observation.
-                        if Task.isCancelled { break }
-                        if ServiceHealthCheckPolicy.shouldSkipBeforeHealthCheck(
-                            backendIsGGUF: true,
-                            runtimeIsInProcess: runtime.isInProcess,
-                            injectedHealthFailure: injectedHealthFailure,
-                            slotActivity: activity) {
-                            Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === runtime })
+                        else { return }
+
+                        if GGUFHealthCheckPolicy.shouldSkipPreflight(
+                            isGGUF: true, isInProcess: false,
+                            injectedFailure: false, slotActivity: activity) {
+                            Self.log(
+                                "⏸ llama.cpp 当前存在活动 slot，跳过健康检查。",
+                                level: .debug)
                             try? await Task.sleep(nanoseconds: 30_000_000_000)
+                            guard !Task.isCancelled,
+                                  self.healthTaskGeneration == generation,
+                                  self.runtimeState.withLock({ $0 === runtime })
+                            else { return }
                             continue
                         }
                     }
                 }
 
-                let healthy =
-                    injectedHealthFailure
+                let healthy = injectedHealthFailure
                     ? false
                     : (await currentRuntime?.checkHealth() ?? false)
-                // checkHealth() may finish after stopHealthCheck() has cancelled
-                // this task. A cancelled iteration must not schedule a restart.
-                if Task.isCancelled { break }
 
-                var failedHealthActivity: SlotActivity = .unknown
-                if !healthy, self.backendKind == .gguf {
-                    failedHealthActivity = await self.slotActivity(for: currentRuntime)
-                    if Task.isCancelled { break }
-                }
+                // Do not act on an obsolete health result. A cancelled loop or
+                // a runtime replaced while checkHealth was suspended has no
+                // authority to restart anything.
+                guard !Task.isCancelled,
+                      self.healthTaskGeneration == generation,
+                      self.runtimeState.withLock({ $0 === currentRuntime })
+                else { return }
 
-                // The captured runtime can be detached while either awaited probe
-                // is in flight. Apply exactly the same pure decision policy that
-                // is covered by deterministic Service-level tests.
-                let runtimeIsStillCurrent = self.runtimeState.withLock { current -> Bool in
-                    guard let current, let currentRuntime else { return false }
-                    return current === currentRuntime
-                }
-                let decision = ServiceHealthCheckPolicy.decisionAfterHealthCheck(
-                    healthy: healthy,
-                    backendIsGGUF: self.backendKind == .gguf,
-                    slotActivity: failedHealthActivity,
-                    taskCancelled: Task.isCancelled,
-                    runtimeIsCurrent: runtimeIsStillCurrent)
+                if !healthy {
+                    var activity = SlotActivity.unknown
+                    if self.backendKind == .gguf {
+                        activity = await self.slotActivity(for: currentRuntime)
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === currentRuntime })
+                        else { return }
+                    }
 
-                switch decision {
-                case .stop:
-                    break
-                case .continueCycle:
-                    try? await Task.sleep(nanoseconds: 30_000_000_000)
-                    continue
-                case .deferRestart:
-                    Self.log("⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。", level: .warning)
-                    try? await Task.sleep(nanoseconds: 30_000_000_000)
-                    continue
-                case .restart:
+                    guard GGUFHealthCheckPolicy.shouldRestartAfterFailure(
+                        isCancelled: Task.isCancelled,
+                        runtimeIsCurrent: self.runtimeState.withLock({ $0 === currentRuntime }),
+                        isGGUF: self.backendKind == .gguf,
+                        slotActivity: activity)
+                    else {
+                        Self.log(
+                            "⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。",
+                            level: .warning)
+                        try? await Task.sleep(nanoseconds: 30_000_000_000)
+                        guard !Task.isCancelled,
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === currentRuntime })
+                        else { return }
+                        continue
+                    }
+
                     Self.log("⚠ 模型服务无响应，触发解耦重启...", level: .warning)
 
-                    // This task is unstructured and would outlive cancellation
-                    // of the health loop. The generation check closes that
-                    // final scheduling window; runtime identity is checked too.
-                    Task { @MainActor [weak self, currentRuntime, generation] in
+                    Task { @MainActor [weak self] in
                         guard let self,
-                              self.healthCheckGeneration == generation,
-                              let expectedRuntime = currentRuntime,
-                              self.runtimeState.withLock({ $0 === expectedRuntime }) else {
-                            return
-                        }
+                              self.healthTaskGeneration == generation,
+                              self.runtimeState.withLock({ $0 === currentRuntime })
+                        else { return }
                         await self.forceRestart()
                     }
                     return
                 }
-                if case .stop = decision { break }
+
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                guard !Task.isCancelled,
+                      self.healthTaskGeneration == generation,
+                      self.runtimeState.withLock({ $0 === currentRuntime })
+                else { return }
             }
         }
     }
@@ -1297,8 +1304,7 @@ public final class Service: ObservableObject {
     // 健康检查循环周期 30s，实际挂起延迟收敛到 idleTimeout～idleTimeout+30s（≤ 6.5 分钟）。
 
     private func stopHealthCheck() {
-        // Invalidate any MainActor restart task already enqueued by the old loop.
-        healthCheckGeneration = UUID()
+        healthTaskGeneration = UUID()
         healthTask?.cancel()
         healthTask = nil
     }

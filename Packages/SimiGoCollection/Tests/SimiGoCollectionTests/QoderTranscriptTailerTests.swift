@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import SimiGoCollection
@@ -70,6 +71,33 @@ final class QoderTranscriptTailerTests: XCTestCase {
     /// `/private/var`, so cursor keys are the scanner's canonical paths.
     private func cursor(_ tailer: QoderTranscriptTailer) -> QoderFileCursor? {
         tailer.cursorState.cursors.values.first
+    }
+
+    func testCursorStoreDoesNotFollowSymlinkAndAtomicSavePreservesTarget() throws {
+        let stateDirectory = root.appendingPathComponent("cursor-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        let external = root.appendingPathComponent("external-cursor.json")
+        let original = try JSONEncoder().encode(pastState())
+        try original.write(to: external)
+        let cursor = stateDirectory.appendingPathComponent("cursor.json")
+        try FileManager.default.createSymbolicLink(at: cursor, withDestinationURL: external)
+        let store = QoderFileCursorStore(directoryURL: stateDirectory)
+
+        XCTAssertThrowsError(
+            try store.load(),
+            "legacy cursor loading must not follow a symlink to an external file")
+        XCTAssertEqual(try Data(contentsOf: external), original)
+
+        // A normal atomic save replaces the directory entry, not its target.
+        // The subsequent no-follow chmod must apply to the newly written file.
+        let replacement = pastState()
+        try store.save(replacement)
+        XCTAssertThrowsError(
+            try FileManager.default.destinationOfSymbolicLink(atPath: cursor.path),
+            "save must leave a regular cursor file rather than a symlink")
+        XCTAssertEqual(try Data(contentsOf: external), original)
+        XCTAssertNotNil(try store.load())
     }
 
     func testFirstPollBaselinesExistingFileAtEnd() throws {
@@ -516,6 +544,34 @@ final class QoderTranscriptTailerTests: XCTestCase {
             Int64(try Data(contentsOf: file).count))
     }
 
+    func testSymlinkedSubagentsDirectoryIsNotTraversed() throws {
+        let sessionDirectory = project.appendingPathComponent(
+            Fixture.sessionID, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: sessionDirectory, withIntermediateDirectories: true)
+
+        let external = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "qoder-external-subagents-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: external) }
+        try FileManager.default.createDirectory(
+            at: external, withIntermediateDirectories: true)
+        try Fixture.writeLines(
+            Fixture.turnLines(), to: external.appendingPathComponent("outside.jsonl"))
+
+        let link = sessionDirectory.appendingPathComponent(
+            "subagents", isDirectory: true)
+        try FileManager.default.createSymbolicLink(
+            at: link, withDestinationURL: external)
+
+        let result = QoderTranscriptScanner(root: root).scan()
+        guard case .complete(let files) = result else {
+            return XCTFail("symlinked subagents directory should be ignored, got \(result)")
+        }
+        XCTAssertTrue(
+            files.isEmpty,
+            "transcripts outside the configured scan root must not be returned")
+    }
+
     func testSubagentTurnsAreCollectedAsInternalRecords() throws {
         let file = try subagentFile()
         try Fixture.writeLines(Fixture.turnLines(), to: file)
@@ -664,6 +720,56 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertEqual(resumed.cursorState, state)
     }
 
+    func testNoFollowReaderRejectsSymlinkHardlinkAndIntermediateDirectories() throws {
+        let fileManager = FileManager.default
+        let nestedDirectory = project.appendingPathComponent("nested", isDirectory: true)
+        try fileManager.createDirectory(at: nestedDirectory, withIntermediateDirectories: true)
+        let regularFile = nestedDirectory.appendingPathComponent("session.jsonl")
+        try Data("{\"type\":\"message\"}\n".utf8).write(to: regularFile)
+
+        let outside = fileManager.temporaryDirectory
+            .appendingPathComponent("qoder-nofollow-outside-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
+        let outsideFile = outside.appendingPathComponent("session.jsonl")
+        try Data("{\"type\":\"outside\"}\n".utf8).write(to: outsideFile)
+        defer { try? fileManager.removeItem(at: outside) }
+
+        let canonicalRoot = QoderTranscriptPathAccess.canonicalPath(root.path)
+        let rootFD = try QoderTranscriptPathAccess.openDirectoryPathNoFollow(canonicalRoot)
+        defer { Darwin.close(rootFD) }
+        let relative = "\(Fixture.projectID)/nested/session.jsonl"
+        let opened = try QoderTranscriptPathAccess.openFile(
+            rootDirectoryFD: rootFD, relativePath: relative)
+        Darwin.close(opened.descriptor)
+
+        try fileManager.removeItem(at: regularFile)
+        try fileManager.linkItem(at: outsideFile, to: regularFile)
+        XCTAssertThrowsError(
+            try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootFD, relativePath: relative),
+            "a hard-linked external file must not be read as a transcript")
+
+        try fileManager.removeItem(at: regularFile)
+        try Data("{\"type\":\"message\"}\n".utf8).write(to: regularFile)
+        try fileManager.removeItem(at: regularFile)
+        try fileManager.createSymbolicLink(at: regularFile, withDestinationURL: outsideFile)
+        XCTAssertThrowsError(
+            try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootFD, relativePath: relative),
+            "a symlink leaf must never be read")
+
+        try fileManager.removeItem(at: regularFile)
+        try Data("{\"type\":\"message\"}\n".utf8).write(to: regularFile)
+        try fileManager.moveItem(
+            at: nestedDirectory,
+            to: project.appendingPathComponent("nested-original", isDirectory: true))
+        try fileManager.createSymbolicLink(at: nestedDirectory, withDestinationURL: outside)
+        XCTAssertThrowsError(
+            try QoderTranscriptPathAccess.openFile(
+                rootDirectoryFD: rootFD, relativePath: relative),
+            "a symlinked parent directory must never be traversed")
+    }
+
     func testScannerDistinguishesAbsentFromComplete() throws {
         let scanner = QoderTranscriptScanner(root: root)
         guard case .complete(let empty) = scanner.scan() else {
@@ -731,7 +837,7 @@ final class QoderTranscriptTailerTests: XCTestCase {
             return XCTFail("an unreadable root must be partial, not absent")
         }
         XCTAssertTrue(files.isEmpty)
-        XCTAssertTrue(errors.contains { $0.contains("cannot list") })
+        XCTAssertFalse(errors.isEmpty, "an unreadable root must report its listing/open error")
     }
 
     func testScannerReportsPartialWhenAProjectCannotBeListed() throws {

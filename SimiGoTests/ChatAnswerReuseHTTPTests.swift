@@ -16,7 +16,7 @@ import SimiGoRuntimeContract
 ///   signed HTTPS POST /v1/chat/completions (stream: true)
 ///     -> HTTPServer.route -> handleChatCompletionsStreaming
 ///     -> prepareInformationTurn (real ES demand + IS resolve)
-///     -> reusableAnswer gate (settlement validity + producer identity)
+///     -> reusableAnswer gate (current demand + settlement validity + producer identity)
 ///     -> serveReusedAnswerStream (one content chunk + stop + [DONE])
 ///
 /// The only substituted component is generation (a counter, never a model).
@@ -223,8 +223,8 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             XCTAssertEqual(second.status, 200, second.sse)
             XCTAssertEqual(second.generate, 1, "a streaming exact repeat must not call the model")
             XCTAssertEqual(
-                try db.count("information_demands"), demandsBeforeRepeat + 1,
-                "the second request resolves a fresh candidate after the first turn changed the chat watermark")
+                try db.count("information_demands"), demandsBeforeRepeat,
+                "the exact repeat resolves the already answered demand, so it mints no new demand row")
 
             let block = try XCTUnwrap(second.reuse, "reuse is reported on the stream")
             XCTAssertEqual(block["answer_reuse"] as? Bool, true)
@@ -264,10 +264,226 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         }
     }
 
+    /// Disconnect after generation start may detach only when an orphan slot
+    /// is granted; manual cancellation and Runtime shutdown still win. Once a
+    /// completed turn claims finalization, later disconnects cannot orphan-yield it.
+    @MainActor
+    func testCompletedTurnClaimAllowsGrantedDetachButRejectsCancellation() throws {
+        func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
+            let connection = NWConnection(
+                to: .hostPort(
+                    host: NWEndpoint.Host("127.0.0.1"),
+                    port: NWEndpoint.Port(rawValue: 9)!),
+                using: .tcp)
+            connection.start(queue: DispatchQueue(label: "detach-policy-" + label + "-" + UUID().uuidString))
+            return (HTTPServer.ConnectionContext(connection: connection), connection)
+        }
+
+        // An acquired orphan slot preserves a naturally completed generation.
+        let (detached, detachedConnection) = makeContext("detached")
+        defer { detachedConnection.cancel() }
+        XCTAssertTrue(detached.markGenerationStarted())
+        let detachedClose = detached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(detachedClose.detached)
+        XCTAssertFalse(detachedClose.shouldCancelGeneration)
+        XCTAssertTrue(detached.claimCompletedTurnSettlement())
+
+        // A normal cancellation sets the cancellation latch and cannot claim.
+        let (cancelled, cancelledConnection) = makeContext("cancelled")
+        defer { cancelledConnection.cancel() }
+        XCTAssertTrue(cancelled.markGenerationStarted())
+        let cancelledClose = cancelled.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertTrue(cancelledClose.shouldCancelGeneration)
+        XCTAssertFalse(cancelled.claimCompletedTurnSettlement())
+
+        // A later client close cannot cancel a generation already finalizing.
+        let (claimed, claimedConnection) = makeContext("claimed")
+        defer { claimedConnection.cancel() }
+        XCTAssertTrue(claimed.markGenerationStarted())
+        XCTAssertTrue(claimed.claimCompletedTurnSettlement())
+        var lateSlotClaimed = false
+        let lateClose = claimed.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: {
+                lateSlotClaimed = true
+                return true
+            })
+        XCTAssertFalse(lateClose.shouldCancelGeneration)
+        XCTAssertFalse(lateClose.detached)
+        XCTAssertFalse(lateSlotClaimed,
+                       "completed finalization is no longer an inference orphan")
+        
+        // Runtime shutdown still overrides a previously claimed finalization.
+        let (runtimeCancelled, runtimeConnection) = makeContext("runtime-cancelled")
+        defer { runtimeConnection.cancel() }
+        XCTAssertTrue(runtimeCancelled.markGenerationStarted())
+        XCTAssertTrue(runtimeCancelled.claimCompletedTurnSettlement())
+        runtimeCancelled.markCancelledByRuntime()
+        let runtimeClose = runtimeCancelled.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertTrue(runtimeClose.shouldCancelGeneration)
+    }
+
+    /// An orphan-yield pass that already took the detached task wins over a
+    /// later completion claim, and a claimed finalization can no longer be
+    /// taken for yield. Both decisions share one lock, so the loser must
+    /// observe the winner's result instead of both proceeding.
+    @MainActor
+    func testOrphanYieldAndSettlementClaimAreMutuallyExclusive() throws {
+        func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
+            let connection = NWConnection(
+                to: .hostPort(
+                    host: NWEndpoint.Host("127.0.0.1"),
+                    port: NWEndpoint.Port(rawValue: 9)!),
+                using: .tcp)
+            connection.start(queue: DispatchQueue(label: "detach-race-" + label + "-" + UUID().uuidString))
+            return (HTTPServer.ConnectionContext(connection: connection), connection)
+        }
+        func sleepingTask() -> Task<Void, Never> {
+            Task {
+                do { try await Task.sleep(nanoseconds: 60_000_000_000) } catch {}
+            }
+        }
+
+        // Yield wins: its task was taken, so the completed turn must not settle.
+        let (yielded, yieldedConnection) = makeContext("yielded")
+        defer { yieldedConnection.cancel() }
+        let yieldedTask = sleepingTask()
+        XCTAssertTrue(yielded.setRequestTask(yieldedTask))
+        XCTAssertTrue(yielded.markGenerationStarted())
+        let yieldedClose = yielded.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(yieldedClose.detached)
+        XCTAssertNotNil(yielded.takeDetachedRequestTask())
+        yieldedTask.cancel()
+        XCTAssertFalse(
+            yielded.claimCompletedTurnSettlement(),
+            "a yielded orphan must not settle after its task was taken")
+
+        // Claim wins over yield: the finalization is no longer a candidate.
+        let (claimed, claimedConnection) = makeContext("claimed-before-yield")
+        defer { claimedConnection.cancel() }
+        let claimedTask = sleepingTask()
+        XCTAssertTrue(claimed.setRequestTask(claimedTask))
+        XCTAssertTrue(claimed.markGenerationStarted())
+        let claimedClose = claimed.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(claimedClose.detached)
+        XCTAssertTrue(claimed.claimCompletedTurnSettlement())
+        XCTAssertNil(
+            claimed.takeDetachedRequestTask(),
+            "a claimed finalization is no longer an orphan candidate")
+        XCTAssertFalse(
+            claimed.claimCompletedTurnSettlement(),
+            "the finalization claim is one-shot")
+        claimedTask.cancel()
+
+        // A close that arrives after the claim (client was still connected when
+        // the claim was taken) must neither cancel the generation nor hand its
+        // task back for cancellation; only Runtime shutdown may override.
+        let (late, lateConnection) = makeContext("late-close-after-claim")
+        defer { lateConnection.cancel() }
+        let lateTask = sleepingTask()
+        XCTAssertTrue(late.setRequestTask(lateTask))
+        XCTAssertTrue(late.markGenerationStarted())
+        XCTAssertTrue(late.claimCompletedTurnSettlement())
+        var lateSlotClaimed = false
+        let lateClose = late.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: {
+                lateSlotClaimed = true
+                return true
+            })
+        XCTAssertFalse(lateClose.shouldCancelGeneration)
+        XCTAssertFalse(lateClose.detached)
+        XCTAssertFalse(lateSlotClaimed)
+        XCTAssertNil(
+            lateClose.requestTask,
+            "a late close must not hand a claimed finalization to cancellation")
+        lateTask.cancel()
+
+        // A claimed detached finalization retains its task for Runtime shutdown.
+        let (claimedDetached, claimedDetachedConnection) = makeContext("claimed-detached")
+        defer { claimedDetachedConnection.cancel() }
+        let detachedTask = sleepingTask()
+        XCTAssertTrue(claimedDetached.setRequestTask(detachedTask))
+        XCTAssertTrue(claimedDetached.markGenerationStarted())
+        let detachedClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(detachedClose.detached)
+        XCTAssertTrue(claimedDetached.claimCompletedTurnSettlement())
+        let ordinaryLateClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertNil(
+            ordinaryLateClose.requestTask,
+            "an ordinary late close must not receive a claimed finalization task")
+        claimedDetached.markCancelledByRuntime()
+        let runtimeClose = claimedDetached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: false)
+        XCTAssertNotNil(
+            runtimeClose.requestTask,
+            "Runtime shutdown must still receive the retained detached task")
+        runtimeClose.requestTask?.cancel()
+        detachedTask.cancel()
+    }
+
+    func testHTTPFailureAuditPersistsSafeAppendOnlyTerminalFact() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-http-failure-audit-\(UUID().uuidString).sqlite3")
+        defer {
+            for suffix in ["", "-wal", "-shm"] {
+                try? FileManager.default.removeItem(at: URL(fileURLWithPath: url.path + suffix))
+            }
+        }
+
+        let executionID = "http-failure-audit-test-\(UUID().uuidString)"
+        let first = try XCTUnwrap(HTTPServer.recordHTTPFailureAudit(
+            executionID: executionID,
+            requestID: "req-test-1234",
+            wire: "chat.completions.stream",
+            terminal: "cancelled_by_client",
+            modelCalls: 1,
+            settlementsWritten: 0,
+            evidence: ["safe_marker": "test-only"],
+            databaseURL: url))
+        XCTAssertTrue(first.auditPersisted)
+
+        let db = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        defer { db.close() }
+        try db.runMigrations()
+        let event = try XCTUnwrap(db.failureAudit(executionID: executionID))
+        XCTAssertEqual(event.executionID, executionID)
+        XCTAssertEqual(event.phase, .g)
+        XCTAssertNil(event.cause)
+        XCTAssertEqual(event.origin, .request)
+        XCTAssertEqual(event.modelCalls, 1)
+        XCTAssertEqual(event.settlementsWritten, 0)
+        XCTAssertEqual(event.evidence["request_id"], "req-test-1234")
+        XCTAssertEqual(event.evidence["wire"], "chat.completions.stream")
+        XCTAssertEqual(event.evidence["terminal"], "cancelled_by_client")
+        XCTAssertEqual(event.evidence["safe_marker"], "test-only")
+        XCTAssertEqual(event.detail, "wire=chat.completions.stream terminal=cancelled_by_client")
+        XCTAssertEqual(try db.failureAuditHistory(executionID: executionID).count, 1)
+
+        let duplicate = try XCTUnwrap(HTTPServer.recordHTTPFailureAudit(
+            executionID: executionID,
+            requestID: "req-test-1234",
+            wire: "chat.completions.stream",
+            terminal: "model_execution_error",
+            modelCalls: 1,
+            settlementsWritten: 0,
+            databaseURL: url))
+        XCTAssertFalse(duplicate.auditPersisted)
+        XCTAssertEqual(duplicate.failureClass, "duplicate_execution_id")
+        XCTAssertEqual(try XCTUnwrap(db.failureAudit(executionID: executionID)), event)
+        XCTAssertEqual(try db.failureAuditHistory(executionID: executionID).count, 1)
+    }
+
     /// Exact wording is not enough: reuse is bound to the demand resolved for
-    /// THIS turn. With prefix freezing off the second request re-resolves after
-    /// the first turn's chat rows were committed, so the same words describe a
-    /// different information scope. The settled answer must not be served.
+    /// THIS turn. An answer's own question and answer rows are excluded from
+    /// that basis, so only information the turn did not itself publish moves it.
+    /// Committing a turn in another session does, and the settled answer must
+    /// then not be served for the same words.
     @MainActor
     func testChangedCurrentDemandIsNotServedByReuse() async throws {
         let session = "chat-demand-change-\(UUID().uuidString)"
@@ -291,6 +507,21 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             let db = try XCTUnwrap(store.esis)
             let demandsAfterFirst = try db.count("information_demands")
 
+            // New information this answer did not produce: a committed turn in a
+            // different session, inside the same shared personal space.
+            let external = "chat-demand-change-external-\(UUID().uuidString)"
+            let externalUser = try db.appendChatMessage(
+                sessionID: external, role: "user",
+                content: "the vault moved to the north shelf",
+                model: nil, createdAt: Date())
+            try db.commitChatTurn(
+                sessionID: external, userMessageID: externalUser,
+                assistantText: "CHAT-EXTERNAL-DEMAND-SOURCE-73B",
+                model: nil, createdAt: Date())
+            XCTAssertEqual(
+                try db.count("information_demands"), demandsAfterFirst,
+                "committing chat rows resolves no demand of its own")
+
             let second = try await dispatch(session: session, input: "where is the vault")
             XCTAssertEqual(second.status, 200, second.sse)
             XCTAssertEqual(
@@ -301,5 +532,49 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
                 try db.count("information_demands"), demandsAfterFirst + 1,
                 "the second turn resolved a NEW demand, so the old answer was out of scope")
         }
+    }
+    
+    func testDetachedCancellationKeepsDetachedTerminalStandingUnlessRuntimeShutdownWins() {
+        func makeContext(_ label: String) -> (HTTPServer.ConnectionContext, NWConnection) {
+            let connection = NWConnection(
+                to: .hostPort(
+                    host: NWEndpoint.Host("127.0.0.1"),
+                    port: NWEndpoint.Port(rawValue: 9)!),
+                using: .tcp)
+            connection.start(queue: DispatchQueue(label: "terminal-standing-" + label + "-" + UUID().uuidString))
+            return (HTTPServer.ConnectionContext(connection: connection), connection)
+        }
+
+        let (detached, detachedConnection) = makeContext("detached-yield")
+        defer { detachedConnection.cancel() }
+        XCTAssertTrue(detached.markGenerationStarted())
+        let detachedClose = detached.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(detachedClose.detached)
+        XCTAssertEqual(
+            HTTPServer.chatTurnTerminalForCancellation(detached).rawValue,
+            "detached",
+            "an orphan-yield cancellation retains the client-detached standing")
+
+        let (runtime, runtimeConnection) = makeContext("runtime-shutdown")
+        defer { runtimeConnection.cancel() }
+        XCTAssertTrue(runtime.markGenerationStarted())
+        let runtimeClose = runtime.closeAndTakeRequestTask(
+            cancelGeneration: true, detach: true, claimDetachSlot: { true })
+        XCTAssertTrue(runtimeClose.detached)
+        runtime.markCancelledByRuntime()
+        XCTAssertEqual(
+            HTTPServer.chatTurnTerminalForCancellation(runtime).rawValue,
+            "cancelled",
+            "Runtime shutdown overrides the earlier client detach")
+
+        let (manual, manualConnection) = makeContext("manual-cancel")
+        defer { manualConnection.cancel() }
+        XCTAssertTrue(manual.markGenerationStarted())
+        _ = manual.closeAndTakeRequestTask(cancelGeneration: true, detach: false)
+        XCTAssertEqual(
+            HTTPServer.chatTurnTerminalForCancellation(manual).rawValue,
+            "cancelled",
+            "ordinary cancellation remains cancelled")
     }
 }

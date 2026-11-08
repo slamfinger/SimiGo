@@ -1,4 +1,5 @@
 import Crypto
+import Darwin
 import Foundation
 import XCTest
 
@@ -10,6 +11,29 @@ final class LOCALBRegistryStoreTests: XCTestCase {
             .appendingPathComponent("localb-registry-tests-\(UUID().uuidString)", isDirectory: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: root) }
         return root
+    }
+
+    /// A FIFO planted at the lock or journal name must be rejected via the
+    /// post-open regular-file check — never blocked on, never read.
+    func testRegistryRejectsFIFOJournalAndLockWithoutBlocking() throws {
+        let root = makeRoot()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let lock = root.appendingPathComponent(".localb-registry.lock")
+        let lockResult = lock.path.withCString { Darwin.mkfifo($0, mode_t(0o600)) }
+        XCTAssertEqual(lockResult, 0, "mkfifo lock failed: \(String(cString: strerror(errno)))")
+        XCTAssertThrowsError(try LOCALBRegistryStore(rootURL: root).initializeNewLineage())
+
+        try FileManager.default.removeItem(at: lock)
+        let store = LOCALBRegistryStore(rootURL: root)
+        let checkpoint = try store.initializeNewLineage()
+        let journal = root.appendingPathComponent(".localb-registry.events")
+        try FileManager.default.removeItem(at: journal)
+        let journalResult = journal.path.withCString { Darwin.mkfifo($0, mode_t(0o600)) }
+        XCTAssertEqual(journalResult, 0, "mkfifo journal failed: \(String(cString: strerror(errno)))")
+
+        XCTAssertThrowsError(
+            try store.loadVerified(checkpoint: checkpoint),
+            "a FIFO journal must be rejected rather than read or blocked on")
     }
 
     private func keyEntryKeyID(_ key: Curve25519.Signing.PrivateKey) throws -> String {
@@ -216,6 +240,44 @@ final class LOCALBRegistryStoreTests: XCTestCase {
         }
         let snapshot = try store.loadVerified(checkpoint: checkpoint)
         XCTAssertEqual(snapshot.entry(for: try keyEntryKeyID(key))?.status, .revoked)
+    }
+
+    func testRegistryRejectsSymlinkedRootWithoutWritingThroughIt() throws {
+        let external = makeRoot().appendingPathComponent("external", isDirectory: true)
+        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
+        let linked = external.deletingLastPathComponent().appendingPathComponent(
+            "linked-root", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: external)
+        let store = LOCALBRegistryStore(rootURL: linked)
+        XCTAssertThrowsError(try store.initializeNewLineage())
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: external.appendingPathComponent(".localb-registry.events").path))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: external.appendingPathComponent(".localb-registry.lock").path))
+    }
+
+    func testRegistryRejectsSymlinkedLockAndJournalWithoutChangingTargets() throws {
+        let root = makeRoot()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let marker = root.deletingLastPathComponent().appendingPathComponent(
+            "registry-external-marker-\(UUID().uuidString)")
+        let original = Data("untouched".utf8)
+        try original.write(to: marker)
+        let store = LOCALBRegistryStore(rootURL: root)
+        try FileManager.default.createSymbolicLink(
+            at: root.appendingPathComponent(".localb-registry.lock"),
+            withDestinationURL: marker)
+        XCTAssertThrowsError(try store.initializeNewLineage())
+        try FileManager.default.removeItem(at: root.appendingPathComponent(".localb-registry.lock"))
+
+        // A valid lock but a journal symlink must also be rejected.
+        let checkpoint = try store.initializeNewLineage()
+        try FileManager.default.removeItem(at: root.appendingPathComponent(".localb-registry.events"))
+        try FileManager.default.createSymbolicLink(
+            at: root.appendingPathComponent(".localb-registry.events"),
+            withDestinationURL: marker)
+        XCTAssertThrowsError(try store.loadVerified(checkpoint: checkpoint))
+        XCTAssertEqual(try Data(contentsOf: marker), original)
     }
 
     func testCorruptTailIsNotSilentlyRepaired() throws {

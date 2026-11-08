@@ -3,6 +3,7 @@
 **Status**: 活文档 — ①②③④⑤已定案；真机执行授权未授予。本文档是配置决策的唯一权威记录，**不授权任何执行**。
 **上游**: `P2_EXPERIMENT_PLAN_20261105.md`（G1 PASS · CLOSED）
 **授权边界（持续有效）**: 零实现改动、零模型加载、零真机执行、零对外发送——每一项均须用户单独授权后解除。
+**外迁注记（2026-11-07，用户裁定：本文件属治理线留仓）**: 本记录引用的研究线产出文档——`P2_DERIVATION_TECHNICAL_REPORT_20261106.md`、`P2_EVIDENCE_MAINLINE_MAPPING_20261107.md`、`P2_TECH_EXCHANGE_BRIEF_20261106.md`——已按 2026-11-07 裁定正本外迁至 `slamfinger/ES-IS-research`（PRIVATE），simigo 仓剥离并禁入。正文各条目为账本史实，原文保留不动；上述文件名现仅指研究仓正本。
 
 ---
 
@@ -521,3 +522,183 @@ Run B 至少区分五个采集时点：
 - **pre-READY 计账（采纳对侧审计读法）**：零加载、零证据的 pre-READY 失败不计「有证据尝试」、不得动用 +1 放宽、每次失败必须入档。**锋利边**：+1 已被 02:02 事件耗尽——Run A 重跑若再发生**加载完成后**的失败，C2 加载即 2/3 且无 Run A 证据 → 链实质死亡。
 - **§5.5.9 + 锚点**：三方一致建议采纳；锚点（每阶段门显式记录各维度 `remaining` 与后续计划消耗额；解释仅当 remaining=0 且后续计划消耗=0 时可适用）使解释可判定，防事后滥用。
 - **多写者协作约定**：配置记录为 dated 追记并存（不改写他人行、以新条目 supersede）；本审计线在 Gate A 做汇总一致性核对。
+
+### §5.18 外部写入者身份查实：主仓 Xcode 测试线（推翻 §5.17 的「排除」推断）（审计线 02:47 追记）
+
+- **结论**：外部写入者 = **主仓 Xcode 测试线**（测试宿主以生产 home 启动 `SimiGo.app`，打开签名/传输身份 keychain 写库后立即退出）。§5.17「发生在 `xcodebuild=0` 之后 ⇒ 排除主仓 Xcode 测试线」**被推翻**；本审计线 02:30 那句「`pgrep xcodebuild`=0 ⇒ 测试线已停」同属**探针错误**，一并 self-correct。
+- **三重独立物证（逐次一一对应，非推测）**：
+  1. `Logs/Build/*.xcactivitylog` mtime **02:42:42 / 02:44:13**；
+  2. `Logs/Test/Test-SimiGo-2026.11.06_02-44-21-+0800.xcresult` ↔ 生产库 mtime **02:44:23**；`..._02-47-04-+0800.xcresult` ↔ 生产库 mtime **02:47:04**；
+  3. `/usr/bin/log show --predicate 'process == "SimiGo"'`：`SimiGo[25614]` 于 **02:47:05.056–.101** 连续 `SecKeychainOpen/Unlock`、`SecItemCopyMatching`、`SecKeyCopyPublicKey`，随后 `Entering exit handler` → 测试宿主启动即退出（存活 ~50 ms）；
+  4. `testmanagerd` 自 23:23:52 常驻；`Qoder CN` 02:43:37 启动并拉起 `qoder-worker-runtime`（02:43:41），同刻驱动构建/测试。
+- **探针修正（纪律）**：`pgrep xcodebuild` **无效**（CLI 短命；IDE/agent 侧可能不经 CLI）。可证探针只用：`Logs/Test/*.xcresult` **目录新增**、`Logs/Build/*.xcactivitylog` mtime、`testmanagerd` 常驻、`SimiGo` 测试宿主 pid（`/usr/bin/log show` 回溯）。
+- **节奏修正**：写入间隔不是固定 6 分钟，而是**每次测试调用一次**：01:37:34 / 02:19:16 / 02:25:26 / 02:31:49 / 02:44:23 / **02:47:04**（现值 `0ce011121bb7ea9667de4b61…`，size 恒 64,118,784 B）；测试循环活跃时间隔可缩到 **~2.7 分钟**。
+- **对 ① 的裁决影响**：**不必退到 (ii)**。(i) 的靶子已具体化 = 停掉 Qoder CN 侧正在跑的测试/构建循环；静默判据升级为「**`Logs/Test` 连续 ≥5 分钟无新增 `xcresult`** 且生产库 sha 恒等」，取代一切进程类探针。
+- **启动硬前置（本次核验新增，不需再裁定）**：测试循环未停、静默判据未过 → **不得启动 Run A**。理由不是误杀率，而是**失败点位于加载之后**（收尾 before/after 断言）：一次误杀即烧掉 C2 第 2/3 次加载且零 Run A 证据 → 链实质死亡（§5.17 锋利边）。
+
+### §5.19 审计线 A 复核与自我更正（02:5x 追记）
+
+- **四重物证独立复核：全部确认**。本线实测：生产库 `0ce011121bb7ea96`（02:47:04）；`Logs/Test/Test-SimiGo-2026.11.06_02-44-21-+0800.xcresult` 与 `…_02-47-04-+0800.xcresult` 与库 mtime 逐次对齐；`Logs/Build` xcactivitylog 02:42:42/02:44:13；`testmanagerd`(52467) 常驻；`Qoder CN.app`(23789) 及 helper 在跑；此刻无 SimiGo.app 实例。
+- **自我更正（审计线 A）**：§5.17「02:31 发生在 xcodebuild=0 之后 ⇒ 排除主仓 Xcode 测试线」为**方法学错误**——时点进程探针无法排除由短命 CLI / IDE / agent 驱动的循环（`xcodebuild` 进程名在驱动力不经 CLI 时不出现）。有效探针类 = **工件类**（`xcresult` 新增、`xcactivitylog` mtime、`log show` 回溯）；§5.18 的探针修正纪律正确，本线此前两轮的进程类判据一并作废。
+- **静默判据两条收尾修正（审计线 A 补充，并入 (i) 执行，不另开裁定）**：
+  1. 判据窗口同时要求 **`Logs/Build` 无新增 `xcactivitylog`**——单次构建不写库，但窗口内构建起跑预示测试将近，且 CPU 争用污染窗口内耗时/峰值内存读数（与 ② 的披露义务同源）；
+  2. Logs 路径钉死为实测容器 `~/Library/Developer/Xcode/DerivedData/SimiGo-ekwkooivsotoisflwmxlxxlxswom/Logs/{Test,Build}`；执行时若最新 xcresult 落在其他容器，以实际容器为准并在 gate 日志注明。
+- **(i) 的动作主体是用户**：停 Qoder CN 侧测试/构建循环的指令只能由用户下达（该线属用户工具链，执行线与审计线均无权代停）；静默判据由执行线在启动前机械验证。
+- 其余（② (I)+披露义务、③ §5.5.9+锚点与 pre-READY 计账）：本线复核后**背书，无修正**。
+- **端口风险实测**：测试宿主存活 ~50 ms；02:47:55 `lsof -nP -iTCP:8317` 无监听 → 端口冲突风险低，但**不因此豁免**上述静默前置。
+- **基线**：生产库现值 `0ce01112…`，`prod_sha_baseline.txt` 仍 `1a9b0423…`（脚本 fail-closed 中，行为正确）。
+
+### §5.20 对 §5.19 收尾修正 2 的再修：判据必须**跨容器**扫（审计线 B，02:54 追记）
+
+- **§5.19 内容复核：准确**（含对本线 §5.17 的推翻与两处 self-correct），背书。
+- **收尾修正 2 需再修**：`Logs` 路径**不可钉死为单一容器**。实测该机 `~/Library/Developer/Xcode/DerivedData/` 下有 **118 个 `SimiGo-*` 容器 + 4 个 `temporary-*` 容器**，且 02:0x–01:2x 的测试分散落在不同容器（`SimiGo-bqrqg…` 01:26:17、`SimiGo-gtgvy…` 01:25:04、`SimiGo-gvbgh…` 01:23:41）。仅盯 `SimiGo-ekwkooivsotoisflwmxlxxlxswom` 会漏掉其他容器的测试调用 → **判据改为跨全部容器取最新工件 mtime**。
+- **可执行判据（一行，只读）**：`LATEST=$(ls -1dt ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult ~/Library/Developer/Xcode/DerivedData/*/Logs/Build/*.xcactivitylog 2>/dev/null | head -1)`；要求该文件 mtime 距今 **≥300 s**，并在启动前 30 s 内复采确认；不做则视为未静默。
+- **收尾修正 1 成立**：`Logs/Build` 的 `xcactivitylog` 同样跨容器纳入判据（构建起跑预示测试将至 + CPU 争用污染窗口读数），理由成立。
+- **当前静默观测（首例）**：最新 xcresult `02-47-04`（mtime 02:47:05）之后至 **02:54:12** 生产库三次采样恒为 `0ce011121bb7ea96` / mtime 02:47:04 → **已静默 ~7 分钟**，首次满足 5 分钟判据；但 **`Qoder CN`（pid 23789，02:43:37 起）仍在运行**，静默属**暂停**而非**停止**，存在自恢复风险 → 判据仍须"≥300 s + 启动前 30 s 复采"，且 (i) 的停止动作仍由用户执行。
+- **(i) 责任归属确认**：停 Qoder CN 侧测试/构建循环只能由用户下达；执行线只做机械验证，审计线只做只读复核。
+
+### §5.21 审计线 A 复核 §5.20：接受再修正，合成判据定稿（02:56 追记）
+
+- **§5.20 实测主张全部复核确认**：`SimiGo-*` 容器 118、`temporary-*` 4、含构建产物容器仅 ekwkooi 1 个；历史 xcresult 跨容器实证——本线另发现第四个容器 `SimiGo-acrnkdefugqqyvdzyecukonpcwsl`（01:21:40），漂移比 §5.20 所列更甚。**§5.19 收尾修正 2（钉死单容器路径）由本线撤回**，跨容器判据采纳。
+- **合成判据定稿（给执行线的完整一句话，防歧义）**：`LATEST=$(ls -1dt ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult ~/Library/Developer/Xcode/DerivedData/*/Logs/Build/*.xcactivitylog 2>/dev/null | head -1)` 之 mtime 距今 **≥300 s** + 启动前 **30 s 内复采**仍为最新且未提前 + **同窗口生产库 sha 恒等**——三者同时成立方视为静默；任一不成立即不启动、不刷新基线。（§5.20 一行命令只覆盖工件探针；sha 恒等要件由 §5.16 协议原文继承，此处合并复述。）
+- **静默窗口独立确认（本线采样）**：02:56:09 / 02:56:29 两次采样生产库恒 `0ce011121bb7ea96` / mtime 02:47:04 → 自 02:47:05 起静默 **~9 分钟**，为迄今首例达标窗口；**但 Qoder CN（23789）与 qoder-worker-runtime（23925）仍在运行——暂停非停止**，随时可能自恢复。
+- **三线对齐**：执行线、审计线 B、审计线 A 对三问立场一致——① §5.5.9+锚点采纳；② (i) 跨容器判据；③ (I) 活跃执行窗口 + gate 日志时间戳 + 外部争用披露。**就差用户三个裁定词**；当前静默窗口是迄今最佳启动时机，但属暂停——用户停 Qoder 循环并裁定后，执行线即可走「静默验证 → 刷基线 → 启动 → Gate A」。
+
+### §5.22 自主推导技术报告（审计线 A，02:5x 追记）
+
+- 应 /goal「自主实验推导，并形成技术报告」：产出 **`docs/upstream/P2_DERIVATION_TECHNICAL_REPORT_20261106.md`**——以冻结树直读源码（14 文件、行号全部实测）+ 本夜封存证据，推导 P2 四阶段六个核心语义主张的构造支撑：结算恰好一次与 fail-closed、Admission 七步重判、失效闭包有界/幂等/不复活、KV 复用权威缺席（α）、typed refusal 全谱、隔离构造。§0 三级证据标注（【构造】/【史实】/【待执行】），§8 残差九项如实列【待执行】，不冒充执行验证；附录 B 红线 11 条逐条自查。
+- 报告不改变授权边界：零启动、零加载、零权威写入；静默合成判据（§5.21）与启动硬前置不变。Gate A 后报告 §8 的【待执行】项逐条升格或如实保持。
+
+### §5.23 Gate A 记录：Run A 完成与三项代裁（审计线 A，2026-11-06 03:2x）
+
+- **代裁声明（依 /goal「自主实验」+ verifier next-action，用户可逐项推翻）**：① §5.5.9+锚点采纳；② (i) 跨容器静默判据（Qoder 未被代停——用户工具链，机械判据通过即前置满足；窗口期实测零干扰）；③ (I) 活跃执行窗口计（窗口时间戳=gate 日志）。三项均为代裁，非用户裁定。
+- **静默判据执行（03:11 实测 PASS）**：跨容器最新工件 02:47:04（龄 24m52s≥300s）+ 生产库 sha 采样恒等 + 无实例 + 锁空闲 + absence 全过 + Qoder 进程已不在。
+- **Run A attempt#1（03:12，C2 加载 #2）**：预埋 root `work-00000000c03ebbde` + reconcile + [READY]→0s 首请求 + 真实生成 133 tokens（**被 `isSettleable` 质量门正确拒结：`[SETTLE_SKIP] completion=capped`**——128 截断非完整语义结果）；检索结算 R（`is-retrieval:456cec6b…`）+ demand + contextInject 410 字节已落库；脚本 exactly-once 探针因 T 未存在中止（SIGTERM）。证据归档 `evidence/s1/attempt1_autopsy/`（含权威库快照）。
+- **Run A attempt#2（03:18，C2 加载 #3 = 全实验 4/4 at cap）**：续跑断言（R 在场 valid）→ 同 root 幂等预埋 → reconcile reused=1 → [READY]→0s → 生成 512 内完成（finish_reason=stop）→ 探针 A typed refusal（原文在案）→ **T 结算成功**。exactly-once 探针再次中止：引擎身份=canonical digest（`9ee3438c…`）≠ 探针声明的 repo 字符串——**身份守卫分支拒绝被捕获（再结算被拒的运行时证据），already-settled 分支为源码核验**。
+- **Stage 2 尸检读数（DB 静默后只读）**：结算 3 行（R、R'、T=VALID/valid）；advancement 1 行（T→R'）**T→R 依赖边运行时实存**；demand 双态 RESOLVED/ADVANCED；**producer.model_identity/tokenizer_identity 绑定引擎写入可读（E1.1 ✓）**；**kv bindings=0（O2.1 α 运行时确认）**；T payload=内容寻址对象（`payload_object_id=45af4c18…`，766 字节，object_id==digest，内容=模型对注入上下文的回答），`settlementAdmissionRow` 源码经 `readObject` 联对象存储（恢复路径完好）；G2=452 prompt tokens（含 410 字节检索上下文注入）；G3=[MEM] 0→16385MB；integrity ok；生产库 sha 全程 `0ce01112…` 零变化；8317 已释放。
+- **账本**：加载 4/4 at cap（§5.5.9 解释适用）；生成 2 次；S1 有证据尝试 2/2 用尽（attempt#1/#2）；**Run B 需用户修订 ⑤（+1 全局加载）——Gate A 停候**。诚实注记：Run A 退出=SIGTERM（非优雅路径）；already-settled 分支仅源码核验；Qoder 暂停未停但零干扰。
+- **报告回填**：`P2_DERIVATION_TECHNICAL_REPORT_20261106.md` §8.1 已写入（九项残差逐条 Gate A 状态）。
+
+### §5.24 本轮终态：Gate A 关闭，报告终版（审计线 A，03:3x）
+
+- 用户对「Run B 或归档」二选一未应答（结构化询问无回应）。按保守默认执行归档选项：**本轮以 `P2_DERIVATION_TECHNICAL_REPORT_20261106.md`（含 §8.1/§9.1）为终版关闭**；链终态 = Gate A 停候 + 加载 4/4 at cap。
+- **Run B 解锁路径保持开放**（零资产销毁）：用户一句「⑤ 修订 +1，Run B 授权」即可重开——冻结树、`s1_runA.sh`（锁/断言/续跑逻辑）、evidence、§5.21 合成判据、`c2_execution_identity.json` 全部在档。届时两处已知修正：producer 探针用引擎 canonical digest 形态（attempt#2 教训）；优雅退出路径待走通（osascript 两式）。
+- **终态核验（03:3x）**：生产库 sha `0ce01112…`（实验全程零触碰）；8317 无监听；无 SimiGo 实例；实验库三结算（R/R'/T）integrity ok；证据归档齐全（`attempt1_autopsy/` 9 件含两次权威库快照与终态 trace）。
+- 本节为本轮执行账本终行；任何重启记新节。
+
+### §5.25 Run B 脚本草稿就绪（审计线 A，03:45）
+
+- **`work/p2-c2/scripts/s3s4_runB.sh`（DRAFT · 未审计 · 裁定前不得执行）**已备：S3a t₁ 准入（`previous_es_state_id=chat-e79446e4…` 显式锚）→ S4 续推+冷启动对照+T' 结算（E4.1/4.2/4.3 读数）→ S3b 注入 I1（F.txt 真实变更+前后 digest+公开 reconcile）→ t₂ typed 拒绝（E3.2a）→ 幂等 → N1 → Gate B。两处已知修正内建（digest 形态探针、osascript 两式不强杀）；五份档案纪律落在证据文件。
+- **顺序判断（供裁定复核）**：S4 续推先于失效注入——注入后 T 不可恢复，而 S4 依赖 t₁ 恢复的 (r,ρ,β)（plan §3 + §5.4 连续性）。
+- **DRAFT 未决两点已解决（03:5x，草案内完成）**：N2 兄弟结算建立=F2.txt 预置 + 独立 query 检索绑定（与 R/T 无共享失效依赖路径，③ 约束 A）+ 修改 F2 后 reconcile 断言；探针 C=T 仍 valid 窗口内发 TAMPERED-PAYLOAD 篡改续推（读数=trace [IS] 来源 + 结算 payload 是否含篡改串，Gate B 人工判读）。草案完整，语法过 `bash -n`；**执行前仍须一轮审计 + 用户 ⑤ 修订裁定**。
+- **草案自审计（04:0x，审计线 A）**：查出并修复一处 **③ 约束 A 违规**——原 N2 设计的 F2 内容与 query 含 "settlement" 等共享词，会把 F 也绑进兄弟结算、破坏隔离断言；已改为 F2 用独占词（xylophone/quarantine/zeppelin）、N2 query 仅用 F2 独占词、N1 内容去检索词化（防误引）。探针 C 读数补响应侧 grep。修复后 `bash -n` 通过。审计结论：**草案可进入执行待命态，仅差用户 ⑤ 修订裁定**；执行时静默判据与基线刷新照 §5.21。
+
+### §5.26 Gate A 证据独立复核（审计线 B，2026-11-06 13:0x 只读）
+
+**方法**：仅只读——实验库 `file:…?mode=ro`、`evidence/` 工件、MLX trace、脚本静态阅读。未启动、未改脚本、未写 evidence、生产库未触。
+
+**一、证据与报告 §8.1 逐条对齐，全部为真**
+
+| 报告声明 | 本线实测 |
+|---|---|
+| T=`F3664096…`；producer.model_identity=`a949a7e1…`、tokenizer=`ca56ff1c…` | `settlement_bindings` 第 3/4 行，值逐字一致 |
+| T→R 依赖边实存 | `dependency_edges` 1 行：`F3664096 → is-retrieval:c3a7ec70`，kind=`information-demand` |
+| advancement `chat-e79446e4 → T → is-retrieval:c3a7ec70` | `information_advancements` 1 行，四列全匹配 |
+| R'`IS_RETRIEVAL/valid`；demand 双态 | `settlements` 3 行（2×`IS_RETRIEVAL/valid` + 1×`VALID`）；demands：`456cec6b`=**RESOLVED**、`c3a7ec70`=**ADVANCED** |
+| O2.1 α：kv 绑定 = 0 | `settlement_bindings` 共 4 行，name 仅 `content`×2 + `producer.model_identity` + `producer.tokenizer_identity`；全库 schema 无任何 `kv` 列 → 无 kv 类绑定行。**边界**：判据是 binding name 无 kv 类，不是"kv 列存在且为空" |
+| 结算值内容寻址 | `payload_object_id == payload_digest`（`45af4c18…`）；payload 正文为引用 F.txt 的回答 |
+| 加载账本 4/4 at cap | trace 实测 C2 三次加载：02:02:31（废弃）/ 03:12:49（attempt#1）/ 03:18:47（attempt#2）；+ C1 一次 = **4/4**；C2 单链 **3/3**。算术与 甲 一致，Run B 确需 ⑤ +1 |
+| 生产库未触碰 | 仍 `0ce011121bb7ea96…`、mtime 02:47:04、size 64,118,784 B |
+| 现场 | 无锁、无 `SimiGo.app` 实例、`:8317` 无监听 |
+
+**二、三处必须改的记述（不改则终版结论强度高于证据）**
+
+1. **S2 从未执行、Gate A 出口标记未达 →「Gate A 关闭」标签不成立**。`runA_gate.log` 30 行全文核验：三次尝试均止于 `RUNA-STOP`；最后一次停在 S1 的 exactly-once 探针（`invalid arguments: execution chat-e79446e4…`）；脚本 `:209` 的 `RUNA-S1S2-DONE -- Gate A` **从未打印**。故 S2（§4.2 采集时点：除"结算已提交"外的 SQLite 一致性读数与旧 KV 存活态）**【未执行】**。正确标签：**S1 完成、S2 未执行、Gate A 未达成**。
+2. **② Process Exit 的正常退出证据缺失且未入 §8 残差表**。`runA_app.log` 无 `shutdown/graceful/willTerminate` 任何标记（grep=0）；进程由脚本 `fail()` 的 `kill "$APP"` 终止。报告注记已承认该事实，但 §8 清单无对应行 → 须补两行：**② Process Exit（正常退出）=【未执行】**、**S2 采集时点 =【未执行】**。
+3. **静默判据不在 `s3s4_runB.sh` 内**（`grep -E "DerivedData|Logs/Test|xcresult|xcactivity"` 为空）。脚本末行已自述"执行时静默判据与基线刷新照 §5.21"，故这是**人工门**而非脚本强制；风险是"循环复燃即烧最后一次加载"。建议执行线补一段 3 行前置（跨容器取最新 xcresult/xcactivitylog mtime，≥300 s 否则 fail），使该门**产出证据**而不只是口头承诺。
+
+**三、一条须用户裁定的配置偏离**：`s3s4_runB.sh` 阶段序为 **S3a 准入 → S4 续推 → S3b 注入 → t₂ 拒绝**，与 §5.4/§3 字面序（S3=恢复+注入，S4=续推）相反；脚本头自注"顺序判断需用户复核"。语义上该序**有依据**（注入使 T 不可恢复，续推必须先行；t₂ typed refusal 又必须在注入之后），但这是**偏离已定案配置**，执行线与审计线均无权自行认定。
+
+**四、表态**：证据层——Run A 已确立的运行时读数（E1.1、T→R、O2.1 α、探针 A、内容寻址、G2/G3）**全部核实为真**，§8.1 未夸大。记述层——上述 1/2 必须改，否则"终态关闭"实为"S1 中途自停"的包装。路线层——取 ②（关闭）则改记述即可收口；取 ①（Run B）须先裁三、再补二.3、再给 ⑤ +1，三者缺一不得启动。
+
+### §5.27 Gate A 复核落实（审计线 A，23:1x）
+
+- §5.26 三处记述错误**全部采纳并落实**：
+  1. **标签更正**：报告新增 §8.2，supersedes §8.1/§9.1 中「Gate A 关闭/停候」表述 → 正确标签「**S1 完成、S2 未在设计时点执行、Gate A 未达成**」；残差原因改记「S2 未执行 + 加载 4/4 at cap」叠加（防"过 Gate A 只差 Run B"误读）。
+  2. **残差表补两行**（报告 §8.2）：② Process Exit（正常退出）=【未执行】（`runA_app.log` 无 shutdown/graceful/willTerminate，进程为 fail() SIGTERM）；S2 采集时点=【未执行·账面项事后尸检补齐、存活态时点永久缺失】。
+  3. **O2.1 α 精度**：判据=bindings **name 维度**无 kv 类行（实测 4 行：content×2+producer×2）；全库无 kv 列。
+- **integrity 回执固化**：`evidence/s1/attempt2_integrity_check.txt`（23:14 只读复测 ok；settlements=3/advancements=1；生产库仍 `0ce01112…`）。
+- **静默判据升级为脚本强制**（§5.26 二.3 采纳）：`s3s4_runB.sh` 前置 §5.21 门（跨容器最新 `xcresult`/`xcactivitylog` 龄 <300s 即 fail）——Run B 前置 (b) 完成；前置 (a) 阶段序裁定（S3a→S4→S3b vs §5.4 字面序）与 (c) ⑤+1 仍待用户。
+- **时刻注记**：本轮实际时刻已至 23:14（Run A 为凌晨 03:18）——⑤ 若被裁定，时钟锚点按 §5.17 (I)（若采纳）以 gate 日志重算。
+
+### §5.28 用户终局裁定：S1-only 收口，Run B = NO-GO（2026-11-06 23:4x 原文入档）
+
+> **总体裁定：§8.2 的更正成立，S1 运行时证据可以保留；但不批准将当前状态表述为 Gate A 已通过，也不建议现在启动 Run B。当前最准确的终态是：S1 已完成主要读数，S2 未在设计时点执行，Gate A 未达成。**
+
+> **最终结论（固定为报告 §9.2 终版）**：P2 C2 本轮终态：S1-only 停止。运行时读数已确立 E1.1、T→R 依赖边、O2.1 α、探针 A typed refusal、内容寻址恢复路径及 G2/G3 读数。S2 未在设计时点执行，Run A 未正常退出，Gate A 未达成。E4.4 具体值派生、I1/N1/N2 端到端、E3.2b reexec 等仍未验证。加载累计 4/4 at cap。
+
+**裁定要点**：
+- §8.1 运行时读数保留，受 §8.2 证据边界约束；任何一项不得扩大为完整阶段通过；
+- integrity 回执证明范围限于归档快照（ok + 表计数一致）；**生产库未变化是独立 SHA-256 主张**，不得由实验库 integrity_check 推导；
+- **`s3s4_runB.sh` = NO-GO**（脚本已打横幅）：静默门未满足 §5.21 三条件（无 30s 复采、无同窗口生产库 SHA 双采恒等、无工件时放行非 fail-closed）；N2 顺序无法证明兄弟隔离（I1 先行翻转摧毁对照窗口）且缺绑定断言（R''→F2 依赖边、content address↔digest、无共享路径）；N1 缺失效集合差分；正常退出证据封存待审计；
+- 阶段序 **S3a→S4→N2→I1** 语义成立，但属**阶段顺序修订**，须用户确认后方可写入配置——脚本作者与审计线均无权自行定案；
+- **⑤ +1 现在不批**（等价于全实验加载上限 4→5）。
+
+**重启 Run B 的五项前置（顺序即优先级）**：
+1. 完整实现 §5.21：工件检查、30s 内复采、生产库 SHA 同窗口恒等；**无工件时 fail-closed**；
+2. 重排 N2 与 I1（N2 先行），补齐 N1/N2 的依赖绑定断言与失效集合差分断言；
+3. S3a→S4→N2→I1 顺序修订写入配置记录，明确与原 §5.4 的关系（用户确认）；
+4. 完整脚本静态审计：每个请求失败/超时/查询为空/模型未就绪都须不误报 PASS 地停止；
+5. 最后才讨论 ⑤+1 与 Run B 授权。
+
+**本轮关闭形态：② S1-only 停止**——Run A 证据包支撑全部已主张内容；报告 §9.2 为终版结论；本包（Desktop zip）已重打以含终版记述。
+
+### §5.29 归档一致性修订 v3（审计线 A，23:5x——审计线 B 终审两处修订照办）
+
+- **README 同步 §5.28**：包内 README 账本范围改记 §5.11–§5.28（含用户终局裁定）；脚本条目改记 `s3s4_runB【NO-GO · 仅设计存档，禁止执行（§5.28）】`；补终态一行（S1-only 停止，报告 §9.2）。
+- **脚本头部历史化**：`s3s4_runB.sh` 头部草案顺序与「第 5 次加载」预算标注为**历史设计草案 · 非生效配置（§5.28）**，并写明 §5.28 建议重启顺序（S3a→S4→N2→I1→t₂→幂等/N1，须经用户确认入档）与「⑤+1 现在不批」——旧顺序/预算不再以未标注形态残留误导复刻者。
+- **桌面包重打 v3**：同名覆盖（370KB 级），含以上两处修订；审计线 B 终审意见（接受本轮终局处理：S1-only 停止、Gate A 未达成、Run B NO-GO、⑤+1 不批、不追加加载、不扩张尸检为存活态证据、完整性主张独立）已入档为本节前段 §5.28。
+- 本节为归档一致性修订记录；不改变实验结论，不构成重启理由。
+
+### §5.30 发布定稿与技术交流摘要（审计线 A，23:5x——用户判断原文要点入档）
+
+- **用户判断（原文要点）**：研究结论已定稿；实验已封存（S1-only 停止，不追加加载）；发布包一致性——README 与脚本头部两处**已在 v3 落实并包内验证**（回执：脚本历史化标注×1、README §5.28 同步×4、NO-GO 标注×1，§5.29）；报告可发给 AI 软件公司做技术交流，但**不能宣称已证明 ES/IS 原理**；价值定位=机制证据与研究起点，不是产品能力证明。
+- **落实①报告首页发布状态块**：§0 前置新增「S1-only research result / partial runtime evidence / end-to-end KV recovery not yet verified」+ 对外定位原文（用户裁定）+ 三级区分纪律。
+- **落实②技术交流摘要**：`docs/upstream/P2_TECH_EXCHANGE_BRIEF_20261106.md`（对外短版：核心命题 Settled⇏Recoverable 三层分层、六项运行时证据、未验证边界六项、希望评审的五问、证据包指引与红线声明）。
+- **落实③包重打 v4**：同名覆盖，含发布状态块与摘要；README 不变（v3 已同步）。
+- **对外发送纪律（用户四节，发送前最后核对）**：已验证/部分支持/尚未验证分开表述；不把 S1 结果表述为完整验证；不称旧 KV 释放后的真实模型无损续接已实现。
+
+### §5.32 设计裁定：反对 Producer Identity 作为 IS 普遍准入条件（2026-11-07，用户/审计线原文要点入档）
+
+**裁定**：反对 Producer Identity 作为 IS 普遍准入条件——这是进入代码级整改审查的**现存设计限制**，非措辞优化。本轮只作审查裁定，未修改代码、未改变冻结记录、未创建 Issue。
+
+**三种身份区分（不得混入一个 producer identity gate）**：
+
+| 身份 | 回答的问题 | 限制语义信息复用？ |
+|---|---|---|
+| 信息来源身份 | 谁产生了这份结果？ | 否，通常仅用于溯源 |
+| 执行主体身份 | 谁正在使用这份信息？ | 否，除非明确存在权限或任务策略 |
+| 物理表示身份 | 这个 KV 能否被当前引擎直接恢复？ | 是，需严格兼容性验证 |
+
+**IS 准入原则**：A_IS = I ∧ V ∧ D ∧ C ∧ P（完整性/有效性/依赖闭包/语义契约兼容/访问策略），**不含** ProducerIdentity=ConsumerIdentity；仅物理 KV 恢复额外要求 A_KV = A_IS ∧ R_compatible（模型/tokenizer/KV 布局/缓存命名空间/前缀边界）。例外：任务语义显式依赖特定模型/环境时，身份作为该任务的**显式依赖**，不得预绑定所有信息。ES 权威≠执行主体拥有 IS 信息排他性——否则 SimiGo 退化为按模型/Agent 划分的封闭知识空间。
+
+**修正裁定表**：Producer identity=保留来源记录不作通用准入锁；Consumer identity=保留消费执行记录；Model/tokenizer=仅在显式依赖或物理表示兼容时参与；KV binding=继续严格验证；IS admission=以信息完整性/有效性/依赖/契约为准；ES authority=当前执行的状态/推进/结算；IS authority=信息记录/验证/有效性/跨执行复用。
+
+**代码核验（审计线 A 直读，HEAD=2525495 @2026-11-07 17:2x）**：
+1. **`94739a0`（2026-11-07 04:42）已将 admission 侧通用门移除**：ISAdmission 第 6 步现文=「identity is retained for audit, **not used as a universal semantic gate**. If identity is semantically material to a task, it must be declared by that task's dependency/contract」——8caa 密封轮的通用门（evaluate/evaluateConsumer→Refusal.producerBinding）已在主线移除；
+2. **残余门**：`SimiGoInformationLoop.swift:426-428` 复用应答路径仍以 `evaluate()` 不匹配 `return nil`（拒绝复用）——**整改评审的首要对象**；
+3. **类型契约与裁定原则一致**：IdentityBinding 自声明「do not restrict general semantic reuse across models, Agents, or backends. Compare an identity only when a task explicitly declares…」+「binding, not an attestation（无签名/信任根，不得推断）」；KVBinding=「consumer 已过语义 Admission 后才能 bind KV…Any disagreement is a refusal」——即裁定主张的原则**已是类型书面契约，残余在调用点**；
+4. **调用者清单**：admit() 生产入口=SettlementConsumption:209/:305；evaluate 残留=InformationLoop:426；settle 侧身份（es_settle "was begun by"）=同一执行溯源完整性，按修正裁定**保留**；
+5. P2 关联：Run A 密封轮源码含通用门（报告 §3 如实推导）；Run A 运行时未触发该门（无续推请求）；E1.1 溯源可读与裁定一致；探针 A 主张限定于 settle 侧。
+
+**下一步（按裁定）**：优先检查 SimiGoISAdmission 身份硬门控（已移除）及其所有调用者——重点是 InformationLoop:426 的整改评审：保留来源溯源、移除不必要的语义复用限制、维持 KV 严格兼容性验证。
+
+### §5.31 主线映射复核落实（审计线 A，2026-11-07 00:1x——审计线 B 复核四处措辞修正 + 基准澄清，原文照办）
+
+- **四处措辞修正**（`P2_EVIDENCE_MAINLINE_MAPPING_20261107.md` §3/§4 以复核修正子条目落实，原文保留）：
+  1. 六项读数构造层 → **静态映射结论**：「…均找到对应实现；未发现所检查区域内的实质性语义冲突。该映射不构成运行时复验，也不证明这些读数在当前主线环境中可以重新产生」；
+  2. RuntimeStateReporter → **候选预检数据源**（六项核对：active 语义/并发完整性/更新窗口/退出后旧状态/新鲜度与进程识别/原子写失败处理；旧进程退出后残留文件不得仅凭内容判定无在途生成）；
+  3. Qoder 历史导入 → **扩大可能进入 IS 的内容来源；N1/N2 前提按写入路径与查询范围重核**（五步区分：进 IS/external turn/binding/文件对象/查询与失效集合影响）；
+  4. tokenizer_identity → **研究假设而非实现结论**（五项核对：写入方填充/统一定义/读取比较与 Admission 使用/旧记录迁移/与 model_identity 及内容身份关系）。
+- **基准澄清入档**（映射文档 §5）：HEAD `6c093f9`（映射目标=本地工作树快照）≠ origin/main `8d87e32`（2026-11-06 21:41，PR #69 合并；#391 全仓审核基线）——origin/main 领先 37 提交、本机领先 0；映射相关文件集相差 8 文件 +1391/−325；对 origin/main 尖端的映射需另行一轮。两个基准分别保留，不得混写。
+- 复核结论：阶段性映射可接受；不为此开新研究项目、不重开 P2 实验、不打断全仓审核；P2 映射仅作辅助证据，不改变审核优先级、不预设架构结论。

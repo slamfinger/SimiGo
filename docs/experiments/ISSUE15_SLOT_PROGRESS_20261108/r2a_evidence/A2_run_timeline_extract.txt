@@ -1,0 +1,48 @@
+[A2] launching app at 12:07:19
+12:07:19 app pid=68430 env_inject=none
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:08:01.471] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:08:01.471] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:08:01.471] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:08:01.471] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:08:31.478] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:08:01.471] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:08:31.478] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:08:01.471] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:08:31.478] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:08:01.471] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:08:31.478] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:09:01.561] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[A2] observation window over at 12:09:20; stopping app tree
+[A2] done
