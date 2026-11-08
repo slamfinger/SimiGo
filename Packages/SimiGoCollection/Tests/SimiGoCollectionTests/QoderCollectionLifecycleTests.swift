@@ -101,6 +101,70 @@ final class QoderCollectionLifecycleTests: XCTestCase {
             parent: "a-1")
     }
 
+    func testLeaseRejectsSymlinkAndLeavesTargetUntouched() throws {
+        let state = root.appendingPathComponent("symlink-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: state, withIntermediateDirectories: true)
+        let target = root.appendingPathComponent("lease-target")
+        let sentinel = Data("outside-state".utf8)
+        try sentinel.write(to: target)
+        let lock = state.appendingPathComponent(QoderCollectionLease.lockFileName)
+        try FileManager.default.createSymbolicLink(at: lock, withDestinationURL: target)
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
+    func testLeaseRejectsHardLinkedLockWithoutTouchingTarget() throws {
+        let state = root.appendingPathComponent("hardlink-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: state, withIntermediateDirectories: true)
+        let target = root.appendingPathComponent("lease-target")
+        let sentinel = Data("do-not-truncate".utf8)
+        try sentinel.write(to: target)
+        try FileManager.default.linkItem(
+            at: target,
+            to: state.appendingPathComponent(QoderCollectionLease.lockFileName))
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
+    func testLeaseRejectsGroupOrWorldWritableLockFile() throws {
+        let state = root.appendingPathComponent("writable-lock-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: state, withIntermediateDirectories: true)
+        let lock = state.appendingPathComponent(QoderCollectionLease.lockFileName)
+        try Data("pid".utf8).write(to: lock)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o666], ofItemAtPath: lock.path)
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+    }
+
+    func testLeaseRejectsGroupOrWorldWritableStateDirectory() throws {
+        let state = root.appendingPathComponent("writable-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: state, withIntermediateDirectories: true)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o777], ofItemAtPath: state.path)
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: state))
+    }
+
+    func testLeaseRejectsSymlinkedStateDirectory() throws {
+        let outside = root.appendingPathComponent("outside-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: outside, withIntermediateDirectories: true)
+        let target = outside.appendingPathComponent(QoderCollectionLease.lockFileName)
+        let sentinel = Data("outside-directory-lock".utf8)
+        try sentinel.write(to: target)
+        let link = root.appendingPathComponent("state-directory-link", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+
+        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: link))
+        XCTAssertEqual(try Data(contentsOf: target), sentinel)
+    }
+
     // MARK: - start -> lease -> second instance refused -> stop -> resume
 
     func testStartTakesTheLeaseAndStopLetsANewInstanceResume() throws {
@@ -116,7 +180,7 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         // timer callback has committed the first-sight baseline before stop().
         // A synchronous poll on the runner's serial queue joins that first scan.
         let initial = first.pollOnce()
-        XCTAssertTrue(initial.errors.isEmpty, "\\(initial.errors)")
+        XCTAssertTrue(initial.errors.isEmpty, "\(initial.errors)")
         XCTAssertEqual(try leaseHolderPID(configuration), getpid())
 
         // While that instance is alive, a second one must be refused rather than
@@ -184,9 +248,13 @@ final class QoderCollectionLifecycleTests: XCTestCase {
             import fcntl, os, sys, time
             fd = os.open(sys.argv[2], os.O_CREAT | os.O_RDWR, 0o600)
             fcntl.flock(fd, fcntl.LOCK_EX)
-            with open(os.path.join(sys.argv[1], "holder.pid"), "w") as handle:
+            report = os.path.join(sys.argv[1], "holder.pid")
+            staging = report + ".tmp"
+            with open(staging, "w") as handle:
                 handle.write("%d\\n" % os.getpid())
                 handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(staging, report)
             time.sleep(120)
             """
         let holder = Process()
@@ -326,16 +394,6 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         XCTAssertThrowsError(
             try QoderCollectionLease.acquire(directoryURL: state),
             "a FIFO must be rejected after a nonblocking open and fstat")
-    }
-
-    func testLeaseRejectsSymlinkedStateDirectory() throws {
-        let external = root.appendingPathComponent("external-lock-state", isDirectory: true)
-        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
-        let linked = root.appendingPathComponent("linked-lock-state", isDirectory: true)
-        try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: external)
-        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: linked))
-        XCTAssertFalse(FileManager.default.fileExists(
-            atPath: external.appendingPathComponent(QoderCollectionLease.lockFileName).path))
     }
 
     func testCollectionReadsAStaticCopyAndWritesOnlyInsideItsOwnStateDirectory()

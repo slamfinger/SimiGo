@@ -90,9 +90,12 @@ final class SlotActivityTests: XCTestCase {
             port: 54_321,
             session: probeSession(BusySlotsURLProtocol.self))
         XCTAssertEqual(activity, .busy)
+        let request = BusySlotsURLProtocol.recordedRequest()
         XCTAssertEqual(
-            BusySlotsURLProtocol.recordedRequest()?.url?.absoluteString,
+            request?.url?.absoluteString,
             "http://127.0.0.1:54321/slots")
+        XCTAssertEqual(request?.cachePolicy, .reloadIgnoringLocalCacheData)
+        XCTAssertEqual(request?.value(forHTTPHeaderField: "Cache-Control"), "no-cache")
     }
 
     func testProbeRequestBypassesURLCache() {

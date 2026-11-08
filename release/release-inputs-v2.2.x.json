@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 631,
+    "tracked": 636,
     "research_not_declared": 0,
-    "non_research_candidates": 631,
-    "declared": 573,
+    "non_research_candidates": 636,
+    "declared": 578,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -868,6 +868,10 @@
       "output": "SimiGo/Inference/RequestBudget.swift"
     },
     {
+      "path": "SimiGo/Inference/SlotProgressMonitor.swift",
+      "output": "SimiGo/Inference/SlotProgressMonitor.swift"
+    },
+    {
       "path": "SimiGo/Inference/StreamTokenFilter.swift",
       "output": "SimiGo/Inference/StreamTokenFilter.swift"
     },
@@ -970,6 +974,10 @@
     {
       "path": "SimiGoTests/AgentExecutionKeyTests.swift",
       "output": "SimiGoTests/AgentExecutionKeyTests.swift"
+    },
+    {
+      "path": "SimiGoTests/BinaryDownloaderTests.swift",
+      "output": "SimiGoTests/BinaryDownloaderTests.swift"
     },
     {
       "path": "SimiGoTests/BranchFork/BranchForkTests.swift",
@@ -1250,6 +1258,10 @@
     {
       "path": "SimiGoTests/SlotActivityTests.swift",
       "output": "SimiGoTests/SlotActivityTests.swift"
+    },
+    {
+      "path": "SimiGoTests/SlotProgressMonitorTests.swift",
+      "output": "SimiGoTests/SlotProgressMonitorTests.swift"
     },
     {
       "path": "SimiGoTests/StaleAdmissionCacheEvictionTests.swift",
@@ -1722,6 +1734,14 @@
     {
       "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_trace.log",
       "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2a_evidence/A2_trace.log"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2b_evidence/R2B_frozen_trace.log",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2b_evidence/R2B_frozen_trace.log"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2b_evidence/R2B_process_snapshots.txt",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/r2b_evidence/R2B_process_snapshots.txt"
     },
     {
       "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/threshold_summary.json",

@@ -1110,7 +1110,11 @@ public final class Service: ObservableObject {
             }
 
             let runtime = runtimeState.withLock { $0 }
-            if await slotActivity(for: runtime) == .idle {
+            let activity = await slotActivity(for: runtime)
+            // Cancellation can race with a successful URLSession response too;
+            // an idle sample from a cancelled wait must not be reported as ready.
+            if Task.isCancelled { return false }
+            if activity == .idle {
                 return true
             }
 

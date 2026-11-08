@@ -21,49 +21,74 @@ final class QoderCollectionLease {
     }
 
     static func acquire(directoryURL: URL) throws -> QoderCollectionLease {
-        try FileManager.default.createDirectory(
-            at: directoryURL, withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700])
-        let directoryDescriptor = open(
-            directoryURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
-        guard directoryDescriptor >= 0 else {
-            throw QoderCollectionStateError.unreadableState(
-                path: directoryURL.path, detail: "state directory is linked or unreadable")
+        // Refuse a state-directory entry that is itself a symlink. The lock
+        // is then opened relative to a verified directory descriptor, so a
+        // parent-path substitution cannot redirect this child open.
+        var rootInfo = stat()
+        if lstat(directoryURL.path, &rootInfo) == 0 {
+            guard (rootInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: "state directory must not be a symlink")
+            }
+        } else {
+            let code = errno
+            guard code == ENOENT else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: String(cString: strerror(code)))
+            }
+            do {
+                try FileManager.default.createDirectory(
+                    at: directoryURL, withIntermediateDirectories: true,
+                    attributes: [.posixPermissions: 0o700])
+            } catch {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: String(describing: error))
+            }
+            guard lstat(directoryURL.path, &rootInfo) == 0,
+                  (rootInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw QoderCollectionStateError.unreadableState(
+                    path: directoryURL.path, detail: "state directory is not a real directory")
+            }
         }
-        defer { close(directoryDescriptor) }
-        var directoryInfo = stat()
-        guard fstat(directoryDescriptor, &directoryInfo) == 0,
-              (directoryInfo.st_mode & S_IFMT) == S_IFDIR,
-              directoryInfo.st_uid == getuid(),
-              fchmod(directoryDescriptor, 0o700) == 0
-        else {
+        let directoryFD = open(
+            directoryURL.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+        guard directoryFD >= 0 else {
             throw QoderCollectionStateError.unreadableState(
-                path: directoryURL.path, detail: "state directory is not a private owned directory")
+                path: directoryURL.path, detail: String(cString: strerror(errno)))
         }
+        defer { close(directoryFD) }
+        var openedRootInfo = stat()
+        guard fstat(directoryFD, &openedRootInfo) == 0,
+              (openedRootInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedRootInfo.st_dev == rootInfo.st_dev,
+              openedRootInfo.st_ino == rootInfo.st_ino,
+              openedRootInfo.st_uid == geteuid(),
+              (openedRootInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0,
+              fchmod(directoryFD, 0o700) == 0 else {
+            throw QoderCollectionStateError.unreadableState(
+                path: directoryURL.path,
+                detail: "state directory changed or could not be secured while opening its descriptor")
+        }
+
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
-        // Anchor the lock open to the validated directory descriptor and open
-        // it non-blocking: a planted FIFO at this name must fail the open or
-        // the post-open regular-file check, never block the runner. Resolving
-        // fileURL by path here would race a directory swap between the
-        // directory validation above and this open.
+        // O_NONBLOCK matters only for a non-regular entry planted at the lock
+        // name: a FIFO must fail the post-open type check, never block.
         let descriptor = openat(
-            directoryDescriptor, lockFileName,
+            directoryFD, lockFileName,
             O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK, 0o600)
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path, detail: String(cString: strerror(errno)))
         }
-        var lockInfo = stat()
-        guard fstat(descriptor, &lockInfo) == 0,
-              (lockInfo.st_mode & S_IFMT) == S_IFREG,
-              lockInfo.st_uid == getuid(),
-              lockInfo.st_nlink == 1,
-              (lockInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0,
-              fchmod(descriptor, 0o600) == 0
-        else {
+        var fileInfo = stat()
+        guard fstat(descriptor, &fileInfo) == 0,
+              (fileInfo.st_mode & S_IFMT) == S_IFREG,
+              fileInfo.st_uid == geteuid(),
+              fileInfo.st_nlink == 1,
+              (fileInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
             close(descriptor)
             throw QoderCollectionStateError.unreadableState(
-                path: fileURL.path, detail: "lock entry is not a regular owned file")
+                path: fileURL.path, detail: "lease must be a regular, non-symlink file")
         }
         guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
             let code = errno

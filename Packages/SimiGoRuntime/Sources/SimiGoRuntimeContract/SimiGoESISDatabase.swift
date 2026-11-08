@@ -69,17 +69,26 @@ public final class SimiGoESISDatabase {
         case staleExternalSource(rootID: String, relativePath: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
-        /// Init-time PRAGMA execution failure — an execution condition, NOT a
-        /// corruption diagnostic. Preserves the primary and extended SQLite
-        /// result codes (e.g. SQLITE_BUSY after the busy handler has waited up
-        /// to busy_timeout, or SQLITE_LOCKED, which busy handlers do not
-        /// cover — explicit return) so callers can classify without parsing
-        /// strings.
+        /// SQLite API execution failure. Preserves primary and extended result
+        /// codes (including BUSY/LOCKED, I/O, and extended constraint codes) so
+        /// callers can classify without parsing localized message strings.
         case executionFailure(primary: Int32, extended: Int32, message: String)
     }
 
     private let handle: OpaquePointer
     private let url: URL
+
+    /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
+    /// /var and /tmp, so resolve the parent only and keep the original leaf.
+    private static func canonicalLeafPath(for url: URL) -> String {
+        let parent = url.deletingLastPathComponent()
+        guard let resolved = parent.path.withCString({ Darwin.realpath($0, nil) }) else {
+            return url.path
+        }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
+            .appendingPathComponent(url.lastPathComponent).path
+    }
 
     /// Open (and optionally create) the database at `url`, applying PRAGMAs.
     public init(url: URL, createIfNeeded: Bool = true) throws {
@@ -91,10 +100,15 @@ public final class SimiGoESISDatabase {
             try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
                                                      withIntermediateDirectories: true)
         }
-        var flags: Int32 = SQLITE_OPEN_READWRITE
+        // The database leaf is part of the authoritative persistence boundary.
+        // SQLite must refuse a symlink here rather than following it to another store.
+        // Apple's SQLite rejects any path whose prefix traverses a symlink
+        // (/var and /tmp on macOS), so open through the canonical parent while
+        // keeping the original leaf name for the NOFOLLOW check itself.
+        var flags: Int32 = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOFOLLOW
         if createIfNeeded { flags |= SQLITE_OPEN_CREATE }
         var db: OpaquePointer?
-        let rc = sqlite3_open_v2(url.path, &db, flags, nil)
+        let rc = sqlite3_open_v2(Self.canonicalLeafPath(for: url), &db, flags, nil)
         guard rc == SQLITE_OK, let db else {
             let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \(rc)"
             if let db { sqlite3_close_v2(db) }
@@ -150,8 +164,19 @@ public final class SimiGoESISDatabase {
         if rc != SQLITE_OK {
             let m = err.map { String(cString: $0) } ?? "code \(rc)"
             sqlite3_free(err)
-            throw DatabaseError.sql(m)
+            throw sqliteFailure(db, resultCode: rc, message: m)
         }
+    }
+
+    private static func sqliteFailure(
+        _ db: OpaquePointer, resultCode: Int32? = nil, message: String? = nil
+    ) -> DatabaseError {
+        let reportedExtended = sqlite3_extended_errcode(db)
+        let reportedCode = resultCode ?? reportedExtended
+        let primary = reportedCode & 0xff
+        let extended = reportedExtended == SQLITE_OK ? reportedCode : reportedExtended
+        let detail = message ?? String(cString: sqlite3_errmsg(db))
+        return .executionFailure(primary: primary, extended: extended, message: detail)
     }
 
     private enum IntegrityOutcome {
@@ -1553,7 +1578,7 @@ public final class SimiGoESISDatabase {
         let rc = sqlite3_step(stmt)
         if rc == SQLITE_ROW { return true }
         if rc == SQLITE_DONE { return false }
-        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+        throw Self.sqliteFailure(handle, resultCode: rc)
     }
 
     private func prepare(_ sql: String) throws -> OpaquePointer {
@@ -1562,7 +1587,7 @@ public final class SimiGoESISDatabase {
         guard rc == SQLITE_OK, let prepared = stmt else {
             let message = String(cString: sqlite3_errmsg(handle))
             if let stmt { sqlite3_finalize(stmt) }
-            throw DatabaseError.sql(message)
+            throw Self.sqliteFailure(handle, resultCode: rc, message: message)
         }
         return prepared
     }
@@ -1630,10 +1655,11 @@ public final class SimiGoESISDatabase {
     private func execBinding(_ sql: String, _ apply: (OpaquePointer) throws -> Void) throws -> Int {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        try apply(stmt)
-        if sqlite3_step(stmt) != SQLITE_DONE {
+try apply(stmt)
+        let rc = sqlite3_step(stmt)
+        if rc != SQLITE_DONE {
             let m = sqlite3_errmsg(handle).map { String(cString: $0) } ?? "step failed"
-            throw DatabaseError.sql(m)
+            throw Self.sqliteFailure(handle, resultCode: rc, message: m)
         }
         return Int(sqlite3_changes(handle))
     }
@@ -2779,7 +2805,7 @@ public final class SimiGoESISDatabase {
                     continue
                 }
                 guard rc == SQLITE_DONE else {
-                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    throw Self.sqliteFailure(handle, resultCode: rc)
                 }
                 break
             }
@@ -3504,7 +3530,7 @@ public final class SimiGoESISDatabase {
             } else {
                 sqlite3_finalize(settled)
                 guard settledRC == SQLITE_DONE else {
-                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    throw Self.sqliteFailure(handle, resultCode: settledRC)
                 }
             }
 
@@ -3584,7 +3610,7 @@ public final class SimiGoESISDatabase {
                 continue
             }
             guard rc == SQLITE_DONE else {
-                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                throw Self.sqliteFailure(handle, resultCode: rc)
             }
             return hits
         }
@@ -3684,7 +3710,7 @@ public final class SimiGoESISDatabase {
                 continue
             }
             guard rc == SQLITE_DONE else {
-                throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                throw Self.sqliteFailure(handle, resultCode: rc)
             }
             return rows
         }
@@ -3930,7 +3956,7 @@ public final class SimiGoESISDatabase {
             }
             guard promotedRows == 1 else {
                 throw DatabaseError.sql(
-                    "commitChatTurn: expected one pending local user row; updated \\(promotedRows)")
+                    "commitChatTurn: expected one pending local user row; updated \(promotedRows)")
             }
         }
         return assistantID
@@ -5863,12 +5889,14 @@ public final class SimiGoESISDatabase {
     /// keep validity='valid'. A change with no dependents invalidates nothing.
     @discardableResult
     public func invalidateSourceFile(rootID: String, relativePath: String) throws -> [String] {
-        let ids = try affectedClosure(rootID: rootID, relativePath: relativePath)
-        guard !ids.isEmpty else { return [] }
-        try transaction {
+        // Acquire the writer lock before reading the dependency closure. Otherwise
+        // a concurrent binding/edge can be committed after the snapshot and remain
+        // valid even though its source is being invalidated.
+        return try transactionResult {
+            let ids = try affectedClosure(rootID: rootID, relativePath: relativePath)
             try markSettlementsInvalidInTransaction(ids)
+            return ids
         }
-        return ids
     }
 
     /// Caller owns the transaction. Flips only valid rows so repeated
@@ -5963,7 +5991,7 @@ public final class SimiGoESISDatabase {
                     continue
                 }
                 guard rc == SQLITE_DONE else {
-                    throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                    throw Self.sqliteFailure(handle, resultCode: rc)
                 }
                 break
             }
@@ -5994,7 +6022,7 @@ public final class SimiGoESISDatabase {
                         // legitimately has no carried file_contents digest.
                         oldDigest = ""
                     } else {
-                        throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+                        throw Self.sqliteFailure(handle, resultCode: rc)
                     }
                 }
 
@@ -6055,12 +6083,14 @@ public final class SimiGoESISDatabase {
     /// valid results are preserved.
     @discardableResult
     public func invalidateSettlement(_ settlementID: String) throws -> [String] {
-        let ids = try transitiveDependents(seeds: [settlementID])
-        guard !ids.isEmpty else { return [] }
-        try transaction {
+        // The dependency closure and validity updates are one serialized unit,
+        // matching reconcileRoot and preventing a new dependent edge from racing
+        // between the closure read and BEGIN IMMEDIATE.
+        return try transactionResult {
+            let ids = try transitiveDependents(seeds: [settlementID])
             try markSettlementsInvalidInTransaction(ids)
+            return ids
         }
-        return ids
     }
 
     /// Data-ownership introspection: does the given table store any BLOB column?
@@ -6089,7 +6119,7 @@ public final class SimiGoESISDatabase {
             return String(cString: c)
         }
         if rc != SQLITE_DONE {
-            throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
+            throw Self.sqliteFailure(handle, resultCode: rc)
         }
         throw DatabaseError.sql("settlementValidity: unknown settlement \(settlementID)")
     }

@@ -36,6 +36,105 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         return Data(json.utf8)
     }
 
+    func testOpenResolvesParentSymlinkAliasButStillRejectsSymlinkedLeaf() throws {
+        let fm = FileManager.default
+        let realParent = fm.temporaryDirectory
+            .appendingPathComponent("simigo-db-parent-\(UUID().uuidString)", isDirectory: true)
+        let aliasParent = fm.temporaryDirectory
+            .appendingPathComponent("simigo-db-parent-alias-\(UUID().uuidString)", isDirectory: true)
+        let databaseURL = aliasParent.appendingPathComponent("store.sqlite3")
+        let targetURL = realParent.appendingPathComponent("target.sqlite3")
+        let leafAlias = aliasParent.appendingPathComponent("leaf.sqlite3")
+        defer {
+            cleanup(databaseURL)
+            cleanup(targetURL)
+            cleanup(leafAlias)
+            try? fm.removeItem(at: aliasParent)
+            try? fm.removeItem(at: realParent)
+        }
+
+        try fm.createDirectory(at: realParent, withIntermediateDirectories: true)
+        try fm.createSymbolicLink(at: aliasParent, withDestinationURL: realParent)
+
+        let database = try SimiGoESISDatabase(url: databaseURL)
+        try database.runMigrations()
+        database.close()
+        XCTAssertTrue(fm.fileExists(atPath: databaseURL.path),
+                      "a parent alias must resolve to its real directory")
+
+        let target = try SimiGoESISDatabase(url: targetURL)
+        target.close()
+        try fm.createSymbolicLink(at: leafAlias, withDestinationURL: targetURL)
+        XCTAssertThrowsError(
+            try SimiGoESISDatabase(url: leafAlias, createIfNeeded: false),
+            "NOFOLLOW must still reject a symlink at the database leaf")
+        XCTAssertTrue(fm.fileExists(atPath: targetURL.path),
+                      "the symlink target must remain directly openable")
+    }
+
+    func testOpenRefusesSymlinkedDatabaseLeafWithoutTouchingTarget() throws {
+        let target = tempURL("symlink-target")
+        let alias = target.deletingLastPathComponent()
+            .appendingPathComponent("symlink-alias.sqlite3")
+        defer {
+            cleanup(alias)
+            cleanup(target)
+        }
+
+        do {
+            let database = try SimiGoESISDatabase(url: target)
+            try database.runMigrations()
+        }
+        try FileManager.default.createSymbolicLink(
+            at: alias, withDestinationURL: target)
+
+        XCTAssertThrowsError(
+            try SimiGoESISDatabase(url: alias, createIfNeeded: false)
+        ) { error in
+            guard let databaseError = error as? SimiGoESISDatabase.DatabaseError,
+                  case .cannotOpen = databaseError else {
+                return XCTFail("expected symlinked database open to fail closed, got \(error)")
+            }
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: alias.path))
+        do {
+            let direct = try SimiGoESISDatabase(url: target, createIfNeeded: false)
+            XCTAssertTrue(try direct.integrityCheck())
+        }
+    }
+
+    func testStatementFailurePreservesPrimaryAndExtendedSQLiteCodes() throws {
+        let url = tempURL("statement-error")
+        let db = try SimiGoESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        try rawExec(url, """
+        CREATE TRIGGER reject_execution_state_insert
+        BEFORE INSERT ON execution_states
+        BEGIN
+            SELECT RAISE(ABORT, 'forced statement failure');
+        END;
+        """)
+
+        XCTAssertThrowsError(
+            try db.recordExecutionState(
+                id: "forced-failure", parentID: nil, modelIdentity: "test-model",
+                position: 0, continuationID: "C-1", anchor: "a",
+                lifecycle: "active", createdAt: Date())
+        ) { error in
+            guard let databaseError = error as? SimiGoESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, _) = databaseError else {
+                return XCTFail("expected preserved SQLite execution failure, got \(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_CONSTRAINT)
+            // SQLITE_CONSTRAINT_TRIGGER is not exported by every system SQLite module map.
+            XCTAssertEqual(extended, SQLITE_CONSTRAINT | (7 << 8))
+        }
+        XCTAssertEqual(try db.count("execution_states"), 0)
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try SimiGoESISDatabase(url: url)
@@ -1188,7 +1287,7 @@ extension SimiGoESISDatabaseTests {
     func testInformationDemandRefusesChangedIndexOnlyFileWithoutCachingPartialResult() throws {
         let databaseURL = tempURL("changed-index-only")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-changed-index-only-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-changed-index-only-\(UUID().uuidString)", isDirectory: true)
         let fm = FileManager.default
         try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
         let fileURL = rootURL.appendingPathComponent("source.txt")

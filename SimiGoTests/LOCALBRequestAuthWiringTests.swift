@@ -913,6 +913,100 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         )
     }
 
+    /// The LAN-facing Information-Space and host-management routes must
+    /// use LOCALB proof. TLS authenticates the server, not the LAN peer.
+    func testInformationAndManagementRoutesUseLeastPrivilegePermissions() {
+        let informationReadRoutes = [
+            ("GET", "/v1/simigo/env"),
+            ("GET", "/v1/simigo/roots"),
+            ("GET", "/v1/simigo/is/status"),
+        ]
+        for (method, target) in informationReadRoutes {
+            XCTAssertEqual(
+                HTTPServer.localbRoutePolicy(forMethod: method, routePath: target),
+                .protected(permission: .informationRead),
+                "\(method) \(target) must require P-INFO-READ"
+            )
+        }
+
+        let srsWriteRoutes = [
+            ("GET", "/v1/simigo/search"),
+            ("POST", "/v1/simigo/search"),
+            ("PUT", "/v1/simigo/roots"),
+            ("POST", "/v1/simigo/roots"),
+        ]
+        for (method, target) in srsWriteRoutes {
+            XCTAssertEqual(
+                HTTPServer.localbRoutePolicy(forMethod: method, routePath: target),
+                .protected(permission: .srsWrite),
+                "\(method) \(target) must require P-SRS-WRITE"
+            )
+        }
+
+        // Keep the documented loopback compatibility surface explicit; it
+        // remains a separate local policy, not a LAN exception.
+        XCTAssertTrue(HTTPServer.localbPlaintextLoopbackPermissions.contains(.informationRead))
+        XCTAssertTrue(HTTPServer.localbPlaintextLoopbackPermissions.contains(.srsWrite))
+    }
+
+    func testInformationAndManagementRoutesRefuseUnpairedTLSClients() throws {
+        let host = try makeAuthorizedHost()
+        let requests: [(String, String)] = [
+            ("GET", "/v1/simigo/env"),
+            ("GET", "/v1/simigo/roots"),
+            ("GET", "/v1/simigo/is/status"),
+            ("GET", "/v1/simigo/search"),
+            ("POST", "/v1/simigo/search"),
+            ("PUT", "/v1/simigo/roots"),
+            ("POST", "/v1/simigo/roots"),
+        ]
+
+        for (method, target) in requests {
+            let request = "\(method) \(target) HTTP/1.1\r\n"
+                + "Host: 127.0.0.1:\(host.port)\r\n"
+                + "Content-Length: 0\r\n"
+                + "Connection: close\r\n\r\n"
+            let response = sendRequest(
+                port: host.port, spkiHex: host.spkiHex, request: request)
+            let status = try XCTUnwrap(statusLine(of: response))
+            XCTAssertTrue(
+                status.contains(" 401 "),
+                "\(method) \(target) must reject an unpaired TLS peer, got: \(status)"
+            )
+        }
+
+        let (readChallenge, readPermission) = try fetchChallenge(
+            host, method: "GET", target: "/v1/simigo/roots")
+        XCTAssertEqual(readPermission, LOCALBPermission.informationRead.rawValue)
+        XCTAssertEqual(readChallenge.count, 32)
+
+        // P-SRS-WRITE is host-exclusive: the route is protected, but a
+        // paired LAN client can never be granted the permission, so the
+        // challenge is refused instead of issued. This is the same
+        // invariant main asserts in
+        // testSearchAndRootMutationRoutesRejectNoProofOverRealTLS and in
+        // InformationSpaceHostE2ETests (`/mcp` challenge denial).
+        let writeBody = "{\"method\":\"POST\",\"requestTarget\":\"/v1/simigo/roots\"}"
+        let writeChallengeRequest = "POST /localb/auth/challenge HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.port)\r\n"
+            + "X-SimiGo-LocalB-Client-Key-ID: \(host.clientKeyID)\r\n"
+            + "Content-Type: application/json\r\n"
+            + "Content-Length: \(writeBody.utf8.count)\r\n"
+            + "Connection: close\r\n\r\n" + writeBody
+        let writeChallengeResponse = sendRequest(
+            port: host.port, spkiHex: host.spkiHex,
+            request: writeChallengeRequest)
+        let writeStatus = try XCTUnwrap(statusLine(of: writeChallengeResponse))
+        XCTAssertTrue(
+            writeStatus.contains(" 400 "),
+            "P-SRS-WRITE is not delegable to paired LAN clients; got: \(writeStatus)")
+        let writeText = String(
+            decoding: writeChallengeResponse ?? Data(), as: UTF8.self)
+        XCTAssertTrue(
+            writeText.contains("LOCALB_PERMISSION_DENIED"),
+            "expected an explicit permission denial; got: \(writeText.prefix(300))")
+    }
+
     // MARK: - S2: plaintext allowlist and permission independence
     // (owner ruling 2026-11-05)
 
