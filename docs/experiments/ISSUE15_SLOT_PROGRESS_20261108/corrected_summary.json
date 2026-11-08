@@ -43,14 +43,16 @@
    11.9,
    13.9
   ],
-  "expected_inter_token_ms": 72,
+  "expected_inter_token_ms": null,
   "max_true_same_task_stall_s": 1.95,
   "max_true_stall_context": "prefill-complete -> first-decode-token boundary, one occurrence in one run; run 2 max was tick-bound (0.51s)",
   "cancel_release_latency_s": [
    0.47,
    0.5
   ],
-  "watchdog_implication": "threshold must be rate-relative: no-progress > max(10s, K x median inter-token). With ~72ms median inter-token, 10s = ~139 median intervals = ~5x the largest observed boundary stall. Single-model single-machine evidence; re-derive per model."
+  "watchdog_implication": "10s is a candidate observation window for Round-2 fault injection, not a validated production threshold. Rate-relative sizing: no-progress > max(10s, K x token-time-scale). 10s = ~133x the 75-77ms average token time-scale and ~5x the largest observed boundary stall (1.95s). Single-model single-machine evidence; re-derive per model.",
+  "token_time_scale_estimate_ms": 77,
+  "token_time_scale_method": "reciprocal of average decode throughput (12.95-13.30 tok/s independent recompute); NOT a measured per-token interval distribution — 500ms sampling cannot resolve it; needs higher-resolution capture"
  },
  "retraction": "a1457df's 10s-threshold and decode no-progress conclusions are RETRACTED: its collector read a non-existent top-level n_decoded (all null) and its cancel sampling had a 10s blind window. Raw a1457df data is preserved untouched as the v1 archive."
 }

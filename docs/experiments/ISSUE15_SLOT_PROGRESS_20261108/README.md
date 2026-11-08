@@ -20,20 +20,26 @@
 > `corrected_summary.json` / `evidence_v2/`): reads
 > `next_token[0].n_decoded`; analyses segment per `id_task` with phase
 > attribution (prefill = prompt counter advanced, decode = n_decoded
-> advanced); the cancel scenario samples continuously from the exact
-> client-close timestamp until idle.
+> advanced; adjacent pairs counted only when both ends are busy), and the
+> cancel scenario samples continuously from the exact client-close timestamp
+> until idle.
 >
 > Corrected results: decode throughput **11.9–13.9 tok/s** (from
 > `next_token[0].n_decoded` deltas); decode-heavy same-task true stalls
 > **0** across both runs (counter advanced every tick); the one true
 > same-task no-progress window was **1.95 s** at the prefill-complete →
 > first-token boundary (run 1; run 2 max was tick-bound 0.51 s);
-> **cancel → idle release latency 0.47–0.50 s** (client close → first idle
-> sample, tick-bound upper bound); concurrent requests hold per-task
-> baselines with no cross-task counter confusion. A no-progress watchdog
-> threshold must be **rate-relative** (`max(10 s, K × median inter-token)`);
-> with ~72 ms median inter-token, 10 s ≈ 139 median intervals ≈ 5× the
-> largest observed boundary stall — single-model, single-machine evidence.
+> **cancel → idle: the first idle-observing sample landed 0.47–0.50 s after
+> client close** — an observation-time bound (sample t brackets the /slots
+> request), not the engine's exact internal release instant.
+>
+> The 10 s figure is a **candidate observation window** for the Round-2
+> fault-injection experiments, NOT a validated production restart threshold.
+> Rate-relative sizing uses the average-throughput reciprocal (~75–77 ms at
+> 12.95–13.30 tok/s) as the token time-scale estimate — that is a
+> throughput-derived average, not a measured per-token interval distribution;
+> per-token intervals need higher-resolution capture. Single-model,
+> single-machine evidence.
 >
 > **R2 split (revised)**: the current Service only parses `is_processing` and
 > cannot see progress counters, so R2 is two phases — **R2-A** proves the
@@ -74,7 +80,16 @@ cancellation. **No recovery policy was modified or consulted during the run.**
 | cancel | streaming client aborts ~6 s into decode |
 | concurrent | 3 overlapping requests against `--parallel 1` |
 
-## Results (two independent runs)
+## ⚠ V1 RESULTS — RETRACTED, HISTORICAL RECORD ONLY
+
+> The collector used here read a non-existent top-level `n_decoded`; decode
+> counters were never observed. The decode "no-progress" row and the 10 s
+> threshold margin below are **not valid evidence** — see the CORRECTION at
+> the top of this file and `evidence_v2/` + `corrected_summary.json` for the
+> corrected measurements. Kept verbatim so later readers do not mistake the
+> archive for current results.
+
+### Results (two independent runs) — V1, RETRACTED
 
 | metric | observed |
 |---|---|
@@ -86,7 +101,7 @@ cancellation. **No recovery policy was modified or consulted during the run.**
 | cancellation → slot idle | prompt+partial decode window (~5.5 s) then idle; **no lingering `is_processing`** |
 | concurrent (np=1) | requests queue; `id_task` advances sequentially (1426→1427→1428); no counter regression |
 
-## Threshold implication for a busy-slot no-progress watchdog
+### Threshold implication for a busy-slot no-progress watchdog — V1, RETRACTED
 
 - Observed maximum no-progress across ~250 busy-seconds, both runs: **2.29 s**
   (a single prefill→decode boundary gap); everything else is tick-bound.
