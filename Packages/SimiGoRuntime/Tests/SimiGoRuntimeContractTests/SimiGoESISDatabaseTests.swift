@@ -36,6 +36,42 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         return Data(json.utf8)
     }
 
+    func testOpenResolvesParentSymlinkAliasButStillRejectsSymlinkedLeaf() throws {
+        let fm = FileManager.default
+        let realParent = fm.temporaryDirectory
+            .appendingPathComponent("simigo-db-parent-\\(UUID().uuidString)", isDirectory: true)
+        let aliasParent = fm.temporaryDirectory
+            .appendingPathComponent("simigo-db-parent-alias-\\(UUID().uuidString)", isDirectory: true)
+        let databaseURL = aliasParent.appendingPathComponent("store.sqlite3")
+        let targetURL = realParent.appendingPathComponent("target.sqlite3")
+        let leafAlias = aliasParent.appendingPathComponent("leaf.sqlite3")
+        defer {
+            cleanup(databaseURL)
+            cleanup(targetURL)
+            cleanup(leafAlias)
+            try? fm.removeItem(at: aliasParent)
+            try? fm.removeItem(at: realParent)
+        }
+
+        try fm.createDirectory(at: realParent, withIntermediateDirectories: true)
+        try fm.createSymbolicLink(at: aliasParent, withDestinationURL: realParent)
+
+        let database = try SimiGoESISDatabase(url: databaseURL)
+        try database.runMigrations()
+        database.close()
+        XCTAssertTrue(fm.fileExists(atPath: databaseURL.path),
+                      "a parent alias must resolve to its real directory")
+
+        let target = try SimiGoESISDatabase(url: targetURL)
+        target.close()
+        try fm.createSymbolicLink(at: leafAlias, withDestinationURL: targetURL)
+        XCTAssertThrowsError(
+            try SimiGoESISDatabase(url: leafAlias, createIfNeeded: false),
+            "NOFOLLOW must still reject a symlink at the database leaf")
+        XCTAssertTrue(fm.fileExists(atPath: targetURL.path),
+                      "the symlink target must remain directly openable")
+    }
+
     func testOpenRefusesSymlinkedDatabaseLeafWithoutTouchingTarget() throws {
         let target = tempURL("symlink-target")
         let alias = target.deletingLastPathComponent()
