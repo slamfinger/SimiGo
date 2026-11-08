@@ -52,6 +52,7 @@ class Sampler:
     def _loop(self):
         while not self.stop.is_set():
             t = time.time()
+            t_mono = time.monotonic()
             try:
                 with urllib.request.urlopen(BASE + "/slots", timeout=2) as r:
                     slots = json.loads(r.read())
@@ -65,6 +66,8 @@ class Sampler:
                 self.rows.append({
                     "t": t,
                     "t_resp": t_resp,
+                    "t_mono": t_mono,
+                    "t_mono_resp": time.monotonic(),
                     "slots": [slot_view(s) for s in slots],
                 })
             self.stop.wait(INTERVAL)
@@ -72,11 +75,11 @@ class Sampler:
     def start(self):
         self.thread.start()
 
-    def idle_seen(self, after_t):
+    def idle_seen(self, after_mono):
         for r in reversed(self.rows):
-            if "slots" in r and r["t"] >= after_t:
+            if "slots" in r and r.get("t_mono", float("inf")) >= after_mono:
                 if not any(s["is_processing"] for s in r["slots"]):
-                    return r["t"]
+                    return r["t_mono"]
         return None
 
     def stop_and_save(self, name):
@@ -184,18 +187,22 @@ def main():
                 if time.time() > deadline:
                     break
         finally:
-            close_t = time.time()
+            # client close uses the SAME monotonic clock as the sampler, so
+            # the release interval is a true bounded observation interval
+            close_mono = time.monotonic()
+            close_wall = time.time()
             resp.close()
-        idle_t = None
-        while time.time() - close_t < 30:
-            idle_t = s.idle_seen(after_t=close_t)
-            if idle_t is not None:
+        idle_mono = None
+        while time.monotonic() - close_mono < 30:
+            idle_mono = s.idle_seen(after_mono=close_mono)
+            if idle_mono is not None:
                 break
             time.sleep(0.2)
         results["cancel"] = {
-            "client_close_t": close_t,
-            "first_idle_t": idle_t,
-            "release_latency_s": round(idle_t - close_t, 2) if idle_t else None,
+            "client_close_t": close_wall,
+            "client_close_mono": close_mono,
+            "first_idle_mono": idle_mono,
+            "release_latency_s": round(idle_mono - close_mono, 2) if idle_mono else None,
             "samples": s.stop_and_save("cancel"),
         }
 
