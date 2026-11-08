@@ -130,3 +130,34 @@ document, not from a picked timeout.
 - `threshold_summary.json` — combined summary (both runs).
 - `evidence/run{1,2}_samples_*.jsonl` — raw 500 ms samples.
 - `evidence/run1_scenarios.json` — wall-clock per scenario (run 1).
+
+## R2-A staged runbook (shim landed, execution next)
+
+**Seam**: `defaults write <app-domain> LlamaServerBin <shim-path>` makes
+`BackendConfig.executable` resolve to the shim (checked first, must exist and
+be executable) — the Service then launches the shim with the production
+argument vector. No Service code changes.
+
+**Shim** (`issue15_engine_shim.py`): spawns the real engine on port P+1,
+forwards /health and everything except /slots verbatim, serves /slots from
+`SHIM_SLOTS_MODE` (frozen busy | passthrough). Owns the child lifecycle
+(TERM→KILL escalation, atexit guard) — standalone-verified: /health 200,
+frozen slots, zero leftovers.
+
+**Acceptance** (record the FULL timeline from
+`$SIMIGO_HOME/logs/native_mlx_trace.log`; the health loop waits 10s at
+startup and busy protection sleeps 30s per cycle):
+
+| step | operation | must observe |
+|---|---|---|
+| A1 | frozen busy /slots, /health 200 pass-through | preflight skip repeatedly (⏸ skip log every ~30s), no /health request reaches the real engine, no restart |
+| A2 | same frozen busy + one-shot `SIMIGO_HEALTH_CHECK_FAILURE_INJECTION` (validation build; injects the check RESULT, not a real 503) | after the injected failure the loop re-reads slots, sees busy, logs defer (⏸ 暂不重启), no restart |
+| A2 follow-up | injection consumed | loop returns to A1 preflight-skip, still no restart |
+
+**Build note**: `SIMIGO_HEALTH_CHECK_FAILURE_INJECTION` is defined in no
+xcconfig/scheme today — the validation build must override
+`SWIFT_ACTIVE_COMPILATION_CONDITIONS` (e.g. `DEBUG SIMIGO_HEALTH_CHECK_FAILURE_INJECTION`).
+
+**Out of scope for R2-A**: any restart-policy change. R2-B (counter monitor
+four-quadrant validation) lands after a monitor exists; detection and
+restart authorisation remain separate decisions.
