@@ -55,8 +55,14 @@ def task_runs(seq):
         if current is None or current["id_task"] != tid:
             current = {"id_task": tid, "samples": []}
             runs.append(current)
+        # observation time = when the Service actually RECEIVED this progress
+        # view: the sample's response-completion stamp on the monotonic clock;
+        # archived v2 data without t_mono_resp falls back to t (review
+        # 2026-11-08: the collector provides the field, the analyzer must use
+        # it — the clock loop has to close on both sides).
         current["samples"].append({
-            "t": r["t"],
+            "t": r.get("t_mono_resp", r["t"]),
+            "t_resp_wall": r.get("t_resp"),
             "busy": busy,
             "np": s["n_prompt_tokens_processed"] or 0,
             "nd": s["n_decoded"],

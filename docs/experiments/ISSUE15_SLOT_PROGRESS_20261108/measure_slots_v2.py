@@ -198,11 +198,23 @@ def main():
             if idle_mono is not None:
                 break
             time.sleep(0.2)
+        # Release-time observation interval: the engine released the slot at
+        # some instant in (close_mono, first-idle-sample t_mono_resp]. The
+        # lower bound is when the first idle-observing REQUEST started; the
+        # upper bound is when its response completed.
+        interval = None
+        if idle_mono is not None:
+            for r in reversed(s.rows):
+                if "slots" in r and r.get("t_mono") == idle_mono:
+                    interval = {
+                        "lower_s": round(idle_mono - close_mono, 2),
+                        "upper_s": round(r["t_mono_resp"] - close_mono, 2)}
+                    break
         results["cancel"] = {
             "client_close_t": close_wall,
             "client_close_mono": close_mono,
             "first_idle_mono": idle_mono,
-            "release_latency_s": round(idle_mono - close_mono, 2) if idle_mono else None,
+            "release_observation_interval_s": interval,
             "samples": s.stop_and_save("cancel"),
         }
 
