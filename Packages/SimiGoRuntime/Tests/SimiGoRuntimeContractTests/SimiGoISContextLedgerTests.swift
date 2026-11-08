@@ -119,4 +119,35 @@ nonisolated final class SimiGoISContextLedgerTests: XCTestCase {
         let turnTwo = render(question: "what is X", freshBlock: "BLOCK-2")
         XCTAssertEqual(turnOne, turnTwo)
     }
+
+/// Refresh-on-divergence: when the frozen context no longer matches what
+    /// the space holds, the turn renders and settles from ONE fresh snapshot —
+    /// so the replacement answer's declared demand is the demand it actually
+    /// saw, and the next exact repeat is served from it (no regen loop).
+    func testRefreshReplacesFrozenSnapshotAndStopsReportingDivergence() {
+        let ledger = SimiGoISContextLedger()
+        let stale = ledger.stabilize(
+            scope: "s", userText: "where is the vault", block: "BLOCK-OLD",
+            resolution: Self.resolution(demand: "demand-old"))
+        XCTAssertTrue(stale.isReplay == false)
+
+        let drifted = ledger.stabilize(
+            scope: "s", userText: "where is the vault", block: "BLOCK-NEW",
+            resolution: Self.resolution(demand: "demand-new"))
+        XCTAssertTrue(drifted.candidateChanged, "divergence must be reported first")
+
+        let refreshed = ledger.refresh(
+            scope: "s", userText: "where is the vault", block: "BLOCK-NEW",
+            resolution: Self.resolution(demand: "demand-new"))
+        XCTAssertEqual(refreshed.block, "BLOCK-NEW")
+        XCTAssertEqual(refreshed.resolution.demandID, "demand-new")
+        XCTAssertFalse(refreshed.candidateChanged)
+
+        let settled = ledger.stabilize(
+            scope: "s", userText: "where is the vault", block: "BLOCK-NEW",
+            resolution: Self.resolution(demand: "demand-new"))
+        XCTAssertFalse(settled.candidateChanged, "post-refresh repeats are stable")
+        XCTAssertEqual(
+            ledger.frozenBlock(scope: "s", userText: "where is the vault"), "BLOCK-NEW")
+    }
 }

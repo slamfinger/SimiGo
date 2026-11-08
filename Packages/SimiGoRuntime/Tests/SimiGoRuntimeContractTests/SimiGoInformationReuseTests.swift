@@ -153,11 +153,12 @@ final class SimiGoInformationReuseTests: XCTestCase {
             position: 1, continuationID: "C-1", anchor: "a1",
             lifecycle: "active", createdAt: Date())
         // A demand resolved but never settled: retrieval alone is not an answer.
-        _ = try loop.resolve(.init(
+        let resolution = try loop.resolve(.init(
             sessionID: "info-a", query: query, includeChat: false, limit: 5))
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: identity))
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
     }
 
     /// Rule 2 (and the dependency rule with it): once the settled chain is
@@ -173,35 +174,43 @@ final class SimiGoInformationReuseTests: XCTestCase {
             try db.settlementValidity(answer.answerSettlementID), "invalid")
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: identity))
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
     }
 
     /// Rule 4: a different engine never inherits settled text, and neither does
     /// an engine whose identity was not resolved.
     func testDifferentOrUnresolvedProducerIdentityIsNotServable() throws {
-        try settleAnsweredTurn()
+        let source = try settleAnsweredTurn()
 
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query,
+            expectedDemandID: source.demandID,
             identity: .init(model: "other-model", tokenizer: identity.tokenizer)))
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query,
+            expectedDemandID: source.demandID,
             identity: .init(model: identity.model, tokenizer: "other-tokenizer")))
         XCTAssertNil(loop.reusableAnswer(
             sessionID: "info-a", query: query,
+            expectedDemandID: source.demandID,
             identity: .init(model: "unspecified", tokenizer: "unspecified")))
     }
 
     /// Scope isolation: the same wording in a different information scope is a
     /// different demand and must not be answered from another scope's settlement.
     func testSameQuestionInAnotherScopeIsNotServable() throws {
-        try settleAnsweredTurn()
+        let source = try settleAnsweredTurn()
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-b", query: query, identity: identity))
+            sessionID: "info-b", query: query,
+            expectedDemandID: source.demandID,
+            identity: identity))
         // Case and whitespace are NOT normalized away — only exact repeats reuse.
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: "Where is the exit?", identity: identity))
+            sessionID: "info-a", query: "Where is the exit?",
+            expectedDemandID: source.demandID,
+            identity: identity))
     }
 
     /// An unresolved producer identity is an absence of a claim, not a wildcard:
@@ -211,15 +220,17 @@ final class SimiGoInformationReuseTests: XCTestCase {
         let resolution = try loop.resolve(.init(
             sessionID: "info-a", query: query, includeChat: false, limit: 5))
         _ = try loop.settleTurn(
-            generatedText: "the exit is north", resolution: resolution,
+            generatedText: "the exit is in the east wing", resolution: resolution,
             stateID: "S-absent", parentStateID: nil, position: 1,
             modelIdentity: "unresolved", identity: .absent,
             sessionID: "info-a", summaryQuery: query)
 
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: .absent))
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: .absent))
         XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query, identity: identity))
+            sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
+            identity: identity))
 
         // The refusal is in the binding rule itself, not only in the gate.
         let absentOnly = SimiGoSettlementIdentityBinding.evaluate(

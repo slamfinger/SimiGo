@@ -710,3 +710,54 @@ jobs:
                injobs && /^    continue-on-error: true/{nb[job]=1}
                END{for(i=1;i<=n;i++){j=order[i]; printf "BLOCKING|%s|%s\n", j, (j in nb ? "non-blocking" : "blocking")}}' \
             .github/workflows/ci.yml
+
+  macos-answer-reuse-regressions:
+    name: macOS answer-reuse regressions (isolated)
+    # Same preview-runner policy as the supported-toolchain witness above:
+    # execute and report the targeted evidence without making the preview image
+    # itself a required merge gate.
+    runs-on: xcode-27
+    continue-on-error: true
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show supported toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          echo "DEVELOPER_DIR=$(xcode-select -p)"
+          echo "ARCH=$(uname -m)  IMAGE=$ImageVersion"
+      - name: Runtime current-demand gate
+        run: swift test --package-path Packages/SimiGoRuntime --filter SimiGoInformationReuseTests
+      - name: Build App test host
+        run: |
+          xcodebuild build-for-testing \
+            -project SimiGo.xcodeproj \
+            -scheme SimiGo \
+            -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build/test \
+            -enableCodeCoverage NO \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Execute answer-reuse regressions in fresh isolated roots
+        run: |
+          tools/run_isolated_tests.sh \
+            --app "$GITHUB_WORKSPACE/build/test/Build/Products/Debug/SimiGo.app" \
+            --evidence-dir "$GITHUB_WORKSPACE/build/test-isolation/answer-reuse-p0" \
+            --tag answer-reuse-p0 \
+            --destination 'platform=macOS,arch=arm64' \
+            --expected-cases 7 \
+            --cache-write-not-required \
+            --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testStreamingExactRepeatIsServedWithoutModelCall \
+            --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testChangedCurrentDemandIsNotServedByReuse \
+            --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testExactRepeatIsServedWithoutModelCall \
+            --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testNewCommittedInformationDoesNotReuseOlderAnswer \
+            --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginDoesNotServeSettledAnswerWithoutCurrentDemand \
+            --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginSettleRecordsAuthoritativeSettlement \
+            --only-testing SimiGoTests/InformationSpaceHostE2ETests/testRealHTTPMCPBeginRefusesAnswerAfterSharedInformationChanges
+      - name: Scope note
+        run: |
+          echo "SCOPE|only the selected answer-reuse App tests ran in this isolated lane"
+          echo "SCOPE|the two HTTP answer-reuse suites use stand-in generation handlers, not real model weights"
+          echo "SCOPE|the MCP InformationSpaceHost test uses real HTTP and a model-free host"
