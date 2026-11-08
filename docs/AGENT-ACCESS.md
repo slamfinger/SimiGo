@@ -196,7 +196,7 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 - 方法与 HTTP 路由共用同一个 `SimiGoESISDatabase` / `SimiGoInformationLoop`，不存在第二套
   数据库或第二套结算权威。
 
-### 3.2 九个工具
+### 3.2 十个工具
 
 | 工具 | 必填 | 作用 |
 | --- | --- | --- |
@@ -209,6 +209,25 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 | `simigo_es_begin` | `model`、`tokenizer` | 开始（或恢复）一次执行；不记录任何结果 |
 | `simigo_es_settle` | `state_id`、`model`、`tokenizer`、`output` | 提交外部结果，按同一结果合同封装并绑定身份 |
 | `simigo_es_fail` | `state_id`、`detail` | 追加式记录失败；**永不产生结算** |
+| `simigo_chat_round` | `session_id`、`request_id`、`user`、`assistant`、`turn_index` | 把外部模型写的一轮问答以 external 来源写入会话，并在同一次调用里提升为 `committed`；幂等键是（session, request） |
+
+### 3.2.1 轮次账本（`turn_index`）
+
+MCP 工具由调用方自己决定调不调，协议里没有任何东西能让 SimiGo 知道"这一轮没进来"。`turn_index` 是这个缺口的唯一可验证解：
+
+- 调用方在本会话内对每一轮按 **1、2、3…** 连续编号，随每轮一起传；
+- SimiGo 把（session, turn_index）写进 `chat_turn_ledger`，返回 `turn_ledger`
+  （`entered` 已进入轮数、`highest` 最大轮号、`missing` 缺失轮号、`continuous`）；
+- 跳号即缺口：第 4 轮没调，第 5 轮到达时 `missing=[4]`，菜单栏读数立刻显示
+  "轮次 4 进入 / 缺 1（4…）"。
+
+不传 `turn_index` 时工具行为不变（入库照常），但账本无法判断缺口——**"每轮都进入"
+只有传了编号才能被检查，否则只能被声称**。重复传同一轮号是幂等的，不会改写已有行。
+
+账本的主键是（session_id, turn_index）。两个 agent 若共用同一个 `session_id`，各自的
+第 3 轮会撞在同一个槽位上：账本保留先到者，后到者**不覆盖、也不静默合并**，返回里带
+`conflict=<先到者的 request_id>`。看到 `conflict` 说明命名冲突，不是轮次丢失——
+给每个 agent 一个前缀（`codex-…` / `qoder-…`）即可。
 
 ### 3.3 生命周期接线
 
