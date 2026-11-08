@@ -1,0 +1,23 @@
+[2026-11-08 12:07:19.407] ℹ️ [CFG] source=recommended model=gemma-4-12b-it-Q4_K_M ctx=131072 gpu=99 temp=1.0 topP=0.9 topK=20 minP=0.05 rep=1.05 pres=0.0 flash=true jinja=false codex=false mtp=false draftN=2 thinkOff=true
+[2026-11-08 12:07:19.407] ℹ️ [NODE] backend=llama.cpp bind=127.0.0.1:8000 advertised=127.0.0.1:8000 lan=false
+[2026-11-08 12:07:19.407] ℹ️ 🧩 llama.cpp 受管入口: public=8000 engine=127.0.0.1:54121 parallel=1
+[2026-11-08 12:07:19.407] ℹ️ 🌐 llama.cpp Endpoint: bind=127.0.0.1:54121
+[2026-11-08 12:07:19.410] ℹ️ 🚀 启动外部推理后端 llama.cpp | 端口: 54121
+[2026-11-08 12:07:19.462] [llama.cpp] [shim] listening on 54121, real engine on 54122, slots mode=frozen
+[2026-11-08 12:07:19.695] [llama.cpp] [shim-access] 12:07:19 GET /health
+[2026-11-08 12:07:20.108] [llama.cpp] [shim-access] 12:07:20 GET /health
+[2026-11-08 12:07:20.537] [llama.cpp] [shim-access] 12:07:20 GET /health
+[2026-11-08 12:07:20.538] ℹ️ ✅ llama.cpp 后端就绪 (1.1秒)
+[2026-11-08 12:07:20.554] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-11-08 12:07:20.554] ℹ️ 🧩 llama.cpp 性能配置: parallel=1 | ngl=99 | specNMax=2 | flash-attn=on
+[2026-11-08 12:07:30.561] [llama.cpp] [shim-access] 12:07:30 GET /slots
+[2026-11-08 12:07:30.563] [llama.cpp] [shim] A2: armed /health failure fired (503, once)
+[2026-11-08 12:07:30.563] [llama.cpp] [shim-access] 12:07:30 GET /health
+[2026-11-08 12:07:30.563] [llama.cpp] [shim-access] 12:07:30 GET /slots
+[2026-11-08 12:07:30.564] ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。
+[2026-11-08 12:08:01.471] [llama.cpp] [shim-access] 12:08:01 GET /slots
+[2026-11-08 12:08:01.471] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:08:31.477] [llama.cpp] [shim-access] 12:08:31 GET /slots
+[2026-11-08 12:08:31.478] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。
+[2026-11-08 12:09:01.561] [llama.cpp] [shim-access] 12:09:01 GET /slots
+[2026-11-08 12:09:01.561] 🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。

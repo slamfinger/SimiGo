@@ -161,3 +161,48 @@ xcconfig/scheme today — the validation build must override
 **Out of scope for R2-A**: any restart-policy change. R2-B (counter monitor
 four-quadrant validation) lands after a monitor exists; detection and
 restart authorisation remain separate decisions.
+
+## R2-A EXECUTED (2026-11-08) — verdict: PASS
+
+The existing Service's two deferred-recovery branches were exercised on a
+real process, a real engine (gemma-4-12B through the shim), and a controlled
+`/slots` view — using the headless `serve-service` facade
+(`SIMIGO_LOCALB_MGMT=serve-service` + `SIMIGO_LOCALB_SERVE_MODEL`), the
+`LlamaServerBin` config seam for the shim, and `SIMIGO_TRACE_VERBOSE=1` for
+the full timeline. No build-time injection was needed in the end: the shim
+answers the loop's first post-observation `/health` with a REAL 503 (once),
+which exercises branch 2 without touching product code.
+
+**A1 — preflight skip (branch 1): PASS.**
+Trace: 4 consecutive cycles at the 30.5 s rhythm
+(11:59:31 → 12:00:01 → 12:00:32 → 12:01:02), each
+`🔍 ⏸ llama.cpp 当前存在活动 slot，跳过健康检查。`, zero restarts.
+
+**A2 — post-failure busy protection (branch 2): PASS.**
+One timeline contains the full chain:
+`12:07:30.561 GET /slots → [] (unknown, preflight stays active) →
+12:07:30.563 GET /health → 503 (real transport failure, armed once) →
+12:07:30.563 GET /slots (re-read) → frozen busy →
+12:07:30.564 ⚠️ ⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。`
+
+**A2 follow-up: PASS.** 12:08:01 / 12:08:31 / 12:09:01 return to the A1
+preflight-skip path — the one-shot failure did not pollute later cycles.
+
+**What this proves**: the Service DOES defer recovery on both paths exactly
+as the Issue describes — with a slot busy (frozen or real), a wedged
+inference would never be recovered: preflight skip on branch 1, busy
+protection on branch 2. This is the defect half of Issue #15, now with
+process-level evidence.
+
+**Scope limits**: the frozen `/slots` snapshot is a shim-controlled view —
+R2-A proves what the SERVICE does with such an observation, not that a real
+llama.cpp wedges this way. The shim forwards via full-buffered urlopen
+(GET/POST only) — it is not a general llama-server proxy and must not be
+used to judge streaming behaviour. Release-time and stall-detection
+thresholds for any future monitor come from the R1-v2 numbers
+(4.04 s normal consecutive-static max on this model) and stay a candidate
+window until R2-style fault injection runs against the real monitor.
+
+**Evidence**: `r2a_evidence/A1_trace.log`, `A1_process_timeline.txt`,
+`A2_trace.log`, `A2_process_timeline.txt` (10 s process/port snapshots
+aligned with the trace timestamps).

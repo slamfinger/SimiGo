@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 608,
+    "tracked": 624,
     "research_not_declared": 0,
-    "non_research_candidates": 608,
-    "declared": 550,
+    "non_research_candidates": 624,
+    "declared": 566,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -1576,6 +1576,14 @@
       "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots.py"
     },
     {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots_v2.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/analyze_slots_v2.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/corrected_summary.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/corrected_summary.json"
+    },
+    {
       "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel.jsonl",
       "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run1_samples_cancel.jsonl"
     },
@@ -1628,8 +1636,64 @@
       "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence/run2_samples_prefill_heavy.jsonl"
     },
     {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_cancel.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_cancel.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_concurrent.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_concurrent.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_decode_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_decode_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_normal.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_normal.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_prefill_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_samples_prefill_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_scenarios.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run1_scenarios.json"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_cancel.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_cancel.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_concurrent.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_concurrent.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_decode_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_decode_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_normal.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_normal.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_prefill_heavy.jsonl",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_samples_prefill_heavy.jsonl"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_scenarios.json",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/evidence_v2/run2_scenarios.json"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/issue15_engine_shim.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/issue15_engine_shim.py"
+    },
+    {
       "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots.py",
       "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots.py"
+    },
+    {
+      "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots_v2.py",
+      "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/measure_slots_v2.py"
     },
     {
       "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/threshold_summary.json",

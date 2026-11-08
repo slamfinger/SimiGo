@@ -29,6 +29,18 @@ from pathlib import Path
 REAL_ENGINE = os.environ.get(
     "SHIM_REAL_ENGINE", str(Path.home() / ".simigo/bin/llama-server"))
 MODE = os.environ.get("SHIM_SLOTS_MODE", "frozen")
+# A2 orchestration: SHIM_HEALTH_MODE=fail makes /health return 503; with
+# SHIM_SLOTS_FIRST=unknown the FIRST /slots observation is an empty list
+# (unknown -> preflight not skipped) so the health check actually executes
+# and fails, and every later /slots observation is the frozen busy snapshot
+# (post-failure busy protection path). Real HTTP failures, product binary.
+HEALTH_MODE = os.environ.get("SHIM_HEALTH_MODE", "pass")
+slots_calls = {"n": 0}
+# A2 state machine: waitReady probes pass through; after the first /slots
+# observation (the unknown that keeps preflight active) exactly ONE /health
+# request is answered 503 (a REAL transport-level failure), then everything
+# passes through again. Branch-2 evidence without any build-time injection.
+state = {"slots_seen": False, "health_fail_used": False}
 
 FROZEN_SLOT = {
     "id": 0,
@@ -74,8 +86,12 @@ import subprocess  # noqa: E402
 class Proxy(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def log_message(self, *a):
-        pass
+    def log_message(self, fmt, *a):
+        # R2-A observation: every request the Service makes through the shim
+        # is part of the acceptance timeline (review 2026-11-08).
+        import time as _t
+        print(f"[shim-access] {_t.strftime('%H:%M:%S')} {self.command} {self.path}",
+              flush=True)
 
     def _forward(self, method):
         length = int(self.headers.get("Content-Length") or 0)
@@ -103,9 +119,36 @@ class Proxy(BaseHTTPRequestHandler):
             self.wfile.write(payload)
 
     def do_GET(self):
-        if self.path.startswith("/slots") and MODE == "frozen":
-            payload = json.dumps([dict(FROZEN_SLOT)]).encode()
-            self.send_response(200)
+        if self.path.startswith("/slots"):
+            slots_calls["n"] += 1
+            if slots_calls["n"] >= 1 and HEALTH_MODE == "fail":
+                state["slots_seen"] = True
+            first_unknown = (MODE == "frozen"
+                             and slots_calls["n"] == 1
+                             and os.environ.get("SHIM_SLOTS_FIRST") == "unknown")
+            if MODE == "frozen" and not first_unknown:
+                payload = json.dumps([dict(FROZEN_SLOT)]).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return
+            if first_unknown:
+                payload = b"[]"
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return
+        if (self.path.startswith("/health") and HEALTH_MODE == "fail"
+                and state["slots_seen"] and not state["health_fail_used"]):
+            state["health_fail_used"] = True
+            print("[shim] A2: armed /health failure fired (503, once)",
+                  flush=True)
+            payload = b'{"error":"issue15-a2-health-failure"}'
+            self.send_response(503)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
