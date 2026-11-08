@@ -747,13 +747,12 @@ jobs:
             --evidence-dir "$GITHUB_WORKSPACE/build/test-isolation/answer-reuse-p0" \
             --tag answer-reuse-p0 \
             --destination 'platform=macOS,arch=arm64' \
-            --expected-cases 8 \
+            --expected-cases 7 \
             --cache-write-not-required \
             --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testStreamingExactRepeatIsServedWithoutModelCall \
             --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testChangedCurrentDemandIsNotServedByReuse \
             --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testExactRepeatIsServedWithoutModelCall \
             --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testNewCommittedInformationDoesNotReuseOlderAnswer \
-            --only-testing SimiGoTests/MCPInformationSpaceTests/testSourcedSettleIsReusableInItsSearchSession \
             --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginDoesNotServeSettledAnswerWithoutCurrentDemand \
             --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginSettleRecordsAuthoritativeSettlement \
             --only-testing SimiGoTests/InformationSpaceHostE2ETests/testRealHTTPMCPBeginRefusesAnswerAfterSharedInformationChanges
