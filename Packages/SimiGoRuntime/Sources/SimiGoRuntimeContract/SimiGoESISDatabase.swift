@@ -2804,7 +2804,7 @@ public final class SimiGoESISDatabase {
             // the remaining scan budget.
             guard scanned < maxFiles else {
                 throw DatabaseError.sql(
-                    "settleWorkRootContents: maxFiles limit exceeded (\\(maxFiles))")
+                    "settleWorkRootContents: maxFiles limit exceeded (\(maxFiles))")
             }
             let remainingBytes = maxTotalBytesRead - entityBytesRead
             let readLimit = min(fileByteCap, remainingBytes)
@@ -2834,7 +2834,7 @@ public final class SimiGoESISDatabase {
                 if read.size <= Int64(fileByteCap),
                    read.size > Int64(remainingBytes) {
                     throw DatabaseError.sql(
-                        "settleWorkRootContents: maxTotalBytesRead limit exceeded (\\(maxTotalBytesRead))")
+                        "settleWorkRootContents: maxTotalBytesRead limit exceeded (\(maxTotalBytesRead))")
                 }
                 skipped += 1
                 indexedFiles.append((relative, file, size, modified, nil))
@@ -3914,7 +3914,7 @@ public final class SimiGoESISDatabase {
             }
             guard promotedRows == 1 else {
                 throw DatabaseError.sql(
-                    "commitChatTurn: expected one pending local user row; updated \\(promotedRows)")
+                    "commitChatTurn: expected one pending local user row; updated \(promotedRows)")
             }
         }
         return assistantID

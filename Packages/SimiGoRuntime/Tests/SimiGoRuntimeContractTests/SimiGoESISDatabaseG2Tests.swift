@@ -112,7 +112,7 @@ final class SimiGoESISDatabaseG2Tests: XCTestCase {
         defer { db.close(); cleanup(url) }
 
         let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-g2-limit-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-g2-limit-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
