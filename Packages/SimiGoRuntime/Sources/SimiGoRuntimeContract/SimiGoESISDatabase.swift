@@ -2730,10 +2730,16 @@ try apply(stmt)
     /// （相同字节只存一次），`file_contents` 只保留身份/摘要引用；索引与
     /// 依赖账本追加记录，历史不覆盖。删除或变为二进制/超限的文件会撤销
     /// 其内容引用并失效依赖闭包。文本判定：utf8 且 ≤ fileByteCap。
+    /// Root-wide guards default to 16,384 visited entries, 4,096 regular files,
+    /// and 64 MiB of bytes read. The aggregate read cap also bounds Data retained
+    /// in pending settlements.
     @discardableResult
     public func settleWorkRootContents(
         rootID: String, rootURL: URL, category: String = "work",
         fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
+        maxObservedFiles: Int = 4_096,
+        maxVisitedEntries: Int = 16_384,
+        maxTotalBytesRead: Int = 64 * 1024 * 1024,
         carryText: Bool = true
     ) throws -> ContentSettleReport {
         // Serialize the baseline snapshot, filesystem observation and all index
@@ -2741,9 +2747,12 @@ try apply(stmt)
         // and let an older observation overwrite a newer settlement.
         return try transactionResult {
         let fm = FileManager.default
-        guard fileByteCap >= 0, maxDepth >= 0 else {
+        guard fileByteCap >= 0, maxDepth >= 0,
+              maxObservedFiles >= 0, maxObservedFiles < Int.max,
+              maxVisitedEntries >= 0, maxTotalBytesRead >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
         }
+        let inventoryRowLimit = Int64(maxObservedFiles) + 1
         let requestedRootPath = try canonicalDirectoryPath(atPath: rootURL.path)
         let requestedRoot = URL(fileURLWithPath: requestedRootPath, isDirectory: true)
         let scanRoot: URL
@@ -2768,10 +2777,12 @@ try apply(stmt)
                        locatorType: "path", status: "present")
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
-        SELECT relative_path, content_sha256, object_id FROM file_contents WHERE root_id=?;
+        SELECT relative_path, content_sha256, object_id FROM file_contents
+        WHERE root_id=? ORDER BY relative_path LIMIT ?;
         """)
         defer { sqlite3_finalize(prevStmt) }
-        try bind(prevStmt, 1, rootID)
+try bind(prevStmt, 1, rootID)
+        try bind(prevStmt, 2, inventoryRowLimit)
         while try stepRowOrDone(prevStmt) {
             func text(_ i: Int32) -> String {
                 sqlite3_column_text(prevStmt, i).map { String(cString: $0) } ?? ""
@@ -2779,6 +2790,10 @@ try apply(stmt)
             previous[text(0)] = FileContentState(
                 digest: text(1),
                 objectID: sqlite3_column_type(prevStmt, 2) == SQLITE_NULL ? nil : text(2))
+        }
+        guard previous.count <= maxObservedFiles else {
+            throw DatabaseError.sql(
+                "settleWorkRootContents: prior file_contents inventory exceeds maxObservedFiles (\(maxObservedFiles))")
         }
 
         // Some indexed files (binary, oversized, or non-UTF8) intentionally
@@ -2788,10 +2803,12 @@ try apply(stmt)
         do {
             let externalStmt = try prepare("""
             SELECT relative_path, content_digest FROM external_files
-            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
+            WHERE root_id=? AND COALESCE(status,'present')<>'missing'
+            ORDER BY relative_path LIMIT ?;
             """)
             defer { sqlite3_finalize(externalStmt) }
-            try bind(externalStmt, 1, rootID)
+try bind(externalStmt, 1, rootID)
+            try bind(externalStmt, 2, inventoryRowLimit)
             while true {
                 let rc = sqlite3_step(externalStmt)
                 if rc == SQLITE_ROW {
@@ -2809,9 +2826,14 @@ try apply(stmt)
                 }
                 break
             }
+            guard previousExternalFiles.count <= maxObservedFiles else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: prior external_files inventory exceeds maxObservedFiles (\(maxObservedFiles))")
+            }
         }
 
         var scanned = 0, reused = 0, skipped = 0
+        var visitedEntries = 0
         var entityBytesRead = 0
         var seen = Set<String>()
         var pending: [PendingSettlement] = []
@@ -2841,6 +2863,11 @@ try apply(stmt)
                 "settleWorkRootContents: cannot enumerate root \(rootID)")
         }
         while let file = enumerator.nextObject() as? URL {
+            visitedEntries += 1
+            guard visitedEntries <= maxVisitedEntries else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxVisitedEntries exceeded (\(maxVisitedEntries))")
+            }
             var enumeratedInfo = stat()
             let lstatResult = file.path.withCString { Darwin.lstat($0, &enumeratedInfo) }
             guard lstatResult == 0 else {
@@ -2848,23 +2875,46 @@ try apply(stmt)
                     "settleWorkRootContents: cannot inspect \(file.path): \(String(cString: strerror(errno)))")
             }
             let relative = relativePath(of: file, under: scanRoot)
-            guard !relative.isEmpty,
-                relative.split(separator: "/").count <= maxDepth
-            else { continue }
-
             let fileType = enumeratedInfo.st_mode & S_IFMT
-            if fileType == S_IFDIR { continue }
+            if fileType == S_IFDIR {
+                if !relative.isEmpty,
+                   relative.split(separator: "/").count >= maxDepth {
+                    enumerator.skipDescendants()
+                }
+                continue
+            }
+            guard !relative.isEmpty,
+                  relative.split(separator: "/").count <= maxDepth else { continue }
             guard fileType == S_IFREG else {
                 throw DatabaseError.sql(
                     "settleWorkRootContents: refuses symbolic or non-regular source \(relative)")
             }
+            guard scanned < maxObservedFiles else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxObservedFiles exceeded (\(maxObservedFiles))")
+            }
+            let enumeratedSize = Int64(enumeratedInfo.st_size)
+            guard enumeratedSize >= 0 else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: negative source size for \(relative)")
+            }
+            let remainingBytes = maxTotalBytesRead - entityBytesRead
+            if enumeratedSize <= Int64(fileByteCap) {
+                guard enumeratedSize <= Int64(remainingBytes) else {
+                    throw DatabaseError.sql(
+                        "settleWorkRootContents: maxTotalBytesRead exceeded (\(maxTotalBytesRead))")
+                }
+            }
 
             // Every component is opened relative to the pinned root FD; no
             // symlink can redirect either an intermediate directory or the leaf.
+            // The helper also checks the opened file's fstat size against the
+            // remaining aggregate budget, not only this earlier lstat snapshot.
             let read = try readRootFileNoFollow(
                 rootDirectoryFD: rootDirectoryFD,
                 relativePath: relative,
-                maximumBytes: fileByteCap)
+                maximumBytes: fileByteCap,
+                maximumTotalBytesRead: remainingBytes)
             guard read.device == Int64(enumeratedInfo.st_dev),
                   read.inode == UInt64(enumeratedInfo.st_ino) else {
                 throw DatabaseError.sql(
@@ -2886,8 +2936,14 @@ try apply(stmt)
                 continue
             }
 
+            let nextEntityBytesRead = entityBytesRead.addingReportingOverflow(data.count)
+            guard !nextEntityBytesRead.overflow,
+                  nextEntityBytesRead.partialValue <= maxTotalBytesRead else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxTotalBytesRead exceeded (\(maxTotalBytesRead))")
+            }
+            entityBytesRead = nextEntityBytesRead.partialValue
             let digest = NativeSHA256.hexDigest(data)
-            entityBytesRead += data.count
             indexedFiles.append((relative, file, size, modified, digest))
             guard String(data: data, encoding: .utf8) != nil else {
                 skipped += 1
@@ -3122,7 +3178,8 @@ try apply(stmt)
     private func readRootFileNoFollow(
         rootDirectoryFD: Int32,
         relativePath: String,
-        maximumBytes: Int?
+        maximumBytes: Int?,
+        maximumTotalBytesRead: Int = Int.max
     ) throws -> NoFollowFileRead {
         if let maximumBytes, maximumBytes < 0 {
             throw DatabaseError.sql("readRootFileNoFollow: negative byte limit")
@@ -3195,23 +3252,26 @@ try apply(stmt)
         }
 
         if let maximumBytes, initialSize > Int64(maximumBytes) {
+            // Per-file oversize inputs are indexed without reading their bytes.
             try verifyUnchanged()
             return NoFollowFileRead(
                 data: nil, size: initialSize,
                 modificationDate: modificationDate, device: device, inode: inode)
         }
+        guard initialSize <= Int64(maximumTotalBytesRead) else {
+            throw DatabaseError.sql(
+                "settleWorkRootContents: maxTotalBytesRead exceeded (\(maximumTotalBytesRead))")
+        }
 
+        // Read exactly the size observed by fstat. Reading until EOF can consume
+        // unbounded extra bytes if a file grows concurrently; the final fstat
+        // rejects that mutation after at most the budgeted initial size is read.
+        let expectedByteCount = Int(initialSize)
         var data = Data()
+        data.reserveCapacity(expectedByteCount)
         var buffer = [UInt8](repeating: 0, count: 64 * 1024)
-        while true {
-            let requestCount: Int
-            if let maximumBytes {
-                let remaining = maximumBytes - data.count
-                requestCount = remaining >= buffer.count
-                    ? buffer.count : max(1, remaining + 1)
-            } else {
-                requestCount = buffer.count
-            }
+        while data.count < expectedByteCount {
+            let requestCount = min(buffer.count, expectedByteCount - data.count)
             let amount = buffer.withUnsafeMutableBytes { raw -> Int in
                 guard let base = raw.baseAddress else { return -1 }
                 return Darwin.read(fileFD, base, requestCount)
@@ -3221,14 +3281,11 @@ try apply(stmt)
                 throw DatabaseError.sql(
                     "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
             }
-            if amount == 0 { break }
-            data.append(contentsOf: buffer.prefix(amount))
-            if let maximumBytes, data.count > maximumBytes {
+            if amount == 0 {
                 try verifyUnchanged()
-                return NoFollowFileRead(
-                    data: nil, size: initialSize,
-                    modificationDate: modificationDate, device: device, inode: inode)
+                throw DatabaseError.sql("readRootFileNoFollow: short or inconsistent file read")
             }
+            data.append(contentsOf: buffer.prefix(amount))
         }
         try verifyUnchanged()
         guard Int64(data.count) == initialSize else {
