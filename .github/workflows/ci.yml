@@ -50,6 +50,85 @@ jobs:
           python3 tools/test_release_chain.py
           python3 tools/test_release_manifest.py
 
+  localb-core-package:
+    name: LOCALB core package tests
+    # LOCALBCore is a standalone trust/signing package. Its tests are not part
+    # of the app's XCTest target, so keep a direct SwiftPM execution lane.
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Derive the LOCALBCore test count
+        run: |
+          python3 - >> "$GITHUB_ENV" <<'PY'
+          from pathlib import Path
+          import re
+          root = Path("Packages/LOCALBCore/Tests/LOCALBCoreTests")
+          files = sorted(root.glob("*.swift"))
+          if not files:
+              raise SystemExit("LOCALBCore test source directory is missing or empty")
+          count = sum(
+              len(re.findall(r"^\s*func test\w+", p.read_text(), re.M))
+              for p in files
+          )
+          if count <= 0:
+              raise SystemExit("no LOCALBCore XCTest methods discovered")
+          print(f"EXPECTED_CASES={count}")
+          print(f"DISCOVERY|Packages/LOCALBCore|files={len(files)} func_test={count}")
+          PY
+      - name: Run LOCALBCore SwiftPM tests
+        run: |
+          set -o pipefail
+          swift test --package-path Packages/LOCALBCore 2>&1 | tee "$RUNNER_TEMP/localb-core.log"
+      - name: Gate on executed LOCALBCore cases
+        if: always()
+        run: |
+          python3 - "$RUNNER_TEMP/localb-core.log" "${EXPECTED_CASES:-}" <<'PY'
+          import os, re, sys
+          log_path, expected_raw = sys.argv[1], sys.argv[2]
+          def out(tag, detail):
+              print("GATE|%s|%s" % (tag, detail))
+          try:
+              expected = int(expected_raw)
+          except ValueError:
+              expected = 0
+          if expected <= 0:
+              out("expected_cases", "absent_or_invalid")
+              out("verdict", "NO_EXPECTATION")
+              sys.exit(1)
+          if not os.path.isfile(log_path):
+              out("log", "absent")
+              out("verdict", "STEP_NOT_STARTED")
+              sys.exit(1)
+          text = open(log_path, errors="replace").read()
+          statuses = re.findall(r"Test Case '[^']*' (passed|failed|skipped) ", text)
+          passed = statuses.count("passed")
+          failed = statuses.count("failed")
+          skipped = statuses.count("skipped")
+          executed = passed + failed + skipped
+          out("expected_cases", str(expected))
+          out("log", "executed=%d passed=%d failed=%d skipped=%d" %
+              (executed, passed, failed, skipped))
+          if executed == 0:
+              for line in [line.strip() for line in text.splitlines() if "error:" in line][:5]:
+                  out("blocked_error", line[:220])
+              out("verdict", "NO_CASES_EXECUTED")
+              sys.exit(1)
+          if executed != expected or skipped != 0 or failed != 0:
+              out("verdict", "NOT_PASS")
+              sys.exit(1)
+          out("verdict", "PASS - executed==expected, skipped==0, failed==0")
+          PY
+      - name: Scope note
+        if: always()
+        run: |
+          echo "SCOPE|Packages/LOCALBCore sources and test target, via native SwiftPM manifest"
+          echo "SCOPE|no app integration, transport or real-host claim"
+
   qoder-collection-package:
     name: Qoder collection package
     # MLX-free Swift package. The app links it on the GUI launch path, so a
@@ -159,6 +238,10 @@ jobs:
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
               Path("SimiGoTests/CancelPathStubHTTPTests.swift"),
+              Path("SimiGoTests/BinaryDownloaderTests.swift"),
+              Path("SimiGoTests/SlotActivityTests.swift"),
+              Path("SimiGoTests/LOCALBManagementEntryTests.swift"),
+              Path("SimiGoTests/LOCALBBranchLifecycleTests.swift"),
           ]
           localb_file = Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift")
           missing = [str(p) for p in [*core_files, localb_file] if not p.is_file()]
@@ -192,6 +275,10 @@ jobs:
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/CancelPathStubHTTPTests \
+            -only-testing:SimiGoTests/BinaryDownloaderTests \
+            -only-testing:SimiGoTests/SlotActivityTests \
+            -only-testing:SimiGoTests/LOCALBManagementEntryTests \
+            -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests
       - name: Generate isolated App test xctestrun
         run: |
@@ -220,6 +307,10 @@ jobs:
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/CancelPathStubHTTPTests \
+            -only-testing:SimiGoTests/BinaryDownloaderTests \
+            -only-testing:SimiGoTests/SlotActivityTests \
+            -only-testing:SimiGoTests/LOCALBManagementEntryTests \
+            -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
       - name: Generate isolated secure LOCALB App test xctestrun
         run: |

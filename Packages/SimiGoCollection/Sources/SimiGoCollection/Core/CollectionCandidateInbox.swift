@@ -415,7 +415,8 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
         var info = stat()
         guard fstat(descriptor, &info) == 0,
               (info.st_mode & S_IFMT) == S_IFDIR,
-              info.st_uid == getuid(),
+              info.st_uid == geteuid(),
+              (info.st_mode & (S_IWGRP | S_IWOTH)) == 0,
               fchmod(descriptor, 0o700) == 0
         else {
             throw CollectionStateError.unreadableState(
@@ -427,7 +428,7 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
     private func validateRegularFileIfPresent(at url: URL) throws -> Bool {
         var info = stat()
         if lstat(url.path, &info) == 0 {
-            guard (info.st_mode & S_IFMT) == S_IFREG, info.st_uid == getuid() else {
+            guard (info.st_mode & S_IFMT) == S_IFREG, info.st_uid == geteuid() else {
                 throw CollectionStateError.unreadableState(
                     path: url.path, detail: "state entry is not a regular owned file")
             }
@@ -443,7 +444,9 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
     /// A file that exists must be a real SQLite database. Zero bytes, foreign
     /// content, or a damaged header all mean damage, never "fresh".
     private func validateHeader(at path: String) throws {
-        let descriptor = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        // O_NONBLOCK keeps a FIFO planted between the lstat and this open from
+        // blocking the caller; the type check below then rejects it.
+        let descriptor = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
         guard descriptor >= 0 else {
             throw CollectionStateError.unreadableState(
                 path: path, detail: "cannot open database without following links")
@@ -452,10 +455,13 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
         var info = stat()
         guard fstat(descriptor, &info) == 0,
               (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_uid == getuid()
+              info.st_uid == geteuid(),
+              info.st_nlink == 1,
+              (info.st_mode & (S_IWGRP | S_IWOTH)) == 0
         else {
             throw CollectionStateError.unreadableState(
-                path: path, detail: "database entry is not a regular owned file")
+                path: path,
+                detail: "database must be an owned, single-link, non-shared-writable regular file")
         }
         var bytes = [UInt8](repeating: 0, count: 16)
         let count = bytes.withUnsafeMutableBytes {
