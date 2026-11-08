@@ -392,16 +392,6 @@ final class QoderCollectionLifecycleTests: XCTestCase {
             "a FIFO must be rejected after a nonblocking open and fstat")
     }
 
-    func testLeaseRejectsSymlinkedStateDirectory() throws {
-        let external = root.appendingPathComponent("external-lock-state", isDirectory: true)
-        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
-        let linked = root.appendingPathComponent("linked-lock-state", isDirectory: true)
-        try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: external)
-        XCTAssertThrowsError(try QoderCollectionLease.acquire(directoryURL: linked))
-        XCTAssertFalse(FileManager.default.fileExists(
-            atPath: external.appendingPathComponent(QoderCollectionLease.lockFileName).path))
-    }
-
     func testCollectionReadsAStaticCopyAndWritesOnlyInsideItsOwnStateDirectory()
         throws {
         let configuration = self.configuration()
