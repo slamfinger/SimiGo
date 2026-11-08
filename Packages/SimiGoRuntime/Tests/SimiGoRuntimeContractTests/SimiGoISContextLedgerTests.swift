@@ -119,9 +119,8 @@ nonisolated final class SimiGoISContextLedgerTests: XCTestCase {
         let turnTwo = render(question: "what is X", freshBlock: "BLOCK-2")
         XCTAssertEqual(turnOne, turnTwo)
     }
-}
 
-    /// Refresh-on-divergence: when the frozen context no longer matches what
+/// Refresh-on-divergence: when the frozen context no longer matches what
     /// the space holds, the turn renders and settles from ONE fresh snapshot —
     /// so the replacement answer's declared demand is the demand it actually
     /// saw, and the next exact repeat is served from it (no regen loop).
@@ -151,3 +150,4 @@ nonisolated final class SimiGoISContextLedgerTests: XCTestCase {
         XCTAssertEqual(
             ledger.frozenBlock(scope: "s", userText: "where is the vault"), "BLOCK-NEW")
     }
+}
