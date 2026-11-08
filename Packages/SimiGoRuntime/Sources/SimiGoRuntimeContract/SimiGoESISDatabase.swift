@@ -2784,7 +2784,7 @@ public final class SimiGoESISDatabase {
         while let file = enumerator.nextObject() as? URL {
             guard enumeratedEntries < maxEntries else {
                 throw DatabaseError.sql(
-                    "settleWorkRootContents: maxEntries limit exceeded (\\(maxEntries))")
+                    "settleWorkRootContents: maxEntries limit exceeded (\(maxEntries))")
             }
             enumeratedEntries += 1
             var enumeratedInfo = stat()
