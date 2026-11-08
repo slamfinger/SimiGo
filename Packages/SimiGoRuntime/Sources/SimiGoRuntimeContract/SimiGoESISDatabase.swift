@@ -5837,12 +5837,14 @@ public final class SimiGoESISDatabase {
     /// keep validity='valid'. A change with no dependents invalidates nothing.
     @discardableResult
     public func invalidateSourceFile(rootID: String, relativePath: String) throws -> [String] {
-        let ids = try affectedClosure(rootID: rootID, relativePath: relativePath)
-        guard !ids.isEmpty else { return [] }
-        try transaction {
+        // Acquire the writer lock before reading the dependency closure. Otherwise
+        // a concurrent binding/edge can be committed after the snapshot and remain
+        // valid even though its source is being invalidated.
+        return try transactionResult {
+            let ids = try affectedClosure(rootID: rootID, relativePath: relativePath)
             try markSettlementsInvalidInTransaction(ids)
+            return ids
         }
-        return ids
     }
 
     /// Caller owns the transaction. Flips only valid rows so repeated
@@ -6029,12 +6031,14 @@ public final class SimiGoESISDatabase {
     /// valid results are preserved.
     @discardableResult
     public func invalidateSettlement(_ settlementID: String) throws -> [String] {
-        let ids = try transitiveDependents(seeds: [settlementID])
-        guard !ids.isEmpty else { return [] }
-        try transaction {
+        // The dependency closure and validity updates are one serialized unit,
+        // matching reconcileRoot and preventing a new dependent edge from racing
+        // between the closure read and BEGIN IMMEDIATE.
+        return try transactionResult {
+            let ids = try transitiveDependents(seeds: [settlementID])
             try markSettlementsInvalidInTransaction(ids)
+            return ids
         }
-        return ids
     }
 
     /// Data-ownership introspection: does the given table store any BLOB column?
