@@ -52,3 +52,12 @@
 
 `docs/upstream/B0_ESIS_GLOSSARY_20261105.md`（ACCEPTED，2026-11-05）是上游冻结词表。本表不与它冲突：
 B0 已有条目按 B0 措辞引用；本表补的是 B0 未收的实现词与论文内部对照。改 B0 属于红线，只能在论文里细化。
+
+## 已知例外（允许，但必须能指回本表）
+
+- **逐字引用不改**：研究文档引用代码注释原文时保留原词，即使原文用的是旧称。例：`INVARIANT_PROPOSITIONS` P3 引
+  `SimiGoESISDatabase.swift` 的 "a declared property of the settled unit"。引文的职责是照抄，改词就变成伪造。
+- **代码注释仍有旧称**：截至 2026-11-09，源码注释里有 6 处 `settled unit`（`SimiGoESISDatabase.swift` 两处、
+  `SimiGoSettlementConsumption.swift` 一处、三个测试文件各一处）。无测试断言该字面串，属注释漂移，不在本轮改：
+  该文件刚做过一次 86 提交的安全加固合并，为一句注释再动它不划算。下次动那个文件时顺手改。
+- **历史版本不改**：`PAPER_S5_ABSTRACT_V0.1_*` 已标"被 v0.2 取代"，其旧词保留作留档。
