@@ -392,6 +392,9 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "session_id": "cloud-a", "query": "where is the exit",
             ],
             databaseURL: dbURL)
+        XCTAssertTrue(
+            (settled["demand_id"] as? String)?.isEmpty == false,
+            "the answer is published, but without a resolved retrieval basis")
 
         let again = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
@@ -400,13 +403,6 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "session_id": "cloud-a", "query": "where is the exit",
             ],
             databaseURL: dbURL)
-        // Printed before the unwrap: an XCTest failure here symbolicates from a
-        // build under ~/Documents and can stall the whole window, so the raw
-        // value must reach the log first.
-        print("[MCP-REUSE] demand_published=\(settled["demand_id"] as? String ?? "") "
-            + "demand_error=\(settled["demand_error"] as? String ?? "") "
-            + "advancement=\(settled["advancement_id"] as? String ?? "") "
-            + "reusable=\(again["reusable_answer"] as? [String: Any] ?? [:])")
         XCTAssertNotEqual(again["state_id"] as? String, firstState)
         // begin resolves no current demand, so it has no identity to gate a
         // historical answer on and must not serve one.
@@ -419,7 +415,8 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertFalse(answered.answerSettlementID.isEmpty)
         db.close()
 
-        // Another engine may not inherit it, and another scope is another question.
+        // The same lack of a retrieval basis also fails closed across engines
+        // and scopes; neither should be handed a historical answer as reusable.
         let otherModel = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
             arguments: [
@@ -437,7 +434,6 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL)
         XCTAssertTrue(otherScope["reusable_answer"] is NSNull)
 
-        // Asking is a read: no settlement and no reuse row was written for it.
         XCTAssertEqual(try rawText("SELECT COUNT(*) FROM settlements;"), "1")
         XCTAssertEqual(try rawText("SELECT COUNT(*) FROM information_reuse_events;"), "0")
     }
@@ -482,7 +478,8 @@ final class MCPInformationSpaceTests: XCTestCase {
     /// skip the session-demand publish.
     @discardableResult
     private func settleSourcedAnswer(
-        session: String, query: String, answer: String
+        session: String, query: String, answer: String,
+        includeChat: Bool = false
     ) throws -> [String: Any] {
         let root = dir.appendingPathComponent("sourced-\(session)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -494,7 +491,7 @@ final class MCPInformationSpaceTests: XCTestCase {
 
         let search = try HTTPServer.runMCPTool(
             name: "simigo_is_search",
-            arguments: ["query": query, "include_chat": false, "session_id": session],
+            arguments: ["query": query, "include_chat": includeChat, "session_id": session],
             databaseURL: dbURL)
         let demandID = try XCTUnwrap(search["demand_id"] as? String)
         let retrievalID = try XCTUnwrap(search["retrieval_settlement_id"] as? String)
@@ -544,7 +541,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             name: "simigo_es_begin",
             arguments: [
                 "model": "cloud-model", "tokenizer": "cloud-tokenizer",
-                "session_id": session, "query": query,
+                "session_id": session, "query": query, "include_chat": false,
             ],
             databaseURL: dbURL)
         print("[MCP-SOURCED-REUSE] \(again["reusable_answer"] ?? "null")")

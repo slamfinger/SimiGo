@@ -238,15 +238,10 @@ extension HTTPServer {
         let declaration = Self.settlementDeclaration(from: json, headers: headers)
         Self.traceClientProvenance(headers: headers)
         let loop = SimiGoInformationLoop(database: db)
-        // Default retrieval scope: every eligible committed entry in this
-        // personal space (files, settled summaries and any session's committed
-        // chat), not just the live session. This is the cross-Agent, cross-
-        // session memory the IS exists for; session identifiers narrow it when
-        // a caller supplies them.
-        // Exclude the exact question/answer pairs already published in this
-        // session before computing the current demand watermark. If exclusion
-        // lookup fails, an empty set is conservative: prior rows remain in the
-        // basis and the current-demand gate refuses historical answer reuse.
+        let producer = informationTurnProducer?()
+        // Exclude all previously answered instances of this exact question and
+        // their own summaries from the freshness snapshot. New information in
+        // any other session, file, or settlement remains part of the demand.
         let reuseExclusions = (try? loop.answerReuseExclusions(
             sessionID: infoSession, query: query)) ?? []
         let candidateResolution = try? loop.resolve(.init(
@@ -263,13 +258,25 @@ extension HTTPServer {
             $0.object?["role"]?.string == "user"
         })
         let turnText = target.flatMap { messages[$0].object?["content"]?.messageText } ?? query
-        let snapshot = Self.contextFreezingEnabled
+        var snapshot = Self.contextFreezingEnabled
             ? SimiGoISContextLedger.shared.stabilize(
                 scope: infoSession, userText: turnText,
                 block: candidate, resolution: retrieval)
             : SimiGoISContextLedger.Snapshot(
                 block: candidate, resolution: retrieval,
                 isReplay: false, candidateChanged: false)
+        var refreshedFrozen = false
+        if snapshot.candidateChanged {
+            // The frozen bytes no longer match what the space holds. Render and
+            // settle from the fresh retrieval in ONE snapshot: the reuse gate,
+            // the injected context and the settlement's declared demand stay
+            // mutually consistent, and the next exact repeat is served from the
+            // replacement answer instead of regenerating against a stale freeze.
+            snapshot = SimiGoISContextLedger.shared.refresh(
+                scope: infoSession, userText: turnText,
+                block: candidate, resolution: retrieval)
+            refreshedFrozen = true
+        }
         let context = snapshot.block
         // One readable line per turn: the landed index is the fact that decides
         // whether the committed prefix drifts — a mid-chain index sits inside
@@ -293,6 +300,7 @@ extension HTTPServer {
             "demand=\(shortRenderedDemand)",
             "demand_origin=\(demandOrigin)"
         ]
+        if refreshedFrozen { traceFields.append("frozenRefresh=1") }
         if shortCandidateDemand != shortRenderedDemand {
             traceFields.append("candidate_demand=\(shortCandidateDemand)")
         }
@@ -309,7 +317,6 @@ extension HTTPServer {
             sessionID: infoSession, role: "user", content: query,
             model: modelId, createdAt: Date(), eligibility: eligibility)) ?? -1
 
-        let producer = informationTurnProducer?()
         let parent = (try? db.currentChatStateID(sessionID: infoSession)) ?? nil
         let position = parent
             .flatMap { (try? db.executionStatePosition($0)) ?? nil }
@@ -552,11 +559,18 @@ extension HTTPServer {
     /// The gate itself lives in the loop so every entry point shares one
     /// fail-closed rule set and the rejection cases are testable without HTTP.
     /// This only adds the diagnostic off-switch and the handler's own shape.
+    ///
+    /// The freshness verdict reads the CURRENT candidate resolve, not the
+    /// frozen rendered snapshot: the freeze exists to keep the rendered prefix
+    /// stable, and its trace already exposes `candidate_demand=` divergence.
+    /// Comparing the frozen demand let an old answer stand in after new
+    /// information changed the scope (observed on the responses wire, 2026-11-08).
+    /// A failed resolve passes nil, and the loop gate fails closed on it.
     func reusableAnswer(for turn: InformationTurn) -> ReusableAnswer? {
         guard Self.isAnswerReuseEnabled,
             let reuse = turn.loop.reusableAnswer(
                 sessionID: turn.sessionID, query: turn.query,
-                expectedDemandID: turn.renderedResolution.demandID,
+                expectedDemandID: turn.candidateResolution?.demandID,
                 identity: turn.identity)
         else { return nil }
         return ReusableAnswer(
