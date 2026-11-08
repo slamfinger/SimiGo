@@ -1,6 +1,5 @@
 import Darwin
 import Foundation
-import Darwin
 import Combine
 import SimiGoRuntimeContract
 
