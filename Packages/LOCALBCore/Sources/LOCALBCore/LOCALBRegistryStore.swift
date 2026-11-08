@@ -626,7 +626,7 @@ public struct LOCALBRegistryStore {
         let directoryFD = try openRootDirectory()
         defer { close(directoryFD) }
         let fd = Self.lockFileName.withCString {
-            openat(directoryFD, $0, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+            openat(directoryFD, $0, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0o600)
         }
         guard fd >= 0 else { throw LOCALBStatus.registryPersistenceFailure }
         var lockInfo = stat()
@@ -649,7 +649,7 @@ public struct LOCALBRegistryStore {
     private func appendEventLocked(_ event: Event) throws {
         let frame = try Self.encodeEventFrame(event)
         guard frame.count <= Self.maxEventBytes else { throw LOCALBStatus.resourceLimit }
-        let fd = try openRegistryFile(Self.journalFileName, flags: O_WRONLY | O_APPEND)
+        let fd = try openRegistryFile(Self.journalFileName, flags: O_WRONLY | O_APPEND | O_NONBLOCK)
         defer { close(fd) }
         try Self.writeAll(fd: fd, bytes: frame)
         guard fsync(fd) == 0 else { throw LOCALBStatus.registryPersistenceFailure }
@@ -712,7 +712,7 @@ public struct LOCALBRegistryStore {
     }
 
     private func replayJournal() throws -> ReplayedState {
-        let fd = try openRegistryFile(Self.journalFileName, flags: O_RDONLY)
+        let fd = try openRegistryFile(Self.journalFileName, flags: O_RDONLY | O_NONBLOCK)
         defer { close(fd) }
         var info = stat()
         guard fstat(fd, &info) == 0,
