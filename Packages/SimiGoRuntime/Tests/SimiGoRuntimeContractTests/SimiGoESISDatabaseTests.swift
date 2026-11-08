@@ -54,7 +54,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         ) { error in
             guard let databaseError = error as? SimiGoESISDatabase.DatabaseError,
                   case .executionFailure(let primary, let extended, _) = databaseError else {
-                return XCTFail("expected SQLite bind failure, got \\(error)")
+                return XCTFail("expected SQLite bind failure, got \(error)")
             }
             XCTAssertEqual(primary, 18) // SQLITE_TOOBIG
             XCTAssertEqual(extended, 18) // SQLITE_TOOBIG
