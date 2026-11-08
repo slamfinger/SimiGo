@@ -365,6 +365,13 @@ extension HTTPServer {
                 "description":
                     "Append one complete conversation round (question + reply) "
                     + "produced outside SimiGo, e.g. by a coding agent's own model. "
+                    + "`assistant` is the reply as it was given to the user, not a "
+                    + "condensed version of it: what is not written here is lost, "
+                    + "because the space keeps the text and nothing else. Carry the "
+                    + "boundary of the round in `boundary` (what must not be read as "
+                    + "fact: unrun arms, single-path coverage, figures that move). "
+                    + "The reply reports `boundary_stated`, so a round written "
+                    + "without one is visible in the result rather than assumed. "
                     + "Both lines carry external provenance and are promoted to "
                     + "committed in the same call, so the round enters the personal "
                     + "information space and is retrievable by later searches. "
@@ -383,6 +390,7 @@ extension HTTPServer {
                         "model": ["type": "string"],
                         "provider": ["type": "string"],
                         "turn_index": ["type": "integer"],
+                        "boundary": ["type": "string"],
                     ],
                     "required": ["session_id", "request_id", "user", "assistant"],
                 ],
@@ -886,6 +894,15 @@ extension HTTPServer {
             let requestID = try requiredString(arguments, "request_id")
             let userText = try requiredString(arguments, "user")
             let assistantText = try requiredString(arguments, "assistant")
+            // A boundary is not a courtesy note: a round that states no limit
+            // reads as if it had none. It travels with the reply under one
+            // heading, and its absence is reported in the result instead of
+            // being silently allowed.
+            let boundary = optionalString(arguments, "boundary")
+            let storedText = ChatRoundText.compose(
+                assistant: assistantText, boundary: boundary)
+            let boundaryStated = ChatRoundText.statesBoundary(
+                assistant: assistantText, boundary: boundary)
             let model = optionalString(arguments, "model")
             let provider = optionalString(arguments, "provider") ?? "codex"
             let createdAt = Date()
@@ -895,7 +912,7 @@ extension HTTPServer {
                 userText: userText, model: model, createdAt: createdAt)
             let assistantID = try db.recordExternalResponse(
                 sessionID: sessionID, provider: provider, requestID: requestID,
-                assistantText: assistantText, model: model, createdAt: createdAt)
+                assistantText: storedText, model: model, createdAt: createdAt)
             let promoted = try db.verifyExternalTurn(
                 sessionID: sessionID, requestID: requestID, verifiedAt: createdAt)
             let rows = try db.chatTurnProvenance(
@@ -924,6 +941,7 @@ extension HTTPServer {
                 "provider": provider,
                 "message_ids": [userID, assistantID],
                 "rows_promoted": promoted,
+                "boundary_stated": boundaryStated,
                 "rows": rows.map { row -> [String: Any] in
                     [
                         "message_id": row.messageID,
