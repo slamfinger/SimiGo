@@ -2667,10 +2667,14 @@ public final class SimiGoESISDatabase {
     /// （相同字节只存一次），`file_contents` 只保留身份/摘要引用；索引与
     /// 依赖账本追加记录，历史不覆盖。删除或变为二进制/超限的文件会撤销
     /// 其内容引用并失效依赖闭包。文本判定：utf8 且 ≤ fileByteCap。
+    /// Root-wide guards default to 4,096 regular files and 64 MiB of bytes read.
+    /// The aggregate read cap also bounds Data retained in pending settlements.
     @discardableResult
     public func settleWorkRootContents(
         rootID: String, rootURL: URL, category: String = "work",
         fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
+        maxObservedFiles: Int = 4_096,
+        maxTotalBytesRead: Int = 64 * 1024 * 1024,
         carryText: Bool = true
     ) throws -> ContentSettleReport {
         // Serialize the baseline snapshot, filesystem observation and all index
@@ -2678,9 +2682,12 @@ public final class SimiGoESISDatabase {
         // and let an older observation overwrite a newer settlement.
         return try transactionResult {
         let fm = FileManager.default
-        guard fileByteCap >= 0, maxDepth >= 0 else {
+        guard fileByteCap >= 0, maxDepth >= 0,
+              maxObservedFiles >= 0, maxObservedFiles < Int.max,
+              maxTotalBytesRead >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
         }
+        let inventoryRowLimit = Int64(maxObservedFiles) + 1
         let requestedRootPath = try canonicalDirectoryPath(atPath: rootURL.path)
         let requestedRoot = URL(fileURLWithPath: requestedRootPath, isDirectory: true)
         let scanRoot: URL
@@ -2705,10 +2712,12 @@ public final class SimiGoESISDatabase {
                        locatorType: "path", status: "present")
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
-        SELECT relative_path, content_sha256, object_id FROM file_contents WHERE root_id=?;
+        SELECT relative_path, content_sha256, object_id FROM file_contents
+        WHERE root_id=? ORDER BY relative_path LIMIT ?;
         """)
         defer { sqlite3_finalize(prevStmt) }
         bind(prevStmt, 1, rootID)
+        bind(prevStmt, 2, inventoryRowLimit)
         while try stepRowOrDone(prevStmt) {
             func text(_ i: Int32) -> String {
                 sqlite3_column_text(prevStmt, i).map { String(cString: $0) } ?? ""
@@ -2716,6 +2725,10 @@ public final class SimiGoESISDatabase {
             previous[text(0)] = FileContentState(
                 digest: text(1),
                 objectID: sqlite3_column_type(prevStmt, 2) == SQLITE_NULL ? nil : text(2))
+        }
+        guard previous.count <= maxObservedFiles else {
+            throw DatabaseError.sql(
+                "settleWorkRootContents: prior file_contents inventory exceeds maxObservedFiles (\(maxObservedFiles))")
         }
 
         // Some indexed files (binary, oversized, or non-UTF8) intentionally
@@ -2725,10 +2738,12 @@ public final class SimiGoESISDatabase {
         do {
             let externalStmt = try prepare("""
             SELECT relative_path, content_digest FROM external_files
-            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
+            WHERE root_id=? AND COALESCE(status,'present')<>'missing'
+            ORDER BY relative_path LIMIT ?;
             """)
             defer { sqlite3_finalize(externalStmt) }
             bind(externalStmt, 1, rootID)
+            bind(externalStmt, 2, inventoryRowLimit)
             while true {
                 let rc = sqlite3_step(externalStmt)
                 if rc == SQLITE_ROW {
@@ -2745,6 +2760,10 @@ public final class SimiGoESISDatabase {
                     throw DatabaseError.sql(String(cString: sqlite3_errmsg(handle)))
                 }
                 break
+            }
+            guard previousExternalFiles.count <= maxObservedFiles else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: prior external_files inventory exceeds maxObservedFiles (\(maxObservedFiles))")
             }
         }
 
@@ -2795,6 +2814,22 @@ public final class SimiGoESISDatabase {
                 throw DatabaseError.sql(
                     "settleWorkRootContents: refuses symbolic or non-regular source \(relative)")
             }
+            guard scanned < maxObservedFiles else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxObservedFiles exceeded (\(maxObservedFiles))")
+            }
+            let enumeratedSize = Int64(enumeratedInfo.st_size)
+            guard enumeratedSize >= 0 else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: negative source size for \(relative)")
+            }
+            if enumeratedSize <= Int64(fileByteCap) {
+                let remainingBytes = maxTotalBytesRead - entityBytesRead
+                guard enumeratedSize <= Int64(remainingBytes) else {
+                    throw DatabaseError.sql(
+                        "settleWorkRootContents: maxTotalBytesRead exceeded (\(maxTotalBytesRead))")
+                }
+            }
 
             // Every component is opened relative to the pinned root FD; no
             // symlink can redirect either an intermediate directory or the leaf.
@@ -2823,8 +2858,14 @@ public final class SimiGoESISDatabase {
                 continue
             }
 
+            let nextEntityBytesRead = entityBytesRead.addingReportingOverflow(data.count)
+            guard !nextEntityBytesRead.overflow,
+                  nextEntityBytesRead.partialValue <= maxTotalBytesRead else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxTotalBytesRead exceeded (\(maxTotalBytesRead))")
+            }
+            entityBytesRead = nextEntityBytesRead.partialValue
             let digest = NativeSHA256.hexDigest(data)
-            entityBytesRead += data.count
             indexedFiles.append((relative, file, size, modified, digest))
             guard String(data: data, encoding: .utf8) != nil else {
                 skipped += 1

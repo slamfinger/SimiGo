@@ -51,6 +51,56 @@ final class SimiGoESISDatabaseG2Tests: XCTestCase {
         return (url, db)
     }
 
+    // MARK: - Bounded root settlement scans
+
+    func testRootSettlementGlobalLimitsAbortWithoutChangingInventoryOrSettlementState() throws {
+        let (databaseURL, db) = try open("scan-limits")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-scan-limits-\\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+        try Data("0123456789".utf8).write(to: rootURL.appendingPathComponent("a.txt"))
+
+        defer { db.close(); cleanup(databaseURL) }
+        _ = try db.settleWorkRootContents(
+            rootID: "bounded-scan-root", rootURL: rootURL,
+            maxObservedFiles: 4, maxTotalBytesRead: 32)
+        let baselineInventory = try db.listExternalFiles(rootID: "bounded-scan-root")
+        XCTAssertEqual(baselineInventory.map(\\.relativePath), ["a.txt"])
+
+        let settlement = try mkSettlement(db, stateID: "S-SCAN-LIMIT", value: "ok")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "bounded-scan-root", relativePath: "a.txt")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+
+        try Data("abcdefghij".utf8).write(to: rootURL.appendingPathComponent("b.txt"))
+
+        // The second regular file exceeds the root-wide count cap. The scan
+        // must roll back the root upsert and leave both inventories untouched.
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "bounded-scan-root", rootURL: rootURL,
+            maxObservedFiles: 1, maxTotalBytesRead: 32))
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "bounded-scan-root"), baselineInventory)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+
+        // Each file is 10 bytes; the aggregate 15-byte cap allows one and
+        // rejects the next. No partial invalidation or inventory update may commit.
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "bounded-scan-root", rootURL: rootURL,
+            maxObservedFiles: 4, maxTotalBytesRead: 15))
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "bounded-scan-root"), baselineInventory)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+    }
+
     // MARK: - Local invalidation preserves unrelated valid results
 
     func testG2LocalInvalidationOnlyAffectsClosurePreservesUnrelated() throws {
