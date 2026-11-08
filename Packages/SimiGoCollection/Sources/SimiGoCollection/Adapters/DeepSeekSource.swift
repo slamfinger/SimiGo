@@ -60,8 +60,15 @@ public enum DeepSeekSource: SnapshotTranscriptSource {
         SnapshotShape.matches(data) { value in
             guard let conversations = SnapshotJSON.array(value), !conversations.isEmpty
             else { return false }
-            return conversations.allSatisfy {
-                SnapshotJSON.object(SnapshotJSON.object($0)?["mapping"]) != nil
+            // A `mapping` key alone is not enough: ChatGPT's export has one too.
+            // This carrier states `children` on its nodes; that export never does.
+            return conversations.allSatisfy { item in
+                guard let mapping = SnapshotJSON.object(
+                    SnapshotJSON.object(item)?["mapping"]), !mapping.isEmpty
+                else { return false }
+                return mapping.values.contains {
+                    SnapshotJSON.object($0)?["children"] != nil
+                }
             }
         }
     }
