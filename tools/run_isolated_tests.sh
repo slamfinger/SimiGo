@@ -179,8 +179,18 @@ ev, tag, rc, start, end = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.ar
 cache_write_not_required = sys.argv[6] == "1"
 expected_cases = int(sys.argv[7]) if sys.argv[7] else None
 log = open(os.path.join(ev, "isolated_tests_%s.log" % tag), errors="replace").read()
-m = re.findall(r"Executed (\d+) tests?, with (\d+) tests? skipped and (\d+) failures?", log)
-counts = tuple(int(x) for x in m[-1]) if m else None
+# Xcode <26 emitted "Executed N tests, with S skipped and F failures"; newer
+# toolchains emit "Executed N tests, with F failures (U unexpected)". Accept
+# both so the audit does not depend on the runner image generation.
+m = re.findall(
+    r"Executed (\d+) tests?, with "
+    r"(?:(\d+) tests? skipped and (\d+) failures?|(\d+) failures?)", log)
+counts = None
+for total, skipped_old, failures_old, failures_new in m[-1:]:
+    counts = (
+        int(total),
+        int(skipped_old) if skipped_old else 0,
+        int(failures_old) if failures_old else int(failures_new or 0))
 iso = os.path.join(ev, "isolation")
 
 def du(p):

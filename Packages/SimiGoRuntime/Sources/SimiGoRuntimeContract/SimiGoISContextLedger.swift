@@ -87,6 +87,29 @@ nonisolated public final class SimiGoISContextLedger: @unchecked Sendable {
             block: block, resolution: resolution, isReplay: false, candidateChanged: false)
     }
 
+    /// Replace the frozen snapshot for this (scope, userText) with today's
+    /// retrieval. Call this when `stabilize` reported `candidateChanged` and the
+    /// turn must answer from current information: the rendered block, the
+    /// settlement's declared retrieval and the reuse gate all read one fresh
+    /// snapshot afterwards, so an exact repeat is served from the replacement
+    /// answer instead of regenerating against the stale one forever.
+    /// This re-pays one cold prefill for that turn — the bounded cost of
+    /// answering from what is actually in the space, versus replaying bytes the
+    /// space no longer backs.
+    @discardableResult
+    public func refresh(
+        scope: String,
+        userText: String,
+        block: String,
+        resolution: SimiGoInformationLoop.Resolution
+    ) -> Snapshot {
+        lock.lock()
+        defer { lock.unlock() }
+        insert(Frozen(block: block, resolution: resolution), scope: scope, userText: userText)
+        return Snapshot(
+            block: block, resolution: resolution, isReplay: false, candidateChanged: false)
+    }
+
     /// The block committed when this user turn was first rendered in `scope`, or
     /// nil when it never was — then the message must be sent unmodified.
     public func frozenBlock(scope: String, userText: String) -> String? {

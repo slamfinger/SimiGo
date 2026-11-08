@@ -258,13 +258,25 @@ extension HTTPServer {
             $0.object?["role"]?.string == "user"
         })
         let turnText = target.flatMap { messages[$0].object?["content"]?.messageText } ?? query
-        let snapshot = Self.contextFreezingEnabled
+        var snapshot = Self.contextFreezingEnabled
             ? SimiGoISContextLedger.shared.stabilize(
                 scope: infoSession, userText: turnText,
                 block: candidate, resolution: retrieval)
             : SimiGoISContextLedger.Snapshot(
                 block: candidate, resolution: retrieval,
                 isReplay: false, candidateChanged: false)
+        var refreshedFrozen = false
+        if snapshot.candidateChanged {
+            // The frozen bytes no longer match what the space holds. Render and
+            // settle from the fresh retrieval in ONE snapshot: the reuse gate,
+            // the injected context and the settlement's declared demand stay
+            // mutually consistent, and the next exact repeat is served from the
+            // replacement answer instead of regenerating against a stale freeze.
+            snapshot = SimiGoISContextLedger.shared.refresh(
+                scope: infoSession, userText: turnText,
+                block: candidate, resolution: retrieval)
+            refreshedFrozen = true
+        }
         let context = snapshot.block
         // One readable line per turn: the landed index is the fact that decides
         // whether the committed prefix drifts — a mid-chain index sits inside
@@ -288,6 +300,7 @@ extension HTTPServer {
             "demand=\(shortRenderedDemand)",
             "demand_origin=\(demandOrigin)"
         ]
+        if refreshedFrozen { traceFields.append("frozenRefresh=1") }
         if shortCandidateDemand != shortRenderedDemand {
             traceFields.append("candidate_demand=\(shortCandidateDemand)")
         }
@@ -546,11 +559,18 @@ extension HTTPServer {
     /// The gate itself lives in the loop so every entry point shares one
     /// fail-closed rule set and the rejection cases are testable without HTTP.
     /// This only adds the diagnostic off-switch and the handler's own shape.
+    ///
+    /// The freshness verdict reads the CURRENT candidate resolve, not the
+    /// frozen rendered snapshot: the freeze exists to keep the rendered prefix
+    /// stable, and its trace already exposes `candidate_demand=` divergence.
+    /// Comparing the frozen demand let an old answer stand in after new
+    /// information changed the scope (observed on the responses wire, 2026-11-08).
+    /// A failed resolve passes nil, and the loop gate fails closed on it.
     func reusableAnswer(for turn: InformationTurn) -> ReusableAnswer? {
         guard Self.isAnswerReuseEnabled,
             let reuse = turn.loop.reusableAnswer(
                 sessionID: turn.sessionID, query: turn.query,
-                expectedDemandID: turn.renderedResolution.demandID,
+                expectedDemandID: turn.candidateResolution?.demandID,
                 identity: turn.identity)
         else { return nil }
         return ReusableAnswer(

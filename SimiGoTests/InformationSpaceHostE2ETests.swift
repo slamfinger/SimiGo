@@ -663,11 +663,14 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
                 "query": query,
                 "include_chat": true,
             ])
-        let reused = try XCTUnwrap(
-            finalRepeat["reusable_answer"] as? [String: Any],
-            "the replacement answer must be reusable after its own demand is unchanged")
-        XCTAssertEqual(reused["text"] as? String, "The exit is now in the east wing.")
-        XCTAssertEqual(reused["model_calls"] as? Int, 0)
+        // MCP begin never serves a historical answer — not even a fresh
+        // replacement whose own demand is unchanged. The begin contract keeps
+        // the newly begun ES free of an un-consumed settlement; a future MCP
+        // reuse path must resolve the current demand and consume explicitly.
+        // Replacement freshness is exercised on the chat/responses reuse lanes.
+        XCTAssertTrue(
+            finalRepeat["reusable_answer"] is NSNull,
+            "begin must not serve answers; explicit settlement consumption is the only zero-model path: \(finalRepeat)")
         await runtime.stop()
     }
 

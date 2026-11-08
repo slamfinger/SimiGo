@@ -750,12 +750,12 @@ jobs:
             --expected-cases 8 \
             --cache-write-not-required \
             --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testStreamingExactRepeatIsServedWithoutModelCall \
-            --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testNewCommittedInformationDoesNotReuseOlderAnswer \
+            --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testChangedCurrentDemandIsNotServedByReuse \
             --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testExactRepeatIsServedWithoutModelCall \
             --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testNewCommittedInformationDoesNotReuseOlderAnswer \
             --only-testing SimiGoTests/MCPInformationSpaceTests/testSourcedSettleIsReusableInItsSearchSession \
-            --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginDoesNotReuseAnswerWithoutRetrievalBasis \
-            --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginDoesNotReuseSourcedAnswerAfterInformationScopeChanges \
+            --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginDoesNotServeSettledAnswerWithoutCurrentDemand \
+            --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginSettleRecordsAuthoritativeSettlement \
             --only-testing SimiGoTests/InformationSpaceHostE2ETests/testRealHTTPMCPBeginRefusesAnswerAfterSharedInformationChanges
       - name: Scope note
         run: |
