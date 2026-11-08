@@ -49,6 +49,68 @@ final class MCPInformationSpaceTests: XCTestCase {
         )
     }
 
+    /// The brief is read through the same database the search reads, so an
+    /// agent can ask "where does this project stand" and get the note that is
+    /// current — not the most similar paragraph ever written.
+    func testProjectBriefIsReadBackAndSupersededInPlace() throws {
+        let empty = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        XCTAssertEqual(empty["claim"] as? String, "")
+        XCTAssertNotNil(empty["hint"], "an absent brief says so instead of looking blank")
+
+        let first = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "v1: what the project is"],
+            databaseURL: dbURL)
+        XCTAssertEqual(first["created"] as? Bool, true)
+        XCTAssertEqual(first["supersedes"] as? String, "")
+
+        let read = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        XCTAssertEqual(read["claim"] as? String, "v1: what the project is")
+        XCTAssertEqual(read["note_id"] as? String, first["note_id"] as? String)
+
+        let second = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "v2: where it stands"],
+            databaseURL: dbURL)
+        XCTAssertEqual(second["supersedes"] as? String, first["note_id"] as? String)
+        XCTAssertEqual(second["current_is_this"] as? Bool, true)
+        XCTAssertEqual(second["history"] as? Int, 2)
+
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM project_notes WHERE kind='brief';"), "2",
+            "the superseded judgement stays in the ledger")
+        let current = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        XCTAssertEqual(current["claim"] as? String, "v2: where it stands")
+
+        // The brief must reach a caller that never asks for it and never uses
+        // the word: it rides outside the ranked items, so it cannot be pushed
+        // out of the answer by a similar paragraph.
+        let search = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: ["query": "anything at all", "include_chat": false],
+            databaseURL: dbURL)
+        let brief = search["brief"] as? [String: Any]
+        XCTAssertEqual(brief?["claim"] as? String, "v2: where it stands")
+        XCTAssertEqual(brief?["note_id"] as? String, second["note_id"] as? String)
+        XCTAssertEqual(
+            (search["items"] as? [[String: Any]])?.isEmpty, true,
+            "the brief is not counted as a retrieved item")
+
+        // A caller that wants the corpus alone can refuse the prior. The field
+        // is declared, so refusing it is a choice rather than a workaround.
+        let without = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": "anything at all", "include_chat": false,
+                "include_brief": false,
+            ],
+            databaseURL: dbURL)
+        XCTAssertNil(without["brief"], "include_brief=false leaves the prior out")
+    }
+
     private func rawText(_ sql: String) throws -> String {
         var handle: OpaquePointer?
         XCTAssertEqual(sqlite3_open(dbURL.path, &handle), SQLITE_OK)
@@ -78,11 +140,20 @@ final class MCPInformationSpaceTests: XCTestCase {
         ])
         let tools = (listResponse?["result"] as? [String: Any])?["tools"] as? [[String: Any]]
         let names = Set(tools?.compactMap { $0["name"] as? String } ?? [])
-        XCTAssertEqual(names, [
-            "simigo_is_search", "simigo_is_status", "simigo_roots_list",
-            "simigo_root_register", "simigo_is_reconcile", "simigo_is_settlement",
-            "simigo_es_begin", "simigo_es_settle", "simigo_es_fail",
-        ])
+        // Compare against the declaration instead of a retyped list: a tool
+        // added to the table must appear on the wire, and one that is served
+        // without being declared would be undocumented. The superset below is
+        // the part that says which tools agents are actually promised.
+        let declared = Set(
+            HTTPServer.mcpToolDefinitions.compactMap { $0["name"] as? String })
+        XCTAssertEqual(names, declared, "served tools must equal declared tools")
+        XCTAssertTrue(
+            names.isSuperset(of: [
+                "simigo_is_search", "simigo_is_status", "simigo_roots_list",
+                "simigo_root_register", "simigo_is_reconcile", "simigo_is_settlement",
+                "simigo_es_begin", "simigo_es_settle", "simigo_es_fail",
+                "simigo_chat_round", "simigo_project_brief", "simigo_project_note",
+            ]), "every tool agents are told to use must be served")
 
         XCTAssertNil(server.mcpResponse(for: [
             "jsonrpc": "2.0", "method": "notifications/initialized",

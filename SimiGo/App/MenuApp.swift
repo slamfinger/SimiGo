@@ -1,5 +1,7 @@
 import SwiftUI
 import AppKit
+import Combine
+import SimiGoRuntimeContract
 
 @main
 struct MenuApp: App {
@@ -22,18 +24,21 @@ struct MenuPanelView: View {
     @State private var networkModeIsLAN = false
     @State private var isChangingNetworkMode = false
     @State private var showBackendSwitch = false
-    @ObservedObject private var qoderCollection = QoderCollectionLifecycle.shared
+    @State private var mcpTurnStatus = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             statusHeader
-            networkSlider.padding(.horizontal, 4)
-
-            if qoderCollection.isEnabled {
-                MenuRowButton(title: qoderCollectionTitle, icon: "tray.and.arrow.down") {
-                    StatusBarCoordinator.shared.openSettingsWindow()
-                }
+            if !mcpTurnStatus.isEmpty {
+                Text(mcpTurnStatus)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .padding(.horizontal, 8)
+                    .help("经 MCP 工具进入信息空间的轮次。缺口＝调用方自己选的轮次号没出现。")
             }
+            networkSlider.padding(.horizontal, 4)
 
             Divider().padding(.vertical, 2)
 
@@ -108,10 +113,39 @@ struct MenuPanelView: View {
         .frame(width: 190)
         .onAppear {
             syncNetworkMode()
+            refreshMCPTurnStatus()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: .simigoMCPTurnRecorded)
+                .receive(on: RunLoop.main)
+        ) { _ in
+            refreshMCPTurnStatus()
         }
     }
 
     // MARK: - Status
+
+    @MainActor
+    private func refreshMCPTurnStatus() {
+        guard
+            let db = try? SimiGoESISDatabase(
+                url: SimiGoPaths.databaseURL, createIfNeeded: false),
+            let sessionID = try? db.latestTurnLedgerSessionID(),
+            let report = try? db.turnLedger(sessionID: sessionID)
+        else {
+            mcpTurnStatus = ""
+            return
+        }
+        if let owner = report.conflict, !owner.isEmpty {
+            mcpTurnStatus = "轮次 \(report.entered) 进入 / 轮号 \(report.turnIndex) 已被占用"
+        } else if report.missing.isEmpty {
+            mcpTurnStatus = "轮次 \(report.entered) 全部进入"
+        } else {
+            let head = report.missing.prefix(3).map(String.init).joined(separator: ",")
+            mcpTurnStatus =
+                "轮次 \(report.entered) 进入 / 缺 \(report.missing.count)（\(head)…）"
+        }
+    }
 
     private var statusHeader: some View {
         let node = svc.inferenceNode
@@ -134,11 +168,6 @@ struct MenuPanelView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-    }
-
-    private var qoderCollectionTitle: String {
-        let status = qoderCollection.statusText
-        return status.isEmpty ? "Qoder 采集" : "Qoder 采集 · \(status)"
     }
 
     // MARK: - Network Slider

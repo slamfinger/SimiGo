@@ -187,19 +187,22 @@ final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate 
         if svc.status.hasPrefix("⚠️") {
             name = "exclamationmark.triangle.fill"
             color = .systemYellow
-        } else if !svc.isRunning {
-            // 无模型：信息空间宿主仍在跑（App 启动即建），所以是「填充但
-            // 中性」的图标——填充=有东西在服务，灰色=没有原生 IS/ES 写入。
-            // 绿色只留给「模型在跑 + 原生 IS/ES」那条路径。
-            name = "bolt.fill"
-            color = .labelColor
-        } else {
+        } else if svc.isRunning, svc.hostMode == .model {
+            // 本地模型在跑：实心绿（内存压力把它降级成橙/红，那仍是模型态）。
             name = "bolt.fill"
             switch svc.memoryPressure {
             case "critical": color = .systemRed
             case "warn": color = .systemOrange
             default: color = .systemGreen
             }
+        } else {
+            // 信息空间宿主（IS 默认开、MCP 回落）：空心。这里用模板图而不是
+            // 固定白色——菜单栏在浅色外观下白描边不可见；模板图会随外观
+            // 渲染成深色或白色，语义仍是「空心=监控，实心=本地模型」。
+            button.image = NSImage(
+                systemSymbolName: "bolt", accessibilityDescription: "SimiGo")
+            button.image?.isTemplate = true
+            return
         }
 
         let configuration = NSImage.SymbolConfiguration(paletteColors: [color])

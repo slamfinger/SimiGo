@@ -7,7 +7,8 @@ struct Settings: View {
     @State private var envMessage = ""
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
-    @ObservedObject private var collection = QoderCollectionLifecycle.shared
+    @State private var collectionReport = ""
+    @State private var collectionBusy = false
     @State private var workRoots: [EnvManager.WorkRootEntry] = []
     @State private var workRootPendingRemoval: EnvManager.WorkRootEntry?
     @State private var informationSpaceStatus = ""
@@ -44,24 +45,33 @@ struct Settings: View {
         refreshWorkRoots()
     }
 
-    /// 采集桥＝「选哪个目录就导入哪个目录」：点按钮直接弹目录面板，选完即
-    /// 跑一次一次性导入（把该目录已有的会话写进 Information Space）。
+    /// 外部信息采集＝「选哪个目录就导入哪个目录」：点按钮弹目录面板，选完
+    /// 递归扫一遍，按结构识别格式（Markdown 会话导出 / Codex 日志 /
+    /// ChatGPT 导出 / AI Studio / DeepSeek / flat 导出），把已结束的问答对
+    /// 写进 Information Space。一次性导入、可重复触发（幂等），不是监听器。
     /// 取消面板不改动任何状态。
     private func openCollectionBridge() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.message = "选择要采集的目录"
+        panel.message = "选择要采集的目录（会话导出所在目录）"
         panel.prompt = "采集此目录"
-        let current = URL(
-            fileURLWithPath: collection.scanRootPath, isDirectory: true)
-        if FileManager.default.fileExists(atPath: current.path) {
-            panel.directoryURL = current
-        }
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        collection.setScanRoot(url)
-        collection.setEnabled(true)
+        collectionBusy = true
+        collectionReport = "扫描中… \(url.lastPathComponent)"
+        Task.detached(priority: .utility) {
+            let outcome = Result { try MultiFormatCollection().importDirectory(url) }
+            await MainActor.run {
+                collectionBusy = false
+                switch outcome {
+                case .success(let report):
+                    collectionReport = report.summary
+                case .failure(let error):
+                    collectionReport = "采集失败：\(error)"
+                }
+            }
+        }
     }
 
     /// 与首启向导同一张 `roots` 表：这里的 +/− 增减的就是安装时设定的
@@ -132,34 +142,18 @@ struct Settings: View {
                             Button("刷新状态") { refreshInformationSpace(deep: false) }
                             Button("深度校验") { refreshInformationSpace(deep: true) }
                             Button("重新对账工作目录") { reconcileInformationSpace() }
-                            Button("采集桥…") { openCollectionBridge() }
+                            Button("外部信息采集…") { openCollectionBridge() }
+                                .disabled(collectionBusy)
                             if informationSpaceBusy {
                                 ProgressView().controlSize(.small)
                             }
                         }
                         .disabled(informationSpaceBusy)
-                        if collection.isEnabled {
-                            HStack(spacing: 6) {
-                                Image(systemName: collection.isRunning
-                                      ? "arrow.triangle.2.circlepath" : "tray.and.arrow.down")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.secondary)
-                                Text(collection.scanRootPath)
-                                    .font(.caption)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                    .textSelection(.enabled)
-                                Spacer()
-                                if collection.isRunning {
-                                    Button("停止") { collection.setEnabled(false) }
-                                        .buttonStyle(.borderless)
-                                }
-                            }
-                            if !collection.statusText.isEmpty {
-                                Text(collection.statusText)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                        if !collectionReport.isEmpty {
+                            Text(collectionReport)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
                         }
                         if !informationSpaceStatus.isEmpty {
                             Text(informationSpaceStatus)

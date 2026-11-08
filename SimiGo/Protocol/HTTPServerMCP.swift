@@ -1,6 +1,12 @@
 import Foundation
 import SimiGoRuntimeContract
 
+extension Notification.Name {
+    /// Posted after an MCP round records a turn index, so the menu can show the
+    /// ledger without polling the database.
+    static let simigoMCPTurnRecorded = Notification.Name("SimiGoMCPTurnRecorded")
+}
+
 /// MCP (JSON-RPC 2.0 over HTTP) facade over the SAME native ES/IS operations
 /// the HTTP routes already use. There is no second database, retrieval path or
 /// settlement authority here: every tool calls `SimiGoESISDatabase` /
@@ -184,7 +190,10 @@ extension HTTPServer {
                     + "call's request identity: a retry with the same request_id reuses "
                     + "the same demand, while a call without one owns a fresh demand "
                     + "lifecycle — knowledge is shared across requests, request state "
-                    + "is not.",
+                    + "is not. The answer also carries the current project brief in a "
+                    + "`brief` field outside `items`: it is not a candidate and is not "
+                    + "ranked, so a similar paragraph cannot push it out. Pass "
+                    + "`include_brief: false` to leave it out.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -195,6 +204,7 @@ extension HTTPServer {
                         "include_chat": ["type": "boolean"],
                         "session_ids": ["type": "array", "items": ["type": "string"]],
                         "limit": ["type": "integer"],
+                        "include_brief": ["type": "boolean"],
                     ],
                     "required": ["query"],
                 ],
@@ -350,6 +360,63 @@ extension HTTPServer {
                     "required": ["state_id", "detail"],
                 ],
             ],
+            [
+                "name": "simigo_chat_round",
+                "description":
+                    "Append one complete conversation round (question + reply) "
+                    + "produced outside SimiGo, e.g. by a coding agent's own model. "
+                    + "Both lines carry external provenance and are promoted to "
+                    + "committed in the same call, so the round enters the personal "
+                    + "information space and is retrievable by later searches. "
+                    + "Idempotent: the same (session_id, request_id) returns the rows "
+                    + "already written instead of appending duplicates. "
+                    + "Pass `turn_index` (1-based, consecutive) to make every round "
+                    + "accounted for: the reply carries `turn_ledger` with the count "
+                    + "entered and the indices that never arrived.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "session_id": ["type": "string"],
+                        "request_id": ["type": "string"],
+                        "user": ["type": "string"],
+                        "assistant": ["type": "string"],
+                        "model": ["type": "string"],
+                        "provider": ["type": "string"],
+                        "turn_index": ["type": "integer"],
+                    ],
+                    "required": ["session_id", "request_id", "user", "assistant"],
+                ],
+            ],
+            [
+                "name": "simigo_project_brief",
+                "description":
+                    "Read the current project brief: what this project is, how far "
+                    + "it has got, and what is still open. A brief is a judgement, "
+                    + "not a document — it is written by `simigo_project_note` and "
+                    + "each new brief supersedes the previous one without erasing "
+                    + "it. Read this before answering questions about the project's "
+                    + "state: search over the corpus returns what was written when, "
+                    + "not what is true now.",
+                "inputSchema": ["type": "object", "properties": [:]],
+            ],
+            [
+                "name": "simigo_project_note",
+                "description":
+                    "Record a judgement about the project and supersede the current "
+                    + "one of the same kind. Kinds in use: brief (what the project "
+                    + "is and where it stands), status, decision, open-question. "
+                    + "Append-only: the previous note stays readable, the new one "
+                    + "becomes current by being the note nothing supersedes. "
+                    + "Recording an identical claim again is a no-op.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "kind": ["type": "string"],
+                        "claim": ["type": "string"],
+                    ],
+                    "required": ["kind", "claim"],
+                ],
+            ],
         ]
     }
 
@@ -374,7 +441,7 @@ extension HTTPServer {
                 includeChat: (arguments["include_chat"] as? Bool) ?? true,
                 chatSessionIDs: arguments["session_ids"] as? [String] ?? [],
                 limit: (arguments["limit"] as? Int) ?? 40))
-            return [
+            var response: [String: Any] = [
                 "demand_id": resolution.demandID,
                 "reused": resolution.reused,
                 "status": resolution.reused ? "reused" : "settled",
@@ -392,6 +459,23 @@ extension HTTPServer {
                     ]
                 },
             ]
+            // The brief rides along with every search, outside the item list.
+            // It is not a candidate: it never takes a slot and is never ranked,
+            // because a judgement that a similar paragraph can outrank is not a
+            // time authority. A caller that has never heard the word "brief"
+            // still gets the current judgement on its first search.
+            if (arguments["include_brief"] as? Bool) ?? true,
+                let brief = try db.currentProjectNote(kind: "brief")
+            {
+                response["brief"] = [
+                    "note_id": brief.noteID,
+                    "claim": brief.claim,
+                    "chars": brief.claim.count,
+                    "recorded_at": brief.recordedAt,
+                    "recorded_at_iso": Self.isoProjectStamp(brief.recordedAt),
+                ] as [String: Any]
+            }
+            return response
 
         case "simigo_is_status":
             let db = try openESISDatabase(databaseURL)
@@ -756,6 +840,105 @@ extension HTTPServer {
                 "settlement_id": try db.latestSettlementID(forStateID: stateID) ?? "",
             ]
 
+        case "simigo_project_brief":
+            let db = try openESISDatabase(databaseURL)
+            let note = try db.currentProjectNote(kind: "brief")
+            var response: [String: Any] = [
+                "kind": "brief",
+                "history": try db.projectNoteCount(kind: "brief"),
+            ]
+            if let note {
+                response["note_id"] = note.noteID
+                response["claim"] = note.claim
+                response["recorded_at"] = note.recordedAt
+                response["recorded_at_iso"] = Self.isoProjectStamp(note.recordedAt)
+                response["supersedes"] = note.supersedes ?? ""
+            } else {
+                response["claim"] = ""
+                response["hint"] =
+                    "no brief recorded; call simigo_project_note with kind=brief"
+            }
+            return response
+
+        case "simigo_project_note":
+            let kind = try requiredString(arguments, "kind")
+            let claim = try requiredString(arguments, "claim")
+            let db = try openESISDatabase(databaseURL)
+            let result = try db.recordProjectNote(kind: kind, claim: claim)
+            return [
+                "note_id": result.note.noteID,
+                "kind": kind,
+                "supersedes": result.superseded ?? "",
+                "created": result.created,
+                "recorded_at": result.note.recordedAt,
+                "recorded_at_iso": Self.isoProjectStamp(result.note.recordedAt),
+                "current_is_this": try db.currentProjectNote(kind: kind)?.noteID
+                    == result.note.noteID,
+                "history": try db.projectNoteCount(kind: kind),
+            ]
+
+        case "simigo_chat_round":
+            // A round written by somebody else's model: recorded with external
+            // provenance, then verified in the same call. The two steps are kept
+            // separate because only (session, request) pairs that carry BOTH
+            // sides may be promoted — verification is not a caller argument.
+            let sessionID = try requiredString(arguments, "session_id")
+            let requestID = try requiredString(arguments, "request_id")
+            let userText = try requiredString(arguments, "user")
+            let assistantText = try requiredString(arguments, "assistant")
+            let model = optionalString(arguments, "model")
+            let provider = optionalString(arguments, "provider") ?? "codex"
+            let createdAt = Date()
+            let db = try openESISDatabase(databaseURL)
+            let userID = try db.recordExternalTurn(
+                sessionID: sessionID, provider: provider, requestID: requestID,
+                userText: userText, model: model, createdAt: createdAt)
+            let assistantID = try db.recordExternalResponse(
+                sessionID: sessionID, provider: provider, requestID: requestID,
+                assistantText: assistantText, model: model, createdAt: createdAt)
+            let promoted = try db.verifyExternalTurn(
+                sessionID: sessionID, requestID: requestID, verifiedAt: createdAt)
+            let rows = try db.chatTurnProvenance(
+                sessionID: sessionID, requestID: requestID)
+            // The ledger is the only place that can say a round never arrived:
+            // the caller chooses the numbers, so a gap is its own statement.
+            var ledger: [String: Any]?
+            if let turnIndex = arguments["turn_index"] as? Int {
+                let report = try db.recordTurnIndex(
+                    sessionID: sessionID, turnIndex: turnIndex,
+                    requestID: requestID, at: createdAt)
+                ledger = [
+                    "turn_index": report.turnIndex,
+                    "entered": report.entered,
+                    "highest": report.highest,
+                    "missing": report.missing,
+                    "continuous": report.isContinuous,
+                    "conflict": report.conflict ?? "",
+                ]
+                NotificationCenter.default.post(
+                    name: .simigoMCPTurnRecorded, object: nil)
+            }
+            var response: [String: Any] = [
+                "session_id": sessionID,
+                "request_id": requestID,
+                "provider": provider,
+                "message_ids": [userID, assistantID],
+                "rows_promoted": promoted,
+                "rows": rows.map { row -> [String: Any] in
+                    [
+                        "message_id": row.messageID,
+                        "role": row.role,
+                        "turn_state": row.turnState,
+                        "source_kind": row.sourceKind,
+                        "source_provider": row.sourceProvider ?? "",
+                        "content_sha256": row.contentSHA256,
+                        "eligible": row.isEligible,
+                    ]
+                },
+            ]
+            if let ledger { response["turn_ledger"] = ledger }
+            return response
+
         default:
             throw MCPToolError.unknownTool(name)
         }
@@ -777,6 +960,15 @@ extension HTTPServer {
     ) -> String? {
         guard let value = arguments[key] as? String, !value.isEmpty else { return nil }
         return value
+    }
+
+    /// Stored timestamps are reference-date seconds (the same codec the
+    /// settlement rows use). Show both: the raw value is what a caller compares
+    /// against, the ISO form is what a reader reads.
+    private static func isoProjectStamp(_ stored: String) -> String {
+        guard let seconds = Double(stored) else { return stored }
+        return ISO8601DateFormatter().string(
+            from: Date(timeIntervalSinceReferenceDate: seconds))
     }
 
     /// Source identity exactly as the common settlement entrance expects it.
