@@ -78,6 +78,18 @@ public final class SimiGoESISDatabase {
     private let handle: OpaquePointer
     private let url: URL
 
+    /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
+    /// /var and /tmp, so resolve the parent only and keep the original leaf.
+    private static func canonicalLeafPath(for url: URL) -> String {
+        let parent = url.deletingLastPathComponent()
+        guard let resolved = parent.path.withCString({ Darwin.realpath($0, nil) }) else {
+            return url.path
+        }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
+            .appendingPathComponent(url.lastPathComponent).path
+    }
+
     /// Open (and optionally create) the database at `url`, applying PRAGMAs.
     public init(url: URL, createIfNeeded: Bool = true) throws {
         self.url = url
@@ -90,10 +102,13 @@ public final class SimiGoESISDatabase {
         }
         // The database leaf is part of the authoritative persistence boundary.
         // SQLite must refuse a symlink here rather than following it to another store.
+        // Apple's SQLite rejects any path whose prefix traverses a symlink
+        // (/var and /tmp on macOS), so open through the canonical parent while
+        // keeping the original leaf name for the NOFOLLOW check itself.
         var flags: Int32 = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOFOLLOW
         if createIfNeeded { flags |= SQLITE_OPEN_CREATE }
         var db: OpaquePointer?
-        let rc = sqlite3_open_v2(url.path, &db, flags, nil)
+        let rc = sqlite3_open_v2(Self.canonicalLeafPath(for: url), &db, flags, nil)
         guard rc == SQLITE_OK, let db else {
             let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \(rc)"
             if let db { sqlite3_close_v2(db) }
