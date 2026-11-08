@@ -252,10 +252,11 @@ extension HTTPServer {
                     "Start (or resume an unsettled) execution for an agent whose model "
                     + "runs outside SimiGo. Creates an ES but records NO result: an "
                     + "external call that never settles leaves a begun, unsettled state. "
-                    + "When query + session_id are supplied, the answer already settled "
-                    + "for that same question in that same session is returned as "
-                    + "`reusable_answer` — a read, so the agent may skip its own model "
-                    + "call when the producer identity also matches.",
+                    + "begin never returns a historical answer and never consumes one — "
+                    + "query + session_id only scope the execution. A zero-model-call "
+                    + "consumption path (explicit settlement consumption driving a "
+                    + "derived settlement and a new ES) is a designed future operation; "
+                    + "until it exists, settle this ES through simigo_es_settle.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
