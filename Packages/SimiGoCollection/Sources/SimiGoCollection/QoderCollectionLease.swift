@@ -41,8 +41,14 @@ final class QoderCollectionLease {
                 path: directoryURL.path, detail: "state directory is not a private owned directory")
         }
         let fileURL = directoryURL.appendingPathComponent(lockFileName)
-        let descriptor = open(
-            fileURL.path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
+        // Anchor the lock open to the validated directory descriptor and open
+        // it non-blocking: a planted FIFO at this name must fail the open or
+        // the post-open regular-file check, never block the runner. Resolving
+        // fileURL by path here would race a directory swap between the
+        // directory validation above and this open.
+        let descriptor = openat(
+            directoryDescriptor, lockFileName,
+            O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK, 0o600)
         guard descriptor >= 0 else {
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path, detail: String(cString: strerror(errno)))
@@ -51,6 +57,8 @@ final class QoderCollectionLease {
         guard fstat(descriptor, &lockInfo) == 0,
               (lockInfo.st_mode & S_IFMT) == S_IFREG,
               lockInfo.st_uid == getuid(),
+              lockInfo.st_nlink == 1,
+              (lockInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0,
               fchmod(descriptor, 0o600) == 0
         else {
             close(descriptor)
@@ -59,6 +67,10 @@ final class QoderCollectionLease {
         }
         guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
             let code = errno
+            // Read the diagnostic PID from the exact inode whose lock attempt
+            // failed. Re-opening fileURL after closing this descriptor would
+            // re-resolve a mutable path and could follow a swapped symlink.
+            let holderPID = code == EWOULDBLOCK ? holder(of: descriptor) : nil
             close(descriptor)
             guard code == EWOULDBLOCK else {
                 throw QoderCollectionStateError.unreadableState(
@@ -66,7 +78,7 @@ final class QoderCollectionLease {
             }
             throw QoderCollectionStateError.stateAlreadyOwned(
                 path: fileURL.path,
-                detail: holder(of: fileURL).map { "held by pid \($0)" }
+                detail: holderPID.map { "held by pid \($0)" }
                     ?? "held by another runner")
         }
         let pid = Data("\(getpid())\n".utf8)
@@ -78,18 +90,13 @@ final class QoderCollectionLease {
     }
 
     /// Best-effort diagnostic only; the lock, not the contents, is the truth.
-    private static func holder(of fileURL: URL) -> String? {
-        let descriptor = open(
-            fileURL.path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
-        guard descriptor >= 0 else { return nil }
-        defer { close(descriptor) }
-        var info = stat()
-        guard fstat(descriptor, &info) == 0,
-              (info.st_mode & S_IFMT) == S_IFREG
-        else { return nil }
+    /// Read through the already-validated descriptor so diagnostics cannot
+    /// follow a path substitution after the lock attempt.
+    private static func holder(of descriptor: Int32) -> String? {
         var bytes = [UInt8](repeating: 0, count: 64)
-        let count = bytes.withUnsafeMutableBytes {
-            Darwin.read(descriptor, $0.baseAddress, $0.count)
+        let count = bytes.withUnsafeMutableBytes { raw -> Int in
+            guard let base = raw.baseAddress else { return -1 }
+            return Darwin.pread(descriptor, base, raw.count, 0)
         }
         guard count > 0,
               let text = String(bytes: bytes.prefix(count), encoding: .utf8)?

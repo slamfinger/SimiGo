@@ -313,6 +313,21 @@ final class QoderCollectionLifecycleTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: external), original)
     }
 
+    /// A FIFO planted at the lock name must be rejected by the nonblocking
+    /// open plus the post-open regular-file check — never block the runner,
+    /// never write a pid line into it.
+    func testLeaseRejectsFIFOWithoutBlockingOrWriting() throws {
+        let state = root.appendingPathComponent("fifo-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: state, withIntermediateDirectories: true)
+        let lock = state.appendingPathComponent(QoderCollectionLease.lockFileName)
+        let result = lock.path.withCString { Darwin.mkfifo($0, mode_t(0o600)) }
+        XCTAssertEqual(result, 0, "mkfifo failed: \(String(cString: strerror(errno)))")
+
+        XCTAssertThrowsError(
+            try QoderCollectionLease.acquire(directoryURL: state),
+            "a FIFO must be rejected after a nonblocking open and fstat")
+    }
+
     func testLeaseRejectsSymlinkedStateDirectory() throws {
         let external = root.appendingPathComponent("external-lock-state", isDirectory: true)
         try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
