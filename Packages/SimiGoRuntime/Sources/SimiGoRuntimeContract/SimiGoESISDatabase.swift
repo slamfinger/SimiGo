@@ -2667,13 +2667,15 @@ public final class SimiGoESISDatabase {
     /// （相同字节只存一次），`file_contents` 只保留身份/摘要引用；索引与
     /// 依赖账本追加记录，历史不覆盖。删除或变为二进制/超限的文件会撤销
     /// 其内容引用并失效依赖闭包。文本判定：utf8 且 ≤ fileByteCap。
-    /// Root-wide guards default to 4,096 regular files and 64 MiB of bytes read.
-    /// The aggregate read cap also bounds Data retained in pending settlements.
+    /// Root-wide guards default to 16,384 visited entries, 4,096 regular files,
+    /// and 64 MiB of bytes read. The aggregate read cap also bounds Data retained
+    /// in pending settlements.
     @discardableResult
     public func settleWorkRootContents(
         rootID: String, rootURL: URL, category: String = "work",
         fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
         maxObservedFiles: Int = 4_096,
+        maxVisitedEntries: Int = 16_384,
         maxTotalBytesRead: Int = 64 * 1024 * 1024,
         carryText: Bool = true
     ) throws -> ContentSettleReport {
@@ -2684,7 +2686,7 @@ public final class SimiGoESISDatabase {
         let fm = FileManager.default
         guard fileByteCap >= 0, maxDepth >= 0,
               maxObservedFiles >= 0, maxObservedFiles < Int.max,
-              maxTotalBytesRead >= 0 else {
+              maxVisitedEntries >= 0, maxTotalBytesRead >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
         }
         let inventoryRowLimit = Int64(maxObservedFiles) + 1
@@ -2768,6 +2770,7 @@ public final class SimiGoESISDatabase {
         }
 
         var scanned = 0, reused = 0, skipped = 0
+        var visitedEntries = 0
         var entityBytesRead = 0
         var seen = Set<String>()
         var pending: [PendingSettlement] = []
@@ -2797,6 +2800,11 @@ public final class SimiGoESISDatabase {
                 "settleWorkRootContents: cannot enumerate root \(rootID)")
         }
         while let file = enumerator.nextObject() as? URL {
+            visitedEntries += 1
+            guard visitedEntries <= maxVisitedEntries else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxVisitedEntries exceeded (\\(maxVisitedEntries))")
+            }
             var enumeratedInfo = stat()
             let lstatResult = file.path.withCString { Darwin.lstat($0, &enumeratedInfo) }
             guard lstatResult == 0 else {
@@ -2804,12 +2812,16 @@ public final class SimiGoESISDatabase {
                     "settleWorkRootContents: cannot inspect \(file.path): \(String(cString: strerror(errno)))")
             }
             let relative = relativePath(of: file, under: scanRoot)
-            guard !relative.isEmpty,
-                relative.split(separator: "/").count <= maxDepth
-            else { continue }
-
             let fileType = enumeratedInfo.st_mode & S_IFMT
-            if fileType == S_IFDIR { continue }
+            if fileType == S_IFDIR {
+                if !relative.isEmpty,
+                   relative.split(separator: "/").count >= maxDepth {
+                    enumerator.skipDescendants()
+                }
+                continue
+            }
+            guard !relative.isEmpty,
+                  relative.split(separator: "/").count <= maxDepth else { continue }
             guard fileType == S_IFREG else {
                 throw DatabaseError.sql(
                     "settleWorkRootContents: refuses symbolic or non-regular source \(relative)")
