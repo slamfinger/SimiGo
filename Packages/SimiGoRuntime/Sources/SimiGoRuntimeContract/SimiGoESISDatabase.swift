@@ -2671,7 +2671,8 @@ public final class SimiGoESISDatabase {
     public func settleWorkRootContents(
         rootID: String, rootURL: URL, category: String = "work",
         fileByteCap: Int = 1 << 20, maxDepth: Int = 4,
-        maxFiles: Int = 20_000, maxTotalBytesRead: Int = 128 << 20,
+        maxEntries: Int = 50_000, maxFiles: Int = 20_000,
+        maxTotalBytesRead: Int = 128 << 20,
         carryText: Bool = true
     ) throws -> ContentSettleReport {
         // Serialize the baseline snapshot, filesystem observation and all index
@@ -2680,7 +2681,7 @@ public final class SimiGoESISDatabase {
         return try transactionResult {
         let fm = FileManager.default
         guard fileByteCap >= 0, maxDepth >= 0,
-              maxFiles >= 0, maxTotalBytesRead >= 0 else {
+              maxEntries >= 0, maxFiles >= 0, maxTotalBytesRead >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
         }
         let requestedRootPath = try canonicalDirectoryPath(atPath: rootURL.path)
@@ -2750,6 +2751,7 @@ public final class SimiGoESISDatabase {
             }
         }
 
+        var enumeratedEntries = 0
         var scanned = 0, reused = 0, skipped = 0
         var entityBytesRead = 0
         var seen = Set<String>()
@@ -2780,6 +2782,11 @@ public final class SimiGoESISDatabase {
                 "settleWorkRootContents: cannot enumerate root \(rootID)")
         }
         while let file = enumerator.nextObject() as? URL {
+            guard enumeratedEntries < maxEntries else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxEntries limit exceeded (\\(maxEntries))")
+            }
+            enumeratedEntries += 1
             var enumeratedInfo = stat()
             let lstatResult = file.path.withCString { Darwin.lstat($0, &enumeratedInfo) }
             guard lstatResult == 0 else {

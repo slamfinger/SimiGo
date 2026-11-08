@@ -130,6 +130,24 @@ final class SimiGoESISDatabaseG2Tests: XCTestCase {
         let originalDigest = try XCTUnwrap(
             db.externalFileDigest(rootID: "work", relativePath: "a.md"))
 
+        // Empty directories count toward maxEntries too, bounding traversal of
+        // trees that contain many directory nodes but few regular files.
+        let directoryA = root.appendingPathComponent("dir-a", isDirectory: true)
+        let directoryB = root.appendingPathComponent("dir-b", isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryA, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: directoryB, withIntermediateDirectories: true)
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, maxEntries: 1,
+            maxFiles: 10, maxTotalBytesRead: 64, carryText: false))
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "work").map { $0.relativePath }, ["a.md"])
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "work", relativePath: "a.md"),
+            originalDigest)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        try FileManager.default.removeItem(at: directoryA)
+        try FileManager.default.removeItem(at: directoryB)
+
         // A second file exceeds the count cap after one entry has been observed.
         // The whole scan must roll back, including root inventory and invalidation.
         let fileB = root.appendingPathComponent("b.md")
