@@ -164,7 +164,7 @@ final class ExecutionStateGraphTests: XCTestCase {
         let openResult = sqlite3_open_v2(
             dbURL.path, &rawDatabase, SQLITE_OPEN_READWRITE, nil)
         guard openResult == SQLITE_OK, let rawDatabase else {
-            XCTFail("could not open test database for trigger setup (SQLite code \\(openResult))")
+            XCTFail("could not open test database for trigger setup (SQLite code \(openResult))")
             if let rawDatabase { _ = sqlite3_close_v2(rawDatabase) }
             return
         }

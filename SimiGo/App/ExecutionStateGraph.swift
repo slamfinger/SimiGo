@@ -737,7 +737,7 @@ final class ExecutionStateGraphStore: ObservableObject {
             persistError = nil
             retireLegacyJSONIfNeeded(authoritativeIDs: document.states.map { $0.id })
         } catch {
-            let detail = "执行图未能写入 SQLite 权威库：\\(error.localizedDescription)"
+            let detail = "执行图未能写入 SQLite 权威库：\(error.localizedDescription)"
             persistError = detail
             // Do not publish a JSON-only mutation: the next launch rebuilds
             // from SQLite and would otherwise silently discard this success.

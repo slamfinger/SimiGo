@@ -147,7 +147,7 @@ public final class SimiGoESISDatabase {
         var err: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(db, sql, nil, nil, &err)
         if rc != SQLITE_OK {
-            let m = err.map { String(cString: $0) } ?? "code \\(rc)"
+            let m = err.map { String(cString: $0) } ?? "code \(rc)"
             sqlite3_free(err)
             throw sqliteFailure(db, resultCode: rc, message: m)
         }
@@ -3904,7 +3904,7 @@ public final class SimiGoESISDatabase {
             }
             guard promotedRows == 1 else {
                 throw DatabaseError.sql(
-                    "commitChatTurn: expected one pending local user row; updated \\(promotedRows)")
+                    "commitChatTurn: expected one pending local user row; updated \(promotedRows)")
             }
         }
         return assistantID

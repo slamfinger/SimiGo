@@ -57,7 +57,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         ) { error in
             guard let databaseError = error as? SimiGoESISDatabase.DatabaseError,
                   case .cannotOpen = databaseError else {
-                return XCTFail("expected symlinked database open to fail closed, got \\(error)")
+                return XCTFail("expected symlinked database open to fail closed, got \(error)")
             }
         }
 
@@ -90,7 +90,7 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         ) { error in
             guard let databaseError = error as? SimiGoESISDatabase.DatabaseError,
                   case .executionFailure(let primary, let extended, _) = databaseError else {
-                return XCTFail("expected preserved SQLite execution failure, got \\(error)")
+                return XCTFail("expected preserved SQLite execution failure, got \(error)")
             }
             XCTAssertEqual(primary, SQLITE_CONSTRAINT)
             XCTAssertEqual(extended, SQLITE_CONSTRAINT_TRIGGER)
@@ -1215,7 +1215,7 @@ extension SimiGoESISDatabaseTests {
     func testInformationDemandRefusesChangedIndexOnlyFileWithoutCachingPartialResult() throws {
         let databaseURL = tempURL("changed-index-only")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-changed-index-only-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-changed-index-only-\(UUID().uuidString)", isDirectory: true)
         let fm = FileManager.default
         try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
         let fileURL = rootURL.appendingPathComponent("source.txt")
