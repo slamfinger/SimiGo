@@ -97,10 +97,14 @@ nonisolated enum GGUFSlotActivityProbe {
         guard let url = URL(string: "http://127.0.0.1:\(port)/slots") else {
             return nil
         }
-        return URLRequest(
+        var request = URLRequest(
             url: url,
             cachePolicy: .reloadIgnoringLocalCacheData,
             timeoutInterval: 1.0)
+        // /slots is a live process-safety signal. Never let a cache return a
+        // previous idle/busy snapshot to the health-check decision.
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        return request
     }
 
     static func activity(
