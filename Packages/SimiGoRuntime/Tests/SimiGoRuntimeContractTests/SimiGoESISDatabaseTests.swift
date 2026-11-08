@@ -151,6 +151,41 @@ final class SimiGoESISDatabaseTests: XCTestCase {
         XCTAssertEqual(try db.schemaVersion(), 21)
     }
 
+    func testBindFailurePreservesSQLiteCodesAndDoesNotCommit() throws {
+        let url = tempURL("bind-failure")
+        let db = try SimiGoESISDatabase(url: url)
+        try db.runMigrations()
+        let previousLimit = db.setSQLiteLengthLimitForTesting(64)
+        defer {
+            _ = db.setSQLiteLengthLimitForTesting(previousLimit)
+            db.close()
+            cleanup(url)
+        }
+        XCTAssertGreaterThan(previousLimit, 64)
+
+        var captured: Error?
+        XCTAssertThrowsError(try db.recordExecutionState(
+            id: "bind-failure-state", parentID: nil,
+            modelIdentity: String(repeating: "m", count: 256),
+            position: 1, continuationID: "C-bind-failure", anchor: "a",
+            lifecycle: "active", createdAt: Date()
+        )) { captured = $0 }
+
+        guard let databaseError = captured as? SimiGoESISDatabase.DatabaseError else {
+            XCTFail("expected a typed SQLite execution failure, got: \(String(describing: captured))")
+            return
+        }
+        guard case .executionFailure(let primary, let extended, _) = databaseError else {
+            XCTFail("expected executionFailure, got: \(databaseError)")
+            return
+        }
+        XCTAssertEqual(primary, SQLITE_TOOBIG)
+        XCTAssertEqual(extended, SQLITE_TOOBIG)
+        XCTAssertEqual(
+            try db.count("execution_states"), 0,
+            "a failed bind must not reach sqlite3_step or commit a row")
+    }
+
     /// A database stamped v6 by the old out-of-order gates reports the head
     /// version while `chat_messages` and `file_contents` are absent. The v7
     /// repair pass must recreate them without touching existing rows.
