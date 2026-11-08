@@ -1,4 +1,5 @@
 import XCTest
+import SQLite3
 import SimiGoRuntimeContract
 @testable import SimiGo
 
@@ -146,4 +147,57 @@ final class ExecutionStateGraphTests: XCTestCase {
         XCTAssertEqual(receipts.first?.payloadDigest, settled.payloadDigest)
         XCTAssertEqual(receipts.first?.stateID, state.id)
     }
+
+    /// A failed authoritative SQLite graph write must not be reported as a
+    /// successful JSON-only mutation. The trigger makes the failure deterministic
+    /// without relying on timing, filesystem permissions, or a busy timeout.
+    @MainActor
+    func testSQLiteWriteFailureIsPropagatedWithoutPublishingJSONFallback() throws {
+        // Create the valid schema first, then add a trigger that rejects the
+        // graph insert performed by writeGraph.
+        do {
+            let database = try SimiGoESISDatabase(url: dbURL)
+            try database.runMigrations()
+        }
+
+        var rawDatabase: OpaquePointer?
+        let openResult = sqlite3_open_v2(
+            dbURL.path, &rawDatabase, SQLITE_OPEN_READWRITE, nil)
+        guard openResult == SQLITE_OK, let rawDatabase else {
+            XCTFail("could not open test database for trigger setup (SQLite code \\(openResult))")
+            if let rawDatabase { _ = sqlite3_close_v2(rawDatabase) }
+            return
+        }
+
+        let triggerSQL = """
+        CREATE TRIGGER reject_execution_state_insert
+        BEFORE INSERT ON execution_states
+        BEGIN
+            SELECT RAISE(ABORT, 'forced graph persistence failure');
+        END;
+        """
+        let triggerResult = sqlite3_exec(rawDatabase, triggerSQL, nil, nil, nil)
+        let triggerError = String(cString: sqlite3_errmsg(rawDatabase))
+        let closeResult = sqlite3_close_v2(rawDatabase)
+        XCTAssertEqual(triggerResult, SQLITE_OK, triggerError)
+        XCTAssertEqual(closeResult, SQLITE_OK)
+        guard triggerResult == SQLITE_OK else { return }
+
+        let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+        XCTAssertNil(store.loadError)
+
+        XCTAssertThrowsError(try store.create())
+        XCTAssertTrue(store.states.isEmpty)
+        XCTAssertNotNil(store.persistError)
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: storeURL.path),
+            "legacy JSON is read-only and must not become a substitute authority")
+
+        let reopened = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+        XCTAssertNil(reopened.loadError)
+        XCTAssertTrue(
+            reopened.states.isEmpty,
+            "a fresh store must see the unchanged authoritative SQLite graph")
+    }
+
 }
