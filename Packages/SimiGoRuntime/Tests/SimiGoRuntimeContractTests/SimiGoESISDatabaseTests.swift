@@ -93,7 +93,8 @@ final class SimiGoESISDatabaseTests: XCTestCase {
                 return XCTFail("expected preserved SQLite execution failure, got \(error)")
             }
             XCTAssertEqual(primary, SQLITE_CONSTRAINT)
-            XCTAssertEqual(extended, SQLITE_CONSTRAINT_TRIGGER)
+            // SQLITE_CONSTRAINT_TRIGGER is not exported by every system SQLite module map.
+            XCTAssertEqual(extended, SQLITE_CONSTRAINT | (7 << 8))
         }
         XCTAssertEqual(try db.count("execution_states"), 0)
     }
