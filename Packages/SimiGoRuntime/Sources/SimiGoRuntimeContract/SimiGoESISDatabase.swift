@@ -2803,7 +2803,7 @@ public final class SimiGoESISDatabase {
             visitedEntries += 1
             guard visitedEntries <= maxVisitedEntries else {
                 throw DatabaseError.sql(
-                    "settleWorkRootContents: maxVisitedEntries exceeded (\\(maxVisitedEntries))")
+                    "settleWorkRootContents: maxVisitedEntries exceeded (\(maxVisitedEntries))")
             }
             var enumeratedInfo = stat()
             let lstatResult = file.path.withCString { Darwin.lstat($0, &enumeratedInfo) }
@@ -2835,8 +2835,8 @@ public final class SimiGoESISDatabase {
                 throw DatabaseError.sql(
                     "settleWorkRootContents: negative source size for \(relative)")
             }
+            let remainingBytes = maxTotalBytesRead - entityBytesRead
             if enumeratedSize <= Int64(fileByteCap) {
-                let remainingBytes = maxTotalBytesRead - entityBytesRead
                 guard enumeratedSize <= Int64(remainingBytes) else {
                     throw DatabaseError.sql(
                         "settleWorkRootContents: maxTotalBytesRead exceeded (\(maxTotalBytesRead))")
@@ -2845,10 +2845,13 @@ public final class SimiGoESISDatabase {
 
             // Every component is opened relative to the pinned root FD; no
             // symlink can redirect either an intermediate directory or the leaf.
+            // The helper also checks the opened file's fstat size against the
+            // remaining aggregate budget, not only this earlier lstat snapshot.
             let read = try readRootFileNoFollow(
                 rootDirectoryFD: rootDirectoryFD,
                 relativePath: relative,
-                maximumBytes: fileByteCap)
+                maximumBytes: fileByteCap,
+                maximumTotalBytesRead: remainingBytes)
             guard read.device == Int64(enumeratedInfo.st_dev),
                   read.inode == UInt64(enumeratedInfo.st_ino) else {
                 throw DatabaseError.sql(
@@ -3112,7 +3115,8 @@ public final class SimiGoESISDatabase {
     private func readRootFileNoFollow(
         rootDirectoryFD: Int32,
         relativePath: String,
-        maximumBytes: Int?
+        maximumBytes: Int?,
+        maximumTotalBytesRead: Int = Int.max
     ) throws -> NoFollowFileRead {
         if let maximumBytes, maximumBytes < 0 {
             throw DatabaseError.sql("readRootFileNoFollow: negative byte limit")
@@ -3185,23 +3189,26 @@ public final class SimiGoESISDatabase {
         }
 
         if let maximumBytes, initialSize > Int64(maximumBytes) {
+            // Per-file oversize inputs are indexed without reading their bytes.
             try verifyUnchanged()
             return NoFollowFileRead(
                 data: nil, size: initialSize,
                 modificationDate: modificationDate, device: device, inode: inode)
         }
+        guard initialSize <= Int64(maximumTotalBytesRead) else {
+            throw DatabaseError.sql(
+                "settleWorkRootContents: maxTotalBytesRead exceeded (\(maximumTotalBytesRead))")
+        }
 
+        // Read exactly the size observed by fstat. Reading until EOF can consume
+        // unbounded extra bytes if a file grows concurrently; the final fstat
+        // rejects that mutation after at most the budgeted initial size is read.
+        let expectedByteCount = Int(initialSize)
         var data = Data()
+        data.reserveCapacity(expectedByteCount)
         var buffer = [UInt8](repeating: 0, count: 64 * 1024)
-        while true {
-            let requestCount: Int
-            if let maximumBytes {
-                let remaining = maximumBytes - data.count
-                requestCount = remaining >= buffer.count
-                    ? buffer.count : max(1, remaining + 1)
-            } else {
-                requestCount = buffer.count
-            }
+        while data.count < expectedByteCount {
+            let requestCount = min(buffer.count, expectedByteCount - data.count)
             let amount = buffer.withUnsafeMutableBytes { raw -> Int in
                 guard let base = raw.baseAddress else { return -1 }
                 return Darwin.read(fileFD, base, requestCount)
@@ -3211,14 +3218,11 @@ public final class SimiGoESISDatabase {
                 throw DatabaseError.sql(
                     "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
             }
-            if amount == 0 { break }
-            data.append(contentsOf: buffer.prefix(amount))
-            if let maximumBytes, data.count > maximumBytes {
+            if amount == 0 {
                 try verifyUnchanged()
-                return NoFollowFileRead(
-                    data: nil, size: initialSize,
-                    modificationDate: modificationDate, device: device, inode: inode)
+                throw DatabaseError.sql("readRootFileNoFollow: short or inconsistent file read")
             }
+            data.append(contentsOf: buffer.prefix(amount))
         }
         try verifyUnchanged()
         guard Int64(data.count) == initialSize else {
