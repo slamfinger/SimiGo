@@ -35,11 +35,16 @@
 >
 > The 10 s figure is a **candidate observation window** for the Round-2
 > fault-injection experiments, NOT a validated production restart threshold.
-> Rate-relative sizing uses the average-throughput reciprocal (~75–77 ms at
-> 12.95–13.30 tok/s) as the token time-scale estimate — that is a
-> throughput-derived average, not a measured per-token interval distribution;
-> per-token intervals need higher-resolution capture. Single-model,
-> single-machine evidence.
+> The watchdog-relevant stall metric is the **consecutive counter-static
+> span** (time from the last sample where any counter advanced to the next
+> such sample): the largest normal span in prefill-heavy was **~4.04 s in
+> BOTH runs** (batched `-ub 512` prompt processing: counters update in
+> batches, so consecutive ticks can be static without any engine fault).
+> 10 s ≈ 2.5× that observed maximum — the margin is thinner than the
+> retracted v1 claim, and the final threshold must be rate-relative
+> (`max(10 s, K × token-time-scale)`, average-throughput reciprocal
+> ~75–77 ms at 12.95–13.30 tok/s; not a measured per-token interval
+> distribution). Single-model, single-machine evidence.
 >
 > **R2 split (revised)**: the current Service only parses `is_processing` and
 > cannot see progress counters, so R2 is two phases — **R2-A** proves the

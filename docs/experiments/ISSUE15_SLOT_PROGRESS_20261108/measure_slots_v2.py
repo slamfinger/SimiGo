@@ -55,11 +55,16 @@ class Sampler:
             try:
                 with urllib.request.urlopen(BASE + "/slots", timeout=2) as r:
                     slots = json.loads(r.read())
+                t_resp = time.time()
             except Exception as exc:
                 self.rows.append({"t": t, "error": repr(exc)})
             else:
+                # t/t_resp bracket the /slots observation: a state change is
+                # only proven to lie within [t, t_resp] of the sample that
+                # first saw it (review 2026-11-08, detail 1).
                 self.rows.append({
                     "t": t,
+                    "t_resp": t_resp,
                     "slots": [slot_view(s) for s in slots],
                 })
             self.stop.wait(INTERVAL)

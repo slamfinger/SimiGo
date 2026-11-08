@@ -50,9 +50,14 @@
    0.47,
    0.5
   ],
-  "watchdog_implication": "10s is a candidate observation window for Round-2 fault injection, not a validated production threshold. Rate-relative sizing: no-progress > max(10s, K x token-time-scale). 10s = ~133x the 75-77ms average token time-scale and ~5x the largest observed boundary stall (1.95s). Single-model single-machine evidence; re-derive per model.",
+  "watchdog_implication": "10s is a candidate observation window for Round-2 fault injection, not a validated production threshold. Rate-relative sizing: no-progress > max(10s, K x token-time-scale). 10s = ~2.5x the largest observed normal consecutive counter-static span (4.04s) and ~133x the average token time-scale (75-77ms). Single-model single-machine evidence; re-derive per model and workload.",
   "token_time_scale_estimate_ms": 77,
-  "token_time_scale_method": "reciprocal of average decode throughput (12.95-13.30 tok/s independent recompute); NOT a measured per-token interval distribution — 500ms sampling cannot resolve it; needs higher-resolution capture"
+  "token_time_scale_method": "reciprocal of average decode throughput (12.95-13.30 tok/s independent recompute); NOT a measured per-token interval distribution — 500ms sampling cannot resolve it; needs higher-resolution capture",
+  "max_consecutive_counter_static_s": [
+   4.041,
+   4.039
+  ],
+  "consecutive_static_note": "watchdog metric = span from the last sample where any counter advanced to the next such sample. Prefill counters update in batches (-ub 512): the largest batch gap was ~4.04s in BOTH runs (2049->2904 tokens). The v1-style adjacent-pair max (1.95s/0.51s) is also reported but is NOT the watchdog-relevant number."
  },
  "retraction": "a1457df's 10s-threshold and decode no-progress conclusions are RETRACTED: its collector read a non-existent top-level n_decoded (all null) and its cancel sampling had a 10s blind window. Raw a1457df data is preserved untouched as the v1 archive."
 }

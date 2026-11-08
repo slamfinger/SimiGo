@@ -1,19 +1,27 @@
 #!/usr/bin/env python3
-"""Issue #15 Round-1 corrected analysis.
+"""Issue #15 Round-1 corrected analysis (v3 tooling, review 2026-11-08).
 
-Rules (per the 2026-11-08 review):
+Rules:
 - Progress is compared WITHIN one id_task; an id_task change starts a new
   observation baseline and never counts as a stall.
-- Counters: prefill progress = n_prompt_tokens_processed (top level); decode
-  progress = next_token[0].n_decoded (b11720 schema; top-level n_decoded does
-  not exist). A missing next_token on a busy slot means "no decode token this
-  tick" — during prefill that is normal, not decode evidence.
-- Phase attribution: a pair is prefill if the prompt counter advanced, decode
-  if only n_decoded advanced, transition-static if neither advanced (reported
-  separately with its duration — NOT silently merged into stall numbers).
-- A stall candidate = consecutive busy samples, same id_task, neither counter
-  advanced. Reported per task with phase context (last counter that moved).
-- Throughput: computed from counter deltas over busy time, method stated.
+- Only BUSY samples enter a run; adjacent pairs are compared only when both
+  ends are busy, so post-task idle can never leak into no-progress.
+- Counters: prefill progress = n_prompt_tokens_processed; decode progress =
+  slot.next_token[0].n_decoded (top-level n_decoded does not exist).
+- TWO stall metrics, distinct:
+    * adjacent_static_max_s — longest single sampling interval with no
+      counter advance (sampling-tick bound);
+    * cumulative_static_max_s — longest span from the last sample where any
+      counter advanced to the sample where one next advanced. THIS is what a
+      no-progress watchdog experiences (batched counter updates make it
+      larger than the tick bound; observed ~4.04 s in prefill-heavy).
+- Phase attribution: last mover before the span ("from_phase") and the mover
+  that closes it ("to_phase"); a span with from=prefill/to=decode crosses the
+  prefill→decode boundary. Spans by construction never cross id_task or
+  busy boundaries — runs are split on both.
+- Both counters advancing in one tick are accounted separately (no elif).
+- Throughput: per-phase counter deltas over summed tick durations, method
+  stated in output.
 """
 import json
 import sys
@@ -33,13 +41,13 @@ def load(name):
 
 
 def task_runs(seq):
-    """Split the timeline into maximal runs of one non-null id_task."""
     runs = []
     current = None
     for r in seq:
         s = r["slots"][0]
         tid = s["id_task"]
-        if tid is None:
+        busy = bool(s["is_processing"])
+        if tid is None or not busy:
             if current:
                 runs.append(current)
                 current = None
@@ -49,6 +57,7 @@ def task_runs(seq):
             runs.append(current)
         current["samples"].append({
             "t": r["t"],
+            "busy": busy,
             "np": s["n_prompt_tokens_processed"] or 0,
             "nd": s["n_decoded"],
         })
@@ -61,67 +70,100 @@ def analyze_run(name):
     seq = load(name)
     runs = task_runs(seq)
     out = {"scenario": name, "tasks": []}
-    max_static = 0.0
-    max_transition = 0.0
-    prefill_tokens = 0
-    prefill_time = 0.0
-    decode_tokens = 0
-    decode_time = 0.0
+    max_adjacent = 0.0
+    max_cumulative = 0.0
+    max_span_info = None
+    prefill_tokens = prefill_time = decode_tokens = decode_time = 0.0
 
     for run in runs:
         s = run["samples"]
-        info = {"id_task": run["id_task"], "busy_samples": len(s),
-                "static_max_s": 0.0, "static_at": None,
-                "transitions": [], "last_phase": None}
+        info = {
+            "id_task": run["id_task"], "busy_samples": len(s),
+            "adjacent_static_max_s": 0.0,
+            "cumulative_static_max_s": 0.0,
+            "spans": [],
+        }
         prev = s[0]
+        t_last_progress = s[0]["t"]
+        last_phase = None
+        open_span = None
         for cur in s[1:]:
-            dt = cur["t"] - prev["t"]
-            np_adv = cur["np"] > prev["np"]
-            nd_adv = (prev["nd"] is not None and cur["nd"] is not None
-                      and cur["nd"] > prev["nd"])
-            if np_adv:
-                phase = "prefill"
-                prefill_tokens += cur["np"] - prev["np"]
-                prefill_time += dt
-            elif nd_adv:
-                phase = "decode"
-                decode_tokens += cur["nd"] - prev["nd"]
-                decode_time += dt
-            else:
-                phase = info["last_phase"] or "unknown"
-                info["static_max_s"] = round(max(info["static_max_s"], dt), 2)
-                if dt > max_static:
-                    max_static = dt
-                    out["max_static_context"] = {
-                        "id_task": run["id_task"], "at_t": round(cur["t"], 2),
-                        "duration_s": round(dt, 2),
-                        "last_phase": phase,
-                        "nd_known": prev["nd"] is not None}
-                if prev["nd"] is None or cur["nd"] is None:
-                    # no decode token visible this tick: boundary/transition
-                    # region (prefill ending or first token pending) — reported
-                    # separately from same-phase stalls.
-                    max_transition = max(max_transition, dt)
-                    info["transitions"].append(round(dt, 2))
+            if not (prev["busy"] and cur["busy"]):
+                if open_span is not None:
+                    open_span["censored"] = True
+                    open_span = None
                 prev = cur
                 continue
-            info["last_phase"] = phase
+            dt = cur["t"] - prev["t"]
+            d_np = cur["np"] - prev["np"]
+            nd_known = prev["nd"] is not None and cur["nd"] is not None
+            d_nd = (cur["nd"] - prev["nd"]) if nd_known else 0
+            np_adv = d_np > 0
+            nd_adv = nd_known and d_nd > 0
+
+            if np_adv:
+                prefill_tokens += d_np
+                prefill_time += dt
+            if nd_adv:
+                decode_tokens += d_nd
+                decode_time += dt
+
+            if np_adv or nd_adv:
+                to_phase = "prefill" if np_adv else "decode"
+                if open_span is not None:
+                    span_duration = cur["t"] - t_last_progress
+                    open_span["duration_s"] = round(span_duration, 2)
+                    open_span["to_phase"] = to_phase
+                    info["spans"].append(open_span)
+                    # the closing tick's own dt must count too — the span
+                    # ends AT an advancing sample, and that sample's dt is
+                    # part of the no-progress window (off-by-one-tick fix,
+                    # review 2026-11-08: 3.54 -> 4.04 on prefill-heavy).
+                    info["cumulative_static_max_s"] = round(
+                        max(info["cumulative_static_max_s"], span_duration), 2)
+                    open_span = None
+                t_last_progress = cur["t"]
+                last_phase = to_phase
+                if d_np > 0 and d_nd > 0:
+                    info["spans"].append({
+                        "note": "both counters advanced in one tick",
+                        "from_phase": "prefill", "to_phase": "decode"})
+            else:
+                if open_span is None:
+                    open_span = {
+                        "from_offset": round(t_last_progress - s[0]["t"], 2),
+                        "from_phase": last_phase or "unknown",
+                        "censored": False}
+                span_now = cur["t"] - t_last_progress
+                info["cumulative_static_max_s"] = round(
+                    max(info["cumulative_static_max_s"], span_now), 2)
+                info["adjacent_static_max_s"] = round(
+                    max(info["adjacent_static_max_s"], dt), 2)
             prev = cur
-        if prev is not None:
-            info["last_counters"] = {"np": prev["np"], "nd": prev["nd"]}
+        if open_span is not None:
+            open_span["duration_s"] = round(prev["t"] - t_last_progress, 2)
+            open_span["censored"] = True
+            info["spans"].append(open_span)
+        if info["cumulative_static_max_s"] > max_cumulative:
+            max_cumulative = info["cumulative_static_max_s"]
+            max_span_info = {"scenario": name, **{
+                k: v for k, v in info.items() if k != "tasks"}}
+        max_adjacent = max(max_adjacent, info["adjacent_static_max_s"])
         out["tasks"].append(info)
 
     out["totals"] = {
-        "max_static_same_task_s": round(max_static, 2),
-        "max_transition_region_s": round(max_transition, 2),
+        "max_adjacent_static_s": round(max_adjacent, 2),
+        "max_cumulative_static_s": round(max_cumulative, 2),
+        "max_span": max_span_info,
         "prefill_throughput_tok_s": (round(prefill_tokens / prefill_time, 1)
                                      if prefill_time else None),
         "decode_throughput_tok_s": (round(decode_tokens / decode_time, 1)
                                     if decode_time else None),
-        "method": ("sum of per-tick counter deltas divided by summed tick "
-                   "durations, within same-id_task runs; prefill attributed "
-                   "when n_prompt_tokens_processed advanced, decode when "
-                   "next_token[0].n_decoded advanced"),
+        "method": ("adjacent = single sampling interval with no counter "
+                   "advance; cumulative = span from the last sample where any "
+                   "counter advanced to the next such sample (watchdog "
+                   "metric). Spans never cross id_task or busy boundaries by "
+                   "construction; censored spans were cut by run end."),
     }
     return out
 
