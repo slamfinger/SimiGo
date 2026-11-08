@@ -248,9 +248,13 @@ final class QoderCollectionLifecycleTests: XCTestCase {
             import fcntl, os, sys, time
             fd = os.open(sys.argv[2], os.O_CREAT | os.O_RDWR, 0o600)
             fcntl.flock(fd, fcntl.LOCK_EX)
-            with open(os.path.join(sys.argv[1], "holder.pid"), "w") as handle:
+            report = os.path.join(sys.argv[1], "holder.pid")
+            staging = report + ".tmp"
+            with open(staging, "w") as handle:
                 handle.write("%d\\n" % os.getpid())
                 handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(staging, report)
             time.sleep(120)
             """
         let holder = Process()
