@@ -146,7 +146,14 @@ extension ManagedGGUFRuntime: SlotActivityProviding {
     }
 
     func slotActivity() async -> SlotActivity {
-        guard let port = enginePort else { return .unknown }
+        guard let port = enginePort else {
+            // The engine port is temporarily unresolvable: no slot was
+            // observed this tick, so tracked baselines must be blocked from
+            // confirming a stall across the gap (review 2026-11-08).
+            _ = progressMonitor.observeProbeFailure(
+                engineGeneration: engineGeneration)
+            return .unknown
+        }
         guard let raw = await GGUFSlotActivityProbe.rawSlots(port: port) else {
             _ = progressMonitor.observeProbeFailure(
                 engineGeneration: engineGeneration)
@@ -154,46 +161,18 @@ extension ManagedGGUFRuntime: SlotActivityProviding {
         }
         let activity = SlotActivityParser.activity(
             from: raw.data, statusCode: raw.status)
-        feedProgressMonitor(from: raw.data, statusCode: raw.status)
-        return activity
-    }
-
-    private func feedProgressMonitor(from data: Data, statusCode: Int) {
-        _ = statusCode
-        guard let object = try? JSONSerialization.jsonObject(with: data),
-              let slots = object as? [[String: Any]] else {
-            _ = progressMonitor.observeProbeFailure(
-                engineGeneration: engineGeneration)
-            return
-        }
-        var seen: Set<Int> = []
-        for s in slots {
-            let nextToken = (s["next_token"] as? [[String: Any]])?.first
-            let o = SlotProgressMonitor.Observation(
-                slotID: s["id"] as? Int ?? 0,
-                engineGeneration: engineGeneration,
-                idTask: s["id_task"] as? Int,
-                isProcessing: (s["is_processing"] as? NSNumber).map {
-                    CFGetTypeID($0) == CFBooleanGetTypeID() && $0.boolValue
-                },
-                promptProcessed: (s["n_prompt_tokens_processed"] as? NSNumber)?.intValue,
-                promptTotal: (s["n_prompt_tokens"] as? NSNumber)?.intValue,
-                decoded: (nextToken?["n_decoded"] as? NSNumber)?.intValue,
-                observedAtMonotonicMS: UInt64(
-                    DispatchTime.now().uptimeNanoseconds / 1_000_000))
-            seen.insert(o.slotID)
-            let v = progressMonitor.observe(o)
+        for v in SlotProgressIngest.ingest(
+            data: raw.data, statusCode: raw.status,
+            engineGeneration: engineGeneration, into: progressMonitor) {
             if v.state == .candidateStall {
+                let taskLabel = v.idTask.map(String.init) ?? "unknown"
                 RuntimeTraceLogger.shared.trace(
-                    "[SLOT-PROGRESS] slot=\(v.slotID) state=\(v.state.rawValue) "
-                        + "phase=\(v.phase.rawValue) noProgressMs=\(v.noProgressMS ?? 0) "
-                        + "\(v.reason) — monitor only; no restart is authorised")
+                    "[SLOT-PROGRESS] slot=\(v.slotID) task=\(taskLabel) "
+                        + "state=\(v.state.rawValue) phase=\(v.phase.rawValue) "
+                        + "noProgressMs=\(v.noProgressMS ?? 0) \(v.reason) "
+                        + "— monitor only; no restart is authorised")
             }
         }
-        for absent in progressMonitor.trackedSlots(
-            engineGeneration: engineGeneration) where !seen.contains(absent) {
-            _ = progressMonitor.observeAbsence(
-                slotID: absent, engineGeneration: engineGeneration)
-        }
+        return activity
     }
 }
