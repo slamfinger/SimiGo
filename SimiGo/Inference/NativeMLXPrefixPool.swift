@@ -167,7 +167,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         if let store { return store }
-        let root = SimiGoRuntimeCachePaths.prefixPoolRoot
+        let root = RuntimeCachePaths.prefixPoolRoot
         let store = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(
                 tokenBudget: RuntimeTuning.prefixPoolTokenBudget,
@@ -340,7 +340,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         var failedErrs: Set<String> = []
         for count in boundaries {
             let hash = cumulative[count - 1]
-            let key = SimiGoSettlementKVBinding.Representation(
+            let key = SettlementKVBinding.Representation(
                 modelID: namespace.modelID, kvFingerprint: namespace.kvFingerprint,
                 tokenCount: count, boundaryHash: hash).poolKey
             let known = lock.withLock { exportedTokenBoundaries.contains(key) }
@@ -412,7 +412,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             // 身份 + KV 指纹 + 边界长度 + 链哈希），落库时只写其摘要。
             if let branchID {
                 rememberRepresentation(
-                    SimiGoSettlementKVBinding.Representation(
+                    SettlementKVBinding.Representation(
                         modelID: namespace.modelID,
                         kvFingerprint: namespace.kvFingerprint,
                         tokenCount: entry.tokenCount,
@@ -438,7 +438,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     // MARK: - A-2: IS-authorised KV reuse
 
     private static let representationRecordLimit = 64
-    private var exportedRepresentations: [(branchID: String, value: SimiGoSettlementKVBinding.Representation)] = []
+    private var exportedRepresentations: [(branchID: String, value: SettlementKVBinding.Representation)] = []
 
     /// The prefix representation this process exported for one logical branch —
     /// i.e. the content claim a settlement is allowed to make on its behalf.
@@ -446,14 +446,14 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// artifact evicted before settlement) yields nil, and the settlement then
     /// records no KV binding: the safe default, because a later continuation has
     /// nothing authorised to reuse.
-    func representation(forBranch branchID: String) -> SimiGoSettlementKVBinding.Representation? {
+    func representation(forBranch branchID: String) -> SettlementKVBinding.Representation? {
         lock.withLock {
             exportedRepresentations.last(where: { $0.branchID == branchID })?.value
         }
     }
 
     private func rememberRepresentation(
-        _ value: SimiGoSettlementKVBinding.Representation, forBranch branchID: String
+        _ value: SettlementKVBinding.Representation, forBranch branchID: String
     ) {
         lock.withLock {
             exportedRepresentations.removeAll(where: { $0.branchID == branchID })
@@ -508,12 +508,12 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         case .verdict(.unauthorized(let reason)):
             return .rejected(reason: reason)
         case .verdict(.authorized(let recorded)):
-            let consumer = SimiGoSettlementKVBinding.Representation(
+            let consumer = SettlementKVBinding.Representation(
                 modelID: namespace.modelID,
                 kvFingerprint: namespace.kvFingerprint,
                 tokenCount: tokenCount,
                 boundaryHash: boundaryHash)
-            let verdict = SimiGoSettlementKVBinding.evaluate(
+            let verdict = SettlementKVBinding.evaluate(
                 recorded: recorded, consumer: consumer)
             guard verdict.status == .ok else {
                 return .rejected(reason: verdict.code ?? "kv_binding_blocked")

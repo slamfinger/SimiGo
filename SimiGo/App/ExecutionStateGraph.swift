@@ -108,7 +108,7 @@ final class ExecutionStateGraphStore: ObservableObject {
     // `persistError` and NEVER silently overwritten (fail closed). The native
     // settlement gate has already refused unsafe values upstream, so this layer
     // only commits results that cleared that gate.
-    private(set) var esis: SimiGoESISDatabase?
+    private(set) var esis: ESISDatabase?
     private var esisOpenAttempted = false
     private var didImportLegacy = false
     @Published private(set) var persistError: String?
@@ -118,7 +118,7 @@ final class ExecutionStateGraphStore: ObservableObject {
     var checkpoints: [ExecutionCheckpoint] { document.checkpoints }
 
     init(storeURL: URL = ExecutionStateGraphStore.defaultStoreURL(),
-         dbURL: URL = SimiGoPaths.databaseURL) {
+         dbURL: URL = ManagedPaths.databaseURL) {
         self.storeURL = storeURL
         self.dbURL = dbURL
         encoder = JSONEncoder()
@@ -363,7 +363,7 @@ final class ExecutionStateGraphStore: ObservableObject {
 
     /// Settle a producer's semantic result as a durable Information-Space record.
     ///
-    /// `SimiGoSettlementAuthority` (native, MLX-free) is the single gate: it runs
+    /// `SettlementAuthority` (native, MLX-free) is the single gate: it runs
     /// BEFORE any `mutate`/`persist`, so a contract rejection — unknown constraint,
     /// missing binding, canonicalization failure, or digest/derivation mismatch —
     /// throws here and NOTHING is written. There is no Python fallback and no
@@ -374,8 +374,8 @@ final class ExecutionStateGraphStore: ObservableObject {
         contractJSON: Data,
         verifiedBindings: [String: NativeContractValue],
         boundToState state: ExecutionStateRecord
-    ) throws -> SimiGoSettlementAuthority.SettledResult {
-        let settled = try SimiGoSettlementAuthority.authorize(
+    ) throws -> SettlementAuthority.SettledResult {
+        let settled = try SettlementAuthority.authorize(
             generatedText: generatedText,
             contractJSON: contractJSON,
             verifiedBindings: verifiedBindings
@@ -410,7 +410,7 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// Production settlement entry for a reference state.
     ///
     /// This is the real production caller of `settleValidatedResult` (and therefore
-    /// of `SimiGoSettlementAuthority` / `NativeProducerResultContractGate` / the
+    /// of `SettlementAuthority` / `NativeProducerResultContractGate` / the
     /// authoritative SQLite commit). The producer's generated text is bound to the
     /// state's already-settled `nextInput` — an IS value persisted with the graph.
     /// If the generated content does not commit to that value, the native gate
@@ -420,7 +420,7 @@ final class ExecutionStateGraphStore: ObservableObject {
     func settleProducerResult(
         generatedText: String,
         boundToState state: ExecutionStateRecord
-    ) throws -> SimiGoSettlementAuthority.SettledResult {
+    ) throws -> SettlementAuthority.SettledResult {
         let bindings: [String: NativeContractValue] = ["next_input": .string(state.nextInput)]
         return try settleValidatedResult(
             generatedText: generatedText,
@@ -437,8 +437,8 @@ final class ExecutionStateGraphStore: ObservableObject {
     func settleProducerResult(
         generatedText: String,
         boundToState state: ExecutionStateRecord,
-        producerIdentity: SimiGoSettlementIdentityBinding.Identity
-    ) throws -> SimiGoSettlementAuthority.SettledResult {
+        producerIdentity: SettlementIdentityBinding.Identity
+    ) throws -> SettlementAuthority.SettledResult {
         let outcome = try settleProducerResultWithIdentity(
             generatedText: generatedText,
             boundToState: state,
@@ -454,8 +454,8 @@ final class ExecutionStateGraphStore: ObservableObject {
     private func settleProducerResultWithIdentity(
         generatedText: String,
         boundToState requestedState: ExecutionStateRecord,
-        producerIdentity: SimiGoSettlementIdentityBinding.Identity
-    ) throws -> (settled: SimiGoSettlementAuthority.SettledResult, settlementID: String) {
+        producerIdentity: SettlementIdentityBinding.Identity
+    ) throws -> (settled: SettlementAuthority.SettledResult, settlementID: String) {
         guard let authoritativeState = document.states.first(where: { $0.id == requestedState.id }) else {
             throw ExecutionGraphError.invalidTransition("state not found")
         }
@@ -463,7 +463,7 @@ final class ExecutionStateGraphStore: ObservableObject {
         let verifiedBindings: [String: NativeContractValue] = [
             "next_input": .string(authoritativeState.nextInput)
         ]
-        let settled = try SimiGoSettlementAuthority.authorize(
+        let settled = try SettlementAuthority.authorize(
             generatedText: generatedText,
             contractJSON: Self.referenceResultContractJSON,
             verifiedBindings: verifiedBindings
@@ -524,8 +524,8 @@ final class ExecutionStateGraphStore: ObservableObject {
         parentStateID: String,
         childStateID: String,
         verifiedBindings: [String: NativeContractValue],
-        producerIdentity: SimiGoSettlementIdentityBinding.Identity,
-        kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil
+        producerIdentity: SettlementIdentityBinding.Identity,
+        kvRepresentation: SettlementKVBinding.Representation? = nil
     ) throws -> ContinuationSettlementCommit {
         guard let parent = document.states.first(where: { $0.id == parentStateID }) else {
             throw ExecutionGraphError.invalidTransition("continuation parent state not found")
@@ -537,7 +537,7 @@ final class ExecutionStateGraphStore: ObservableObject {
             throw ExecutionGraphError.invalidTransition("continuation child state already exists")
         }
 
-        let settled = try SimiGoSettlementAuthority.authorize(
+        let settled = try SettlementAuthority.authorize(
             generatedText: generatedText,
             contractJSON: Self.referenceResultContractJSON,
             verifiedBindings: verifiedBindings
@@ -548,7 +548,7 @@ final class ExecutionStateGraphStore: ObservableObject {
                 persistError ?? "ES/IS authoritative database unavailable")
         }
         let createdAt = Date()
-        let child = SimiGoESISDatabase.ChildExecutionState(
+        let child = ESISDatabase.ChildExecutionState(
             id: childStateID,
             parentID: parent.id,
             modelIdentity: parent.modelIdentity,
@@ -602,7 +602,7 @@ final class ExecutionStateGraphStore: ObservableObject {
 
     /// The semantic value carried by a native-authorized payload, read the same
     /// way the admission authority reads it back.
-    static func settledContent(_ settled: SimiGoSettlementAuthority.SettledResult) -> String {
+    static func settledContent(_ settled: SettlementAuthority.SettledResult) -> String {
         guard let obj = try? JSONSerialization.jsonObject(with: settled.validatedPayload)
                 as? [String: Any] else { return "" }
         if let direct = obj["content"] as? String { return direct }
@@ -612,7 +612,7 @@ final class ExecutionStateGraphStore: ObservableObject {
     }
 
     /// The IS admission (recovery) edge for a continuation, driven through the
-    /// product's authoritative store. It calls the native `SimiGoISAdmission`
+    /// product's authoritative store. It calls the native `ISAdmission`
     /// authority against the store's SQLite IS: a settled value is returned with
     /// `verifiedBindings` for a fresh ES ONLY after digest integrity, dynamic
     /// validity, the full upstream dependency closure, and the producer model /
@@ -620,12 +620,12 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// any binding exists to feed a generation — so recovery is fail-closed.
     func admitContinuation(
         stateID: String,
-        consumer: SimiGoSettlementIdentityBinding.Identity
-    ) throws -> SimiGoISAdmission.Admitted {
+        consumer: SettlementIdentityBinding.Identity
+    ) throws -> ISAdmission.Admitted {
         guard let db = ensureESIS() else {
             throw ExecutionGraphError.storeUnavailable(persistError ?? "ES/IS authority unavailable")
         }
-        return try SimiGoISAdmission.admit(db: db, stateID: stateID, consumer: consumer)
+        return try ISAdmission.admit(db: db, stateID: stateID, consumer: consumer)
     }
 
     /// Stage B consumption edge: one authoritative transaction consumes an
@@ -633,12 +633,12 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// dependency closure, identity, contract terms and the canonical input are
     /// all re-verified inside that transaction; no model is invoked.
     func consumeSettlement(
-        _ request: SimiGoSettlementConsumption.Request
-    ) throws -> SimiGoSettlementConsumption.Outcome {
+        _ request: SettlementConsumption.Request
+    ) throws -> SettlementConsumption.Outcome {
         guard let db = ensureESIS() else {
             throw ExecutionGraphError.storeUnavailable(persistError ?? "ES/IS authority unavailable")
         }
-        return try SimiGoSettlementConsumption.consume(db: db, request: request)
+        return try SettlementConsumption.consume(db: db, request: request)
     }
 
     // MARK: - Authoritative SQLite commit + legacy migration
@@ -646,11 +646,11 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// Lazily open the authoritative SQLite store, run schema migrations, and on
     /// first open transactionally migrate any pre-existing JSON reference graph
     /// (validated row-by-row inside `importLegacyGraph`, rolled back on mismatch).
-    private func ensureESIS() -> SimiGoESISDatabase? {
+    private func ensureESIS() -> ESISDatabase? {
         if esisOpenAttempted { return esis }
         esisOpenAttempted = true
         do {
-            let db = try SimiGoESISDatabase(url: dbURL)
+            let db = try ESISDatabase(url: dbURL)
             try db.runMigrations()
             if (try db.count("execution_states")) == 0,
                let legacy = legacyJSONData,
@@ -672,7 +672,7 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// Non-fatal to the UI graph: a write failure is surfaced via `persistError`
     /// but never rolls back the already-authorized native settlement.
     private func commitSettlementToAuthoritativeStore(
-        _ settled: SimiGoSettlementAuthority.SettledResult,
+        _ settled: SettlementAuthority.SettledResult,
         state: ExecutionStateRecord
     ) {
         guard let db = ensureESIS() else { return }
@@ -719,7 +719,7 @@ final class ExecutionStateGraphStore: ObservableObject {
 
         do {
             let states = document.states.map {
-                SimiGoESISDatabase.GraphState(
+                ESISDatabase.GraphState(
                     id: $0.id, parentID: $0.parentID, modelIdentity: $0.modelIdentity,
                     createdAt: $0.createdAt, position: $0.position,
                     continuationID: $0.continuationID, nextInput: $0.nextInput,
@@ -727,7 +727,7 @@ final class ExecutionStateGraphStore: ObservableObject {
                     checkpointIDs: $0.checkpointIDs)
             }
             let cps = document.checkpoints.map {
-                SimiGoESISDatabase.GraphCheckpoint(
+                ESISDatabase.GraphCheckpoint(
                     id: $0.id, stateID: $0.stateID, modelIdentity: $0.modelIdentity,
                     position: $0.position, continuationID: $0.continuationID,
                     nextInput: $0.nextInput, anchor: $0.anchor, prefix: $0.prefix,
@@ -749,9 +749,9 @@ final class ExecutionStateGraphStore: ObservableObject {
 
     /// Rebuild the app's working document from authoritative SQLite rows.
     private static func graphDocument(
-        states: [SimiGoESISDatabase.GraphState],
-        checkpoints: [SimiGoESISDatabase.GraphCheckpoint],
-        receipts: [SimiGoESISDatabase.SettlementReceiptRow]
+        states: [ESISDatabase.GraphState],
+        checkpoints: [ESISDatabase.GraphCheckpoint],
+        receipts: [ESISDatabase.SettlementReceiptRow]
     ) -> ExecutionGraphDocument {
         var doc = ExecutionGraphDocument()
         doc.states = states.map {

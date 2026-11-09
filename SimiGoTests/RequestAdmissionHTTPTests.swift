@@ -108,7 +108,7 @@ final class RequestAdmissionHTTPTests: XCTestCase {
                 "isolated roots not injected: run through tools/make_isolated_xctestrun.py")
         }
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(
+            ManagedPaths.databaseURL.path.hasPrefix(
                 URL(fileURLWithPath: home, isDirectory: true).path),
             "authoritative store resolves outside the isolation root")
 
@@ -141,7 +141,7 @@ final class RequestAdmissionHTTPTests: XCTestCase {
         _ run: () async throws -> T
     ) async throws -> T {
         let stub = self.stub!
-        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let identity = ProducerIdentity.identity(fromPath: modelPath)
         let server = HTTPServer(
             port: port,
             modelId: "request-admission-http-test",

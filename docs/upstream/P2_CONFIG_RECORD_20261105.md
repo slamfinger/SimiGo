@@ -457,7 +457,7 @@ Run B 至少区分五个采集时点：
 |---|---|---|
 | R0 基线 | **R0=1** | 不吸收并发状态外发线；以 `8caaabbb` 冻结只读树为源码基准（git archive 落盘），**沿用 E0 二进制 `d2fc953c…`（免重建）**→ E0 结论全额沿用；身份四元组改记为「冻结树@8caaabbb + 二进制 d2fc953c + 无活 HEAD + 冻结树 tree digest」 |
 | R1 链会计 | **R1=1（甲）** | C1 作废入档（BLOCKED，证据原样封存），开 **C2**：全新实验根 `work/p2-c2`，work/p2-c1 原样不动；预算按 ⑤（加载 2/生成 8/3.5h/4GiB；全实验加载累计 1+2=3≤4、S1 尝试 0+1=1≤2）；**本裁定构成 §5.3 要求的 C2 单独批准** |
-| R2 结算路径 | **R2=1（B）** | S1 走 chat 单请求自动结算：resolve 自建 demand+检索结算 R，T 的 advancement 指向 R；R 定义为 SQL 读回的 advancement 目标；producer 由引擎写入；dependencies[] 为空；先行 `/v1/simigo/search` 请求省去（search 与 chat 的 demand 结构性不命中，已从冻结树直读核验 `SimiGoInformationLoop.resolve:132-300`） |
+| R2 结算路径 | **R2=1（B）** | S1 走 chat 单请求自动结算：resolve 自建 demand+检索结算 R，T 的 advancement 指向 R；R 定义为 SQL 读回的 advancement 目标；producer 由引擎写入；dependencies[] 为空；先行 `/v1/simigo/search` 请求省去（search 与 chat 的 demand 结构性不命中，已从冻结树直读核验 `InformationLoop.resolve:132-300`） |
 
 **C2 前置新检查**（交接日志 §5/§11）：实验根 IS 须先有 ≥1 个已结算信息源文件，否则 R.hits 为空——依赖边结构成立但「T 基于检索结果」语义不足，不当 E1.1 正例。→ S0 预检含注册流实测（`PUT /v1/simigo/roots` 注册即 `settleWorkRootContents` 结算文件行；`POST /v1/simigo/is/reconcile` 变更检测），预埋在 Run A 启动前完成（无模型）。
 
@@ -474,7 +474,7 @@ Run B 至少区分五个采集时点：
 
 **故障**：S0 尝试 #1（01:13）的辅助实例以普通启动形态（无 mgmt 门）拉起，产品 `applicationDidFinishLaunching` 的 bootstrap Task **无条件**执行（调用点无守卫）`bootstrapGenerationEnvironment`（`EnvManager.swift:624-668` 硬编码 `selectedEngineID="llama.cpp"`）→ 从 GitHub 完整克隆 `llama.cpp@0878f7c`（231,740 KB）+ HF dist.tar.gz 下载（`s0_app.log:108`）+ Metal 构建至 47% 被 fail-fast 终止。全部产物隔离于 `work/p2-c2`；生产库 sha 未变；四张权威表 0 行；零外发、零模型、零生成。**本链此后不得宣称零网络**（记「非零出网·归因 S0 操作故障·无场景数据外发」）；≈283 MiB 计入 C2 4 GiB，删除不退还。fault 记录：`work/p2-c2/evidence/s0/s0_network_fault_record.json`。
 
-**机制更正（源码直读）**：阻断点 = `SIMIGO_LOCALB_MGMT=serve-service` 命中 mgmt 早退分支，**不是** `-BackendSelection mlx`（后者无效）；serve-service 强制要求 `SIMIGO_LOCALB_SERVE_MODEL`（`SimiGoLocalBManagementEntry.swift:120-122`）→ **无模型 mgmt 实例在结构上不存在** → S0 独立辅助实例取消，**场景预埋并入 Run A 窗口**（health → GET roots 只读验证 → PUT roots → reconcile → [READY] → chat，≤5s）。E0 零克隆与「普通启动必 bootstrap」并存，判定为 E0 探针实例存活短于 bootstrap 到达克隆点（开放条目，不影响 E0 结论）。
+**机制更正（源码直读）**：阻断点 = `SIMIGO_LOCALB_MGMT=serve-service` 命中 mgmt 早退分支，**不是** `-BackendSelection mlx`（后者无效）；serve-service 强制要求 `SIMIGO_LOCALB_SERVE_MODEL`（`LocalBManagementEntry.swift:120-122`）→ **无模型 mgmt 实例在结构上不存在** → S0 独立辅助实例取消，**场景预埋并入 Run A 窗口**（health → GET roots 只读验证 → PUT roots → reconcile → [READY] → chat，≤5s）。E0 零克隆与「普通启动必 bootstrap」并存，判定为 E0 探针实例存活短于 bootstrap 到达克隆点（开放条目，不影响 E0 结论）。
 
 **用户裁定：α 修正版，六硬条件（2026-11-06）**：①修正形态 = mgmt 早退分支（Run A 沿用 11-05 S1 形态逐字一致）；②启动前 absence 断言（`sources/llama.cpp`、`build/llama.cpp`、`manifests/*`、`simigo.sqlite3` 均不存在）；③启动后 fail-closed 监听（出现 bootstrap/clone 行即 kill 判 FAIL）；④重置覆盖四类产物 + reset 后 absence 验证；⑤网络账本按日志全量枚举；⑥≈283 MiB 计入预算不退还。S0 第 2/2 次尝试 = 重置 + absence 验证（无 app 实例）；再失败即 S0 耗尽、C2 停链。
 
@@ -514,7 +514,7 @@ Run B 至少区分五个采集时点：
 - **漂移第三笔（本审计线 02:3x 复核实测）**：生产库现值 `32bbe03f791864c4…`（size 不变 64,118,784 B，mtime **02:31:49**）；keychain/bin 物证同刻 02:31:49–54 → 又一次 SimiGo.app 启动→写库→退出。**该次发生在 xcodebuild=0 之后 → 排除主仓 Xcode 测试线**。外部启动者以 ~6 分钟节奏复发（01:37 / 02:19 / 02:25 / 02:31），来源待用户排查（`launchctl list | grep -i simigo`、登录项、其他 agent 线的循环）。
 - **(a) 的误杀率更新**：外部写入 ~6 分钟一次 ⇒ 纯 (a) 收尾 before/after 断言每次运行约 **1/3 概率**被外部写入误杀（2 分钟窗口 / 6 分钟节奏）；4×30s 协议只保基线新鲜，保不了收尾窗口。两条路：
   - **(i) 推荐**：用户先排查并静默该外部启动者 → 纯 (a) 可行；
-  - **(ii)** 若无法静默：收尾断言收窄为「**我链无罪**」判据——SIMIGO_HOME 隔离是源码级构造（我方实例结构上不可达生产库，`SimiGoPaths.databaseURL` 由 SIMIGO_HOME 派生）+ `lsof -p $APP` 快照 + keychain 物证 → sha 变化记「外部机器活动，隔离由构造保证」，不判停链。（此为 (b) 的修正版：02:25 事件混淆的是「哪个外部进程写的」（不可知、亦不需要）与「我链是否写了」（构造性可知）。）
+  - **(ii)** 若无法静默：收尾断言收窄为「**我链无罪**」判据——SIMIGO_HOME 隔离是源码级构造（我方实例结构上不可达生产库，`ManagedPaths.databaseURL` 由 SIMIGO_HOME 派生）+ `lsof -p $APP` 快照 + keychain 物证 → sha 变化记「外部机器活动，隔离由构造保证」，不判停链。（此为 (b) 的修正版：02:25 事件混淆的是「哪个外部进程写的」（不可知、亦不需要）与「我链是否写了」（构造性可知）。）
 - **C2 机器时钟——被数据强制裁定**：保守锚（C2 根创建 01:03）→ 硬上限 04:33；剩余段预算合计 170 分钟（S1 40 + S2 20 + GateA 10 + S3 40 + S4 50 + GateB 10）→ **保守读法下 C2 已不可行（差约 50 分钟）**。三选一：
   - **(I) 活跃执行窗口计（推荐）**：「机器执行时间」只计链进程运行时段；每窗口起止入 gate 日志，事后可审计；
   - (II) 墙钟锚后移至 Run A 启动时刻；
@@ -686,12 +686,12 @@ Run B 至少区分五个采集时点：
 
 **代码核验（审计线 A 直读，HEAD=2525495 @2026-11-07 17:2x）**：
 1. **`94739a0`（2026-11-07 04:42）已将 admission 侧通用门移除**：ISAdmission 第 6 步现文=「identity is retained for audit, **not used as a universal semantic gate**. If identity is semantically material to a task, it must be declared by that task's dependency/contract」——8caa 密封轮的通用门（evaluate/evaluateConsumer→Refusal.producerBinding）已在主线移除；
-2. **残余门**：`SimiGoInformationLoop.swift:426-428` 复用应答路径仍以 `evaluate()` 不匹配 `return nil`（拒绝复用）——**整改评审的首要对象**；
+2. **残余门**：`InformationLoop.swift:426-428` 复用应答路径仍以 `evaluate()` 不匹配 `return nil`（拒绝复用）——**整改评审的首要对象**；
 3. **类型契约与裁定原则一致**：IdentityBinding 自声明「do not restrict general semantic reuse across models, Agents, or backends. Compare an identity only when a task explicitly declares…」+「binding, not an attestation（无签名/信任根，不得推断）」；KVBinding=「consumer 已过语义 Admission 后才能 bind KV…Any disagreement is a refusal」——即裁定主张的原则**已是类型书面契约，残余在调用点**；
 4. **调用者清单**：admit() 生产入口=SettlementConsumption:209/:305；evaluate 残留=InformationLoop:426；settle 侧身份（es_settle "was begun by"）=同一执行溯源完整性，按修正裁定**保留**；
 5. P2 关联：Run A 密封轮源码含通用门（报告 §3 如实推导）；Run A 运行时未触发该门（无续推请求）；E1.1 溯源可读与裁定一致；探针 A 主张限定于 settle 侧。
 
-**下一步（按裁定）**：优先检查 SimiGoISAdmission 身份硬门控（已移除）及其所有调用者——重点是 InformationLoop:426 的整改评审：保留来源溯源、移除不必要的语义复用限制、维持 KV 严格兼容性验证。
+**下一步（按裁定）**：优先检查 ISAdmission 身份硬门控（已移除）及其所有调用者——重点是 InformationLoop:426 的整改评审：保留来源溯源、移除不必要的语义复用限制、维持 KV 严格兼容性验证。
 
 ### §5.31 主线映射复核落实（审计线 A，2026-11-07 00:1x——审计线 B 复核四处措辞修正 + 基准澄清，原文照办）
 

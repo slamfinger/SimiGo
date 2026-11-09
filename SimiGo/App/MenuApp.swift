@@ -128,8 +128,8 @@ struct MenuPanelView: View {
     @MainActor
     private func refreshMCPTurnStatus() {
         guard
-            let db = try? SimiGoESISDatabase(
-                url: SimiGoPaths.databaseURL, createIfNeeded: false),
+            let db = try? ESISDatabase(
+                url: ManagedPaths.databaseURL, createIfNeeded: false),
             let sessionID = try? db.latestTurnLedgerSessionID(),
             let report = try? db.turnLedger(sessionID: sessionID)
         else {

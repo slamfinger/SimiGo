@@ -83,7 +83,7 @@
 
 **非定义**：不是数据库；不是结果缓存；不是对话历史存储——存储只是载体（见 2.9）；"已在数据库里"不等于已结算、更不等于可检索（IS 契约 §1 三分）。
 
-**实现对应**：权威实现 `SimiGoESISDatabase`（`IS_EXTERNAL_TURN_CONTRACT_20261030.md:4`）；IS 三状态 recorded / committed / retrievable（同文件 §1:24-37）；运行时 `InformationSpaceRuntime`（`SimiGo/Inference/InformationSpaceRuntime.swift:17`）；结算门语义"may only become a settled **Information-Space** record"（`SimiGoSettlementAuthority.swift:5-6`）；复用四条件（`docs/AGENT-ACCESS.md:102-109`）。测试：`MCPInformationSpaceTests`、`SimiGoExternalTurnContractTests`。
+**实现对应**：权威实现 `ESISDatabase`（`IS_EXTERNAL_TURN_CONTRACT_20261030.md:4`）；IS 三状态 recorded / committed / retrievable（同文件 §1:24-37）；运行时 `InformationSpaceRuntime`（`SimiGo/Inference/InformationSpaceRuntime.swift:17`）；结算门语义"may only become a settled **Information-Space** record"（`SettlementAuthority.swift:5-6`）；复用四条件（`docs/AGENT-ACCESS.md:102-109`）。测试：`MCPInformationSpaceTests`、`ExternalTurnContractTests`。
 
 **OPEN**：OQ-8（IS 的完整语义定义目前散布于多份契约，B1 归拢）。
 
@@ -93,7 +93,7 @@
 
 **非定义**：不等同于生成完成（`finish_reason == "length"` 不结算；流式须 `[DONE]` / `response.completed`，IS 契约 §3.1:78-84）；不等同于写入数据库（recorded ≠ committed）；`simigo_es_fail` 只落审计、不产生结算（`AGENT-ACCESS.md:227`）；不是缓存命中。
 
-**实现对应**：`SimiGoSettlementAuthority`（`SimiGoSettlementAuthority.swift:5-12`："A semantic result produced by any producer (model, tool, or import) may only become a settled Information-Space record after this type returns successfully"；"the caller must invoke this BEFORE any write/sign, so a thrown error means nothing was persisted (fail-closed)"）；结算前置条件（`AGENT-ACCESS.md:229-240`）；写入族 `recordNativeSettlement*`（`SimiGoESISDatabase.swift:1568/1756/1788`）；轮次结算 `commitChatTurn`（:3283）/ `verifyExternalTurn`（:3425）。跨路径恒等：`CrossPathSettlementIdentityHTTPTests`（同一声明集合只结算一次）。
+**实现对应**：`SettlementAuthority`（`SettlementAuthority.swift:5-12`："A semantic result produced by any producer (model, tool, or import) may only become a settled Information-Space record after this type returns successfully"；"the caller must invoke this BEFORE any write/sign, so a thrown error means nothing was persisted (fail-closed)"）；结算前置条件（`AGENT-ACCESS.md:229-240`）；写入族 `recordNativeSettlement*`（`ESISDatabase.swift:1568/1756/1788`）；轮次结算 `commitChatTurn`（:3283）/ `verifyExternalTurn`（:3425）。跨路径恒等：`CrossPathSettlementIdentityHTTPTests`（同一声明集合只结算一次）。
 
 **裁定（2026-11-05）**：归属划分 RESOLVED（§1.2）。结算键的一般化并入 B1（R1 参数化方向，随 OQ-8 归拢；现行键 `(session_id, request_id, source_kind)` 见 `IS_EXTERNAL_TURN_CONTRACT_20261030.md:119`）。
 
@@ -103,7 +103,7 @@
 
 **非定义**：不等同于"生成完成后的文本"（不完整/失败不产生结算）；不等同于缓存条目（缓存命中没有结算身份与依据）。
 
-**实现对应**：`SettledResult` 类型（`SimiGoSettlementAuthority.swift:20-28`，仅携带已验证字段与 payloadDigest）；轮次层 committed 行（`turn_state='committed'` + `verified_at`）；`validationStatus: "VALID"`（`NativeDeclarativeResultContract.swift:495`）。
+**实现对应**：`SettledResult` 类型（`SettlementAuthority.swift:20-28`，仅携带已验证字段与 payloadDigest）；轮次层 committed 行（`turn_state='committed'` + `verified_at`）；`validationStatus: "VALID"`（`NativeDeclarativeResultContract.swift:495`）。
 
 ### 2.5 结算记录 · Settlement Record —【已建立 · 命名归拢待 B1】
 
@@ -111,9 +111,9 @@
 
 **非定义**：不是结果本身；不是审计日志（es_fail 落审计但不产生结算——审计与结算记录是两类，`AGENT-ACCESS.md:227`）。
 
-**实现对应**：现行三种形态——`settlements` 表（含 `validity` 列，`SimiGoESISDatabase.swift:267`）；`SettlementReceipt`（`ExecutionStateGraph.swift:71`）；`SimiGoSettlementIdentityBinding`（producer.model_identity / producer.tokenizer_identity，`SimiGoSettlementIdentityBinding.swift:16,34-37`）。另有消费侧 `SettlementConsumptionEntry`（`SimiGo/Protocol/SettlementConsumptionEntry.swift:37`）。
+**实现对应**：现行三种形态——`settlements` 表（含 `validity` 列，`ESISDatabase.swift:267`）；`SettlementReceipt`（`ExecutionStateGraph.swift:71`）；`SettlementIdentityBinding`（producer.model_identity / producer.tokenizer_identity，`SettlementIdentityBinding.swift:16,34-37`）。另有消费侧 `SettlementConsumptionEntry`（`SimiGo/Protocol/SettlementConsumptionEntry.swift:37`）。
 
-**归拢去向（2026-11-05 裁定）**：三种形态（settlements 表 / receipt / identity binding）是否统一收拢于单一 "Settlement Record" 术语，随 OQ-8（IS 总定义归拢）一并处理，不单列 OPEN。注意身份绑定的已声明边界："hold no signature, no trust anchor and no dependency-closure proof; signed provenance remains unimplemented"（`SimiGoSettlementIdentityBinding.swift:11-13`）。
+**归拢去向（2026-11-05 裁定）**：三种形态（settlements 表 / receipt / identity binding）是否统一收拢于单一 "Settlement Record" 术语，随 OQ-8（IS 总定义归拢）一并处理，不单列 OPEN。注意身份绑定的已声明边界："hold no signature, no trust anchor and no dependency-closure proof; signed provenance remains unimplemented"（`SettlementIdentityBinding.swift:11-13`）。
 
 ### 2.6 可靠结算结果 · Reliably Settled Result —【新术语】
 
@@ -121,7 +121,7 @@
 
 **非定义**：不等同于缓存命中；不等同于历史记录；不等同于 checkpoint。
 
-**实现对应**：名称不存在于代码；概念由 IS 准入的有序 fail-closed 检查单承载（`SimiGoISAdmission.swift:92-99`：resolve newest settlement → receipt → digest 完整性 → settlement 自身 validity → 上游依赖闭包逐项 present AND valid → producer model/tokenizer 身份绑定 → recover value）。
+**实现对应**：名称不存在于代码；概念由 IS 准入的有序 fail-closed 检查单承载（`ISAdmission.swift:92-99`：resolve newest settlement → receipt → digest 完整性 → settlement 自身 validity → 上游依赖闭包逐项 present AND valid → producer model/tokenizer 身份绑定 → recover value）。
 
 **裁定（2026-11-05）+ OPEN**：可靠结算**不是一次性认证标签，而是有条件的可恢复资格**——恢复/续接时逐项重判（记录可信、结果完整、依赖闭包满足、来源/版本/有效性依据成立、无失效变化）；七步检查单是实现依据，**不提升为完整、普遍适用的定义**。OQ-1（充分必要集）保留为三项 OPEN 之一。
 
@@ -131,7 +131,7 @@
 
 **非定义**：不等同于重放（replay）；不等同于上下文拼接；不等同于"从最近一行接着写"（结算键不是「最近一行」，IS 契约:119）；准入失败绝不静默降级为普通生成。
 
-**实现对应**：`ContinuationAdmissionOutcome` —— "recoveredValue is the semantic value recovered from a VERIFIED IS settlement; …the value that reaches the model comes from the authoritative store, not the client"（`SimiGo/Protocol/ContinuationAdmission.swift:4-7`）；"The settlement gate binds the produced result against exactly these values; it never re-derives them from mutable execution state"（:9-12）；opt-in 门——仅当请求显式携带 `previous_es_state_id`，缺省时"dispatch path byte-for-byte unchanged"（:56-59）；机器可读契约终端与"两类拒绝永不互扮"（`ContinuationSettlement.swift:4-23`）；`childESStateID` "returned to the client so the NEXT continuation admits through it"（:105-106）；无伪造结果通道（:123-126）。管线：`SimiGoManagedContinuation` P1→S→G→P2（`SimiGoManagedContinuation.swift:96,195`）。测试：`ResponsesContinuationAdmissionGateTests` 等。
+**实现对应**：`ContinuationAdmissionOutcome` —— "recoveredValue is the semantic value recovered from a VERIFIED IS settlement; …the value that reaches the model comes from the authoritative store, not the client"（`SimiGo/Protocol/ContinuationAdmission.swift:4-7`）；"The settlement gate binds the produced result against exactly these values; it never re-derives them from mutable execution state"（:9-12）；opt-in 门——仅当请求显式携带 `previous_es_state_id`，缺省时"dispatch path byte-for-byte unchanged"（:56-59）；机器可读契约终端与"两类拒绝永不互扮"（`ContinuationSettlement.swift:4-23`）；`childESStateID` "returned to the client so the NEXT continuation admits through it"（:105-106）；无伪造结果通道（:123-126）。管线：`ManagedContinuation` P1→S→G→P2（`ManagedContinuation.swift:96,195`）。测试：`ResponsesContinuationAdmissionGateTests` 等。
 
 ### 2.8 分支 · Branch —【已建立 · 身份层级待明确】
 
@@ -164,7 +164,7 @@
 
 **非定义**：载体能力差异（有无原生 fork、有无 in-memory snapshot）影响性能与实现层可迁移性，不影响 ES/IS 语义层成立性；数据库只是载体。
 
-**实现对应**：`CarrierObject` / `CarrierReport` / `carrierReport(deepVerify:)`（`SimiGoESISDatabase.swift:856,863,1100`，MARK "Information-Space physical carrier" :851）；"the database is only a carrier, so it never reinterprets the bytes"（:853-855）；telemetry `carrier` 字段与 `information_space` 磁盘对象存储（`AGENT-ACCESS.md:54`）；`R_Reference_v1` reference carrier（`README.md:217`）；KV/sequence 层 `kvFingerprint`（V16:54）、`PrefixMemoryPool`；迁移/reattach 实验线（`ExecutionContinuityCoordinator.swift`；研究故事 F5）。
+**实现对应**：`CarrierObject` / `CarrierReport` / `carrierReport(deepVerify:)`（`ESISDatabase.swift:856,863,1100`，MARK "Information-Space physical carrier" :851）；"the database is only a carrier, so it never reinterprets the bytes"（:853-855）；telemetry `carrier` 字段与 `information_space` 磁盘对象存储（`AGENT-ACCESS.md:54`）；`R_Reference_v1` reference carrier（`README.md:217`）；KV/sequence 层 `kvFingerprint`（V16:54）、`PrefixMemoryPool`；迁移/reattach 实验线（`ExecutionContinuityCoordinator.swift`；研究故事 F5）。
 
 ### 2.10 执行快照 · Execution Snapshot —【区分性术语】
 
@@ -172,7 +172,7 @@
 
 **非定义**：快照 ≠ ES；具备快照能力不等于具备 ES（判据见 §1.1）。`EngineExecutionStateSnapshot` 是"纯数据快照……零行为、零 IO、零新执行语义——不参与 reuse/restore/驱逐任何决策"（`ExecutionStateProjection.swift:4-9`）；`ExecutionCheckpoint` 是状态的 durable 固化、"save/checkpoint：当前 closure durable 固化……不新建 semantic state"（V2.1 参考架构 §2）。
 
-**实现对应**：`SimiGoSnapshotContract`（immutable declared/final、`used ⊆ declared`、replayability 连言，`SimiGoSnapshotContract.swift:3-15`）；`ExecutionCheckpoint`（`ExecutionStateGraph.swift:59`）；checkpoint/restore 动作（`ExecutionControlling.swift:85-87`）。测试：`SimiGoSnapshotContractTests`、`SessionCachePersistenceTests`。
+**实现对应**：`SnapshotContract`（immutable declared/final、`used ⊆ declared`、replayability 连言，`SnapshotContract.swift:3-15`）；`ExecutionCheckpoint`（`ExecutionStateGraph.swift:59`）；checkpoint/restore 动作（`ExecutionControlling.swift:85-87`）。测试：`SnapshotContractTests`、`SessionCachePersistenceTests`。
 
 ### 2.11 依赖闭包 · Dependency Closure —【已建立 · 形式化待 B1】
 
@@ -180,7 +180,7 @@
 
 **非定义**：不是"对话上下文"；不是直接依赖的浅层列表（是传递闭包）；未封存的依赖地址使整次结算被拒（`AGENT-ACCESS.md:235-236`）。
 
-**实现对应**：`upstreamDependencyClosure(ofSettlement:)` 递归 CTE（`SimiGoESISDatabase.swift:5654`）；`appendDependency` / `DependencyEntry`（:1059, :894，含 contentAddress / revision / reason / recordedAt）；准入闭包检查（`SimiGoISAdmission.swift:149-160`：dependencyMissing / dependencyInvalid）；失效沿闭包传播（`invalidateSourceFile` → `markSettlementsInvalidInTransaction`，:4943-4982，"Unrelated settlements keep validity='valid'"）；HTTP `GET /v1/simigo/is/dependency`。
+**实现对应**：`upstreamDependencyClosure(ofSettlement:)` 递归 CTE（`ESISDatabase.swift:5654`）；`appendDependency` / `DependencyEntry`（:1059, :894，含 contentAddress / revision / reason / recordedAt）；准入闭包检查（`ISAdmission.swift:149-160`：dependencyMissing / dependencyInvalid）；失效沿闭包传播（`invalidateSourceFile` → `markSettlementsInvalidInTransaction`，:4943-4982，"Unrelated settlements keep validity='valid'"）；HTTP `GET /v1/simigo/is/dependency`。
 
 **去向（2026-11-05 裁定）**：OQ-4 并入 B1 恢复时约束 C-dep（`B1_ESIS_MINIMAL_FORMALIZATION_20261105.md` §6）；闭包充分必要集的进一步完备化随 OQ-8 归拢，不单列 OPEN。
 
@@ -190,7 +190,7 @@
 
 **非定义**：不是 TTL / 过期时间（仓库无 TTL/expiry 概念）；失效是显式判定的（来源文件变更 → 闭包传播失效），不是定时衰减。
 
-**实现对应**：`settlements.validity`（'valid'/'invalid'，`SimiGoESISDatabase.swift:267,5102`）；失效传播（:4949）；准入拒绝 `Refusal.invalidated`（`SimiGoISAdmission.swift:146-148`）；引用门——invalid 的检索结算不可被新结果引用（`HTTPServerMCP.swift:618-620`）；语义说明"这是捕捉「来源文件已变」的依赖检查"（`AGENT-ACCESS.md:105-106`）。
+**实现对应**：`settlements.validity`（'valid'/'invalid'，`ESISDatabase.swift:267,5102`）；失效传播（:4949）；准入拒绝 `Refusal.invalidated`（`ISAdmission.swift:146-148`）；引用门——invalid 的检索结算不可被新结果引用（`HTTPServerMCP.swift:618-620`）；语义说明"这是捕捉「来源文件已变」的依赖检查"（`AGENT-ACCESS.md:105-106`）。
 
 **去向（2026-11-05 裁定）**：OQ-5 并入 B1 恢复时约束 C-val；V(ρ) 依据集的未来扩展（模型/量化/采样参数变更、unknown 第三态）随 OQ-8 归拢，不单列 OPEN。无 TTL 是已验证缺省。
 
@@ -200,7 +200,7 @@
 
 **非定义**：不等同于结果非空（`Refusal.emptyValue` 只是下界）；不等同于格式合法。
 
-**实现对应（部分覆盖，无统一名称）**：`NativeProducerResultContractGate.validateBeforeSettlement`（拒绝类：unknown constraint / missing binding / canonicalization failure / digest-derivation mismatch，`SimiGoSettlementAuthority.swift:30-33`）；wire 完整性判据（IS 契约 §3.1）；复用门要求载荷含非空顶层 `content`（`AGENT-ACCESS.md:224`）。
+**实现对应（部分覆盖，无统一名称）**：`NativeProducerResultContractGate.validateBeforeSettlement`（拒绝类：unknown constraint / missing binding / canonicalization failure / digest-derivation mismatch，`SettlementAuthority.swift:30-33`）；wire 完整性判据（IS 契约 §3.1）；复用门要求载荷含非空顶层 `content`（`AGENT-ACCESS.md:224`）。
 
 **去向（2026-11-05 裁定）**：OQ-6 暂缓，不作 OPEN 追踪。**占位纪律不变**：判据未决前，本词只作占位，不得用于任何强宣称（B1 R2 的 complete(r) 同此纪律）。
 
@@ -210,7 +210,7 @@
 
 **非定义**：不是无条件重新生成；不是"缓存未命中就重算"——重执行范围由失效的依赖闭包决定（这是与缓存语义的本质区别）。
 
-**实现对应（部分）**：`SimiGoRecomputePolicy`（`never` 默认 | `allow_safe_recompute`；"a resumed continuation whose inputs no longer match the anchored evidence is refused instead of silently regenerated"，`SimiGoManagedContinuation.swift:3-10`；P1 期锚定证据不匹配 + policy 不允许 → 拒绝，:234-245）；`ExecutionDecision {extend / restore / rebuild / fork}`（`SimiGo/Inference/ExecutionPolicy.swift:8-12`）；复用四条件不满足即"走正常生成，不做「尽力而为」的近似回答"（`AGENT-ACCESS.md:102-109`）；`SettlementConsumptionEntry.allowRecompute` 与 `recompute(reason:)`。
+**实现对应（部分）**：`RecomputePolicy`（`never` 默认 | `allow_safe_recompute`；"a resumed continuation whose inputs no longer match the anchored evidence is refused instead of silently regenerated"，`ManagedContinuation.swift:3-10`；P1 期锚定证据不匹配 + policy 不允许 → 拒绝，:234-245）；`ExecutionDecision {extend / restore / rebuild / fork}`（`SimiGo/Inference/ExecutionPolicy.swift:8-12`）；复用四条件不满足即"走正常生成，不做「尽力而为」的近似回答"（`AGENT-ACCESS.md:102-109`）；`SettlementConsumptionEntry.allowRecompute` 与 `recompute(reason:)`。
 
 **去向（2026-11-05 裁定）**：OQ-9 并入 B1 R3——范围公式 `reexec(ρ, t)` 已作为骨架定义给出（`B1_ESIS_MINIMAL_FORMALIZATION_20261105.md` §4）；最小重执行集的算法化随后续证据深化，不单列 OPEN。
 
@@ -220,7 +220,7 @@
 
 **非定义**：不是"所有载体能力等同"；不是已完成的跨引擎实验结论（现有跨路径恒等证据限于单引擎内）。
 
-**实现对应**：原则已在代码中显形——数据库不 reinterpret 字节（`SimiGoESISDatabase.swift:853-855`）；KV 复用权威来自 IS 记录而非引擎："Empty means the settlement claimed no prefix representation, so the continuation **has no authority to reuse KV state**"（`ContinuationAdmission.swift:17-20`）；表示声明与载体诊断分离（`README.md:140-145,217`）；representation transition / migration / reattach 实验层（研究故事 F4–F5）。
+**实现对应**：原则已在代码中显形——数据库不 reinterpret 字节（`ESISDatabase.swift:853-855`）；KV 复用权威来自 IS 记录而非引擎："Empty means the settlement claimed no prefix representation, so the continuation **has no authority to reuse KV state**"（`ContinuationAdmission.swift:17-20`）；表示声明与载体诊断分离（`README.md:140-145,217`）；representation transition / migration / reattach 实验层（研究故事 F4–F5）。
 
 **去向（2026-11-05 裁定）**：OQ-7 暂缓，留待实验证据阶段，不作 OPEN 追踪。
 
@@ -247,9 +247,9 @@
 3. `docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md` — 分支 fork v1 已发布协议与实证边界
 4. `docs/AGENT-ACCESS.md` — §2.4 复用四条件、§3.4–3.6 结算规则
 5. `OPEN_SOURCE.md` — 公开证据边界（本表遵守：不宣称 universal / backend-independent）
-6. 代码层权威实现：`SimiGoESISDatabase.swift`、`SimiGoSettlementAuthority.swift`、`SimiGoISAdmission.swift`、`SimiGoManagedContinuation.swift`、`ContinuationAdmission.swift`、`ContinuationSettlement.swift`、`ExecutionControlling.swift`、`ExecutionLineage.swift`、`ExecutionStateProjection.swift`
+6. 代码层权威实现：`ESISDatabase.swift`、`SettlementAuthority.swift`、`ISAdmission.swift`、`ManagedContinuation.swift`、`ContinuationAdmission.swift`、`ContinuationSettlement.swift`、`ExecutionControlling.swift`、`ExecutionLineage.swift`、`ExecutionStateProjection.swift`
 7. `docs/research/EXECUTION_STATE_RESEARCH_STORY_20260922.md` — Track B 生命周期实验线（证据来源，非契约）
 
 **冲突规则**：冻结契约与权威实现 > 本表 > 路线文档。发现冲突 → 回改本表，不改契约。
 
-**逐字引用核验记录**：本表中的逐字引文均经直接读源核验（`SimiGoSettlementAuthority.swift`、`SimiGoISAdmission.swift:85-169`、`SimiGoESISDatabase.swift:845-894`、`ExecutionLineage.swift:1-45`、`ExecutionStateProjection.swift:1-20`、`ContinuationAdmission.swift:1-62`、`ContinuationSettlement.swift:1-160`、`IS_EXTERNAL_TURN_CONTRACT`、`EXECUTION_RUNTIME_DESIGN_V16`、`BRANCH_FORK_PROTOCOL_DRAFT`、`AGENT-ACCESS.md` 两段）；其余 file:line 定位来自全仓扫描代理，引用前建议复核具体行。
+**逐字引用核验记录**：本表中的逐字引文均经直接读源核验（`SettlementAuthority.swift`、`ISAdmission.swift:85-169`、`ESISDatabase.swift:845-894`、`ExecutionLineage.swift:1-45`、`ExecutionStateProjection.swift:1-20`、`ContinuationAdmission.swift:1-62`、`ContinuationSettlement.swift:1-160`、`IS_EXTERNAL_TURN_CONTRACT`、`EXECUTION_RUNTIME_DESIGN_V16`、`BRANCH_FORK_PROTOCOL_DRAFT`、`AGENT-ACCESS.md` 两段）；其余 file:line 定位来自全仓扫描代理，引用前建议复核具体行。

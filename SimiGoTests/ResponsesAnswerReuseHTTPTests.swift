@@ -69,7 +69,7 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
         }
         isolationRoot = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         let dir = FileManager.default.temporaryDirectory
@@ -116,7 +116,7 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
     ) async throws {
         let stub = activeStub ?? self.stub!
         self.stub = stub
-        let identity = SimiGoProducerIdentity.identity(fromPath: identityPath ?? modelPath)
+        let identity = ProducerIdentity.identity(fromPath: identityPath ?? modelPath)
         let server = HTTPServer(
             port: port,
             modelId: "answer-reuse-http-test",

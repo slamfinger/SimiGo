@@ -639,7 +639,7 @@ final class BranchForkTests: XCTestCase {
 
     // MARK: - 辅助
 
-    private static let traceLogURL = SimiGoPaths.logs
+    private static let traceLogURL = ManagedPaths.logs
         .appendingPathComponent("native_mlx_trace.log")
 
     private static func field(

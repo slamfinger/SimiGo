@@ -56,7 +56,7 @@ final class GenerationCompletionRealModelE2ETests: XCTestCase {
     // MARK: - instruments
 
     private var traceURL: URL {
-        SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
+        ManagedPaths.logs.appendingPathComponent("native_mlx_trace.log")
     }
 
     private func traceSize() -> Int {
@@ -125,7 +125,7 @@ final class GenerationCompletionRealModelE2ETests: XCTestCase {
 
     @MainActor
     private func answered(_ session: String, _ query: String) throws ->
-        SimiGoESISDatabase.AnsweredDemand? {
+        ESISDatabase.AnsweredDemand? {
         let db = try XCTUnwrap(ExecutionStateGraphStore().esis)
         return try db.answeredDemand(sessionID: session, query: query)
     }
@@ -192,10 +192,10 @@ final class GenerationCompletionRealModelE2ETests: XCTestCase {
 
     private var activePort = 18_481
 
-    /// Raw readings stay in the run root (SIMIGO_HOME relocates `SimiGoPaths.logs`)
+    /// Raw readings stay in the run root (SIMIGO_HOME relocates `ManagedPaths.logs`)
     /// so the archive holds the response bytes, not only the assertion outcomes.
     private func record(_ name: String, _ payload: [String: Any]) {
-        let url = SimiGoPaths.logs.appendingPathComponent("t1-realmodel-\(name).json")
+        let url = ManagedPaths.logs.appendingPathComponent("t1-realmodel-\(name).json")
         guard let data = try? JSONSerialization.data(
             withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) else { return }
         try? data.write(to: url)

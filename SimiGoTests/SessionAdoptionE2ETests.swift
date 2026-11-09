@@ -82,7 +82,7 @@ final class SessionAdoptionE2ETests: XCTestCase {
     }
 
     private var traceURL: URL {
-        SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
+        ManagedPaths.logs.appendingPathComponent("native_mlx_trace.log")
     }
 
     private func traceLogSize() -> Int {
@@ -236,7 +236,7 @@ final class SessionAdoptionE2ETests: XCTestCase {
         var handle: OpaquePointer?
         // 只读打开：本测试不得改动权威库。库文件尚未建立 = 各表零行。
         guard sqlite3_open_v2(
-            SimiGoPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
         ) == SQLITE_OK else {
             sqlite3_close(handle)
             return Dictionary(uniqueKeysWithValues: esisTables.map { ($0, 0) })
@@ -284,7 +284,7 @@ final class SessionAdoptionE2ETests: XCTestCase {
     private func chatExecutionLinkIds() -> [String]? {
         var handle: OpaquePointer?
         guard sqlite3_open_v2(
-            SimiGoPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
         ) == SQLITE_OK else {
             sqlite3_close(handle)
             return nil
@@ -390,9 +390,9 @@ final class SessionAdoptionE2ETests: XCTestCase {
             throw XCTSkip("SIMIGO_HOME not injected; ES/IS 对账需在隔离根内跑")
         }
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix((home as NSString).standardizingPath),
+            ManagedPaths.databaseURL.path.hasPrefix((home as NSString).standardizingPath),
             "authoritative store resolves outside the isolation root: "
-                + SimiGoPaths.databaseURL.path)
+                + ManagedPaths.databaseURL.path)
 
         let runtime = NativeMLX(
             info: ModelInfo(path: modelPath, kind: .mlx), config: ModelConfig())

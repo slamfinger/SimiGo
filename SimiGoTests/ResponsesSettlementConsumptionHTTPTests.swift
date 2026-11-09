@@ -17,9 +17,9 @@ import SimiGoRuntimeContract
 ///     -> HTTPServer.route -> handleResponsesNonStreaming
 ///     -> settlementConsumptionStep -> the REAL adapter
 ///        (`makeNativeMLXSettlementConsumptionHandler` ->
-///         `SimiGoProducerIdentity.consumeSettlement` ->
+///         `ProducerIdentity.consumeSettlement` ->
 ///         `ExecutionStateGraphStore.consumeSettlement` ->
-///         `SimiGoSettlementConsumption.consume`, one BEGIN IMMEDIATE)
+///         `SettlementConsumption.consume`, one BEGIN IMMEDIATE)
 ///     -> completed 200 / typed refusal
 ///
 /// The only substituted component is generation (a counter, never a model).
@@ -64,7 +64,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         }
         isolationRoot = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         let dir = FileManager.default.temporaryDirectory
@@ -100,12 +100,12 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
     ) throws -> String {
         let store = ExecutionStateGraphStore()
         let db = try XCTUnwrap(store.esis)
-        let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let producer = ProducerIdentity.identity(fromPath: modelPath)
         _ = try db.settleWorkRootContents(rootID: rootID, rootURL: workRoot)
 
-        let settled = try SimiGoSettlementAuthority.authorize(
+        let settled = try SettlementAuthority.authorize(
             generatedText: value,
-            contractJSON: SimiGoInformationLoop.chatResultContractJSON,
+            contractJSON: InformationLoop.chatResultContractJSON,
             verifiedBindings: [:])
         let stateID = "es-source-" + UUID().uuidString.lowercased()
         try db.recordExecutionState(
@@ -116,9 +116,9 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         try db.recordIdentityBindings(settlementID: settlementID, identity: producer)
         _ = try db.declareSettlementReuseContract(
             settlementID: settlementID,
-            contractID: SimiGoSettlementConsumption.Contract.contractID,
-            demandClass: SimiGoSettlementConsumption.Contract.demandClass,
-            contractVersion: SimiGoSettlementConsumption.Contract.version,
+            contractID: SettlementConsumption.Contract.contractID,
+            demandClass: SettlementConsumption.Contract.demandClass,
+            contractVersion: SettlementConsumption.Contract.version,
             query: query,
             rootIDs: [rootID])
         return settlementID
@@ -129,10 +129,10 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         query: String = "alpha facts",
         rootIDs: [String] = ["work"],
         allowRecompute: Bool = false,
-        contractID: String = SimiGoSettlementConsumption.Contract.contractID,
-        demandClass: String = SimiGoSettlementConsumption.Contract.demandClass,
-        version: String = SimiGoSettlementConsumption.Contract.version,
-        extract: String = SimiGoSettlementConsumption.Contract.defaultExtractField,
+        contractID: String = SettlementConsumption.Contract.contractID,
+        demandClass: String = SettlementConsumption.Contract.demandClass,
+        version: String = SettlementConsumption.Contract.version,
+        extract: String = SettlementConsumption.Contract.defaultExtractField,
         extra: [String: Any] = [:]
     ) -> [String: Any] {
         var json: [String: Any] = [
@@ -249,7 +249,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
     func testExplicitConsumptionServesSettledValueWithZeroGeneration() async throws {
         let value = "CONSUMED-8801"
         let source = try stageConsumableSource(value: value, query: "alpha facts")
-        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let identity = ProducerIdentity.identity(fromPath: modelPath)
 
         let o = try await dispatch(
             body: consumptionBody(
@@ -257,10 +257,10 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
                 extra: ["settlement_consumption": [
                     "source_settlement_id": source,
                     "contract": [
-                        "id": SimiGoSettlementConsumption.Contract.contractID,
-                        "demand_class": SimiGoSettlementConsumption.Contract.demandClass,
-                        "version": SimiGoSettlementConsumption.Contract.version,
-                        "extract": SimiGoSettlementConsumption.Contract.defaultExtractField,
+                        "id": SettlementConsumption.Contract.contractID,
+                        "demand_class": SettlementConsumption.Contract.demandClass,
+                        "version": SettlementConsumption.Contract.version,
+                        "extract": SettlementConsumption.Contract.defaultExtractField,
                     ],
                     "query": "alpha facts",
                     "root_ids": ["work"],
@@ -298,8 +298,8 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         XCTAssertEqual(rows.first?.modelCalls, 0)
         XCTAssertEqual(rows.first?.sourceSettlementID, source)
         let bindings = try db.settlementBindings(settlementID: consumerSettlement)
-        XCTAssertNotNil(bindings[SimiGoSettlementIdentityBinding.consumerModelKey])
-        XCTAssertNil(bindings[SimiGoSettlementIdentityBinding.modelKey])
+        XCTAssertNotNil(bindings[SettlementIdentityBinding.consumerModelKey])
+        XCTAssertNil(bindings[SettlementIdentityBinding.modelKey])
         XCTAssertTrue(bindings.keys.allSatisfy { !$0.hasPrefix("kv.") })
 
         // Chainable: the derived settlement admits as a continuation anchor.
@@ -347,10 +347,10 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         body["settlement_consumption"] = [
             "source_settlement_id": source,
             "contract": [
-                "id": SimiGoSettlementConsumption.Contract.contractID,
-                "demand_class": SimiGoSettlementConsumption.Contract.demandClass,
-                "version": SimiGoSettlementConsumption.Contract.version,
-                "extract": SimiGoSettlementConsumption.Contract.defaultExtractField,
+                "id": SettlementConsumption.Contract.contractID,
+                "demand_class": SettlementConsumption.Contract.demandClass,
+                "version": SettlementConsumption.Contract.version,
+                "extract": SettlementConsumption.Contract.defaultExtractField,
             ],
             "query": "alpha facts",
             "root_ids": ["work"],

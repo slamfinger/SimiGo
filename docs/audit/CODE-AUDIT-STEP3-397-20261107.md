@@ -86,7 +86,7 @@ LOCALB 策略：`:1634-1644` = `.protected(permission: .branchControl)`（owner 
 
 事务边界（关键，**C**）：
 
-- `upsertRoot`（`SimiGoESISDatabase.swift:5036-5055`）= 单条 `execBinding`（隐式 autocommit），**不在** settle 事务内；`ON CONFLICT` 只更新 category/display_name/locator_type/status，不重置 `created_at`，也不动 `last_scanned_at`。
+- `upsertRoot`（`ESISDatabase.swift:5036-5055`）= 单条 `execBinding`（隐式 autocommit），**不在** settle 事务内；`ON CONFLICT` 只更新 category/display_name/locator_type/status，不重置 `created_at`，也不动 `last_scanned_at`。
 - `settleWorkRootContents`（`:2654-2964`）= 整体包在 `transactionResult`（BEGIN IMMEDIATE，`:1510-1533`）之内，且**文件系统枚举（`:2726-2745`）与逐文件 `Data(contentsOf:)`（`:2777`）全部发生在写锁持有期间**。
 
 ⇒ 由此得两个事实：
@@ -115,9 +115,9 @@ settle 的完整写集（事务内逐条，**C**）：
 
 `createIfNeeded:true` 只存在于 `:1885`（search）与 `:2370`（roots PUT），其余 9 个只读入口全 `false` —— 依 owner 上轮裁定 **只登记，不重新定性**。
 
-写集入口穷举（**C**，`git grep` 全 ref 路径重测，不限定子目录）：`upsertRoot` 的调用点共 6 处 —— 产品外部入口 4 处：`HTTPServer.swift:2373`（roots PUT）、`HTTPServerMCP.swift:436`（`simigo_root_register`，同样 `upsertRoot(registered)` + `settleWorkRootContents(carryText:false)`，`:421-454`）、`EnvManager.swift:556`（`bootstrapFreshDatabase`，声明在 `:542`）与 `:852`（`registerWorkRoot`，声明在 `:840`）；DB 内部 2 处：`SimiGoESISDatabase.swift:2668`（settle 第一段）与 `:5084`（`indexExternalFile`，声明 `:5080-5104`）。`markRootScanned`/`markRootStatus` 的产品侧调用者仅 `:2953` 与 `:3046`。
+写集入口穷举（**C**，`git grep` 全 ref 路径重测，不限定子目录）：`upsertRoot` 的调用点共 6 处 —— 产品外部入口 4 处：`HTTPServer.swift:2373`（roots PUT）、`HTTPServerMCP.swift:436`（`simigo_root_register`，同样 `upsertRoot(registered)` + `settleWorkRootContents(carryText:false)`，`:421-454`）、`EnvManager.swift:556`（`bootstrapFreshDatabase`，声明在 `:542`）与 `:852`（`registerWorkRoot`，声明在 `:840`）；DB 内部 2 处：`ESISDatabase.swift:2668`（settle 第一段）与 `:5084`（`indexExternalFile`，声明 `:5080-5104`）。`markRootScanned`/`markRootStatus` 的产品侧调用者仅 `:2953` 与 `:3046`。
 
-`indexExternalFile` 那条内部调用值得单列（**C** + **C-NEG**）：它传 `displayName: nil, locatorType:"path", status: 入参（默认 "present"）`，而 `upsertRoot` 的 `ON CONFLICT` 用 `display_name=COALESCE(excluded.display_name, display_name)`（`:5044`）⇒ 对已有 work 根**不会抹掉**已留存的 locator（settle 注释 `:2666-2667` 即为此保证）；但对**首次由索引创建**的根（启动面 `SimiGoBootstrap.swift:92` 的 `discover-models`，category `"model"`），落库行 `display_name IS NULL` ⇒ 该根永无 locator。reconcile 默认只跑 category `"work"`，而 HTTP（`:2301-2303`）与 MCP（`HTTPServerMCP.swift:458`）都接受任意 `category` 入参 ⇒ 若以 `category:"model"` 调用，这些行全部计入 `unlocatableRoots`（`:3033-3036`，语义自陈为"登记于 locator 保留之前，非扫描失败"`:2987-2989`）。本轮只登记这一形状，不定性。
+`indexExternalFile` 那条内部调用值得单列（**C** + **C-NEG**）：它传 `displayName: nil, locatorType:"path", status: 入参（默认 "present"）`，而 `upsertRoot` 的 `ON CONFLICT` 用 `display_name=COALESCE(excluded.display_name, display_name)`（`:5044`）⇒ 对已有 work 根**不会抹掉**已留存的 locator（settle 注释 `:2666-2667` 即为此保证）；但对**首次由索引创建**的根（启动面 `Bootstrap.swift:92` 的 `discover-models`，category `"model"`），落库行 `display_name IS NULL` ⇒ 该根永无 locator。reconcile 默认只跑 category `"work"`，而 HTTP（`:2301-2303`）与 MCP（`HTTPServerMCP.swift:458`）都接受任意 `category` 入参 ⇒ 若以 `category:"model"` 调用，这些行全部计入 `unlocatableRoots`（`:3033-3036`，语义自陈为"登记于 locator 保留之前，非扫描失败"`:2987-2989`）。本轮只登记这一形状，不定性。
 
 ---
 
@@ -128,10 +128,10 @@ settle 的完整写集（事务内逐条，**C**）：
 | 入口 | 锚点 | 策略 | 参数缺省 |
 |---|---|---|---|
 | HTTP `POST /v1/simigo/is/reconcile` | 路由 `HTTPServer.swift:2645`，handler `:2292-2340` | `.protected(srsWrite)` `:1619-1622` | `category="work"`、`max_age_seconds`>0 才生效 `:2301-2306`；`carryText` 不可传 ⇒ 恒 index-only |
-| MCP `simigo_is_reconcile` | `SimiGo/Protocol/HTTPServerMCP.swift:456-471` | 整支 `.protected(srsWrite)` `:1623-1627` | `minAgeSeconds` 未传 ⇒ **0（全量重扫）**；形参缺省见 `SimiGoESISDatabase.swift:3008` |
-| 启动面 | `Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoBootstrap.swift:119-133`，`minAgeSeconds:600` | — | 另有 step `index-work` `:102-112` 对声明的 work roots 逐个 `settleWorkRootContents(carryText:false)` |
+| MCP `simigo_is_reconcile` | `SimiGo/Protocol/HTTPServerMCP.swift:456-471` | 整支 `.protected(srsWrite)` `:1623-1627` | `minAgeSeconds` 未传 ⇒ **0（全量重扫）**；形参缺省见 `ESISDatabase.swift:3008` |
+| 启动面 | `Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/Bootstrap.swift:119-133`，`minAgeSeconds:600` | — | 另有 step `index-work` `:102-112` 对声明的 work roots 逐个 `settleWorkRootContents(carryText:false)` |
 
-`reconcileRegisteredRoots`（`SimiGoESISDatabase.swift:3007-3072`）真实顺序：
+`reconcileRegisteredRoots`（`ESISDatabase.swift:3007-3072`）真实顺序：
 
 1. `SELECT root_id, display_name, last_scanned_at FROM roots WHERE category=? ORDER BY root_id` `:3012-3024`（**无事务**，autocommit 读）；
 2. 逐根：locator 为空 ⇒ `unlocatableRoots++` `:3033-3036`；近期已扫 ⇒ `freshRoots++` 跳过 `:3037-3042`；目录不存在 ⇒ `markRootStatus(status:"missing")` 单条 UPDATE（`:5071-5075`）+ `missingRoots++` `:3043-3049`（**不清内容**，注释 `:3045-3046` 与函数头 `:2999-3001` 一致）；否则 `settleWorkRootContents`（第 3 节的整段事务）`:3050-3059`；
@@ -147,7 +147,7 @@ settle 的完整写集（事务内逐条，**C**）：
 
 1. **失败原因被吞（C）**：`:3060-3062` 不记 `error`；HTTP 只见 `failed_roots` 计数（`:2319-2334` 的 12 字段响应体，无逐根明细）；bootstrap 只把该 step 判 `.failed`（`:132`）。⇒ 只能知道"有几个根没扫成"，不能知道为什么。诊断面缺口，不定性为缺陷。
 2. **legacy 失效作用域为全库（C）**：`invalidateRetrievalSettlementsInTransaction` 末段 `UPDATE retrieval_settlements SET status='invalidated' WHERE status='valid' AND inputs_digest LIKE 'legacy-v1:%'` `:5375-5378` **不带 root／path 约束** ⇒ 任一来源文件变更会使所有 legacy-v1 有效检索结算失效。注释 `:5370-5374` 自陈这是 provenance 不可证时的保守选择（方向是"宁可多失效"，非 fail-open）。
-3. **两条失效／对账原语在产品代码零生产者（C-NEG）**：`invalidateSourceFile` `:5307-5314` 与 `reconcileRoot(rootID:seenRelativePaths:)` `:5386+` 的全部调用点为测试（`Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseG2Tests.swift:78`、`:102`；`SimiGoISAdmissionTests.swift:160`；`SimiGoESISDatabaseTests.swift:935`、`:942`）与 `docs/upstream` 文字引用；产品侧失效唯一触发面是"扫描"。另：全仓产品代码对 `FSEvents`／`makeFileSystemObjectSource`／`kFSEventStream` **零命中**（仅 `docs/experiments/V17_RUNTIME_MATRIX/evidence/*` 样本文本出现该字样）⇒ 「来源文件变化后运行时自动失效」在当前 main 不成立，须经 `/reconcile`、MCP 或重启。与 `docs/upstream/P2_CONFIG_RECORD_20261105.md:69` 把 `invalidateSourceFile` 记为"应急后备"一致，但产品代码里没有调用它的入口。
+3. **两条失效／对账原语在产品代码零生产者（C-NEG）**：`invalidateSourceFile` `:5307-5314` 与 `reconcileRoot(rootID:seenRelativePaths:)` `:5386+` 的全部调用点为测试（`Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseG2Tests.swift:78`、`:102`；`ISAdmissionTests.swift:160`；`ESISDatabaseTests.swift:935`、`:942`）与 `docs/upstream` 文字引用；产品侧失效唯一触发面是"扫描"。另：全仓产品代码对 `FSEvents`／`makeFileSystemObjectSource`／`kFSEventStream` **零命中**（仅 `docs/experiments/V17_RUNTIME_MATRIX/evidence/*` 样本文本出现该字样）⇒ 「来源文件变化后运行时自动失效」在当前 main 不成立，须经 `/reconcile`、MCP 或重启。与 `docs/upstream/P2_CONFIG_RECORD_20261105.md:69` 把 `invalidateSourceFile` 记为"应急后备"一致，但产品代码里没有调用它的入口。
 
 MCP 面附加事实（C）：`simigo_is_reconcile` 输出缺 `unlocatable_roots`（HTTP 有 `:2326`）；每个 MCP 工具都新开句柄并跑迁移（`openESISDatabase` `:796-800`，`createIfNeeded:true`），抛错被吞成 `isError:true` `:130-134`（承步骤 2 读数，不重复定性）。
 
@@ -165,7 +165,7 @@ MCP 面附加事实（C）：`simigo_is_reconcile` 输出缺 `unlocatable_roots`
 
 - **B-8** 失效触发面缺失：无文件监听、`invalidateSourceFile`／`reconcileRoot` 产品零调用 ⇒ 运行时自动失效未实现（承待裁项 #28）。
 - **B-9** 身份与责任：分支命名空间由客户端声明字段决定（`agent_id`／`x-simigo-agent`／`x-agent-id`，缺省 `default`），与 LOCALB 认证主体无绑定。
-- **B-10** `legacy-v1` 结算失效作用域为全库而非单根（`SimiGoESISDatabase.swift:5375-5378`）。
+- **B-10** `legacy-v1` 结算失效作用域为全库而非单根（`ESISDatabase.swift:5375-5378`）。
 - **B-11** 非 MLX 宿主的 `branches/list` 与"无分支"不可区分（`ok:true` + 空集），且 fork/delete 拒绝被降级为通用 400。
 - **B-12** 分支派生血统（parent→child）没有持久载体：唯一记录处是进程内 128 条环形缓冲（`ExecutionLineage.swift:80-88`/`:48`），面向展示的只读投影为其唯一消费者（`NativeMLX.swift:3123-3145`）。⇒ 重启后"该分支由谁派生"在产品侧无任何可查询事实；ES／IS／SQLite 均无分支级 lineage 行（C-NEG）。是否要求跨重启保留分支 provenance 属架构裁决，本轮不定性；`BranchForkEvent` 注释自陈语义为 checkpoint 派生而非执行级父子（`:28-31`），不得据此声称执行血统已覆盖。
 

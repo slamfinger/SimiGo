@@ -58,7 +58,7 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
     // MARK: - instruments
 
     private var traceURL: URL {
-        SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
+        ManagedPaths.logs.appendingPathComponent("native_mlx_trace.log")
     }
 
     private func traceSize() -> Int {
@@ -206,7 +206,7 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
     }
 
     private func record(_ name: String, _ payload: [String: Any]) {
-        let url = SimiGoPaths.logs.appendingPathComponent("tool-echo-realmodel-\(name).json")
+        let url = ManagedPaths.logs.appendingPathComponent("tool-echo-realmodel-\(name).json")
         guard let data = try? JSONSerialization.data(
             withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) else { return }
         try? data.write(to: url)

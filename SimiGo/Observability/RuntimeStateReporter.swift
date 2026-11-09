@@ -33,7 +33,7 @@ nonisolated final class RuntimeStateReporter: @unchecked Sendable {
     private init() {
         // 与 trace 日志同在受管根下（`SIMIGO_HOME` 覆盖时一并重定向），
         // 但目录独立：logs/ 是人类可读流，state/ 是机器可读快照。
-        self.fileURL = SimiGoPaths.managedRoot()
+        self.fileURL = ManagedPaths.managedRoot()
             .appendingPathComponent("state", isDirectory: true)
             .appendingPathComponent("runtime.json")
     }

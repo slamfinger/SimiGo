@@ -54,7 +54,7 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
     /// The identity pair the caller EXPECTS to consume under. Optional and
     /// purely an assertion: the consumed identity is always re-derived from
     /// this runtime's model snapshot.
-    public let identityAssertion: SimiGoSettlementIdentityBinding.Identity?
+    public let identityAssertion: SettlementIdentityBinding.Identity?
 
     public init(
         sourceSettlementID: String,
@@ -65,7 +65,7 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
         query: String,
         rootIDs: [String] = [],
         allowRecompute: Bool = false,
-        identityAssertion: SimiGoSettlementIdentityBinding.Identity? = nil
+        identityAssertion: SettlementIdentityBinding.Identity? = nil
     ) {
         self.sourceSettlementID = sourceSettlementID
         self.contractID = contractID
@@ -135,12 +135,12 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
             allowRecompute = flag
         }
 
-        var assertion: SimiGoSettlementIdentityBinding.Identity?
+        var assertion: SettlementIdentityBinding.Identity?
         if let rawIdentity = object["identity"] {
             guard let identity = rawIdentity as? [String: Any] else {
                 throw ParseError.invalidField("identity (must be an object)")
             }
-            assertion = SimiGoSettlementIdentityBinding.Identity(
+            assertion = SettlementIdentityBinding.Identity(
                 model: try requiredString(identity, "model_identity"),
                 tokenizer: try requiredString(identity, "tokenizer_identity"))
         }
@@ -291,13 +291,13 @@ extension ContinuationTerminal {
 
 /// Stable machine-readable codes for the native consumption refusals.
 ///
-/// The IS admission gate (`SimiGoISAdmission.Refusal`) contributes its own
+/// The IS admission gate (`ISAdmission.Refusal`) contributes its own
 /// codes through the same 422 terminal, so a refusal after invalidation is
 /// reported as a business refusal rather than an engine fault:
 /// `unknown_source`, `source_tampered`, `source_not_valid`,
 /// `dependency_missing`, `dependency_invalid`, `empty_value`, and the
 /// producer-binding verdict code (`SETTLEMENT_BINDING_MODEL_MISMATCH` et al).
-extension SimiGoSettlementConsumption.Refusal {
+extension SettlementConsumption.Refusal {
     var reasonCode: String {
         switch self {
         case .missingField: return "missing_field"
@@ -328,7 +328,7 @@ func settlementConsumptionTerminal(for error: Error) -> ContinuationTerminal {
     if let parse = error as? SettlementConsumptionEntry.ParseError {
         return SettlementConsumptionFailure.invalidEntry(String(describing: parse)).terminal
     }
-    if let refusal = error as? SimiGoSettlementConsumption.Refusal {
+    if let refusal = error as? SettlementConsumption.Refusal {
         return SettlementConsumptionFailure.refused(
             code: refusal.reasonCode, detail: String(describing: refusal)).terminal
     }
@@ -349,7 +349,7 @@ func makeNativeMLXSettlementConsumptionHandler(
 ) -> SettlementConsumptionHandler {
     return { entry in
         try await MainActor.run {
-            try SimiGoProducerIdentity.consumeSettlement(
+            try ProducerIdentity.consumeSettlement(
                 entry: entry, modelPath: modelPath)
         }
     }

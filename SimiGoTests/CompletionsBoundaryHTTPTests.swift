@@ -57,7 +57,7 @@ final class CompletionsBoundaryHTTPTests: XCTestCase {
         }
         isolationRoot = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         host = try LOCALBAuthorizedE2E.makeHost()

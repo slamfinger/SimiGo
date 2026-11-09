@@ -449,9 +449,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // Resolved once at load time (not per request): the IS producer
             // identity is a pure re-derivation from the snapshot on disk.
             let informationProducer = InformationTurnProducer(
-                modelIdentity: SimiGoProducerIdentity.canonicalModelIdentity(
+                modelIdentity: ProducerIdentity.canonicalModelIdentity(
                     fromPath: info.path),
-                identity: SimiGoProducerIdentity.identity(fromPath: info.path))
+                identity: ProducerIdentity.identity(fromPath: info.path))
 
             let server = await MainActor.run {
                 HTTPServer(
@@ -549,7 +549,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         // the settlement gate binds THIS request's result against
                         // exactly what this admission verified.
                         let admitted = try await MainActor.run {
-                            try SimiGoProducerIdentity.recoverForContinuation(
+                            try ProducerIdentity.recoverForContinuation(
                                 stateID: esStateID, modelPath: modelPath)
                         }
                         return ContinuationAdmissionOutcome(
@@ -581,6 +581,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             )
                         }
                     ),
+                    // This runtime owns the KV representation in-process and
+                    // can export/restore it, so the declaration is verified by
+                    // the handlers above being present.
+                    kvRepresentationAvailable: .supported,
                     informationTurnProducer: { informationProducer },
                     requestBudget: { [weak self] requestId, agentId, sessionId,
                         branchId, messages, tools, config, budgetHeaderMs in
@@ -966,7 +970,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let path = modelPath
         var cached = budgetIdentityCache.value
         if cached?.path != path {
-            let identity = SimiGoProducerIdentity.identity(fromPath: path)
+            let identity = ProducerIdentity.identity(fromPath: path)
             let entry = (
                 path: path,
                 model: identity.model,
@@ -3224,7 +3228,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// 关闭持久化（`SIMIGO_BRANCH_CHECKPOINTS=0`）时不得创建该目录——目录
     /// 本身就不该出现，而不是建了再不用。
     nonisolated public static func defaultBranchCheckpointStore() -> URL {
-        let directory = SimiGoRuntimeCachePaths.branchCheckpointsRoot
+        let directory = RuntimeCachePaths.branchCheckpointsRoot
         if RuntimeTuning.branchCheckpointsEnabled {
             try? FileManager.default.createDirectory(
                 at: directory, withIntermediateDirectories: true)

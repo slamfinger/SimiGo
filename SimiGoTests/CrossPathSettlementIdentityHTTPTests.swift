@@ -78,7 +78,7 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
                 + "so no real model or user state is touched")
         }
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(
+            ManagedPaths.databaseURL.path.hasPrefix(
                 (home as NSString).standardizingPath),
             "authoritative store resolves outside the isolation root")
 
@@ -107,7 +107,7 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
         port: Int, _ run: () async throws -> Void
     ) async throws {
         let stub = self.stub!
-        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let identity = ProducerIdentity.identity(fromPath: modelPath)
         let server = HTTPServer(
             port: port,
             modelId: "cross-path-identity-http-test",
@@ -207,7 +207,7 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
         arguments["output"] = output
         return try HTTPServer.runMCPTool(
             name: "simigo_es_settle", arguments: arguments,
-            databaseURL: SimiGoPaths.databaseURL)
+            databaseURL: ManagedPaths.databaseURL)
     }
 
     private func beginMCPState() throws -> String {
@@ -217,16 +217,16 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
                 "model": "cross-path-cloud-model",
                 "tokenizer": "cross-path-cloud-tokenizer",
             ],
-            databaseURL: SimiGoPaths.databaseURL)
+            databaseURL: ManagedPaths.databaseURL)
         return try XCTUnwrap(begun["state_id"] as? String)
     }
 
     private func query(_ sql: String) throws -> String {
         var handle: OpaquePointer?
-        guard sqlite3_open(SimiGoPaths.databaseURL.path, &handle) == SQLITE_OK else {
+        guard sqlite3_open(ManagedPaths.databaseURL.path, &handle) == SQLITE_OK else {
             sqlite3_close(handle)
             throw NSError(domain: "CrossPath", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "cannot open \(SimiGoPaths.databaseURL.path)",
+                NSLocalizedDescriptionKey: "cannot open \(ManagedPaths.databaseURL.path)",
             ])
         }
         defer { sqlite3_close(handle) }
@@ -266,7 +266,7 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
         let search = try HTTPServer.runMCPTool(
             name: "simigo_is_search",
             arguments: ["query": token, "include_chat": false],
-            databaseURL: SimiGoPaths.databaseURL)
+            databaseURL: ManagedPaths.databaseURL)
         let items = try XCTUnwrap(search["items"] as? [[String: Any]])
         return items.filter { $0["kind"] as? String == "settlement" }
     }

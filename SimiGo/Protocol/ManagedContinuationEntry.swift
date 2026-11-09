@@ -85,8 +85,8 @@ struct ManagedContinuationFields: @unchecked Sendable {
         }
 
         return ManagedContinuationFields(
-            policyPresent: json.keys.contains(SimiGoRecomputePolicy.requestKey),
-            policyRaw: json[SimiGoRecomputePolicy.requestKey],
+            policyPresent: json.keys.contains(RecomputePolicy.requestKey),
+            policyRaw: json[RecomputePolicy.requestKey],
             idempotencyKey: key,
             consumerESStateID: consumer,
             rootIDs: roots,
@@ -102,7 +102,7 @@ public struct ManagedContinuationRequest: Sendable {
     public let sessionId: String
     public let logicalBranchId: String
     public let anchorESStateID: String
-    public let policy: SimiGoRecomputePolicy
+    public let policy: RecomputePolicy
     public let idempotencyKey: String?
     public let consumerESStateID: String?
     public let rootIDs: [String]
@@ -116,7 +116,7 @@ public struct ManagedContinuationRequest: Sendable {
         sessionId: String,
         logicalBranchId: String,
         anchorESStateID: String,
-        policy: SimiGoRecomputePolicy,
+        policy: RecomputePolicy,
         idempotencyKey: String?,
         consumerESStateID: String?,
         rootIDs: [String],
@@ -201,7 +201,7 @@ public enum ManagedContinuationFailure: Error, Sendable, Equatable {
     case invalidRequest(String)
     /// The core refused. The internal cause/evidence stay internal; only the
     /// public allowlist can reach the response body.
-    case refused(SimiGoManagedRefusal.Refusal)
+    case refused(ManagedRefusal.Refusal)
     /// Infrastructure or unclassified fault (never a business refusal).
     case engine(String)
 }
@@ -215,20 +215,20 @@ extension ManagedContinuationFailure {
             return ContinuationTerminal(
                 status: 422,
                 message: "Managed continuation is not supported on the streaming Responses path",
-                errorKind: SimiGoManagedRefusal.Entry.managedContinuation.rawValue,
+                errorKind: ManagedRefusal.Entry.managedContinuation.rawValue,
                 reasonCode: nil)
         case .invalidRequest(let field):
             return ContinuationTerminal(
                 status: 422,
                 message: "Managed continuation refused: unusable \(field)",
-                errorKind: SimiGoManagedRefusal.Entry.managedContinuation.rawValue,
+                errorKind: ManagedRefusal.Entry.managedContinuation.rawValue,
                 reasonCode: nil)
         case .refused(let refusal):
-            let external = SimiGoManagedRefusal.external(
+            let external = ManagedRefusal.external(
                 refusal, entry: .managedContinuation)
             // O1: the body may carry only an allowlisted code. The internal cause,
             // stage and evidence never leave the process.
-            let code = SimiGoManagedRefusal.sanitizedReasonCode(external.reasonCode)
+            let code = ManagedRefusal.sanitizedReasonCode(external.reasonCode)
             return ContinuationTerminal(
                 status: external.status,
                 message: code.map { "Managed continuation refused: \($0)" }
@@ -247,7 +247,7 @@ func managedContinuationTerminal(for error: Error) -> ContinuationTerminal {
     if let failure = error as? ManagedContinuationFailure {
         return failure.terminal
     }
-    if let refusal = error as? SimiGoManagedRefusal.Refusal {
+    if let refusal = error as? ManagedRefusal.Refusal {
         return ManagedContinuationFailure.refused(refusal).terminal
     }
     return ManagedContinuationFailure.engine(
@@ -298,9 +298,9 @@ enum ManagedSourceCapture {
     static let injectionByteBudget = 64 * 1024
 
     static func capture(
-        _ request: SimiGoSnapshotContract.Request,
-        database: SimiGoESISDatabase
-    ) throws -> SimiGoManagedContinuation.Captured {
+        _ request: SnapshotContract.Request,
+        database: ESISDatabase
+    ) throws -> ManagedContinuation.Captured {
         let fm = FileManager.default
         var pathsByRoot: [String: String] = [:]
         for row in try database.listRoots() {
@@ -310,7 +310,7 @@ enum ManagedSourceCapture {
             pathsByRoot[row.rootID] = name
         }
 
-        var entries: [SimiGoSnapshotContract.DeclaredEntry] = []
+        var entries: [SnapshotContract.DeclaredEntry] = []
         for rootID in request.rootIDs.sorted() {
             guard let path = pathsByRoot[rootID] else {
                 throw ManagedSourceCaptureError.unknownRoot(rootID)
@@ -345,10 +345,10 @@ enum ManagedSourceCapture {
                     String(data: data, encoding: .utf8) != nil
                 else { continue }
                 entries.append(
-                    try SimiGoSnapshotContract.DeclaredEntry(
+                    try SnapshotContract.DeclaredEntry(
                         fileRootID: rootID,
                         relativePath: file.relative,
-                        sha256: SimiGoSnapshotContract.sha256Hex(data),
+                        sha256: SnapshotContract.sha256Hex(data),
                         byteSource: .embedded(data),
                         size: data.count,
                         statIdentity: statIdentity(file.url)))
@@ -361,10 +361,10 @@ enum ManagedSourceCapture {
     /// The block is appended to the trailing user turn: the leading prefix stays
     /// byte-stable so a managed run cannot destroy cross-ES KV bindings.
     static func inject(
-        declared: SimiGoSnapshotContract.Declared,
+        declared: SnapshotContract.Declared,
         messages: [JSONValue]
-    ) -> (messages: [JSONValue], used: [SimiGoSnapshotContract.UsedItem]) {
-        var used: [SimiGoSnapshotContract.UsedItem] = []
+    ) -> (messages: [JSONValue], used: [SnapshotContract.UsedItem]) {
+        var used: [SnapshotContract.UsedItem] = []
         var blocks: [String] = []
         var spent = 0
         let ordered = declared.entries.sorted {
@@ -410,7 +410,7 @@ enum ManagedSourceCapture {
         return String(path.dropFirst(rootPath.count + 1))
     }
 
-    static func statIdentity(_ url: URL) -> SimiGoSnapshotContract.StatIdentity? {
+    static func statIdentity(_ url: URL) -> SnapshotContract.StatIdentity? {
         var info = Darwin.stat()
         guard lstat(url.path, &info) == 0 else { return nil }
         let nanos =
@@ -450,15 +450,15 @@ func runNativeManagedContinuation(
     modelPath: String,
     generate: @escaping ManagedContinuationGenerate
 ) async throws -> ManagedContinuationResult {
-    let db = try SimiGoESISDatabase(
-        url: SimiGoPaths.databaseURL, createIfNeeded: true)
+    let db = try ESISDatabase(
+        url: ManagedPaths.databaseURL, createIfNeeded: true)
     try db.runMigrations()
-    let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
+    let producer = ProducerIdentity.identity(fromPath: modelPath)
     // One contract for the declared snapshot and the settlement gate, so the
     // fingerprint's `contract` dimension and the settled payload cannot drift.
-    let contract = SimiGoInformationLoop.chatResultContractJSON
+    let contract = InformationLoop.chatResultContractJSON
 
-    let snapshotRequest = SimiGoSnapshotContract.Request(
+    let snapshotRequest = SnapshotContract.Request(
         kind: "managed_continuation",
         rootIDs: request.rootIDs,
         contractJSON: contract,
@@ -470,7 +470,7 @@ func runNativeManagedContinuation(
     let anchorPosition =
         (try? db.executionStatePosition(request.anchorESStateID)) ?? nil
 
-    let config = SimiGoManagedContinuation.Config(
+    let config = ManagedContinuation.Config(
         executionID: "mc-\(UUID().uuidString.lowercased())",
         anchorStateID: request.anchorESStateID,
         policy: request.policy,
@@ -483,9 +483,9 @@ func runNativeManagedContinuation(
 
     let produced = ManagedProduced()
 
-    let outcome: SimiGoManagedContinuation.Outcome
+    let outcome: ManagedContinuation.Outcome
     do {
-        outcome = try await SimiGoManagedContinuation.run(
+        outcome = try await ManagedContinuation.run(
             db: db,
             config: config,
             capture: { try ManagedSourceCapture.capture($0, database: db) },
@@ -497,18 +497,18 @@ func runNativeManagedContinuation(
                 // settled record. Throwing here is the only safe place — G runs
                 // before P2, so nothing has been written and nothing can be reused.
                 guard result.completion.isSettleable else {
-                    throw SimiGoManagedRefusal.Refusal(
+                    throw ManagedRefusal.Refusal(
                         cause: .generationIncomplete, origin: .admission, phase: .g,
                         evidence: ["completion": result.completion.wireName])
                 }
                 produced.value = (result.text, result.usage)
-                let settled = try SimiGoSettlementAuthority.authorize(
+                let settled = try SettlementAuthority.authorize(
                     generatedText: result.text, contractJSON: contract,
                     verifiedBindings: [:])
-                return SimiGoManagedContinuation.Generated(
+                return ManagedContinuation.Generated(
                     used: injection.used, settled: settled, nextInput: result.text)
             })
-    } catch let refusal as SimiGoManagedRefusal.Refusal {
+    } catch let refusal as ManagedRefusal.Refusal {
         // A refusal raised inside G reaches the entry as its own typed failure;
         // the core only returns refusals it decided itself.
         throw ManagedContinuationFailure.refused(refusal)
@@ -545,7 +545,7 @@ func runNativeManagedContinuation(
 
 /// A replay serves the value the prior attempt settled, never a regenerated one.
 /// The chat result contract seals the whole message under `content`.
-func replayContent(db: SimiGoESISDatabase, settlementID: String) -> String? {
+func replayContent(db: ESISDatabase, settlementID: String) -> String? {
     guard let receipt = try? db.settlementReceipt(settlementID),
         let object = try? JSONSerialization.jsonObject(with: receipt.payload)
             as? [String: Any],

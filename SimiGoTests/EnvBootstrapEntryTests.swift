@@ -11,22 +11,22 @@ final class EnvBootstrapEntryTests: XCTestCase {
     // MARK: - evaluate
 
     func testEvaluateGating() {
-        XCTAssertFalse(SimiGoEnvBootstrapEntry.evaluate(env: [:]).requested)
+        XCTAssertFalse(EnvBootstrapEntry.evaluate(env: [:]).requested)
         XCTAssertFalse(
-            SimiGoEnvBootstrapEntry
+            EnvBootstrapEntry
                 .evaluate(env: ["SIMIGO_ENV_BOOTSTRAP": ""]).requested)
-        let ok = SimiGoEnvBootstrapEntry.evaluate(env: ["SIMIGO_ENV_BOOTSTRAP": "1"])
+        let ok = EnvBootstrapEntry.evaluate(env: ["SIMIGO_ENV_BOOTSTRAP": "1"])
         XCTAssertTrue(ok.requested)
         XCTAssertTrue(ok.valid)
         XCTAssertNil(ok.error)
 
-        let relative = SimiGoEnvBootstrapEntry.evaluate(
+        let relative = EnvBootstrapEntry.evaluate(
             env: ["SIMIGO_ENV_BOOTSTRAP": "1", "SIMIGO_WORKROOT": "relative/path"])
         XCTAssertTrue(relative.requested)
         XCTAssertFalse(relative.valid)
         XCTAssertNotNil(relative.error)
 
-        let absolute = SimiGoEnvBootstrapEntry.evaluate(
+        let absolute = EnvBootstrapEntry.evaluate(
             env: ["SIMIGO_ENV_BOOTSTRAP": "1", "SIMIGO_WORKROOT": "/tmp/somewhere"])
         XCTAssertTrue(absolute.valid)
     }
@@ -42,7 +42,7 @@ final class EnvBootstrapEntryTests: XCTestCase {
 
         // Blank creation.
         XCTAssertFalse(FileManager.default.fileExists(atPath: dbURL.path))
-        let db = try SimiGoESISDatabase(url: dbURL, createIfNeeded: true)
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try db.runMigrations()
         XCTAssertTrue(FileManager.default.fileExists(atPath: dbURL.path))
         let schema = try db.schemaVersion()
@@ -54,17 +54,53 @@ final class EnvBootstrapEntryTests: XCTestCase {
         try db.upsertRoot(
             rootID: rootID, category: "work",
             displayName: workPath, locatorType: "path", status: "registered")
-        let reopened = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        let reopened = try ESISDatabase(url: dbURL, createIfNeeded: false)
         let roots = try reopened.listRoots()
         XCTAssertTrue(roots.contains { $0.rootID == rootID && $0.category == "work" },
                       "registered work root must survive a reopen: \(roots)")
 
         // Existing databases are never blanked by createIfNeeded.
-        _ = try SimiGoESISDatabase(url: dbURL, createIfNeeded: true)
-        let after = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        _ = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        let after = try ESISDatabase(url: dbURL, createIfNeeded: false)
         XCTAssertTrue(try after.listRoots().contains { $0.rootID == rootID })
     }
 
+    /// 重装语义：已经在的数据库只能被打开，不能被换成空库。
+    @MainActor
+    func testReinstallOpensTheExistingDatabaseInsteadOfReplacingIt() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("envboot-reinstall-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("simigo.sqlite3")
+
+        // 先造一份"老安装"：一个已注册的 work root。
+        do {
+            let seed = try ESISDatabase(url: dbURL, createIfNeeded: true)
+            try seed.runMigrations()
+            try seed.upsertRoot(
+                rootID: "work-seeded", category: "work",
+                displayName: "/tmp/seeded", locatorType: "path", status: "registered")
+            seed.close()
+        }
+        let inodeBefore = try XCTUnwrap(
+            (try FileManager.default.attributesOfItem(atPath: dbURL.path))[.systemFileNumber]
+                as? NSNumber)
+
+        // 重装路径（首启向导第 3 步）在同一个路径上再自举一次。
+        let report = EnvManager.shared.bootstrapFreshDatabase(workRoot: nil, url: dbURL)
+        XCTAssertEqual(report["status"] as? String, "existing", "\(report)")
+        XCTAssertEqual(report["database_replaced"] as? Bool, false, "\(report)")
+
+        let inodeAfter = try XCTUnwrap(
+            (try FileManager.default.attributesOfItem(atPath: dbURL.path))[.systemFileNumber]
+                as? NSNumber)
+        XCTAssertEqual(inodeAfter, inodeBefore, "重装不得替换数据库文件本身")
+
+        let reopened = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertTrue(try reopened.listRoots().contains { $0.rootID == "work-seeded" },
+                      "重装前写入的行必须活过重装")
+    }
 
     func testBinaryDownloaderRejectsOversizedDownloadedFile() async throws {
         let directory = FileManager.default.temporaryDirectory

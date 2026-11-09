@@ -15,10 +15,10 @@
 
 | 骨架节 | 正文要说的 | 代码锚点 | 已有证据 | 状态 |
 |---|---|---|---|---|
-| §1 Introduction | 两个答案、一次反常 | `SimiGoInformationLoop.reusableAnswer`（L436）→ `SimiGoESISDatabase.recordInformationReuse`（L4665） | Arm A：`reuse_hit=1 model_calls=0 settlements_delta=0` | 已实现 |
+| §1 Introduction | 两个答案、一次反常 | `InformationLoop.reusableAnswer`（L436）→ `ESISDatabase.recordInformationReuse`（L4665） | Arm A：`reuse_hit=1 model_calls=0 settlements_delta=0` | 已实现 |
 | §2 Background | 六圈假设及其证人 | 无论文侧代码 | 文献表在论文，不在本仓 | 不适用 |
-| §3 Model | 两谓词、四格、三路径 | `settleTurn`（`SimiGoInformationLoop` L617）、`SimiGoISAdmission.admit`（L112/L132）、`SimiGoSettlementConsumption.consume`（L171）、`resolve`（L132） | 7 步准入 + 三路径写入清单；Arm A/B | 已实现 |
-| §4 Mechanism | 门、七步、闭包、schema 分离 | `admit` 六步校验；`dependency_edges` 唯一索引（v22）；`settlement_consumptions.model_calls CHECK(model_calls=0)`；v23 有效性事件账本（`SimiGoESISDatabase` L963） | `SimiGoISAdmissionTests`、`SimiGoESISDatabaseTests` 迁移测试 | 已实现（需同步论文措辞，见 G5） |
+| §3 Model | 两谓词、四格、三路径 | `settleTurn`（`InformationLoop` L617）、`ISAdmission.admit`（L112/L132）、`SettlementConsumption.consume`（L171）、`resolve`（L132） | 7 步准入 + 三路径写入清单；Arm A/B | 已实现 |
+| §4 Mechanism | 门、七步、闭包、schema 分离 | `admit` 六步校验；`dependency_edges` 唯一索引（v22）；`settlement_consumptions.model_calls CHECK(model_calls=0)`；v23 有效性事件账本（`ESISDatabase` L963） | `ISAdmissionTests`、`ESISDatabaseTests` 迁移测试 | 已实现（需同步论文措辞，见 G5） |
 | §5 Propositions | 四条被逼出来的命题 | 见 §2 | 见 §2 | 已实现，读数见 §2 |
 | §6 Guarantees | C1–C10 作为推论 | 见 §3 | 见 §3 | 8 条已测，2 条附条件 |
 | §7 Evaluation | 三层证据 + 分歧案例 | 结构＝测试；行为＝11 对（既有）+ Arm A/B（新）；运行时＝单机 | 见实验记录 | 分歧案例本轮补上 |
@@ -54,16 +54,16 @@
 
 | # | 断言（压缩） | 代码锚点 | 测试 | 状态 |
 |---|---|---|---|---|
-| C1 | 消费原子且零调用，三处一致 | `SimiGoSettlementConsumption.consume` L171 | `SimiGoSettlementConsumptionTests:151/:202/:423` | 已测 |
-| C2 | 拒绝是结论，不是命令 | `SimiGoManagedRefusal` 四码 + 审计 best-effort | `SimiGoRefusalSideEffectTests:133/:168/:203/:336` | 已测 |
-| C3 | 降级从不静默 | `Refusal` 类型枚举，无 fallback 校验器 | `SimiGoISAdmissionTests:126/:150`、`SimiGoManagedRefusalTests` | 已测 |
-| C4 | 无门不结算 | `SimiGoSettlementAuthority.authorize` | `SimiGoSettlementAuthorityTests:28–80` | 已测 |
-| C5 | 一 state 一结算 | 声明写入的重放/冲突分支 | `SimiGoSettlementIdempotencyTests:330` | 已测（声明写入边界） |
-| C6 | 一 source 一 revision | `settlement_source_identities` + `settlement_operation_keys` | `SimiGoSettlementIdempotencyTests:101/:124/:148/:173/:431` | 已测 |
-| C7 | 一指纹一次 | 六维指纹 + `object_id == SHA256(payload)` | `SimiGoManagedContinuationTests:347`；`SimiGoSnapshotContractTests` | 已测；正文需补 content-addressability 段（G6） |
-| C8 | 复用靠声明 | 消费必须带 declaration；无声明不可消费 | `SimiGoSettlementConsumptionTests:558`、`SimiGoSettlementIdempotencyTests:221/:238` | 已测 |
-| C9 | 失效沿闭包且停在边界 | `markSettlementsInvalidInTransaction` L5971 + 闭包 | `SimiGoESISDatabaseG2Tests:56/:87/:110`、`SimiGoInformationLoopTests` 闭包组 | 已测 |
-| C10 | 缺席身份不是通配 | 身份仅溯源；声明显式引用才设闸 | `SimiGoSettlementIdentityBindingTests`、`SimiGoInformationReuseTests:181/:210` | 已测 |
+| C1 | 消费原子且零调用，三处一致 | `SettlementConsumption.consume` L171 | `SettlementConsumptionTests:151/:202/:423` | 已测 |
+| C2 | 拒绝是结论，不是命令 | `ManagedRefusal` 四码 + 审计 best-effort | `RefusalSideEffectTests:133/:168/:203/:336` | 已测 |
+| C3 | 降级从不静默 | `Refusal` 类型枚举，无 fallback 校验器 | `ISAdmissionTests:126/:150`、`ManagedRefusalTests` | 已测 |
+| C4 | 无门不结算 | `SettlementAuthority.authorize` | `SettlementAuthorityTests:28–80` | 已测 |
+| C5 | 一 state 一结算 | 声明写入的重放/冲突分支 | `SettlementIdempotencyTests:330` | 已测（声明写入边界） |
+| C6 | 一 source 一 revision | `settlement_source_identities` + `settlement_operation_keys` | `SettlementIdempotencyTests:101/:124/:148/:173/:431` | 已测 |
+| C7 | 一指纹一次 | 六维指纹 + `object_id == SHA256(payload)` | `ManagedContinuationTests:347`；`SnapshotContractTests` | 已测；正文需补 content-addressability 段（G6） |
+| C8 | 复用靠声明 | 消费必须带 declaration；无声明不可消费 | `SettlementConsumptionTests:558`、`SettlementIdempotencyTests:221/:238` | 已测 |
+| C9 | 失效沿闭包且停在边界 | `markSettlementsInvalidInTransaction` L5971 + 闭包 | `ESISDatabaseG2Tests:56/:87/:110`、`InformationLoopTests` 闭包组 | 已测 |
+| C10 | 缺席身份不是通配 | 身份仅溯源；声明显式引用才设闸 | `SettlementIdentityBindingTests`、`InformationReuseTests:181/:210` | 已测 |
 
 ---
 
@@ -94,11 +94,11 @@
 | 保存/恢复 | prefix pool 表示 | 6 tok → 2.72 MB，restore 0.43 ms，续写与 cold 同文；401 tok → 268 MB，512 ctx 可恢复，256 ctx 返回 400（边界，如实报） |
 | 子序列一致性 | 产品测试断言返回存量值 | 同捐体各臂（ref / 只拷 / cold / 复用拷贝）`child_toks` 逐 token 相同；同一捐体两个子请求都相同；**换捐体则尾两 token 变**（q4_0 p2、q4_0 p4、f16 p4 三组）——子请求跟的是被交给它的状态，不是它复述的提示 |
 | 产品接线 | 已接：`HTTPServerResponses` 的 `continuationSettle`，KV 走 `NativeMLXPrefixPool` | **已接（2026-11-08 夜）**：`ManagedGGUFRuntime` 传 `continuationAdmission`（`recoverForContinuation(modelPath: info.path)`）与 `continuationSettlement`（`makeContinuationSettlementHandler(modelPath:) { _ in nil }`）——同一结算权威，KV 声明为 nil；分支快照仍显式拒绝（`forkBranchHandler` 抛错）；零调用消费与 managed pipeline 仍是 MLX 独占 |
-| 跨引擎续算 | KV 不可移植；值可过（准入不比对消费者身份，`SimiGoISAdmission.admit` 明确注释） | 同上；接线后 GGUF 侧可**按值**续算 MLX 落的结算，反之亦然——KV 声明为 nil，故只是无 KV 权威 |
+| 跨引擎续算 | KV 不可移植；值可过（准入不比对消费者身份，`ISAdmission.admit` 明确注释） | 同上；接线后 GGUF 侧可**按值**续算 MLX 落的结算，反之亦然——KV 声明为 nil，故只是无 KV 权威 |
 
 一句话：**两侧载体各自成立且各自有读数；跨载体只有值能过。**
 
-nil-KV 的机械前提已单跑验证（`work/kvcheck`，隔离临时库）：结算写入后 `settlement_validity=valid`、`recovered_value=carried-value`、`verified_bindings=1`、`kv_bindings=0`——即 GGUF 侧续算按值成立，KV 恢复没有权威（`SimiGoISAdmission.Admitted.kvBindings` 注释即此语义）。
+nil-KV 的机械前提已单跑验证（`work/kvcheck`，隔离临时库）：结算写入后 `settlement_validity=valid`、`recovered_value=carried-value`、`verified_bindings=1`、`kv_bindings=0`——即 GGUF 侧续算按值成立，KV 恢复没有权威（`ISAdmission.Admitted.kvBindings` 注释即此语义）。
 
 ### 5.1 模型来源：三条入口（G4 的真实边界）
 
@@ -106,7 +106,7 @@ nil-KV 的机械前提已单跑验证（`work/kvcheck`，隔离临时库）：�
 |---|---|---|---|
 | A 本地引擎 OpenAI 兼容 | 本机 MLX / llama.cpp | 每轮 demand、检索、结算、身份绑定、advancement | `BackendSelection.swift:7`（`mlx`/`llamaCpp`）、`Service.swift:920–938` |
 | B MCP 生命周期 | **Agent 自己的云端 API**；SimiGo 不代理模型请求 | `simigo_es_settle` 写入的结算；`model`/`tokenizer` 由 Agent 声明 | `HTTPServerMCP.swift:662`（`settleTurn` 收 `.init(model:tokenizer:)`）、`docs/AGENT-ACCESS.md` §3.2–3.4。边界：MCP 面 `reusable_answer` 恒为 null——云端 Agent 能结算，但**复用门在 Chat/Responses 线上**，不经 MCP 回给外部 Agent |
-| C 采集桥（Qoder） | 外部 Agent 云端 API，事后采集 | 外部轮次问答写入 IS 检索面；**不补 ES 结算**（"事后补一个 ES 就是把观测冒充执行"） | `QoderExternalTurnSink.swift:1–26`、`recordExternalTurn` |
+| C 采集桥（Qoder） | 外部 Agent 云端 API，事后采集 | 外部轮次问答写入 IS 检索面；**不补 ES 结算**（"事后补一个 ES 就是把观测冒充执行"） | `ExternalTurnSink.swift:1–26`、`recordExternalTurn` |
 
 结论：**结算路径不绑定模型来源，读数绑定。** §6 的 11 对全部来自 A 路一个本地模型；B、C 两路已实现但未跑成对读数。与 G4 同族的一条口径：B 路的 `model` 是**声明**（溯源），不是核验——所以在论文里它属于 C10 的"缺席身份不是通配"一侧，不构成"多模型已验证"。
 

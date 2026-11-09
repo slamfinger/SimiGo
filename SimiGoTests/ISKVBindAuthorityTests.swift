@@ -45,8 +45,8 @@ final class ISKVBindAuthorityTests: XCTestCase {
         }
         isolationRoot = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
-            "authoritative store resolves outside the isolation root: \(SimiGoPaths.databaseURL.path)")
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            "authoritative store resolves outside the isolation root: \(ManagedPaths.databaseURL.path)")
         XCTAssertTrue(
             ExecutionStateGraphStore.defaultStoreURL().path.hasPrefix(
                 (graphStore as NSString).standardizingPath),
@@ -82,8 +82,8 @@ final class ISKVBindAuthorityTests: XCTestCase {
     }
 
     private func representation(in namespace: PrefixPoolNamespace, boundaryHash: UInt64 = 0xdead_beef)
-        -> SimiGoSettlementKVBinding.Representation {
-        SimiGoSettlementKVBinding.Representation(
+        -> SettlementKVBinding.Representation {
+        SettlementKVBinding.Representation(
             modelID: namespace.modelID, kvFingerprint: namespace.kvFingerprint,
             tokenCount: 12, boundaryHash: boundaryHash)
     }
@@ -103,8 +103,8 @@ final class ISKVBindAuthorityTests: XCTestCase {
     /// representation, then admit it back through the real IS admission.
     @MainActor
     private func settleAndAdmit(
-        tag: String, kvRepresentation: SimiGoSettlementKVBinding.Representation?
-    ) throws -> (outcome: ContinuationSettlementOutcome, admitted: SimiGoISAdmission.Admitted) {
+        tag: String, kvRepresentation: SettlementKVBinding.Representation?
+    ) throws -> (outcome: ContinuationSettlementOutcome, admitted: ISAdmission.Admitted) {
         let anchor = try stageUnsettledAnchor(value: tag)
         let child = "es-child-\(UUID().uuidString.lowercased())"
         let outcome = try settleForNativeMLXContinuation(
@@ -118,7 +118,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             kvRepresentation: kvRepresentation)
         let admitted = try store().admitContinuation(
             stateID: outcome.childESStateID,
-            consumer: SimiGoProducerIdentity.identity(fromPath: modelPath!))
+            consumer: ProducerIdentity.identity(fromPath: modelPath!))
         return (outcome, admitted)
     }
 
@@ -136,12 +136,12 @@ final class ISKVBindAuthorityTests: XCTestCase {
             tag: "A2-KV-RECORD-7101", kvRepresentation: settledRepresentation)
 
         let rows = try XCTUnwrap(store().esis).settlementBindings(settlementID: outcome.settlementID)
-        let expected = SimiGoSettlementKVBinding.bindings(for: settledRepresentation)
-        XCTAssertEqual(rows[SimiGoSettlementKVBinding.poolKey], expected[SimiGoSettlementKVBinding.poolKey],
+        let expected = SettlementKVBinding.bindings(for: settledRepresentation)
+        XCTAssertEqual(rows[SettlementKVBinding.poolKey], expected[SettlementKVBinding.poolKey],
                        "the settlement must name the exact pool boundary it exported")
         XCTAssertEqual(
-            rows[SimiGoSettlementKVBinding.cacheFingerprint],
-            expected[SimiGoSettlementKVBinding.cacheFingerprint])
+            rows[SettlementKVBinding.cacheFingerprint],
+            expected[SettlementKVBinding.cacheFingerprint])
         // Digests only — no model path, no token array, no weight material. The
         // recorded form is exactly what `bindings(for:)` produces, so a raw pool
         // key or namespace can never appear in the table.
@@ -155,7 +155,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
         XCTAssertEqual(admitted.kvBindings, expected,
                        "IS admission must carry the settled KV rows to the next ES")
         XCTAssertEqual(Set(admitted.kvBindings.keys),
-                       [SimiGoSettlementKVBinding.poolKey, SimiGoSettlementKVBinding.cacheFingerprint])
+                       [SettlementKVBinding.poolKey, SettlementKVBinding.cacheFingerprint])
     }
 
     // MARK: - Read side: the bind site authorizes one boundary only
@@ -183,7 +183,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             .verdict(.authorized(recorded)), namespace: ns,
             tokenCount: settledRepresentation.tokenCount + 1,
             boundaryHash: settledRepresentation.boundaryHash)
-        XCTAssertEqual(longer, .rejected(reason: SimiGoSettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
+        XCTAssertEqual(longer, .rejected(reason: SettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
         XCTAssertFalse(longer.permitsBind, "a longer reuse than settled must not bind")
 
         // Tampered content claim at the right length.
@@ -192,7 +192,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 .verdict(.authorized(recorded)), namespace: ns,
                 tokenCount: settledRepresentation.tokenCount,
                 boundaryHash: settledRepresentation.boundaryHash &+ 1),
-            .rejected(reason: SimiGoSettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
+            .rejected(reason: SettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
 
         // Different KV namespace (different kvSettings / thinking flag) — the same
         // boundary hash is a different representation.
@@ -203,20 +203,20 @@ final class ISKVBindAuthorityTests: XCTestCase {
             boundaryHash: settledRepresentation.boundaryHash)
         XCTAssertEqual(
             otherFingerprint,
-            .rejected(reason: SimiGoSettlementKVBinding.Refusal.fingerprintMismatch.rawValue))
+            .rejected(reason: SettlementKVBinding.Refusal.fingerprintMismatch.rawValue))
 
         // Missing rows fail closed (a settlement from before this wiring).
         XCTAssertEqual(
             NativeMLXPrefixPool.bindVerdict(.verdict(.authorized([:])), namespace: ns,
                                             tokenCount: 12, boundaryHash: 1),
-            .rejected(reason: SimiGoSettlementKVBinding.Refusal.fingerprintAbsent.rawValue))
+            .rejected(reason: SettlementKVBinding.Refusal.fingerprintAbsent.rawValue))
         var halfOnly = recorded
-        halfOnly[SimiGoSettlementKVBinding.poolKey] = nil
+        halfOnly[SettlementKVBinding.poolKey] = nil
         XCTAssertEqual(
             NativeMLXPrefixPool.bindVerdict(.verdict(.authorized(halfOnly)), namespace: ns,
                                             tokenCount: settledRepresentation.tokenCount,
                                             boundaryHash: settledRepresentation.boundaryHash),
-            .rejected(reason: SimiGoSettlementKVBinding.Refusal.poolKeyAbsent.rawValue))
+            .rejected(reason: SettlementKVBinding.Refusal.poolKeyAbsent.rawValue))
     }
 
     // MARK: - No KV row => no authority
@@ -255,7 +255,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
     func testGateLifecycleIsConsumeOnceAndNeverLeaks() {
         let ns = namespace()
         let settledRepresentation = representation(in: ns, boundaryHash: 0x9999_8888)
-        let recorded = SimiGoSettlementKVBinding.bindings(for: settledRepresentation)
+        let recorded = SettlementKVBinding.bindings(for: settledRepresentation)
 
         // Unmanaged = the pool edge as it was before A-2.
         let ungoverned = NativeMLXPrefixPool.bindVerdict(

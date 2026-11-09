@@ -21,11 +21,11 @@
 | 正名 | 中文 | 定义（一行） | 代码锚点 | 旧称 / 禁用 |
 |---|---|---|---|---|
 | execution state (ES) | 执行状态 | 一次计算在轨迹上的可识别位置（锚点、位置、谱系）＋继续关系＋**判定权威**：它有权判定产出是否成立。不是运行时状态的时点快照 | `execution_states`、`previous_es_state_id` | `ES snapshot` |
-| information space (IS / PALACE) | 信息空间 | 已结算结果及其记录、依赖与有效性关系所在的语义环境；存储实现它，不等于它 | IS 数据库（`SimiGoESISDatabase`） | 把库说成"空间" |
+| information space (IS / PALACE) | 信息空间 | 已结算结果及其记录、依赖与有效性关系所在的语义环境；存储实现它，不等于它 | IS 数据库（`ESISDatabase`） | 把库说成"空间" |
 | Settled(ρ) | 已结算 | 历史事实：动作发生过，之后发生的任何事都不撤销它 | `settlements` 行存在 | — |
 | Reusable(ρ, ctx, t) | 可复用 | 当前资格：在时刻 t 按有效性、依赖闭包、声明逐项重判后的结果 | 七步准入 | 把两者当同一个谓词 |
-| admission | 准入 | 恢复时点的七步失败即拒（fail-closed）重判 | `SimiGoISAdmission.swift` | — |
-| refusal / typed reason | 拒绝 / 类型化理由 | 从封闭公开集合里给出类型化拒绝，不冒充另一族拒绝 | `SimiGoManagedRefusal.swift` | 无类型失败 |
+| admission | 准入 | 恢复时点的七步失败即拒（fail-closed）重判 | `ISAdmission.swift` | — |
+| refusal / typed reason | 拒绝 / 类型化理由 | 从封闭公开集合里给出类型化拒绝，不冒充另一族拒绝 | `ManagedRefusal.swift` | 无类型失败 |
 
 ## 三条路径（坐标，不是功能清单）
 
@@ -56,14 +56,14 @@ B0 已有条目按 B0 措辞引用；本表补的是 B0 未收的实现词与论
 ## 已知例外（允许，但必须能指回本表）
 
 - **逐字引用须与原文同步**：研究文档引用代码注释原文时照抄当时原文；源码原文改词后，引文与行号随之更新并注明
-  日期——引文与被引对象不符才是伪造。例：`INVARIANT_PROPOSITIONS` P3 引 `SimiGoESISDatabase.swift` 的
+  日期——引文与被引对象不符才是伪造。例：`INVARIANT_PROPOSITIONS` P3 引 `ESISDatabase.swift` 的
   "a declared property of the settled result"（2026-11-10 随源码正名同步，原引文为 "settled unit"）。
 - **代码注释旧称已清零**：2026-11-10 按本表正名改掉当时仍在的 7 处 `settled unit`
-  （`SimiGoESISDatabase.swift` 两处、`SimiGoSettlementConsumption.swift` 一处、
-  `SimiGoISAdmission.swift` 一处跨行漏检、`SimiGoSettlementConsumptionTests.swift` 一处，
-  以及首轮漏查的应用层两处：`SimiGo/Model/SimiGoProducerIdentity.swift`、
+  （`ESISDatabase.swift` 两处、`SettlementConsumption.swift` 一处、
+  `ISAdmission.swift` 一处跨行漏检、`SettlementConsumptionTests.swift` 一处，
+  以及首轮漏查的应用层两处：`SimiGo/Model/ProducerIdentity.swift`、
   `SimiGoTests/ResponsesSettlementConsumptionHTTPTests.swift` —— 首轮只扫了 `Packages/`，
   评论区与 app target 不在其内，复核时补齐）。原记 6 处中
-  `SimiGoESISDatabaseTests` / `SimiGoInformationLoopTests` 的两处已在更早改动中消失。
+  `ESISDatabaseTests` / `InformationLoopTests` 的两处已在更早改动中消失。
   无测试断言该字面串；复核命令 `grep -rn -i "settled unit" --include='*.swift' Packages SimiGo SimiGoTests` 现为空。
 - **历史版本不改**：`PAPER_S5_ABSTRACT_V0.1_*` 已标"被 v0.2 取代"，其旧词保留作留档。

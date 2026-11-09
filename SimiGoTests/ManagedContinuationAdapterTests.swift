@@ -5,7 +5,7 @@ import SimiGoRuntimeContract
 @testable import SimiGo
 
 /// C-4b acceptance at the production adapter boundary: real work-root capture,
-/// real P1 → S → G → P2 through `SimiGoManagedContinuation.run`, real settlement
+/// real P1 → S → G → P2 through `ManagedContinuation.run`, real settlement
 /// gate, and a stub model call (a counter plus a fixed answer).
 ///
 /// The adapter is exercised exactly as the runtime wires it, so these tests also
@@ -59,7 +59,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         isolationRoot = URL(
             fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         let model = FileManager.default.temporaryDirectory
@@ -89,28 +89,28 @@ final class ManagedContinuationAdapterTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func openDatabase() throws -> SimiGoESISDatabase {
-        let db = try SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: true)
+    private func openDatabase() throws -> ESISDatabase {
+        let db = try ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: true)
         try db.runMigrations()
         return db
     }
 
-    private func ledger(_ db: SimiGoESISDatabase) throws -> Ledger {
+    private func ledger(_ db: ESISDatabase) throws -> Ledger {
         Ledger(
             states: try db.count("execution_states"),
             settlements: try db.count("settlements"))
     }
 
-    private func stageAnchor(_ db: SimiGoESISDatabase) throws -> String {
-        let settled = try SimiGoSettlementAuthority.authorize(
+    private func stageAnchor(_ db: ESISDatabase) throws -> String {
+        let settled = try SettlementAuthority.authorize(
             generatedText: "ANCHOR-STATE",
-            contractJSON: SimiGoInformationLoop.chatResultContractJSON,
+            contractJSON: InformationLoop.chatResultContractJSON,
             verifiedBindings: [:])
         let stateID = "es-anchor-" + UUID().uuidString.lowercased()
         try db.recordExecutionState(
             id: stateID, parentID: nil,
-            modelIdentity: SimiGoProducerIdentity.identity(fromPath: modelPath).model,
+            modelIdentity: ProducerIdentity.identity(fromPath: modelPath).model,
             position: 1, continuationID: UUID().uuidString,
             anchor: settled.payloadDigest, lifecycle: "active", createdAt: Date())
         _ = try db.recordNativeSettlement(settled, stateID: stateID)
@@ -119,7 +119,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
 
     private func makeRequest(
         anchor: String,
-        policy: SimiGoRecomputePolicy = .never,
+        policy: RecomputePolicy = .never,
         key: String?,
         roots: [String]? = nil
     ) -> ManagedContinuationRequest {
@@ -169,7 +169,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         stub: Stub,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) async -> SimiGoManagedRefusal.Refusal? {
+    ) async -> ManagedRefusal.Refusal? {
         await refusal(from: request, generate: generator(stub), file: file, line: line)
     }
 
@@ -178,7 +178,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         generate: @escaping ManagedContinuationGenerate,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) async -> SimiGoManagedRefusal.Refusal? {
+    ) async -> ManagedRefusal.Refusal? {
         do {
             _ = try await runNativeManagedContinuation(
                 request: request, modelPath: modelPath, generate: generate)
@@ -229,19 +229,19 @@ final class ManagedContinuationAdapterTests: XCTestCase {
 
         let finalID = try XCTUnwrap(
             db.settlementInputSnapshotObjectID(settlementID: result.settlementID))
-        let final = try SimiGoSnapshotContract.Final.decode(try db.readObject(finalID))
+        let final = try SnapshotContract.Final.decode(try db.readObject(finalID))
         XCTAssertTrue(final.replayable)
         XCTAssertEqual(final.used.count, 1)
         XCTAssertEqual(final.used.first?.identity.identifier, "file:\(rootID)/notes.md")
         XCTAssertEqual(final.used.first?.injectedAs, "context[0]")
 
-        let declared = try SimiGoSnapshotContract.Declared.decode(
+        let declared = try SnapshotContract.Declared.decode(
             try db.readObject(final.declaredSnapshotID))
         XCTAssertEqual(declared.entries.count, 1)
         XCTAssertEqual(declared.request.rootIDs, [rootID])
         XCTAssertEqual(
             declared.entries.first?.digest,
-            SimiGoSnapshotContract.sha256Hex(Data("alpha beta gamma".utf8)))
+            SnapshotContract.sha256Hex(Data("alpha beta gamma".utf8)))
         XCTAssertNoThrow(try final.verify(against: declared))
     }
 
@@ -322,7 +322,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
 
         let finalID = try XCTUnwrap(
             db.settlementInputSnapshotObjectID(settlementID: second.settlementID))
-        let final = try SimiGoSnapshotContract.Final.decode(try db.readObject(finalID))
+        let final = try SnapshotContract.Final.decode(try db.readObject(finalID))
         XCTAssertTrue(final.replayable)
     }
 
@@ -397,8 +397,8 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         var committed = false
         var modelCalls = 0
         var settlementsWritten = 0
-        var cause: SimiGoManagedRefusal.Cause?
-        var phase: SimiGoManagedRefusal.Phase?
+        var cause: ManagedRefusal.Cause?
+        var phase: ManagedRefusal.Phase?
         var error: String?
     }
 

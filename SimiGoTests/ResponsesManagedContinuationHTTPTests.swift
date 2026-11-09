@@ -152,7 +152,7 @@ final class ResponsesManagedContinuationHTTPTests: XCTestCase {
             "input": "continue",
         ]
         if let anchor { json["previous_es_state_id"] = anchor }
-        json[SimiGoRecomputePolicy.requestKey] = policy
+        json[RecomputePolicy.requestKey] = policy
         for (k, v) in extra { json[k] = v }
         return json
     }
@@ -308,7 +308,7 @@ final class ResponsesManagedContinuationHTTPTests: XCTestCase {
             body: managedBody(),
             managed: { _ in
                 throw ManagedContinuationFailure.refused(
-                    SimiGoManagedRefusal.Refusal(
+                    ManagedRefusal.Refusal(
                         cause: .snapshotUsedUndeclared, origin: .snapshot, phase: .p2))
             })
         XCTAssertEqual(o.status, 422, String(decoding: o.raw, as: UTF8.self))
@@ -328,7 +328,7 @@ final class ResponsesManagedContinuationHTTPTests: XCTestCase {
             body: managedBody(),
             managed: { _ in
                 throw ManagedContinuationFailure.refused(
-                    SimiGoManagedRefusal.Refusal(
+                    ManagedRefusal.Refusal(
                         cause: .idempotencyConflict, origin: .idempotency, phase: .p2))
             })
         XCTAssertEqual(o.status, 422, String(decoding: o.raw, as: UTF8.self))

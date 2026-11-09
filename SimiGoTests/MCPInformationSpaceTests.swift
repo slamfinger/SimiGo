@@ -256,9 +256,9 @@ final class MCPInformationSpaceTests: XCTestCase {
     // MARK: - Post-settlement distillation
 
     func testSettlementSummaryIsReadableAndCitableOverMCP() throws {
-        let db = try SimiGoESISDatabase(url: dbURL, createIfNeeded: true)
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try db.runMigrations()
-        let loop = SimiGoInformationLoop(database: db)
+        let loop = InformationLoop(database: db)
         let turn = try loop.settleTurn(
             generatedText: "施工组织设计以实施性方案为纲，覆盖关键线路与节点工期。",
             resolution: nil, stateID: "S-MCP-1", parentStateID: nil, position: 0,
@@ -377,8 +377,8 @@ final class MCPInformationSpaceTests: XCTestCase {
             arguments: ["settlement_id": followUpID], databaseURL: dbURL)
         print("[MCP-SETTLE-RECEIPT] \(receipt)")
         let bindings = try XCTUnwrap(receipt["bindings"] as? [String: String])
-        XCTAssertNotNil(bindings[SimiGoSettlementIdentityBinding.modelKey])
-        XCTAssertNotNil(bindings[SimiGoSettlementIdentityBinding.tokenizerKey])
+        XCTAssertNotNil(bindings[SettlementIdentityBinding.modelKey])
+        XCTAssertNotNil(bindings[SettlementIdentityBinding.tokenizerKey])
         XCTAssertEqual(
             (receipt["dependencies"] as? [[String: Any]])?.count, 1,
             "the declared dependency is readable back from the settlement: \(receipt)")
@@ -480,7 +480,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertTrue(again["reusable_answer"] is NSNull)
 
         // The answer is still recorded; only the unverified begin path refuses.
-        let db = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
         let answered = try XCTUnwrap(
             try db.answeredDemand(sessionID: "cloud-a", query: "where is the exit"))
         XCTAssertFalse(answered.answerSettlementID.isEmpty)
@@ -621,7 +621,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             "begin resolves no current demand and must not serve the answer: \(again)")
 
         // Same store, same schema: reopening it still finds the recorded answer.
-        let reopened = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        let reopened = try ESISDatabase(url: dbURL, createIfNeeded: false)
         let answered = try XCTUnwrap(
             try reopened.answeredDemand(sessionID: session, query: query))
         XCTAssertEqual(
@@ -848,7 +848,7 @@ final class MCPInformationSpaceTests: XCTestCase {
     }
 
     func testBeginTokenizerIdentityIsFixedAcrossResumeAndSettle() throws {
-        let db = try SimiGoESISDatabase(url: dbURL)
+        let db = try ESISDatabase(url: dbURL)
         try db.runMigrations()
         defer { db.close() }
         let stateID = "tokenizer-bound-state"
@@ -900,7 +900,7 @@ final class MCPInformationSpaceTests: XCTestCase {
     }
 
     func testMCPStateSurvivesNativeGraphReconciliationAndKeepsTokenizerBinding() throws {
-        let db = try SimiGoESISDatabase(url: dbURL)
+        let db = try ESISDatabase(url: dbURL)
         try db.runMigrations()
         let stateID = "mcp-graph-isolation-\(UUID().uuidString)"
         let begun = try HTTPServer.runMCPTool(
@@ -926,7 +926,7 @@ final class MCPInformationSpaceTests: XCTestCase {
 
         // Reopen from SQLite alone, then prove the begin-time tokenizer remains
         // authoritative: a different tokenizer cannot claim the surviving ES.
-        let reopened = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        let reopened = try ESISDatabase(url: dbURL, createIfNeeded: false)
         XCTAssertEqual(try reopened.executionStateTokenizerIdentity(stateID), "tokenizer-a")
         reopened.close()
 
@@ -954,7 +954,7 @@ final class MCPInformationSpaceTests: XCTestCase {
     }
 
     func testLegacyMCPStateWithoutTokenizerCannotSettle() throws {
-        let db = try SimiGoESISDatabase(url: dbURL)
+        let db = try ESISDatabase(url: dbURL)
         try db.runMigrations()
         defer { db.close() }
         try db.recordExecutionState(

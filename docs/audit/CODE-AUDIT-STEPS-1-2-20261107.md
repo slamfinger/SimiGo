@@ -7,9 +7,9 @@
 只读副本位于 `/tmp/audit-om/`。未修改任何产品代码、未启动任何实验、未做架构裁决。
 
 真实路径提醒（本轮踩过的坑）：
-- `SimiGoESISDatabase.swift`(6583 行) 与 `SimiGoInformationLoop.swift`(684 行)
+- `ESISDatabase.swift`(6583 行) 与 `InformationLoop.swift`(684 行)
   在 `Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/`，**不在** `SimiGo/Storage/`。
-- `SimiGoISContextLedger.swift`(123 行) 同目录。
+- `ISContextLedger.swift`(123 行) 同目录。
 
 证据等级标记：
 - **C** = 代码级已证（锚点 + 调用关系可在本轮重放）
@@ -33,8 +33,8 @@
 | `/v1/completions` | **无** | **无** | **无** | **无** | **无** | 声明式不托管 HTTPServerCompletions:58-66；`completionsBlock` :72-82 只贴 marker | C |
 | `/mcp` `simigo_es_settle` | **无 T1**（不写 chat 行） | — | HTTPServerMCP:656 `settleTurn` | 同事务链内 Loop :637 | Loop :641 | 由调用方参数决定；**第 5 笔** `recordAnsweredDemand` :681-694（附加，失败只记 `demandError`）；抛错被 :130-134 吞成 `isError:true` | C |
 | `/mcp` `simigo_is_search` | HTTPServerMCP:361-370 `openESISDatabase`+`loop.resolve` → 有 T0 副作用 | — | — | — | — | 只读工具名，实际写 demand+检索结算（同 §4） | C |
-| Qoder 采集桥（第 6 条写入链） | `QoderExternalTurnSink.write` :70 `recordExternalTurn` → :74 `recordExternalResponse` → :78 `guard verified` → :79 `verifyExternalTurn` | 外部合同原语（DB :3666-3745），不借 chat T1/T2 | — | — | — | fail-closed：问答双方齐全才在同一事务提升为 `committed` | C |
-| 受管续跑（C 阶段） | — | — | `ExecutionStateGraph:479` / `:564` / `SimiGoISAdmission:248` 各自**单事务** | — | — | 单事务形态，与 chat 的分段写形成对照 | C |
+| Qoder 采集桥（第 6 条写入链） | `ExternalTurnSink.write` :70 `recordExternalTurn` → :74 `recordExternalResponse` → :78 `guard verified` → :79 `verifyExternalTurn` | 外部合同原语（DB :3666-3745），不借 chat T1/T2 | — | — | — | fail-closed：问答双方齐全才在同一事务提升为 `committed` | C |
+| 受管续跑（C 阶段） | — | — | `ExecutionStateGraph:479` / `:564` / `ISAdmission:248` 各自**单事务** | — | — | 单事务形态，与 chat 的分段写形成对照 | C |
 
 ### §1.1 Responses 的 `eligibility` 来源（本轮遗留待核项，现已闭合）
 
@@ -84,7 +84,7 @@ advancement / chat-session 链接 / 摘要**一笔都不写**，且**没有任�
 而 turn 仍被无条件返回（:325）；默认开启的上下文冻结
 （`contextFreezingEnabled` = `env["SIMIGO_IS_CONTEXT_FREEZE"] != "0"`，HTTPServerChat:501-503）
 会把这份空 resolution 按 (scope, userText) 冻结并在后续同文本轮次回放
-（`SimiGoISContextLedger.stabilize` :72-88，进程内 LRU，重启即清）。**C**（可达链）/ **R**（真实频率）
+（`ISContextLedger.stabilize` :72-88，进程内 LRU，重启即清）。**C**（可达链）/ **R**（真实频率）
 
 ---
 
@@ -137,7 +137,7 @@ user `pending` 行。无失效、无回滚、无审计行。
 | MCP `es_fail` | :735-744 `recordFailureAudit` | 同步处理（**唯一由 HTTP/MCP 侧调用者**，其余全是调用方自报字段） | failure_audit 行 | C |
 
 **六条 wire 的失败路径均不调用 `recordFailureAudit`**：`git grep recordFailureAudit origin/main`
-的产品侧调用者只有 `SimiGoManagedContinuation.swift:477` 与 `HTTPServerMCP.swift:735`。**C**
+的产品侧调用者只有 `ManagedContinuation.swift:477` 与 `HTTPServerMCP.swift:735`。**C**
 
 `.capped` / `.unconfirmed` 的生产者（本轮新闭合）：
 - `NativeMLX.swift:2363-2368`：`stopReason` 为 `.none` ⇒ `.unconfirmed`（vendor 无信息事件即无证据）
@@ -191,7 +191,7 @@ Runtime 停止（`markCancelledByRuntime` :523-528）与手动取消不经过 de
 
 ## §4 `loop.resolve()` 内部：确定性半状态（非崩溃）
 
-`SimiGoInformationLoop.swift`：
+`InformationLoop.swift`：
 ```
 294-302  try database.recordInformationRetrieval(...)   // 一个事务：settlements + 2×index
                                                         //   + retrieval_settlements valid
@@ -201,7 +201,7 @@ Runtime 停止（`markCancelledByRuntime` :523-528）与手动取消不经过 de
 308-315  for hit in items where hit.kind=="file" { try database.linkSettlementToExternalFile(...) }
                                                     // 事务外、逐笔、会 throw
 ```
-`SimiGoESISDatabase.swift:5202-5226`：`:5204-5205` 在文件未被索引时直接 `throw`。
+`ESISDatabase.swift:5202-5226`：`:5204-5205` 在文件未被索引时直接 `throw`。
 
 ⇒ 检索结算与源边绑定**分离**：绑定阶段抛错后，demand 已是 `RESOLVED` + `valid` 检索结算，
 却没有任何源边；Loop :273-287 之后会按此 resolution 供 `reused`。**这是确定性可达的半状态，
@@ -209,7 +209,7 @@ Runtime 停止（`markCancelledByRuntime` :523-528）与手动取消不经过 de
 
 对照（证明半状态并非 schema 必然）：`recordInformationRetrieval` 用单事务、
 `verifyExternalTurn`(DB:3726-3745) 要求问答双方齐全才在同一事务里提升两行状态、
-`ExecutionStateGraph:479`/`:564`/`SimiGoISAdmission:248` 也是单事务。**C**
+`ExecutionStateGraph:479`/`:564`/`ISAdmission:248` 也是单事务。**C**
 全仓只有**两处** `turn_state` 提升站点：DB:3598（chat `commitChatTurn`）与 DB:3736（外部合同）。**C**
 
 ---
@@ -239,9 +239,9 @@ Runtime 停止（`markCancelledByRuntime` :523-528）与手动取消不经过 de
   唯一回填是迁移期 settlement→summary 且排除检索类。
 - **B-新-2** IS 检索资格权威（`turn_state='committed'`，DB:3775 / :3954）与
   settlement / ES lineage 权威在 schema 层没有对齐机制 —— 与 owner 对 V-7 的裁定一致。
-- **B-新-3** `SimiGoISAdmission.settleContinuation`（:223-252）是公开、单事务、
+- **B-新-3** `ISAdmission.settleContinuation`（:223-252）是公开、单事务、
   已测试但未接线的权威入口：**无任何产品调用者**（`.admit` 才用于
-  SimiGoSettlementConsumption:205/:296、ExecutionStateGraph:628）。
+  SettlementConsumption:205/:296、ExecutionStateGraph:628）。
 - **B-继承** 跨原语崩溃窗口（V-7 定性保留）。
 
 ### C. 仍需运行时证据

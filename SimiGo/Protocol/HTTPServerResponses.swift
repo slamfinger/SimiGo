@@ -702,7 +702,7 @@ extension HTTPServer {
         case inert
         /// A typed terminal was already written; return without generating.
         case refused
-        case managed(policy: SimiGoRecomputePolicy, anchor: String)
+        case managed(policy: RecomputePolicy, anchor: String)
     }
 
     enum ManagedContinuationDispatch {
@@ -740,14 +740,14 @@ extension HTTPServer {
             guard parsed.managed.hasCScopeFields else { return .inert }
             sendTerminal(
                 ManagedContinuationFailure.invalidRequest(
-                    "\(SimiGoRecomputePolicy.requestKey) (required with idempotency_key, consumer_es_state_id or root_ids)"
+                    "\(RecomputePolicy.requestKey) (required with idempotency_key, consumer_es_state_id or root_ids)"
                 ).terminal,
                 context: context)
             return .refused
         }
-        let policy: SimiGoRecomputePolicy
+        let policy: RecomputePolicy
         do {
-            policy = try SimiGoRecomputePolicy.resolve(
+            policy = try RecomputePolicy.resolve(
                 managedAnchorPresent: parsed.esStateIDPresent,
                 settlementConsumptionPresent: parsed.settlementConsumptionPresent,
                 raw: parsed.managed.policyRaw)
@@ -768,7 +768,7 @@ extension HTTPServer {
         guard let anchor = parsed.esStateID, !anchor.isEmpty else {
             sendTerminal(
                 ManagedContinuationFailure.refused(
-                    SimiGoManagedRefusal.Refusal(
+                    ManagedRefusal.Refusal(
                         cause: .invalidAnchor, origin: .request, phase: .pre)
                 ).terminal,
                 context: context)
@@ -781,7 +781,7 @@ extension HTTPServer {
     /// The handler owns the DB and the model; this layer only reports.
     func managedContinuationStep(
         parsed: ResponsesParsedRequest,
-        policy: SimiGoRecomputePolicy,
+        policy: RecomputePolicy,
         anchor: String,
         context: ConnectionContext
     ) async -> ManagedContinuationDispatch {
@@ -817,7 +817,7 @@ extension HTTPServer {
     /// execution. `replayable` stays JSON null unless the commit attested it.
     func sendManagedContinuationResponse(
         _ result: ManagedContinuationResult,
-        policy: SimiGoRecomputePolicy,
+        policy: RecomputePolicy,
         anchor: String,
         parsed: ResponsesParsedRequest,
         json: [String: Any],
@@ -873,7 +873,7 @@ extension HTTPServer {
 
     func managedContinuationPayload(
         _ result: ManagedContinuationResult,
-        policy: SimiGoRecomputePolicy,
+        policy: RecomputePolicy,
         anchor: String
     ) -> [String: Any] {
         [
@@ -1166,7 +1166,7 @@ extension HTTPServer {
         // C-scope managed continuation. Inert (no C-scope field) leaves this
         // path byte-identical; a refused request writes its typed terminal and
         // never generates, stores or settles anything.
-        var managedPolicy: SimiGoRecomputePolicy?
+        var managedPolicy: RecomputePolicy?
         var managedAnchor: String?
         switch managedContinuationPreflight(parsed: parsed, context: context) {
         case .refused:
@@ -1179,7 +1179,7 @@ extension HTTPServer {
         }
 
         var pendingInformationTurn: InformationTurn?
-        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
         defer {
             terminalizePendingInformationTurn(
                 pendingInformationTurn, terminal: chatTurnTerminal, context: context)
@@ -1626,7 +1626,7 @@ extension HTTPServer {
 
         // 2. Use defer to ensure lifecycle completion (success or failure)
         var pendingInformationTurn: InformationTurn?
-        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
         defer {
             terminalizePendingInformationTurn(
                 pendingInformationTurn, terminal: chatTurnTerminal, context: context)

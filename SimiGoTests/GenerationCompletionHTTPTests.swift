@@ -121,7 +121,7 @@ final class GenerationCompletionHTTPTests: XCTestCase {
         }
         isolationRoot = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         // An engine stand-in whose identity is stable across the server restarts
@@ -153,7 +153,7 @@ final class GenerationCompletionHTTPTests: XCTestCase {
     @MainActor
     private func withServer(_ run: () async throws -> Void) async throws {
         let stub = stub!
-        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let identity = ProducerIdentity.identity(fromPath: modelPath)
         let server = HTTPServer(
             port: port,
             modelId: "generation-completion-http-test",

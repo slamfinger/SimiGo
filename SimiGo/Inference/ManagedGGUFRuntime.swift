@@ -66,9 +66,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     baseURL: URL(string: "http://127.0.0.1:\(enginePort)")!,
                     model: alias))
             let producer = InformationTurnProducer(
-                modelIdentity: SimiGoProducerIdentity.canonicalModelIdentity(
+                modelIdentity: ProducerIdentity.canonicalModelIdentity(
                     fromPath: info.path),
-                identity: SimiGoProducerIdentity.identity(fromPath: info.path))
+                identity: ProducerIdentity.identity(fromPath: info.path))
             let node = await MainActor.run {
                 InferenceNodeConfiguration.shared.snapshot()
             }
@@ -129,7 +129,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     continuationAdmission: { esStateID in
                         let modelPath = info.path
                         let admitted = try await MainActor.run {
-                            try SimiGoProducerIdentity.recoverForContinuation(
+                            try ProducerIdentity.recoverForContinuation(
                                 stateID: esStateID, modelPath: modelPath)
                         }
                         return ContinuationAdmissionOutcome(
@@ -140,6 +140,12 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     },
                     continuationSettlement: makeContinuationSettlementHandler(
                         modelPath: info.path) { _ in nil },
+                    // llama-server keeps the prefix cells internally and this
+                    // runtime exports no representation, so it declares that
+                    // instead of letting a client discover it by a failed call.
+                    // Settlement consumption and managed continuation are nil
+                    // here and therefore declared unsupported from the wiring.
+                    kvRepresentationAvailable: .unsupported,
                     informationTurnProducer: { producer },
                     requestAdmission: RequestAdmissionScheduler(limit: admissionLimit)
                 )

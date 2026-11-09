@@ -11,7 +11,7 @@ final class ExecutionStateGraphSettlementContractTests: XCTestCase {
 
     private var storeURL: URL!
     private var dbURL: URL!
-    private let identity = SimiGoSettlementIdentityBinding.Identity(
+    private let identity = SettlementIdentityBinding.Identity(
         model: "mlx:qwen3-coder-30b", tokenizer: "tok:6e302ea6")
 
     override func setUp() {

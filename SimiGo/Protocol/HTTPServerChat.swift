@@ -60,23 +60,23 @@ extension HTTPServer {
     // MARK: - Information turn (ES demand → IS → settlement)
 
     struct InformationTurn {
-        let db: SimiGoESISDatabase
-        let loop: SimiGoInformationLoop
+        let db: ESISDatabase
+        let loop: InformationLoop
         let sessionID: String
         let query: String
         let userMessageID: Int64
         /// Latest retrieval candidate for this request. It may differ from the
         /// frozen snapshot while an engine prefix must remain byte-identical.
-        let candidateResolution: SimiGoInformationLoop.Resolution?
+        let candidateResolution: InformationLoop.Resolution?
         /// The demand represented by the exact Information-Space bytes rendered
         /// into the model input. Reuse and settlement must bind to this demand.
-        let renderedResolution: SimiGoInformationLoop.Resolution
+        let renderedResolution: InformationLoop.Resolution
         let modelIdentity: String
-        let identity: SimiGoSettlementIdentityBinding.Identity
+        let identity: SettlementIdentityBinding.Identity
         let parentStateID: String?
         let position: Int
-        let eligibility: SimiGoESISDatabase.ChatTurnEligibility
-        let sourceIdentity: SimiGoESISDatabase.DeclaredSourceIdentity
+        let eligibility: ESISDatabase.ChatTurnEligibility
+        let sourceIdentity: ESISDatabase.DeclaredSourceIdentity
         let operationKey: String?
     }
 
@@ -85,7 +85,7 @@ extension HTTPServer {
     /// pending, so this terminalization is intentionally idempotent.
     func terminalizePendingInformationTurn(
         _ turn: InformationTurn?,
-        terminal: SimiGoESISDatabase.ChatTurnTerminal?,
+        terminal: ESISDatabase.ChatTurnTerminal?,
         context: ConnectionContext
     ) {
         guard let turn else { return }
@@ -112,7 +112,7 @@ extension HTTPServer {
     /// still take the cancelled standing.
     static func chatTurnTerminalForCancellation(
         _ context: ConnectionContext
-    ) -> SimiGoESISDatabase.ChatTurnTerminal {
+    ) -> ESISDatabase.ChatTurnTerminal {
         context.cancellationFailureReason() == "detached_by_client" ? .detached : .cancelled
     }
 
@@ -123,7 +123,7 @@ extension HTTPServer {
     /// protocol layer never decides on its own which fields it has.
     static func settlementDeclaration(
         from json: [String: Any], headers: [String: String]
-    ) -> (identity: SimiGoESISDatabase.DeclaredSourceIdentity, key: String?) {
+    ) -> (identity: ESISDatabase.DeclaredSourceIdentity, key: String?) {
         let metadata = json["metadata"] as? [String: Any]
         let clientMetadata = json["client_metadata"] as? [String: Any]
         func declared(_ field: String) -> String? {
@@ -141,7 +141,7 @@ extension HTTPServer {
             }
             return nil
         }
-        let identity = SimiGoESISDatabase.DeclaredSourceIdentity(
+        let identity = ESISDatabase.DeclaredSourceIdentity(
             sourceType: declared("source_type"),
             sourceSessionID: declared("source_session_id"),
             sourceTurnID: declared("source_turn_id"),
@@ -158,7 +158,7 @@ extension HTTPServer {
     /// memory or a settled result. Anything else stays an ordinary turn.
     static func turnEligibility(
         from json: [String: Any], headers: [String: String]
-    ) -> SimiGoESISDatabase.ChatTurnEligibility {
+    ) -> ESISDatabase.ChatTurnEligibility {
         let declared = [
             (json["metadata"] as? [String: Any])?["simigo_request_scope"] as? String,
             (json["client_metadata"] as? [String: Any])?["simigo_request_scope"] as? String,
@@ -234,9 +234,9 @@ extension HTTPServer {
         // the client's per-turn envelope. Measured 2026-10-29: the envelope owned
         // every extracted term, so 30 hits were greetings and LUA sources and the
         // answer never used the information space it had just searched.
-        let query = SimiGoInformationLoop.retrievalQuery(from: rawQuery)
-        guard let db = try? SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: true)
+        let query = InformationLoop.retrievalQuery(from: rawQuery)
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: true)
         else { return (messages, nil) }
         try? db.runMigrations()
         perfMark("db")
@@ -247,7 +247,7 @@ extension HTTPServer {
         let eligibility = Self.turnEligibility(from: json, headers: headers)
         let declaration = Self.settlementDeclaration(from: json, headers: headers)
         Self.traceClientProvenance(headers: headers)
-        let loop = SimiGoInformationLoop(database: db)
+        let loop = InformationLoop(database: db)
         let producer = informationTurnProducer?()
         // Exclude all previously answered instances of this exact question and
         // their own summaries from the freshness snapshot. New information in
@@ -259,7 +259,7 @@ extension HTTPServer {
             sessionID: infoSession, query: query, includeChat: true,
             chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))
         perfMark("resolve")
-        let retrieval = candidateResolution ?? SimiGoInformationLoop.Resolution(
+        let retrieval = candidateResolution ?? InformationLoop.Resolution(
             demandID: "", stateID: nil, reused: false, hits: [], inputDigest: "",
             resultSHA256: "", retrievalSettlementID: "", itemIDs: [], staleItemIDs: [])
         let candidate = candidateResolution.map { loop.contextBlock($0) } ?? ""
@@ -272,10 +272,10 @@ extension HTTPServer {
         })
         let turnText = target.flatMap { messages[$0].object?["content"]?.messageText } ?? query
         var snapshot = Self.contextFreezingEnabled
-            ? SimiGoISContextLedger.shared.stabilize(
+            ? ISContextLedger.shared.stabilize(
                 scope: infoSession, userText: turnText,
                 block: candidate, resolution: retrieval)
-            : SimiGoISContextLedger.Snapshot(
+            : ISContextLedger.Snapshot(
                 block: candidate, resolution: retrieval,
                 isReplay: false, candidateChanged: false)
         var refreshedFrozen = false
@@ -285,7 +285,7 @@ extension HTTPServer {
             // the injected context and the settlement's declared demand stay
             // mutually consistent, and the next exact repeat is served from the
             // replacement answer instead of regenerating against a stale freeze.
-            snapshot = SimiGoISContextLedger.shared.refresh(
+            snapshot = ISContextLedger.shared.refresh(
                 scope: infoSession, userText: turnText,
                 block: candidate, resolution: retrieval)
             refreshedFrozen = true
@@ -364,7 +364,7 @@ extension HTTPServer {
         // Older user turns already carry their frozen block in the engine's
         // ledger, so replay exactly what was committed for them.
         if Self.contextFreezingEnabled {
-            let ledger = SimiGoISContextLedger.shared
+            let ledger = ISContextLedger.shared
             for index in augmented.indices {
                 guard index != target,
                     augmented[index].object?["role"]?.string == "user",
@@ -701,7 +701,7 @@ extension HTTPServer {
             seed += "|\(role):\(object["content"]?.messageText ?? "")"
             if role == "user" { break }
         }
-        let digest = SimiGoSettlementAuthority.payloadDigest(Data(seed.utf8))
+        let digest = SettlementAuthority.payloadDigest(Data(seed.utf8))
         return "info-" + digest.prefix(32)
     }
 
@@ -738,7 +738,7 @@ extension HTTPServer {
 
         let information = prepareInformationTurn(
             json: json, headers: headers, agentId: agentId, messages: messages)
-        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
         defer {
             terminalizePendingInformationTurn(
                 information.turn, terminal: chatTurnTerminal, context: context)
@@ -1351,7 +1351,7 @@ extension HTTPServer {
 
         let information = prepareInformationTurn(
             json: json, headers: headers, agentId: agentId, messages: messages)
-        var chatTurnTerminal: SimiGoESISDatabase.ChatTurnTerminal?
+        var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
         defer {
             terminalizePendingInformationTurn(
                 information.turn, terminal: chatTurnTerminal, context: context)

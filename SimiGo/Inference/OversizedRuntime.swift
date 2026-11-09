@@ -90,9 +90,9 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         // re-derivation from the snapshot, so an oversized turn settles under
         // the model revision that actually produced it.
         let informationProducer = InformationTurnProducer(
-            modelIdentity: SimiGoProducerIdentity.canonicalModelIdentity(
+            modelIdentity: ProducerIdentity.canonicalModelIdentity(
                 fromPath: modelDirectory.path),
-            identity: SimiGoProducerIdentity.identity(fromPath: modelDirectory.path))
+            identity: ProducerIdentity.identity(fromPath: modelDirectory.path))
 
         let server = HTTPServer(
             port: port,

@@ -237,13 +237,13 @@ public struct AppConfig: Sendable {
     /// it is absent under every external cache root (fail-closed, never invents).
     nonisolated public static var resolvedSelectedModelURL: URL? {
         guard let ref = selectedModelReference else { return nil }
-        return SimiGoModelDiscovery.resolve(ref)
+        return ModelDiscovery.resolve(ref)
     }
 
     /// Persist a portable reference derived from a selected absolute path when the
     /// path lives under an external cache root; clears it otherwise.
     nonisolated public static func persistReference(forAbsolutePath path: String) {
-        if let ref = SimiGoModelDiscovery.reference(forAbsolutePath: path) {
+        if let ref = ModelDiscovery.reference(forAbsolutePath: path) {
             selectedModelReference = ref
         } else {
             selectedModelReference = nil

@@ -117,6 +117,29 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
                     capabilities[key] as? [String: Any],
                     "capability \(key) must be declared")
             }
+            // This server was built without a consumption or managed-
+            // continuation handler, so those authorities are declared absent
+            // instead of being discovered by a refused call.
+            let continuation = try XCTUnwrap(
+                capabilities["execution_continuation"] as? [String: Any])
+            for key in [
+                "admission", "settlement", "kv_representation",
+                "settlement_consumption", "managed_continuation",
+            ] {
+                XCTAssertNotNil(
+                    continuation[key] as? [String: Any],
+                    "execution_continuation.\(key) must be declared")
+            }
+            XCTAssertEqual(
+                (continuation["settlement_consumption"] as? [String: Any])?["state"] as? String,
+                "unsupported")
+            XCTAssertEqual(
+                (continuation["managed_continuation"] as? [String: Any])?["state"] as? String,
+                "unsupported")
+            XCTAssertEqual(
+                (continuation["kv_representation"] as? [String: Any])?["state"] as? String,
+                "unverified",
+                "an undeclared KV carrier is unverified, not silently supported")
             let isCapability = try XCTUnwrap(capabilities["is"] as? [String: Any])
             let search = try XCTUnwrap(isCapability["search"] as? [String: Any])
             XCTAssertEqual(search["path"] as? String, "/v1/simigo/search")
@@ -251,5 +274,83 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
         XCTAssertEqual(
             (dark["runtime_status"] as? [String: Any])?["health"] as? String,
             "unavailable")
+    }
+
+    /// Backends differ in which ES/IS authorities they wire. The declaration is
+    /// derived from the handlers the server was built with, so a client can ask
+    /// before a call fails instead of treating "route exists" as "authority
+    /// available".
+    func testAuthorityStatusIsDerivedFromWiring() {
+        func make(
+            wire: Bool, kv: CapabilityStatus = .unverified
+        ) -> HTTPServer {
+            HTTPServer(
+                port: 1, modelId: "authority-test", bonjourEnabled: false,
+                generateHandler: { _, _, _, _, _, _, _, _, _, _ in
+                    GenerationResult(text: "", usage: nil, completion: .complete)
+                },
+                forkBranchHandler: { _, _, _, _ in
+                    SessionCacheMetadata(
+                        storageKey: "test/main", modelId: "authority-test",
+                        savedAt: Date(), history: [])
+                },
+                deleteBranchHandler: { _, _, _, _ in
+                    BranchDeletionOutcome(
+                        deletedBranch: "", hadLiveSession: false,
+                        hadCheckpointFile: false, generation: 1,
+                        remainingLiveBranches: [], remainingCheckpointBranches: [])
+                },
+                listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
+                checkHealthHandler: { true },
+                continuationAdmission: wire
+                    ? { _ in throw ContinuationAdmissionFailure.unavailable } : nil,
+                continuationSettlement: wire
+                    ? { _ in throw RuntError.notLoaded } : nil,
+                settlementConsumption: wire
+                    ? { _ in throw RuntError.notLoaded } : nil,
+                managedContinuation: wire
+                    ? { _ in throw RuntError.notLoaded } : nil,
+                kvRepresentationAvailable: kv)
+        }
+
+        let base = make(wire: false)
+        XCTAssertEqual(base.authorityStatus.continuationAdmission, .unsupported)
+        XCTAssertEqual(base.authorityStatus.continuationSettlement, .unsupported)
+        XCTAssertEqual(base.authorityStatus.settlementConsumption, .unsupported)
+        XCTAssertEqual(base.authorityStatus.managedContinuation, .unsupported)
+        XCTAssertEqual(base.authorityStatus.kvRepresentation, .unverified)
+
+        let wired = make(wire: true, kv: .supported)
+        XCTAssertEqual(wired.authorityStatus.continuationAdmission, .supported)
+        XCTAssertEqual(wired.authorityStatus.continuationSettlement, .supported)
+        XCTAssertEqual(wired.authorityStatus.settlementConsumption, .supported)
+        XCTAssertEqual(wired.authorityStatus.managedContinuation, .supported)
+        XCTAssertEqual(wired.authorityStatus.kvRepresentation, .supported)
+    }
+
+    /// The backend difference the audit named: GGUF exports no KV
+    /// representation and wires no consumption/managed continuation. The
+    /// document has to say so, in the same shape MLX uses.
+    func testBootstrapDocumentDeclaresBackendSpecificAuthorities() throws {
+        let epoch = Date(timeIntervalSince1970: 0)
+        let gguf = RuntimeAuthorityStatus(
+            continuationAdmission: .supported,
+            continuationSettlement: .supported,
+            kvRepresentation: .unsupported,
+            settlementConsumption: .unsupported,
+            managedContinuation: .unsupported)
+        let document = HTTPServer.simigoBootstrapDocument(
+            health: true, observedAt: epoch, authorities: gguf)
+        let capabilities = try XCTUnwrap(document["capabilities"] as? [String: Any])
+        let continuation = try XCTUnwrap(
+            capabilities["execution_continuation"] as? [String: Any])
+        func state(_ key: String) -> String? {
+            (continuation[key] as? [String: Any])?["state"] as? String
+        }
+        XCTAssertEqual(state("admission"), "supported")
+        XCTAssertEqual(state("settlement"), "supported")
+        XCTAssertEqual(state("kv_representation"), "unsupported")
+        XCTAssertEqual(state("settlement_consumption"), "unsupported")
+        XCTAssertEqual(state("managed_continuation"), "unsupported")
     }
 }

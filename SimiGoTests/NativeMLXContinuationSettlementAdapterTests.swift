@@ -73,8 +73,8 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         // Guard the claim itself: the authority this test opens must be inside
         // the isolation root, not the real ~/.simigo.
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
-            "authoritative store resolves outside the isolation root: \(SimiGoPaths.databaseURL.path)")
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            "authoritative store resolves outside the isolation root: \(ManagedPaths.databaseURL.path)")
         XCTAssertTrue(
             ExecutionStateGraphStore.defaultStoreURL().path.hasPrefix(
                 (graphStore as NSString).standardizingPath),
@@ -142,7 +142,7 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     /// to inject a failure exactly when a producer identity binding is inserted.
     private func executeIsolatedSQLite(_ sql: String) throws {
         var handle: OpaquePointer?
-        let openRC = sqlite3_open(SimiGoPaths.databaseURL.path, &handle)
+        let openRC = sqlite3_open(ManagedPaths.databaseURL.path, &handle)
         guard openRC == SQLITE_OK, let handle else {
             if let handle { sqlite3_close(handle) }
             throw NSError(
@@ -209,17 +209,17 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
 
         // Identity binding really landed in settlement_bindings (read back).
         // The store persists `digest(identity.model|tokenizer)`, the same form
-        // `SimiGoISAdmission` compares a consumer against, so the read-back must
+        // `ISAdmission` compares a consumer against, so the read-back must
         // match the digest of the identity re-derived from THIS snapshot.
-        let own = SimiGoProducerIdentity.identity(fromPath: modelPath!)
+        let own = ProducerIdentity.identity(fromPath: modelPath!)
         let bindings = try XCTUnwrap(fresh.esis).settlementBindings(settlementID: outcome.settlementID)
         XCTAssertEqual(
-            bindings[SimiGoSettlementIdentityBinding.modelKey],
-            SimiGoSettlementIdentityBinding.digest(own.model),
+            bindings[SettlementIdentityBinding.modelKey],
+            SettlementIdentityBinding.digest(own.model),
             "the published binding must be the identity re-derived from THIS runtime's snapshot")
         XCTAssertEqual(
-            bindings[SimiGoSettlementIdentityBinding.tokenizerKey],
-            SimiGoSettlementIdentityBinding.digest(own.tokenizer))
+            bindings[SettlementIdentityBinding.tokenizerKey],
+            SettlementIdentityBinding.digest(own.tokenizer))
 
         // Admission seam: the settlement this adapter published is admissible by
         // the continuation path that follows, THROUGH THE CHILD id it returned.
@@ -302,12 +302,12 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         XCTAssertTrue(outcome.identityBindingPublished)
 
         let fresh = store()
-        let own = SimiGoProducerIdentity.identity(fromPath: modelPath!)
+        let own = ProducerIdentity.identity(fromPath: modelPath!)
         let admitted = try fresh.admitContinuation(
             stateID: outcome.childESStateID, consumer: own)
         XCTAssertEqual(admitted.recoveredValue, "ADAPTER-IDENTITY-6313")
 
-        let borrowed = SimiGoSettlementIdentityBinding.Identity(
+        let borrowed = SettlementIdentityBinding.Identity(
             model: "borrowed-model-digest", tokenizer: "borrowed-tokenizer-digest")
         XCTAssertThrowsError(
             try fresh.admitContinuation(stateID: outcome.childESStateID, consumer: borrowed),
@@ -370,26 +370,26 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         let value = "ADAPTER-CONCURRENT-6315"
         let anchor = try stageUnsettledAnchor(value: value)
         let fixedDate = Date(timeIntervalSince1970: 1_798_000_000)
-        let settled = try SimiGoSettlementAuthority.authorize(
+        let settled = try SettlementAuthority.authorize(
             generatedText: "RESULT=\(value)",
             contractJSON: ExecutionStateGraphStore.referenceResultContractJSON,
             verifiedBindings: ["next_input": .string(value)],
             settledAt: fixedDate
         )
         let identities = [
-            SimiGoSettlementIdentityBinding.Identity(
+            SettlementIdentityBinding.Identity(
                 model: "concurrent-model-A", tokenizer: "concurrent-tokenizer-A"),
-            SimiGoSettlementIdentityBinding.Identity(
+            SettlementIdentityBinding.Identity(
                 model: "concurrent-model-B", tokenizer: "concurrent-tokenizer-B")
         ]
-        let databaseURL = SimiGoPaths.databaseURL
+        let databaseURL = ManagedPaths.databaseURL
         let results = ConcurrentCommitResultBox()
 
         // Each worker opens its own SQLite connection. BEGIN IMMEDIATE serializes
         // writes; returned IDs remain transaction-local regardless of commit order.
         DispatchQueue.concurrentPerform(iterations: 2) { index in
             do {
-                let db = try SimiGoESISDatabase(url: databaseURL, createIfNeeded: false)
+                let db = try ESISDatabase(url: databaseURL, createIfNeeded: false)
                 let id = try db.recordNativeSettlementWithIdentity(
                     settled,
                     stateID: anchor,
@@ -422,21 +422,21 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         }
         XCTAssertNotEqual(id0, id1, "each committed settlement has its own UUID")
 
-        let verifier = try SimiGoESISDatabase(url: databaseURL, createIfNeeded: false)
+        let verifier = try ESISDatabase(url: databaseURL, createIfNeeded: false)
         let bindings0 = try verifier.settlementBindings(settlementID: id0)
         let bindings1 = try verifier.settlementBindings(settlementID: id1)
         XCTAssertEqual(
-            bindings0[SimiGoSettlementIdentityBinding.modelKey],
-            SimiGoSettlementIdentityBinding.digest(identities[0].model))
+            bindings0[SettlementIdentityBinding.modelKey],
+            SettlementIdentityBinding.digest(identities[0].model))
         XCTAssertEqual(
-            bindings0[SimiGoSettlementIdentityBinding.tokenizerKey],
-            SimiGoSettlementIdentityBinding.digest(identities[0].tokenizer))
+            bindings0[SettlementIdentityBinding.tokenizerKey],
+            SettlementIdentityBinding.digest(identities[0].tokenizer))
         XCTAssertEqual(
-            bindings1[SimiGoSettlementIdentityBinding.modelKey],
-            SimiGoSettlementIdentityBinding.digest(identities[1].model))
+            bindings1[SettlementIdentityBinding.modelKey],
+            SettlementIdentityBinding.digest(identities[1].model))
         XCTAssertEqual(
-            bindings1[SimiGoSettlementIdentityBinding.tokenizerKey],
-            SimiGoSettlementIdentityBinding.digest(identities[1].tokenizer))
+            bindings1[SettlementIdentityBinding.tokenizerKey],
+            SettlementIdentityBinding.digest(identities[1].tokenizer))
 
         let latest = try XCTUnwrap(verifier.latestSettlementID(forStateID: anchor))
         XCTAssertTrue(latest == id0 || latest == id1)

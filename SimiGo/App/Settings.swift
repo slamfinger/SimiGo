@@ -332,8 +332,8 @@ struct Settings: View {
         Task.detached(priority: .utility) {
             let text: String
             do {
-                let db = try SimiGoESISDatabase(
-                    url: SimiGoPaths.databaseURL, createIfNeeded: true)
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
                 try db.runMigrations()
                 let report = try db.carrierReport(deepVerify: deep)
                 let unaddressed = report.unaddressedFileContents
@@ -362,8 +362,8 @@ struct Settings: View {
         Task.detached(priority: .utility) {
             let text: String
             do {
-                let db = try SimiGoESISDatabase(
-                    url: SimiGoPaths.databaseURL, createIfNeeded: true)
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
                 try db.runMigrations()
                 let result = try db.reconcileRegisteredRoots(category: "work")
                 text = """
