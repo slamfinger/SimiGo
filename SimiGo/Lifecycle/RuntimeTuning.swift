@@ -24,6 +24,27 @@ nonisolated enum RuntimeTuning {
     static let idleReleaseFootprintBytes =
         ProcessInfo.processInfo.physicalMemory / 5 * 3
 
+    /// 轮末归还的研究门（2026-11-09）。42e68f9 起，footprint 越过 3/5 就在每轮
+    /// 结束把 MLX 缓存与 malloc 空闲页还回去；在 32 GB 机器 + 20.6 GB 模型上
+    /// 这条判据**每轮必然成立**，代价是下一次复用要重付缓冲区分配——同模型
+    /// 实测（2026-11-09 17:38 vs 16:57）：无此路径首复用 0.35 s，有它 4.0 s。
+    /// 而归还没换来绿灯：归还后 `cache=0MB` 但 footprint 仍 20.5 GB，黄色照旧。
+    /// 值不值只能 A/B 量，所以给一个不改常数就能切的闸：
+    /// 文件 `~/.simigo/turn_end_release` 内容 `1` 强制归还、`0` 关闭（吃 KV
+    /// 复用），非法或缺失回落 `auto` = 现行 footprint 判据。每次轮末读取。
+    static func turnEndReleaseMode() -> String {
+        let url = URL(
+            fileURLWithPath: NSString(string: "~/.simigo/turn_end_release")
+                .expandingTildeInPath)
+        if let s = try? String(contentsOf: url, encoding: .utf8) {
+            let v = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            if v == "0" || v == "1" { return v }
+        }
+        if let v = ProcessInfo.processInfo.environment["SIMIGO_TURN_END_RELEASE"],
+           v == "0" || v == "1" { return v }
+        return "auto"
+    }
+
     /// Responses store is protocol state, not inference memory.
     static let responsesStoreMaxCount = 64
     static let responsesStoreTTLSeconds: TimeInterval = 1800

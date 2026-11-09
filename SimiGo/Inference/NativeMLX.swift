@@ -2527,7 +2527,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// 缓冲区留给下一轮复用。判断依据是 footprint 而不是"看起来大不大"：
     /// 模型本身就占 20 GB，只有越过物理内存 3/5 才说明是本进程把机器顶住了。
     private nonisolated func releaseIdleMemoryIfTight(trigger: String) {
-        let tight = RuntimeTuning.footprintBytes() > RuntimeTuning.idleReleaseFootprintBytes
+        // 归还与否的研究门：`~/.simigo/turn_end_release` 写 0 关掉（吃 KV
+        // 复用）、写 1 强制，缺省仍按 footprint 判据。
+        let mode = RuntimeTuning.turnEndReleaseMode()
+        let tight = mode == "1"
+            || (mode != "0"
+                && RuntimeTuning.footprintBytes() > RuntimeTuning.idleReleaseFootprintBytes)
         if tight {
             Memory.clearCache()
             malloc_zone_pressure_relief(nil, 0)
