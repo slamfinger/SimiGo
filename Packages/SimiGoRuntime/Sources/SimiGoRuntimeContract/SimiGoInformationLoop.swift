@@ -254,6 +254,14 @@ public struct SimiGoInformationLoop {
                 for (idx, line) in row.content
                     .split(separator: "\n", omittingEmptySubsequences: false).enumerated()
                 where !line.isEmpty {
+                    // The SQL filter admits a message, not a line: a long
+                    // message keeps every line it has and `citationSnippet`
+                    // copies each one before it decides. The byte scan below
+                    // decides the same question and is what the snippet builder
+                    // starts with, so a line dropped here could not have cited
+                    // anyway.
+                    guard Self.firstMatch(in: line, foldedKeywords) != nil
+                    else { continue }
                     guard let snippet = Self.citationSnippet(
                         in: line, folded: foldedKeywords, keywords: keywords)
                     else { continue }
@@ -577,8 +585,18 @@ public struct SimiGoInformationLoop {
             guard !value.isEmpty, !stop.contains(value), !out.contains(value) else { return }
             out.append(value)
         }
+        // Terms break on punctuation, except the three separators that make a
+        // written identifier one word: `ES-IS`, `PAPER_V1`, `a/b`. Splitting on
+        // them used to turn `ES-IS` into `es` and `is`, and `is` matched most
+        // English in the space — a six-term demand over the live space dragged
+        // 38.8 MB of chat into the line scan and cost 12.7 s, with 130k lines
+        // reaching the snippet builder (measured 2026-11-10). The same term set
+        // over the same query keeps 7.0 MB.
+        var separators = CharacterSet.whitespacesAndNewlines
+        separators.formUnion(.punctuationCharacters)
+        separators.remove(charactersIn: "-_/")
         for part in query.lowercased()
-            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .components(separatedBy: separators)
             .reversed()
         where !part.isEmpty {
             let chars = Array(part)

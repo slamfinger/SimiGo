@@ -1389,4 +1389,15 @@ final class SimiGoInformationLoopTests: XCTestCase {
         XCTAssertEqual(first.demandID, second.demandID)
         XCTAssertTrue(second.reused)
     }
+
+    /// A hyphenated identifier is one term. Splitting `ES-IS` on the hyphen used
+    /// to leave `is` behind, and `is` is a substring of most English text — the
+    /// demand then dragged almost the whole space into the line scan instead of
+    /// the rows that share the identifier.
+    func testHyphenatedIdentifierStaysOneTerm() throws {
+        let terms = SimiGoInformationLoop.keywords(in: "ES-IS 论文 实验")
+        XCTAssertTrue(terms.contains("es-is"), "terms: \(terms)")
+        XCTAssertFalse(terms.contains("is"), "terms: \(terms)")
+        XCTAssertFalse(terms.contains("es"), "terms: \(terms)")
+    }
 }
