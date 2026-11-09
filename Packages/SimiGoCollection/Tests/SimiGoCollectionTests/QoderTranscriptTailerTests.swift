@@ -1029,4 +1029,142 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertEqual(tailer.cursorState, saved)
         XCTAssertFalse(missing.report.stateChanged)
     }
+
+    // MARK: - Poll budgets are poll-wide, not per file
+
+    private func fill(_ file: URL, atLeast bytes: Int, tag: String) throws {
+        var text = ""
+        var index = 0
+        while text.utf8.count < bytes {
+            text += Fixture.turnLines(
+                anchor: "u-\(tag)-\(index)", answerUUID: "a-\(tag)-\(index)",
+                messageID: "m-\(tag)-\(index)", nextAnchor: "n-\(tag)-\(index)"
+            ).joined(separator: "\n") + "\n"
+            index += 1
+        }
+        try Data(text.utf8).write(to: file)
+    }
+
+    /// `maxBytesPerPoll` is the budget for the whole poll. Four files with
+    /// fresh bytes must not add up to four full windows.
+    func testPollByteBudgetIsGlobalAcrossFiles() throws {
+        let root = try makeRoot()
+        var files: [URL] = []
+        for index in 0..<4 {
+            let file = projectFile(in: root, session: "budget-\(index)")
+            try fill(file, atLeast: 16 * 1024, tag: "b\(index)")
+            files.append(file)
+        }
+        let budget = 4 * 1024
+        let tailer = QoderTranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxBytesPerPoll: budget)
+
+        let first = poll(tailer)
+        XCTAssertTrue(first.report.budgetExhausted, "one window cannot cover four files")
+        XCTAssertLessThanOrEqual(
+            first.report.readBytes, Int64(budget),
+            "a single poll read more than its own budget")
+
+        // Fair rotation: repeated polls finish the tree instead of re-reading
+        // the same head, and no poll exceeds the budget.
+        var polls = 1
+        while true {
+            polls += 1
+            XCTAssertLessThan(polls, 200, "budgeted polls stopped making progress")
+            let next = poll(tailer)
+            XCTAssertLessThanOrEqual(next.report.readBytes, Int64(budget))
+            if !next.report.budgetExhausted { break }
+        }
+        for file in files {
+            let size = Int64(try Data(contentsOf: file).count)
+            let cursor = tailer.cursorState.cursors.first {
+                $0.key.hasSuffix("/" + file.lastPathComponent)
+            }?.value
+            XCTAssertEqual(cursor?.offset, size, "file was never drained: \(file.lastPathComponent)")
+        }
+    }
+
+    /// A line larger than the poll budget is scanned across polls: the scan
+    /// spends the same budget as the read, so one poll can no longer pull
+    /// `maxLineBytes` (32 MiB by default) out of a single file.
+    func testOversizedLineScanSharesThePollBudget() throws {
+        let root = try makeRoot()
+        let file = projectFile(in: root, session: "huge")
+        let line = String(repeating: "x", count: 256 * 1024)
+        try Data((line + "\n").utf8).write(to: file)
+        let budget = 8 * 1024
+        let tailer = QoderTranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxBytesPerPoll: budget,
+            maxLineBytes: 1 << 20)
+        let size = Int64(try Data(contentsOf: file).count)
+
+        var polls = 0
+        var sawParseFailure = false
+        while tailer.cursorState.cursors.values.first?.offset != size {
+            polls += 1
+            XCTAssertLessThan(polls, 200, "the oversized line never completed")
+            let result = poll(tailer)
+            sawParseFailure = sawParseFailure || result.report.parseFailures > 0
+            XCTAssertLessThanOrEqual(
+                result.report.readBytes, Int64(budget),
+                "poll \(polls) read past the poll budget")
+        }
+        XCTAssertGreaterThan(polls, 1, "a line longer than the budget must span polls")
+        XCTAssertTrue(sawParseFailure, "an oversized line is a parse failure, not content")
+    }
+
+    /// A scan that stops at its file budget is partial. A partial walk cannot
+    /// prove deletion, so cursors it did not see must survive.
+    func testScanBudgetIsPartialAndNeverRetiresUnseenCursors() throws {
+        let root = try makeRoot()
+        for index in 0..<4 {
+            let file = projectFile(in: root, session: "scan-\(index)")
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: file)
+        }
+        let first = QoderTranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting)
+        _ = poll(first)
+        XCTAssertEqual(first.cursorState.cursors.count, 4)
+
+        let capped = QoderTranscriptTailer(
+            scanRoot: root, state: first.cursorState,
+            now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxScannedFiles: 1)
+        let result = poll(capped)
+        XCTAssertFalse(result.report.scanComplete, "a capped walk is not a complete walk")
+        XCTAssertEqual(
+            capped.cursorState.cursors.count, 4,
+            "cursors the capped walk did not see were retired as deleted")
+        XCTAssertTrue(
+            result.report.errors.contains { $0.contains("scan file budget") },
+            "the budget stop must be reported: \(result.report.errors)")
+    }
+
+    /// The runner stages a poll's events in memory before committing them, so
+    /// the event count of one poll is bounded too.
+    func testEventBudgetStopsThePollBeforeStagingUnboundedEvents() throws {
+        let root = try makeRoot()
+        for index in 0..<4 {
+            let file = projectFile(in: root, session: "events-\(index)")
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: file)
+        }
+        let tailer = QoderTranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxEventsPerPoll: 2)
+        let result = poll(tailer)
+        XCTAssertTrue(result.report.budgetExhausted)
+        let paths = Set(Fixture.baselines(result.events).map(\.path))
+        XCTAssertEqual(paths.count, 1, "the poll staged events from more than one file")
+    }
 }

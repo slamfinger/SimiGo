@@ -426,16 +426,23 @@ public enum QoderTranscriptScanResult: Sendable, Equatable {
 ///   <root>/<project>/<session>/subagents/<agent>.jsonl
 public struct QoderTranscriptScanner {
     public let root: URL
+    /// A walk that stops at a budget is partial, never complete: a short list
+    /// cannot prove that an unlisted file was deleted.
+    public let maxScannedFiles: Int
+    public let maxVisitedEntries: Int
 
     private static let resourceKeys: Set<URLResourceKey> = [
         .isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey,
         .fileSizeKey, .creationDateKey, .contentModificationDateKey,
     ]
 
-    public init(root: URL) {
+    public init(root: URL, maxScannedFiles: Int = 4_096,
+                maxVisitedEntries: Int = 16_384) {
         self.root = URL(
             fileURLWithPath: QoderTranscriptPathAccess.canonicalPath(root.path),
             isDirectory: true)
+        self.maxScannedFiles = max(0, maxScannedFiles)
+        self.maxVisitedEntries = max(0, maxVisitedEntries)
     }
 
     public func scan() -> QoderTranscriptScanResult {
@@ -459,9 +466,21 @@ public struct QoderTranscriptScanner {
         }
 
         var errors: [String] = []
+        var visitedEntries = 0
+        var budgetError: String?
+        func chargeEntry() -> Bool {
+            visitedEntries += 1
+            guard visitedEntries <= maxVisitedEntries else {
+                budgetError = "scan entry budget exceeded (\(maxVisitedEntries)); "
+                    + "remaining directories were not walked"
+                return false
+            }
+            return true
+        }
 
         var files: [QoderTranscriptFile] = []
-        for project in projects {
+        projectLoop: for project in projects {
+            guard chargeEntry() else { break }
             guard
                 let projectValues = try? project.resourceValues(
                     forKeys: Self.resourceKeys)
@@ -474,6 +493,12 @@ public struct QoderTranscriptScanner {
             let projectID = project.lastPathComponent
             guard let children = list(project, errors: &errors) else { continue }
             for child in children {
+                guard chargeEntry() else { break projectLoop }
+                guard files.count < maxScannedFiles else {
+                    budgetError = "scan file budget exceeded (\(maxScannedFiles)); "
+                        + "remaining files were not walked"
+                    break projectLoop
+                }
                 guard
                     let values = try? child.resourceValues(forKeys: Self.resourceKeys)
                 else {
@@ -555,6 +580,7 @@ public struct QoderTranscriptScanner {
             }
         }
 
+        if let budgetError { errors.append(budgetError) }
         let sorted = files.sorted { $0.path < $1.path }
         return errors.isEmpty ? .complete(sorted) : .partial(files: sorted, errors: errors)
     }
@@ -630,6 +656,13 @@ public struct QoderPollReport: Sendable, Equatable {
     /// Candidates handed to the delivery sink during this poll.
     public var deliveredCandidates = 0
     public var stateChanged = false
+    /// The poll stopped because its poll-wide byte or event budget ran out.
+    /// The cursors that were not reached stay where they are; the next poll
+    /// continues from them.
+    public var budgetExhausted = false
+    /// The walk saw the whole root. False when it stopped at a scan budget, and
+    /// then no cursor may be retired as "deleted".
+    public var scanComplete = true
     public var errors: [String] = []
 
     public init() {}
@@ -661,10 +694,25 @@ public final class QoderTranscriptTailer {
     public let baselinePolicy: QoderBaselinePolicy
     public let maxBytesPerPoll: Int
     public let maxLineBytes: Int
+    /// Events handed to the sink in one poll. The runner stages them in memory
+    /// before committing, so this is the bound on that staging buffer.
+    public let maxEventsPerPoll: Int
+    public let maxScannedFiles: Int
+    public let maxVisitedEntries: Int
 
     private let scanner: QoderTranscriptScanner
     private var state: QoderCursorState
     private var accumulators: [String: QoderTurnAccumulator] = [:]
+    /// Fair rotation: files processed least recently go first, so a budget that
+    /// only covers part of the tree still visits every file over a few polls.
+    private var lastVisit: [String: UInt64] = [:]
+    private var visitClock: UInt64 = 0
+    /// Progress inside a single line too long to scan in one poll. The scan is
+    /// not a read the cursor can carry, so it is remembered here and continued
+    /// by the next poll; a restart simply re-scans from the line start.
+    /// `window` is the first read window of that line, which is what a
+    /// too-long line is dropped by.
+    private var oversizedScan: [String: (scanned: Int64, window: Int)] = [:]
 
     /// Deterministic post-read fingerprint fault injection for package tests.
     /// Production callers leave this nil and use descriptor-backed reads.
@@ -676,16 +724,24 @@ public final class QoderTranscriptTailer {
         now: Date = Date(),
         baselinePolicy: QoderBaselinePolicy = .skipExisting,
         maxBytesPerPoll: Int = 4 << 20,
-        maxLineBytes: Int = 32 << 20
+        maxLineBytes: Int = 32 << 20,
+        maxEventsPerPoll: Int = 20_000,
+        maxScannedFiles: Int = 4_096,
+        maxVisitedEntries: Int = 16_384
     ) {
         let canonicalRoot = URL(
             fileURLWithPath: QoderTranscriptPathAccess.canonicalPath(scanRoot.path),
             isDirectory: true)
         self.scanRoot = canonicalRoot
         self.baselinePolicy = baselinePolicy
-        self.scanner = QoderTranscriptScanner(root: canonicalRoot)
+        self.scanner = QoderTranscriptScanner(
+            root: canonicalRoot, maxScannedFiles: maxScannedFiles,
+            maxVisitedEntries: maxVisitedEntries)
         self.maxBytesPerPoll = maxBytesPerPoll
         self.maxLineBytes = maxLineBytes
+        self.maxEventsPerPoll = maxEventsPerPoll
+        self.maxScannedFiles = maxScannedFiles
+        self.maxVisitedEntries = maxVisitedEntries
         self.state = state ?? QoderCursorState(initializedAt: now)
     }
 
@@ -703,13 +759,31 @@ public final class QoderTranscriptTailer {
             report.stateChanged = true
         }
         let scan = scanner.scan()
-        let files = scan.files
+        // Least-recently-visited first, then path order: with a poll budget that
+        // covers only part of the tree, the next poll starts where this one
+        // stopped instead of re-reading the same head every time.
+        let files = scan.files.sorted { lhs, rhs in
+            let left = lastVisit[lhs.path] ?? 0
+            let right = lastVisit[rhs.path] ?? 0
+            if left != right { return left < right }
+            return lhs.path < rhs.path
+        }
         report.scannedFiles = files.count
         report.errors.append(contentsOf: scan.errors)
-        var livePaths: Set<String> = []
+        report.scanComplete = scan.isComplete
+        // Everything the walk saw is live, including files this poll's budget
+        // did not reach: a file that exists but was not read has not been
+        // deleted, and retiring its cursor would replay it from the start.
+        let livePaths = Set(files.map(\.path))
+        var budget = max(0, maxBytesPerPoll)
 
         for file in files {
-            livePaths.insert(file.path)
+            if budget <= 0 || report.deliveredEvents >= maxEventsPerPoll {
+                report.budgetExhausted = true
+                break
+            }
+            lastVisit[file.path] = visitClock
+            visitClock &+= 1
             var events: [QoderCollectionEvent] = []
             var nextCursor: QoderFileCursor
             var changed = false
@@ -766,7 +840,8 @@ public final class QoderTranscriptTailer {
                             // anchor even when no new bytes arrived, so recovery
                             // happens at start rather than at the next append.
                             let consumed = readAvailable(
-                                file, cursor: &existing, events: &events, report: &report)
+                                file, cursor: &existing, events: &events,
+                                budget: &budget, report: &report)
                             nextCursor = existing
                             changed = consumed
                         } else {
@@ -795,7 +870,8 @@ public final class QoderTranscriptTailer {
                         file, offset: 0, segmentLines: 0,
                         fingerprint: QoderDigest.sha256Hex(Data()))
                     _ = readAvailable(
-                        file, cursor: &cursor, events: &events, report: &report)
+                        file, cursor: &cursor, events: &events,
+                        budget: &budget, report: &report)
                     nextCursor = cursor
                     changed = true
                 } else {
@@ -951,8 +1027,8 @@ public final class QoderTranscriptTailer {
         return accumulator
     }
 
-    /// Reads complete lines only, at most `maxBytesPerPoll`. Returns true when
-    /// the cursor moved.
+    /// Reads complete lines only, at most the poll's remaining byte budget.
+    /// Returns true when the cursor moved.
     ///
     /// When no in-memory accumulator exists and the cursor still points at an
     /// open turn's anchor, reading starts there instead of at `offset`, so a
@@ -961,7 +1037,8 @@ public final class QoderTranscriptTailer {
     /// replay path and keeps an open turn from being orphaned mid-answer.
     private func readAvailable(
         _ file: QoderTranscriptFile, cursor: inout QoderFileCursor,
-        events: inout [QoderCollectionEvent], report: inout QoderPollReport
+        events: inout [QoderCollectionEvent], budget: inout Int,
+        report: inout QoderPollReport
     ) -> Bool {
         let committedOffset = cursor.offset
         let replaying =
@@ -973,6 +1050,20 @@ public final class QoderTranscriptTailer {
         }
         let available = file.size - working.offset
         guard available > 0 else { return false }
+        guard budget > 0 else {
+            report.budgetExhausted = true
+            return false
+        }
+        if oversizedScan[file.path] != nil, working.offset == cursor.offset {
+            // The same oversized line is still being scanned. Its already
+            // scanned prefix is known to hold no newline, so this poll spends
+            // its whole budget on the search instead of re-reading that prefix.
+            let moved = skipOversizedLine(
+                file, cursor: &working, available: available, partialBytes: 0,
+                budget: &budget, events: &events, report: &report)
+            cursor = working
+            return moved
+        }
         let opened: QoderTranscriptPathAccess.OpenedFile
         do {
             opened = try openTranscriptFile(path: file.path, expectedInode: file.inode)
@@ -990,12 +1081,13 @@ public final class QoderTranscriptTailer {
         do {
             data = try QoderTranscriptPathAccess.read(
                 descriptor: opened.descriptor, offset: working.offset,
-                count: Int(min(available, Int64(maxBytesPerPoll))))
+                count: Int(min(available, Int64(budget))))
             guard !data.isEmpty else { return false }
         } catch {
             report.errors.append("read failed for \(file.path): \(error)")
             return false
         }
+        budget -= data.count
 
         if replaying {
             report.replayedBytes += min(
@@ -1005,7 +1097,7 @@ public final class QoderTranscriptTailer {
         guard let lastNewline = data.lastIndex(of: 0x0A) else {
             let moved = skipOversizedLine(
                 file, cursor: &working, available: available, partialBytes: data.count,
-                events: &events, report: &report)
+                budget: &budget, events: &events, report: &report)
             cursor = working
             return moved
         }
@@ -1090,18 +1182,45 @@ public final class QoderTranscriptTailer {
     }
 
     /// A single line longer than one poll window would otherwise stall the
-    /// file forever. Search for its newline up to `maxLineBytes`; past that,
-    /// drop one window and record a parse failure so the stream can progress.
+    /// file forever. Search for its newline up to `maxLineBytes`, spending the
+    /// poll's remaining byte budget on the scan as well: the search reads the
+    /// same disk the tail reads. When the budget ends mid-line, the scan
+    /// position is remembered for the next poll; past `maxLineBytes`, one
+    /// window is dropped with a parse failure so the stream still progresses.
     private func skipOversizedLine(
         _ file: QoderTranscriptFile, cursor: inout QoderFileCursor, available: Int64,
-        partialBytes: Int, events: inout [QoderCollectionEvent],
+        partialBytes: Int, budget: inout Int,
+        events: inout [QoderCollectionEvent],
         report: inout QoderPollReport
     ) -> Bool {
         let lineStart = cursor.offset
-        if let afterNewline = findNewline(
-            path: file.path, from: lineStart, limit: Int64(maxLineBytes),
-            expectedInode: file.inode)
-        {
+        let pending = oversizedScan[file.path]
+        // A line that stops at the end of the file is incomplete, not
+        // oversized: more bytes may still arrive, and re-reading from the line
+        // start is exactly what parses it once they do. Only a line that
+        // continues past what this poll could read is handled as too long.
+        guard pending != nil || available > Int64(partialBytes) else {
+            return false
+        }
+        // The window just read was itself searched for a newline and had none,
+        // so its bytes count as scanned; a resumed scan picks up where the
+        // previous poll stopped instead of re-reading that prefix.
+        let alreadyScanned = (pending?.scanned ?? 0) + Int64(partialBytes)
+        let window = pending?.window ?? max(partialBytes, 1)
+        let lineAllowance = max(0, Int64(maxLineBytes) - alreadyScanned)
+        let scanLimit = min(lineAllowance, Int64(max(0, budget)))
+        var scanned: Int64 = 0
+        var afterNewline: Int64?
+        if scanLimit > 0 {
+            let found = findNewline(
+                path: file.path, from: lineStart + alreadyScanned,
+                limit: scanLimit, expectedInode: file.inode)
+            afterNewline = found.position
+            scanned = found.scanned
+            budget -= Int(scanned)
+        }
+        if let afterNewline {
+            oversizedScan.removeValue(forKey: file.path)
             let consumed = afterNewline - lineStart
             guard
                 let fingerprint = trailingFingerprint(
@@ -1119,7 +1238,8 @@ public final class QoderTranscriptTailer {
                 lineStart: lineStart, lineEnd: afterNewline)
             report.parseFailures += 1
             report.readFiles += 1
-            report.readBytes += consumed
+            // Bytes actually read this poll: the window plus the scan.
+            report.readBytes += Int64(partialBytes) + scanned
             events.append(
                 .parseFailure(
                     QoderParseFailure(
@@ -1128,8 +1248,10 @@ public final class QoderTranscriptTailer {
                         detail: "line exceeds poll window")))
             return true
         }
-        if available > Int64(maxLineBytes) {
-            let advance = Int64(partialBytes)
+        if alreadyScanned + scanned >= Int64(maxLineBytes) {
+            oversizedScan.removeValue(forKey: file.path)
+            let advance = min(Int64(window), available)
+            guard advance > 0 else { return false }
             guard
                 let fingerprint = trailingFingerprint(
                     path: file.path, offset: lineStart + advance, expectedInode: file.inode)
@@ -1145,7 +1267,7 @@ public final class QoderTranscriptTailer {
             // boundary) is left where it was; a cold start re-reads the line.
             report.parseFailures += 1
             report.readFiles += 1
-            report.readBytes += advance
+            report.readBytes += Int64(partialBytes) + scanned
             events.append(
                 .parseFailure(
                     QoderParseFailure(
@@ -1154,6 +1276,8 @@ public final class QoderTranscriptTailer {
                         detail: "line exceeds \(maxLineBytes) bytes; window dropped")))
             return true
         }
+        oversizedScan[file.path] = (alreadyScanned + scanned, window)
+        if budget <= 0 { report.budgetExhausted = true }
         return false
     }
 
@@ -1186,24 +1310,24 @@ public final class QoderTranscriptTailer {
 
     private func findNewline(
         path: String, from offset: Int64, limit: Int64, expectedInode: UInt64
-    ) -> Int64? {
+    ) -> (position: Int64?, scanned: Int64) {
         guard offset >= 0, limit >= 0,
               let opened = try? openTranscriptFile(path: path, expectedInode: expectedInode)
-        else { return nil }
+        else { return (nil, 0) }
         defer { Darwin.close(opened.descriptor) }
         var scanned: Int64 = 0
         while scanned < limit {
             let count = Int(min(1 << 20, limit - scanned))
             guard let chunk = try? QoderTranscriptPathAccess.read(
                 descriptor: opened.descriptor, offset: offset + scanned, count: count),
-                !chunk.isEmpty else { return nil }
+                !chunk.isEmpty else { return (nil, scanned) }
             if let newline = chunk.firstIndex(of: 0x0A) {
-                return offset + scanned
-                    + Int64(chunk.distance(from: chunk.startIndex, to: newline)) + 1
+                let found = Int64(chunk.distance(from: chunk.startIndex, to: newline)) + 1
+                return (offset + scanned + found, scanned + found)
             }
             scanned += Int64(chunk.count)
         }
-        return nil
+        return (nil, scanned)
     }
 
     private func trailingFingerprint(
