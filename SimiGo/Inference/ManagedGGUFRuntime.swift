@@ -66,9 +66,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     baseURL: URL(string: "http://127.0.0.1:\(enginePort)")!,
                     model: alias))
             let producer = InformationTurnProducer(
-                modelIdentity: SimiGoProducerIdentity.canonicalModelIdentity(
+                modelIdentity: ProducerIdentity.canonicalModelIdentity(
                     fromPath: info.path),
-                identity: SimiGoProducerIdentity.identity(fromPath: info.path))
+                identity: ProducerIdentity.identity(fromPath: info.path))
             let node = await MainActor.run {
                 InferenceNodeConfiguration.shared.snapshot()
             }
@@ -129,7 +129,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     continuationAdmission: { esStateID in
                         let modelPath = info.path
                         let admitted = try await MainActor.run {
-                            try SimiGoProducerIdentity.recoverForContinuation(
+                            try ProducerIdentity.recoverForContinuation(
                                 stateID: esStateID, modelPath: modelPath)
                         }
                         return ContinuationAdmissionOutcome(

@@ -29,19 +29,19 @@ public final class EnvManager: ObservableObject {
     @Published public var commandStatus = "就绪"
 
     // MARK: - Paths
-    // Single source of truth: SimiGoPaths (MLX-free runtime resolver). No `models`
+    // Single source of truth: ManagedPaths (MLX-free runtime resolver). No `models`
     // directory is ever created under the managed root — model weights stay external
     // and are referenced from the Hugging Face cache / user-selected roots only.
-    public static var simigoDir: String { SimiGoPaths.managedRoot().path }
-    public static var binDir: String { SimiGoPaths.bin.path }
-    public static var logsDir: String { SimiGoPaths.logs.path }
-    public static var nativeMLXTraceLog: String { SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log").path }
+    public static var simigoDir: String { ManagedPaths.managedRoot().path }
+    public static var binDir: String { ManagedPaths.bin.path }
+    public static var logsDir: String { ManagedPaths.logs.path }
+    public static var nativeMLXTraceLog: String { ManagedPaths.logs.appendingPathComponent("native_mlx_trace.log").path }
 
     // MARK: - Engine selection (install page)
     /// Engines selectable at install time: bundled defaults plus any operator
     /// manifest entries. NOT hardcoded to llama.cpp — add an engine via manifest.
     public var availableEngines: [EngineRecipe] {
-        SimiGoEngineRegistry.load(manifestURL: SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName))
+        EngineRegistry.load(manifestURL: ManagedPaths.manifests.appendingPathComponent(EngineRegistry.manifestName))
     }
 
     /// Currently chosen engine id (persisted to config).
@@ -55,9 +55,9 @@ public final class EnvManager: ObservableObject {
     public func engineStage(for id: String) -> EngineStage {
         guard let recipe = availableEngines.first(where: { $0.id == id }) else { return .absent }
         let binaryPresent = Self.findSystemLlamaServer() != nil
-        let sourcePinned = FileManager.default.fileExists(atPath: SimiGoPaths.sources.path)
+        let sourcePinned = FileManager.default.fileExists(atPath: ManagedPaths.sources.path)
         let driverAdapted = id == "mlx-native" ? true : binaryPresent
-        return SimiGoEngineRegistry.resolveStage(recipe: recipe,
+        return EngineRegistry.resolveStage(recipe: recipe,
                                                  sourcePresentAtPinnedRef: sourcePinned,
                                                  binaryPresent: binaryPresent,
                                                  driverAdapted: driverAdapted,
@@ -70,9 +70,9 @@ public final class EnvManager: ObservableObject {
     /// source-build llama.cpp) or is fail-closed for lack of a manifest endpoint
     /// (SGLang). The install UI uses this to wire the existing remote runtime,
     /// so selecting a server actually routes inference instead of only logging.
-    public func adoptedEndpoint(for id: String) -> SimiGoEngineRegistry.AdoptedEndpoint? {
+    public func adoptedEndpoint(for id: String) -> EngineRegistry.AdoptedEndpoint? {
         guard let recipe = availableEngines.first(where: { $0.id == id }) else { return nil }
-        return SimiGoEngineRegistry.adoptedEndpoint(for: recipe)
+        return EngineRegistry.adoptedEndpoint(for: recipe)
     }
 
     public static var llamaServerExecutable: String {
@@ -307,15 +307,15 @@ public final class EnvManager: ObservableObject {
             // Locked version only: NO floating `git pull`. The pinned ref must come
             // from the engine manifest / operator setting; an unlocked recipe is
             // refused fail-closed instead of silently tracking upstream HEAD.
-            guard let llamaRecipe = SimiGoEngineRegistry.recipe(
+            guard let llamaRecipe = EngineRegistry.recipe(
                     id: "llama.cpp",
-                    manifestURL: SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName)),
+                    manifestURL: ManagedPaths.manifests.appendingPathComponent(EngineRegistry.manifestName)),
                   llamaRecipe.isVersionLocked, let pinned = llamaRecipe.pinnedRef else {
                 throw NSError(domain: "EnvManager", code: 409, userInfo: [NSLocalizedDescriptionKey:
-                    "llama.cpp 未锁定版本：请在引擎清单 '\(SimiGoEngineRegistry.manifestName)' 指定 pinnedRef 后再构建（禁止随上游漂移）。"])
+                    "llama.cpp 未锁定版本：请在引擎清单 '\(EngineRegistry.manifestName)' 指定 pinnedRef 后再构建（禁止随上游漂移）。"])
             }
-            let source = SimiGoPaths.sources.appendingPathComponent("llama.cpp").path
-            let build = SimiGoPaths.build.appendingPathComponent("llama.cpp").path
+            let source = ManagedPaths.sources.appendingPathComponent("llama.cpp").path
+            let build = ManagedPaths.build.appendingPathComponent("llama.cpp").path
 
             // 网络重试：github 连接间歇性失败（HTTP2 framing / 443 超时实测），
             // 检出与更新各给 4 次机会（间隔 5s）。
@@ -421,7 +421,7 @@ public final class EnvManager: ObservableObject {
             for rel in llamaRecipe.cachePathsToRemoveAfterBuild {
                 precondition(!rel.hasPrefix("/") && !rel.contains(".."),
                              "recipe cache path must be relative and contained")
-                let url = SimiGoPaths.managedRoot().appendingPathComponent(rel, isDirectory: true)
+                let url = ManagedPaths.managedRoot().appendingPathComponent(rel, isDirectory: true)
                 if fm.fileExists(atPath: url.path) { try? fm.removeItem(at: url) }
             }
             appendCommandLog("✅ 已清理引擎缓存：\(llamaRecipe.cachePathsToRemoveAfterBuild.joined(separator: ", "))（仅保留二进制）")
@@ -554,7 +554,7 @@ public final class EnvManager: ObservableObject {
     /// `roots` table (category `work`, locator `path`) so Execution State and
     /// Information Space can index files under it without ever copying them in.
     public func bootstrapFreshDatabase(
-        workRoot: String?, url: URL = SimiGoPaths.databaseURL
+        workRoot: String?, url: URL = ManagedPaths.databaseURL
     ) -> [String: Any] {
         let fm = FileManager.default
         let existedBefore = fm.fileExists(atPath: url.path)
@@ -565,7 +565,7 @@ public final class EnvManager: ObservableObject {
             // structural: there is no code path here that can mint a blank file
             // at a path that already holds one. A corrupt existing file fails
             // closed instead of being papered over by a fresh creation.
-            let db = try SimiGoESISDatabase(url: url, createIfNeeded: !existedBefore)
+            let db = try ESISDatabase(url: url, createIfNeeded: !existedBefore)
             try db.runMigrations()
             // Migrations may grow the file; they must never substitute it. Device
             // plus inode is what separates "opened the database that was there"
@@ -632,12 +632,12 @@ public final class EnvManager: ObservableObject {
     /// validated in the user's real environment (2026-10-18, build 11720,
     /// `0878f7c3…`) — self-bootstrap without upstream drift.
     public func ensureDefaultEngineManifest() -> [String: Any] {
-        let url = SimiGoPaths.manifests.appendingPathComponent(SimiGoEngineRegistry.manifestName)
+        let url = ManagedPaths.manifests.appendingPathComponent(EngineRegistry.manifestName)
         if FileManager.default.fileExists(atPath: url.path) {
             return ["status": "present", "path": url.path]
         }
         let pinned = "0878f7c304cc13915c831ae17694534c94940176"
-        var recipes = SimiGoEngineRegistry.bundledDefaults
+        var recipes = EngineRegistry.bundledDefaults
         if let idx = recipes.firstIndex(where: { $0.id == "llama.cpp" }) {
             recipes[idx] = EngineRecipe(
                 id: "llama.cpp", displayName: "llama.cpp", kind: .sourceBuild,
@@ -649,7 +649,7 @@ public final class EnvManager: ObservableObject {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             try FileManager.default.createDirectory(
-                at: SimiGoPaths.manifests, withIntermediateDirectories: true)
+                at: ManagedPaths.manifests, withIntermediateDirectories: true)
             try encoder.encode(recipes).write(to: url)
             return ["status": "created", "pinned_ref": pinned, "path": url.path]
         } catch {
@@ -665,7 +665,7 @@ public final class EnvManager: ObservableObject {
     /// aborting the rest.
     public func bootstrapGenerationEnvironment(workRoot: String?) async -> [String: Any] {
         var report: [String: Any] = [
-            "managed_root": SimiGoPaths.managedRoot().path,
+            "managed_root": ManagedPaths.managedRoot().path,
             "started_at": ISO8601DateFormatter().string(from: Date()),
         ]
         // 0) Version-locked engine manifest (operator manifest wins; the
@@ -719,7 +719,7 @@ public final class EnvManager: ObservableObject {
         maximumBytes: Int64 = EnvManager.defaultExternalBinaryDownloadLimitBytes
     ) async -> [String: Any] {
         let name = url.lastPathComponent.isEmpty ? "tool" : url.lastPathComponent
-        let cacheDir = SimiGoPaths.staging
+        let cacheDir = ManagedPaths.staging
         let tmp = cacheDir.appendingPathComponent("dl-\(UUID().uuidString)-\(name)")
         let fm = FileManager.default
         binaryInstallProgress = 0
@@ -749,8 +749,8 @@ public final class EnvManager: ObservableObject {
                 binaryInstallMessage = "\(name) 不是 Mach-O 可执行文件"
                 return ["status": "not_executable", "detail": "\(name) is not a Mach-O binary"]
             }
-            let target = SimiGoPaths.bin.appendingPathComponent(name)
-            try fm.createDirectory(at: SimiGoPaths.bin, withIntermediateDirectories: true)
+            let target = ManagedPaths.bin.appendingPathComponent(name)
+            try fm.createDirectory(at: ManagedPaths.bin, withIntermediateDirectories: true)
             try Task.checkCancellation()
             try BinaryDownloader.installAtomically(stagedAt: tmp, to: target)
             binaryInstallMessage = "已安装 \(target.path)（\(Self.byteText(bytes))）"
@@ -804,7 +804,7 @@ public final class EnvManager: ObservableObject {
         var report: [String: Any] = [:]
         // llama.cpp: rebuild from the (locked) recipe via force. 不再先删二进制——
         // 先前那版删完再重建，一旦克隆/编译失败，手上就没有可用的 llama-server 了。
-        let llama = SimiGoPaths.bin.appendingPathComponent("llama-server")
+        let llama = ManagedPaths.bin.appendingPathComponent("llama-server")
         if FileManager.default.fileExists(atPath: llama.path) {
             await upgradeLlamaCpp()
             report["llama.cpp"] = ["status": commandStatus]
@@ -833,9 +833,9 @@ public final class EnvManager: ObservableObject {
         else {
             return ["status": "invalid", "detail": "not a file: \(sourceURL.path)"]
         }
-        let target = SimiGoPaths.bin.appendingPathComponent(sourceURL.lastPathComponent)
+        let target = ManagedPaths.bin.appendingPathComponent(sourceURL.lastPathComponent)
         do {
-            try fm.createDirectory(at: SimiGoPaths.bin, withIntermediateDirectories: true)
+            try fm.createDirectory(at: ManagedPaths.bin, withIntermediateDirectories: true)
             if fm.fileExists(atPath: target.path) {
                 let existing = fm.contents(atPath: target.path)?.count ?? -1
                 let incoming = fm.contents(atPath: sourceURL.path)?.count ?? -2
@@ -867,7 +867,7 @@ public final class EnvManager: ObservableObject {
     /// Registered external work roots, read from the authoritative database.
     public func listWorkRoots() -> [WorkRootEntry] {
         do {
-            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
             return try db.listRoots(category: "work").compactMap { row in
                 guard let path = row.displayName, row.locatorType == "path" else { return nil }
@@ -883,7 +883,7 @@ public final class EnvManager: ObservableObject {
     @discardableResult
     public func removeWorkRoot(rootID: String) -> [String: Any] {
         do {
-            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
             try db.removeRoot(rootID: rootID)
             NotificationCenter.default.post(name: Self.workRootsDidChange, object: nil)
@@ -905,7 +905,7 @@ public final class EnvManager: ObservableObject {
             return ["status": "invalid", "detail": "not a directory: \(standardized)"]
         }
         do {
-            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
             let rootID = "work-" + Self.stableRootID(forPath: standardized)
             try db.upsertRoot(

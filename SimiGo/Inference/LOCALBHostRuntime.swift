@@ -24,7 +24,7 @@ enum LOCALBHostRuntime {
     static func defaultHostDirectory() -> URL {
         // Same managed-root resolver as the rest of the product: SIMIGO_HOME moves it
         // for tests/experiments, and with no override it is <home>/.simigo/localb.
-        SimiGoPaths.managedRoot().appendingPathComponent("localb", isDirectory: true)
+        ManagedPaths.managedRoot().appendingPathComponent("localb", isDirectory: true)
     }
 
     static func registryRoot(in hostDirectory: URL) -> URL {

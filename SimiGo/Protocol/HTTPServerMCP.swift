@@ -9,8 +9,8 @@ extension Notification.Name {
 
 /// MCP (JSON-RPC 2.0 over HTTP) facade over the SAME native ES/IS operations
 /// the HTTP routes already use. There is no second database, retrieval path or
-/// settlement authority here: every tool calls `SimiGoESISDatabase` /
-/// `SimiGoInformationLoop`, so an external agent sees exactly the information
+/// settlement authority here: every tool calls `ESISDatabase` /
+/// `InformationLoop`, so an external agent sees exactly the information
 /// space the local model executes against.
 ///
 /// Transport: stateless Streamable-HTTP subset. POST /mcp carries one request,
@@ -430,7 +430,7 @@ extension HTTPServer {
 
     static func runMCPTool(
         name: String, arguments: [String: Any],
-        databaseURL: URL = SimiGoPaths.databaseURL
+        databaseURL: URL = ManagedPaths.databaseURL
     ) throws -> [String: Any] {
         switch name {
         case "simigo_is_search":
@@ -440,7 +440,7 @@ extension HTTPServer {
                 throw MCPToolError.invalidArguments("query is required")
             }
             let db = try openESISDatabase(databaseURL)
-            let loop = SimiGoInformationLoop(database: db)
+            let loop = InformationLoop(database: db)
             let resolution = try loop.resolve(.init(
                 sessionID: optionalString(arguments, "session_id"),
                 requestIdentity: optionalString(arguments, "request_id"),
@@ -718,7 +718,7 @@ extension HTTPServer {
             }
             let resolution = demandID.isEmpty
                 ? nil
-                : SimiGoInformationLoop.Resolution(
+                : InformationLoop.Resolution(
                     demandID: demandID, stateID: stateID, reused: false,
                     hits: [], inputDigest: "", resultSHA256: "",
                     retrievalSettlementID: retrievalID, itemIDs: [],
@@ -729,7 +729,7 @@ extension HTTPServer {
             // transaction as the result: a settle never succeeds while dropping
             // a source it claims. An address must already be a sealed object —
             // the FK enforces it, and this turns that into a clear refusal.
-            var declaredDependencies: [SimiGoESISDatabase.DeclaredDependency] = []
+            var declaredDependencies: [ESISDatabase.DeclaredDependency] = []
             for entry in arguments["dependencies"] as? [[String: Any]] ?? [] {
                 guard let dependencyID = entry["dependency_id"] as? String,
                     !dependencyID.isEmpty
@@ -751,7 +751,7 @@ extension HTTPServer {
                     reason: entry["reason"] as? String ?? "declared"))
             }
 
-            let turn = try SimiGoInformationLoop(database: db).settleTurn(
+            let turn = try InformationLoop(database: db).settleTurn(
                 generatedText: output,
                 resolution: resolution,
                 stateID: stateID,
@@ -828,7 +828,7 @@ extension HTTPServer {
                 evidence[key] = text
             }
             let phase = (arguments["phase"] as? String)
-                .flatMap(SimiGoManagedRefusal.Phase.init(rawValue:)) ?? .g
+                .flatMap(ManagedRefusal.Phase.init(rawValue:)) ?? .g
             let executionID = optionalString(arguments, "execution_id") ?? stateID
             let audit = db.recordFailureAudit(.init(
                 executionID: executionID,
@@ -994,7 +994,7 @@ extension HTTPServer {
     /// declaration is not silently treated as missing and refused as incomplete.
     static func declaredSourceIdentity(
         from arguments: [String: Any]
-    ) -> SimiGoESISDatabase.DeclaredSourceIdentity {
+    ) -> ESISDatabase.DeclaredSourceIdentity {
         func text(_ key: String) -> String? {
             if let value = arguments[key] as? String { return value }
             if let value = arguments[key] as? Int { return String(value) }
@@ -1009,8 +1009,8 @@ extension HTTPServer {
             sourceRevision: text("source_revision"))
     }
 
-    private static func openESISDatabase(_ url: URL) throws -> SimiGoESISDatabase {
-        let db = try SimiGoESISDatabase(url: url, createIfNeeded: true)
+    private static func openESISDatabase(_ url: URL) throws -> ESISDatabase {
+        let db = try ESISDatabase(url: url, createIfNeeded: true)
         try db.runMigrations()
         return db
     }

@@ -66,7 +66,7 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
     @MainActor
     private func stageSettledAnchor(value: String) throws -> String {
         let store = ExecutionStateGraphStore()
-        let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let producer = ProducerIdentity.identity(fromPath: modelPath)
         let root = try store.create()
         try store.continueState(root, input: value)
         let state = try XCTUnwrap(store.state(root.id))
@@ -123,7 +123,7 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
     }
 
     private var traceURL: URL {
-        SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
+        ManagedPaths.logs.appendingPathComponent("native_mlx_trace.log")
     }
 
     private func traceWindow(since offset: Int, timeout: TimeInterval = 3) -> String {
@@ -300,7 +300,7 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
     /// correct and only the physical object is wrong.
     private func tamperPoolDeclarations() throws -> [String] {
         let fm = FileManager.default
-        let root = SimiGoRuntimeCachePaths.prefixPoolRoot
+        let root = RuntimeCachePaths.prefixPoolRoot
         let namespaces = (try? fm.contentsOfDirectory(
             at: root, includingPropertiesForKeys: [.isDirectoryKey]))?
             .filter { $0.hasDirectoryPath } ?? []
@@ -618,7 +618,7 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
     private let identityPort = 18_477
 
     @MainActor
-    private func isDatabase() throws -> SimiGoESISDatabase {
+    private func isDatabase() throws -> ESISDatabase {
         try XCTUnwrap(
             ExecutionStateGraphStore().esis,
             "the product's authoritative ES/IS database is not open")
@@ -634,7 +634,7 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
         throws -> (anchorID: String, settlementID: String, bindings: [String: String])
     {
         let store = ExecutionStateGraphStore()
-        let producer = SimiGoProducerIdentity.identity(fromPath: producerPath)
+        let producer = ProducerIdentity.identity(fromPath: producerPath)
         let root = try store.create()
         try store.continueState(root, input: value)
         let state = try XCTUnwrap(store.state(root.id))
@@ -789,8 +789,8 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
         let identityValue = "A12-IDENTITY-MISMATCH-7502"
         let foreignPath = URL(fileURLWithPath: NSHomeDirectory())
             .appendingPathComponent("a12-foreign-model-snapshot-7503").path
-        let real = SimiGoProducerIdentity.identity(fromPath: modelPath)
-        let foreign = SimiGoProducerIdentity.identity(fromPath: foreignPath)
+        let real = ProducerIdentity.identity(fromPath: modelPath)
+        let foreign = ProducerIdentity.identity(fromPath: foreignPath)
         XCTAssertNotEqual(
             real, foreign, "the identity injection is a no-op — nothing was mismatched")
 
@@ -1205,7 +1205,7 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
     /// Relative path -> byte size under the pool root. Empty when the directory
     /// does not exist, which is the expected disabled state, not an error.
     private func prefixPoolInventory() -> [String: Int] {
-        let root = SimiGoRuntimeCachePaths.prefixPoolRoot
+        let root = RuntimeCachePaths.prefixPoolRoot
         var inventory: [String: Int] = [:]
         guard let enumerator = FileManager.default.enumerator(
             at: root, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey])

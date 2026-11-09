@@ -44,9 +44,9 @@
 
 **可观测证据**：
 - E1.1 settlements 行可读：validationStatus、payloadDigest、producer model/tokenizer 绑定；
-- **E1.2 探针 A 每项 typed 拒绝，且按写入边界检查（修订 2026-11-05）**：断言 settlements 表无新增**或修改**；对探针可能触及的其他权威状态（身份绑定、依赖边等）按实际写入边界逐项检查；**不把单表行数不变表述为系统全局零写入**。fail-closed 双向验证：拒绝 ⇒ 无相关写入（`SimiGoSettlementAuthority.swift:5-12`、`AGENT-ACCESS.md:229-240`【已核验】）；
+- **E1.2 探针 A 每项 typed 拒绝，且按写入边界检查（修订 2026-11-05）**：断言 settlements 表无新增**或修改**；对探针可能触及的其他权威状态（身份绑定、依赖边等）按实际写入边界逐项检查；**不把单表行数不变表述为系统全局零写入**。fail-closed 双向验证：拒绝 ⇒ 无相关写入（`SettlementAuthority.swift:5-12`、`AGENT-ACCESS.md:229-240`【已核验】）；
 - E1.3 重复请求产生**恰好一次**结算（跨路径恒等；行为断言见 `SimiGoTests/CrossPathSettlementIdentityHTTPTests.swift`）；
-- E1.4 digest 重算一致（`payloadDigestMatches`，`SimiGoSettlementAuthority.swift:62-66`【已核验】）。
+- E1.4 digest 重算一致（`payloadDigestMatches`，`SettlementAuthority.swift:62-66`【已核验】）。
 
 **预期读数**：E1.1–E1.4 全部成立。
 
@@ -88,15 +88,15 @@
 **主张**：从 IS 独立读取已结算结果，来源、完整性、依赖闭包和当前有效性逐项验证；`Settled(ρ)` 与 `Recoverable(ρ, ctx, t)` 的分离获得直接实验证据。
 
 **独立复现步骤（形状）**：
-1. 在阶段 2 之后的全新上下文中，以 settlement_id **显式命名**准入（"a consumer that reuses a settled result must name it"，`SimiGoISAdmission.swift:128-129`【已核验 2026-11-10】）；
+1. 在阶段 2 之后的全新上下文中，以 settlement_id **显式命名**准入（"a consumer that reuses a settled result must name it"，`ISAdmission.swift:128-129`【已核验 2026-11-10】）；
 2. 采集准入检查单逐项读数；
-3. **失效注入**：对依赖闭包内的来源文件做变更，触发失效传播（注入手段待 G1 裁定——候选：来源文件变更的既有失效机制 `invalidateSourceFile`，`SimiGoESISDatabase.swift:6737-6747`【已核验 2026-11-10】）；
+3. **失效注入**：对依赖闭包内的来源文件做变更，触发失效传播（注入手段待 G1 裁定——候选：来源文件变更的既有失效机制 `invalidateSourceFile`，`ESISDatabase.swift:6737-6747`【已核验 2026-11-10】）；
 4. 在注入后时点 t₂ 再次尝试恢复**同一**结算；
 5. 对抗探针 C：篡改客户端提供的续接值。
 
 **可观测证据**：
-- E3.1 t₁ 时刻准入逐项读数：digest 完整 / validity='valid' / 依赖闭包逐项 present ∧ valid / 身份绑定 evaluate 结果（`SimiGoISAdmission.swift:92-99`【已核验】）；
-- **E3.2a 失效传播与拒绝（修订 2026-11-05 P2-R3）**：绑定来源的结算沿闭包翻转 validity='invalid'、**无关结算保持 valid**、无依赖者的变更不产生任何失效（"Unrelated settlements keep validity='valid'. A change with no dependents invalidates nothing."，`SimiGoESISDatabase.swift:6733-6747`【已核验 2026-11-10】）；t₂ 对同一结算的恢复被拒且 typed reason 可审计（`Refusal.invalidated` / `dependencyInvalid` 路径，`SimiGoISAdmission.swift:146-160`【已核验】）——本读数验证 **R6 分离与依赖类 Refuse**；
+- E3.1 t₁ 时刻准入逐项读数：digest 完整 / validity='valid' / 依赖闭包逐项 present ∧ valid / 身份绑定 evaluate 结果（`ISAdmission.swift:92-99`【已核验】）；
+- **E3.2a 失效传播与拒绝（修订 2026-11-05 P2-R3）**：绑定来源的结算沿闭包翻转 validity='invalid'、**无关结算保持 valid**、无依赖者的变更不产生任何失效（"Unrelated settlements keep validity='valid'. A change with no dependents invalidates nothing."，`ESISDatabase.swift:6733-6747`【已核验 2026-11-10】）；t₂ 对同一结算的恢复被拒且 typed reason 可审计（`Refusal.invalidated` / `dependencyInvalid` 路径，`ISAdmission.swift:146-160`【已核验】）——本读数验证 **R6 分离与依赖类 Refuse**；
 - **E3.2b reexec 执行集合（条件读数）**：仅当本轮**实际执行了 reexec**时，记录实际执行集合并与受影响依赖闭包比较，验证 R3 闭包范围。**拒绝与重执行是两个不同事件**（Admission 拒绝不是执行命令）；若实验未实际触发 reexec，**R3 标为"本轮未验证"**——不得因出现 Refuse 而宣称 R3 执行范围已验证。不为本验证强行增加重执行。
 - E3.3 探针 C：到达模型的值仍来自权威存储（"the value that reaches the model comes from the authoritative store, not the client"，`ContinuationAdmission.swift:4-7`【已核验】），或请求被拒。
 
@@ -117,7 +117,7 @@
 4. 续推完成后结算，读取消费/派生记录。
 
 **可观测证据**：
-- **E4.1 复用计账对照（修订 2026-11-05）**：**执行决策计账为主证据**【候选读数：`SimiGoManagedContinuation` Committed 的 recomputed / reusedExecution 字段、SettlementConsumption 消费记录指向原 settlement_id——字段名与可读性待真机配置时核验】；**token 计账为辅助证据**（提示长度、输出、tokenizer 行为与生成路径都可能影响读数）。对照组尽可能保持输入、模型、tokenizer 与生成条件一致，并明确区分哪些 token 属于历史已完成工作、哪些属于新续推工作；
+- **E4.1 复用计账对照（修订 2026-11-05）**：**执行决策计账为主证据**【候选读数：`ManagedContinuation` Committed 的 recomputed / reusedExecution 字段、SettlementConsumption 消费记录指向原 settlement_id——字段名与可读性待真机配置时核验】；**token 计账为辅助证据**（提示长度、输出、tokenizer 行为与生成路径都可能影响读数）。对照组尽可能保持输入、模型、tokenizer 与生成条件一致，并明确区分哪些 token 属于历史已完成工作、哪些属于新续推工作；
 - E4.2 无重复结算：已结算工作未产生第二结算行（复用四条件路径，`AGENT-ACCESS.md:102-109`【已核验】）；
 - E4.3 引用链可追溯：续推结算产出下一级 child ES 引用，链至少两跳（ES_n → IS → ES_{n+1} → IS → ES_{n+2}；"childESStateID … so the NEXT continuation admits through it"，`ContinuationSettlement.swift:105-106`【已核验】）；
 - **E4.4 派生绑定（修订 2026-11-05 P2-R4）**：DERIVED_CONSUMPTION + evaluateConsumer 只能核验**消费关系与消费方身份**；值来源主张需要完整绑定链。证据至少关联五项：
@@ -125,7 +125,7 @@
   2. 消费记录中的来源标识；
   3. 实际消费输入的身份或 digest；
   4. 派生输出的标识或 digest；
-  5. 消费方身份验证结果（evaluateConsumer，`SimiGoISAdmission.swift:161-169`【已核验】）。
+  5. 消费方身份验证结果（evaluateConsumer，`ISAdmission.swift:161-169`【已核验】）。
 
   若现有实现不能提供完整绑定链，E4.4 拆为两级结论——「**消费关系已验证**」与「**具体值派生关系已验证**」，前者**不得当成后者**。【绑定链完整性待真机配置时核验】
   红线 2 的关键：证明已结算结果**实际参与了新计算**，而不只是新 ES 曾经读取过它。

@@ -243,7 +243,7 @@ final class BlockingStubEngine: @unchecked Sendable {
 
 enum CancelTrace {
     static var url: URL {
-        SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
+        ManagedPaths.logs.appendingPathComponent("native_mlx_trace.log")
     }
 
     static func size() -> Int {
@@ -521,12 +521,12 @@ struct ESISSweep {
 
     static func take() -> Snapshot {
         var snapshot = Snapshot()
-        guard FileManager.default.fileExists(atPath: SimiGoPaths.databaseURL.path) else {
+        guard FileManager.default.fileExists(atPath: ManagedPaths.databaseURL.path) else {
             return snapshot
         }
         var handle: OpaquePointer?
         guard sqlite3_open_v2(
-            SimiGoPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
         ) == SQLITE_OK else {
             sqlite3_close(handle)
             return snapshot
@@ -632,7 +632,7 @@ struct ESISSweep {
     @MainActor
     static func answeredDemand(
         sessionID: String, query: String
-    ) throws -> SimiGoESISDatabase.AnsweredDemand? {
+    ) throws -> ESISDatabase.AnsweredDemand? {
         let store = ExecutionStateGraphStore()
         guard let db = store.esis else { return nil }
         return try db.answeredDemand(sessionID: sessionID, query: query)
@@ -648,7 +648,7 @@ struct ESISSweep {
     @MainActor
     static func summary(
         settlementID: String
-    ) throws -> SimiGoESISDatabase.SettlementSummaryRecord? {
+    ) throws -> ESISDatabase.SettlementSummaryRecord? {
         let store = ExecutionStateGraphStore()
         guard let db = store.esis else { return nil }
         return try db.settlementSummary(settlementID: settlementID)
@@ -694,12 +694,12 @@ struct ESISSweep {
     }
 
     private static func stringColumn(_ sql: String) -> Set<String> {
-        guard FileManager.default.fileExists(atPath: SimiGoPaths.databaseURL.path) else {
+        guard FileManager.default.fileExists(atPath: ManagedPaths.databaseURL.path) else {
             return []
         }
         var handle: OpaquePointer?
         guard sqlite3_open_v2(
-            SimiGoPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
         ) == SQLITE_OK else {
             sqlite3_close(handle)
             return []
@@ -712,12 +712,12 @@ struct ESISSweep {
 
     /// A failed read is distinct from a legitimate zero-row result.
     static func countRows(_ sql: String) -> Int? {
-        guard FileManager.default.fileExists(atPath: SimiGoPaths.databaseURL.path) else {
+        guard FileManager.default.fileExists(atPath: ManagedPaths.databaseURL.path) else {
             return nil
         }
         var handle: OpaquePointer?
         guard sqlite3_open_v2(
-            SimiGoPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READONLY, nil
         ) == SQLITE_OK, let handle else {
             sqlite3_close(handle)
             return nil
@@ -755,7 +755,7 @@ enum CancelPathHarness {
         let root = URL(
             fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(root.path),
+            ManagedPaths.databaseURL.path.hasPrefix(root.path),
             "authoritative store resolves outside the isolation root")
         return root
     }
@@ -779,7 +779,7 @@ enum CancelPathHarness {
         host: LOCALBAuthorizedE2E.Host,
         engine: BlockingStubEngine,
         cancel: RecordingCancelHandler
-    ) throws -> HTTPServer {        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+    ) throws -> HTTPServer {        let identity = ProducerIdentity.identity(fromPath: modelPath)
         let server = HTTPServer(
             port: port,
             modelId: "cancel-path-http-test",

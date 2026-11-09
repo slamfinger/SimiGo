@@ -819,7 +819,7 @@ jobs:
           echo "DEVELOPER_DIR=$(xcode-select -p)"
           echo "ARCH=$(uname -m)  IMAGE=$ImageVersion"
       - name: Runtime current-demand gate
-        run: swift test --package-path Packages/SimiGoRuntime --filter SimiGoInformationReuseTests
+        run: swift test --package-path Packages/SimiGoRuntime --filter InformationReuseTests
       - name: Build App test host
         run: |
           xcodebuild build-for-testing \

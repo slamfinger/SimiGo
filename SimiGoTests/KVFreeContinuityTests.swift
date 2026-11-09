@@ -142,7 +142,7 @@ final class KVFreeContinuityTests: XCTestCase {
         blockedCacheRoot = URL(
             fileURLWithPath: (cache as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         let model = FileManager.default.temporaryDirectory
@@ -174,14 +174,14 @@ final class KVFreeContinuityTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func openDatabase() throws -> SimiGoESISDatabase {
-        let db = try SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: true)
+    private func openDatabase() throws -> ESISDatabase {
+        let db = try ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: true)
         try db.runMigrations()
         return db
     }
 
-    private func ledger(_ db: SimiGoESISDatabase) throws -> Ledger {
+    private func ledger(_ db: ESISDatabase) throws -> Ledger {
         Ledger(
             states: try db.count("execution_states"),
             settlements: try db.count("settlements"))
@@ -196,8 +196,8 @@ final class KVFreeContinuityTests: XCTestCase {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        let prefix = SimiGoRuntimeCachePaths.prefixPoolRoot
-        let checkpoints = SimiGoRuntimeCachePaths.branchCheckpointsRoot
+        let prefix = RuntimeCachePaths.prefixPoolRoot
+        let checkpoints = RuntimeCachePaths.branchCheckpointsRoot
 
         XCTAssertTrue(
             prefix.path.hasPrefix(blockedCacheRoot.path + "/"),
@@ -241,15 +241,15 @@ final class KVFreeContinuityTests: XCTestCase {
         }
     }
 
-    private func stageAnchor(_ db: SimiGoESISDatabase) throws -> String {
-        let settled = try SimiGoSettlementAuthority.authorize(
+    private func stageAnchor(_ db: ESISDatabase) throws -> String {
+        let settled = try SettlementAuthority.authorize(
             generatedText: "ANCHOR-STATE",
-            contractJSON: SimiGoInformationLoop.chatResultContractJSON,
+            contractJSON: InformationLoop.chatResultContractJSON,
             verifiedBindings: [:])
         let stateID = "es-anchor-" + UUID().uuidString.lowercased()
         try db.recordExecutionState(
             id: stateID, parentID: nil,
-            modelIdentity: SimiGoProducerIdentity.identity(fromPath: modelPath).model,
+            modelIdentity: ProducerIdentity.identity(fromPath: modelPath).model,
             position: 1, continuationID: UUID().uuidString,
             anchor: settled.payloadDigest, lifecycle: "active", createdAt: Date())
         _ = try db.recordNativeSettlement(settled, stateID: stateID)
@@ -309,7 +309,7 @@ final class KVFreeContinuityTests: XCTestCase {
         let store = NativeMLX.defaultBranchCheckpointStore()
         XCTAssertEqual(
             store.standardizedFileURL.path,
-            SimiGoRuntimeCachePaths.branchCheckpointsRoot.standardizedFileURL.path)
+            RuntimeCachePaths.branchCheckpointsRoot.standardizedFileURL.path)
         XCTAssertFalse(
             FileManager.default.fileExists(atPath: store.path),
             "defaultBranchCheckpointStore() created \(store.path) while persistence is off")
@@ -384,14 +384,14 @@ final class KVFreeContinuityTests: XCTestCase {
 
         let finalID = try XCTUnwrap(
             reopened.settlementInputSnapshotObjectID(settlementID: settlementID))
-        let final = try SimiGoSnapshotContract.Final.decode(try reopened.readObject(finalID))
+        let final = try SnapshotContract.Final.decode(try reopened.readObject(finalID))
         XCTAssertTrue(final.replayable)
-        let declared = try SimiGoSnapshotContract.Declared.decode(
+        let declared = try SnapshotContract.Declared.decode(
             try reopened.readObject(final.declaredSnapshotID))
         XCTAssertNoThrow(try final.verify(against: declared))
         XCTAssertEqual(
             declared.entries.first?.digest,
-            SimiGoSnapshotContract.sha256Hex(Data("alpha beta gamma".utf8)))
+            SnapshotContract.sha256Hex(Data("alpha beta gamma".utf8)))
 
         let stub = Stub()
         stub.configure(.answer("K2-MUST-NOT-APPEAR"))

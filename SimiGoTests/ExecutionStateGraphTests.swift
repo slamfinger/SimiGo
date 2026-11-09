@@ -117,7 +117,7 @@ final class ExecutionStateGraphTests: XCTestCase {
 
     /// Integration proof that the native settlement gate is wired into the app's
     /// real production call chain (UI Settle action -> `settleProducerResult` ->
-    /// `SimiGoSettlementAuthority` -> authoritative SQLite IS commit), and that it
+    /// `SettlementAuthority` -> authoritative SQLite IS commit), and that it
     /// stays fail-closed. A temp `dbURL` keeps the run off the global store.
     @MainActor
     func testSettleProducerResultCommitsThroughNativeGateAndFailsClosed() throws {
@@ -156,7 +156,7 @@ final class ExecutionStateGraphTests: XCTestCase {
         // Create the valid schema first, then add a trigger that rejects the
         // graph insert performed by writeGraph.
         do {
-            let database = try SimiGoESISDatabase(url: dbURL)
+            let database = try ESISDatabase(url: dbURL)
             try database.runMigrations()
         }
 

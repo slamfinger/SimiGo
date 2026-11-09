@@ -59,7 +59,7 @@
 - **T5**：执行后产出公开复刻包（方案 §6 形状：描述性步骤只依赖冻结合同+公开 HTTP 面+只读 SQL+工件清单）；
 - **T6**（更远，均须届时授权）：P3 相关工作六问对照 → Research Note v0 → 分对象邀请（llama.cpp 第一优先，一次一个对象）。
 
-**执行机制待钉死（T3/T4 时与用户确认，不得自行发明）**：Run A/Run B 的具体进程形态（优先公开 HTTP 的 App/runtime 前台路径；headless `SimiGoG1G3Entry` 仅限辅助或被单独授权，不得替代公开 HTTP 证据）；HTTP 面端口与调用序列；隔离 `SIMIGO_HOME` 下的 SQLite 位置与只读访问方式。
+**执行机制待钉死（T3/T4 时与用户确认，不得自行发明）**：Run A/Run B 的具体进程形态（优先公开 HTTP 的 App/runtime 前台路径；headless `G1G3Entry` 仅限辅助或被单独授权，不得替代公开 HTTP 证据）；HTTP 面端口与调用序列；隔离 `SIMIGO_HOME` 下的 SQLite 位置与只读访问方式。
 
 ## 6. 工作流规范（从移交会话习得，务必延续）
 
@@ -74,16 +74,16 @@
 
 | 事实 | 位置 |
 |---|---|
-| 结算唯一前置门，fail-closed，先于任何写入 | `SimiGoSettlementAuthority.swift:5-12` |
+| 结算唯一前置门，fail-closed，先于任何写入 | `SettlementAuthority.swift:5-12` |
 | SettledResult 类型 / digest 复核 | 同文件 `:20-28` / `:62-66` |
-| IS 准入七步 fail-closed 检查单 | `SimiGoISAdmission.swift:92-99` |
+| IS 准入七步 fail-closed 检查单 | `ISAdmission.swift:92-99` |
 | 显式命名结算准入（"must name it"） | 同文件 `:122-125` |
 | invalid/dependencyInvalid 拒绝路径 | 同文件 `:146-160` |
 | DERIVED_CONSUMPTION + evaluateConsumer | 同文件 `:161-169` |
 | KV 复用权威在 IS（kvBindings 空则无权复用） | `ContinuationAdmission.swift:17-20` |
 | 恢复值来自权威存储而非客户端 | 同文件 `:4-7`；esStateID 仅入口引用 `:56-59` |
 | childESStateID 供下一次准入（ES↔IS 闭环） | `ContinuationSettlement.swift:105-106`；契约终端 `:4-23` |
-| 依赖闭包递归 CTE | `SimiGoESISDatabase.swift:5654` |
+| 依赖闭包递归 CTE | `ESISDatabase.swift:5654` |
 | invalidateSourceFile 语义（无关保持 valid/无依赖者零操作/幂等） | 同文件 `:4946-4983` |
 | 载体不 reinterpret 字节 | 同文件 `:853-855` |
 | fork 是 storageKey 级、非 execution lineage | `ExecutionLineage.swift:28-31`（外审钉死） |

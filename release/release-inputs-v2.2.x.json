@@ -112,10 +112,6 @@
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/ChatGPTSource.swift"
     },
     {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/CodexRolloutSource.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/CodexRolloutSource.swift"
-    },
-    {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/DeepSeekSource.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/DeepSeekSource.swift"
     },
@@ -130,6 +126,26 @@
     {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/OpenCodeSource.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/OpenCodeSource.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/RolloutSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/RolloutSource.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/CandidateInbox.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/CandidateInbox.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/CollectionLease.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/CollectionLease.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/CollectionRunner.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/CollectionRunner.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/CollectionTypes.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/CollectionTypes.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/CollectionCandidateInbox.swift",
@@ -152,40 +168,24 @@
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/TranscriptSource.swift"
     },
     {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCandidateInbox.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCandidateInbox.swift"
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Transcript.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Transcript.swift"
     },
     {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCollectionLease.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCollectionLease.swift"
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/TranscriptClassifier.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/TranscriptClassifier.swift"
     },
     {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCollectionRunner.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCollectionRunner.swift"
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/TranscriptSourceAdapter.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/TranscriptSourceAdapter.swift"
     },
     {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCollectionTypes.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderCollectionTypes.swift"
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/TranscriptTailer.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/TranscriptTailer.swift"
     },
     {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscript.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscript.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptClassifier.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptClassifier.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptSource.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptSource.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptTailer.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTranscriptTailer.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTurnAccumulator.swift",
-      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/QoderTurnAccumulator.swift"
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/TurnAccumulator.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/TurnAccumulator.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/AIStudioSourceTests.swift",
@@ -196,8 +196,20 @@
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/ChatGPTSourceTests.swift"
     },
     {
-      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionQoderCompatibilityTests.swift",
-      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionQoderCompatibilityTests.swift"
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionCompatibilityTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionCompatibilityTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionConfigurationTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionConfigurationTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionLifecycleTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionLifecycleTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionRunnerTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionRunnerTests.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionSQLiteErrorPropagationTests.swift",
@@ -216,34 +228,6 @@
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/OpenCodeSourceTests.swift"
     },
     {
-      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderCollectionConfigurationTests.swift",
-      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderCollectionConfigurationTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderCollectionLifecycleTests.swift",
-      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderCollectionLifecycleTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderCollectionRunnerTests.swift",
-      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderCollectionRunnerTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptClassifierTests.swift",
-      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptClassifierTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptSourceTests.swift",
-      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptSourceTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptTailerTests.swift",
-      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTranscriptTailerTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTurnAccumulatorTests.swift",
-      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderTurnAccumulatorTests.swift"
-    },
-    {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/SnapshotCarrierRoutingTests.swift",
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/SnapshotCarrierRoutingTests.swift"
     },
@@ -254,6 +238,22 @@
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TestSupport.swift",
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TestSupport.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TranscriptClassifierTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TranscriptClassifierTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TranscriptSourceTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TranscriptSourceTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TranscriptTailerTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TranscriptTailerTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TurnAccumulatorTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/TurnAccumulatorTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Package.resolved",
@@ -548,8 +548,20 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/WorkloadTrace.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/Bootstrap.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/Bootstrap.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ChatRoundText.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ChatRoundText.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabase.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabase.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/EngineRecipe.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/EngineRecipe.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ExecutionContinuityContract.swift",
@@ -560,6 +572,34 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ExecutionStateBackendContract.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ISAdmission.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ISAdmission.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ISContextLedger.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ISContextLedger.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/InformationLoop.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/InformationLoop.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ManagedContinuation.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ManagedContinuation.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ManagedPaths.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ManagedPaths.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ManagedRefusal.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ManagedRefusal.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ModelDiscovery.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ModelDiscovery.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/NativeDeclarativeResultContract.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/NativeDeclarativeResultContract.swift"
     },
@@ -568,176 +608,136 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/RuntimeBackendContract.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementAuthority.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementAuthority.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementConsumption.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementConsumption.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementIdentityBinding.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementIdentityBinding.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementKVBinding.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementKVBinding.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementSummaryPolicy.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementSummaryPolicy.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoBootstrap.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoBootstrap.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoEngineRecipe.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoISAdmission.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoISAdmission.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoISContextLedger.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoISContextLedger.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoInformationLoop.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoInformationLoop.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoManagedContinuation.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoManagedContinuation.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoManagedRefusal.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoManagedRefusal.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoModelDiscovery.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoModelDiscovery.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoPaths.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoPaths.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementAuthority.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementAuthority.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementConsumption.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementConsumption.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementIdentityBinding.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementKVBinding.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSettlementKVBinding.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSnapshotContract.swift",
-      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoSnapshotContract.swift"
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SnapshotContract.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SnapshotContract.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/TaskRunOutcomeClassificationTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/TaskRunOutcomeClassificationTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/BootstrapTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/BootstrapTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ChatRoundTextTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ChatRoundTextTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ConflictingSettlementTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ConflictingSettlementTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISArmsTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISArmsTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISCarrierTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISCarrierTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseG2Tests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseG2Tests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/EngineRecipeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/EngineRecipeTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnContractTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnContractTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISAdmissionTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISAdmissionTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISContextLedgerTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISContextLedgerTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/InformationCitationEdgeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/InformationCitationEdgeTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/InformationLoopTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/InformationLoopTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/InformationReuseTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/InformationReuseTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ManagedContinuationTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ManagedContinuationTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ManagedRefusalTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ManagedRefusalTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ModelDiscoveryTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ModelDiscoveryTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/NativeDeclarativeResultContractTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/NativeDeclarativeResultContractTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoBootstrapTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoBootstrapTests.swift"
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/PathsTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/PathsTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoConflictingSettlementTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoConflictingSettlementTests.swift"
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/RefusalSideEffectTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/RefusalSideEffectTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISArmsTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISArmsTests.swift"
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementAuthorityTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementAuthorityTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISCarrierTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISCarrierTests.swift"
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementConsumptionTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementConsumptionTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseG2Tests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseG2Tests.swift"
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementIdempotencyTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementIdempotencyTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISDatabaseTests.swift"
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementIdentityBindingTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementIdentityBindingTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoEngineRecipeTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoEngineRecipeTests.swift"
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotContractTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotContractTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoExternalTurnContractTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoExternalTurnContractTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISAdmissionTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISAdmissionTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISContextLedgerTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISContextLedgerTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationCitationEdgeTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationCitationEdgeTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationLoopTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationLoopTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationReuseTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationReuseTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoManagedContinuationTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoManagedContinuationTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoManagedRefusalTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoManagedRefusalTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoModelDiscoveryTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoModelDiscoveryTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoPathsTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoPathsTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoRefusalSideEffectTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoRefusalSideEffectTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementAuthorityTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementAuthorityTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementConsumptionTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementConsumptionTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdempotencyTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdempotencyTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSettlementIdentityBindingTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSnapshotContractTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSnapshotContractTests.swift"
-    },
-    {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSnapshotStorageTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoSnapshotStorageTests.swift"
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotStorageTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotStorageTests.swift"
     },
     {
       "path": "README.md",
@@ -788,12 +788,24 @@
       "output": "SimiGo/App/BackendSelection.swift"
     },
     {
+      "path": "SimiGo/App/BootstrapRunner.swift",
+      "output": "SimiGo/App/BootstrapRunner.swift"
+    },
+    {
+      "path": "SimiGo/App/CollectionLifecycle.swift",
+      "output": "SimiGo/App/CollectionLifecycle.swift"
+    },
+    {
       "path": "SimiGo/App/Config.swift",
       "output": "SimiGo/App/Config.swift"
     },
     {
       "path": "SimiGo/App/ExecutionStateGraph.swift",
       "output": "SimiGo/App/ExecutionStateGraph.swift"
+    },
+    {
+      "path": "SimiGo/App/ExternalTurnSink.swift",
+      "output": "SimiGo/App/ExternalTurnSink.swift"
     },
     {
       "path": "SimiGo/App/FirstRunWizard.swift",
@@ -808,36 +820,24 @@
       "output": "SimiGo/App/MultiFormatCollection.swift"
     },
     {
-      "path": "SimiGo/App/QoderCollectionLifecycle.swift",
-      "output": "SimiGo/App/QoderCollectionLifecycle.swift"
-    },
-    {
-      "path": "SimiGo/App/QoderExternalTurnSink.swift",
-      "output": "SimiGo/App/QoderExternalTurnSink.swift"
-    },
-    {
       "path": "SimiGo/App/Settings.swift",
       "output": "SimiGo/App/Settings.swift"
-    },
-    {
-      "path": "SimiGo/App/SimiGoBootstrapRunner.swift",
-      "output": "SimiGo/App/SimiGoBootstrapRunner.swift"
     },
     {
       "path": "SimiGo/App/StatusBarCoordinator.swift",
       "output": "SimiGo/App/StatusBarCoordinator.swift"
     },
     {
-      "path": "SimiGo/Headless/SimiGoEnvBootstrapEntry.swift",
-      "output": "SimiGo/Headless/SimiGoEnvBootstrapEntry.swift"
+      "path": "SimiGo/Headless/EnvBootstrapEntry.swift",
+      "output": "SimiGo/Headless/EnvBootstrapEntry.swift"
     },
     {
-      "path": "SimiGo/Headless/SimiGoG1G3Entry.swift",
-      "output": "SimiGo/Headless/SimiGoG1G3Entry.swift"
+      "path": "SimiGo/Headless/G1G3Entry.swift",
+      "output": "SimiGo/Headless/G1G3Entry.swift"
     },
     {
-      "path": "SimiGo/Headless/SimiGoLocalBManagementEntry.swift",
-      "output": "SimiGo/Headless/SimiGoLocalBManagementEntry.swift"
+      "path": "SimiGo/Headless/LocalBManagementEntry.swift",
+      "output": "SimiGo/Headless/LocalBManagementEntry.swift"
     },
     {
       "path": "SimiGo/Inference/BranchCheckpointRetention.swift",
@@ -948,8 +948,8 @@
       "output": "SimiGo/Model/ModelTypes.swift"
     },
     {
-      "path": "SimiGo/Model/SimiGoProducerIdentity.swift",
-      "output": "SimiGo/Model/SimiGoProducerIdentity.swift"
+      "path": "SimiGo/Model/ProducerIdentity.swift",
+      "output": "SimiGo/Model/ProducerIdentity.swift"
     },
     {
       "path": "SimiGo/Model/TypesBridge.swift",
@@ -1100,6 +1100,14 @@
       "output": "SimiGoTests/ExecutionStateGraphTests.swift"
     },
     {
+      "path": "SimiGoTests/ExternalTurnSinkTests.swift",
+      "output": "SimiGoTests/ExternalTurnSinkTests.swift"
+    },
+    {
+      "path": "SimiGoTests/G1G3HeadlessEntryTests.swift",
+      "output": "SimiGoTests/G1G3HeadlessEntryTests.swift"
+    },
+    {
       "path": "SimiGoTests/GGUFManagedEntryHTTPTests.swift",
       "output": "SimiGoTests/GGUFManagedEntryHTTPTests.swift"
     },
@@ -1236,10 +1244,6 @@
       "output": "SimiGoTests/PrefixPoolNamespaceRecencyTests.swift"
     },
     {
-      "path": "SimiGoTests/QoderExternalTurnSinkTests.swift",
-      "output": "SimiGoTests/QoderExternalTurnSinkTests.swift"
-    },
-    {
       "path": "SimiGoTests/RealModelStreamingCancelRetryE2ETests.swift",
       "output": "SimiGoTests/RealModelStreamingCancelRetryE2ETests.swift"
     },
@@ -1306,10 +1310,6 @@
     {
       "path": "SimiGoTests/SessionCachePersistenceTests.swift",
       "output": "SimiGoTests/SessionCachePersistenceTests.swift"
-    },
-    {
-      "path": "SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift",
-      "output": "SimiGoTests/SimiGoG1G3HeadlessEntryTests.swift"
     },
     {
       "path": "SimiGoTests/SlotActivityTests.swift",
@@ -1996,12 +1996,12 @@
       "output": "docs/experiments/jsonvalue-roundtrip-repro.swift"
     },
     {
-      "path": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md",
-      "output": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md"
+      "path": "docs/history/COLLECTION_INTEGRATION_20261105.md",
+      "output": "docs/history/COLLECTION_INTEGRATION_20261105.md"
     },
     {
-      "path": "docs/history/QODER_COLLECTION_INTEGRATION_20261105.md",
-      "output": "docs/history/QODER_COLLECTION_INTEGRATION_20261105.md"
+      "path": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md",
+      "output": "docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md"
     },
     {
       "path": "docs/knowledge/README.md",
@@ -2192,12 +2192,12 @@
       "output": "docs/research/es-is/TERMINOLOGY_V0.1_20261109.md"
     },
     {
-      "path": "docs/research/knowledge-map/README.md",
-      "output": "docs/research/knowledge-map/README.md"
+      "path": "docs/research/knowledge-map/KNOWLEDGE_MAP_20260922.md",
+      "output": "docs/research/knowledge-map/KNOWLEDGE_MAP_20260922.md"
     },
     {
-      "path": "docs/research/knowledge-map/SIMIGO_KNOWLEDGE_MAP_20260922.md",
-      "output": "docs/research/knowledge-map/SIMIGO_KNOWLEDGE_MAP_20260922.md"
+      "path": "docs/research/knowledge-map/README.md",
+      "output": "docs/research/knowledge-map/README.md"
     },
     {
       "path": "docs/research/participants/PARTICIPANT_INDEPENDENCE_20260922.md",

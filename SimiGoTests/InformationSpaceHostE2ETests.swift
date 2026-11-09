@@ -12,7 +12,7 @@ import XCTest
 /// request to a listener started by `InformationSpaceRuntime` — never an
 /// in-process `HTTPServer.runMCPTool` call. The suite runs only inside an
 /// injected isolation root because the MCP handler writes
-/// `SimiGoPaths.databaseURL`.
+/// `ManagedPaths.databaseURL`.
 ///
 /// Rows covered:
 ///  (1) no model loaded — no MLX, no llama-server, no cloud backend config;
@@ -33,7 +33,7 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
     // MARK: - Isolation
 
     /// This suite writes the IS database through the HTTP MCP handler, which
-    /// resolves `SimiGoPaths.databaseURL` at call time. Without an injected
+    /// resolves `ManagedPaths.databaseURL` at call time. Without an injected
     /// isolated `SIMIGO_HOME` the run would touch the real `~/.simigo`.
     private func requireIsolatedHome() throws -> URL {
         let environment = ProcessInfo.processInfo.environment
@@ -300,10 +300,10 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
             receipt["bindings"] as? [String: Any])
         XCTAssertEqual(
             bindings["producer.model_identity"] as? String,
-            SimiGoSettlementIdentityBinding.digest(modelIdentity))
+            SettlementIdentityBinding.digest(modelIdentity))
         XCTAssertEqual(
             bindings["producer.tokenizer_identity"] as? String,
-            SimiGoSettlementIdentityBinding.digest(tokenizerIdentity))
+            SettlementIdentityBinding.digest(tokenizerIdentity))
 
         // Independent persistence readback (not through the tool layer).
         let dbURL = home.appendingPathComponent("simigo.sqlite3")
@@ -600,7 +600,7 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
             "the source answer must advance the named retrieval demand")
 
         let dbURL = home.appendingPathComponent("simigo.sqlite3")
-        let db = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
         let outsideSession = "mcp-new-fact-\(UUID().uuidString)"
         let userID = try db.appendChatMessage(
             sessionID: outsideSession, role: "user",

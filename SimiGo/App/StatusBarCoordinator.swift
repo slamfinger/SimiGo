@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // G1/G3 controlled headless gate (env-gated). Default GUI path unchanged:
         // only engages when SIMIGO_HEADLESS_ROLE is present, and fail-closes on an
         // unsupported role / missing parameters BEFORE any model work.
-        let headless = SimiGoG1G3Entry.evaluate()
+        let headless = G1G3Entry.evaluate()
         if headless.requested {
             guard let role = headless.role else {
                 FileHandle.standardError.write(
@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FileHandle.standardError.write(("headless-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
             Task { @MainActor in
                 FileHandle.standardError.write("headless-task-started\n".data(using: .utf8)!)
-                let code = await SimiGoG1G3Entry.run(role: role)
+                let code = await G1G3Entry.run(role: role)
                 FileHandle.standardError.write(("headless-task-done rc=\(code)\n").data(using: .utf8)!)
                 exit(code)
             }
@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // is the one-command path from a bare install to a root where
         // Execution State / Information Space can run; it never starts a model
         // or a listener.
-        let envBootstrap = SimiGoEnvBootstrapEntry.evaluate()
+        let envBootstrap = EnvBootstrapEntry.evaluate()
         if envBootstrap.requested {
             guard envBootstrap.valid else {
                 FileHandle.standardError.write(
@@ -46,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             FileHandle.standardError.write("env-bootstrap-entered\n".data(using: .utf8)!)
             Task { @MainActor in
-                let code = await SimiGoEnvBootstrapEntry.run()
+                let code = await EnvBootstrapEntry.run()
                 exit(code)
             }
             return
@@ -56,7 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // surface called them, so a never-activated host could not bind its
         // listener at all. This gate only routes an explicit operator command
         // to those existing APIs; it never activates on an ordinary launch.
-        let management = SimiGoLocalBManagementEntry.evaluate()
+        let management = LocalBManagementEntry.evaluate()
         if management.requested {
             guard let role = management.role else {
                 FileHandle.standardError.write(
@@ -66,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FileHandle.standardError.write(
                 ("localb-mgmt-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
             Task { @MainActor in
-                let code = await SimiGoLocalBManagementEntry.run(role: role)
+                let code = await LocalBManagementEntry.run(role: role)
                 exit(code)
             }
             return
@@ -86,13 +86,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // every step is idempotent, an installed binary short-circuits, an
         // existing database is never reset (owner ruling 2026-10-26).
         Task.detached(priority: .utility) {
-            _ = SimiGoBootstrapRunner.launchIfNeeded()
+            _ = BootstrapRunner.launchIfNeeded()
             _ = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
         }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        QoderCollectionLifecycle.shared.stop()
+        CollectionLifecycle.shared.stop()
     }
 }
 

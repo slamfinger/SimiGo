@@ -61,7 +61,7 @@ S0 预检（不加载模型）
 | Run B / 阶段 4 | 新 ES 续推；执行决策计账；冷启动对照；两跳引用链；E4.4 绑定链 | E4.1–E4.4；最终链证据 |
 | Gate B | Run B 退出后提交全链结论等级；不自动复刻/外发 | 最终报告 |
 
-**公开路径要求**：阶段 1 必须走公开 HTTP 面，不得用 `SimiGoG1G3Entry` 的 `restricted_production_path` 替代。若公开 HTTP 面在当前构建中不可用，**停在 E0 并请求范围变更**，不得静默改用 headless 路径。
+**公开路径要求**：阶段 1 必须走公开 HTTP 面，不得用 `G1G3Entry` 的 `restricted_production_path` 替代。若公开 HTTP 面在当前构建中不可用，**停在 E0 并请求范围变更**，不得静默改用 headless 路径。
 
 ---
 

@@ -98,7 +98,7 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
         let root = URL(
             fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(root.path),
+            ManagedPaths.databaseURL.path.hasPrefix(root.path),
             "authoritative store resolves outside the isolation root")
         return root
     }
@@ -244,7 +244,7 @@ final class W4BudgetCalibrationE2ETests: XCTestCase {
     }
 
     private func flush() {
-        let url = SimiGoPaths.logs.appendingPathComponent("w4-budget-calibration.json")
+        let url = ManagedPaths.logs.appendingPathComponent("w4-budget-calibration.json")
         try? FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let payload: [String: Any] = [

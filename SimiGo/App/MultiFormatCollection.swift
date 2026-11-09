@@ -55,9 +55,9 @@ final class MultiFormatCollection {
     private static let maxDocumentBytes = 64 * 1024 * 1024
 
     private let databaseURL: URL
-    private var db: SimiGoESISDatabase?
+    private var db: ESISDatabase?
 
-    init(databaseURL: URL = SimiGoPaths.databaseURL) {
+    init(databaseURL: URL = ManagedPaths.databaseURL) {
         self.databaseURL = databaseURL
     }
 
@@ -155,9 +155,9 @@ final class MultiFormatCollection {
     /// 识别顺序即优先级：AI Studio 与 DeepSeek 的顶层键互斥，flat 导出
     /// 认 `messages` 数组，放在最后，避免把别的结构当消息列表读。
     private func read(data: Data, url: URL) throws -> Recognized? {
-        if CodexRolloutSource.recognizes(data) {
-            let importResult = try CodexRolloutSource.readSnapshot(at: url)
-            return Recognized(format: CodexRolloutSource.sourceType, turns: importResult.turns)
+        if RolloutSource.recognizes(data) {
+            let importResult = try RolloutSource.readSnapshot(at: url)
+            return Recognized(format: RolloutSource.sourceType, turns: importResult.turns)
         }
         if ChatGPTSource.recognizes(data) {
             let importResult = try ChatGPTSource.readSnapshot(at: url)
@@ -195,7 +195,7 @@ final class MultiFormatCollection {
         {
             return Outcome(written: false, promoted: false, existed: true)
         }
-        let eligibility: SimiGoESISDatabase.ChatTurnEligibility =
+        let eligibility: ESISDatabase.ChatTurnEligibility =
             turn.disposition == .auditOnly ? .internalOperation : .ordinary
         let verified = turn.disposition == .retrievable
         let now = Date()
@@ -224,7 +224,7 @@ final class MultiFormatCollection {
     private struct DedupeIndex {
         private var answers: [String: [String]] = [:]
 
-        init(_ rows: [SimiGoESISDatabase.ExternalTurnText]) {
+        init(_ rows: [ESISDatabase.ExternalTurnText]) {
             for row in rows {
                 let prompt = Self.normalized(row.prompt)
                 let answer = Self.normalized(row.answer)
@@ -285,9 +285,9 @@ final class MultiFormatCollection {
         return index
     }
 
-    private func open() throws -> SimiGoESISDatabase {
+    private func open() throws -> ESISDatabase {
         if let db { return db }
-        let database = try SimiGoESISDatabase(url: databaseURL, createIfNeeded: true)
+        let database = try ESISDatabase(url: databaseURL, createIfNeeded: true)
         try database.runMigrations()
         db = database
         return database

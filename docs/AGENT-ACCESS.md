@@ -193,7 +193,7 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
   带着自有云端 API 的 Agent 可直接对接该宿主，不必先加载本地模型。
 - 协议：JSON-RPC 2.0，无状态 Streamable-HTTP 子集；单条、批量、通知均可；
   通知返回 `202`。`initialize` 返回 `protocolVersion: "2025-06-18"`，能力只有 `tools`。
-- 方法与 HTTP 路由共用同一个 `SimiGoESISDatabase` / `SimiGoInformationLoop`，不存在第二套
+- 方法与 HTTP 路由共用同一个 `ESISDatabase` / `InformationLoop`，不存在第二套
   数据库或第二套结算权威。
 
 ### 3.2 十个工具

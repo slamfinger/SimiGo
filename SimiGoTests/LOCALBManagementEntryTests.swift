@@ -102,7 +102,7 @@ final class LOCALBManagementEntryTests: XCTestCase {
 
     func testClientsListReportsPairedClientReadOnly() throws {
         let env = try makeEnvironment()
-        let payload = try SimiGoLocalBManagementEntry.clientsListPayload(
+        let payload = try LocalBManagementEntry.clientsListPayload(
             context: env.context
         )
         XCTAssertEqual(payload["result"] as? String, "ok")
@@ -118,7 +118,7 @@ final class LOCALBManagementEntryTests: XCTestCase {
 
     func testPermissionsSetDryRunShowsFromToAndWritesNothing() throws {
         let env = try makeEnvironment()
-        let payload = try SimiGoLocalBManagementEntry.permissionsSetPayload(
+        let payload = try LocalBManagementEntry.permissionsSetPayload(
             context: env.context,
             env: [
                 "SIMIGO_LOCALB_CLIENT_KEY_ID": env.clientKeyID,
@@ -148,7 +148,7 @@ final class LOCALBManagementEntryTests: XCTestCase {
         let beforeSequence = env.pairedCheckpoint.sequence
         let beforeHead = env.pairedCheckpoint.headHash
 
-        let payload = try SimiGoLocalBManagementEntry.permissionsSetPayload(
+        let payload = try LocalBManagementEntry.permissionsSetPayload(
             context: env.context,
             env: [
                 "SIMIGO_LOCALB_CLIENT_KEY_ID": env.clientKeyID,
@@ -204,7 +204,7 @@ final class LOCALBManagementEntryTests: XCTestCase {
     func testClientRevokeDryRunThenConfirmIsTerminalAndObservable() throws {
         let env = try makeEnvironment()
 
-        let dry = try SimiGoLocalBManagementEntry.clientRevokePayload(
+        let dry = try LocalBManagementEntry.clientRevokePayload(
             context: env.context,
             env: [
                 "SIMIGO_LOCALB_CLIENT_KEY_ID": env.clientKeyID,
@@ -215,7 +215,7 @@ final class LOCALBManagementEntryTests: XCTestCase {
         XCTAssertEqual(dry["status_before"] as? String, "ACTIVE")
         XCTAssertEqual(try currentAnchorSequence(env), env.pairedCheckpoint.sequence)
 
-        let written = try SimiGoLocalBManagementEntry.clientRevokePayload(
+        let written = try LocalBManagementEntry.clientRevokePayload(
             context: env.context,
             env: [
                 "SIMIGO_LOCALB_CLIENT_KEY_ID": env.clientKeyID,
@@ -241,7 +241,7 @@ final class LOCALBManagementEntryTests: XCTestCase {
         let env = try makeEnvironment()
         let bogusKeyID = String(repeating: "a", count: 64)
         XCTAssertThrowsError(
-            try SimiGoLocalBManagementEntry.permissionsSetPayload(
+            try LocalBManagementEntry.permissionsSetPayload(
                 context: env.context,
                 env: [
                     "SIMIGO_LOCALB_CLIENT_KEY_ID": bogusKeyID,
@@ -259,7 +259,7 @@ final class LOCALBManagementEntryTests: XCTestCase {
     func testEmptyReasonFailsClosed() throws {
         let env = try makeEnvironment()
         XCTAssertThrowsError(
-            try SimiGoLocalBManagementEntry.permissionsSetPayload(
+            try LocalBManagementEntry.permissionsSetPayload(
                 context: env.context,
                 env: [
                     "SIMIGO_LOCALB_CLIENT_KEY_ID": env.clientKeyID,
@@ -276,7 +276,7 @@ final class LOCALBManagementEntryTests: XCTestCase {
     func testUnknownPermissionNameFailsClosed() throws {
         let env = try makeEnvironment()
         XCTAssertThrowsError(
-            try SimiGoLocalBManagementEntry.permissionsSetPayload(
+            try LocalBManagementEntry.permissionsSetPayload(
                 context: env.context,
                 env: [
                     "SIMIGO_LOCALB_CLIENT_KEY_ID": env.clientKeyID,

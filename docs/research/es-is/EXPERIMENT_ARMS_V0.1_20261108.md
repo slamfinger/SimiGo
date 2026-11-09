@@ -6,7 +6,7 @@
 
 ## 装置
 
-`Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISArmsTests.swift`
+`Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISArmsTests.swift`
 
 两臂都直接调用 HTTP 路径使用的同一组函数，不经过测试专用装配：
 
@@ -16,7 +16,7 @@
 ## 命令与原始输出
 
 ```
-swift test --filter SimiGoESISArmsTests
+swift test --filter ESISArmsTests
 
 ARM_A reuse_hit=1 model_calls=0 settlements_delta=0 states_delta=0 consumptions_delta=0 source=08E1DD8E
 ARM_B naive=stale_silent:5.6 product invalidated=2 new_demand=3cbff273 fresh=7.2
@@ -47,7 +47,7 @@ ARM_B naive=stale_silent:5.6 product invalidated=2 new_demand=3cbff273 fresh=7.2
 
 ```
 cd ~/Documents/SimiGo-new-root/Packages/SimiGoRuntime
-swift test --filter SimiGoESISArmsTests
+swift test --filter ESISArmsTests
 ```
 
 断言失败即实验失败；两行 `ARM_A` / `ARM_B` 是打印读数，不是断言本身。

@@ -978,10 +978,10 @@ public final class HTTPServer: @unchecked Sendable {
         modelCalls: Int,
         settlementsWritten: Int,
         evidence: [String: String] = [:],
-        databaseURL: URL = SimiGoPaths.databaseURL
-    ) -> SimiGoFailureAudit.WriteResult? {
+        databaseURL: URL = ManagedPaths.databaseURL
+    ) -> FailureAudit.WriteResult? {
         do {
-            let db = try SimiGoESISDatabase(url: databaseURL, createIfNeeded: true)
+            let db = try ESISDatabase(url: databaseURL, createIfNeeded: true)
             defer { db.close() }
             try db.runMigrations()
 
@@ -989,7 +989,7 @@ public final class HTTPServer: @unchecked Sendable {
             safeEvidence["request_id"] = requestID
             safeEvidence["wire"] = wire
             safeEvidence["terminal"] = terminal
-            let event = SimiGoFailureAudit.Event(
+            let event = FailureAudit.Event(
                 executionID: executionID,
                 attempt: 1,
                 phase: .g,
@@ -2076,7 +2076,7 @@ public final class HTTPServer: @unchecked Sendable {
             return
         }
         do {
-            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
             var includeChat = true
             var sessionID: String?
@@ -2106,7 +2106,7 @@ public final class HTTPServer: @unchecked Sendable {
             if chatSessionIDs.isEmpty, let sessionID {
                 chatSessionIDs = [sessionID]
             }
-            let loop = SimiGoInformationLoop(database: db)
+            let loop = InformationLoop(database: db)
             let resolution = try loop.resolve(.init(
                 sessionID: sessionID, requestIdentity: requestID, query: q,
                 rootIDs: rootID.map { [$0] } ?? [],
@@ -2153,18 +2153,18 @@ public final class HTTPServer: @unchecked Sendable {
         _ request: HTTPRequest, context: ConnectionContext
     ) async throws {
         let fm = FileManager.default
-        let root = SimiGoPaths.managedRoot()
+        let root = ManagedPaths.managedRoot()
         let llama = EnvManager.findTool("llama-server")
-            ?? (fm.isExecutableFile(atPath: SimiGoPaths.bin.appendingPathComponent("llama-server").path)
-                ? SimiGoPaths.bin.appendingPathComponent("llama-server").path : nil)
+            ?? (fm.isExecutableFile(atPath: ManagedPaths.bin.appendingPathComponent("llama-server").path)
+                ? ManagedPaths.bin.appendingPathComponent("llama-server").path : nil)
         let hf = EnvManager.findTool("hf")
-            ?? (fm.isExecutableFile(atPath: SimiGoPaths.bin.appendingPathComponent("hf").path)
-                ? SimiGoPaths.bin.appendingPathComponent("hf").path : nil)
-        var db: [String: Any] = ["path": SimiGoPaths.databaseURL.path]
-        if let opened = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: false),
+            ?? (fm.isExecutableFile(atPath: ManagedPaths.bin.appendingPathComponent("hf").path)
+                ? ManagedPaths.bin.appendingPathComponent("hf").path : nil)
+        var db: [String: Any] = ["path": ManagedPaths.databaseURL.path]
+        if let opened = try? ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: false),
             let version = try? opened.schemaVersion()
         {
-            db["exists"] = fm.fileExists(atPath: SimiGoPaths.databaseURL.path)
+            db["exists"] = fm.fileExists(atPath: ManagedPaths.databaseURL.path)
             db["schema_version"] = version
             db["roots"] = (try? opened.listRoots().map(\ .rootID)) ?? []
         } else {
@@ -2196,7 +2196,7 @@ public final class HTTPServer: @unchecked Sendable {
     private func handleSimigoRootsRequest(
         _ request: HTTPRequest, context: ConnectionContext
     ) async throws {
-        guard let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        guard let db = try? ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: false)
         else {
             sendJSON(["error": "database unavailable"], status: 503, on: context.connection, context: context)
             return
@@ -2228,8 +2228,8 @@ public final class HTTPServer: @unchecked Sendable {
             .queryItems?.contains(where: {
                 $0.name == "deep" && ["1", "true", "yes"].contains($0.value ?? "")
             }) ?? false
-        guard let db = try? SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: false)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2288,7 +2288,7 @@ public final class HTTPServer: @unchecked Sendable {
     }
 
     private func simigoDependencyJSON(
-        _ entry: SimiGoESISDatabase.DependencyEntry
+        _ entry: ESISDatabase.DependencyEntry
     ) -> [String: Any] {
         [
             "dependency_id": entry.dependencyID,
@@ -2311,8 +2311,8 @@ public final class HTTPServer: @unchecked Sendable {
                 status: 400, on: context.connection, context: context)
             return
         }
-        guard let db = try? SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: false)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2359,8 +2359,8 @@ public final class HTTPServer: @unchecked Sendable {
                 status: 400, on: context.connection, context: context)
             return
         }
-        guard let db = try? SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: false)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2402,8 +2402,8 @@ public final class HTTPServer: @unchecked Sendable {
                 status: 400, on: context.connection, context: context)
             return
         }
-        guard let db = try? SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: false)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2446,8 +2446,8 @@ public final class HTTPServer: @unchecked Sendable {
                 status: 400, on: context.connection, context: context)
             return
         }
-        guard let db = try? SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: false)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2499,8 +2499,8 @@ public final class HTTPServer: @unchecked Sendable {
                 maxAge = value
             }
         }
-        guard let db = try? SimiGoESISDatabase(
-            url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: false)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2561,7 +2561,7 @@ public final class HTTPServer: @unchecked Sendable {
             return
         }
         do {
-            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
             let rootID = "work-" + EnvManager.stableRootID(forPath: standardized)
             try db.upsertRoot(

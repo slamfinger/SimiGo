@@ -18,7 +18,7 @@ import SimiGoRuntimeContract
 ///     -> HTTPServer.route (protected-route gate)
 ///     -> handleResponsesNonStreaming / handleResponsesStreaming
 ///     -> continuationGate -> the REAL admission authority
-///        (`SimiGoProducerIdentity.recoverForContinuation`, exactly the closure
+///        (`ProducerIdentity.recoverForContinuation`, exactly the closure
 ///        NativeMLX wires at the HTTPServer construction site)
 ///     -> generateHandler  (a TEXT stand-in, no model load — this is the ONLY
 ///        substituted component)
@@ -104,8 +104,8 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         isolationRoot = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         // Guard the claim: the authority the server opens must live inside the isolation root.
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
-            "authoritative store resolves outside the isolation root: \(SimiGoPaths.databaseURL.path)")
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            "authoritative store resolves outside the isolation root: \(ManagedPaths.databaseURL.path)")
         XCTAssertTrue(
             ExecutionStateGraphStore.defaultStoreURL().path.hasPrefix(
                 (graphStore as NSString).standardizingPath),
@@ -144,7 +144,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     @MainActor
     private func stageSettledAnchor(value: String) throws -> String {
         let store = ExecutionStateGraphStore()
-        let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let producer = ProducerIdentity.identity(fromPath: modelPath)
         let root = try store.create()
         try store.continueState(root, input: value)
         let state = try XCTUnwrap(store.state(root.id))
@@ -212,7 +212,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     /// as evidence instead of being reclassified as harmless.
     private func countIsolatedSQLite(_ sql: String) throws -> Int {
         var handle: OpaquePointer?
-        let openRC = sqlite3_open(SimiGoPaths.databaseURL.path, &handle)
+        let openRC = sqlite3_open(ManagedPaths.databaseURL.path, &handle)
         guard openRC == SQLITE_OK, let handle else {
             if let handle { sqlite3_close(handle) }
             throw NSError(
@@ -239,7 +239,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     /// distinguishable from a missing one.
     private func rowsIsolatedSQLite(_ sql: String, columns: Int) throws -> [[String]] {
         var handle: OpaquePointer?
-        let openRC = sqlite3_open(SimiGoPaths.databaseURL.path, &handle)
+        let openRC = sqlite3_open(ManagedPaths.databaseURL.path, &handle)
         guard openRC == SQLITE_OK, let handle else {
             if let handle { sqlite3_close(handle) }
             throw NSError(
@@ -331,7 +331,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     /// lower-layer write fault exactly when a producer identity binding is written.
     private func executeIsolatedSQLite(_ sql: String) throws {
         var handle: OpaquePointer?
-        let openRC = sqlite3_open(SimiGoPaths.databaseURL.path, &handle)
+        let openRC = sqlite3_open(ManagedPaths.databaseURL.path, &handle)
         guard openRC == SQLITE_OK, let handle else {
             if let handle { sqlite3_close(handle) }
             throw NSError(
@@ -382,7 +382,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             admission = { esStateID in
                 stub.bumpAdmission()
                 let admitted = try await MainActor.run {
-                    try SimiGoProducerIdentity.recoverForContinuation(
+                    try ProducerIdentity.recoverForContinuation(
                         stateID: esStateID, modelPath: mp)
                 }
                 return ContinuationAdmissionOutcome(
@@ -523,7 +523,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     func testValidContinuationSettlesAndReportsAuthoritativeID() async throws {
         let value = "HTTP-SETTLE-7101"
         let anchor = try stageSettledAnchor(value: value)
-        let own = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let own = ProducerIdentity.identity(fromPath: modelPath)
 
         // The real settlement will run over the ACTUAL generated text, so the
         // stand-in must satisfy the declared result contract for this anchor.
@@ -549,11 +549,11 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         // transaction, published WITH the re-derived producer identity binding.
         let bindings = try XCTUnwrap(freshStore().esis)
             .settlementBindings(settlementID: responseID)
-        XCTAssertEqual(bindings[SimiGoSettlementIdentityBinding.modelKey],
-                       SimiGoSettlementIdentityBinding.digest(own.model),
+        XCTAssertEqual(bindings[SettlementIdentityBinding.modelKey],
+                       SettlementIdentityBinding.digest(own.model),
                        "the reported settlement_id must exist in the DB bound to THIS runtime identity")
-        XCTAssertEqual(bindings[SimiGoSettlementIdentityBinding.tokenizerKey],
-                       SimiGoSettlementIdentityBinding.digest(own.tokenizer))
+        XCTAssertEqual(bindings[SettlementIdentityBinding.tokenizerKey],
+                       SettlementIdentityBinding.digest(own.tokenizer))
 
         // The settlement belongs to a NEW child Execution State, not the anchor,
         // and the child id is returned so the next continuation can chain.
@@ -657,7 +657,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     @MainActor
     func testContinuationBindsAdmittedValueNotMutatedESState() async throws {
         let anchor = try stageSettledAnchor(value: "A")
-        let own = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let own = ProducerIdentity.identity(fromPath: modelPath)
 
         // Durable product mutation of the same ES: nextInput A -> B.
         let mutator = freshStore()
@@ -1017,14 +1017,14 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     /// Contract fix B regression, driven through the SAME closure NativeMLX wires
     /// (not a stub). When the authoritative store itself faults — SQLite cannot
     /// open its database file, so `ensureESIS()` fails, `admitContinuation` throws
-    /// `ExecutionGraphError.storeUnavailable`, a NON-`SimiGoISAdmission.Refusal`
+    /// `ExecutionGraphError.storeUnavailable`, a NON-`ISAdmission.Refusal`
     /// error — the real `recoverForContinuation` must surface it so the route
     /// returns 500 ADMISSION_ENGINE_ERROR. The pre-fix behaviour swallowed it into
     /// a 422 INPUT_ADMISSION_REFUSED. Contrast test 8 (route mapping via an
     /// injected stub) and test 6 (a genuine semantic refusal still 422).
     @MainActor
     func testAdmissionInternalFaultThroughRealClosureIs500() async throws {
-        let dbURL = SimiGoPaths.databaseURL
+        let dbURL = ManagedPaths.databaseURL
         // Make the authority genuinely UNOPENABLE. A short garbage file is NOT
         // enough: an existing WAL/SHM pair lets SQLite rebuild a valid image and
         // admission then returns a legitimate empty-store refusal (422). Occupy

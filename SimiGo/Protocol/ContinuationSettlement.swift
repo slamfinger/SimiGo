@@ -268,7 +268,7 @@ func makeNativeMLXContinuationSettlementHandler(
 /// authority to grant — it still verifies the payload, validity and closure.
 func makeContinuationSettlementHandler(
     modelPath: String,
-    kvRepresentationProvider: @escaping @Sendable (String) -> SimiGoSettlementKVBinding.Representation?
+    kvRepresentationProvider: @escaping @Sendable (String) -> SettlementKVBinding.Representation?
 ) -> ContinuationSettlementHandler {
     return { request in
         let kvRepresentation = kvRepresentationProvider(request.childESStateID)
@@ -291,7 +291,7 @@ func settleForNativeMLXContinuation(
     store: ExecutionStateGraphStore,
     request: ContinuationSettlementRequest,
     modelPath: String,
-    kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil
+    kvRepresentation: SettlementKVBinding.Representation? = nil
 ) throws -> ContinuationSettlementOutcome {
     // The anchor must name a live state in the authoritative graph; an
     // unknown anchor is an authority/infrastructure fault, never a
@@ -302,7 +302,7 @@ func settleForNativeMLXContinuation(
     }
     // Producer identity is re-derived from THIS runtime's own model snapshot —
     // never supplied by the caller, never taken from another execution.
-    let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
+    let producer = ProducerIdentity.identity(fromPath: modelPath)
     let commit = try store.settleContinuationResult(
         generatedText: request.generatedText,
         parentStateID: request.parentESStateID,

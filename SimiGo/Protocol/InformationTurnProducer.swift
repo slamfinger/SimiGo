@@ -6,9 +6,9 @@ import SimiGoRuntimeContract
 /// executes but its settlement carries only the protocol-level model id.
 public struct InformationTurnProducer: Sendable {
     public let modelIdentity: String
-    public let identity: SimiGoSettlementIdentityBinding.Identity
+    public let identity: SettlementIdentityBinding.Identity
 
-    public init(modelIdentity: String, identity: SimiGoSettlementIdentityBinding.Identity) {
+    public init(modelIdentity: String, identity: SettlementIdentityBinding.Identity) {
         self.modelIdentity = modelIdentity
         self.identity = identity
     }

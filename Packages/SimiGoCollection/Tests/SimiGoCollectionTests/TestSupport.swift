@@ -127,18 +127,18 @@ enum Fixture {
     static func context(
         sessionID: String = Fixture.sessionID, isSubagent: Bool = false,
         path: String = "/tmp/transcript.jsonl"
-    ) -> QoderTurnAccumulator.Context {
-        QoderTurnAccumulator.Context(
+    ) -> TurnAccumulator.Context {
+        TurnAccumulator.Context(
             projectID: Fixture.projectID, sessionID: sessionID, path: path,
             isSubagent: isSubagent)
     }
 
     static func feed(
-        _ accumulator: QoderTurnAccumulator, _ lines: [String], startingAt: Int64 = 1
-    ) -> [QoderCollectionEvent] {
-        var events: [QoderCollectionEvent] = []
+        _ accumulator: TurnAccumulator, _ lines: [String], startingAt: Int64 = 1
+    ) -> [CollectionEvent] {
+        var events: [CollectionEvent] = []
         for (index, line) in lines.enumerated() {
-            let entry = try! QoderTranscriptLineParser.parse(Data(line.utf8))
+            let entry = try! TranscriptLineParser.parse(Data(line.utf8))
             events.append(
                 contentsOf: accumulator.ingest(
                     entry, segmentLine: startingAt + Int64(index)))
@@ -146,42 +146,42 @@ enum Fixture {
         return events
     }
 
-    static func turns(_ events: [QoderCollectionEvent]) -> [QoderCollectedTurn] {
+    static func turns(_ events: [CollectionEvent]) -> [CollectedTurnRecord] {
         events.compactMap {
             if case .turn(let turn) = $0 { return turn }
             return nil
         }
     }
 
-    static func closures(_ events: [QoderCollectionEvent]) -> [QoderTurnClosure] {
+    static func closures(_ events: [CollectionEvent]) -> [TurnClosure] {
         events.compactMap {
             if case .closedWithoutAnswer(let closure) = $0 { return closure }
             return nil
         }
     }
 
-    static func baselines(_ events: [QoderCollectionEvent]) -> [QoderBaselineEvent] {
+    static func baselines(_ events: [CollectionEvent]) -> [BaselineEvent] {
         events.compactMap {
             if case .baseline(let event) = $0 { return event }
             return nil
         }
     }
 
-    static func compactions(_ events: [QoderCollectionEvent]) -> [QoderCompactionEvent] {
+    static func compactions(_ events: [CollectionEvent]) -> [CompactionEvent] {
         events.compactMap {
             if case .compaction(let event) = $0 { return event }
             return nil
         }
     }
 
-    static func orphans(_ events: [QoderCollectionEvent]) -> [QoderOrphanAssistant] {
+    static func orphans(_ events: [CollectionEvent]) -> [OrphanAssistant] {
         events.compactMap {
             if case .orphanAssistant(let event) = $0 { return event }
             return nil
         }
     }
 
-    static func failures(_ events: [QoderCollectionEvent]) -> [QoderParseFailure] {
+    static func failures(_ events: [CollectionEvent]) -> [ParseFailure] {
         events.compactMap {
             if case .parseFailure(let event) = $0 { return event }
             return nil

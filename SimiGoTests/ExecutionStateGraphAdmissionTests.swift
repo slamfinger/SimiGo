@@ -15,7 +15,7 @@ final class ExecutionStateGraphAdmissionTests: XCTestCase {
 
     private var storeURL: URL!
     private var dbURL: URL!
-    private let identity = SimiGoSettlementIdentityBinding.Identity(
+    private let identity = SettlementIdentityBinding.Identity(
         model: "mlx:qwen3-coder-30b", tokenizer: "tok:6e302ea6")
 
     override func setUp() {
@@ -66,13 +66,13 @@ final class ExecutionStateGraphAdmissionTests: XCTestCase {
     func testStoreRefusesValueProducedByDifferentModel() throws {
         let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
         let state = try settledState(store, value: "hello")
-        let other = SimiGoSettlementIdentityBinding.Identity(model: "mlx:different", tokenizer: identity.tokenizer)
+        let other = SettlementIdentityBinding.Identity(model: "mlx:different", tokenizer: identity.tokenizer)
 
         XCTAssertThrowsError(try store.admitContinuation(stateID: state.id, consumer: other)) { error in
-            guard case SimiGoISAdmission.Refusal.producerBinding(let verdict) = error else {
+            guard case ISAdmission.Refusal.producerBinding(let verdict) = error else {
                 return XCTFail("expected producerBinding refusal, got \(error)")
             }
-            XCTAssertEqual(verdict.code, SimiGoSettlementIdentityBinding.Refusal.modelMismatch.rawValue)
+            XCTAssertEqual(verdict.code, SettlementIdentityBinding.Refusal.modelMismatch.rawValue)
         }
     }
 
@@ -86,7 +86,7 @@ final class ExecutionStateGraphAdmissionTests: XCTestCase {
         try store.continueState(root, input: "hello")   // continued but NOT settled
 
         XCTAssertThrowsError(try store.admitContinuation(stateID: root.id, consumer: identity)) { error in
-            guard case SimiGoISAdmission.Refusal.noSettlement = error else {
+            guard case ISAdmission.Refusal.noSettlement = error else {
                 return XCTFail("expected noSettlement refusal, got \(error)")
             }
         }

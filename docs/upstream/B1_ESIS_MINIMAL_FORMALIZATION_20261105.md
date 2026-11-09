@@ -102,7 +102,7 @@ B0 ACCEPTED。以下裁定已编入本骨架，不再作为待办：
 
 骨架表述：**Settlement 可以产生供下一次续接使用的 ES 引用；Admission 成功后，消费经过验证的结果与绑定，创建新的 ES 执行实例。**旧 ES 生命周期结束后仍可续接，正是通过 1 → 2 → 3 的链条表达，而非三者同一。
 
-**关键推论**【骨架】：**ES_{n+1} 的存在不要求 ES_n 或其载体（KV / slot / 进程）仍然存活**。这是"执行生命周期结束后的续接"的形式表达：admission 产出的是 recovered value + verified bindings "for a **fresh ES**"（`SimiGoISAdmission.swift:90-91`）。证据状态：由实现推导（恢复铸造新 ES 的路径已验证；跨引擎未验证——不因此宣称普适）。
+**关键推论**【骨架】：**ES_{n+1} 的存在不要求 ES_n 或其载体（KV / slot / 进程）仍然存活**。这是"执行生命周期结束后的续接"的形式表达：admission 产出的是 recovered value + verified bindings "for a **fresh ES**"（`ISAdmission.swift:90-91`）。证据状态：由实现推导（恢复铸造新 ES 的路径已验证；跨引擎未验证——不因此宣称普适）。
 
 ---
 
@@ -119,7 +119,7 @@ es_fail     : 仅落审计，不产生结算，es 保持未结算
 ```
 
 - 语义地位：规则（骨架内有效；形式化的是现行契约行为，不是新发明）。
-- 实现对应（已验证）：前置条件族 `AGENT-ACCESS.md:229-240`；fail-closed 先于任何写入 `SimiGoSettlementAuthority.swift:5-12`；es_fail 仅审计 `:227`；结算键 `(session_id, request_id, source_kind)` 而非「最近一行」（IS 契约:119）。结算键的一般化（脱离 session/request 特化）是 R1 的参数化方向，随 OQ-8 归拢处理。
+- 实现对应（已验证）：前置条件族 `AGENT-ACCESS.md:229-240`；fail-closed 先于任何写入 `SettlementAuthority.swift:5-12`；es_fail 仅审计 `:227`；结算键 `(session_id, request_id, source_kind)` 而非「最近一行」（IS 契约:119）。结算键的一般化（脱离 session/request 特化）是 R1 的参数化方向，随 OQ-8 归拢处理。
 
 ### R2 · 恢复准入规则【规则】
 
@@ -133,7 +133,7 @@ A(IS, ρ, ctx, t) = Admit(β) ⟺ 以下四项在恢复时点 t 全部成立：
 ```
 
 - **时间索引即第五项检查**：裁定 OQ-1 列出的"是否发生使结果失效的变化"不是独立第六步，而是 (iii)/(iv) 按 t 求值的本意——谓词在恢复时点重算，历史成立不外推。
-- 实现对应（已验证）：`SimiGoISAdmission.swift:92-99` 七步 fail-closed 检查单是 (i)–(iv) 的现行实现细化。
+- 实现对应（已验证）：`ISAdmission.swift:92-99` 七步 fail-closed 检查单是 (i)–(iv) 的现行实现细化。
 - **裁定红线**：检查单是实现佐证，**不是**完整、普遍适用的可靠结算定义（OQ-1 显式保留）。
 
 ### R3 · 选择性重执行规则【规则 + 骨架操作】
@@ -171,7 +171,7 @@ A(IS, ρ, ctx, t) = Admit(β) ⟺ 以下四项在恢复时点 t 全部成立：
 
 - 边界（裁定原文）：重执行范围**不是**简单地等于所有无效依赖，而是依赖图上**恢复目标所需的受影响闭包**；已结算且有效、不在该闭包上的工作保持复用，不重跑。即授权原文："不满足条件时，只重执行缺失或失效的依赖闭包，而不是无条件重跑全部已完成工作。"
 - 重执行产出经 σ 重新结算并重入 IS（骨架闭环闭合）。
-- 实现对应：失效传播 `invalidateSourceFile` → 闭包传播、无关结算保持 valid（`SimiGoESISDatabase.swift:4943-4982`，"Unrelated settlements keep validity='valid'"）；复用四条件不满足即"走正常生成，不做「尽力而为」的近似回答"（`AGENT-ACCESS.md:102-109`）；policy 门控 `SimiGoRecomputePolicy`（`never` 默认，输入不匹配锚定证据即拒绝、不静默重生成，`SimiGoManagedContinuation.swift:3-10,234-245`）。
+- 实现对应：失效传播 `invalidateSourceFile` → 闭包传播、无关结算保持 valid（`ESISDatabase.swift:4943-4982`，"Unrelated settlements keep validity='valid'"）；复用四条件不满足即"走正常生成，不做「尽力而为」的近似回答"（`AGENT-ACCESS.md:102-109`）；policy 门控 `RecomputePolicy`（`never` 默认，输入不匹配锚定证据即拒绝、不静默重生成，`ManagedContinuation.swift:3-10,234-245`）。
 - 语义地位：三步范围计算与 `cl_graph` 是本文件给出的**骨架操作**，不是完整的最小重执行算法；算法化（性能与正确性权衡）随 OQ-8 归拢与后续证据深化。
 
 ### R4 · 载体可选规则【规则】
@@ -184,7 +184,7 @@ KV 复用权威在 IS 记录，不在引擎自身状态：
   to reuse KV state"（ContinuationAdmission.swift:17-20）
 ```
 
-- 实现对应（已验证）：载体不 reinterpret 字节（`SimiGoESISDatabase.swift:853-855`）；KV 绑定权威引文如上。
+- 实现对应（已验证）：载体不 reinterpret 字节（`ESISDatabase.swift:853-855`）；KV 绑定权威引文如上。
 - 两层独立性（B0 §1.3 编入）：语义层独立性 = 设计原则（本规则即其形式化）；实现层可迁移性 = 实验命题，逐载体验证，本骨架不作宣称。
 
 ### R5 · 分支关系规则【规则 + OPEN】
@@ -299,14 +299,14 @@ C-comp : complete(r)                                       结果完整（wire �
 
 | 骨架元素 | 实现对应（证据） | 证据状态 |
 |---|---|---|
-| σ 部分性 / fail-closed | `SimiGoSettlementAuthority.swift:5-12`（引文核验） | 已验证 |
+| σ 部分性 / fail-closed | `SettlementAuthority.swift:5-12`（引文核验） | 已验证 |
 | 恰好一次结算 / 前置条件族 | `AGENT-ACCESS.md:229-240`；`CrossPathSettlementIdentityHTTPTests` | 已验证（契约+测试层） |
 | put 被动（IS 不判定完成） | IS 契约 §1 三态分离 + C1 | 已验证（契约明文） |
-| A 七步 ↔ R2 四条件 | `SimiGoISAdmission.swift:92-99`（引文核验） | 已验证；**提升为普遍定义 = OPEN(OQ-1)** |
+| A 七步 ↔ R2 四条件 | `ISAdmission.swift:92-99`（引文核验） | 已验证；**提升为普遍定义 = OPEN(OQ-1)** |
 | child ES 闭环 | `ContinuationSettlement.swift:105-106`（引文核验） | 已验证 |
 | child ES 引用 ≠ 新 ES 实例（§3 区分） | 实现中同一 ID 关联（同上）；语义等同性未证明 | 已验证（ID 关联）；等同性不作宣称 |
-| ES_{n+1} 不要求 ES_n 载体存活 | admit "for a fresh ES"（`SimiGoISAdmission.swift:90-91`）+ 恢复路径测试 | 推导结论（单引擎内已验证；跨引擎未验证） |
-| R3 失效闭包传播 | `SimiGoESISDatabase.swift:4943-4982`；`AGENT-ACCESS.md:102-109` | 已验证（机制）；`cl_graph` 范围计算 = 骨架操作（待精确定义） |
+| ES_{n+1} 不要求 ES_n 载体存活 | admit "for a fresh ES"（`ISAdmission.swift:90-91`）+ 恢复路径测试 | 推导结论（单引擎内已验证；跨引擎未验证） |
+| R3 失效闭包传播 | `ESISDatabase.swift:4943-4982`；`AGENT-ACCESS.md:102-109` | 已验证（机制）；`cl_graph` 范围计算 = 骨架操作（待精确定义） |
 | R4 KV 绑定权威在 IS | `ContinuationAdmission.swift:17-20`（引文核验） | 已验证 |
 | R5 storageKey 钉死 | `ExecutionLineage.swift:28-31`（引文核验） | 已验证 |
 | R5 Branch ↔ Lineage 身份关系 | — | OPEN（OQ-3） |

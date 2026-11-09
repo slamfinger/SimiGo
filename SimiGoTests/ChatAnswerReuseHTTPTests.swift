@@ -78,7 +78,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         }
         isolationRoot = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         let dir = FileManager.default.temporaryDirectory
@@ -107,7 +107,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     @MainActor
     private func withServer(_ run: () async throws -> Void) async throws {
         let stub = self.stub!
-        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let identity = ProducerIdentity.identity(fromPath: modelPath)
         let server = HTTPServer(
             port: port,
             modelId: "chat-answer-reuse-http-test",
@@ -448,7 +448,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             databaseURL: url))
         XCTAssertTrue(first.auditPersisted)
 
-        let db = try SimiGoESISDatabase(url: url, createIfNeeded: false)
+        let db = try ESISDatabase(url: url, createIfNeeded: false)
         defer { db.close() }
         try db.runMigrations()
         let event = try XCTUnwrap(db.failureAudit(executionID: executionID))

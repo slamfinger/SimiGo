@@ -61,7 +61,7 @@ final class LiveSessionCeilingEvictionRealModelTests: XCTestCase {
     }
 
     private var traceURL: URL {
-        SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
+        ManagedPaths.logs.appendingPathComponent("native_mlx_trace.log")
     }
 
     private func traceSize() -> UInt64 {
@@ -177,9 +177,9 @@ final class LiveSessionCeilingEvictionRealModelTests: XCTestCase {
             throw XCTSkip("SIMIGO_HOME not injected; 逐出读数需在隔离根内跑")
         }
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix((home as NSString).standardizingPath),
+            ManagedPaths.databaseURL.path.hasPrefix((home as NSString).standardizingPath),
             "authoritative store resolves outside the isolation root: "
-                + SimiGoPaths.databaseURL.path)
+                + ManagedPaths.databaseURL.path)
         XCTAssertEqual(
             RuntimeTuning.liveSessionByteBudgetOverrideBytes, ceiling,
             "覆盖值必须在进程启动时被读到（static let 每进程只求值一次）")

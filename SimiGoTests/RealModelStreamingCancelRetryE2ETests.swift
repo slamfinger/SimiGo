@@ -89,7 +89,7 @@ final class RealModelStreamingCancelRetryE2ETests: XCTestCase {
     }
 
     private func record(_ name: String, _ payload: [String: Any]) {
-        let url = SimiGoPaths.logs.appendingPathComponent("tc-realmodel-\(name).json")
+        let url = ManagedPaths.logs.appendingPathComponent("tc-realmodel-\(name).json")
         guard let data = try? JSONSerialization.data(
             withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
         else { return }

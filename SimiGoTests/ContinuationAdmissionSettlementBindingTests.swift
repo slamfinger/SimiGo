@@ -23,7 +23,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
 
     private var isolationRoot: URL!
     private var modelPath: String!
-    private var consumer: SimiGoSettlementIdentityBinding.Identity!
+    private var consumer: SettlementIdentityBinding.Identity!
 
     override func setUpWithError() throws {
         let env = ProcessInfo.processInfo.environment
@@ -36,7 +36,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         }
         isolationRoot = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         let dir = FileManager.default.temporaryDirectory
@@ -45,7 +45,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         try Data(#"{"model_type":"binding-model-free-stand-in"}"#.utf8)
             .write(to: dir.appendingPathComponent("tokenizer.binding.json"))
         modelPath = dir.path
-        consumer = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        consumer = ProducerIdentity.identity(fromPath: modelPath)
     }
 
     override func tearDown() {

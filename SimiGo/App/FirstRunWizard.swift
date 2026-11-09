@@ -14,7 +14,7 @@ import SimiGoRuntimeContract
 enum FirstRunWizard {
 
     static var doneMarkerURL: URL {
-        SimiGoPaths.manifests.appendingPathComponent("first-run-done.json")
+        ManagedPaths.manifests.appendingPathComponent("first-run-done.json")
     }
 
     static func isNeeded() -> Bool {
@@ -29,7 +29,7 @@ enum FirstRunWizard {
             "binaries": binaries,
         ]
         try? FileManager.default.createDirectory(
-            at: SimiGoPaths.manifests, withIntermediateDirectories: true)
+            at: ManagedPaths.manifests, withIntermediateDirectories: true)
         if let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted]) {
             try? data.write(to: doneMarkerURL)
         }
@@ -143,7 +143,7 @@ struct FirstRunWizardView: View {
             bullet("2", "从引擎适配清单勾选外部二进制（自动安装 → ~/.simigo/bin → 清理缓存）")
             bullet("3", "自举生成环境：目录树、llama.cpp 工具链、hf、数据库（已有则复用，不替换）、LOCALB")
             bullet("4", "把 SimiGo 落位到 /Applications 并重启")
-            Text("目标目录：\(SimiGoPaths.managedRoot().path)")
+            Text("目标目录：\(ManagedPaths.managedRoot().path)")
                 .font(.caption).foregroundStyle(.secondary)
             Spacer()
             HStack {
@@ -217,9 +217,9 @@ struct FirstRunWizardView: View {
     @State private var selectedEngines: Set<String> = []
 
     private var engineRecipes: [EngineRecipe] {
-        SimiGoEngineRegistry.load(
-            manifestURL: SimiGoPaths.manifests
-                .appendingPathComponent(SimiGoEngineRegistry.manifestName))
+        EngineRegistry.load(
+            manifestURL: ManagedPaths.manifests
+                .appendingPathComponent(EngineRegistry.manifestName))
     }
 
     private var binaryStep: some View {
@@ -453,7 +453,7 @@ struct FirstRunWizardView: View {
         log("== 生成环境自举 ==")
         var report = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
         // LOCALB first-run ceremony（产品自身首启即完成；无交互 prepare→activate）
-        let ceremony = SimiGoEnvBootstrapEntry.bootstrapLOCALBCeremonyIfNeeded(optIn: true)
+        let ceremony = EnvBootstrapEntry.bootstrapLOCALBCeremonyIfNeeded(optIn: true)
         report["localb_ceremony"] = ceremony
         for key in ["engine_manifest", "llama_cpp", "hf", "database", "localb", "localb_ceremony"] {
             if let v = report[key] as? [String: Any] {

@@ -11,7 +11,7 @@ import SimiGoRuntimeContract
 ///   real signed POST /v1/responses (previous_es_state_id)
 ///     -> HTTPServer.route -> handleResponsesNonStreaming
 ///     -> continuationGate -> HTTPServer.continuationAdmission (wired in
-///        NativeMLX) -> SimiGoProducerIdentity.recoverForContinuation
+///        NativeMLX) -> ProducerIdentity.recoverForContinuation
 ///     -> ExecutionStateGraphStore.admitContinuation -> native IS admission over
 ///        the authoritative SQLite IS
 ///     -> recovered IS value appended as generation input -> REAL MLX generate.
@@ -48,7 +48,7 @@ final class ResponsesContinuationRealModelE2ETests: XCTestCase {
     @MainActor
     private func stageSettledAnchor(value: String) throws -> String {
         let store = ExecutionStateGraphStore()
-        let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let producer = ProducerIdentity.identity(fromPath: modelPath)
         let root = try store.create()
         try store.continueState(root, input: value)
         let state = try XCTUnwrap(store.state(root.id))

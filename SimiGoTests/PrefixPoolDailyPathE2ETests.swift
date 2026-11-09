@@ -281,7 +281,7 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         // --- Restart-warm: a fresh store over the same disk root admits
         //     the committed boundary without any live session. ---
         let freshStore = PrefixSnapshotStore(
-            root: SimiGoRuntimeCachePaths.prefixPoolRoot,
+            root: RuntimeCachePaths.prefixPoolRoot,
             pool: ExecutionStatePrefixPool(tokenBudget: 200_000))
         let rescanned = try freshStore.rescan()
         XCTAssertGreaterThanOrEqual(rescanned, 1, "disk boundaries survive restart")

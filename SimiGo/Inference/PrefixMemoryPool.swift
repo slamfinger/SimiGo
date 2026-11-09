@@ -101,7 +101,7 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
         guard RuntimeTuning.prefixMemoryPoolEnabled else { return nil }
         let cumulative = PrefixChain.cumulative(boundary.tokens)
         let hash = cumulative.last ?? 0
-        let key = SimiGoSettlementKVBinding.Representation(
+        let key = SettlementKVBinding.Representation(
             modelID: namespace.modelID,
             kvFingerprint: namespace.kvFingerprint,
             tokenCount: boundary.tokenCount,

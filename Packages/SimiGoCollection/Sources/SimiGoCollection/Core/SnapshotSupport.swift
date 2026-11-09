@@ -95,7 +95,7 @@ enum SnapshotJSON {
 
 /// Carrier stamps normalized to one wire form.
 ///
-/// `QoderExternalTurnSink.date(from:)` accepts ISO 8601 with fractional seconds
+/// `ExternalTurnSink.date(from:)` accepts ISO 8601 with fractional seconds
 /// and without, so that is the only shape this bridge may emit. Carriers differ:
 /// the flat export uses epoch seconds, AI Studio uses milliseconds with `Z`,
 /// DeepSeek uses microseconds with a numeric offset. Normalizing here keeps a

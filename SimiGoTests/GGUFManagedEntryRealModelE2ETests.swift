@@ -34,7 +34,7 @@ final class GGUFManagedEntryRealModelE2ETests: XCTestCase {
         isolationRoot = URL(
             fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
     }
 
@@ -85,7 +85,7 @@ final class GGUFManagedEntryRealModelE2ETests: XCTestCase {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         XCTAssertFalse(text.isEmpty, "the real engine produced no text")
 
-        let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL)
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL)
         let messages = try db.listChatMessages(sessionID: session)
         XCTAssertEqual(messages.map(\.role), ["user", "assistant"])
         // The settlement writes the canonical (trimmed) answer; llama.cpp's
@@ -100,7 +100,7 @@ final class GGUFManagedEntryRealModelE2ETests: XCTestCase {
             try db.settlementReceipt(answered.answerSettlementID)?.validity, "valid")
         XCTAssertNotNil(try db.currentChatStateID(sessionID: session))
 
-        let loop = SimiGoInformationLoop(database: db)
+        let loop = InformationLoop(database: db)
         let resolution = try loop.resolve(
             .init(
                 sessionID: session, query: query, includeChat: true,

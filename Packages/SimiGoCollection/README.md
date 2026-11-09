@@ -5,7 +5,7 @@
 > **当前定位：采集 → 外部轮次合同。** App 集成默认关闭采集；开启后，sink 把轮次按
 > IS 外部轮次合同（`recordExternalTurn` / `recordExternalResponse` / `verifyExternalTurn`）
 > 写入权威库。本 package 自身仍不依赖 Runtime：sink 在 App 侧
-> （`SimiGo/App/QoderExternalTurnSink.swift`）。包测试只证明采集与 inbox 语义；
+> （`SimiGo/App/ExternalTurnSink.swift`）。包测试只证明采集与 inbox 语义；
 > 「真实 transcript → 检索命中」的整链安装版读数尚未取得。
 
 ## 数据流

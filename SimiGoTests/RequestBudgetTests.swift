@@ -14,7 +14,7 @@ import SimiGoRuntimeContract
 ///
 /// Runs only with the three isolated roots injected, for the same reason as the
 /// HTTP suites: the controller persists calibration records under
-/// `SimiGoPaths.managedRoot()` and must never write the real user state.
+/// `ManagedPaths.managedRoot()` and must never write the real user state.
 final class RequestBudgetControllerTests: XCTestCase {
 
     override func setUpWithError() throws {
@@ -40,7 +40,7 @@ final class RequestBudgetControllerTests: XCTestCase {
                 "isolated roots not injected: run through tools/make_isolated_xctestrun.py")
         }
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(
+            ManagedPaths.databaseURL.path.hasPrefix(
                 URL(fileURLWithPath: home, isDirectory: true).path),
             "authoritative store resolves outside the isolation root")
     }
@@ -632,7 +632,7 @@ final class RequestBudgetGateHTTPTests: XCTestCase {
         isolationRoot = URL(
             fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         let dir = FileManager.default.temporaryDirectory
@@ -661,7 +661,7 @@ final class RequestBudgetGateHTTPTests: XCTestCase {
     @MainActor
     private func withServer(_ run: () async throws -> Void) async throws {
         let stub = stub!
-        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let identity = ProducerIdentity.identity(fromPath: modelPath)
         let server = HTTPServer(
             port: port,
             modelId: "budget-gate-http-test",

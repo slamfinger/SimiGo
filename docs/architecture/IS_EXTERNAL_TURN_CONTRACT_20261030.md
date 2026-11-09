@@ -2,7 +2,7 @@
 
 **性质**：外部轮次的数据层合同与检索资格规则；当前产品调用方是 Qoder 采集桥（§3.1.1）。
 它不是云端代理能力说明：SimiGo 不代任何外部 provider 发请求。
-**权威实现**：`Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SimiGoESISDatabase.swift`。
+**权威实现**：`Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabase.swift`。
 **阅读边界（2026-11-05 复核）**：
 
 - §1–5 是**来源无关**的存储合同：它约束「怎么把一条外部轮次写进 IS」，不约束「外部轮次从哪个口进来」。代码入口与合同测试仍在；2026-11-06 起产品侧调用方是采集桥（§3.1.1）。
@@ -41,7 +41,7 @@
 | 可检索 retrievable | 在 committed 之上，还要通过消费方的范围/来源/依赖检查 | `chatIndexRows(sessionIDs:)` 等只读 committed |
 
 已记录不等于可检索：`chatIndexRows` 只 SELECT `turn_state='committed'`
-（`SimiGoESISDatabase.swift:3069` 起，条件在 `:3076`）。在途文本可以被记录，
+（`ESISDatabase.swift:3069` 起，条件在 `:3076`）。在途文本可以被记录，
 但不会因为「已经在数据库里」就成为另一个并发请求的已结算知识。
 
 ## 2. Schema（迁移 v16，`simigo-external-turn-provenance-v16`）
@@ -87,7 +87,7 @@
 入口是**一次性导入**：选目录 → 扫到不再读出字节 → 释放 lease 结束。它不是常驻 tail；
 之后的新会话由 agent 自己走 MCP（§3 方式 B）进 IS。
 
-`SimiGo/App/QoderExternalTurnSink.swift`：
+`SimiGo/App/ExternalTurnSink.swift`：
 
 判据是**答案完整 + 问答绑定成立**，不是「归因是否完美」：采集的是已经结束的历史，
 `recorded` 原本的用途（防止在途文本被并发请求当成记忆）在这里不存在。
@@ -111,7 +111,7 @@
 已删除：问答要成对才成立，IS 里没有「孤儿轮次」这种行。
 
 - `session_id` = `qoder:<project>/<session>`，与本地会话共用同一个信息空间。
-- `request_id` = `QoderSourceIdentity.operationKey`（源类型 / 会话 / 轮次 / 消息 / 修订的摘要），
+- `request_id` = `SourceIdentity.operationKey`（源类型 / 会话 / 轮次 / 消息 / 修订的摘要），
   重投同一候选只会读回既有行，不追加。
 - `source_provider` = `qoder`。
 - 采集器只读 transcript；写入面仅 `$SIMIGO_HOME/simigo.sqlite3` 的 `chat_messages` /
@@ -172,7 +172,7 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 外部轮次行；MCP 外部结果接入属于另一条显式 ES 生命周期合同（见
 [Agent 接入说明](../AGENT-ACCESS.md) §3）。
 
-数据层合同测试：`SimiGoExternalTurnContractTests` 中的
+数据层合同测试：`ExternalTurnContractTests` 中的
 `testInternalOperationIsKeptButNeverPromoted` 与
 `testInternalOperationStaysOutOfRetrievalBesideCommittedHistory`。原真实 HTTP 转发测试
 `testInternalDeclaredForwardedTurnIsKeptButNeverPromoted` 随代理路径移除；
@@ -180,7 +180,7 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 
 ### 3.4 本地重试不收养外部行
 
-`lastUserMessage` 只取 `source_kind='local'` 的最近用户行（`SimiGoESISDatabase.swift`
+`lastUserMessage` 只取 `source_kind='local'` 的最近用户行（`ESISDatabase.swift`
 中该查询的 `source_kind='local'` 条件）。外部行属于另一个生产方的请求身份，
 本地轮次的 retry 复用不得采纳或提升它。
 
@@ -193,14 +193,14 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 - 结算键是 `(session_id, request_id, source_kind='external')`，不是「最近一行」：
   一个请求的在途文本不可能被另一个请求的结算顺手提升。
 - `verifyExternalTurn` 要求两侧都在，单边在途（只有用户行）不会提交。
-- 测试（`SimiGoExternalTurnContractTests`）：
+- 测试（`ExternalTurnContractTests`）：
   `testVerifyingOneRequestNeverPromotesAnotherInFlightTurn`、
   `testVerificationRequiresBothSidesOfTheRequest`。
 
 ## 5. 检索资格
 
 `committed` 只是「这一行自己的事实」。某次请求能否消费它，还要看该请求的范围：
-`chatIndexRows(sessionIDs:)` 按会话取 committed 行，`SimiGoInformationLoop.resolve`
+`chatIndexRows(sessionIDs:)` 按会话取 committed 行，`InformationLoop.resolve`
 在其上做查询匹配。内部记账行（`internal`）与在途行（`recorded`）在数据层就被排除。
 
 ## 6. 端到端链路（历史机制；当前保留数据层合同测试）
@@ -210,7 +210,7 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 `finish_reason='length'` 不提交、internal 声明不获检索资格）。该文件与被测的转发路径
 一并删除，不再有 E2E 覆盖。
 
-**仍保留**：`Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoExternalTurnContractTests.swift`
+**仍保留**：`Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnContractTests.swift`
 （数据层合同测试）覆盖数据层后果 —— 记录/结算两行、`verified_at`、并发不变量、
 内部记账不被提升。这些是历史外部轮次存储合同的兼容性守卫。
 
@@ -229,12 +229,12 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 仍然成立：
 
 - 外部轮次与 ES/KV 复用契约（结算消费边）尚未接线：本契约只覆盖 IS 留存与检索资格。
-- `chatIndexRows` 仍为模块内 API；应用层只能经 `SimiGoInformationLoop` 观察可检索性。
+- `chatIndexRows` 仍为模块内 API；应用层只能经 `InformationLoop` 观察可检索性。
 
 ## 8. 未关闭项
 
 - **采集桥这条生产调用链的 E2E 尚未取得**：§1–5 的合同由源码与隔离数据层测试支持，
-  采集侧有 `SimiGoTests/QoderExternalTurnSinkTests.swift`（三档落库、重投不追加、
+  采集侧有 `SimiGoTests/ExternalTurnSinkTests.swift`（三档落库、重投不追加、
   跨会话可引用）；但「真实 Qoder transcript → 采集器 → sink → 检索命中」的整链
   安装版读数还没取。§9–11 的窗口读数验的是相邻的本地受管路径，**不能代替这条链的验收**。
   在取得该读数之前，不得声称 collection → IS 已端到端验收。缺的是证据，不是链路。
@@ -374,7 +374,7 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
    `thread_source` → 检索资格当前只由 `turn_state` 一道门决定。
 2. **检索结果跨会话共享**：「你好」的两条 demand（`19be…` Qoder、`3633…` 后续复用）均无需新候选即可
    `RESOLVED`；demand id = SHA256(query + keywords + 候选集摘要 + stale)、不含 session
-   （`SimiGoInformationLoop.swift:231-251`）。`chatSessionIDs` 只过滤 chat 行。
+   （`InformationLoop.swift:231-251`）。`chatSessionIDs` 只过滤 chat 行。
 3. **完成时长与客户端看门狗决定结局**：ZCode 434 s 完成（无看门狗）、Qoder >100 s 冷 prefill 被
    60 s 取消、Codex 后台轮被 `generation_contended` 分离——三家同窗口的命运差异来自协议/调度，
    不来自 IS 资格。
@@ -405,7 +405,7 @@ HTTP 状态不在 2xx 时不结算。流式捕获上限 8 MiB，超限则不结�
 
 ### 11.4 可检索资格：当前实现只由 `turn_state` 一道门决定
 
-`chatIndexRows`（`SimiGoESISDatabase.swift:3069-3077`）的 SQL 只有
+`chatIndexRows`（`ESISDatabase.swift:3069-3077`）的 SQL 只有
 `WHERE c.turn_state='committed'`，不带 role、`source_kind`、前台/后台或 Agent 条件；
 `sessionIDs` 参数只做 scope 过滤。demand id 不含 session（§11.2 第 2 条），
 所以命中还可跨 Agent 复用。

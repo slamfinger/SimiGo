@@ -595,7 +595,7 @@ public final class RequestBudgetController: @unchecked Sendable {
     }
 
     static var calibrationURL: URL {
-        SimiGoPaths.managedRoot().appendingPathComponent("budget-calibration.json")
+        ManagedPaths.managedRoot().appendingPathComponent("budget-calibration.json")
     }
 
     /// §6 校准与真机运行共用同一份记录：校准跑出来的实测速率在重启后

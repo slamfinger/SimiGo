@@ -489,7 +489,7 @@ final class GGUFEngineClientTests: XCTestCase {
         let blobName = String((0..<64).map { _ in "0123456789abcdef".randomElement()! })
         let blob = root.appendingPathComponent(blobName)
         try Data(repeating: 0xAB, count: 33).write(to: blob)
-        let addressed = SimiGoProducerIdentity.tokenizerIdentity(fromPath: blob.path)
+        let addressed = ProducerIdentity.tokenizerIdentity(fromPath: blob.path)
         XCTAssertEqual(addressed.count, 1)
         XCTAssertEqual(addressed.first?["file"] as? String, blobName)
         XCTAssertEqual(
@@ -499,7 +499,7 @@ final class GGUFEngineClientTests: XCTestCase {
 
         let plain = root.appendingPathComponent("model.gguf")
         try Data(repeating: 0xCD, count: 7).write(to: plain)
-        let fallback = SimiGoProducerIdentity.tokenizerIdentity(fromPath: plain.path)
+        let fallback = ProducerIdentity.tokenizerIdentity(fromPath: plain.path)
         XCTAssertEqual(fallback.count, 1)
         XCTAssertEqual(fallback.first?["file"] as? String, "model.gguf")
         XCTAssertEqual(fallback.first?["size"] as? Int64, 7)
@@ -544,7 +544,7 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
         isolationRoot = URL(
             fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
         XCTAssertTrue(
-            SimiGoPaths.databaseURL.path.hasPrefix(isolationRoot.path),
+            ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
 
         let dir = FileManager.default.temporaryDirectory
@@ -575,7 +575,7 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
             endpoint: .init(
                 baseURL: URL(string: "http://127.0.0.1:\(stub.port)")!,
                 model: "stub-gguf-model"))
-        let identity = SimiGoProducerIdentity.identity(fromPath: modelPath)
+        let identity = ProducerIdentity.identity(fromPath: modelPath)
         let port = Int(try GGUFRestFixture.freePort())
         let server = HTTPServer(
             port: port,
@@ -709,7 +709,7 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
             XCTAssertNotNil(stub.requestBody)
         }
 
-        let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL)
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL)
         let messages = try db.listChatMessages(sessionID: session)
         XCTAssertEqual(messages.map(\.role), ["user", "assistant"])
         XCTAssertEqual(messages.last?.content, answer)
@@ -721,7 +721,7 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
             try db.settlementReceipt(answered.answerSettlementID)?.validity, "valid")
         XCTAssertNotNil(try db.currentChatStateID(sessionID: session))
 
-        let loop = SimiGoInformationLoop(database: db)
+        let loop = InformationLoop(database: db)
         let resolution = try loop.resolve(
             .init(
                 sessionID: session, query: query, includeChat: true,
@@ -752,7 +752,7 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
             XCTAssertEqual(simigo?["settlement_written"] as? Bool, false)
         }
 
-        let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL)
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL)
         let messages = try db.listChatMessages(sessionID: session)
         XCTAssertEqual(
             messages.last?.content, "TRUNCATED-MID-SENTENCE",
@@ -818,7 +818,7 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
                 "reasoning exposure alone does not change a finished turn's verdict")
         }
 
-        let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL)
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL)
         let messages = try db.listChatMessages(sessionID: session)
         XCTAssertEqual(messages.map(\.role), ["user", "assistant"])
         XCTAssertEqual(
@@ -834,7 +834,7 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
         XCTAssertEqual(
             try db.settlementReceipt(answered.answerSettlementID)?.validity, "valid")
 
-        let loop = SimiGoInformationLoop(database: db)
+        let loop = InformationLoop(database: db)
         let resolution = try loop.resolve(
             .init(
                 sessionID: session, query: query, includeChat: true,

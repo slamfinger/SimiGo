@@ -27,7 +27,7 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
         // test/experiment root (SIMIGO_HOME) also relocates the trace log. With no
         // override this is still <home>/.simigo/logs: default behaviour is unchanged,
         // only the previously hardcoded home is now injectable.
-        let logsDirectory = SimiGoPaths.logs
+        let logsDirectory = ManagedPaths.logs
 
         try? FileManager.default.createDirectory(
             at: logsDirectory,
