@@ -13,10 +13,10 @@
     {
       "identity" : "mlx-swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ml-explore/mlx-swift",
+      "location" : "https://github.com/slamfinger/mlx-swift",
       "state" : {
-        "revision" : "7ede4fd6d05f63305c1c0ebf4f8c1909a637c574",
-        "version" : "0.33.0"
+        "branch" : "simigo/0.33.0-dsplit-fix",
+        "revision" : "40665267ad754da4d622f7d23057127f20ea31ac"
       }
     },
     {

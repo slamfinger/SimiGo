@@ -527,10 +527,10 @@
 		};
 		C1632ADD3028D4B700D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ml-explore/mlx-swift";
+			repositoryURL = "https://github.com/slamfinger/mlx-swift";
 			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 0.33.0;
+				kind = branch;
+				branch = "simigo/0.33.0-dsplit-fix";
 			};
 		};
 		C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
