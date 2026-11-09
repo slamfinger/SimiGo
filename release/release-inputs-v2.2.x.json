@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 636,
+    "tracked": 656,
     "research_not_declared": 0,
-    "non_research_candidates": 636,
-    "declared": 578,
+    "non_research_candidates": 656,
+    "declared": 598,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -108,12 +108,28 @@
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/AIStudioSource.swift"
     },
     {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/ChatGPTSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/ChatGPTSource.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/CodexRolloutSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/CodexRolloutSource.swift"
+    },
+    {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/DeepSeekSource.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/DeepSeekSource.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/FlatMessageExportSource.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/FlatMessageExportSource.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/MarkdownSessionSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/MarkdownSessionSource.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/OpenCodeSource.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/OpenCodeSource.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/CollectionCandidateInbox.swift",
@@ -176,8 +192,16 @@
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/AIStudioSourceTests.swift"
     },
     {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/ChatGPTSourceTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/ChatGPTSourceTests.swift"
+    },
+    {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionQoderCompatibilityTests.swift",
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionQoderCompatibilityTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionSQLiteErrorPropagationTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/CollectionSQLiteErrorPropagationTests.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/DeepSeekSourceTests.swift",
@@ -186,6 +210,10 @@
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/FlatMessageExportSourceTests.swift",
       "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/FlatMessageExportSourceTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/OpenCodeSourceTests.swift",
+      "output": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/OpenCodeSourceTests.swift"
     },
     {
       "path": "Packages/SimiGoCollection/Tests/SimiGoCollectionTests/QoderCollectionConfigurationTests.swift",
@@ -520,6 +548,10 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/WorkloadTrace.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ChatRoundText.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ChatRoundText.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ExecutionContinuityContract.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ExecutionContinuityContract.swift"
     },
@@ -604,12 +636,24 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/TaskRunOutcomeClassificationTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ChatRoundTextTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ChatRoundTextTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/NativeDeclarativeResultContractTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/NativeDeclarativeResultContractTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoBootstrapTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoBootstrapTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoConflictingSettlementTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoConflictingSettlementTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISArmsTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISArmsTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoESISCarrierTests.swift",
@@ -638,6 +682,10 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISContextLedgerTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoISContextLedgerTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationCitationEdgeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationCitationEdgeTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SimiGoInformationLoopTests.swift",
@@ -754,6 +802,10 @@
     {
       "path": "SimiGo/App/MenuApp.swift",
       "output": "SimiGo/App/MenuApp.swift"
+    },
+    {
+      "path": "SimiGo/App/MultiFormatCollection.swift",
+      "output": "SimiGo/App/MultiFormatCollection.swift"
     },
     {
       "path": "SimiGo/App/QoderCollectionLifecycle.swift",
@@ -1138,6 +1190,10 @@
     {
       "path": "SimiGoTests/MCPInformationSpaceTests.swift",
       "output": "SimiGoTests/MCPInformationSpaceTests.swift"
+    },
+    {
+      "path": "SimiGoTests/MLXErrorBoundaryTests.swift",
+      "output": "SimiGoTests/MLXErrorBoundaryTests.swift"
     },
     {
       "path": "SimiGoTests/ManagedContinuationAdapterTests.swift",
@@ -2112,6 +2168,26 @@
       "output": "docs/research/conclusions/README.md"
     },
     {
+      "path": "docs/research/es-is/ESIS_RESEARCH_MAP_V0.1_20261108.md",
+      "output": "docs/research/es-is/ESIS_RESEARCH_MAP_V0.1_20261108.md"
+    },
+    {
+      "path": "docs/research/es-is/EXPERIMENT_ARMS_V0.1_20261108.md",
+      "output": "docs/research/es-is/EXPERIMENT_ARMS_V0.1_20261108.md"
+    },
+    {
+      "path": "docs/research/es-is/README.md",
+      "output": "docs/research/es-is/README.md"
+    },
+    {
+      "path": "docs/research/es-is/RUNTIME_FORM_V0.1_20261108.md",
+      "output": "docs/research/es-is/RUNTIME_FORM_V0.1_20261108.md"
+    },
+    {
+      "path": "docs/research/es-is/TERMINOLOGY_V0.1_20261109.md",
+      "output": "docs/research/es-is/TERMINOLOGY_V0.1_20261109.md"
+    },
+    {
       "path": "docs/research/knowledge-map/README.md",
       "output": "docs/research/knowledge-map/README.md"
     },
@@ -2202,6 +2278,10 @@
     {
       "path": "release/release-inputs-v2.2.x.json",
       "output": "release/release-inputs-v2.2.x.json"
+    },
+    {
+      "path": "tools/agent_prefix_audit.py",
+      "output": "tools/agent_prefix_audit.py"
     },
     {
       "path": "tools/check_trace_is_evidence_only.sh",

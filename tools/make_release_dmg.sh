@@ -9,12 +9,17 @@ APP="${1:-/tmp/simigo_rel/Build/Products/Release/SimiGo.app}"
 [ -d "$APP" ] || { echo "未找到 Release SimiGo.app"; exit 1; }
 VER="$(defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString)"
 BUILD="$(defaults read "$APP/Contents/Info.plist" CFBundleVersion)"
-EXE8="$(shasum -a 256 "$APP/Contents/MacOS/SimiGo" | cut -c1-8)"
-OUT="$ROOT/SimiGo-v${VER}-${BUILD}-${EXE8}.dmg"
 STAGE="$(mktemp -d)/dmg"
 TMPAPPLES="$(mktemp -d)/install.applescript"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/SimiGo.app"
+# 发布门要求产物里不含构建路径（家目录前缀 + 用户名）。Release 编译会把 __FILE__ /
+# #filePath 原样写进 __cstring，文本级清洗救不了 Mach-O，所以在此做等长擦除并
+# 重新 adhoc 签名。只动路径字符串，不动指令；见 tools/redact_binary_paths.py。
+python3 "$ROOT/tools/redact_binary_paths.py" "$STAGE/SimiGo.app/Contents/MacOS/SimiGo" --apply --no-backup
+# 名字里的 hash 取擦除之后的那颗二进制：文件名必须描述真正发出去的东西。
+EXE8="$(shasum -a 256 "$STAGE/SimiGo.app/Contents/MacOS/SimiGo" | cut -c1-8)"
+OUT="$ROOT/SimiGo-v${VER}-${BUILD}-${EXE8}.dmg"
 ln -s /Applications "$STAGE/Applications"
 cat > "$TMPAPPLES" <<'OSA'
 -- SimiGo 图形安装器（DMG 内双击运行）

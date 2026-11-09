@@ -97,6 +97,6 @@
 `FlatMessageExportSource` 三个适配器在包里没有任何调用方（死代码）。现改为
 `MultiFormatCollection`：按文档结构识别（`recognizes`），不认扩展名，写外部轮次合同。
 
-实测样本 `/Users/mr.simi/Desktop/大模型会话记录`：扫描 386 文件、识别 76、
+实测样本 `~/Desktop/大模型会话记录`：扫描 386 文件、识别 76、
 轮次 2640、入库 2640（可检索 2416）、失败 0；格式分布 aistudio 1453 / deepseek 1169 /
 flat-export 18。`is_search` 已命中 `chat:aistudio:…/1645` 等导入轮次。

@@ -46,7 +46,7 @@ ARM_B naive=stale_silent:5.6 product invalidated=2 new_demand=3cbff273 fresh=7.2
 ## 复现
 
 ```
-cd /Users/mr.simi/Documents/SimiGo-new-root/Packages/SimiGoRuntime
+cd ~/Documents/SimiGo-new-root/Packages/SimiGoRuntime
 swift test --filter SimiGoESISArmsTests
 ```
 
