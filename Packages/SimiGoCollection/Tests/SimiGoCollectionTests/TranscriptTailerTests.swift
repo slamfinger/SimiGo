@@ -1232,4 +1232,139 @@ final class TranscriptTailerTests: XCTestCase {
         let paths = Set(Fixture.baselines(result.events).map(\.path))
         XCTAssertEqual(paths.count, 1, "the poll staged events from more than one file")
     }
+
+    /// The event budget binds inside one file's read as well: a single file
+    /// whose parse yields more events than the poll budget stops mid-file
+    /// instead of staging the whole flood, and later polls finish the file
+    /// without losing or duplicating events.
+    func testEventBudgetStopsMidFileBeforeStagingASingleFileFlood() throws {
+        var lines: [String] = []
+        for index in 0..<6 {
+            lines.append(
+                contentsOf: Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"))
+        }
+        try Fixture.writeLines(lines, to: mainFile())
+
+        let reference = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting)
+        let whole = poll(reference)
+        XCTAssertTrue(whole.events.count > 3, "the fixture must exceed the capped budget")
+
+        let capped = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxEventsPerPoll: 3)
+        var collected: [CollectionEvent] = []
+        var sawBudgetStop = false
+        for _ in 0..<20 {
+            let result = poll(capped)
+            XCTAssertLessThanOrEqual(
+                result.events.count, 3,
+                "a poll staged \(result.events.count) events beyond the budget")
+            if result.report.budgetExhausted { sawBudgetStop = true }
+            collected.append(contentsOf: result.events)
+            if result.events.isEmpty { break }
+        }
+        XCTAssertTrue(sawBudgetStop, "the capped poll must report its budget stop")
+        XCTAssertEqual(
+            collected.count, whole.events.count,
+            "capped polls must deliver the same events as the uncapped read")
+        XCTAssertEqual(Fixture.turns(collected).count, Fixture.turns(whole.events).count)
+        XCTAssertEqual(
+            Fixture.baselines(collected).count, Fixture.baselines(whole.events).count)
+        XCTAssertEqual(Fixture.failures(collected).count, Fixture.failures(whole.events).count)
+    }
+
+    /// Subagent files spend the same file budget as main files: the walk
+    /// stops at the cap instead of letting the subagents branch slip past it.
+    func testSubagentFilesShareTheScanFileBudget() throws {
+        let projectDir = root.appendingPathComponent(Fixture.projectID, isDirectory: true)
+        for index in 0..<2 {
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: projectDir.appendingPathComponent("main-\(index).jsonl"))
+        }
+        let subagents = projectDir
+            .appendingPathComponent("session-sub", isDirectory: true)
+            .appendingPathComponent("subagents", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: subagents, withIntermediateDirectories: true)
+        for index in 0..<2 {
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "s-\(index)", answerUUID: "sa-\(index)",
+                    messageID: "sm-\(index)", nextAnchor: "sn-\(index)"),
+                to: subagents.appendingPathComponent("agent-\(index).jsonl"))
+        }
+
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxScannedFiles: 3)
+        let result = poll(tailer)
+        XCTAssertFalse(result.report.scanComplete, "a capped walk is not a complete walk")
+        XCTAssertEqual(result.report.scannedFiles, 3)
+        XCTAssertTrue(
+            result.report.errors.contains { $0.contains("scan file budget") },
+            "the budget stop must be reported: \(result.report.errors)")
+        XCTAssertTrue(
+            tailer.cursorState.cursors.keys.contains { $0.contains("/subagents/") },
+            "whatever fit under the cap must include a subagent file")
+    }
+
+    /// Every surfaced subagents entry is charged to the entry budget, like
+    /// the session layer above it.
+    func testSubagentEntriesShareTheScanEntryBudget() throws {
+        let projectDir = root.appendingPathComponent(Fixture.projectID, isDirectory: true)
+        try Fixture.writeLines(
+            Fixture.turnLines(), to: projectDir.appendingPathComponent("main.jsonl"))
+        let subagents = projectDir
+            .appendingPathComponent("session-sub", isDirectory: true)
+            .appendingPathComponent("subagents", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: subagents, withIntermediateDirectories: true)
+        try Fixture.writeLines(
+            Fixture.turnLines(), to: subagents.appendingPathComponent("agent.jsonl"))
+
+        // Root(1) + one child(2) + one child(3): the fourth charge happens
+        // inside the subagents branch, whichever order readdir surfaces the
+        // two children in.
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxVisitedEntries: 3)
+        let result = poll(tailer)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertEqual(result.report.scannedFiles, 1)
+        XCTAssertTrue(
+            result.report.errors.contains { $0.contains("scan entry budget") },
+            "the budget stop must be reported: \(result.report.errors)")
+    }
+
+    /// The entry budget stops the walk inside a directory: entries past the
+    /// cap are never surfaced, and the scan is partial.
+    func testDirectoryListingStopsAtTheEntryBudgetMidDirectory() throws {
+        let projectDir = root.appendingPathComponent(Fixture.projectID, isDirectory: true)
+        for index in 0..<8 {
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: projectDir.appendingPathComponent("main-\(index).jsonl"))
+        }
+
+        // Root(1) + the first two children(2,3): the fourth charge trips the
+        // budget before the rest of the directory is surfaced.
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxVisitedEntries: 3)
+        let result = poll(tailer)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertEqual(result.report.scannedFiles, 2)
+        XCTAssertTrue(
+            result.report.errors.contains { $0.contains("scan entry budget") },
+            "the budget stop must be reported: \(result.report.errors)")
+    }
 }

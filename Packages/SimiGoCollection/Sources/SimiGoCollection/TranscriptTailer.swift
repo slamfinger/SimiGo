@@ -445,6 +445,61 @@ public struct TranscriptScanner {
         self.maxVisitedEntries = max(0, maxVisitedEntries)
     }
 
+    /// A lazy directory iterator. `FileManager.contentsOfDirectory` reads
+    /// the whole directory — entries and their attribute fetches — into an
+    /// array before a single one can be charged to the scan budget, so the
+    /// budgets only bounded the walk over an already-allocated array, not
+    /// the read itself. readdir yields one entry at a time: when the budget
+    /// stops the walk, the listing stops with it. Hidden entries (leading
+    /// dot, including `.` and `..`) are never produced, matching the
+    /// `.skipsHiddenFiles` behavior this replaces.
+    ///
+    /// Deliberately an `IteratorProtocol` and not a `Sequence`: an open
+    /// directory handle is a one-shot stream. A exhausted iterator returns
+    /// nil forever, so there is no "second iteration reads as a complete
+    /// scan of an empty directory" shape to trip over.
+    private final class DirectoryEntries: IteratorProtocol {
+        /// Set when the directory could not be opened, or when a readdir
+        /// failed mid-stream. Absence is `POSIXError(.ENOENT)`; each layer
+        /// decides whether that is normal for it.
+        private(set) var error: Error?
+
+        private var dirp: UnsafeMutablePointer<DIR>?
+        private let directory: URL
+
+        init(_ directory: URL) {
+            self.directory = directory
+            guard let handle = opendir(directory.path) else {
+                error = POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+                return
+            }
+            dirp = handle
+        }
+
+        deinit {
+            if let dirp { closedir(dirp) }
+        }
+
+        func next() -> URL? {
+            guard let dirp, error == nil else { return nil }
+            while true {
+                errno = 0
+                guard let entry = readdir(dirp) else {
+                    if errno != 0 {
+                        error = POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+                    }
+                    return nil
+                }
+                var record = entry.pointee
+                let name = withUnsafeBytes(of: &record.d_name) { buffer in
+                    String(cString: buffer.baseAddress!.assumingMemoryBound(to: CChar.self))
+                }
+                guard !name.hasPrefix(".") else { continue }
+                return directory.appendingPathComponent(name)
+            }
+        }
+    }
+
     public func scan() -> TranscriptScanResult {
         let rootDirectoryFD: Int32
         do {
@@ -456,13 +511,11 @@ public struct TranscriptScanner {
         }
         defer { Darwin.close(rootDirectoryFD) }
 
-        let projects: [URL]
-        do {
-            projects = try listDirectory(root)
-        } catch {
-            if isNoSuchFileError(error) { return .absent }
+        let projectIterator = DirectoryEntries(root)
+        if let openError = projectIterator.error {
+            if isNoSuchFileError(openError) { return .absent }
             return .partial(
-                files: [], errors: ["cannot list \(root.path): \(error)"])
+                files: [], errors: ["cannot list \(root.path): \(openError)"])
         }
 
         var errors: [String] = []
@@ -479,7 +532,7 @@ public struct TranscriptScanner {
         }
 
         var files: [TranscriptFile] = []
-        projectLoop: for project in projects {
+        projectLoop: while let project = projectIterator.next() {
             guard chargeEntry() else { break }
             guard
                 let projectValues = try? project.resourceValues(
@@ -491,8 +544,12 @@ public struct TranscriptScanner {
             guard projectValues.isDirectory == true, projectValues.isSymbolicLink != true
             else { continue }
             let projectID = project.lastPathComponent
-            guard let children = list(project, errors: &errors) else { continue }
-            for child in children {
+            let childIterator = DirectoryEntries(project)
+            if let openError = childIterator.error {
+                errors.append("cannot list \(project.path): \(openError)")
+                continue
+            }
+            while let child = childIterator.next() {
                 guard chargeEntry() else { break projectLoop }
                 guard files.count < maxScannedFiles else {
                     budgetError = "scan file budget exceeded (\(maxScannedFiles)); "
@@ -539,24 +596,40 @@ public struct TranscriptScanner {
                           subagentValues.isDirectory == true
                     else { continue }
 
-                    let agents: [URL]
+                    let agentIterator: DirectoryEntries
                     do {
                         let subagentValues = try subagents.resourceValues(
                             forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
                         // The directory entry itself must be a real directory.
-                        // contentsOfDirectory follows a symlink otherwise.
+                        // A symlink is never opened even if its target is one.
                         guard subagentValues.isDirectory == true,
                               subagentValues.isSymbolicLink != true else {
                             continue
                         }
-                        agents = try listDirectory(subagents)
+                        agentIterator = DirectoryEntries(subagents)
                     } catch {
                         if !isNoSuchFileError(error) {
                             errors.append("cannot list \(subagents.path): \(error)")
                         }
                         continue
                     }
-                    for agent in agents where agent.pathExtension == "jsonl" {
+                    if let openError = agentIterator.error {
+                        if !isNoSuchFileError(openError) {
+                            errors.append("cannot list \(subagents.path): \(openError)")
+                        }
+                        continue
+                    }
+                    // Main files and subagent files spend the same two
+                    // budgets: every surfaced entry is charged and the file
+                    // cap is rechecked, exactly like the session layer above.
+                    while let agent = agentIterator.next() {
+                        guard chargeEntry() else { break projectLoop }
+                        guard files.count < maxScannedFiles else {
+                            budgetError = "scan file budget exceeded (\(maxScannedFiles)); "
+                                + "remaining files were not walked"
+                            break projectLoop
+                        }
+                        guard agent.pathExtension == "jsonl" else { continue }
                         guard
                             let agentValues = try? agent.resourceValues(
                                 forKeys: Self.resourceKeys)
@@ -576,28 +649,22 @@ public struct TranscriptScanner {
                             errors.append("cannot read attributes for \(agent.path)")
                         }
                     }
+                    if let readError = agentIterator.error {
+                        errors.append("cannot list \(subagents.path): \(readError)")
+                    }
                 }
             }
+            if let readError = childIterator.error {
+                errors.append("cannot list \(project.path): \(readError)")
+            }
+        }
+        if let readError = projectIterator.error {
+            errors.append("cannot list \(root.path): \(readError)")
         }
 
         if let budgetError { errors.append(budgetError) }
         let sorted = files.sorted { $0.path < $1.path }
         return errors.isEmpty ? .complete(sorted) : .partial(files: sorted, errors: errors)
-    }
-
-    private func list(_ directory: URL, errors: inout [String]) -> [URL]? {
-        do {
-            return try listDirectory(directory)
-        } catch {
-            errors.append("cannot list \(directory.path): \(error)")
-            return nil
-        }
-    }
-
-    private func listDirectory(_ directory: URL) throws -> [URL] {
-        try FileManager.default.contentsOfDirectory(
-            at: directory, includingPropertiesForKeys: Array(Self.resourceKeys),
-            options: [.skipsHiddenFiles])
     }
 
     private func isNoSuchFileError(_ error: Error) -> Bool {
@@ -695,7 +762,9 @@ public final class TranscriptTailer {
     public let maxBytesPerPoll: Int
     public let maxLineBytes: Int
     /// Events handed to the sink in one poll. The runner stages them in memory
-    /// before committing, so this is the bound on that staging buffer.
+    /// before committing, so this is the bound on that staging buffer. The
+    /// check applies per line inside a file's read too, so one file cannot
+    /// flood the staging buffer between the file-boundary checks.
     public let maxEventsPerPoll: Int
     public let maxScannedFiles: Int
     public let maxVisitedEntries: Int
@@ -1111,7 +1180,6 @@ public final class TranscriptTailer {
         }
 
         let content = data[data.startIndex..<lastNewline]
-        let consumed = data.distance(from: data.startIndex, to: lastNewline) + 1
         let windowStart = working.offset
         // Preserve only events that predate this read (notably a first-seen
         // baseline). Read-derived candidates are provisional until the source
@@ -1119,8 +1187,19 @@ public final class TranscriptTailer {
         let readDerivedEventStart = events.count
 
         var lineCount: Int64 = 0
+        var parsedBytes = 0
         var start = content.startIndex
         while true {
+            // The runner stages every event of a poll in memory before its
+            // durable commit, so the event budget has to bind inside one
+            // file's read as well: a file whose parse floods events stops
+            // mid-window and the next poll resumes from the parsed position.
+            // Crossing the cap by one line's events is the price of parsing
+            // in whole lines.
+            if report.deliveredEvents + events.count >= maxEventsPerPoll {
+                report.budgetExhausted = true
+                break
+            }
             let end = content[start...].firstIndex(of: 0x0A) ?? content.endIndex
             lineCount += 1
             let segmentLine = working.segmentLines + lineCount
@@ -1160,11 +1239,17 @@ public final class TranscriptTailer {
             advanceResume(
                 &working, file: file, segmentLine: segmentLine,
                 lineStart: lineStart, lineEnd: lineEnd)
+            parsedBytes = content.distance(from: content.startIndex, to: end) + 1
             if end == content.endIndex { break }
             start = content.index(after: end)
         }
 
-        let newOffset = windowStart + Int64(consumed)
+        // A budget stop leaves the rest of the window unparsed: those bytes
+        // stay behind the cursor and are re-read (and re-charged) by the next
+        // poll, so `readBytes` counts what the cursor consumed, like the
+        // complete-window case where it equals `consumed`.
+        guard parsedBytes > 0 else { return false }
+        let newOffset = windowStart + Int64(parsedBytes)
         guard let fingerprint = trailingFingerprint(
             path: file.path, offset: newOffset, expectedInode: file.inode)
         else {
@@ -1186,7 +1271,7 @@ public final class TranscriptTailer {
         working.updatedAt = Date()
         cursor = working
         report.readFiles += 1
-        report.readBytes += Int64(consumed)
+        report.readBytes += Int64(parsedBytes)
         return true
     }
 
@@ -1232,7 +1317,6 @@ public final class TranscriptTailer {
         }
         if let afterNewline {
             oversizedScan.removeValue(forKey: file.path)
-            let consumed = afterNewline - lineStart
             guard
                 let fingerprint = trailingFingerprint(
                     path: file.path, offset: afterNewline, expectedInode: file.inode)
