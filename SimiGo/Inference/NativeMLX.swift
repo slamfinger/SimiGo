@@ -1350,7 +1350,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
             )
         }
-        try await ensureLoaded()
+        // Loading weights and building kernels evaluates MLX work too: a device
+        // or Metal failure here is the same class of fault as one during
+        // generation.
+        try await MLXErrorBoundary.run { try await ensureLoaded() }
 
         let executionKey = try AgentExecutionKey.resolve(
             agentId: agentId,
@@ -1387,16 +1390,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     // 排队期间已被取消：转换非法，按取消处理。
                     throw CancellationError()
                 }
-                return try await self.generateUsingChatSession(
-                    requestId: requestId,
-                    executionKey: executionKey,
-                    executionId: executionId,
-                    messages: messages,
-                    tools: tools,
-                    config: config,
-                    onChunk: onChunk,
-                    onToolCall: onToolCall
-                )
+                return try await MLXErrorBoundary.run {
+                    try await self.generateUsingChatSession(
+                        requestId: requestId,
+                        executionKey: executionKey,
+                        executionId: executionId,
+                        messages: messages,
+                        tools: tools,
+                        config: config,
+                        onChunk: onChunk,
+                        onToolCall: onToolCall
+                    )
+                }
             }
         }
 
@@ -3901,5 +3906,22 @@ nonisolated public struct BranchForkPoint: Codable, Sendable, Equatable {
         self.sourceStorageKey = sourceStorageKey
         self.atMessage = atMessage
         self.atToken = atToken
+    }
+}
+
+/// MLX reports errors through a process-wide handler whose default body is
+/// `fatalError`. Every path that evaluates MLX work runs inside this scope, so
+/// a device or kernel fault surfaces as a Swift error the turn can fail on
+/// instead of terminating the app (measured 2026-11-09: a Metal library that
+/// failed to build killed the process mid-prefill and the client saw no error
+/// at all).
+///
+/// The scope is a task-local stack: nested work created inside it inherits the
+/// handler, work already running outside it does not.
+enum MLXErrorBoundary {
+    static func run<T>(_ body: () async throws -> T) async throws -> T {
+        try await MLX.withError { (_: MLX.ErrorBox) async throws -> T in
+            try await body()
+        }
     }
 }
