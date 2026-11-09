@@ -11,7 +11,8 @@ fork@common 与 divergenceToken（fork 系模式）/ reuse 分布 /
     python3 tools/prefill_stats.py [logfile] [--since "YYYY-MM-DD HH:MM"] [--session KEY] [--json]
 
 仅依赖标准库。mode 取值与引擎透传一致：
-cold / extend / rebuild / fork-no-rewind（及其余透传值）。
+cold / extend / rebuild / fork-no-rewind（及其余透传值：prefix 前缀复用、
+restore 恢复、cross-session 跨会话——引擎报什么就列什么，此处不另作解释）。
 特殊档：
   fragment   = 恢复态轮（Conditional Restore / 旧 rf 的 fragment-continuation，
                无 mode=，用紧邻 admission 行的 rf=1 判别； latency 取 ttft）。
@@ -27,10 +28,11 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-SESSION_RE = re.compile(
-    r"\[(?P<ts>[^\]]+)\] \[MLX\] session=(?P<key>\S+) messages=\d+ history=\d+ "
-    r"delta=\d+ reuse=(?P<reuse>\w+)"
-)
+# 完成行的 kv 顺序会变（2026-11 起 messages 与 history 之间插了 exec=，
+# 旧式定序正则因此一条也匹配不上，整份日志静默归零）。只锚定会话头，
+# 其余字段各自在整行里找。
+SESSION_RE = re.compile(r"\[(?P<ts>[^\]]+)\] \[MLX\] session=(?P<key>\S+)")
+REUSE_RE = re.compile(r"\breuse=(?P<reuse>\w+)")
 MODE_RE = re.compile(r"mode=(?P<mode>\S+)")
 PROMPT_RE = re.compile(r"promptTokens=(?P<pt>\d+) promptTime=(?P<ptime>[\d.]+)s")
 COMMON_RE = re.compile(r"fork@common=(?P<common>\d+)/(?P<ledger>\d+)")
@@ -119,7 +121,8 @@ def main():
             cm = COMMON_RE.search(line)
             cache = CACHE_RE.search(line)
             ttft = TTFT_RE.search(line)
-            reuse = sm.group("reuse")
+            rm = REUSE_RE.search(line)
+            reuse = rm.group("reuse") if rm else "?"
             pt = int(pm.group("pt"))
             ptime = float(pm.group("ptime"))
             common = int(cm.group("common")) if cm else None
