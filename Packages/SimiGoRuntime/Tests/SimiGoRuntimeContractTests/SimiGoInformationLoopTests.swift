@@ -203,14 +203,14 @@ final class SimiGoInformationLoopTests: XCTestCase {
         let all = try loop.resolve(.init(
             sessionID: "consumer", requestIdentity: "same-request",
             query: "needle", chatSessionIDs: ["source-chat"], limit: 10))
-        XCTAssertEqual(Set(all.hits.map(\\.itemID)), Set([first.itemID, second.itemID]))
+        XCTAssertEqual(Set(all.hits.map(\.itemID)), Set([first.itemID, second.itemID]))
 
         let filtered = try loop.resolve(.init(
             sessionID: "consumer", requestIdentity: "same-request",
             query: "needle", chatSessionIDs: ["source-chat"],
             excludeItemIDs: [first.itemID], limit: 10))
         XCTAssertNotEqual(filtered.demandID, all.demandID)
-        XCTAssertEqual(filtered.hits.map(\\.itemID), [second.itemID])
+        XCTAssertEqual(filtered.hits.map(\.itemID), [second.itemID])
         XCTAssertFalse(filtered.reused)
 
         let repeated = try loop.resolve(.init(
