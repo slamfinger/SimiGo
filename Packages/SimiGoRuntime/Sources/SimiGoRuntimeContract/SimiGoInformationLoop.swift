@@ -152,6 +152,11 @@ public struct SimiGoInformationLoop {
         // caseless scripts (CJK, the bulk here) and for ASCII text; the citation
         // itself is still sliced by `citationSnippet`.
         let foldedKeywords = keywords.map { Array($0.utf8).map(Self.foldedASCII) }
+        let requestedRootIDs = Array(Set(demand.rootIDs)).sorted()
+        let requestedRootSet = Set(requestedRootIDs)
+        let requestedChatSessionIDs = Array(Set(demand.chatSessionIDs)).sorted()
+        let rootScopeJSON = String(
+            decoding: try JSONEncoder.sorted.encode(requestedRootIDs), as: UTF8.self)
         // The demand's lifecycle identity. A retry of the same request must land
         // on the same demand; two unrelated requests without a session must not,
         // or one would supersede the other. Knowledge itself stays shared: this
@@ -171,7 +176,7 @@ public struct SimiGoInformationLoop {
 
         // Physical information: read the locator, verify the settled digest.
         for row in try database.settledFileRows(rootID: nil) {
-            if !demand.rootIDs.isEmpty, !demand.rootIDs.contains(row.rootID) { continue }
+            if !requestedRootSet.isEmpty, !requestedRootSet.contains(row.rootID) { continue }
             let identity = "file:\(row.rootID)/\(row.relativePath)"
             guard !demand.excludeItemIDs.contains(identity) else { continue }
             let text: String
@@ -207,25 +212,33 @@ public struct SimiGoInformationLoop {
         var chatScope = "chat-scope=off"
         if demand.includeChat {
             // Excluded rows are outside this demand input basis, not merely
-            // outside rendered snippets. An answer’s own question/answer rows
+            // outside rendered snippets. An answer's own question/answer rows
             // must not make its exact repeat look stale.
             //
-            // The scope is measured on identity and digest alone: it is the
-            // demand’s identity field, so it must keep seeing every committed
-            // line while the chat bytes stay in SQLite.
-            let scopedChatRows = try database.chatScopeRows(sessionIDs: demand.chatSessionIDs)
+            // The scope is a digest over every eligible row's identity and
+            // settled digest, not a count/tail watermark: two exclusion sets
+            // can drop different older rows while leaving both the count and
+            // the tail identical, and those are different retrieval scopes.
+            // Measured on identity and digest alone, so the demand's identity
+            // field still sees every committed line while the chat bytes stay
+            // in SQLite.
+            let scopedChatRows = try database.chatScopeRows(
+                sessionIDs: requestedChatSessionIDs)
                 .filter { !demand.excludeItemIDs.contains($0.itemID) }
-            let scopeSessions = demand.chatSessionIDs.isEmpty
-                ? "all" : demand.chatSessionIDs.sorted().joined(separator: ",")
-            let tail = scopedChatRows.max { $0.messageID < $1.messageID }
+            let scopeSessions = requestedChatSessionIDs.isEmpty
+                ? "all" : requestedChatSessionIDs.joined(separator: ",")
+            let chatBasis = scopedChatRows
+                .map { "\($0.itemID)=\($0.contentSHA256)" }
+                .sorted()
+                .joined(separator: "\n")
             chatScope = "chat-scope=sessions=\(scopeSessions)"
-                + ";count=\(scopedChatRows.count);max=\(tail?.messageID ?? 0)"
-                + ";last=\(tail?.contentSHA256 ?? "-")"
+                + ";count=\(scopedChatRows.count)"
+                + ";basis=\(NativeSHA256.hexDigest(Data(chatBasis.utf8)))"
             // Candidates, not filters: a row that mentions no term is dropped in
             // C before its bytes are ever materialized. Every row kept still has
             // to be sliced by `citationSnippet` below.
             for row in try database.chatIndexRows(
-                sessionIDs: demand.chatSessionIDs, matchingAny: keywords)
+                sessionIDs: requestedChatSessionIDs, matchingAny: keywords)
             {
                 guard !demand.excludeItemIDs.contains(row.itemID) else { continue }
                 guard NativeSHA256.hexDigest(Data(row.content.utf8)) == row.contentSHA256
@@ -282,8 +295,11 @@ public struct SimiGoInformationLoop {
         }
         let items = Array(scored.prefix(limit).map(\.item))
 
+        let rootScope = requestedRootIDs.isEmpty ? "all" : rootScopeJSON
         let canonical = "query=\(query)\n"
             + "request=\(requestIdentity)\n"
+            + "limit=\(limit)\n"
+            + "root-scope=\(rootScope)\n"
             + "keywords=" + keywords.sorted().joined(separator: " ")
             + "\n" + inputs.sorted().joined(separator: "\n")
             + "\n" + chatScope

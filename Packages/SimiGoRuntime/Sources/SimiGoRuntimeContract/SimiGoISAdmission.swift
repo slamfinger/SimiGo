@@ -247,7 +247,10 @@ public enum SimiGoISAdmission {
             position: 1, continuationID: UUID().uuidString, anchor: admitted.payloadDigest,
             createdAt: Date(), nextInput: admitted.recoveredValue)
         let sid = try db.recordNativeSettlementWithIdentity(
-            settled, stateID: childStateID, identity: consumer, childState: childState)
+            settled, stateID: childStateID, identity: consumer, childState: childState,
+            settlementDependencies: [
+                .init(settlementID: admitted.settlementID, kind: "continuation-parent")
+            ])
         return SettledContinuation(
             admission: admitted, settled: settled, settlementID: sid.uuidString)
     }

@@ -262,6 +262,34 @@ final class SimiGoISAdmissionTests: XCTestCase {
         XCTAssertEqual(reAdmitted.recoveredValue, "hello")
     }
 
+    func testSettleContinuationInvalidatesWhenParentSourceChanges() throws {
+        let (url, db) = try open("cont-parent-source-invalidation")
+        defer { db.close(); cleanup(url) }
+        let parentSettlement = try mkSettlement(db, stateID: "P-source", value: "hello")
+        try db.indexExternalFile(
+            rootID: "work", relativePath: "source.md", kind: "md", size: 12,
+            modifiedAt: nil, contentDigest: "source-v1")
+        try db.linkSettlementToExternalFile(
+            settlementID: parentSettlement, binding: "content",
+            rootID: "work", relativePath: "source.md")
+
+        let done = try SimiGoISAdmission.settleContinuation(
+            db: db, parentStateID: "P-source", consumer: producer,
+            childStateID: "C-source", generatedText: "RESULT=hello",
+            contractJSON: Data(Self.referenceContract.utf8))
+        XCTAssertEqual(
+            Set(try db.upstreamDependencyClosure(ofSettlement: done.settlementID)),
+            Set([parentSettlement]),
+            "the child settlement must persist its admitted parent as an upstream dependency")
+
+        _ = try db.invalidateSourceFile(rootID: "work", relativePath: "source.md")
+        XCTAssertEqual(try db.settlementValidity(parentSettlement), "invalid")
+        XCTAssertEqual(try db.settlementValidity(done.settlementID), "invalid")
+        expectRefusal(
+            { try SimiGoISAdmission.admit(db: db, stateID: "C-source", consumer: producer) },
+            { if case .invalidated(let id) = $0 { return id == done.settlementID }; return false })
+    }
+
     // Only the recovered IS value drives the child result: a child result that
     // does not commit to the parent's settled value is refused and persists nothing.
     func testSettleContinuationIsValueSensitiveAndWritesNothingOnContractFailure() throws {
@@ -341,6 +369,55 @@ final class SimiGoISAdmissionTests: XCTestCase {
         XCTAssertEqual(try db.latestSettlementID(forStateID: "P-atomic"), parentSettlement,
                        "the parent settlement remains intact")
     }
+    func testSettleContinuationDependencyEdgeWriteIsAtomic() throws {
+        let (url, db) = try open("cont-parent-edge-atomic")
+        defer { db.close(); cleanup(url) }
+        _ = try mkSettlement(db, stateID: "P-edge", value: "hello")
+
+        let statesBefore = try db.count("execution_states")
+        let settlementsBefore = try db.count("settlements")
+        let bindingsBefore = try db.count("settlement_bindings")
+        let objectsBefore = try db.count("is_objects")
+        let itemsBefore = try db.count("information_items")
+        let edgesBefore = try db.count("dependency_edges")
+        let dependencyLedgerBefore = try db.count("is_dependency_entries")
+
+        var writer: OpaquePointer?
+        guard sqlite3_open(url.path, &writer) == SQLITE_OK, let writer else {
+            sqlite3_close(writer)
+            throw SimiGoESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(writer) }
+        let trigger = """
+        CREATE TRIGGER fail_continuation_parent_dependency
+        BEFORE INSERT ON dependency_edges
+        WHEN NEW.kind='continuation-parent'
+        BEGIN
+            SELECT RAISE(ABORT, 'injected continuation parent dependency failure');
+        END;
+        """
+        var message: UnsafeMutablePointer<CChar>?
+        let triggerRC = sqlite3_exec(writer, trigger, nil, nil, &message)
+        guard triggerRC == SQLITE_OK else {
+            let detail = message.map { String(cString: $0) } ?? "unknown SQLite error"
+            sqlite3_free(message)
+            throw SimiGoESISDatabase.DatabaseError.sql(detail)
+        }
+
+        XCTAssertThrowsError(try SimiGoISAdmission.settleContinuation(
+            db: db, parentStateID: "P-edge", consumer: producer,
+            childStateID: "C-edge", generatedText: "RESULT=hello",
+            contractJSON: Data(Self.referenceContract.utf8)))
+        XCTAssertNil(try db.latestSettlementID(forStateID: "C-edge"))
+        XCTAssertEqual(try db.count("execution_states"), statesBefore)
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertEqual(try db.count("settlement_bindings"), bindingsBefore)
+        XCTAssertEqual(try db.count("is_objects"), objectsBefore)
+        XCTAssertEqual(try db.count("information_items"), itemsBefore)
+        XCTAssertEqual(try db.count("dependency_edges"), edgesBefore)
+        XCTAssertEqual(try db.count("is_dependency_entries"), dependencyLedgerBefore)
+    }
+
     // Admission runs BEFORE the child contract/persist: an unverified parent is
     // refused with the admission Refusal, and no child settlement appears.
     func testSettleContinuationAllowsCrossModelParentAndRecordsChildProvenance() throws {

@@ -2107,6 +2107,19 @@ try apply(stmt)
         }
     }
 
+    /// A settled result that another settlement must remain valid with.
+    /// Persisted as a dependency edge and content-address ledger entry in the
+    /// same transaction as the consumer settlement.
+    public struct SettlementDependency: Sendable, Equatable, Hashable {
+        public let settlementID: String
+        public let kind: String
+
+        public init(settlementID: String, kind: String = "depends") {
+            self.settlementID = settlementID
+            self.kind = kind
+        }
+    }
+
     @discardableResult
     public func recordNativeSettlementWithIdentity(
         _ settled: SimiGoSettlementAuthority.SettledResult,
@@ -2114,13 +2127,15 @@ try apply(stmt)
         identity: SimiGoSettlementIdentityBinding.Identity,
         childState: ChildExecutionState? = nil,
         kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil,
-        inputSnapshotObjectID: String? = nil
+        inputSnapshotObjectID: String? = nil,
+        settlementDependencies: [SettlementDependency] = []
     ) throws -> UUID {
         try recordNativeSettlementWithIdentityAndAdvancement(
             settled, stateID: stateID, identity: identity,
             childState: childState, advancement: nil,
             kvRepresentation: kvRepresentation,
-            inputSnapshotObjectID: inputSnapshotObjectID
+            inputSnapshotObjectID: inputSnapshotObjectID,
+            settlementDependencies: settlementDependencies
         ).settlementID
     }
 
@@ -2149,6 +2164,7 @@ try apply(stmt)
         kvRepresentation: SimiGoSettlementKVBinding.Representation? = nil,
         inputSnapshotObjectID: String? = nil,
         declaredDependencies: [DeclaredDependency] = [],
+        settlementDependencies: [SettlementDependency] = [],
         sourceIdentity: DeclaredSourceIdentity? = nil,
         operationKey: String? = nil,
         chatTurn: ChatTurnCommit? = nil,
@@ -2157,6 +2173,10 @@ try apply(stmt)
     ) throws -> SettlementWithAdvancement {
         let declared = try sourceIdentity?.normalized()
         let key = Self.cleanedOperationKey(operationKey)
+        let normalizedSettlementDependencies = Array(Set(settlementDependencies)).sorted {
+            if $0.kind != $1.kind { return $0.kind < $1.kind }
+            return $0.settlementID < $1.settlementID
+        }
         let settlementUUID = UUID()
         let settlementID = settlementUUID.uuidString
         var advancementID: String?
@@ -2168,7 +2188,8 @@ try apply(stmt)
                     declared: declared, operationKey: key,
                     payloadDigest: settled.payloadDigest,
                     requestedStateID: stateID,
-                    declaredDependencies: declaredDependencies)
+                    declaredDependencies: declaredDependencies,
+                    settlementEdges: normalizedSettlementDependencies)
                 {
                     reuse = hit
                     if let chatTurn { _ = try insertChatTurnRows(chatTurn) }
@@ -2187,6 +2208,20 @@ try apply(stmt)
                     throw SettlementIdentityError.stateAlreadySettled(
                         "state \(stateID) already carries settlement \(existing)")
                 }
+            }
+            // Validate every upstream settlement while this BEGIN IMMEDIATE
+            // writer lock is held. If its source invalidation commits first, the
+            // child is refused; if it commits later, the edge below makes the
+            // invalidation cascade to this child.
+            var settlementDependencyObjectIDs: [SettlementDependency: String] = [:]
+            for dependency in normalizedSettlementDependencies {
+                guard dependency.settlementID != settlementID,
+                      !dependency.settlementID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      !dependency.kind.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw DatabaseError.sql("settlement dependency requires a distinct settlement id and kind")
+                }
+                settlementDependencyObjectIDs[dependency] =
+                    try validatedSettlementDependencyObjectID(dependency.settlementID)
             }
             // The conversation row and its standing share the settlement transaction.
             if let chatTurn { _ = try insertChatTurnRows(chatTurn) }
@@ -2217,6 +2252,30 @@ try apply(stmt)
                         settlementID: settlementID, dependencyID: dependency.dependencyID),
                     contentAddress: dependency.contentAddress,
                     reason: dependency.reason)
+            }
+            for dependency in normalizedSettlementDependencies {
+                try execBinding("""
+                INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
+                SELECT ?,?,?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM dependency_edges
+                    WHERE from_settlement=? AND to_settlement=? AND kind=?);
+                """) { stmt in
+                    try bind(stmt, 1, settlementID)
+                    try bind(stmt, 2, dependency.settlementID)
+                    try bind(stmt, 3, dependency.kind)
+                    try bind(stmt, 4, settlementID)
+                    try bind(stmt, 5, dependency.settlementID)
+                    try bind(stmt, 6, dependency.kind)
+                }
+                guard let address = settlementDependencyObjectIDs[dependency] else {
+                    throw DatabaseError.sql(
+                        "settlement dependency object address missing for \(dependency.settlementID)")
+                }
+                _ = try appendDependencyInTransaction(
+                    dependencyID: "settlement:\(settlementID) -> settlement:\(dependency.settlementID)",
+                    contentAddress: address,
+                    reason: dependency.kind)
             }
             if let advancement {
                 advancementID = try insertInformationAdvancementRows(.init(
@@ -2289,7 +2348,8 @@ try apply(stmt)
         operationKey: String?,
         payloadDigest: String,
         requestedStateID: String,
-        declaredDependencies: [DeclaredDependency]
+        declaredDependencies: [DeclaredDependency],
+        settlementEdges: [SettlementDependency]
     ) throws -> StoredSettlementReuse? {
         var identityHit: StoredSourceIdentityRow?
         if let declared, let stored = try storedSourceIdentity(declared) {
@@ -2319,13 +2379,15 @@ try apply(stmt)
             return try settlementReuseOf(
                 settlementID: stored.settlementID,
                 requestedStateID: requestedStateID,
-                declaredDependencies: declaredDependencies)
+                declaredDependencies: declaredDependencies,
+                settlementEdges: settlementEdges)
         }
         if let identityHit {
             let hit = try settlementReuseOf(
                 settlementID: identityHit.settlementID,
                 requestedStateID: requestedStateID,
-                declaredDependencies: declaredDependencies)
+                declaredDependencies: declaredDependencies,
+                settlementEdges: settlementEdges)
             if let operationKey {
                 // The identity is the authority; the key only makes this call
                 // replayable. It is bound to the identity's settlement, never
@@ -2342,7 +2404,8 @@ try apply(stmt)
     private func settlementReuseOf(
         settlementID: String,
         requestedStateID: String,
-        declaredDependencies: [DeclaredDependency]
+        declaredDependencies: [DeclaredDependency],
+        settlementEdges: [SettlementDependency]
     ) throws -> StoredSettlementReuse {
         guard let uuid = UUID(uuidString: settlementID) else {
             throw DatabaseError.sql("stored settlement id is not a UUID: \(settlementID)")
@@ -2358,6 +2421,21 @@ try apply(stmt)
                         "reused settlement does not carry declared dependency "
                             + "'\(dependency.dependencyID)'")
                 }
+            }
+        }
+        for dependency in settlementEdges {
+            let stmt = try prepare("""
+            SELECT 1 FROM dependency_edges
+            WHERE from_settlement=? AND to_settlement=? AND kind=? LIMIT 1;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, settlementID)
+            try bind(stmt, 2, dependency.settlementID)
+            try bind(stmt, 3, dependency.kind)
+            guard try stepRowOrDone(stmt) else {
+                throw SettlementIdentityError.identityConflict(
+                    "reused settlement does not carry settlement dependency "
+                        + "\(dependency.settlementID) (\(dependency.kind))")
             }
         }
         return StoredSettlementReuse(
@@ -2887,6 +2965,8 @@ try apply(stmt)
         let size: Int64
         let modified: String?
         let previous: FileContentState?
+        /// Raw bytes read for a tail-window digest, before dropping a partial line.
+        let tailWindowBytes: Int?
     }
 
     /// 结算一个工作根：逐文件计算 SHA-256，内容写入内容寻址对象库
@@ -3104,15 +3184,7 @@ try bind(externalStmt, 1, rootID)
             // file's size so an append always reads as a change, and so a tail
             // digest can never collide with a whole-file digest of the same
             // bytes.
-            var indexedData = data
-            if read.isTail {
-                if let firstBreak = indexedData.firstIndex(of: 0x0A) {
-                    // The window may start inside a multi-byte character or a
-                    // half-written JSONL line; the first complete line is the
-                    // first thing this window can honestly state.
-                    indexedData = indexedData[indexedData.index(after: firstBreak)...]
-                }
-            }
+            let indexedData = read.isTail ? Self.indexedTailData(data) : data
             let digest = read.isTail
                 ? NativeSHA256.hexDigest(Data("tail:\(size):".utf8) + indexedData)
                 : NativeSHA256.hexDigest(indexedData)
@@ -3139,7 +3211,8 @@ try bind(externalStmt, 1, rootID)
             }
             pending.append(PendingSettlement(
                 relativePath: relative, url: file, data: indexedData, digest: digest,
-                size: size, modified: modified, previous: previous[relative]))
+                size: size, modified: modified, previous: previous[relative],
+                tailWindowBytes: read.isTail ? data.count : nil))
         }
 
         // Enumeration errors can occur after some descendants were yielded.
@@ -3223,7 +3296,11 @@ try bind(externalStmt, 1, rootID)
                         "locator": identity,
                         "sha256": item.digest,
                         "size": item.size,
+                        "is_tail": item.tailWindowBytes != nil,
                     ]
+                    if let tailWindowBytes = item.tailWindowBytes {
+                        metadata["tail_bytes"] = tailWindowBytes
+                    }
                     if let modified = item.modified { metadata["modified"] = modified }
                     let encoded = try JSONSerialization.data(
                         withJSONObject: metadata,
@@ -3307,6 +3384,13 @@ try bind(externalStmt, 1, rootID)
         var isTail: Bool = false
     }
 
+    /// The tail index discards its first possibly partial line identically
+    /// during settlement and later source revalidation.
+    private static func indexedTailData(_ rawData: Data) -> Data {
+        guard let firstBreak = rawData.firstIndex(of: 0x0A) else { return rawData }
+        return rawData[rawData.index(after: firstBreak)...]
+    }
+
     private func canonicalDirectoryPath(atPath path: String) throws -> String {
         let resolved = path.withCString { Darwin.realpath($0, nil) }
         guard let resolved else {
@@ -3368,6 +3452,9 @@ try bind(externalStmt, 1, rootID)
     ) throws -> NoFollowFileRead {
         if let maximumBytes, maximumBytes < 0 {
             throw DatabaseError.sql("readRootFileNoFollow: negative byte limit")
+        }
+        guard maximumTotalBytesRead >= 0 else {
+            throw DatabaseError.sql("readRootFileNoFollow: negative aggregate byte limit")
         }
         let components = relativePath.split(
             separator: "/", omittingEmptySubsequences: false)
@@ -3447,32 +3534,42 @@ try bind(externalStmt, 1, rootID)
                     data: nil, size: initialSize,
                     modificationDate: modificationDate, device: device, inode: inode)
             }
-            let start = max(0, initialSize - Int64(tailBytes))
+            let expectedByteCount = Int(min(initialSize, Int64(tailBytes)))
+            guard expectedByteCount <= maximumTotalBytesRead else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: maxTotalBytesRead exceeded (\(maximumTotalBytesRead))")
+            }
+            let start = initialSize - Int64(expectedByteCount)
             guard Darwin.lseek(fileFD, off_t(start), SEEK_SET) == off_t(start) else {
                 throw DatabaseError.sql(
                     "readRootFileNoFollow: seek failed: \(String(cString: strerror(errno)))")
             }
             var tail = Data()
+            tail.reserveCapacity(expectedByteCount)
             var tailBuffer = [UInt8](repeating: 0, count: 64 * 1024)
-            while true {
+            while tail.count < expectedByteCount {
+                let requestCount = min(tailBuffer.count, expectedByteCount - tail.count)
                 let amount = tailBuffer.withUnsafeMutableBytes { raw -> Int in
                     guard let base = raw.baseAddress else { return -1 }
-                    return Darwin.read(fileFD, base, raw.count)
+                    return Darwin.read(fileFD, base, requestCount)
                 }
                 if amount < 0 && errno == EINTR { continue }
                 guard amount >= 0 else {
                     throw DatabaseError.sql(
                         "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
                 }
-                if amount == 0 { break }
+                if amount == 0 {
+                    try verifyUnchanged()
+                    throw DatabaseError.sql(
+                        "readRootFileNoFollow: short or inconsistent tail read")
+                }
                 tail.append(contentsOf: tailBuffer.prefix(amount))
             }
             try verifyUnchanged()
-            return NoFollowFileRead(
-                data: tail, size: initialSize,
-                modificationDate: modificationDate, device: device, inode: inode,
-                isTail: true)
-            try verifyUnchanged()
+            guard tail.count == expectedByteCount else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: short or inconsistent tail read")
+            }
             return NoFollowFileRead(
                 data: tail, size: initialSize,
                 modificationDate: modificationDate, device: device, inode: inode,
@@ -4005,18 +4102,29 @@ try bind(externalStmt, 1, rootID)
     func searchableFileText(_ row: SettledFileRow) throws -> String {
         if let objectID = row.objectID, !objectID.isEmpty {
             let data = try readObject(objectID)
-            guard NativeSHA256.hexDigest(data) == row.digest else {
-                throw DatabaseError.sql(
-                    "searchableFileText: carried object digest mismatch for \(row.rootID)/\(row.relativePath)")
+            if NativeSHA256.hexDigest(data) == row.digest {
+                return String(decoding: data, as: UTF8.self)
             }
-            return String(decoding: data, as: UTF8.self)
+            // A carried tail is stored as the indexed text window, while its
+            // content digest is framed with the full source size. Verify that
+            // representation instead of comparing it to a whole-file digest.
+            if let indexedSize = row.indexedSize, indexedSize >= 0,
+               NativeSHA256.hexDigest(Data("tail:\(indexedSize):".utf8) + data) == row.digest {
+                return String(decoding: data, as: UTF8.self)
+            }
+            throw DatabaseError.sql(
+                "searchableFileText: carried object digest mismatch for \(row.rootID)/\(row.relativePath)")
         }
         if !row.legacy.isEmpty {
-            guard NativeSHA256.hexDigest(row.legacy) == row.digest else {
-                throw DatabaseError.sql(
-                    "searchableFileText: legacy content digest mismatch for \(row.rootID)/\(row.relativePath)")
+            if NativeSHA256.hexDigest(row.legacy) == row.digest {
+                return String(decoding: row.legacy, as: UTF8.self)
             }
-            return String(decoding: row.legacy, as: UTF8.self)
+            if let indexedSize = row.indexedSize, indexedSize >= 0,
+               NativeSHA256.hexDigest(Data("tail:\(indexedSize):".utf8) + row.legacy) == row.digest {
+                return String(decoding: row.legacy, as: UTF8.self)
+            }
+            throw DatabaseError.sql(
+                "searchableFileText: legacy content digest mismatch for \(row.rootID)/\(row.relativePath)")
         }
         guard let locator = try rootLocatorPath(row.rootID) else {
             throw DatabaseError.sql(
@@ -4031,30 +4139,79 @@ try bind(externalStmt, 1, rootID)
         }
         let rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
         defer { Darwin.close(rootDirectoryFD) }
-        // An index-only source is only eligible for a bounded re-read at the
-        // size recorded by the same root scan. If it has grown since indexing,
-        // reject it from its stat metadata before allocating or hashing the new
-        // bytes. Older rows without an external_files size use the historical
-        // 1 MiB default cap rather than an unbounded read.
-        let maximumBytes: Int
-        if let indexedSize = row.indexedSize {
-            guard indexedSize >= 0, indexedSize <= Int64(Int.max) else {
-                throw DatabaseError.sql(
-                    "searchableFileText: invalid indexed size for \(row.rootID)/\(row.relativePath)")
+
+        // Index-only metadata is itself a content-addressed object. It records
+        // whether the settled digest covers the whole file or a tail window and
+        // the exact raw window size needed to reproduce that digest.
+        let identity = "file:\(row.rootID)/\(row.relativePath)"
+        guard let metadataObjectID = try latestIndexObjectID(identity: identity),
+              !metadataObjectID.isEmpty else {
+            throw DatabaseError.sql(
+                "searchableFileText: missing index-only metadata object for \(row.rootID)/\(row.relativePath)")
+        }
+        let metadataData = try readObject(metadataObjectID)
+        guard let metadata = try JSONSerialization.jsonObject(with: metadataData)
+                as? [String: Any],
+              let metadataLocator = metadata["locator"] as? String,
+              let metadataDigest = metadata["sha256"] as? String,
+              let indexedSize = metadata["size"] as? Int64,
+              indexedSize >= 0 else {
+            throw DatabaseError.sql(
+                "searchableFileText: malformed index-only metadata for \(row.rootID)/\(row.relativePath)")
+        }
+        guard metadataLocator == identity, metadataDigest == row.digest,
+              row.indexedSize == nil || row.indexedSize == indexedSize else {
+            throw DatabaseError.staleExternalSource(
+                rootID: row.rootID, relativePath: row.relativePath)
+        }
+
+        if metadata["is_tail"] as? Bool == true {
+            let maximumTailReadBytes = 64 * 1024 * 1024
+            guard let tailWindowBytes = metadata["tail_bytes"] as? Int,
+                  tailWindowBytes > 0, tailWindowBytes <= maximumTailReadBytes,
+                  indexedSize > 0, indexedSize <= Int64(Int.max) else {
+                throw DatabaseError.staleExternalSource(
+                    rootID: row.rootID, relativePath: row.relativePath)
             }
-            maximumBytes = Int(indexedSize)
-        } else {
-            maximumBytes = 1 << 20
+            let read = try readRootFileNoFollow(
+                rootDirectoryFD: rootDirectoryFD,
+                relativePath: relative,
+                // Force the bounded tail path based on the read window, not
+                // the original full source size. If the source shrank but is
+                // still larger than the tail budget, a size-based threshold
+                // would try to read the whole changed file and throw a generic
+                // budget error instead of classifying it as stale.
+                maximumBytes: tailWindowBytes - 1,
+                tailBytes: tailWindowBytes,
+                maximumTotalBytesRead: tailWindowBytes)
+            guard read.isTail, read.size == indexedSize, let rawTail = read.data else {
+                throw DatabaseError.staleExternalSource(
+                    rootID: row.rootID, relativePath: row.relativePath)
+            }
+            let indexedData = Self.indexedTailData(rawTail)
+            let digest = NativeSHA256.hexDigest(
+                Data("tail:\(indexedSize):".utf8) + indexedData)
+            guard digest == row.digest else {
+                throw DatabaseError.staleExternalSource(
+                    rootID: row.rootID, relativePath: row.relativePath)
+            }
+            return String(decoding: indexedData, as: UTF8.self)
+        }
+
+        // Full-file index-only revalidation is bounded independently of the
+        // caller's custom scan limits; larger sources require a tail marker.
+        let maximumFullReadBytes = 64 * 1024 * 1024
+        guard indexedSize <= Int64(maximumFullReadBytes) else {
+            throw DatabaseError.staleExternalSource(
+                rootID: row.rootID, relativePath: row.relativePath)
         }
         let read = try readRootFileNoFollow(
             rootDirectoryFD: rootDirectoryFD,
             relativePath: relative,
-            maximumBytes: maximumBytes)
-        guard let data = read.data else {
-            throw DatabaseError.staleExternalSource(
-                rootID: row.rootID, relativePath: row.relativePath)
-        }
-        guard NativeSHA256.hexDigest(data) == row.digest else {
+            maximumBytes: Int(indexedSize),
+            maximumTotalBytesRead: maximumFullReadBytes)
+        guard !read.isTail, read.size == indexedSize, let data = read.data,
+              NativeSHA256.hexDigest(data) == row.digest else {
             throw DatabaseError.staleExternalSource(
                 rootID: row.rootID, relativePath: row.relativePath)
         }
@@ -6471,6 +6628,35 @@ try bind(externalStmt, 1, rootID)
             return nil
         }
         return String(cString: c)
+    }
+
+    /// Validate an upstream settlement under the caller's write transaction and
+    /// return its content-addressed payload object. This closes the admission /
+    /// child-commit race: invalidation cannot slip between this check and edge
+    /// insertion, and a later invalidation follows the persisted edge.
+    private func validatedSettlementDependencyObjectID(_ settlementID: String) throws -> String {
+        guard let row = try settlementAdmissionRow(settlementID: settlementID),
+              row.validationStatus != "MIGRATED_LEGACY" else {
+            throw DatabaseError.sql("settlement dependency is unavailable: \(settlementID)")
+        }
+        guard SimiGoSettlementAuthority.payloadDigestMatches(
+            row.payload, recordedDigest: row.recordedPayloadDigest) else {
+            throw DatabaseError.sql("settlement dependency payload digest mismatch: \(settlementID)")
+        }
+        guard row.validity == "valid" else {
+            throw DatabaseError.sql("settlement dependency is invalid: \(settlementID)")
+        }
+        for upstream in try upstreamDependencyClosure(ofSettlement: settlementID) {
+            guard try settlementValidity(upstream) == "valid" else {
+                throw DatabaseError.sql(
+                    "settlement dependency closure contains invalid member: \(upstream)")
+            }
+        }
+        guard let objectID = try settlementPayloadObject(settlementID),
+              !objectID.isEmpty, try objectRow(objectID) != nil else {
+            throw DatabaseError.sql("settlement dependency payload object is missing: \(settlementID)")
+        }
+        return objectID
     }
 
     /// Content address of a settled file, when its bytes are carried.
