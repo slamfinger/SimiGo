@@ -186,8 +186,9 @@ public struct SimiGoInformationLoop {
                 addresses.append(.init(itemID: identity, contentAddress: address))
             }
             for (idx, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
-            where !line.isEmpty && Self.mentions(line, foldedKeywords) {
-                guard let snippet = Self.citationSnippet(in: line, keywords: keywords)
+            where !line.isEmpty {
+                guard let snippet = Self.citationSnippet(
+                    in: line, folded: foldedKeywords, keywords: keywords)
                 else { continue }
                 scored.append((Item(
                     itemID: identity, kind: "file", locator: identity,
@@ -222,8 +223,9 @@ public struct SimiGoInformationLoop {
                 else { continue }
                 for (idx, line) in row.content
                     .split(separator: "\n", omittingEmptySubsequences: false).enumerated()
-                where !line.isEmpty && Self.mentions(line, foldedKeywords) {
-                    guard let snippet = Self.citationSnippet(in: line, keywords: keywords)
+                where !line.isEmpty {
+                    guard let snippet = Self.citationSnippet(
+                        in: line, folded: foldedKeywords, keywords: keywords)
                     else { continue }
                     scored.append((Item(
                         itemID: row.itemID, kind: "chat",
@@ -250,8 +252,8 @@ public struct SimiGoInformationLoop {
             // Match and cite the settled summary itself: the demand's query is
             // metadata about what was asked, not part of the settled payload,
             // so a query-only term must not pull in an unrelated summary.
-            guard Self.mentions(row.summary[...], foldedKeywords),
-                let snippet = Self.citationSnippet(in: row.summary, keywords: keywords)
+            guard let snippet = Self.citationSnippet(
+                in: row.summary[...], folded: foldedKeywords, keywords: keywords)
             else { continue }
             scored.append((Item(
                 itemID: identity, kind: "settlement",
@@ -573,32 +575,34 @@ public struct SimiGoInformationLoop {
         (byte >= 0x41 && byte <= 0x5A) ? byte &+ 0x20 : byte
     }
 
-    /// Whether `line` can mention any keyword: a necessary condition for
-    /// `citationSnippet` to return anything, computed over UTF-8 bytes so that
-    /// 806k lines cost a byte scan instead of 806k Unicode searches.
+    /// Byte offset of the earliest position where any keyword can match, or nil
+    /// when the line mentions none. This is the only scan a line pays before the
+    /// citation is built: 806k chat lines over 38 MB cost 0.9 s here and 36 s
+    /// when the same question is asked of ICU per line (measured 2026-11-09).
     ///
     /// Boundary: this folds ASCII case and nothing else. A non-ASCII character
     /// that case-folds onto an ASCII letter (Kelvin sign onto `k`, long s onto
-    /// `s`) would be cited by the Unicode scan and skipped here. No such match
-    /// was found in this space; a line skipped here is never cited, so the
-    /// failure mode is a missing citation, never a fabricated one.
-    private static func mentions(_ line: Substring, _ foldedKeywords: [[UInt8]]) -> Bool {
+    /// `s`) is not found here, so a line whose only match would be such a
+    /// character yields no citation. The failure mode is a missing citation,
+    /// never a fabricated one.
+    private static func firstMatch(in line: Substring, _ foldedKeywords: [[UInt8]]) -> Int? {
         line.utf8.withContiguousStorageIfAvailable {
-            Self.mentions($0, foldedKeywords)
-        } ?? Self.mentions(Array(line.utf8), foldedKeywords)
+            Self.firstMatch($0, foldedKeywords)
+        } ?? Self.firstMatch(Array(line.utf8), foldedKeywords)
     }
 
     /// The byte scan itself. `C.Index == Int` keeps the inner arithmetic free of
     /// collection index overhead on both the contiguous view and the fallback.
-    private static func mentions<C: RandomAccessCollection>(
+    private static func firstMatch<C: RandomAccessCollection>(
         _ bytes: C, _ foldedKeywords: [[UInt8]]
-    ) -> Bool where C.Element == UInt8, C.Index == Int {
+    ) -> Int? where C.Element == UInt8, C.Index == Int {
         let start = bytes.startIndex
+        var best: Int?
         for keyword in foldedKeywords {
             guard let first = keyword.first, keyword.count <= bytes.count else { continue }
             let last = start + bytes.count - keyword.count
             var cursor = start
-            while cursor <= last {
+            while cursor <= last, best.map({ cursor < $0 }) ?? true {
                 if Self.foldedASCII(bytes[cursor]) == first {
                     var probe = cursor + 1
                     var matched = 1
@@ -607,12 +611,15 @@ public struct SimiGoInformationLoop {
                         probe += 1
                         matched += 1
                     }
-                    if matched == keyword.count { return true }
+                    if matched == keyword.count {
+                        best = cursor
+                        break
+                    }
                 }
                 cursor += 1
             }
         }
-        return false
+        return best
     }
 
     /// A citation must contain the match that justified it, so scoring and the
@@ -621,19 +628,20 @@ public struct SimiGoInformationLoop {
     /// Measured 2026-10-30: matching the whole 2,447-character rollout line and
     /// quoting its 240-character prefix injected text that never contained the
     /// query term at all.
-    private static func citationSnippet<S: StringProtocol>(
-        in line: S, keywords: [String], maxLength: Int = 240
+    private static func citationSnippet(
+        in line: Substring, folded: [[UInt8]], keywords: [String], maxLength: Int = 240
     ) -> (text: String, score: Int)? {
         let text = String(line)
-        var first: Range<String.Index>?
-        for keyword in keywords {
-            guard let range = text.range(of: keyword, options: .caseInsensitive)
-            else { continue }
-            if first == nil || range.lowerBound < first!.lowerBound { first = range }
-        }
-        guard let hit = first else { return nil }
+        // The match is located on UTF-8 bytes and only then mapped back to a
+        // character offset: asking ICU for it cost 1.68 s on 405 surviving file
+        // lines (2.25 MB) where the byte scan costs nothing next to the slicing.
+        guard let byteHit = Self.firstMatch(in: line, folded),
+            let utf8Index = text.utf8.index(
+                text.utf8.startIndex, offsetBy: byteHit, limitedBy: text.utf8.endIndex),
+            let hit = String.Index(utf8Index, within: text)
+        else { return nil }
         let total = text.count
-        let hitOffset = text.distance(from: text.startIndex, to: hit.lowerBound)
+        let hitOffset = text.distance(from: text.startIndex, to: hit)
         // Context before the match, clamped so the window never runs past the end.
         let startOffset = max(0, min(hitOffset - 80, max(0, total - maxLength)))
         let endOffset = min(total, startOffset + maxLength)
