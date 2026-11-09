@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 656,
+    "tracked": 658,
     "research_not_declared": 0,
-    "non_research_candidates": 656,
-    "declared": 598,
+    "non_research_candidates": 658,
+    "declared": 600,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -1536,6 +1536,10 @@
       "output": "docs/decisions/README.md"
     },
     {
+      "path": "docs/decisions/RELEASE_STAGING_20261110.md",
+      "output": "docs/decisions/RELEASE_STAGING_20261110.md"
+    },
+    {
       "path": "docs/decisions/RUNTIME_RELIABILITY_BACKLOG.md",
       "output": "docs/decisions/RUNTIME_RELIABILITY_BACKLOG.md"
     },
@@ -2326,6 +2330,10 @@
     {
       "path": "tools/rc_noninterference_diff.py",
       "output": "tools/rc_noninterference_diff.py"
+    },
+    {
+      "path": "tools/redact_binary_paths.py",
+      "output": "tools/redact_binary_paths.py"
     },
     {
       "path": "tools/release_chain.py",

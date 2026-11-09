@@ -19,8 +19,8 @@ sha256 前八位正是 `fa230358`——同一路径、同一份源码、同一�
 
 - 二进制 121,407,584 字节，比不带插桩时大 45 MB；
 - 每个函数的覆盖记录名是 `___profc_<#filePath>:<函数>`，把
-  `/Users/<用户名>/Documents/SimiGo-new-root/...` 原样写进 `__llvm_prf_names`：
-  实测 `/Users/` 与用户名各 38,312 处。
+  `~/Documents/SimiGo-new-root/...` 的绝对家目录形式原样写进
+  `__llvm_prf_names`：实测家目录前缀与用户名各 38,312 处。
 
 处置：Release 用 `ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO` 重编，
 二进制降到 76,064,256 字节，路径串降到 2,958 处（只剩 Swift 的 `#filePath`）。
@@ -32,7 +32,7 @@ sha256 前八位正是 `fa230358`——同一路径、同一份源码、同一�
 在 `__TEXT,__cstring`，不在 `__text`）。文本级清洗救不了 Mach-O：变长替换会让
 `__cstring` 之后的偏移与代码签名一起作废。
 
-处置：`tools/redact_binary_paths.py` 做等长替换（`/Users/` → `/build/`，用户名 →
+处置：`tools/redact_binary_paths.py` 做等长替换（家目录前缀 → `/build/`，用户名 →
 等长填充），文件长度不变，替换后重新 adhoc 签名。这个步骤已经写进
 `tools/make_release_dmg.sh`（`--no-backup`，副本不落进 staging），名字里的
 `EXE8` 也改成擦除之后再算——文件名必须描述真正发出去的那颗二进制。
