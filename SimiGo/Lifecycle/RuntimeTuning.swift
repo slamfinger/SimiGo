@@ -8,7 +8,14 @@ nonisolated enum RuntimeTuning {
     static let mlxMemoryLimitBytes = 22 * gibibyte
 
     /// MLX recyclable buffer cache limit.
-    static let mlxCacheLimitBytes = 4 * gibibyte
+    ///
+    /// 4 GiB 在 20.6 GB 模型 + 32 GB 机器上没有意义（2026-11-09 改）：缓存
+    /// 是"下一次分配可能同形"的投机，而跨轮次的分配尺寸一直在变，投机很少
+    /// 命中；代价却是死攥最多 4 GB 活页，把权重挤去 swap。实测同一会话内
+    /// 预填吞吐从 128 tok/s 掉到 20 tok/s（16:34 那轮 1731 token 用了 85.3 s），
+    /// 生成从 23 tok/s 掉到 7.4 tok/s。留 1 GiB 够装一步 prefillStep=2048 的
+    /// 中间缓冲，又不至于把机器顶死。
+    static let mlxCacheLimitBytes = 1 * gibibyte
 
     /// 空闲归还阈值（2026-11-09）：本轮结束后进程 footprint 超过物理内存的
     /// 3/5，就把 MLX 缓存与 malloc 空闲页还给系统。低于阈值不动——一次 clear
