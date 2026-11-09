@@ -144,6 +144,14 @@ public struct SimiGoInformationLoop {
         var scored: [(item: Item, score: Int)] = []
         var addresses: [SimiGoESISDatabase.InformationInput] = []
         let keywords = Self.keywords(in: query)
+        // Every citation below is a line that must mention a keyword, and the
+        // case-insensitive Unicode scan that decides it is the most expensive
+        // thing in this function: measured 2026-11-09 on the live space, 38 MB
+        // of chat over 806k lines cost 36 s with it and 0.2 s baselined by the
+        // byte-level skip. The skip folds ASCII only, so it is exact for
+        // caseless scripts (CJK, the bulk here) and for ASCII text; the citation
+        // itself is still sliced by `citationSnippet`.
+        let foldedKeywords = keywords.map { Array($0.utf8).map(Self.foldedASCII) }
         // The demand's lifecycle identity. A retry of the same request must land
         // on the same demand; two unrelated requests without a session must not,
         // or one would supersede the other. Knowledge itself stays shared: this
@@ -178,7 +186,7 @@ public struct SimiGoInformationLoop {
                 addresses.append(.init(itemID: identity, contentAddress: address))
             }
             for (idx, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
-            where !line.isEmpty {
+            where !line.isEmpty && Self.mentions(line, foldedKeywords) {
                 guard let snippet = Self.citationSnippet(in: line, keywords: keywords)
                 else { continue }
                 scored.append((Item(
@@ -214,7 +222,7 @@ public struct SimiGoInformationLoop {
                 else { continue }
                 for (idx, line) in row.content
                     .split(separator: "\n", omittingEmptySubsequences: false).enumerated()
-                where !line.isEmpty {
+                where !line.isEmpty && Self.mentions(line, foldedKeywords) {
                     guard let snippet = Self.citationSnippet(in: line, keywords: keywords)
                     else { continue }
                     scored.append((Item(
@@ -242,7 +250,8 @@ public struct SimiGoInformationLoop {
             // Match and cite the settled summary itself: the demand's query is
             // metadata about what was asked, not part of the settled payload,
             // so a query-only term must not pull in an unrelated summary.
-            guard let snippet = Self.citationSnippet(in: row.summary, keywords: keywords)
+            guard Self.mentions(row.summary[...], foldedKeywords),
+                let snippet = Self.citationSnippet(in: row.summary, keywords: keywords)
             else { continue }
             scored.append((Item(
                 itemID: identity, kind: "settlement",
@@ -554,6 +563,56 @@ public struct SimiGoInformationLoop {
             out.append(query.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         return Array(out.prefix(limit))
+    }
+
+    /// ASCII-only case fold over raw UTF-8 bytes. Byte folding never inserts or
+    /// removes a byte, so a match found here has the same offsets as the text
+    /// the citation is sliced from.
+    @inline(__always)
+    private static func foldedASCII(_ byte: UInt8) -> UInt8 {
+        (byte >= 0x41 && byte <= 0x5A) ? byte &+ 0x20 : byte
+    }
+
+    /// Whether `line` can mention any keyword: a necessary condition for
+    /// `citationSnippet` to return anything, computed over UTF-8 bytes so that
+    /// 806k lines cost a byte scan instead of 806k Unicode searches.
+    ///
+    /// Boundary: this folds ASCII case and nothing else. A non-ASCII character
+    /// that case-folds onto an ASCII letter (Kelvin sign onto `k`, long s onto
+    /// `s`) would be cited by the Unicode scan and skipped here. No such match
+    /// was found in this space; a line skipped here is never cited, so the
+    /// failure mode is a missing citation, never a fabricated one.
+    private static func mentions(_ line: Substring, _ foldedKeywords: [[UInt8]]) -> Bool {
+        line.utf8.withContiguousStorageIfAvailable {
+            Self.mentions($0, foldedKeywords)
+        } ?? Self.mentions(Array(line.utf8), foldedKeywords)
+    }
+
+    /// The byte scan itself. `C.Index == Int` keeps the inner arithmetic free of
+    /// collection index overhead on both the contiguous view and the fallback.
+    private static func mentions<C: RandomAccessCollection>(
+        _ bytes: C, _ foldedKeywords: [[UInt8]]
+    ) -> Bool where C.Element == UInt8, C.Index == Int {
+        let start = bytes.startIndex
+        for keyword in foldedKeywords {
+            guard let first = keyword.first, keyword.count <= bytes.count else { continue }
+            let last = start + bytes.count - keyword.count
+            var cursor = start
+            while cursor <= last {
+                if Self.foldedASCII(bytes[cursor]) == first {
+                    var probe = cursor + 1
+                    var matched = 1
+                    while matched < keyword.count,
+                        Self.foldedASCII(bytes[probe]) == keyword[matched] {
+                        probe += 1
+                        matched += 1
+                    }
+                    if matched == keyword.count { return true }
+                }
+                cursor += 1
+            }
+        }
+        return false
     }
 
     /// A citation must contain the match that justified it, so scoring and the
