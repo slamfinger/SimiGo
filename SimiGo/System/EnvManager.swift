@@ -553,17 +553,35 @@ public final class EnvManager: ObservableObject {
     /// to a new environment only. `workRoot`, when given, is registered in the
     /// `roots` table (category `work`, locator `path`) so Execution State and
     /// Information Space can index files under it without ever copying them in.
-    public func bootstrapFreshDatabase(workRoot: String?) -> [String: Any] {
-        let url = SimiGoPaths.databaseURL
-        let existedBefore = FileManager.default.fileExists(atPath: url.path)
+    public func bootstrapFreshDatabase(
+        workRoot: String?, url: URL = SimiGoPaths.databaseURL
+    ) -> [String: Any] {
+        let fm = FileManager.default
+        let existedBefore = fm.fileExists(atPath: url.path)
+        let identityBefore = existedBefore ? Self.fileIdentity(at: url) : nil
         do {
-            let db = try SimiGoESISDatabase(url: url, createIfNeeded: true)
+            // A reinstall must reuse the database that is already there. Opening
+            // an existing file read-write only (no SQLITE_OPEN_CREATE) makes that
+            // structural: there is no code path here that can mint a blank file
+            // at a path that already holds one. A corrupt existing file fails
+            // closed instead of being papered over by a fresh creation.
+            let db = try SimiGoESISDatabase(url: url, createIfNeeded: !existedBefore)
             try db.runMigrations()
+            // Migrations may grow the file; they must never substitute it. Device
+            // plus inode is what separates "opened the database that was there"
+            // from "created a different one at the same path".
+            let replaced = identityBefore != nil && Self.fileIdentity(at: url) != identityBefore
             var report: [String: Any] = [
                 "status": existedBefore ? "existing" : "created",
                 "path": url.path,
                 "schema_version": (try? db.schemaVersion()) ?? -1,
+                "database_replaced": replaced,
             ]
+            guard !replaced else {
+                report["status"] = "failed"
+                report["detail"] = "existing database was replaced during bootstrap"
+                return report
+            }
             if let workRoot, !workRoot.isEmpty {
                 let standardized = (workRoot as NSString).standardizingPath
                 let rootID = "work-" + Self.stableRootID(forPath: standardized)
@@ -594,6 +612,16 @@ public final class EnvManager: ObservableObject {
         } catch {
             return ["status": "failed", "path": url.path, "detail": error.localizedDescription]
         }
+    }
+
+    /// Device + inode of a file, or nil when it cannot be read. Two reads that
+    /// agree describe the same file; a migration that swaps the file out does not.
+    private static func fileIdentity(at url: URL) -> String? {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let device = attrs[.systemNumber] as? NSNumber,
+              let inode = attrs[.systemFileNumber] as? NSNumber
+        else { return nil }
+        return "\(device)-\(inode)"
     }
 
     /// Ensure a version-locked engine manifest exists before building.

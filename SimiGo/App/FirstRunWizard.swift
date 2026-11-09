@@ -6,7 +6,8 @@ import SimiGoRuntimeContract
 //   删除 ~/.simigo 后安装 DMG 打开 App，向导引导完成
 //   ① 选定外部工作目录（写入权威数据库 roots）
 //   ② 导入自定义外部二进制（转移至 <root>/bin，0755）
-//   ③ 自动自举完整生成环境（目录树/llama.cpp/hf/空白数据库/LOCALB/DMG 留存）
+//   ③ 自动自举完整生成环境（目录树/llama.cpp/hf/空白数据库——已存在则复用，绝不替换/
+//      LOCALB/DMG 留存）
 //   ④ 把 App 落位 /Applications 并重启
 // 菜单栏常驻同等入口（见 MenuPanelView 的"环境"分区）。
 
@@ -140,7 +141,7 @@ struct FirstRunWizardView: View {
             Text("将为你完成以下事项：").font(.body.weight(.medium))
             bullet("1", "选定外部工作目录（Execution State / Information Space 的数据入库范围）")
             bullet("2", "从引擎适配清单勾选外部二进制（自动安装 → ~/.simigo/bin → 清理缓存）")
-            bullet("3", "自举生成环境：目录树、llama.cpp 工具链、hf、空白数据库、LOCALB")
+            bullet("3", "自举生成环境：目录树、llama.cpp 工具链、hf、数据库（已有则复用，不替换）、LOCALB")
             bullet("4", "把 SimiGo 落位到 /Applications 并重启")
             Text("目标目录：\(SimiGoPaths.managedRoot().path)")
                 .font(.caption).foregroundStyle(.secondary)

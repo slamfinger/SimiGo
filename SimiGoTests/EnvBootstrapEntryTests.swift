@@ -65,6 +65,42 @@ final class EnvBootstrapEntryTests: XCTestCase {
         XCTAssertTrue(try after.listRoots().contains { $0.rootID == rootID })
     }
 
+    /// 重装语义：已经在的数据库只能被打开，不能被换成空库。
+    @MainActor
+    func testReinstallOpensTheExistingDatabaseInsteadOfReplacingIt() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("envboot-reinstall-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("simigo.sqlite3")
+
+        // 先造一份"老安装"：一个已注册的 work root。
+        do {
+            let seed = try SimiGoESISDatabase(url: dbURL, createIfNeeded: true)
+            try seed.runMigrations()
+            try seed.upsertRoot(
+                rootID: "work-seeded", category: "work",
+                displayName: "/tmp/seeded", locatorType: "path", status: "registered")
+            seed.close()
+        }
+        let inodeBefore = try XCTUnwrap(
+            (try FileManager.default.attributesOfItem(atPath: dbURL.path))[.systemFileNumber]
+                as? NSNumber)
+
+        // 重装路径（首启向导第 3 步）在同一个路径上再自举一次。
+        let report = EnvManager.shared.bootstrapFreshDatabase(workRoot: nil, url: dbURL)
+        XCTAssertEqual(report["status"] as? String, "existing", "\(report)")
+        XCTAssertEqual(report["database_replaced"] as? Bool, false, "\(report)")
+
+        let inodeAfter = try XCTUnwrap(
+            (try FileManager.default.attributesOfItem(atPath: dbURL.path))[.systemFileNumber]
+                as? NSNumber)
+        XCTAssertEqual(inodeAfter, inodeBefore, "重装不得替换数据库文件本身")
+
+        let reopened = try SimiGoESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertTrue(try reopened.listRoots().contains { $0.rootID == "work-seeded" },
+                      "重装前写入的行必须活过重装")
+    }
 
     func testBinaryDownloaderRejectsOversizedDownloadedFile() async throws {
         let directory = FileManager.default.temporaryDirectory
