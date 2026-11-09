@@ -14,7 +14,7 @@ This directory contains current contracts, evidence records, and historical rese
 - [Lessons](lessons/README.md) — incidents, regressions, and engineering lessons.
 - [Research archive](research/README.md) — historical research questions and synthesis, not current product status.
 - [Evolution history](evolution/README.md) — architecture transitions.
-- [History: V5 baseline](history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md) and [Qoder collection integration](history/QODER_COLLECTION_INTEGRATION_20261105.md) — dated snapshots.
+- [History: V5 baseline](history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md) and [transcript collection integration](history/COLLECTION_INTEGRATION_20261105.md) — dated snapshots.
 - [Release history](releases/README.md) — historical release notes and freeze records. Current distribution status is in the repository-root [README](../README.md) and [RELEASE.md](../RELEASE.md).
 
 ## Evidence and archive rules
