@@ -1,0 +1,128 @@
+import XCTest
+import Foundation
+import SimiGoRuntimeContract
+
+@testable import SimiGo
+
+/// I1: the GGUF producer identity must be the model BYTES, not the file name or
+/// size, and must be resolved the same way everywhere it is consumed.
+final class GGUFModelIdentityTests: XCTestCase {
+    private var root: URL!
+
+    override func setUpWithError() throws {
+        root = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "gguf-model-identity-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: root)
+    }
+
+    @discardableResult
+    private func write(_ bytes: Data, at relative: String) throws -> String {
+        let url = root.appendingPathComponent(relative)
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try bytes.write(to: url)
+        return url.path
+    }
+
+    func testSameNameAndSizeWithDifferentBytesResolveToDifferentIdentities() throws {
+        let first = Data("GGUF-placeholder-bytes-A".utf8)
+        let second = Data("GGUF-placeholder-bytes-B".utf8)
+        XCTAssertEqual(first.count, second.count, "the probe must keep the size equal")
+
+        let a = try GGUFModelIdentity.resolve(
+            path: try write(first, at: "a/model.gguf"))
+        let b = try GGUFModelIdentity.resolve(
+            path: try write(second, at: "b/model.gguf"))
+
+        XCTAssertEqual(a.byteCount, b.byteCount)
+        XCTAssertEqual(a.contentSource, .fileContents)
+        XCTAssertNotEqual(a.contentSHA256, b.contentSHA256)
+        XCTAssertNotEqual(a.modelIdentity, b.modelIdentity)
+        XCTAssertNotEqual(a.producer.model, b.producer.model)
+        XCTAssertNotEqual(a.producer.tokenizer, b.producer.tokenizer)
+
+        // The streamed digest is the production digest, not a private variant.
+        XCTAssertEqual(a.contentSHA256, SettlementAuthority.payloadDigest(first))
+        XCTAssertEqual(b.contentSHA256, SettlementAuthority.payloadDigest(second))
+    }
+
+    func testHuggingFaceBlobSymlinkUsesVerifiedBlobContentAddress() throws {
+        let hub = root.appendingPathComponent("hub", isDirectory: true)
+        let repo = hub.appendingPathComponent("models--org--demo", isDirectory: true)
+        let blobs = repo.appendingPathComponent("blobs", isDirectory: true)
+        let snapshot = repo.appendingPathComponent("snapshots/rev-1", isDirectory: true)
+        try FileManager.default.createDirectory(at: blobs, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: snapshot, withIntermediateDirectories: true)
+
+        let bytes = Data("gguf-weights-through-the-hub".utf8)
+        let sha = SettlementAuthority.payloadDigest(bytes)
+        try bytes.write(to: blobs.appendingPathComponent(sha))
+        let link = snapshot.appendingPathComponent("demo.gguf")
+        try FileManager.default.createSymbolicLink(
+            atPath: link.path, withDestinationPath: "../../blobs/\(sha)")
+
+        let identity = try GGUFModelIdentity.resolve(path: link.path, hubs: [hub])
+
+        XCTAssertEqual(identity.contentSource, .huggingFaceCacheBlob)
+        XCTAssertEqual(identity.contentSHA256, sha)
+        XCTAssertEqual(identity.byteCount, Int64(bytes.count))
+        XCTAssertTrue(
+            identity.resolvedPath.hasSuffix("/blobs/\(sha)"),
+            "the symlink must resolve to the blob: \(identity.resolvedPath)")
+        // Provenance is recorded, but it is evidence — the digest above is the
+        // identity.
+        XCTAssertEqual(identity.repository, "org/demo")
+        XCTAssertEqual(identity.revision, "rev-1")
+        XCTAssertEqual(identity.rootID, "huggingface-cache")
+    }
+
+    func testContentAddressLikeNameOutsideBlobLayoutIsNotTrusted() throws {
+        let fakeName = String(repeating: "a", count: 64)
+        let bytes = Data("ordinary-local-gguf".utf8)
+        let identity = try GGUFModelIdentity.resolve(
+            path: try write(bytes, at: "local/\(fakeName)"))
+
+        XCTAssertEqual(identity.contentSource, .fileContents)
+        XCTAssertEqual(identity.contentSHA256, SettlementAuthority.payloadDigest(bytes))
+        XCTAssertNotEqual(
+            identity.contentSHA256, fakeName,
+            "a 64-hex file name outside the hub layout must not be taken as content")
+    }
+
+    func testSameBytesUnderDifferentNamesShareContentIdentity() throws {
+        let bytes = Data("same-model-different-file-name".utf8)
+        let one = try GGUFModelIdentity.resolve(path: try write(bytes, at: "one.gguf"))
+        let two = try GGUFModelIdentity.resolve(
+            path: try write(bytes, at: "renamed/model-two.gguf"))
+
+        XCTAssertEqual(one.modelIdentity, two.modelIdentity)
+        XCTAssertEqual(one.producer, two.producer)
+    }
+
+    func testTokenizerIdentityIsModelFileBound() throws {
+        let identity = try GGUFModelIdentity.resolve(
+            path: try write(Data("tokenizer-source".utf8), at: "m.gguf"))
+        XCTAssertEqual(
+            identity.producer.tokenizer,
+            GGUFModelIdentity.tokenizerFingerprint(
+                modelContentSHA256: identity.contentSHA256))
+
+        let other = try GGUFModelIdentity.resolve(
+            path: try write(Data("different-tokenizer-source".utf8), at: "n.gguf"))
+        XCTAssertNotEqual(identity.producer.tokenizer, other.producer.tokenizer)
+    }
+
+    func testDirectoryIsRefused() throws {
+        let directory = root.appendingPathComponent("model-dir", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        XCTAssertThrowsError(try GGUFModelIdentity.resolve(path: directory.path)) { error in
+            guard case GGUFModelIdentityError.notAFile = error else {
+                return XCTFail("unexpected error: \(error)")
+            }
+        }
+    }
+}
