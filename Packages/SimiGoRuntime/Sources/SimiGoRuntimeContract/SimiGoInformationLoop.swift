@@ -144,6 +144,14 @@ public struct SimiGoInformationLoop {
         var scored: [(item: Item, score: Int)] = []
         var addresses: [SimiGoESISDatabase.InformationInput] = []
         let keywords = Self.keywords(in: query)
+        let requestedRootIDs = Array(Set(demand.rootIDs)).sorted()
+        let requestedRootSet = Set(requestedRootIDs)
+        let requestedChatSessionIDs = Array(Set(demand.chatSessionIDs)).sorted()
+        let exclusionIDs = demand.excludeItemIDs.sorted()
+        let rootScopeJSON = String(
+            decoding: try JSONEncoder.sorted.encode(requestedRootIDs), as: UTF8.self)
+        let exclusionScopeJSON = String(
+            decoding: try JSONEncoder.sorted.encode(exclusionIDs), as: UTF8.self)
         // The demand's lifecycle identity. A retry of the same request must land
         // on the same demand; two unrelated requests without a session must not,
         // or one would supersede the other. Knowledge itself stays shared: this
@@ -163,7 +171,7 @@ public struct SimiGoInformationLoop {
 
         // Physical information: read the locator, verify the settled digest.
         for row in try database.settledFileRows(rootID: nil) {
-            if !demand.rootIDs.isEmpty, !demand.rootIDs.contains(row.rootID) { continue }
+            if !requestedRootSet.isEmpty, !requestedRootSet.contains(row.rootID) { continue }
             let identity = "file:\(row.rootID)/\(row.relativePath)"
             guard !demand.excludeItemIDs.contains(identity) else { continue }
             let text: String
@@ -197,15 +205,15 @@ public struct SimiGoInformationLoop {
         // a changed scope produce a different demand instead of a silent reuse.
         var chatScope = "chat-scope=off"
         if demand.includeChat {
-            let chatRows = try database.chatIndexRows(sessionIDs: demand.chatSessionIDs)
+            let chatRows = try database.chatIndexRows(sessionIDs: requestedChatSessionIDs)
             // Excluded rows are outside this demand input basis, not merely
             // outside rendered snippets. An answer’s own question/answer rows
             // must not make its exact repeat look stale.
             let scopedChatRows = chatRows.filter {
                 !demand.excludeItemIDs.contains($0.itemID)
             }
-            let scopeSessions = demand.chatSessionIDs.isEmpty
-                ? "all" : demand.chatSessionIDs.sorted().joined(separator: ",")
+            let scopeSessions = requestedChatSessionIDs.isEmpty
+                ? "all" : requestedChatSessionIDs.joined(separator: ",")
             let tail = scopedChatRows.max { $0.messageID < $1.messageID }
             chatScope = "chat-scope=sessions=\(scopeSessions)"
                 + ";count=\(scopedChatRows.count);max=\(tail?.messageID ?? 0)"
@@ -262,8 +270,12 @@ public struct SimiGoInformationLoop {
         }
         let items = Array(scored.prefix(limit).map(\.item))
 
+        let rootScope = requestedRootIDs.isEmpty ? "all" : rootScopeJSON
         let canonical = "query=\(query)\n"
             + "request=\(requestIdentity)\n"
+            + "limit=\(limit)\n"
+            + "root-scope=\(rootScope)\n"
+            + "exclude-items=\(exclusionScopeJSON)\n"
             + "keywords=" + keywords.sorted().joined(separator: " ")
             + "\n" + inputs.sorted().joined(separator: "\n")
             + "\n" + chatScope

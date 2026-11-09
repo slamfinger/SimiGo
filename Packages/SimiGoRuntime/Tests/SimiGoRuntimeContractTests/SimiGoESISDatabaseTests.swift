@@ -1185,6 +1185,111 @@ extension SimiGoESISDatabaseTests {
             "a changed oversized source must not create a partial retrieval settlement")
     }
 
+    func testIndexOnlyOversizedTailIsSearchableWithoutReadingWholeSource() throws {
+        let databaseURL = tempURL("index-only-tail")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-index-only-tail-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        let source = Data(repeating: 0x78, count: 2 * 1024 * 1024)
+            + Data("\nneedle in tail\n".utf8)
+        try source.write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        let report = try db.settleWorkRootContents(
+            rootID: "index-only-tail-root", rootURL: rootURL,
+            fileByteCap: 128, tailBytes: 256, maxTotalBytesRead: 512,
+            carryText: false)
+        XCTAssertTrue(report.indexOnly)
+        XCTAssertEqual(report.entityBytesRead, 256)
+        XCTAssertEqual(report.bytesAddressed, 0)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+
+        let hits = try db.searchSettledContent(
+            query: "needle", rootID: "index-only-tail-root", limit: 10)
+        XCTAssertEqual(hits.count, 1)
+        XCTAssertEqual(hits.first?.lineNo, 1)
+
+        let demand = try db.executeInformationDemand(
+            query: "needle", rootID: "index-only-tail-root", limit: 10)
+        XCTAssertEqual(demand.hits.count, 1)
+        XCTAssertFalse(demand.reused)
+        let demandAgain = try db.executeInformationDemand(
+            query: "needle", rootID: "index-only-tail-root", limit: 10)
+        XCTAssertTrue(demandAgain.reused)
+        XCTAssertEqual(demandAgain.hits, demand.hits)
+    }
+
+    func testCarriedOversizedTailDigestIsVerifiedAndSearchable() throws {
+        let databaseURL = tempURL("carried-tail")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-carried-tail-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        let source = Data(repeating: 0x78, count: 2 * 1024 * 1024)
+            + Data("\nneedle in tail\n".utf8)
+        try source.write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        let report = try db.settleWorkRootContents(
+            rootID: "carried-tail-root", rootURL: rootURL,
+            fileByteCap: 128, tailBytes: 256, maxTotalBytesRead: 512,
+            carryText: true)
+        XCTAssertFalse(report.indexOnly)
+        XCTAssertEqual(report.entityBytesRead, 256)
+        XCTAssertGreaterThan(report.bytesAddressed, 0)
+        XCTAssertEqual(
+            try db.carriedFileContent(rootID: "carried-tail-root", relativePath: "source.txt")?.content,
+            Data("needle in tail\n".utf8))
+
+        let hits = try db.searchSettledContent(
+            query: "needle", rootID: "carried-tail-root", limit: 10)
+        XCTAssertEqual(hits.count, 1)
+        XCTAssertEqual(hits.first?.lineNo, 1)
+    }
+
+    func testRootSettlementRejectsTailWindowOverRemainingReadBudgetAtomically() throws {
+        let databaseURL = tempURL("tail-budget")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-tail-budget-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let firstURL = rootURL.appendingPathComponent("a.txt")
+        try Data(repeating: 0x78, count: 2 * 1024 * 1024).write(to: firstURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try SimiGoESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "tail-budget-root", rootURL: rootURL,
+            fileByteCap: 128, tailBytes: 128, maxTotalBytesRead: 128,
+            carryText: false)
+        let baseline = try db.listExternalFiles(rootID: "tail-budget-root")
+        XCTAssertEqual(baseline.map(\.relativePath), ["a.txt"])
+
+        try Data(repeating: 0x79, count: 2 * 1024 * 1024)
+            .write(to: rootURL.appendingPathComponent("b.txt"))
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "tail-budget-root", rootURL: rootURL,
+            fileByteCap: 128, tailBytes: 256, maxTotalBytesRead: 128,
+            carryText: false)) { error in
+                XCTAssertTrue(
+                    String(describing: error).contains("maxTotalBytesRead exceeded (0)"),
+                    "the tail window must be refused before reading: \(error)")
+            }
+        XCTAssertEqual(try db.listExternalFiles(rootID: "tail-budget-root"), baseline)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+    }
+
     func testRootSettlementAbortsWhenNestedDirectoryCannotBeEnumerated() throws {
         let databaseURL = tempURL("enumeration-error")
         let rootURL = FileManager.default.temporaryDirectory

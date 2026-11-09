@@ -133,6 +133,58 @@ final class SimiGoInformationLoopTests: XCTestCase {
         XCTAssertEqual(NativeSHA256.hexDigest(payload), first.resultSHA256)
     }
 
+    func testDemandCacheIdentityIncludesEffectiveLimitAndExplicitRootScope() throws {
+        let (url, db) = try open("demand-cache-limit-scope")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("needle alpha", to: root, name: "a.md")
+        try write("needle beta", to: root, name: "b.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "limit-root", rootURL: root, carryText: false)
+
+        let loop = SimiGoInformationLoop(database: db)
+        let one = try loop.resolve(.init(
+            sessionID: "s-limit", requestIdentity: "request-limit",
+            query: "needle", rootIDs: ["limit-root"],
+            includeChat: false, limit: 1))
+        XCTAssertEqual(one.hits.count, 1)
+        XCTAssertFalse(one.reused)
+
+        let two = try loop.resolve(.init(
+            sessionID: "s-limit", requestIdentity: "request-limit",
+            query: "needle", rootIDs: ["limit-root"],
+            includeChat: false, limit: 2))
+        XCTAssertEqual(two.hits.count, 2)
+        XCTAssertNotEqual(two.demandID, one.demandID)
+        XCTAssertFalse(two.reused)
+
+        let twoAgain = try loop.resolve(.init(
+            sessionID: "s-limit", requestIdentity: "request-limit",
+            query: "needle", rootIDs: ["limit-root"],
+            includeChat: false, limit: 2))
+        XCTAssertTrue(twoAgain.reused)
+        XCTAssertEqual(twoAgain.hits, two.hits)
+
+        // Explicit root scopes with no current file rows still differ. The
+        // current source inventory cannot erase the scope the caller named.
+        let emptyA = try loop.resolve(.init(
+            sessionID: "s-scope", requestIdentity: "request-scope",
+            query: "needle", rootIDs: ["empty-a"],
+            includeChat: false, limit: 1))
+        let emptyB = try loop.resolve(.init(
+            sessionID: "s-scope", requestIdentity: "request-scope",
+            query: "needle", rootIDs: ["empty-b"],
+            includeChat: false, limit: 1))
+        XCTAssertTrue(emptyA.hits.isEmpty)
+        XCTAssertTrue(emptyB.hits.isEmpty)
+        XCTAssertFalse(emptyA.reused)
+        XCTAssertFalse(emptyB.reused)
+        XCTAssertNotEqual(emptyA.demandID, emptyB.demandID)
+    }
+
     // MARK: - P1/P2: retrieval boundary (measured 2026-10-30)
 
     // MARK: - Chat turn terminal standing
