@@ -131,9 +131,9 @@ final class QoderTranscriptTailerTests: XCTestCase {
         var fingerprintCalls = 0
         tailer.trailingFingerprintOverride = { path, offset, _ in
             fingerprintCalls += 1
-            // The first call fingerprints the baseline at EOF. The second is
-            // the post-parse verification and deliberately fails.
-            if fingerprintCalls == 2 { return nil }
+            // The only call in a first-seen read is the post-parse
+            // verification; fail it after the accumulator has ingested lines.
+            if fingerprintCalls == 1 { return nil }
             guard let bytes = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
                 return nil
             }
@@ -143,7 +143,7 @@ final class QoderTranscriptTailerTests: XCTestCase {
         }
 
         let failed = poll(tailer)
-        XCTAssertEqual(fingerprintCalls, 2)
+        XCTAssertEqual(fingerprintCalls, 1)
         XCTAssertTrue(failed.report.errors.contains {
             $0.contains("cannot fingerprint") && $0.contains("after read")
         })
