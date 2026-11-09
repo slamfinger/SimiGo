@@ -100,6 +100,40 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertNotNil(try store.load())
     }
 
+    func testCursorStoreRejectsHardlinkAndAtomicSaveLeavesExternalTargetUntouched() throws {
+        let stateDirectory = root.appendingPathComponent("hardlinked-cursor-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        let external = root.appendingPathComponent("external-hardlinked-cursor.json")
+        let linkedPath = "/tmp/qoder-hardlink-source.jsonl"
+        let linkedCursor = QoderFileCursor(
+            path: linkedPath, projectID: "p", sessionID: "s", isSubagent: false,
+            inode: 1, offset: 10, segmentLines: 1,
+            fingerprint: "abc", updatedAt: Date(timeIntervalSince1970: 1))
+        let originalState = QoderCursorState(
+            initializedAt: Date(timeIntervalSince1970: 1),
+            cursors: [linkedPath: linkedCursor])
+        let original = try JSONEncoder().encode(originalState)
+        try original.write(to: external)
+
+        let cursorURL = stateDirectory.appendingPathComponent("cursor.json")
+        try FileManager.default.linkItem(at: external, to: cursorURL)
+        let store = QoderFileCursorStore(directoryURL: stateDirectory)
+        XCTAssertThrowsError(try store.load()) { error in
+            XCTAssertTrue(
+                String(describing: error).contains("link count one"),
+                "cursor loading must reject hardlinked state: \(error)")
+        }
+        XCTAssertEqual(try Data(contentsOf: external), original)
+
+        let replacement = QoderCursorState(initializedAt: Date(timeIntervalSince1970: 2))
+        try store.save(replacement)
+        XCTAssertEqual(try store.load(), replacement)
+        XCTAssertEqual(
+            try Data(contentsOf: external), original,
+            "atomic replacement and chmod must not modify the hardlink target")
+    }
+
     func testFirstPollBaselinesExistingFileAtEnd() throws {
         let file = mainFile()
         try Fixture.writeLines(Fixture.turnLines(), to: file)
@@ -643,6 +677,52 @@ final class QoderTranscriptTailerTests: XCTestCase {
                 return XCTFail("expected corruptLegacyCursor, got \(error)")
             }
         }
+    }
+
+    func testCursorStoreBoundsStateBytesAndTrackedCursorCount() throws {
+        let directory = root.appendingPathComponent("bounded-cursor-state", isDirectory: true)
+        let store = QoderFileCursorStore(directoryURL: directory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        let oversized = Data(
+            repeating: 0x78, count: QoderFileCursorStore.maximumCursorStateBytes + 1)
+        try oversized.write(to: store.fileURL)
+        XCTAssertThrowsError(try store.load()) { error in
+            XCTAssertTrue(
+                String(describing: error).contains("maximum cursor-state byte limit"),
+                "oversized durable state must fail before JSON decoding: \(error)")
+        }
+        try FileManager.default.removeItem(at: store.fileURL)
+
+        var cursors: [String: QoderFileCursor] = [:]
+        for index in 0...QoderFileCursorStore.maximumCursorCount {
+            let path = "/tmp/qoder-cursor-\(index).jsonl"
+            cursors[path] = QoderFileCursor(
+                path: path, projectID: "p", sessionID: "s", isSubagent: false,
+                inode: 1, offset: 0, segmentLines: 0,
+                fingerprint: "empty", updatedAt: Date(timeIntervalSince1970: 0))
+        }
+        XCTAssertThrowsError(try store.save(QoderCursorState(
+            initializedAt: Date(timeIntervalSince1970: 0), cursors: cursors))) { error in
+                XCTAssertTrue(
+                    String(describing: error).contains("maximum tracked cursor count"),
+                    "state writes must reject excess cursor entries before encoding: \(error)")
+            }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.fileURL.path))
+
+        let oversizedPath = String(repeating: "x", count: 4_500_000)
+        let pathCursor = QoderFileCursor(
+            path: oversizedPath, projectID: "p", sessionID: "s", isSubagent: false,
+            inode: 1, offset: 0, segmentLines: 0,
+            fingerprint: "empty", updatedAt: Date(timeIntervalSince1970: 0))
+        XCTAssertThrowsError(try store.save(QoderCursorState(
+            initializedAt: Date(timeIntervalSince1970: 0),
+            cursors: [oversizedPath: pathCursor]))) { error in
+                XCTAssertTrue(
+                    String(describing: error).contains("maximum cursor-state byte limit"),
+                    "encoded state must stay within its durable byte cap: \(error)")
+            }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.fileURL.path))
     }
 
     func testInvalidResumeOffsetFailsClosedWithoutAdvancingOrOrphaning() throws {
