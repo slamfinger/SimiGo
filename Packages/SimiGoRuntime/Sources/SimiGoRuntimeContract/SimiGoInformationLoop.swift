@@ -206,20 +206,29 @@ public struct SimiGoInformationLoop {
         // a changed scope produce a different demand instead of a silent reuse.
         var chatScope = "chat-scope=off"
         if demand.includeChat {
-            let chatRows = try database.chatIndexRows(sessionIDs: demand.chatSessionIDs)
             // Excluded rows are outside this demand input basis, not merely
             // outside rendered snippets. An answer’s own question/answer rows
             // must not make its exact repeat look stale.
-            let scopedChatRows = chatRows.filter {
-                !demand.excludeItemIDs.contains($0.itemID)
-            }
+            //
+            // The scope is measured on identity and digest alone: it is the
+            // demand’s identity field, so it must keep seeing every committed
+            // line while the chat bytes stay in SQLite.
+            let scopedChatRows = try database.chatScopeRows(sessionIDs: demand.chatSessionIDs)
+                .filter { !demand.excludeItemIDs.contains($0.itemID) }
             let scopeSessions = demand.chatSessionIDs.isEmpty
                 ? "all" : demand.chatSessionIDs.sorted().joined(separator: ",")
             let tail = scopedChatRows.max { $0.messageID < $1.messageID }
             chatScope = "chat-scope=sessions=\(scopeSessions)"
                 + ";count=\(scopedChatRows.count);max=\(tail?.messageID ?? 0)"
                 + ";last=\(tail?.contentSHA256 ?? "-")"
-            for row in scopedChatRows {                guard NativeSHA256.hexDigest(Data(row.content.utf8)) == row.contentSHA256
+            // Candidates, not filters: a row that mentions no term is dropped in
+            // C before its bytes are ever materialized. Every row kept still has
+            // to be sliced by `citationSnippet` below.
+            for row in try database.chatIndexRows(
+                sessionIDs: demand.chatSessionIDs, matchingAny: keywords)
+            {
+                guard !demand.excludeItemIDs.contains(row.itemID) else { continue }
+                guard NativeSHA256.hexDigest(Data(row.content.utf8)) == row.contentSHA256
                 else { continue }
                 for (idx, line) in row.content
                     .split(separator: "\n", omittingEmptySubsequences: false).enumerated()

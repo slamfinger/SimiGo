@@ -4872,11 +4872,33 @@ try bind(externalStmt, 1, rootID)
         public var itemID: String { "chat:\(sessionID)/\(messageID)" }
     }
 
+    /// Session scoping shared by every chat projection below. Ids are inlined
+    /// as quoted literals, matching the rest of this file.
+    private func sessionClause(_ sessionIDs: [String]?) -> String {
+        guard let sessionIDs, !sessionIDs.isEmpty else { return "" }
+        let quoted = sessionIDs.map {
+            "'" + $0.replacingOccurrences(of: "'", with: "''") + "'"
+        }
+        return " AND c.session_id IN (\(quoted.joined(separator: ",")))"
+    }
+
     /// Eligible chat messages as demand inputs, with their settled digest.
     /// Eligibility is the turn's own completion (`commitChatTurn`), not mere
     /// presence in the live table: another request's in-flight user text and a
     /// cancelled turn's input are conversation lines without semantic standing.
-    func chatIndexRows(sessionIDs: [String]?) throws -> [ChatIndexRow] {
+    ///
+    /// `matchingAny` is a prefilter, never a filter: it drops rows that cannot
+    /// mention any term, so every row kept here still has to survive the
+    /// per-line `citationSnippet` byte scan. SQLite's default LIKE folds
+    /// exactly the ASCII bytes `foldedASCII` folds and leaves every other byte
+    /// alone, so the dropped set is provably empty of citations. It exists
+    /// because materializing the space's 39.9 MB (5,720 rows over 806k lines)
+    /// into Swift strings to find a few hundred hits costs 0.85 s, and the same
+    /// predicate in C costs 0.02 s — measured 2026-11-09, 6 keywords,
+    /// set-equal to the byte scan on the live space.
+    func chatIndexRows(
+        sessionIDs: [String]?, matchingAny: [String]? = nil
+    ) throws -> [ChatIndexRow] {
         var sql = """
         SELECT c.session_id, c.id, c.role,
                COALESCE(CAST(o.content AS TEXT), c.content),
@@ -4885,15 +4907,24 @@ try bind(externalStmt, 1, rootID)
         LEFT JOIN is_objects o ON o.object_id=c.content_object_id
         WHERE c.turn_state='committed'
         """
-        if let sessionIDs, !sessionIDs.isEmpty {
-            let quoted = sessionIDs.map {
-                "'" + $0.replacingOccurrences(of: "'", with: "''") + "'"
+        sql += sessionClause(sessionIDs)
+        let terms = (matchingAny ?? []).filter { !$0.isEmpty }
+        if !terms.isEmpty {
+            let alternatives = terms.map { _ in
+                "CAST(COALESCE(o.content, c.content) AS TEXT) LIKE ? ESCAPE '\\'"
             }
-            sql += " AND c.session_id IN (\(quoted.joined(separator: ",")))"
+            sql += " AND (" + alternatives.joined(separator: " OR ") + ")"
         }
         sql += " ORDER BY c.session_id, c.id;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
+        for (idx, term) in terms.enumerated() {
+            let escaped = term
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "%", with: "\\%")
+                .replacingOccurrences(of: "_", with: "\\_")
+            try bind(stmt, Int32(idx + 1), "%\(escaped)%")
+        }
         var rows: [ChatIndexRow] = []
         while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String? {
@@ -4903,6 +4934,38 @@ try bind(externalStmt, 1, rootID)
                 sessionID: text(0) ?? "", messageID: sqlite3_column_int64(stmt, 1),
                 role: text(2) ?? "", content: text(3) ?? "",
                 contentSHA256: text(4) ?? "", createdAt: text(5) ?? ""))
+        }
+        return rows
+    }
+
+    public struct ChatScopeRow: Equatable, Sendable {
+        public let sessionID: String
+        public let messageID: Int64
+        public let contentSHA256: String
+        public var itemID: String { "chat:\(sessionID)/\(messageID)" }
+    }
+
+    /// The same rows `chatIndexRows` selects, reduced to identity and digest.
+    /// A demand fingerprint built from these is byte-identical to one built
+    /// from the full rows — same WHERE, same ORDER BY, same digest column — so
+    /// scoping still sees every committed line while the chat bytes stay in
+    /// SQLite.
+    func chatScopeRows(sessionIDs: [String]?) throws -> [ChatScopeRow] {
+        var sql = """
+        SELECT c.session_id, c.id, c.content_sha256
+        FROM chat_messages c
+        WHERE c.turn_state='committed'
+        """
+        sql += sessionClause(sessionIDs)
+        sql += " ORDER BY c.session_id, c.id;"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [ChatScopeRow] = []
+        while try stepRowOrDone(stmt) {
+            rows.append(ChatScopeRow(
+                sessionID: sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+                messageID: sqlite3_column_int64(stmt, 1),
+                contentSHA256: sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""))
         }
         return rows
     }

@@ -55,6 +55,45 @@ final class SimiGoInformationLoopTests: XCTestCase {
 
     // MARK: - Index without entity copies
 
+    /// The chat keyword prefilter is a necessary condition, never a filter: a
+    /// row it drops could not have produced a citation, and the scope
+    /// projection must keep seeing every committed line digest for digest.
+    func testChatPrefilterDropsOnlyRowsThatCannotBeCited() throws {
+        let (url, db) = try open("chat-prefilter")
+        defer { cleanup(url) }
+        let turns: [(String, String)] = [
+            ("MLX prefill 度量", "MLX 预填 1731 token"),
+            ("内存压力", "黄色持续 28 s"),
+            ("50% 命中率", "a_b 变量名"),
+            ("nothing here", "also nothing"),
+        ]
+        for (index, turn) in turns.enumerated() {
+            let stamp = Date(timeIntervalSince1970: Double(index))
+            let userID = try db.appendChatMessage(
+                sessionID: "s", role: "user", content: turn.0,
+                model: nil, createdAt: stamp)
+            try db.commitChatTurn(
+                sessionID: "s", userMessageID: userID, assistantText: turn.1,
+                model: nil, createdAt: stamp)
+        }
+        let all = try db.chatIndexRows(sessionIDs: ["s"])
+        XCTAssertEqual(all.count, 8)
+
+        let scope = try db.chatScopeRows(sessionIDs: ["s"])
+        XCTAssertEqual(scope.map(\.messageID), all.map(\.messageID))
+        XCTAssertEqual(scope.map(\.contentSHA256), all.map(\.contentSHA256))
+
+        // Case, CJK and LIKE metacharacters: the prefilter keeps exactly the
+        // rows a case-insensitive substring scan would keep.
+        for term in ["mlx", "MLX", "预填", "50%", "a_b", "zzz"] {
+            let kept = try db.chatIndexRows(sessionIDs: ["s"], matchingAny: [term])
+            let expected = all.filter {
+                $0.content.lowercased().contains(term.lowercased())
+            }
+            XCTAssertEqual(kept.map(\.itemID), expected.map(\.itemID), "term \(term)")
+        }
+    }
+
     func testIndexOnlySettlementReadsVerifiedBytesFromLocator() throws {
         let (url, db) = try open("index-only")
         let root = try makeWorkRoot()
