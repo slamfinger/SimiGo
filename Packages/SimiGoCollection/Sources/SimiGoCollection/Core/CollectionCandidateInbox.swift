@@ -192,7 +192,7 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
                 try insert.reset()
                 try insert.bind(text: row.key, at: 1)
                 try insert.bind(text: row.kind, at: 2)
-                insert.bind(double: recordedAt, at: 3)
+                try insert.bind(double: recordedAt, at: 3)
                 try insert.bind(text: row.digest, at: 4)
                 try insert.bind(blob: row.payload, at: 5)
                 _ = try insert.step()
@@ -242,7 +242,7 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
             SELECT seq, key, kind, recorded_at, payload_digest, payload FROM candidates
             WHERE delivered_at IS NULL ORDER BY seq LIMIT ?
             """)
-        statement.bind(int64: Int64(max(1, limit)), at: 1)
+        try statement.bind(int64: Int64(max(1, limit)), at: 1)
         var candidates: [CollectionCandidate<Event>] = []
         while try statement.step() {
             guard let key = statement.text(at: 1),
@@ -294,7 +294,7 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
                 """)
             for key in keys {
                 try update.reset()
-                update.bind(double: deliveredAt, at: 1)
+                try update.bind(double: deliveredAt, at: 1)
                 try update.bind(text: key, at: 2)
                 _ = try update.step()
             }
@@ -521,7 +521,7 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
             for row in rows {
                 try update.reset()
                 try update.bind(text: CollectionDigest.sha256Hex(row.payload), at: 1)
-                update.bind(int64: row.seq, at: 2)
+                try update.bind(int64: row.seq, at: 2)
                 _ = try update.step()
             }
             try connection.execute("PRAGMA user_version = \(Self.schemaVersion)")
@@ -690,8 +690,13 @@ final class CollectionSQLiteStatement {
     }
 
     func reset() throws {
-        sqlite3_reset(handle)
-        sqlite3_clear_bindings(handle)
+        // Reset always runs before clearing bindings, even when it reports the
+        // previous step error. Surface both return codes instead of allowing a
+        // failed statement to be silently reused.
+        let resetCode = sqlite3_reset(handle)
+        let clearCode = sqlite3_clear_bindings(handle)
+        try check(resetCode)
+        try check(clearCode)
     }
 
     func bind(text: String, at index: Int32) throws {
@@ -712,12 +717,12 @@ final class CollectionSQLiteStatement {
         try check(code)
     }
 
-    func bind(double: Double, at index: Int32) {
-        sqlite3_bind_double(handle, index, double)
+    func bind(double: Double, at index: Int32) throws {
+        try check(sqlite3_bind_double(handle, index, double))
     }
 
-    func bind(int64: Int64, at index: Int32) {
-        sqlite3_bind_int64(handle, index, int64)
+    func bind(int64: Int64, at index: Int32) throws {
+        try check(sqlite3_bind_int64(handle, index, int64))
     }
 
     func step() throws -> Bool {
