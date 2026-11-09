@@ -671,7 +671,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
                 "INSERT INTO candidates(key, kind, recorded_at, payload) VALUES (?, ?, ?, ?)")
             try insertCandidate.bind(text: turn.identity.operationKey, at: 1)
             try insertCandidate.bind(text: QoderCandidateKind.turn.rawValue, at: 2)
-            insertCandidate.bind(double: 1_700_000_001, at: 3)
+            try insertCandidate.bind(double: 1_700_000_001, at: 3)
             try insertCandidate.bind(blob: eventPayload, at: 4)
             _ = try insertCandidate.step()
             try connection.execute("PRAGMA user_version = 1")
@@ -722,7 +722,7 @@ final class QoderCollectionRunnerTests: XCTestCase {
             let update = try connection.prepare(
                 "UPDATE candidates SET payload = ? WHERE seq = ?")
             try update.bind(blob: payload, at: 1)
-            update.bind(int64: sequence, at: 2)
+            try update.bind(int64: sequence, at: 2)
             _ = try update.step()
         }
 
