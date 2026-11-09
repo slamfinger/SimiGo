@@ -154,6 +154,46 @@ final class QoderTranscriptTailerTests: XCTestCase {
             cursor(tailer)?.offset, size)
     }
 
+    func testPostReadFingerprintFailureDiscardsCandidatesAndReplaysFromCursor() throws {
+        let file = mainFile()
+        try Fixture.writeLines(
+            Fixture.turnLines(prompt: "first prompt", answer: "first answer"),
+            to: file)
+
+        let tailer = QoderTranscriptTailer(
+            scanRoot: root, now: Date(), baselinePolicy: .readExisting)
+        var fingerprintCalls = 0
+        tailer.trailingFingerprintOverride = { path, offset, _ in
+            fingerprintCalls += 1
+            // The only call in a first-seen read is the post-parse
+            // verification; fail it after the accumulator has ingested lines.
+            if fingerprintCalls == 1 { return nil }
+            guard let bytes = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
+                return nil
+            }
+            let end = min(Int(offset), bytes.count)
+            let start = max(0, end - 256)
+            return QoderDigest.sha256Hex(bytes.subdata(in: start..<end))
+        }
+
+        let failed = poll(tailer)
+        XCTAssertEqual(fingerprintCalls, 1)
+        XCTAssertTrue(failed.report.errors.contains {
+            $0.contains("cannot fingerprint") && $0.contains("after read")
+        })
+        XCTAssertEqual(failed.events.count, 1, "only the baseline event is deliverable")
+        XCTAssertEqual(Fixture.baselines(failed.events).first?.reason, .existingFileFromStart)
+        XCTAssertTrue(Fixture.turns(failed.events).isEmpty)
+        XCTAssertEqual(cursor(tailer)?.offset, 0, "failed verification must not advance the durable cursor")
+
+        tailer.trailingFingerprintOverride = nil
+        let replayed = poll(tailer)
+        XCTAssertEqual(Fixture.turns(replayed.events).count, 1)
+        XCTAssertEqual(Fixture.turns(replayed.events).first?.promptText, "first prompt")
+        XCTAssertEqual(Fixture.turns(replayed.events).first?.answerText, "first answer")
+        XCTAssertEqual(cursor(tailer)?.offset, Int64(try Data(contentsOf: file).count))
+    }
+
     /// 采集桥语义：`readExisting` 把启用前就存在的会话从头读进来，而不是
     /// 在 EOF 立一个空基线。默认策略的对照在上面那条测试里。
     func testReadExistingPolicyBackfillsExistingFileFromStart() throws {

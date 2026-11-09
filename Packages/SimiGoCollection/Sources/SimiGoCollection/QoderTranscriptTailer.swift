@@ -666,6 +666,10 @@ public final class QoderTranscriptTailer {
     private var state: QoderCursorState
     private var accumulators: [String: QoderTurnAccumulator] = [:]
 
+    /// Deterministic post-read fingerprint fault injection for package tests.
+    /// Production callers leave this nil and use descriptor-backed reads.
+    var trailingFingerprintOverride: ((String, Int64, UInt64) -> String?)?
+
     public init(
         scanRoot: URL,
         state: QoderCursorState? = nil,
@@ -1009,6 +1013,10 @@ public final class QoderTranscriptTailer {
         let content = data[data.startIndex..<lastNewline]
         let consumed = data.distance(from: data.startIndex, to: lastNewline) + 1
         let windowStart = working.offset
+        // Preserve only events that predate this read (notably a first-seen
+        // baseline). Read-derived candidates are provisional until the source
+        // path still resolves to the pinned inode after parsing.
+        let readDerivedEventStart = events.count
 
         var lineCount: Int64 = 0
         var start = content.startIndex
@@ -1061,6 +1069,14 @@ public final class QoderTranscriptTailer {
             path: file.path, offset: newOffset, expectedInode: file.inode)
         else {
             report.errors.append("cannot fingerprint \(file.path) after read")
+            if events.count > readDerivedEventStart {
+                events.removeSubrange(readDerivedEventStart..<events.count)
+            }
+            // Parsing may have mutated the open-turn accumulator before the
+            // final path/inode check. Discard it so the next poll rebuilds from
+            // the durable replay offset instead of delivering or duplicating
+            // candidates from an identity that no longer verifies.
+            accumulators.removeValue(forKey: file.path)
             return false
         }
         working.offset = newOffset
@@ -1193,6 +1209,9 @@ public final class QoderTranscriptTailer {
     private func trailingFingerprint(
         path: String, offset: Int64, expectedInode: UInt64
     ) -> String? {
+        if let trailingFingerprintOverride {
+            return trailingFingerprintOverride(path, offset, expectedInode)
+        }
         guard offset >= 0 else { return nil }
         if offset == 0 { return QoderDigest.sha256Hex(Data()) }
         let window: Int64 = 256
