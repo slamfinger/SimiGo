@@ -1400,4 +1400,161 @@ final class SimiGoInformationLoopTests: XCTestCase {
         XCTAssertFalse(terms.contains("is"), "terms: \(terms)")
         XCTAssertFalse(terms.contains("es"), "terms: \(terms)")
     }
+
+    // MARK: - The retrieval commit is one atomic claim
+
+    /// A source that moves between the read and the write refuses the whole
+    /// retrieval. The binding cannot be written afterwards: the invalidation
+    /// pass that already ran would never see it, and the stale answer would be
+    /// advertised as valid permanently.
+    func testRetrievalRefusesSourceThatMovedBeforeTheCommit() throws {
+        let (url, dbRead) = try open("atomic-refusal")
+        let root = try makeWorkRoot()
+        // A second connection to the same store: the interleaving under test is
+        // between two writers, not between two calls on one handle.
+        let dbWrite = try SimiGoESISDatabase(url: url)
+        defer {
+            dbRead.close(); dbWrite.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("omega revision one", to: root, name: "a.md")
+        try dbRead.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let readDigest = try XCTUnwrap(
+            try dbRead.settledFileRows(rootID: "work").first?.digest)
+
+        try write("omega revision two", to: root, name: "a.md")
+        try dbWrite.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        XCTAssertNotEqual(
+            try dbRead.settledFileRows(rootID: "work").first?.digest, readDigest,
+            "the second connection must have committed a new revision")
+
+        let demandID = "demand-atomic-refusal"
+        let write = SimiGoESISDatabase.InformationRetrievalWrite(
+            demandID: demandID, stateID: nil, sessionID: nil,
+            requestIdentity: "refusal", query: "omega",
+            rootIDs: [], includeChat: false, inputDigest: demandID,
+            payload: Data("{}".utf8), hitCount: 1, itemIDs: ["file:work/a.md"],
+            inputs: [],
+            sourceBindings: [.init(
+                rootID: "work", relativePath: "a.md",
+                expectedDigest: readDigest)])
+        XCTAssertThrowsError(try dbRead.recordInformationRetrieval(write)) { error in
+            guard case .sourceRevisionChanged(
+                let rootID, let relativePath, let expected, _)
+                = error as? SimiGoESISDatabase.InformationDemandError
+            else { return XCTFail("unexpected error: \(error)") }
+            XCTAssertEqual(rootID, "work")
+            XCTAssertEqual(relativePath, "a.md")
+            XCTAssertEqual(expected, readDigest)
+        }
+        // Refused means rolled back, not partly recorded.
+        XCTAssertEqual(try rawText(url, """
+        SELECT COUNT(*) FROM settlements WHERE settlement_id='is-retrieval:\(demandID)';
+        """), "0")
+        XCTAssertEqual(try rawText(url, """
+        SELECT COUNT(*) FROM settlement_bindings WHERE settlement_id='is-retrieval:\(demandID)';
+        """), "0")
+        XCTAssertEqual(try rawText(url, """
+        SELECT COUNT(*) FROM information_demands WHERE demand_id='\(demandID)';
+        """), "0")
+    }
+
+    /// The other order: the binding commits first, then the new revision lands
+    /// on a different connection. The invalidation closure has to reach the
+    /// result written by the first connection, and the demand-side row must
+    /// flip with it.
+    func testBindingCommittedFirstIsInvalidatedByAnotherConnection() throws {
+        let (url, dbRead) = try open("atomic-invalidate")
+        let root = try makeWorkRoot()
+        let dbWrite = try SimiGoESISDatabase(url: url)
+        defer {
+            dbRead.close(); dbWrite.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("omega appears here", to: root, name: "a.md")
+        try dbRead.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+
+        let loop = SimiGoInformationLoop(database: dbRead)
+        let resolution = try loop.resolve(.init(
+            requestIdentity: "binding-first", query: "omega", includeChat: false))
+        XCTAssertEqual(resolution.hits.map(\.itemID), ["file:work/a.md"])
+        XCTAssertNotNil(try dbRead.informationRetrievalPayload(demandID: resolution.demandID))
+
+        try write("omega appears here, revised", to: root, name: "a.md")
+        let report = try dbWrite.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertNil(
+            try dbRead.informationRetrievalPayload(demandID: resolution.demandID),
+            "the first connection's result must not survive the second's commit")
+        XCTAssertEqual(try rawText(url, """
+        SELECT status FROM retrieval_settlements
+        WHERE bridged_settlement_id='\(resolution.retrievalSettlementID)';
+        """), "invalidated")
+    }
+
+    /// Resolves and source updates racing on two connections. After a final
+    /// revision, no retrieval that cited the file may still be valid — whatever
+    /// the interleaving was, the outcome is the same.
+    func testConcurrentResolveAndSourceUpdateLeavesNoStaleResultValid() throws {
+        let (url, dbRead) = try open("atomic-race")
+        let root = try makeWorkRoot()
+        let dbWrite = try SimiGoESISDatabase(url: url)
+        defer {
+            dbRead.close(); dbWrite.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("omega revision 0", to: root, name: "a.md")
+        try dbRead.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+
+        let loop = SimiGoInformationLoop(database: dbRead)
+        let lock = NSLock()
+        var failures: [String] = []
+        func record(_ failure: String) {
+            lock.lock(); failures.append(failure); lock.unlock()
+        }
+        for round in 1...12 {
+            let group = DispatchGroup()
+            group.enter()
+            DispatchQueue.global().async {
+                defer { group.leave() }
+                do {
+                    _ = try loop.resolve(.init(
+                        requestIdentity: "race-\(round)", query: "omega",
+                        includeChat: false))
+                } catch {
+                    record("resolve \(round): \(error)")
+                }
+            }
+            group.enter()
+            DispatchQueue.global().async {
+                defer { group.leave() }
+                do {
+                    // Atomic replace: a reader sees the old or the new file,
+                    // never a truncated one.
+                    try Data("omega revision \(round)".utf8).write(
+                        to: root.appendingPathComponent("a.md"), options: .atomic)
+                    _ = try dbWrite.settleWorkRootContents(
+                        rootID: "work", rootURL: root, carryText: false)
+                } catch {
+                    record("settle \(round): \(error)")
+                }
+            }
+            group.wait()
+        }
+        XCTAssertTrue(failures.isEmpty, "concurrent rounds failed: \(failures)")
+
+        // One more revision after both lanes stopped: anything that cited the
+        // file before this point must have been invalidated by it.
+        try Data("omega final revision".utf8).write(
+            to: root.appendingPathComponent("a.md"), options: .atomic)
+        _ = try dbWrite.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+
+        XCTAssertEqual(try rawText(url, """
+        SELECT COUNT(*) FROM retrieval_settlements r
+        JOIN settlement_bindings b ON b.settlement_id=r.bridged_settlement_id
+        WHERE r.status='valid';
+        """), "0", "a retrieval that cited the changed file survived as valid")
+    }
 }

@@ -5184,6 +5184,12 @@ try bind(externalStmt, 1, rootID)
         case invalidTransition(demandID: String, from: String, to: String)
         case retrievalBindingMismatch(demandID: String, expected: String, actual: String)
         case retrievalSettlementUnavailable(String)
+        /// The source a retrieval read is no longer the source the index holds:
+        /// a root settlement committed between the read and this write. Nothing
+        /// from the stale read is persisted; the caller must resolve again
+        /// against the new revision.
+        case sourceRevisionChanged(rootID: String, relativePath: String,
+                                   expectedDigest: String, actualDigest: String?)
         case producerSettlementUnavailable(String)
         case advancementConflict(
             demandID: String, existingSettlementID: String, requestedSettlementID: String)
@@ -5530,6 +5536,24 @@ try bind(externalStmt, 1, rootID)
         }
     }
 
+    /// One physical source a retrieval actually read, with the digest that read
+    /// was verified against. The digest is what makes the binding a claim about
+    /// a *revision*: if the index has moved on by commit time, the claim is no
+    /// longer true and the whole retrieval is refused rather than recorded.
+    public struct SourceBinding: Sendable, Equatable {
+        public let rootID: String
+        public let relativePath: String
+        public let binding: String
+        public let expectedDigest: String
+        public init(rootID: String, relativePath: String, binding: String = "content",
+                    expectedDigest: String) {
+            self.rootID = rootID
+            self.relativePath = relativePath
+            self.binding = binding
+            self.expectedDigest = expectedDigest
+        }
+    }
+
     public struct InformationRetrievalWrite: Sendable {
         public let demandID: String
         public let stateID: String?
@@ -5546,6 +5570,17 @@ try bind(externalStmt, 1, rootID)
         public let hitCount: Int
         public let itemIDs: [String]
         public let inputs: [InformationInput]
+        /// Physical sources cited by this result. They are written inside the
+        /// same transaction as the settlement, and each one is re-verified
+        /// against `expectedDigest` first: a root settlement that committed
+        /// between the read and this write invalidates the read, and an
+        /// invalidation pass that ran in that gap would never see a binding
+        /// written afterwards.
+        public let sourceBindings: [SourceBinding]
+        /// Settlements cited by this result. Each is validated (own validity,
+        /// payload digest, upstream closure) inside the write transaction, so
+        /// the edge cannot be added after its dependency was invalidated.
+        public let citedSettlements: [String]
         public let evaluatedAt: Date
 
         public init(demandID: String, stateID: String?, sessionID: String?,
@@ -5553,6 +5588,8 @@ try bind(externalStmt, 1, rootID)
                     query: String, rootIDs: [String], includeChat: Bool,
                     inputDigest: String, payload: Data, hitCount: Int,
                     itemIDs: [String], inputs: [InformationInput],
+                    sourceBindings: [SourceBinding] = [],
+                    citedSettlements: [String] = [],
                     evaluatedAt: Date = Date()) {
             self.demandID = demandID; self.stateID = stateID
             self.sessionID = sessionID; self.requestIdentity = requestIdentity
@@ -5560,7 +5597,10 @@ try bind(externalStmt, 1, rootID)
             self.rootIDs = rootIDs; self.includeChat = includeChat
             self.inputDigest = inputDigest; self.payload = payload
             self.hitCount = hitCount; self.itemIDs = itemIDs
-            self.inputs = inputs; self.evaluatedAt = evaluatedAt
+            self.inputs = inputs
+            self.sourceBindings = sourceBindings
+            self.citedSettlements = citedSettlements
+            self.evaluatedAt = evaluatedAt
         }
     }
 
@@ -5708,10 +5748,101 @@ try bind(externalStmt, 1, rootID)
                     contentAddress: input.contentAddress,
                     reason: "demand-input")
             }
+            // Sources and cited settlements are part of the same atomic claim
+            // as the result itself. Writing them after COMMIT left a window in
+            // which the source update could invalidate the (empty) closure and
+            // then the bindings would land behind the invalidation, leaving a
+            // stale answer advertised as valid forever.
+            for binding in write.sourceBindings {
+                try insertVerifiedSourceBindingInTransaction(
+                    settlementID: settlementID, binding: binding)
+            }
+            for cited in write.citedSettlements {
+                try insertCitedSettlementEdgeInTransaction(
+                    fromSettlement: settlementID, toSettlement: cited)
+            }
         }
         return InformationRetrievalCommit(
             retrievalSettlementID: settlementID,
             resultSHA256: resultSHA, resultObjectID: resultObjectID)
+    }
+
+    /// Caller owns the transaction. Inserts one source binding only after the
+    /// indexed revision still matches the digest the retrieval actually read.
+    private func insertVerifiedSourceBindingInTransaction(
+        settlementID: String, binding: SourceBinding
+    ) throws {
+        let stmt = try prepare("""
+        SELECT e.file_id, COALESCE(e.status,'present'), c.content_sha256
+        FROM external_files e
+        LEFT JOIN file_contents c
+          ON c.root_id=e.root_id AND c.relative_path=e.relative_path
+        WHERE e.root_id=? AND e.relative_path=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, binding.rootID)
+        try bind(stmt, 2, binding.relativePath)
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql(
+                "recordInformationRetrieval: source file not indexed: "
+                    + "\(binding.rootID)/\(binding.relativePath)")
+        }
+        let fileID = sqlite3_column_int64(stmt, 0)
+        let status = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "present"
+        let digest = sqlite3_column_text(stmt, 2).map { String(cString: $0) }
+        // A vanished or re-indexed source is a moved revision, not a result to
+        // record: the retrieval described bytes that are no longer what this
+        // path holds, and no later invalidation can reach a binding that has
+        // not been written yet.
+        guard status != "missing", digest == binding.expectedDigest else {
+            throw InformationDemandError.sourceRevisionChanged(
+                rootID: binding.rootID, relativePath: binding.relativePath,
+                expectedDigest: binding.expectedDigest, actualDigest: digest)
+        }
+        try execBinding("""
+        INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
+        VALUES(?,?,'source',?,?);
+        """) { stmt in
+            try bind(stmt, 1, settlementID)
+            try bind(stmt, 2, binding.binding)
+            try bind(stmt, 3, binding.rootID)
+            try bind(stmt, 4, fileID)
+        }
+        if let address = try fileContentObject(
+            rootID: binding.rootID, relativePath: binding.relativePath)
+        {
+            _ = try appendDependencyInTransaction(
+                dependencyID: "settlement:\(settlementID) -> "
+                    + "file:\(binding.rootID)/\(binding.relativePath)",
+                contentAddress: address,
+                reason: "source-binding:\(binding.binding)")
+        }
+    }
+
+    /// Caller owns the transaction. Validates the cited settlement under the
+    /// same write lock that records the edge, so an upstream invalidation can
+    /// neither precede the check nor slip in before the edge exists.
+    private func insertCitedSettlementEdgeInTransaction(
+        fromSettlement: String, toSettlement: String, kind: String = "citation"
+    ) throws {
+        let address = try validatedSettlementDependencyObjectID(toSettlement)
+        try execBinding("""
+        INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
+        SELECT ?,?,?
+        WHERE NOT EXISTS (
+            SELECT 1 FROM dependency_edges
+            WHERE from_settlement=? AND to_settlement=? AND kind=?);
+        """) { stmt in
+            try bind(stmt, 1, fromSettlement)
+            try bind(stmt, 2, toSettlement)
+            try bind(stmt, 3, kind)
+            try bind(stmt, 4, fromSettlement)
+            try bind(stmt, 5, toSettlement)
+            try bind(stmt, 6, kind)
+        }
+        _ = try appendDependencyInTransaction(
+            dependencyID: "settlement:\(fromSettlement) -> settlement:\(toSettlement)",
+            contentAddress: address, reason: kind)
     }
 
     /// The verified result payload of a recorded demand, or nil when the demand

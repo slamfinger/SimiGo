@@ -129,7 +129,26 @@ public struct SimiGoInformationLoop {
 
     private static let resultSchema = "simigo.information-demand/v1"
 
+    /// Resolve a demand against the current information space.
+    ///
+    /// A source can move between the read and the settlement commit. When that
+    /// happens the database refuses the whole write (no result, no bindings),
+    /// because a binding written after the invalidation pass would never be
+    /// reached by it. The refusal is not repaired here by compensation: the
+    /// request is simply re-executed against the revision that is now there.
     public func resolve(_ demand: Demand) throws -> Resolution {
+        var attempt = 0
+        while true {
+            do {
+                return try resolveOnce(demand)
+            } catch let error as SimiGoESISDatabase.InformationDemandError {
+                guard case .sourceRevisionChanged = error, attempt < 2 else { throw error }
+                attempt += 1
+            }
+        }
+    }
+
+    private func resolveOnce(_ demand: Demand) throws -> Resolution {
         let query = demand.query.trimmingCharacters(in: .whitespacesAndNewlines)
         let limit = max(1, min(demand.limit, 200))
         guard !query.isEmpty else {
@@ -343,15 +362,6 @@ public struct SimiGoInformationLoop {
             schema: Self.resultSchema, query: query, inputDigest: demandID,
             hitCount: items.count, items: items, staleItemIDs: stale,
             includeChat: demand.includeChat, evaluatedAtUTC: evaluatedAt))
-        let commit = try database.recordInformationRetrieval(
-            .init(
-                demandID: demandID, stateID: demand.stateID,
-                sessionID: demand.sessionID, requestIdentity: requestIdentity,
-                query: query,
-                rootIDs: demand.rootIDs, includeChat: demand.includeChat,
-                inputDigest: demandID, payload: payload,
-                hitCount: items.count, itemIDs: items.map(\.itemID),
-                inputs: addresses))
 
         // Only a source that can change in place gets a binding. A demand
         // resolved from chat turns or from the collection bridge has nothing to
@@ -361,6 +371,7 @@ public struct SimiGoInformationLoop {
         // instead of a stale one. An information result and its settlement are
         // therefore independent of where they came from; identity is a separate
         // question, asked only where the artefact is model-specific.
+        var sourceBindings: [SimiGoESISDatabase.SourceBinding] = []
         var boundSources = Set<String>()
         for hit in items where hit.kind == "file" {
             guard let sourceRoot = hit.rootID, let sourcePath = hit.relativePath else {
@@ -371,16 +382,20 @@ public struct SimiGoInformationLoop {
                     "information-loop: file hit without a locator: \(hit.itemID)")
             }
             guard boundSources.insert("\(sourceRoot)/\(sourcePath)").inserted else { continue }
-            try database.linkSettlementToExternalFile(
-                settlementID: commit.retrievalSettlementID, binding: "content",
-                rootID: sourceRoot, relativePath: sourcePath)
+            // The digest the citation was verified against, not the digest the
+            // index holds at commit time: the write must prove the two are the
+            // same, and refuse the result when they are not.
+            sourceBindings.append(.init(
+                rootID: sourceRoot, relativePath: sourcePath,
+                binding: "content", expectedDigest: hit.sourceSHA256))
         }
 
         // A cited settlement is a dependency, not a source: it carries no bytes
         // to bind, but if the cited result stops being eligible then this answer
         // no longer follows from it. Without the edge a settlement-to-settlement
         // citation is invisible to the invalidation closure.
-        var citedSettlements = Set<String>()
+        var citedSettlements: [String] = []
+        var seenCitations = Set<String>()
         for hit in items where hit.kind == "settlement" {
             // `sourceSettlementID` is only set for derived consumptions; a plain
             // summary leaves it empty, and an empty string would otherwise stop
@@ -390,11 +405,26 @@ public struct SimiGoInformationLoop {
             let cited = (declared?.isEmpty == false)
                 ? declared!
                 : String(hit.itemID.dropFirst("settlement:".count))
-            guard !cited.isEmpty, citedSettlements.insert(cited).inserted else { continue }
-            try database.addDependency(
-                fromSettlement: commit.retrievalSettlementID,
-                toSettlement: cited, kind: "citation")
+            guard !cited.isEmpty, seenCitations.insert(cited).inserted else { continue }
+            citedSettlements.append(cited)
         }
+
+        // One transaction records the result, every source binding and every
+        // citation edge, re-verifying each source revision and each upstream
+        // settlement under the same write lock. Splitting these three writes
+        // left a window where a source update could invalidate an empty closure
+        // and the bindings would land behind it.
+        let commit = try database.recordInformationRetrieval(
+            .init(
+                demandID: demandID, stateID: demand.stateID,
+                sessionID: demand.sessionID, requestIdentity: requestIdentity,
+                query: query,
+                rootIDs: demand.rootIDs, includeChat: demand.includeChat,
+                inputDigest: demandID, payload: payload,
+                hitCount: items.count, itemIDs: items.map(\.itemID),
+                inputs: addresses,
+                sourceBindings: sourceBindings,
+                citedSettlements: citedSettlements))
 
         return Resolution(
             demandID: demandID, stateID: demand.stateID, reused: false,
