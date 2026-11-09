@@ -65,10 +65,17 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                 endpoint: .init(
                     baseURL: URL(string: "http://127.0.0.1:\(enginePort)")!,
                     model: alias))
+            // The checkpoint's content digest now decides the producer identity
+            // for the whole session, and every later admission, settlement and
+            // consumption resolves the same value. Resolve it here, off the
+            // cooperative pool: hashing is once per file stamp, but "once" is a
+            // multi-GB read and must not happen inside a request.
+            let seeds = await Task.detached(priority: .userInitiated) {
+                (ProducerIdentity.canonicalModelIdentity(fromPath: info.path),
+                 ProducerIdentity.identity(fromPath: info.path))
+            }.value
             let producer = InformationTurnProducer(
-                modelIdentity: ProducerIdentity.canonicalModelIdentity(
-                    fromPath: info.path),
-                identity: ProducerIdentity.identity(fromPath: info.path))
+                modelIdentity: seeds.0, identity: seeds.1)
             let node = await MainActor.run {
                 InferenceNodeConfiguration.shared.snapshot()
             }

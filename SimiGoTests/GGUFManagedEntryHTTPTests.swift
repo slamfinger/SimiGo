@@ -480,32 +480,53 @@ final class GGUFEngineClientTests: XCTestCase {
             "cancellation must not wait for the engine to finish")
     }
 
-    func testGGUFSnapshotIdentityUsesHFBlobNameAsContentAddress() throws {
+    /// A checkpoint's tokenizer identity is the digest of its bytes. The HF hub
+    /// names blobs by their own SHA-256, and that name is accepted only inside
+    /// the hub layout it describes — a bare 64-hex filename proves nothing.
+    func testGGUFTokenizerIdentityIsTheContentDigestNotTheFilename() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("GGUFIdentity-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
-        let blobName = String((0..<64).map { _ in "0123456789abcdef".randomElement()! })
-        let blob = root.appendingPathComponent(blobName)
-        try Data(repeating: 0xAB, count: 33).write(to: blob)
-        let addressed = ProducerIdentity.tokenizerIdentity(fromPath: blob.path)
+        let hub = root.appendingPathComponent("hub", isDirectory: true)
+        let blobs = hub.appendingPathComponent(
+            "models--org--demo/blobs", isDirectory: true)
+        try FileManager.default.createDirectory(at: blobs, withIntermediateDirectories: true)
+        let bytes = Data("gguf-blob-through-the-hub".utf8)
+        let blobName = SettlementAuthority.payloadDigest(bytes)
+        try bytes.write(to: blobs.appendingPathComponent(blobName))
+        let addressed = ProducerIdentity.tokenizerIdentity(
+            fromPath: blobs.appendingPathComponent(blobName).path)
         XCTAssertEqual(addressed.count, 1)
         XCTAssertEqual(addressed.first?["file"] as? String, blobName)
         XCTAssertEqual(
             addressed.first?["sha256"] as? String, blobName,
-            "an HF cache blob's filename IS its SHA-256")
-        XCTAssertEqual(addressed.first?["size"] as? Int64, 33)
+            "inside models--*/blobs/, the filename IS the SHA-256")
+        XCTAssertEqual(addressed.first?["size"] as? Int64, Int64(bytes.count))
 
+        // A local checkpoint: the digest comes from the bytes, not from the name.
         let plain = root.appendingPathComponent("model.gguf")
-        try Data(repeating: 0xCD, count: 7).write(to: plain)
-        let fallback = ProducerIdentity.tokenizerIdentity(fromPath: plain.path)
-        XCTAssertEqual(fallback.count, 1)
-        XCTAssertEqual(fallback.first?["file"] as? String, "model.gguf")
-        XCTAssertEqual(fallback.first?["size"] as? Int64, 7)
-        XCTAssertNil(
-            fallback.first?["sha256"],
-            "a non-content-addressed name must not claim a digest")
+        let localBytes = Data(repeating: 0xCD, count: 7)
+        try localBytes.write(to: plain)
+        let local = ProducerIdentity.tokenizerIdentity(fromPath: plain.path)
+        XCTAssertEqual(local.count, 1)
+        XCTAssertEqual(local.first?["file"] as? String, "model.gguf")
+        XCTAssertEqual(local.first?["size"] as? Int64, 7)
+        XCTAssertEqual(
+            local.first?["sha256"] as? String,
+            SettlementAuthority.payloadDigest(localBytes),
+            "the digest is the checkpoint's content, never the filename")
+
+        // A 64-hex name outside the hub layout is not a content address.
+        let fakeName = String(repeating: "a", count: 64)
+        let fake = root.appendingPathComponent(fakeName)
+        try localBytes.write(to: fake)
+        let notTrusted = ProducerIdentity.tokenizerIdentity(fromPath: fake.path)
+        XCTAssertEqual(
+            notTrusted.first?["sha256"] as? String,
+            SettlementAuthority.payloadDigest(localBytes),
+            "an ordinary file cannot claim a digest by naming itself like one")
     }
 
     func testManagedLaunchArgsPinTheEngineToLoopback() {

@@ -738,61 +738,26 @@ enum G1G3Entry {
 
     // MARK: - identity fingerprints (settlement binding)
 
-    /// Canonical JSON (sorted keys) fed through the production settlement digest.
-    /// Deterministic for a given structured value; no consumer re-implements hashing.
+    /// Delegated: `ProducerIdentity` owns the one fingerprint formula. A copy
+    /// here is how a GGUF checkpoint ends up bound by name+size on one path and
+    /// by content on another, so this driver keeps no second implementation.
+
     private static func canonicalFingerprint(_ value: Any) -> String {
-        let canonical = (try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])) ?? Data()
-        return SettlementAuthority.payloadDigest(canonical)
+        ProducerIdentity.canonicalFingerprint(value)
     }
 
-    /// Stable model binding fingerprint: only identity-bearing fields (repo id,
-    /// revision, root id), never the filesystem path, so relocating a snapshot does
-    /// not change identity while a different model or revision does.
     private static func modelBindingFingerprint(_ identity: [String: Any]) -> String {
-        canonicalFingerprint([
-            "model_repo_id": identity["model_repo_id"] ?? NSNull(),
-            "model_revision": identity["model_revision"] ?? NSNull(),
-            "model_root_id": identity["model_root_id"] ?? NSNull(),
-        ])
+        ProducerIdentity.modelBindingFingerprint(identity)
     }
 
     // MARK: - model / tokenizer identity (task §5)
 
-    /// Resolve durable model identity (repoID + revision=snapshot hash) via the
-    /// PRODUCTION ModelDiscovery, matching the resolved weight file under the
-    /// given snapshot path. Records model instance + revision, NOT just a path.
     private static func modelIdentity(fromPath path: String) -> [String: Any] {
-        let url = URL(fileURLWithPath: path).standardizedFileURL
-        let match = ModelDiscovery.discover().first {
-            $0.fileURL.standardizedFileURL.path.hasPrefix(url.path)
-        }
-        var out: [String: Any] = ["model_path": path]
-        if let m = match {
-            out["model_repo_id"] = m.repoID
-            out["model_revision"] = m.revision ?? NSNull()
-            out["model_root_id"] = m.rootID
-        } else {
-            out["model_repo_id"] = NSNull(); out["model_revision"] = NSNull()
-        }
-        return out
+        ProducerIdentity.modelIdentity(fromPath: path)
     }
 
-    /// Tokenizer identity: name + content SHA-256 (production digest) of each
-    /// tokenizer artifact present in the snapshot. Content-addressed, so identity
-    /// is auditable, not just a filename.
     private static func tokenizerIdentity(fromPath path: String) -> [[String: Any]] {
-        let dir = URL(fileURLWithPath: path).standardizedFileURL
-        guard let files = try? FileManager.default.contentsOfDirectory(
-            at: dir, includingPropertiesForKeys: nil) else { return [] }
-        return files
-            .filter { $0.lastPathComponent.lowercased().contains("tokenizer")
-                       || $0.lastPathComponent.lowercased().contains("vocab") }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
-            .compactMap { f in
-                guard let data = try? Data(contentsOf: f) else { return nil }
-                return ["file": f.lastPathComponent,
-                        "sha256": SettlementAuthority.payloadDigest(data)]
-            }
+        ProducerIdentity.tokenizerIdentity(fromPath: path)
     }
 
     // MARK: - helpers

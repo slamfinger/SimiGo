@@ -30,6 +30,11 @@ enum GGUFModelIdentityError: LocalizedError, Equatable {
 /// producer, continuation admission and continuation settlement, so all three
 /// derive the same value from the same file.
 struct GGUFModelIdentity: Equatable, Sendable {
+    /// The value a checkpoint gets when its bytes cannot be read. It is not a hex
+    /// string on purpose: it can never be mistaken for, or collide with, a real
+    /// digest, and two unreadable files never look like the same model by accident.
+    static let unreadableMarker = "unreadable"
+
     enum ContentSource: String, Equatable, Sendable {
         /// A Hugging Face cache blob whose file name is its own SHA-256. The
         /// structure is verified before the name is trusted; multi-GB weights
@@ -51,6 +56,29 @@ struct GGUFModelIdentity: Equatable, Sendable {
     let modelIdentity: String
     let producer: SettlementIdentityBinding.Identity
 
+    /// Hash results keyed by the file's identity-bearing attributes. `identity()`
+    /// runs on every admission, settlement and consumption, and a checkpoint is
+    /// multi-GB: re-hashing per request would cost seconds each time. A replaced
+    /// or rewritten file has a different size/mtime/inode and therefore misses.
+    private final class ResolvedCache: @unchecked Sendable {
+        private let lock = NSLock()
+        private var entries: [String: GGUFModelIdentity] = [:]
+
+        func value(for key: String) -> GGUFModelIdentity? {
+            lock.lock()
+            defer { lock.unlock() }
+            return entries[key]
+        }
+
+        func store(_ identity: GGUFModelIdentity, for key: String) {
+            lock.lock()
+            defer { lock.unlock() }
+            entries[key] = identity
+        }
+    }
+
+    private static let resolvedCache = ResolvedCache()
+
     static func resolve(path: String, hubs: [URL]? = nil) throws -> GGUFModelIdentity {
         let original = URL(fileURLWithPath: path).standardizedFileURL
         var isDirectory: ObjCBool = false
@@ -60,6 +88,12 @@ struct GGUFModelIdentity: Equatable, Sendable {
             throw GGUFModelIdentityError.notAFile(path)
         }
         let resolved = original.resolvingSymlinksInPath()
+
+        // Provenance is part of the cached value, so a call with its own `hubs`
+        // skips the cache: a hit must never hand back another hub's answer.
+        let cacheKey =
+            hubs == nil ? identityStamp(of: resolved) : nil
+        if let cacheKey, let hit = resolvedCache.value(for: cacheKey) { return hit }
 
         let digest: String
         let source: ContentSource
@@ -75,7 +109,7 @@ struct GGUFModelIdentity: Equatable, Sendable {
         let provenance = provenance(for: original, resolved: resolved, hubs: hubs)
         let modelIdentity = contentFingerprint(sha256: digest, byteCount: size)
 
-        return GGUFModelIdentity(
+        let identity = GGUFModelIdentity(
             contentSHA256: digest,
             byteCount: size,
             contentSource: source,
@@ -87,6 +121,21 @@ struct GGUFModelIdentity: Equatable, Sendable {
             producer: SettlementIdentityBinding.Identity(
                 model: modelIdentity,
                 tokenizer: tokenizerFingerprint(modelContentSHA256: digest)))
+        if let cacheKey { resolvedCache.store(identity, for: cacheKey) }
+        return identity
+    }
+
+    /// Everything a hash depends on. A rewrite that keeps size and mtime but
+    /// changes bytes still changes the inode in every realistic copy path; a
+    /// same-inode in-place rewrite within one filesystem timestamp tick is the
+    /// only miss, and that one is indistinguishable by stat anywhere.
+    private static func identityStamp(of url: URL) -> String? {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = (attributes[.size] as? NSNumber)?.int64Value,
+              let inode = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value
+        else { return nil }
+        let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        return "\(url.path)|\(size)|\(inode)|\(modified)"
     }
 
     /// Content digest only. Byte count is included so a hash collision across

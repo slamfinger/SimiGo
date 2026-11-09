@@ -138,7 +138,7 @@ SimiGo 并不排斥 KV Cache，也不把所有缓存优化都称为 ES/IS 连续
 | ES 生命周期 | 产品与 Runtime 中已有状态记录、分支/continuation 与受管推进路径；早期实验覆盖 fork、隔离、迁移/reattach 等生命周期场景 | 早期实验只对其登记的模型、配置和范围成立，不等于所有 backend 的统一 conformance |
 | IS / PALACE | 当前实现包含内容寻址对象、摘要校验、结算记录、来源与身份溯源、依赖边和失效机制；检索结算、来源绑定与引用依赖边在同一事务内提交 | 存在账本与验证逻辑，不等于所有语义资格均已在真实 Agent 工作流中证明 |
 | 新 ES 消费已结算结果 | `SettlementConsumption` 创建新的 consumer ES、派生结算和依赖边；合同测试覆盖零模型调用、显式身份约束/依赖/输入变化拒绝 | 当前明确合同是 `exact-repeat` v1；测试通过不等于真实模型卸载后的载体独立性验收 |
-| 真实 GGUF 请求复用 | 真实 llama.cpp/GGUF E2E 覆盖首次生成、结算，以及同一运行中相同问题再次请求时零模型调用 | 该测试没有卸载模型、销毁旧 KV Cache 或重启模型进程；本地 GGUF 文件的 producer 身份仍由文件名与大小决定（不在 HF cache 布局内时不算内容哈希），同名同尺寸不同字节会得到同一身份——这是身份唯一性与溯源问题，未被证明为语义准入绕过 |
+| 真实 GGUF 请求复用 | 真实 llama.cpp/GGUF E2E 覆盖首次生成、结算，以及同一运行中相同问题再次请求时零模型调用 | 该测试没有卸载模型、销毁旧 KV Cache 或重启模型进程；本地 GGUF 文件的 producer 身份已改为按字节内容的 SHA-256（HF hub blob 布局校验后才采信文件名），同名同尺寸不同字节不再得到同一身份。该缺口是身份唯一性与溯源问题，从未被证明为语义准入绕过 |
 | MLX / llama.cpp | 产品源码包含两类受管执行路径及各自的实验/测试 | 不能把单个 backend 的测试结论扩展为跨 backend 的完整证明 |
 | Transcript collection | 可选、只读的 transcript collection 已进入主线；扫描根只读，写入只落在候选 inbox | collection-only；采集候选到受控 ES/IS 结算消费尚未完成端到端验收；目录遍历预算、超长行恢复与单文件事件预算的已知缺口登记在[未关闭问题清单](docs/knowledge/open-problems/README.md) |
 
