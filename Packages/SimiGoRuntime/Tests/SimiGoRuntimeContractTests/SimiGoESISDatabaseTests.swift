@@ -1222,6 +1222,17 @@ extension SimiGoESISDatabaseTests {
             query: "needle", rootID: "index-only-tail-root", limit: 10)
         XCTAssertTrue(demandAgain.reused)
         XCTAssertEqual(demandAgain.hits, demand.hits)
+
+        // A shrink that remains larger than the tail window must fail closed
+        // as a stale locator, not attempt an unbounded full-source read.
+        let settledRow = try XCTUnwrap(
+            db.settledFileRows(rootID: "index-only-tail-root").first)
+        try Data(repeating: 0x79, count: 1 * 1024 * 1024).write(to: fileURL)
+        XCTAssertThrowsError(try db.searchableFileText(settledRow)) { error in
+            XCTAssertEqual(
+                error as? SimiGoESISDatabase.DatabaseError,
+                .staleExternalSource(rootID: "index-only-tail-root", relativePath: "source.txt"))
+        }
     }
 
     func testCarriedOversizedTailDigestIsVerifiedAndSearchable() throws {

@@ -4176,7 +4176,12 @@ try bind(externalStmt, 1, rootID)
             let read = try readRootFileNoFollow(
                 rootDirectoryFD: rootDirectoryFD,
                 relativePath: relative,
-                maximumBytes: Int(indexedSize) - 1,
+                // Force the bounded tail path based on the read window, not
+                // the original full source size. If the source shrank but is
+                // still larger than the tail budget, a size-based threshold
+                // would try to read the whole changed file and throw a generic
+                // budget error instead of classifying it as stale.
+                maximumBytes: tailWindowBytes - 1,
                 tailBytes: tailWindowBytes,
                 maximumTotalBytesRead: tailWindowBytes)
             guard read.isTail, read.size == indexedSize, let rawTail = read.data else {
