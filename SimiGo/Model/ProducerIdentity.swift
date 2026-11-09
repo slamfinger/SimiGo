@@ -63,17 +63,22 @@ enum ProducerIdentity {
         else { return [] }
         if !isDirectory.boolValue {
             // A GGUF checkpoint is a single weight file with the tokenizer
-            // embedded. Hugging Face cache blobs are named by their own
-            // SHA-256, so the name is a content address; anything else falls
-            // back to name+size (hashing a multi-GB file at load is not
-            // affordable).
-            let name = dir.lastPathComponent.lowercased()
+            // embedded, so its identity is the file's content digest — resolved
+            // once per file stamp and shared (GGUFModelIdentity caches the hash).
             let attributes = try? FileManager.default.attributesOfItem(atPath: dir.path)
             let size = (attributes?[.size] as? NSNumber)?.int64Value ?? 0
-            if name.count == 64, name.allSatisfy({ $0.isHexDigit }) {
-                return [["file": name, "sha256": name, "size": size]]
+            guard let gguf = try? GGUFModelIdentity.resolve(path: dir.path) else {
+                // Unreadable is not "the same as the name": it is its own
+                // answer, and it can never match a hashable file.
+                return [[
+                    "file": dir.lastPathComponent, "size": size,
+                    "content": GGUFModelIdentity.unreadableMarker,
+                ]]
             }
-            return [["file": name, "size": size]]
+            return [[
+                "file": dir.lastPathComponent, "sha256": gguf.contentSHA256,
+                "size": size,
+            ]]
         }
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: dir, includingPropertiesForKeys: nil) else { return [] }
@@ -91,8 +96,24 @@ enum ProducerIdentity {
     /// The `Identity` used for BOTH the producer side of a settlement and the
     /// consumer side of a continuation admission for the model resolved at
     /// `path`. Kept identical so a real settle -> admit round-trip verifies.
+    ///
+    /// A single-file GGUF resolves through `GGUFModelIdentity`: its content
+    /// digest IS the identity. The snapshot fingerprint above cannot serve that
+    /// case, because for a file outside the hub layout repo/revision are both
+    /// null — two checkpoints with the same name and size would bind to the same
+    /// producer and admit each other's settlements.
     static func identity(fromPath path: String) -> SettlementIdentityBinding.Identity {
-        SettlementIdentityBinding.Identity(
+        if let gguf = ggufModelIdentity(fromPath: path) { return gguf.producer }
+        if Self.isRegularFile(path) {
+            // A checkpoint whose bytes cannot be read must not fall back to
+            // name+size — that is the collision this identity exists to remove.
+            let marker = GGUFModelIdentity.unreadableMarker
+            return SettlementIdentityBinding.Identity(
+                model: GGUFModelIdentity.contentFingerprint(
+                    sha256: marker, byteCount: Self.byteCount(of: path)),
+                tokenizer: GGUFModelIdentity.tokenizerFingerprint(modelContentSHA256: marker))
+        }
+        return SettlementIdentityBinding.Identity(
             model: modelBindingFingerprint(modelIdentity(fromPath: path)),
             tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: path)))
     }
@@ -102,7 +123,28 @@ enum ProducerIdentity {
     /// model revision carry the same value; a different model or revision does
     /// not.
     static func canonicalModelIdentity(fromPath path: String) -> String {
-        modelBindingFingerprint(modelIdentity(fromPath: path))
+        if let gguf = ggufModelIdentity(fromPath: path) { return gguf.modelIdentity }
+        return modelBindingFingerprint(modelIdentity(fromPath: path))
+    }
+
+    /// The content identity of a single-file checkpoint, or nil for a directory
+    /// (an MLX snapshot keeps its repo/revision identity) and for a file whose
+    /// bytes cannot be read.
+    static func ggufModelIdentity(fromPath path: String) -> GGUFModelIdentity? {
+        try? GGUFModelIdentity.resolve(path: path)
+    }
+
+    private static func isRegularFile(_ path: String) -> Bool {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) else {
+            return false
+        }
+        return !isDirectory.boolValue
+    }
+
+    private static func byteCount(of path: String) -> Int64 {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: path)
+        return (attributes?[.size] as? NSNumber)?.int64Value ?? 0
     }
 
     /// Drive the authoritative store's IS admission for a live continuation:

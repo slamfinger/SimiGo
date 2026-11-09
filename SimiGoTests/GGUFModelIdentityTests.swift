@@ -125,4 +125,37 @@ final class GGUFModelIdentityTests: XCTestCase {
             }
         }
     }
+
+    /// The wiring this type exists for: every admission, settlement and
+    /// consumption asks `ProducerIdentity` who produced the model. Two local
+    /// checkpoints that share a path name and a byte count must not answer the
+    /// same thing.
+    func testProducerIdentityFollowsTheBytesOfALocalCheckpoint() throws {
+        let first = try write(Data("same-length-A".utf8), at: "a/model.gguf")
+        let second = try write(Data("same-length-B".utf8), at: "b/model.gguf")
+        XCTAssertEqual(
+            URL(fileURLWithPath: first).lastPathComponent,
+            URL(fileURLWithPath: second).lastPathComponent)
+        XCTAssertEqual(
+            try Data(contentsOf: URL(fileURLWithPath: first)).count,
+            try Data(contentsOf: URL(fileURLWithPath: second)).count,
+            "the probe must keep name and size equal")
+
+        let a = ProducerIdentity.identity(fromPath: first)
+        let b = ProducerIdentity.identity(fromPath: second)
+        XCTAssertNotEqual(a.model, b.model, "same name and size, different bytes")
+        XCTAssertNotEqual(a.tokenizer, b.tokenizer)
+        XCTAssertEqual(
+            a, try GGUFModelIdentity.resolve(path: first).producer,
+            "the runtime identity must be the resolver's identity, not a re-derivation")
+
+        // The same bytes under another file name are the same producer.
+        let renamed = try write(Data("same-length-A".utf8), at: "c/other-name.gguf")
+        XCTAssertEqual(ProducerIdentity.identity(fromPath: renamed), a)
+
+        // The execution state's durable model identity moves with the content too.
+        XCTAssertNotEqual(
+            ProducerIdentity.canonicalModelIdentity(fromPath: first),
+            ProducerIdentity.canonicalModelIdentity(fromPath: second))
+    }
 }

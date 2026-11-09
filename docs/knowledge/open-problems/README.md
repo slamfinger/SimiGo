@@ -4,7 +4,7 @@
 
 **基线：2026-11-10（补登 2026-11-10 审核提出的采集侧四项与本地 GGUF 身份）。** 云端 provider 代理已于 2026-11-03 从产品源码移除。旧代理“外部转发真机 E2E 缺失”不再作为当前产品问题；其历史合同和证据继续保留供追溯。
 
-第 8–14 条由 2026-11-10 云端审核提出，已在源码逐条核对确认。其中**第 11、12 条已在同批修复**（回归用例见各自条目），其余五条仍只登记、未修复，不代表已排期。
+第 8–14 条由 2026-11-10 云端审核提出，已在源码逐条核对确认。其中**第 11、12 条已在同批修复**、**第 14 条已接线**（回归用例见各自条目），其余四条（第 8、9、10、13 条）仍只登记、未修复，不代表已排期。
 
 | # | 问题 | 状态 | 证据 / 边界 |
 |---|---|---|---|
@@ -21,7 +21,7 @@
 | 11 | 超长行扫描按换行位置计费，实际磁盘读取大于预算 | **已修复（2026-11-10）** | 原状：`findNewline` 一次 `pread` 最多 1 MiB，命中换行时只按 `scanned + found` 计费，`skipOversizedLine` 据此扣减 `budget`，剩余预算多于真实剩余磁盘量。修法：`findNewline` 额外返回 `charged`（实际读到的 `chunk.count` 累计），预算与 `readBytes` 一律按 `charged` 记，换行后的逻辑推进仍用 `scanned`。验收：`testOversizedLineChargesTheChunkItActuallyRead`（换行落在 1 MiB 块首，修复前 `readBytes` 报 1，修复后报整块）；包测试 197/197。**边界**：这是计费口径的修正，未在真实大目录上量过 poll 频率变化。 |
 | 12 | 文件身份重置未清理 `oversizedScan`，同路径换文件可能沿用旧偏移 | **已修复（2026-11-10）** | 原状：`oversizedScan` 按路径保存，`baseline()` 只清 accumulator；`baseline()` 覆盖的 identity / truncation / fingerprint 三种重置、策略切换、resume 点损坏、读取后身份不符，这些路径都不清该表。修法：这四处一并清理。验收：`testReplacingAFileDropsThePendingOversizedScan`（旧文件留有未完成的超长行扫描 → 同路径换文件并追加 → 新内容必须被读出；修复前该文件永远读不出）。**边界**：只覆盖 identity reset 一条路径的行为，其余四处清理点没有各自的对应用例。 |
 | 13 | 单文件事件预算只在文件之间检查 | 未关闭 | `maxEventsPerPoll` 仅在循环头判定（`TranscriptTailer.swift:781`），单文件 `readAvailable()` 可一次产出大量事件；`CollectionRunner` 先把本轮事件累积到 staged 再提交，单文件事件洪峰仍可突破 `maxEventsPerPoll` 的内存预期。 |
-| 14 | 本地 GGUF producer 身份未按内容解析 | 未关闭 / 待接线 | `ProducerIdentity.tokenizerIdentity(fromPath:)` 对非 HF blob 布局的 GGUF 只记 name+size，同名同尺寸不同字节得到同一身份。内容身份解析器已在 PR #127 提出并通过单元测试，但**未接线**到 `ManagedGGUFRuntime` 的四条实际路径。属身份唯一性与 provenance 可靠性问题；现行 `ISAdmission` 不把 consumer identity 当通用语义准入门槛，因此不得表述为已证明的语义准入绕过。 |
+| 14 | 本地 GGUF producer 身份未按内容解析 | **已接线（2026-11-10）** | 原状：`ProducerIdentity` 对非 HF blob 布局的 GGUF 只记 name+size，且 `identity.model` 对任意本地文件都是同一串全 null 绑定指纹，同名同尺寸不同字节得到同一 producer。修法：`identity(fromPath:)` / `canonicalModelIdentity(fromPath:)` 对单文件路径一律走 `GGUFModelIdentity`（按字节流式 SHA-256，HF blob 布局校验后走快路径，按 path+size+inode+mtime 缓存）；不可读文件用 `unreadable` 标记，绝不退回 name+size；`ManagedGGUFRuntime` 启动时解析一次并共享；headless G1/G3 的副本实现已删除改为委托，只剩一处公式。验收：`testProducerIdentityFollowsTheBytesOfALocalCheckpoint`、`testGGUFTokenizerIdentityIsTheContentDigestNotTheFilename`。**边界**：现行库里没有任何一条 producer 绑定使用过全 null 的本地绑定指纹（0 条），所以本次改身份没有让既有结算失效——这只说明该洞是潜在的、未被使用过，不代表旧值曾被验证正确；GGUF 的 settlement consumption / managed continuation 仍是 unsupported。 |
 
 ## 使用规则
 
