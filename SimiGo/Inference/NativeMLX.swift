@@ -762,10 +762,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// · **没有热 KV**（一次都没跑过，或会话已空）：驻留只值一次 5 s 重载，用
     ///   `idleResidencyNoSessionSeconds`。这覆盖"加载完大模型放着不动"那段——
     ///   旧实现让它按 240–360 s 计，等于用 4 分钟黄色换 5 秒重载。
-    /// · **有热 KV、KV 不落盘**：240–360 s。卸载会丢掉整个会话，下次整段冷
-    ///   prefill（58.3–98.4 s），多轮连续性只能靠保温买。
-    /// · **有热 KV、KV 可恢复**：90–240 s。卸载后 restore 3.5 s@40K，保温只省
-    ///   这几秒，窗口可以收短，黄色随之减半。
+    /// · **有热 KV**：240–360 s。卸载会丢掉整个会话，下次整段冷 prefill
+    ///   （58.3–98.4 s），多轮连续性只能靠保温买。KV 的存续归上游
+    ///   `mlx-swift-lm`，在它给出可跨卸载复用的缓存之前，这段窗口不许缩短。
     ///
     /// 重建时长按上下文档的实测吞吐估算（`prefillThroughputFloor(contextTokens:)`），
     /// 不再一律按 512 档的 150 tok/s——那让 28K 会话估出 247 s，是真实 58 s 的三倍。
@@ -784,15 +783,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         guard maxTokens > 0 else { return RuntimeTuning.idleResidencyNoSessionSeconds }
         let estimate = Double(maxTokens)
             / RuntimeTuning.prefillThroughputFloor(contextTokens: maxTokens) + 60
-        // 会话卸载后能不能活，决定窗口能给多短：KV 不落盘时卸载就是下次整段
-        // 冷 prefill，多轮连续性只能靠保温买，维持 240–360 s；落盘可恢复时
-        // 保温只省 40K 档的 3.5 s，才允许收成 90–240 s。
-        guard RuntimeTuning.branchCheckpointsEnabled else {
-            return min(RuntimeTuning.idleResidencyCapSeconds,
-                       max(RuntimeTuning.idleResidencyFloorSeconds, estimate))
-        }
-        return min(RuntimeTuning.idleResidencyCheckpointedCapSeconds,
-                   max(RuntimeTuning.idleResidencyCheckpointedFloorSeconds, estimate))
+        // 收敛驻留窗口：floor 兜底工具间隙、cap 封顶大会话（见 RuntimeTuning）。
+        return min(RuntimeTuning.idleResidencyCapSeconds,
+                   max(RuntimeTuning.idleResidencyFloorSeconds, estimate))
     }
 
     public func suspendIfIdle() async -> Bool {
