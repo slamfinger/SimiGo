@@ -741,6 +741,9 @@ public final class HTTPServer: @unchecked Sendable {
     /// `recompute_policy`). Absent (nil) means such a request is refused
     /// fail-closed; the legacy continuation path is unaffected.
     let managedContinuation: ManagedContinuationHandler?
+    /// What this backend actually wires, declared on every `/v1/models`
+    /// response so a client can ask before a call fails.
+    let authorityStatus: RuntimeAuthorityStatus
     /// Producer identity for information-turn settlements. Absent only when the
     /// runtime has no resolved model snapshot (headless/library callers).
     let informationTurnProducer: InformationTurnProducerProvider?
@@ -906,6 +909,7 @@ public final class HTTPServer: @unchecked Sendable {
         continuationSettlement: ContinuationSettlementHandler? = nil,
         settlementConsumption: SettlementConsumptionHandler? = nil,
         managedContinuation: ManagedContinuationHandler? = nil,
+        kvRepresentationAvailable: CapabilityStatus = .unverified,
         informationTurnProducer: InformationTurnProducerProvider? = nil,
         requestBudget: RequestBudgetHandler? = nil,
         requestAdmission: RequestAdmissionScheduler? = nil,
@@ -943,6 +947,17 @@ public final class HTTPServer: @unchecked Sendable {
         self.continuationSettlement = continuationSettlement
         self.settlementConsumption = settlementConsumption
         self.managedContinuation = managedContinuation
+        // Availability is read off the wiring, not declared separately: a nil
+        // handler IS the absence of that authority on this backend.
+        self.authorityStatus = RuntimeAuthorityStatus(
+            continuationAdmission: continuationAdmission == nil ? .unsupported : .supported,
+            continuationSettlement: continuationSettlement == nil
+                ? .unsupported : .supported,
+            kvRepresentation: kvRepresentationAvailable,
+            settlementConsumption: settlementConsumption == nil
+                ? .unsupported : .supported,
+            managedContinuation: managedContinuation == nil
+                ? .unsupported : .supported)
         self.informationTurnProducer = informationTurnProducer
         self.requestBudget = requestBudget
         self.requestAdmission = requestAdmission
@@ -2662,7 +2677,8 @@ public final class HTTPServer: @unchecked Sendable {
     /// time so a caller cannot mistake a stale probe for a live one.
     static func simigoBootstrapDocument(
         health: Bool,
-        observedAt: Date
+        observedAt: Date,
+        authorities: RuntimeAuthorityStatus = RuntimeAuthorityStatus()
     ) -> [String: Any] {
         let capabilities: [String: Any] = [
             "es": ["state": "supported"] as [String: Any],
@@ -2672,6 +2688,21 @@ public final class HTTPServer: @unchecked Sendable {
                 "mcp": ["method": "POST", "path": "/mcp"] as [String: Any],
             ] as [String: Any],
             "memory_kv_cache": ["state": "supported"] as [String: Any],
+            // The continuation surface is the same routes everywhere, so the
+            // difference between backends has to be stated, not discovered by a
+            // failed call. Values come from the handlers this server was built
+            // with; a backend that exports no KV representation says so.
+            "execution_continuation": [
+                "admission": ["state": authorities.continuationAdmission.rawValue],
+                "settlement": ["state": authorities.continuationSettlement.rawValue],
+                "kv_representation": ["state": authorities.kvRepresentation.rawValue],
+                "settlement_consumption": [
+                    "state": authorities.settlementConsumption.rawValue,
+                ],
+                "managed_continuation": [
+                    "state": authorities.managedContinuation.rawValue,
+                ],
+            ] as [String: Any],
             "external_api_intake": [
                 "state": "supported",
                 "channels": ["mcp_settle"],
@@ -2908,7 +2939,8 @@ public final class HTTPServer: @unchecked Sendable {
             let health = await checkHealthHandler()
             let bootstrap = Self.simigoBootstrapDocument(
                 health: health,
-                observedAt: Date())
+                observedAt: Date(),
+                authorities: authorityStatus)
 
             sendJSON(
                 [

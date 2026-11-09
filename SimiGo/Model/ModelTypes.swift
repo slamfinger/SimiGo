@@ -216,6 +216,36 @@ nonisolated public struct ModelCapabilityContract: Codable, Equatable, Sendable 
     }
 }
 
+/// Which ES/IS continuation authorities this backend actually wires.
+///
+/// The protocol surface is the same for every runtime, so a client cannot tell
+/// from the route list that `settlement_consumption` or `managed_continuation`
+/// is unavailable until it calls one. This declaration is the queryable answer:
+/// it is derived from the handlers the server was constructed with, never from
+/// what a backend would like to support. `unverified` is used when nothing was
+/// declared — an absence of evidence is not evidence of absence.
+nonisolated public struct RuntimeAuthorityStatus: Codable, Equatable, Sendable {
+    public var continuationAdmission: CapabilityStatus
+    public var continuationSettlement: CapabilityStatus
+    public var kvRepresentation: CapabilityStatus
+    public var settlementConsumption: CapabilityStatus
+    public var managedContinuation: CapabilityStatus
+
+    public init(
+        continuationAdmission: CapabilityStatus = .unverified,
+        continuationSettlement: CapabilityStatus = .unverified,
+        kvRepresentation: CapabilityStatus = .unverified,
+        settlementConsumption: CapabilityStatus = .unverified,
+        managedContinuation: CapabilityStatus = .unverified
+    ) {
+        self.continuationAdmission = continuationAdmission
+        self.continuationSettlement = continuationSettlement
+        self.kvRepresentation = kvRepresentation
+        self.settlementConsumption = settlementConsumption
+        self.managedContinuation = managedContinuation
+    }
+}
+
 nonisolated public extension ModelCapabilityContract {
     /// V1 解析器：已实测架构族（兼容矩阵 2026-09-11/12 实证）走 runtime 数据，
     /// 未实测架构族全部保持 unverified——不从无证据推断。

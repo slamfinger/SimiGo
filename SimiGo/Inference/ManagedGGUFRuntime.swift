@@ -140,6 +140,12 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     },
                     continuationSettlement: makeContinuationSettlementHandler(
                         modelPath: info.path) { _ in nil },
+                    // llama-server keeps the prefix cells internally and this
+                    // runtime exports no representation, so it declares that
+                    // instead of letting a client discover it by a failed call.
+                    // Settlement consumption and managed continuation are nil
+                    // here and therefore declared unsupported from the wiring.
+                    kvRepresentationAvailable: .unsupported,
                     informationTurnProducer: { producer },
                     requestAdmission: RequestAdmissionScheduler(limit: admissionLimit)
                 )

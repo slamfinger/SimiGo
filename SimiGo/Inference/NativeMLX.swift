@@ -581,6 +581,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             )
                         }
                     ),
+                    // This runtime owns the KV representation in-process and
+                    // can export/restore it, so the declaration is verified by
+                    // the handlers above being present.
+                    kvRepresentationAvailable: .supported,
                     informationTurnProducer: { informationProducer },
                     requestBudget: { [weak self] requestId, agentId, sessionId,
                         branchId, messages, tools, config, budgetHeaderMs in
