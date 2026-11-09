@@ -100,6 +100,40 @@ final class QoderTranscriptTailerTests: XCTestCase {
         XCTAssertNotNil(try store.load())
     }
 
+    func testCursorStoreRejectsHardlinkAndAtomicSaveLeavesExternalTargetUntouched() throws {
+        let stateDirectory = root.appendingPathComponent("hardlinked-cursor-state", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: stateDirectory, withIntermediateDirectories: true)
+        let external = root.appendingPathComponent("external-hardlinked-cursor.json")
+        let linkedPath = "/tmp/qoder-hardlink-source.jsonl"
+        let linkedCursor = QoderFileCursor(
+            path: linkedPath, projectID: "p", sessionID: "s", isSubagent: false,
+            inode: 1, offset: 10, segmentLines: 1,
+            fingerprint: "abc", updatedAt: Date(timeIntervalSince1970: 1))
+        let originalState = QoderCursorState(
+            initializedAt: Date(timeIntervalSince1970: 1),
+            cursors: [linkedPath: linkedCursor])
+        let original = try JSONEncoder().encode(originalState)
+        try original.write(to: external)
+
+        let cursorURL = stateDirectory.appendingPathComponent("cursor.json")
+        try FileManager.default.linkItem(at: external, to: cursorURL)
+        let store = QoderFileCursorStore(directoryURL: stateDirectory)
+        XCTAssertThrowsError(try store.load()) { error in
+            XCTAssertTrue(
+                String(describing: error).contains("link count one"),
+                "cursor loading must reject hardlinked state: \(error)")
+        }
+        XCTAssertEqual(try Data(contentsOf: external), original)
+
+        let replacement = QoderCursorState(initializedAt: Date(timeIntervalSince1970: 2))
+        try store.save(replacement)
+        XCTAssertEqual(try store.load(), replacement)
+        XCTAssertEqual(
+            try Data(contentsOf: external), original,
+            "atomic replacement and chmod must not modify the hardlink target")
+    }
+
     func testFirstPollBaselinesExistingFileAtEnd() throws {
         let file = mainFile()
         try Fixture.writeLines(Fixture.turnLines(), to: file)

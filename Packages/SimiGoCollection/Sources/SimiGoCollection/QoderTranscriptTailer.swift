@@ -289,12 +289,13 @@ public final class QoderFileCursorStore {
         guard fstat(descriptor, &info) == 0,
               (info.st_mode & S_IFMT) == S_IFREG,
               info.st_uid == getuid(),
+              info.st_nlink == 1,
               info.st_size >= 0,
               info.st_size <= off_t(Self.maximumCursorStateBytes)
         else {
             throw QoderCollectionStateError.unreadableState(
                 path: fileURL.path,
-                detail: "cursor is not a regular owned file or exceeds the maximum cursor-state byte limit")
+                detail: "cursor is not a regular owned file with link count one or exceeds the maximum cursor-state byte limit")
         }
 
         var data = Data()
@@ -361,10 +362,11 @@ public final class QoderFileCursorStore {
         guard fstat(descriptor, &info) == 0,
               (info.st_mode & S_IFMT) == S_IFREG,
               info.st_uid == getuid(),
+              info.st_nlink == 1,
               fchmod(descriptor, 0o600) == 0
         else {
             throw QoderCollectionStateError.unreadableState(
-                path: fileURL.path, detail: "saved cursor is not a regular owned file")
+                path: fileURL.path, detail: "saved cursor is not a regular owned file with link count one")
         }
     }
 }
