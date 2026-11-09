@@ -1,4 +1,5 @@
 import Foundation
+import Dispatch
 import MLX
 import MLXLMCommon
 import SimiGo2Experimental
@@ -159,6 +160,9 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
             promptTokenIds: promptTokenIds, namespace: namespace,
             context: gate.context, authority: gate.authority, source: "adopt"
         ) else { return nil }
+        let probeOn = RuntimeTuning.cloneCostProbeEnabled
+        let probeStart = probeOn ? DispatchTime.now().uptimeNanoseconds : 0
+        let probeFootprintBefore = probeOn ? RuntimeTuning.footprintBytes() : 0
         let clone: PromptCacheSnapshot
         do {
             clone = try candidate.boundary.clonedForAdoption()
@@ -174,6 +178,24 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
                 "[MLX] memPoolCloneRejected tokens=\(candidate.tokenCount)"
                     + " key=\(candidate.key.suffix(12)) err=\(String(describing: error))")
             return nil
+        }
+        if probeOn {
+            // E1：clone 是视图（预期 ~0ms），materialize 在首个 update 才发生。
+            // 探针强制 eval 克隆数组来直接计量那次 materialize；语义不变，
+            // 只是把本会发生的工作提前到采纳点。
+            let cloneDone = DispatchTime.now().uptimeNanoseconds
+            let cloneFootprint = RuntimeTuning.footprintBytes()
+            let arrays = clone.cache.flatMap { $0.state }
+            let evalStart = DispatchTime.now().uptimeNanoseconds
+            MLX.eval(arrays)
+            let evalDone = DispatchTime.now().uptimeNanoseconds
+            let materializedFootprint = RuntimeTuning.footprintBytes()
+            Self.recordCloneCostProbe(
+                candidate: candidate,
+                cloneNanos: cloneDone - probeStart,
+                cloneFootprintDelta: Int64(cloneFootprint) - Int64(probeFootprintBefore),
+                materializeNanos: evalDone - evalStart,
+                materializeFootprintDelta: Int64(materializedFootprint) - Int64(cloneFootprint))
         }
         lock.withLock {
             if var current = entries[candidate.key] {
@@ -312,6 +334,62 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
 
     var stats: Stats {
         lock.withLock { Stats(entries: entries.count, tokens: tokenTotal, bytes: byteTotal) }
+    }
+
+    // MARK: - E1 clone 成本探针
+
+    private static let cloneCostProbeWriteLock = NSLock()
+
+    /// 一次采纳的 clone/materialize 读数：trace 一行 + JSONL 追加。
+    /// 只在 `RuntimeTuning.cloneCostProbeEnabled` 时被调用。
+    private static func recordCloneCostProbe(
+        candidate: Entry,
+        cloneNanos: UInt64,
+        cloneFootprintDelta: Int64,
+        materializeNanos: UInt64,
+        materializeFootprintDelta: Int64
+    ) {
+        let cloneMs = Double(cloneNanos) / 1_000_000
+        let materializeMs = Double(materializeNanos) / 1_000_000
+        RuntimeTraceLogger.shared.trace(
+            "[MLX] cloneCostProbe cloneMs=\(String(format: "%.3f", cloneMs))"
+                + " materializeMs=\(String(format: "%.1f", materializeMs))"
+                + " cloneFpDeltaMB=\(cloneFootprintDelta / 1_048_576)"
+                + " materializeFpDeltaMB=\(materializeFootprintDelta / 1_048_576)"
+                + " bytes=\(candidate.bytes) matchedTokens=\(candidate.tokenCount)"
+                + " es=\(candidate.esStateID.map { String($0.suffix(12)) } ?? "-")")
+        let root: URL
+        if let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"], !home.isEmpty {
+            root = URL(fileURLWithPath: home, isDirectory: true)
+        } else {
+            root = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".simigo", isDirectory: true)
+        }
+        let dir = root.appendingPathComponent("clone_cost_probe", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let record: [String: Any] = [
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "snapshotBytes": candidate.bytes,
+            "matchedTokens": candidate.tokenCount,
+            "cloneMs": (cloneMs * 1000).rounded() / 1000,
+            "cloneFootprintDeltaBytes": cloneFootprintDelta,
+            "materializeMs": (materializeMs * 1000).rounded() / 1000,
+            "materializeFootprintDeltaBytes": materializeFootprintDelta,
+        ]
+        guard let data = try? JSONSerialization.data(
+            withJSONObject: record, options: [.sortedKeys]),
+            let line = String(data: data, encoding: .utf8)
+        else { return }
+        let url = dir.appendingPathComponent("readings.jsonl")
+        cloneCostProbeWriteLock.withLock {
+            if let handle = try? FileHandle(forWritingTo: url) {
+                defer { try? handle.close() }
+                _ = try? handle.seekToEnd()
+                try? handle.write(contentsOf: Data((line + "\n").utf8))
+            } else {
+                try? Data((line + "\n").utf8).write(to: url)
+            }
+        }
     }
 
     private func enforceBudgetLocked() {

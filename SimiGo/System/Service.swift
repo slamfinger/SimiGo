@@ -542,7 +542,6 @@ public final class Service: ObservableObject {
         didSet { AppConfig.set(backendSelection.rawValue, for: .backendSelection) }
     }
     @Published public private(set) var hostMode: HostMode = .idle
-    @Published public var memoryPressure = "normal"
     @Published public var config = ModelConfig()
     @Published public private(set) var inferenceNode = InferenceNodeConfiguration.shared
     /// Execution State 窗口的引擎只读投影（nil = 无进程内执行状态）。
@@ -684,14 +683,6 @@ public final class Service: ObservableObject {
 
     public var currentConfig: ModelConfig {
         config
-    }
-
-    public var pressureColor: Color {
-        switch memoryPressure {
-        case "critical": return .red
-        case "warn": return .orange
-        default: return .green
-        }
     }
 
     // MARK: Configuration Resolution
@@ -1034,7 +1025,6 @@ public final class Service: ObservableObject {
         isRunning = false
         hostMode = .idle
         backendKind = nil
-        memoryPressure = "normal"
         status = "已停止"
         RuntimeStateReporter.shared.clearContext()
 

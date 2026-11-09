@@ -152,7 +152,7 @@ struct MenuPanelView: View {
 
         return HStack(spacing: 6) {
             Circle()
-                .fill(svc.isRunning ? svc.pressureColor : Color.gray.opacity(0.6))
+                .fill(svc.isRunning ? Color.green : Color.gray.opacity(0.6))
                 .frame(width: 7, height: 7)
 
             Text(svc.status)

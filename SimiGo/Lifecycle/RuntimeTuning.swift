@@ -133,6 +133,11 @@ nonisolated enum RuntimeTuning {
         ProcessInfo.processInfo.environment["SIMIGO_PREFIX_MEMORY_POOL_MAX_BYTES"]
             .flatMap(Int.init) ?? 8 * gibibyte)
 
+    /// [实验臂 / EXPERIMENTAL] 正常运行不得开启：这是 A/B 对照用的研究分支，
+    /// 不是产品的连续性路径（owner 裁定 U2）。磁盘目录
+    /// `~/.simigo/branch-checkpoints` 已于 2026-11-09 手动删除，代码保留仅为
+    /// 复核该实验；默认关闭，产品行为不依赖它。
+    ///
     /// branch-checkpoints 是可选缓存（2026-10-27 裁定：ES/IS 是语义连续性的
     /// 唯一权威，持久化 KV 不得成为恢复前提）。`SIMIGO_BRANCH_CHECKPOINTS=0`
     /// 关闭后：不建目录、不读、不写、不从这些文件恢复；suspend 不再因脏会话
@@ -141,6 +146,15 @@ nonisolated enum RuntimeTuning {
     /// `SIMIGO_BRANCH_CHECKPOINTS=1` 显式开启，仅作为性能对照/研究实验模式。
     static let branchCheckpointsEnabled =
         ProcessInfo.processInfo.environment["SIMIGO_BRANCH_CHECKPOINTS"] == "1"
+
+    /// E1 clone 成本探针（2026-11-09，研究实验，默认关）。
+    ///
+    /// 开启后采纳路径在 `clonedForAdoption()` 前后取单调时钟与 footprint，
+    /// 并**强制 eval 克隆出的数组**直接计量 materialize——这次 eval 本就会
+    /// 发生在消费方首个 update，探针只是把它提前到采纳点，语义与总量不变。
+    /// 读数写 `~/.simigo/clone_cost_probe/readings.jsonl` 与 trace。
+    static let cloneCostProbeEnabled =
+        ProcessInfo.processInfo.environment["SIMIGO_CLONE_COST_PROBE"] == "1"
 
     /// EXP-B（B_HEDGE_SKIP_EXPERIMENT_DESIGN §1，实验）：hedge-skip 开关
     /// 与阈值。缺省关闭 = 实验 A 行为；threshold 仅为实验参数，不进入

@@ -3219,7 +3219,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     // MARK: - Branch Fork（生产分支协议 v1；证据链与设计见 docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md）
 
-    /// 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/。
+    /// [实验臂 / EXPERIMENTAL] 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/。
+    /// 正常运行不启用（owner 裁定 U2）；目录已于 2026-11-09 手动删除。
     /// 关闭持久化（`SIMIGO_BRANCH_CHECKPOINTS=0`）时不得创建该目录——目录
     /// 本身就不该出现，而不是建了再不用。
     nonisolated public static func defaultBranchCheckpointStore() -> URL {

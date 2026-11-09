@@ -172,6 +172,13 @@ final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate 
         else { return }
         Task { @MainActor [weak self] in
             guard let self, !self.svc.isRunning else { return }
+            // 研究实验：无人值守基准需要启动即拉起模型后端（默认关）。
+            if ProcessInfo.processInfo.environment["SIMIGO_EXP_AUTOSTART_BACKEND"] == "1",
+                self.svc.hasStartTarget
+            {
+                await self.svc.startSelected()
+                if self.svc.isRunning { return }
+            }
             await self.svc.startInformationSpaceService()
         }
     }
@@ -188,13 +195,10 @@ final class StatusBarCoordinator: NSObject, NSPopoverDelegate, NSWindowDelegate 
             name = "exclamationmark.triangle.fill"
             color = .systemYellow
         } else if svc.isRunning, svc.hostMode == .model {
-            // 本地模型在跑：实心绿（内存压力把它降级成橙/红，那仍是模型态）。
+            // 本地模型在跑：实心绿。内存压力降级（橙/红）曾计划接 UI，
+            // 早已放弃——2026-11-09 删掉那套只写不读的 memoryPressure。
             name = "bolt.fill"
-            switch svc.memoryPressure {
-            case "critical": color = .systemRed
-            case "warn": color = .systemOrange
-            default: color = .systemGreen
-            }
+            color = .systemGreen
         } else {
             // 信息空间宿主（IS 默认开、MCP 回落）：空心。这里用模板图而不是
             // 固定白色——菜单栏在浅色外观下白描边不可见；模板图会随外观
