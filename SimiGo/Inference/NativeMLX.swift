@@ -2114,6 +2114,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 traceLogger.trace(
                     "[MLX] rejectedToolCall reason=\(rejection.reason.rawValue) tool=\(rejection.toolName ?? "-")"
                 )
+            case .reasoning:
+                // 上游 3.32.3 起把思考通道从 chunk 里拆出来单独投递（分隔符已剥）。
+                // 6f88129 及以前不投递该事件，SimiGo 的答案字节里从未包含思考
+                // 正文。本轮只计数不转发：转发会改变答案字节、进而改变 ES 结算
+                // 身份——reasoning 是否计入答案属于实验决定，不在依赖升级里顺手做。
+                rawEventCount += 1
+            case .steering:
+                // SimiGo 未接线 steering 通道（SessionSteering 的宿主入口没有
+                // 调用方），上游事件按遥测丢弃：不参与任何结算判定。
+                rawEventCount += 1
             case .info(let info):
                 tokensPerSecond = info.tokensPerSecond
                 promptTokens = info.promptTokenCount
@@ -2121,9 +2131,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 generationTokens = info.generationTokenCount
                 cachedPromptTokens = info.cachedPromptTokenCount
                 cacheEfficiency = info.cacheEfficiency
-                cacheReuseMode = info.cacheReuseMode
-                cacheForkCommon = info.cacheForkCommonTokens
-                cacheForkLedger = info.cacheForkLedgerTokens
+                // 上游 3.32.3 不再上报复用模式字符串，也没有 fork 分歧点
+                // （cacheReuseMode/cacheForkCommonTokens 是 6f88129 私有遥测）。
+                // 这里从官方读数派生同一组类别：restore（快照恢复且真的复用）
+                // / cold / exact / prefix。fork-common 与 fork-ledger 上游无
+                // 对应量，两个字段保持 nil——这是本轮明确的观测缺口，不补造。
+                if managed.isRestoredSnapshot, info.cachedPromptTokenCount > 0 {
+                    cacheReuseMode = "restore"
+                } else if info.cachedPromptTokenCount <= 0 {
+                    cacheReuseMode = "cold"
+                } else if info.cachedPromptTokenCount >= info.totalPromptTokenCount {
+                    cacheReuseMode = "exact"
+                } else {
+                    cacheReuseMode = "prefix"
+                }
+                cacheForkCommon = nil
+                cacheForkLedger = nil
                 stopReason = info.stopReason
             }
         }
@@ -2364,6 +2387,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         case .some(.stop): completion = .complete
         case .some(.length): completion = .capped
         case .some(.cancelled): completion = .cancelled
+        // 官方 .steered：生成被 steering 指令改道而非自然结束，按 fail-closed
+        // 归入 unconfirmed（与"缺信息事件"同档），不得宣称为完整回答。
+        case .some(.steered): completion = .unconfirmed
         case .none: completion = .unconfirmed
         }
 
@@ -2921,12 +2947,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
 
         // 未跑过任何生成的会话没有可保存的 cache（官方抛 noCacheAvailable）。
-        let saveReceipt = try await managed.session.saveCache(to: cacheURL)
+        try await managed.session.saveCache(to: cacheURL)
 
         // The vendor cache is written separately from the sidecar. Bind the
         // pair with a generation id + content hash so any crash/failure between
         // the two writes becomes an invalid checkpoint instead of a mixed pair.
-        let cacheSHA256 = saveReceipt.sha256
+        //
+        // 上游 `saveCache(to:)` 只写文件、不返回摘要（3.32.3 起；旧轮的
+        // SaveReceipt 是 mlx-swift 侧补丁产物）。摘要因此在本层按落盘字节
+        // 重算：同一份文件字节 → 同一 sha256，checkpoint 语义不变。
+        let cacheSHA256 = try Self.sha256HexOfFile(at: cacheURL)
         let checkpointGeneration = UUID().uuidString.lowercased()
 
         let encoder = JSONEncoder()

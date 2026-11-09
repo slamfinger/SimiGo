@@ -1,5 +1,5 @@
 {
-  "originHash" : "06544dde5e1ff4620bc6d2b009955881546f07cc8ab642177f938020f933b115",
+  "originHash" : "0c0fd9fe13af072eaa5ee736d3be3edc3a60b4f1c3367fa5690f7608f22f60b9",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -13,9 +13,10 @@
     {
       "identity" : "mlx-swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/slamfinger/mlx-swift",
+      "location" : "https://github.com/ml-explore/mlx-swift",
       "state" : {
-        "revision" : "ef5f1b6bb24e27922189316362f3057c64261704"
+        "revision" : "7ede4fd6d05f63305c1c0ebf4f8c1909a637c574",
+        "version" : "0.33.0"
       }
     },
     {
@@ -23,7 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/slamfinger/mlx-swift-lm.git",
       "state" : {
-        "revision" : "6f88129b19684849a19d9d1c1ed6e0021491906b"
+        "branch" : "simigo/adapt-tip-3.32.3",
+        "revision" : "79adafebff03e2663f4cdb9a9c8d2636e347094d"
       }
     },
     {

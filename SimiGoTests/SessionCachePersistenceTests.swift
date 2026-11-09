@@ -64,24 +64,22 @@ final class SessionCachePersistenceTests: XCTestCase {
         )
     }
 
-    func testSafetensorsSaveReceiptMatchesIndependentDigest() throws {
+    /// checkpoint 摘要由本层按落盘字节重算（上游 saveCache 不再返回 SaveReceipt）。
+    /// 契约只剩一条：摘要 == 文件字节的 SHA-256，分块读不得改变结果。
+    func testFileDigestMatchesIndependentDigest() throws {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-save-receipt-(UUID().uuidString).safetensors")
+            .appendingPathComponent("simigo-digest-(UUID().uuidString).safetensors")
         defer { try? FileManager.default.removeItem(at: url) }
 
-        let receipt = try saveWithReceipt(
-            arrays: ["0.0": MLXArray([1, 2, 3, 4])],
-            metadata: ["test": "p2-es-02"],
-            url: url
-        )
+        try save(arrays: ["0.0": MLXArray([1, 2, 3, 4])], metadata: [:], url: url)
         let bytes = try Data(contentsOf: url)
         let digest = SHA256.hash(data: bytes)
             .map { String(format: "%02x", $0) }
             .joined()
 
-        XCTAssertEqual(receipt.sha256, digest)
-        XCTAssertEqual(receipt.bytesWritten, Int64(bytes.count))
-        XCTAssertFalse(receipt.sha256.isEmpty)
+        XCTAssertEqual(try NativeMLX.sha256HexOfFile(at: url), digest)
+        XCTAssertEqual(try NativeMLX.sha256HexOfFile(at: url, chunkBytes: 1), digest)
+        XCTAssertFalse(digest.isEmpty)
     }
 
     func testSessionCacheMetadataCodableRoundTrip() throws {
