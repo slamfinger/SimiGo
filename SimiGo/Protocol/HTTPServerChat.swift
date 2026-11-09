@@ -214,6 +214,15 @@ extension HTTPServer {
         sessionID: String? = nil,
         queryOverride: String? = nil
     ) -> (messages: [JSONValue], turn: InformationTurn?) {
+        // Stage timing for the pre-generation half of a turn. Without it a slow
+        // turn is indistinguishable from slow inference: the trace only records
+        // the moment the context is finally injected.
+        let perfT0 = DispatchTime.now()
+        var perfMarks: [String] = []
+        func perfMark(_ label: String) {
+            let ms = DispatchTime.now().uptimeNanoseconds &- perfT0.uptimeNanoseconds
+            perfMarks.append("\(label)=\(ms / 1_000_000)ms")
+        }
         let lastUser = messages.reversed().first {
             $0.object?["role"]?.string == "user"
         }?.object?["content"]?.messageText
@@ -230,6 +239,7 @@ extension HTTPServer {
             url: SimiGoPaths.databaseURL, createIfNeeded: true)
         else { return (messages, nil) }
         try? db.runMigrations()
+        perfMark("db")
 
         let infoSession = sessionID
             ?? resolveExplicitSession(from: json, headers: headers)
@@ -244,13 +254,16 @@ extension HTTPServer {
         // any other session, file, or settlement remains part of the demand.
         let reuseExclusions = (try? loop.answerReuseExclusions(
             sessionID: infoSession, query: query)) ?? []
+        perfMark("excl")
         let candidateResolution = try? loop.resolve(.init(
             sessionID: infoSession, query: query, includeChat: true,
             chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))
+        perfMark("resolve")
         let retrieval = candidateResolution ?? SimiGoInformationLoop.Resolution(
             demandID: "", stateID: nil, reused: false, hits: [], inputDigest: "",
             resultSHA256: "", retrievalSettlementID: "", itemIDs: [], staleItemIDs: [])
         let candidate = candidateResolution.map { loop.contextBlock($0) } ?? ""
+        perfMark("render")
         // The turn this block is attached to. Inside a tool loop the client
         // repeats the same trailing user message every request, so this is a
         // mid-chain position the engine has already committed.
@@ -277,6 +290,7 @@ extension HTTPServer {
                 block: candidate, resolution: retrieval)
             refreshedFrozen = true
         }
+        perfMark("freeze")
         let context = snapshot.block
         // One readable line per turn: the landed index is the fact that decides
         // whether the committed prefix drifts — a mid-chain index sits inside
@@ -307,6 +321,7 @@ extension HTTPServer {
         if snapshot.candidateChanged { traceFields.append("frozenStale=1") }
         if eligibility == .internalOperation { traceFields.append("eligibility=internal") }
         RuntimeTraceLogger.shared.trace(traceFields.joined(separator: " "))
+        RuntimeTraceLogger.shared.trace("[PERF] prepare " + perfMarks.joined(separator: " "))
 
         // Persist only this turn's user text, not the whole request envelope:
         // re-storing the accumulated history would make every later retrieval
