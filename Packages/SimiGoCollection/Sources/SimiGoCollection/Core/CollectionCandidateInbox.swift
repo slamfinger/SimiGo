@@ -691,12 +691,21 @@ final class CollectionSQLiteStatement {
 
     func reset() throws {
         // Reset always runs before clearing bindings, even when it reports the
-        // previous step error. Surface both return codes instead of allowing a
-        // failed statement to be silently reused.
+        // previous step error. Capture both diagnostics so neither return code
+        // is silently discarded.
         let resetCode = sqlite3_reset(handle)
+        let resetDetail = String(cString: sqlite3_errmsg(connection))
         let clearCode = sqlite3_clear_bindings(handle)
-        try check(resetCode)
-        try check(clearCode)
+        let clearDetail = String(cString: sqlite3_errmsg(connection))
+        if resetCode != SQLITE_OK {
+            let detail = clearCode == SQLITE_OK
+                ? resetDetail
+                : "sqlite3_reset: \(resetDetail); sqlite3_clear_bindings (\(clearCode)): \(clearDetail)"
+            throw CollectionSQLiteConnection.error(code: resetCode, path: path, detail: detail)
+        }
+        if clearCode != SQLITE_OK {
+            throw CollectionSQLiteConnection.error(code: clearCode, path: path, detail: clearDetail)
+        }
     }
 
     func bind(text: String, at index: Int32) throws {
