@@ -260,6 +260,11 @@ public struct QoderCursorState: Codable, Sendable, Equatable {
 public final class QoderFileCursorStore {
     public let fileURL: URL
 
+    /// A bounded durable checkpoint: enough for the normal 4,096-file inventory,
+    /// while refusing corrupted or attacker-grown state before unbounded reads.
+    static let maximumCursorStateBytes = 8 * 1024 * 1024
+    static let maximumCursorCount = 4_096
+
     public init(directoryURL: URL) {
         self.fileURL = directoryURL.appendingPathComponent("cursor.json")
     }
@@ -283,10 +288,13 @@ public final class QoderFileCursorStore {
         var info = stat()
         guard fstat(descriptor, &info) == 0,
               (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_uid == getuid()
+              info.st_uid == getuid(),
+              info.st_size >= 0,
+              info.st_size <= off_t(Self.maximumCursorStateBytes)
         else {
             throw QoderCollectionStateError.unreadableState(
-                path: fileURL.path, detail: "cursor is not a regular owned file")
+                path: fileURL.path,
+                detail: "cursor is not a regular owned file or exceeds the maximum cursor-state byte limit")
         }
 
         var data = Data()
@@ -296,6 +304,11 @@ public final class QoderFileCursorStore {
                 Darwin.read(descriptor, raw.baseAddress, raw.count)
             }
             if count > 0 {
+                guard count <= Self.maximumCursorStateBytes - data.count else {
+                    throw QoderCollectionStateError.unreadableState(
+                        path: fileURL.path,
+                        detail: "cursor state grew beyond the maximum cursor-state byte limit while reading")
+                }
                 data.append(contentsOf: buffer.prefix(count))
             } else if count == 0 {
                 break
@@ -314,13 +327,23 @@ public final class QoderFileCursorStore {
     }
 
     public func save(_ state: QoderCursorState) throws {
+        guard state.cursors.count <= Self.maximumCursorCount else {
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path,
+                detail: "cursor state exceeds the maximum tracked cursor count (\(Self.maximumCursorCount))")
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let data = try encoder.encode(state)
+        guard data.count <= Self.maximumCursorStateBytes else {
+            throw QoderCollectionStateError.unreadableState(
+                path: fileURL.path,
+                detail: "cursor state exceeds the maximum cursor-state byte limit (\(Self.maximumCursorStateBytes))")
+        }
         let directory = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true,
             attributes: [.posixPermissions: 0o700])
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(state)
         // Atomic replacement never opens an existing cursor target. Apply the
         // restrictive mode through a no-follow descriptor as well, so a late
         // symlink swap cannot redirect chmod to an external file.
