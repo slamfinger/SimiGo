@@ -47,6 +47,6 @@ Package tests 使用临时夹具，不读取活跃 transcript。App XCTest 中�
 
 ## 主线整合与历史证据
 
-采集桥于 `b3886bb8` 进入产品主线。包测试、App 构建与冒烟仅证明接入未破坏既有路径，不证明 collection → ES/IS 完整链路。提交构成、候选 tag 与当前 HEAD 的差异、91 条测试及整合历史详见 [Qoder collection integration record](../../docs/history/QODER_COLLECTION_INTEGRATION_20261105.md)。
+采集桥于 `b3886bb8` 进入产品主线。包测试、App 构建与冒烟仅证明接入未破坏既有路径，不证明 collection → ES/IS 完整链路。提交构成、候选 tag 与当前 HEAD 的差异、91 条测试及整合历史详见 [collection integration record](../../docs/history/COLLECTION_INTEGRATION_20261105.md)。
 
 旧云代理转发已退役；本 package 不恢复该能力。

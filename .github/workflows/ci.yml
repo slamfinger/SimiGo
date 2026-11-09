@@ -129,8 +129,8 @@ jobs:
           echo "SCOPE|Packages/LOCALBCore sources and test target, via native SwiftPM manifest"
           echo "SCOPE|no app integration, transport or real-host claim"
 
-  qoder-collection-package:
-    name: Qoder collection package
+  collection-package:
+    name: Transcript collection package
     # MLX-free Swift package. The app links it on the GUI launch path, so a
     # package that stops building or loses cases blocks the product, not only
     # the package. No Xcode project, llama.cpp, model weights, or signing.
@@ -155,11 +155,11 @@ jobs:
       - name: Package tests
         run: |
           set -o pipefail
-          swift test --package-path Packages/SimiGoCollection 2>&1 | tee "$RUNNER_TEMP/qoder-collection.log"
+          swift test --package-path Packages/SimiGoCollection 2>&1 | tee "$RUNNER_TEMP/collection-package.log"
       - name: Gate on executed cases, not on the light
         if: always()
         run: |
-          python3 - "$RUNNER_TEMP/qoder-collection.log" "${EXPECTED_CASES:-}" <<'PY'
+          python3 - "$RUNNER_TEMP/collection-package.log" "${EXPECTED_CASES:-}" <<'PY'
           import os, re, sys
 
           log_path, expected_raw = sys.argv[1], sys.argv[2]
@@ -453,7 +453,7 @@ jobs:
           echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests + CancelPathStubHTTPTests run in the default isolated process"
           echo "SCOPE|includes four-path detached settlement DB assertions and negative controls"
           echo "SCOPE|LOCALBRequestAuthWiringTests run separately with SIMIGO_TRANSPORT=secure"
-          echo "SCOPE|no claim about external models, Qoder, or end-to-end Agent execution"
+          echo "SCOPE|no claim about external models, third-party agent clients, or end-to-end Agent execution"
   runtime-contract-tests:
     name: SimiGoRuntime contract tests (isolated source target)
     # SwiftPM currently builds the package's MLX experimental target even when
