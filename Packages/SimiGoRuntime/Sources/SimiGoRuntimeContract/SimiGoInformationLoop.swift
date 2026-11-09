@@ -150,8 +150,6 @@ public struct SimiGoInformationLoop {
         let exclusionIDs = demand.excludeItemIDs.sorted()
         let rootScopeJSON = String(
             decoding: try JSONEncoder.sorted.encode(requestedRootIDs), as: UTF8.self)
-        let exclusionScopeJSON = String(
-            decoding: try JSONEncoder.sorted.encode(exclusionIDs), as: UTF8.self)
         // The demand's lifecycle identity. A retry of the same request must land
         // on the same demand; two unrelated requests without a session must not,
         // or one would supersede the other. Knowledge itself stays shared: this
@@ -214,10 +212,18 @@ public struct SimiGoInformationLoop {
             }
             let scopeSessions = requestedChatSessionIDs.isEmpty
                 ? "all" : requestedChatSessionIDs.joined(separator: ",")
-            let tail = scopedChatRows.max { $0.messageID < $1.messageID }
+            // Hash the complete eligible chat basis, not only a count and tail
+            // watermark. Different exclusions can remove different older rows
+            // while preserving both; the basis digest makes those retrieval
+            // scopes distinct. Excluding the current answer's newly appended
+            // rows leaves the source demand's basis unchanged for exact reuse.
+            let chatBasis = scopedChatRows
+                .map { "\($0.itemID)=\($0.contentSHA256)" }
+                .sorted()
+                .joined(separator: "\n")
+            let chatBasisSHA256 = NativeSHA256.hexDigest(Data(chatBasis.utf8))
             chatScope = "chat-scope=sessions=\(scopeSessions)"
-                + ";count=\(scopedChatRows.count);max=\(tail?.messageID ?? 0)"
-                + ";last=\(tail?.contentSHA256 ?? "-")"
+                + ";count=\(scopedChatRows.count);basis=\(chatBasisSHA256)"
             for row in scopedChatRows {                guard NativeSHA256.hexDigest(Data(row.content.utf8)) == row.contentSHA256
                 else { continue }
                 for (idx, line) in row.content
@@ -275,7 +281,6 @@ public struct SimiGoInformationLoop {
             + "request=\(requestIdentity)\n"
             + "limit=\(limit)\n"
             + "root-scope=\(rootScope)\n"
-            + "exclude-items=\(exclusionScopeJSON)\n"
             + "keywords=" + keywords.sorted().joined(separator: " ")
             + "\n" + inputs.sorted().joined(separator: "\n")
             + "\n" + chatScope

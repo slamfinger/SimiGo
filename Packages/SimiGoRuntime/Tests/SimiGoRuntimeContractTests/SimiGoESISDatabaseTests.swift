@@ -1283,8 +1283,8 @@ extension SimiGoESISDatabaseTests {
             fileByteCap: 128, tailBytes: 256, maxTotalBytesRead: 128,
             carryText: false)) { error in
                 XCTAssertTrue(
-                    String(describing: error).contains("maxTotalBytesRead exceeded (0)"),
-                    "the tail window must be refused before reading: \(error)")
+                    String(describing: error).contains("maxTotalBytesRead exceeded (128)"),
+                    "the oversized tail window must be refused before reading: \(error)")
             }
         XCTAssertEqual(try db.listExternalFiles(rootID: "tail-budget-root"), baseline)
         XCTAssertEqual(try db.count("file_contents"), 1)

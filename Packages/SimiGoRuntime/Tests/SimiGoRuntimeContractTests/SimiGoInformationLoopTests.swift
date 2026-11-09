@@ -185,6 +185,42 @@ final class SimiGoInformationLoopTests: XCTestCase {
         XCTAssertNotEqual(emptyA.demandID, emptyB.demandID)
     }
 
+    func testExcludedChatRowsChangeDemandBasisAndReuseOnlyWithinSameScope() throws {
+        let (url, db) = try open("chat-exclusion-basis")
+        defer { db.close(); cleanup(url) }
+
+        let firstMessageID = try db.appendChatMessage(
+            sessionID: "source-chat", role: "assistant",
+            content: "needle first row", model: nil, createdAt: Date())
+        let secondMessageID = try db.appendChatMessage(
+            sessionID: "source-chat", role: "assistant",
+            content: "needle second row", model: nil, createdAt: Date())
+        let rows = try db.chatIndexRows(sessionIDs: ["source-chat"])
+        let first = try XCTUnwrap(rows.first { $0.messageID == firstMessageID })
+        let second = try XCTUnwrap(rows.first { $0.messageID == secondMessageID })
+
+        let loop = SimiGoInformationLoop(database: db)
+        let all = try loop.resolve(.init(
+            sessionID: "consumer", requestIdentity: "same-request",
+            query: "needle", chatSessionIDs: ["source-chat"], limit: 10))
+        XCTAssertEqual(Set(all.hits.map(\\.itemID)), Set([first.itemID, second.itemID]))
+
+        let filtered = try loop.resolve(.init(
+            sessionID: "consumer", requestIdentity: "same-request",
+            query: "needle", chatSessionIDs: ["source-chat"],
+            excludeItemIDs: [first.itemID], limit: 10))
+        XCTAssertNotEqual(filtered.demandID, all.demandID)
+        XCTAssertEqual(filtered.hits.map(\\.itemID), [second.itemID])
+        XCTAssertFalse(filtered.reused)
+
+        let repeated = try loop.resolve(.init(
+            sessionID: "consumer", requestIdentity: "same-request",
+            query: "needle", chatSessionIDs: ["source-chat"],
+            excludeItemIDs: [first.itemID], limit: 10))
+        XCTAssertTrue(repeated.reused)
+        XCTAssertEqual(repeated.hits, filtered.hits)
+    }
+
     // MARK: - P1/P2: retrieval boundary (measured 2026-10-30)
 
     // MARK: - Chat turn terminal standing
