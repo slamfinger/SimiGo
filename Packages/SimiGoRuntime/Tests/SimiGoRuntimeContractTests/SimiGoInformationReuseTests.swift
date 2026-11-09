@@ -178,23 +178,24 @@ final class SimiGoInformationReuseTests: XCTestCase {
             identity: identity))
     }
 
-    /// Rule 4: a different engine never inherits settled text, and neither does
-    /// an engine whose identity was not resolved.
-    func testDifferentOrUnresolvedProducerIdentityIsNotServable() throws {
+    /// A settled answer is a semantic result, not a KV state: producer identity
+    /// is provenance, never a reuse condition (P2 §5.32). A different engine —
+    /// named differently, differently tokenized, or unnamed — reads the same
+    /// settled text, and the consuming model is recorded on the reuse row.
+    func testDifferentEngineIdentityStillServesSettledText() throws {
         let source = try settleAnsweredTurn()
-
-        XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query,
-            expectedDemandID: source.demandID,
-            identity: .init(model: "other-model", tokenizer: identity.tokenizer)))
-        XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query,
-            expectedDemandID: source.demandID,
-            identity: .init(model: identity.model, tokenizer: "other-tokenizer")))
-        XCTAssertNil(loop.reusableAnswer(
-            sessionID: "info-a", query: query,
-            expectedDemandID: source.demandID,
-            identity: .init(model: "unspecified", tokenizer: "unspecified")))
+        let engines: [(String, SimiGoSettlementIdentityBinding.Identity)] = [
+            ("other model", .init(model: "other-model", tokenizer: identity.tokenizer)),
+            ("other tokenizer", .init(model: identity.model, tokenizer: "other-tokenizer")),
+            ("unspecified", .init(model: "unspecified", tokenizer: "unspecified")),
+            ("absent", .absent),
+        ]
+        for (label, engine) in engines {
+            let reuse = loop.reusableAnswer(
+                sessionID: "info-a", query: query,
+                expectedDemandID: source.demandID, identity: engine)
+            XCTAssertEqual(reuse?.text, "the exit is north", label)
+        }
     }
 
     /// Scope isolation: the same wording in a different information scope is a
@@ -213,10 +214,10 @@ final class SimiGoInformationReuseTests: XCTestCase {
             identity: identity))
     }
 
-    /// An unresolved producer identity is an absence of a claim, not a wildcard:
-    /// two unnamed engines are not the same engine, so 「未识别」 must never let
-    /// one model inherit another model's settled text.
-    func testAbsentProducerIdentityIsNeverServable() throws {
+    /// A producer that recorded no identity leaves no claim to compare — but it
+    /// still leaves a settled result, and that result stays rereadable. The
+    /// comparison itself is unchanged; this path simply no longer consults it.
+    func testAbsentProducerIdentityStillServesWhileEvaluateBlocks() throws {
         let resolution = try loop.resolve(.init(
             sessionID: "info-a", query: query, includeChat: false, limit: 5))
         _ = try loop.settleTurn(
@@ -225,14 +226,15 @@ final class SimiGoInformationReuseTests: XCTestCase {
             modelIdentity: "unresolved", identity: .absent,
             sessionID: "info-a", summaryQuery: query)
 
-        XCTAssertNil(loop.reusableAnswer(
+        XCTAssertEqual(loop.reusableAnswer(
             sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
-            identity: .absent))
-        XCTAssertNil(loop.reusableAnswer(
+            identity: .absent)?.text, "the exit is in the east wing")
+        XCTAssertEqual(loop.reusableAnswer(
             sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
-            identity: identity))
+            identity: identity)?.text, "the exit is in the east wing")
 
-        // The refusal is in the binding rule itself, not only in the gate.
+        // evaluate() still refuses: it remains the comparison a task opts into
+        // when it declares identity to be a semantic dependency.
         let absentOnly = SimiGoSettlementIdentityBinding.evaluate(
             recorded: SimiGoSettlementIdentityBinding.bindings(for: .absent),
             consumer: .absent)

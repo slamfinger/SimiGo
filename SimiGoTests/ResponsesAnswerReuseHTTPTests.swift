@@ -16,7 +16,7 @@ import SimiGoRuntimeContract
 ///   signed HTTPS POST /v1/responses
 ///     -> HTTPServer.route -> handleResponses(Non)Streaming
 ///     -> prepareInformationTurn (real ES demand + IS resolve)
-///     -> reusableAnswer gate (current demand + settlement validity + producer identity)
+///     -> reusableAnswer gate (current demand + settlement validity; identity is provenance)
 ///     -> completed response carrying `simigo.model_calls = 0`
 ///
 /// The only substituted component is generation (a counter, never a model).
@@ -270,14 +270,14 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
         }
     }
 
-    // MARK: - 3) A swapped engine never inherits another engine's answer
+    // MARK: - 3) A swapped engine reads the same settled text
 
     /// Replace the local model and ask the SAME question in the SAME session:
-    /// the previous engine's settled result must not be served. The gate checks
-    /// producer identity, so this is the product-level form of 「不同模型的结果
-    /// 不能直接假定可互换」.
+    /// the settled result is a semantic result, so it is still served with zero
+    /// model calls, and the engine now in use is what the reuse row records.
+    /// Producer identity is provenance (P2 §5.32), never a reuse condition.
     @MainActor
-    func testDifferentProducerIdentityIsNotReused() async throws {
+    func testDifferentProducerIdentityStillReusesSettledText() async throws {
         let session = "reuse-identity-\(UUID().uuidString)"
         let stubA = Stub()
         stubA.text = "MODEL-A-ANSWER"
@@ -300,12 +300,15 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
             let second = try await dispatch(
                 requestBody(session: session, input: "what is gamma"))
             XCTAssertEqual(second.status, 200, String(decoding: second.raw, as: UTF8.self))
-            XCTAssertEqual(second.generate, 1,
-                           "a different engine must not inherit the settled answer")
-            XCTAssertEqual(second.outputText, "MODEL-B-ANSWER",
-                           "the turn is answered by the engine now in use")
-            XCTAssertNil(second.body["simigo"],
-                         "a cross-engine turn is a generation, not a reuse")
+            XCTAssertEqual(second.generate, 0,
+                           "a reuse spends no model call, whichever engine asks")
+            XCTAssertEqual(second.outputText, "MODEL-A-ANSWER",
+                           "the settled text is the settled result, not the current engine's guess")
+            let block = try XCTUnwrap(second.simigo, "reuse is reported on the wire")
+            XCTAssertEqual(block["answer_reuse"] as? Bool, true)
+            XCTAssertEqual(block["model_calls"] as? Int, 0)
+            XCTAssertEqual(stubB.generate, 0,
+                           "the engine in use was never asked to generate")
         }
     }
 

@@ -429,10 +429,15 @@ public struct SimiGoInformationLoop {
     /// 3. the retrieval settlement behind that demand is still `valid` — the
     ///    answer row carries no file edges of its own, so this dependency check
     ///    is what catches a source that moved since the answer was settled;
-    /// 4. the producer model and tokenizer bindings match the engine serving
-    ///    this turn, so a different model never inherits another engine's
-    ///    settled value (an absent binding refuses too, which is why a turn
-    ///    without a resolved producer identity can never reuse).
+    ///
+    /// Producer identity is deliberately NOT one of them. A settled answer is a
+    /// semantic result, and the standing ruling (P2 §5.32) puts identity outside
+    /// the universal admission condition: `producer.*` bindings are provenance,
+    /// recorded for audit, and compared only when a task explicitly declares
+    /// identity as a semantic dependency. Serving settled text to a different —
+    /// or unnamed — engine is therefore allowed; the consuming model is recorded
+    /// on the reuse row itself. `identity` stays in the signature because callers
+    /// still carry it, not because this path consults it.
     public func reusableAnswer(
         sessionID: String,
         query: String,
@@ -453,9 +458,6 @@ public struct SimiGoInformationLoop {
             guard let retrieval = try? database.settlementReceipt(retrievalID),
                 retrieval.validity == "valid" else { return nil }
         }
-        let verdict = SimiGoSettlementIdentityBinding.evaluate(
-            recorded: receipt.bindings, consumer: identity)
-        guard verdict.status == .ok else { return nil }
         guard let object = try? JSONSerialization.jsonObject(with: receipt.payload)
             as? [String: Any],
             let content = object["content"] as? String,
