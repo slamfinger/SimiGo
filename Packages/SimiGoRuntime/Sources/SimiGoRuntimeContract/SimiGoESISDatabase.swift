@@ -67,6 +67,10 @@ public final class SimiGoESISDatabase {
         case sql(String)
         /// The registered locator has changed since its last settled digest.
         case staleExternalSource(rootID: String, relativePath: String)
+        /// The source path is no longer there (ENOENT/ENOTDIR). Kept distinct
+        /// from a path that now leads somewhere else: a vanished source is
+        /// drift the retrieval reports as stale, a redirected one is refused.
+        case sourceGone(path: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
         /// SQLite API execution failure. Preserves primary and extended result
@@ -3394,8 +3398,12 @@ try bind(externalStmt, 1, rootID)
     private func canonicalDirectoryPath(atPath path: String) throws -> String {
         let resolved = path.withCString { Darwin.realpath($0, nil) }
         guard let resolved else {
+            let code = errno
+            if code == ENOENT || code == ENOTDIR {
+                throw DatabaseError.sourceGone(path: path)
+            }
             throw DatabaseError.sql(
-                "canonicalDirectoryPath: \(String(cString: strerror(errno)))")
+                "canonicalDirectoryPath: \(String(cString: strerror(code)))")
         }
         defer { free(resolved) }
         return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
@@ -3477,6 +3485,9 @@ try bind(externalStmt, 1, rootID)
             guard next >= 0 else {
                 let code = errno
                 Darwin.close(parentFD)
+                if code == ENOENT || code == ENOTDIR {
+                    throw DatabaseError.sourceGone(path: relativePath)
+                }
                 throw DatabaseError.sql(
                     "readRootFileNoFollow: parent is unavailable or symlinked: \(String(cString: strerror(code)))")
             }
@@ -3493,6 +3504,9 @@ try bind(externalStmt, 1, rootID)
         let openError = errno
         Darwin.close(parentFD)
         guard fileFD >= 0 else {
+            if openError == ENOENT || openError == ENOTDIR {
+                throw DatabaseError.sourceGone(path: relativePath)
+            }
             throw DatabaseError.sql(
                 "readRootFileNoFollow: leaf is unavailable or symlinked: \(String(cString: strerror(openError)))")
         }
@@ -4137,7 +4151,19 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.sql(
                 "searchableFileText: invalid relative path for \(row.rootID)/\(row.relativePath)")
         }
-        let rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
+        // A vanished source is drift, not carrier failure: the resolve keeps
+        // every other source and reports this one stale. A path that now leads
+        // elsewhere (symlink) still refuses loudly — that is what the no-follow
+        // reader is for, so `sourceGone` is deliberately narrower than it.
+        func mapGone<T>(_ body: () throws -> T) throws -> T {
+            do {
+                return try body()
+            } catch SimiGoESISDatabase.DatabaseError.sourceGone {
+                throw DatabaseError.staleExternalSource(
+                    rootID: row.rootID, relativePath: row.relativePath)
+            }
+        }
+        let rootDirectoryFD = try mapGone { try openDirectoryNoFollow(atPath: locator) }
         defer { Darwin.close(rootDirectoryFD) }
 
         // Index-only metadata is itself a content-addressed object. It records
@@ -4173,7 +4199,7 @@ try bind(externalStmt, 1, rootID)
                 throw DatabaseError.staleExternalSource(
                     rootID: row.rootID, relativePath: row.relativePath)
             }
-            let read = try readRootFileNoFollow(
+            let read = try mapGone { try readRootFileNoFollow(
                 rootDirectoryFD: rootDirectoryFD,
                 relativePath: relative,
                 // Force the bounded tail path based on the read window, not
@@ -4183,7 +4209,7 @@ try bind(externalStmt, 1, rootID)
                 // budget error instead of classifying it as stale.
                 maximumBytes: tailWindowBytes - 1,
                 tailBytes: tailWindowBytes,
-                maximumTotalBytesRead: tailWindowBytes)
+                maximumTotalBytesRead: tailWindowBytes) }
             guard read.isTail, read.size == indexedSize, let rawTail = read.data else {
                 throw DatabaseError.staleExternalSource(
                     rootID: row.rootID, relativePath: row.relativePath)
@@ -4205,11 +4231,11 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.staleExternalSource(
                 rootID: row.rootID, relativePath: row.relativePath)
         }
-        let read = try readRootFileNoFollow(
+        let read = try mapGone { try readRootFileNoFollow(
             rootDirectoryFD: rootDirectoryFD,
             relativePath: relative,
             maximumBytes: Int(indexedSize),
-            maximumTotalBytesRead: maximumFullReadBytes)
+            maximumTotalBytesRead: maximumFullReadBytes) }
         guard !read.isTail, read.size == indexedSize, let data = read.data,
               NativeSHA256.hexDigest(data) == row.digest else {
             throw DatabaseError.staleExternalSource(

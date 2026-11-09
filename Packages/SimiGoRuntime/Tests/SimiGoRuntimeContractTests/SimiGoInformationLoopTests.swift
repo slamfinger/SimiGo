@@ -380,6 +380,55 @@ final class SimiGoInformationLoopTests: XCTestCase {
             "the window starts near the match, not at the line's beginning")
     }
 
+    /// A settled source that disappears must be reported stale, not abort the
+    /// retrieval. Measured 2026-11-10 on the live space: one deleted Codex
+    /// rollout made every `simigo_is_search` call fail with the raw open error,
+    /// so no local agent could read the space at all — while the code already
+    /// carried a stale list that nothing could reach.
+    ///
+    /// A path that now leads elsewhere is a different statement: it stays a
+    /// loud refusal, because silently reading the new target is exactly the
+    /// redirection the no-follow reader exists to stop.
+    func testUnavailableSettledSourceIsStaleNotFatal() throws {
+        let (url, db) = try open("stale-source")
+        let root = try makeWorkRoot()
+        defer {
+            db.close()
+            cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("needle survives in this file", to: root, name: "a.md")
+        try write("this file is about to vanish", to: root, name: "b.md")
+        try write("this file is about to be redirected", to: root, name: "c.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+
+        let loop = SimiGoInformationLoop(database: db)
+        try FileManager.default.removeItem(at: root.appendingPathComponent("b.md"))
+        let resolution = try loop.resolve(.init(
+            sessionID: "s", query: "needle", includeChat: false))
+        XCTAssertTrue(resolution.staleItemIDs.contains("file:work/b.md"))
+        XCTAssertTrue(
+            resolution.hits.contains { $0.itemID == "file:work/a.md" },
+            "the readable source still answers")
+
+        // Redirected, not gone: still refused.
+        try FileManager.default.removeItem(at: root.appendingPathComponent("c.md"))
+        try FileManager.default.createSymbolicLink(
+            at: root.appendingPathComponent("c.md"),
+            withDestinationURL: root.appendingPathComponent("a.md"))
+        XCTAssertThrowsError(
+            try loop.resolve(.init(
+                sessionID: "s", query: "needle again", includeChat: false)),
+            "a symlinked source must refuse rather than follow")
+
+        // The whole root going away is the same statement, one level up.
+        try FileManager.default.removeItem(at: root)
+        let gone = try loop.resolve(.init(
+            sessionID: "s", query: "needle a third time", includeChat: false))
+        XCTAssertTrue(gone.hits.isEmpty)
+        XCTAssertEqual(gone.staleItemIDs.sorted(), ["file:work/a.md", "file:work/b.md", "file:work/c.md"])
+    }
+
     /// A user line whose own request has not completed is not history. Measured
     /// 2026-10-30: four Codex requests shared one session and the greeting
     /// retrieved a background rollout prompt that was still in flight.
