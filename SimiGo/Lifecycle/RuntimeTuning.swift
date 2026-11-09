@@ -10,6 +10,13 @@ nonisolated enum RuntimeTuning {
     /// MLX recyclable buffer cache limit.
     static let mlxCacheLimitBytes = 4 * gibibyte
 
+    /// 空闲归还阈值（2026-11-09）：本轮结束后进程 footprint 超过物理内存的
+    /// 3/5，就把 MLX 缓存与 malloc 空闲页还给系统。低于阈值不动——一次 clear
+    /// 的代价是下一轮重付缓冲区分配，只有机器真的紧时才划算。
+    /// 32 GB 机器上 3/5 = 19.3 GB，20.6 GB 的模型必然越线；64 GB 机器上不越线。
+    static let idleReleaseFootprintBytes =
+        ProcessInfo.processInfo.physicalMemory / 5 * 3
+
     /// Responses store is protocol state, not inference memory.
     static let responsesStoreMaxCount = 64
     static let responsesStoreTTLSeconds: TimeInterval = 1800

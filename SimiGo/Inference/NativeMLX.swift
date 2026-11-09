@@ -2498,6 +2498,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         traceLogger.trace(log)
 
+        // 轮末归还（2026-11-09）。两轮之间运行时一直攥着两样东西：MLX 回收
+        // 缓存里的空闲缓冲，和 malloc arena 里已释放但没还给系统的页。它们
+        // 只在下一轮分配时才有用，而在 20.6 GB 模型 + 32 GB 机器上，这正好
+        // 是把 macOS 顶在黄色、把下一轮复用预填变成缺页的那点余量。
+        // 实测：afterLoad cache=1621 MB、停机前 cache=860 MB；单次会话
+        // swapUsed 从 5.6 GB 爬到 25.5 GB；同样的复用预填平时 1-9 s，
+        // 2026-11-09 16:32 那次 1731 token 用了 28 s。
+        releaseIdleMemoryIfTight(trigger: "turn")
+
         // usage 保持 vendor 原值透传（含 restore 路径的归因缺口）：P1-2 契约
         // 是官方计数不做估算；restore 归因补全只属于上方 Runtime 遥测行。
         let usage: GenerationUsageReport? = (promptTokens != nil && generationTokens != nil)
@@ -2512,6 +2521,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             : nil
         return GenerationResult(
             text: completedText, usage: usage, completion: completion)
+    }
+
+    /// 机器紧的时候，把本进程攥着的空闲内存还回去；不紧就什么都不做，把
+    /// 缓冲区留给下一轮复用。判断依据是 footprint 而不是"看起来大不大"：
+    /// 模型本身就占 20 GB，只有越过物理内存 3/5 才说明是本进程把机器顶住了。
+    private nonisolated func releaseIdleMemoryIfTight(trigger: String) {
+        let tight = RuntimeTuning.footprintBytes() > RuntimeTuning.idleReleaseFootprintBytes
+        if tight {
+            Memory.clearCache()
+            malloc_zone_pressure_relief(nil, 0)
+        }
+        // 每轮一行：不紧时的读数同样有用，它证明"没越线"而不是"没测"。
+        logMemory(tight ? "idle-release:\(trigger)" : "turn:\(trigger)")
     }
 
     /// #90 A：跨请求采纳活会话分片。判据本身是纯函数（`SessionAdoption`，
