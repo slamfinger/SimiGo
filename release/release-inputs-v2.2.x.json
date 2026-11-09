@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 658,
+    "tracked": 660,
     "research_not_declared": 0,
-    "non_research_candidates": 658,
-    "declared": 600,
+    "non_research_candidates": 660,
+    "declared": 602,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -940,6 +940,10 @@
       "output": "SimiGo/Lifecycle/RuntimeTuning.swift"
     },
     {
+      "path": "SimiGo/Model/GGUFModelIdentity.swift",
+      "output": "SimiGo/Model/GGUFModelIdentity.swift"
+    },
+    {
       "path": "SimiGo/Model/InferenceNodeCfg.swift",
       "output": "SimiGo/Model/InferenceNodeCfg.swift"
     },
@@ -1114,6 +1118,10 @@
     {
       "path": "SimiGoTests/GGUFManagedEntryRealModelE2ETests.swift",
       "output": "SimiGoTests/GGUFManagedEntryRealModelE2ETests.swift"
+    },
+    {
+      "path": "SimiGoTests/GGUFModelIdentityTests.swift",
+      "output": "SimiGoTests/GGUFModelIdentityTests.swift"
     },
     {
       "path": "SimiGoTests/GenerationCompletionHTTPTests.swift",
