@@ -165,7 +165,7 @@ public enum SimiGoSettlementConsumption {
         }
     }
 
-    /// Consume a settled unit. The source must be named explicitly; validity,
+    /// Consume a settled result. The source must be named explicitly; validity,
     /// dependency closure, any explicitly declared identity constraint, the contract and canonical input basis are all
     /// re-checked inside the write transaction, never from an earlier read.
     public static func consume(

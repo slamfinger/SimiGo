@@ -141,7 +141,7 @@ enum SimiGoProducerIdentity {
     }
 
     /// Drive the product's single zero-call consumption transaction for an
-    /// explicitly named settled unit. The consumer identity is re-derived from
+    /// explicitly named settled result. The consumer identity is re-derived from
     /// THIS runtime's model snapshot (a request assertion is only compared, never
     /// trusted), the consumer Execution State is fresh, and every refusal is a
     /// typed failure — nothing falls back to generation here.

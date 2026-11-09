@@ -55,9 +55,15 @@ B0 已有条目按 B0 措辞引用；本表补的是 B0 未收的实现词与论
 
 ## 已知例外（允许，但必须能指回本表）
 
-- **逐字引用不改**：研究文档引用代码注释原文时保留原词，即使原文用的是旧称。例：`INVARIANT_PROPOSITIONS` P3 引
-  `SimiGoESISDatabase.swift` 的 "a declared property of the settled unit"。引文的职责是照抄，改词就变成伪造。
-- **代码注释仍有旧称**：截至 2026-11-09，源码注释里有 6 处 `settled unit`（`SimiGoESISDatabase.swift` 两处、
-  `SimiGoSettlementConsumption.swift` 一处、三个测试文件各一处）。无测试断言该字面串，属注释漂移，不在本轮改：
-  该文件刚做过一次 86 提交的安全加固合并，为一句注释再动它不划算。下次动那个文件时顺手改。
+- **逐字引用须与原文同步**：研究文档引用代码注释原文时照抄当时原文；源码原文改词后，引文与行号随之更新并注明
+  日期——引文与被引对象不符才是伪造。例：`INVARIANT_PROPOSITIONS` P3 引 `SimiGoESISDatabase.swift` 的
+  "a declared property of the settled result"（2026-11-10 随源码正名同步，原引文为 "settled unit"）。
+- **代码注释旧称已清零**：2026-11-10 按本表正名改掉当时仍在的 7 处 `settled unit`
+  （`SimiGoESISDatabase.swift` 两处、`SimiGoSettlementConsumption.swift` 一处、
+  `SimiGoISAdmission.swift` 一处跨行漏检、`SimiGoSettlementConsumptionTests.swift` 一处，
+  以及首轮漏查的应用层两处：`SimiGo/Model/SimiGoProducerIdentity.swift`、
+  `SimiGoTests/ResponsesSettlementConsumptionHTTPTests.swift` —— 首轮只扫了 `Packages/`，
+  评论区与 app target 不在其内，复核时补齐）。原记 6 处中
+  `SimiGoESISDatabaseTests` / `SimiGoInformationLoopTests` 的两处已在更早改动中消失。
+  无测试断言该字面串；复核命令 `grep -rn -i "settled unit" --include='*.swift' Packages SimiGo SimiGoTests` 现为空。
 - **历史版本不改**：`PAPER_S5_ABSTRACT_V0.1_*` 已标"被 v0.2 取代"，其旧词保留作留档。

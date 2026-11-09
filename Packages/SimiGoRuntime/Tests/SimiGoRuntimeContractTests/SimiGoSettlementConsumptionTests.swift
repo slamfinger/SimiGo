@@ -3,7 +3,7 @@ import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
-/// Stage B matrix: a settled unit is consumed into a NEW execution state with
+/// Stage B matrix: a settled result is consumed into a NEW execution state with
 /// zero model calls, or it is refused. Every case runs on a real SQLite store so
 /// the transactional boundary, provenance rows and directory isolation are
 /// exercised rather than simulated.

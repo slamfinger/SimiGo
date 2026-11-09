@@ -88,15 +88,15 @@
 **主张**：从 IS 独立读取已结算结果，来源、完整性、依赖闭包和当前有效性逐项验证；`Settled(ρ)` 与 `Recoverable(ρ, ctx, t)` 的分离获得直接实验证据。
 
 **独立复现步骤（形状）**：
-1. 在阶段 2 之后的全新上下文中，以 settlement_id **显式命名**准入（"a consumer that reuses a settled unit must name it"，`SimiGoISAdmission.swift:122-125`【已核验】）；
+1. 在阶段 2 之后的全新上下文中，以 settlement_id **显式命名**准入（"a consumer that reuses a settled result must name it"，`SimiGoISAdmission.swift:128-129`【已核验 2026-11-10】）；
 2. 采集准入检查单逐项读数；
-3. **失效注入**：对依赖闭包内的来源文件做变更，触发失效传播（注入手段待 G1 裁定——候选：来源文件变更的既有失效机制 `invalidateSourceFile`，`SimiGoESISDatabase.swift:4946-4958`【已核验】）；
+3. **失效注入**：对依赖闭包内的来源文件做变更，触发失效传播（注入手段待 G1 裁定——候选：来源文件变更的既有失效机制 `invalidateSourceFile`，`SimiGoESISDatabase.swift:6737-6747`【已核验 2026-11-10】）；
 4. 在注入后时点 t₂ 再次尝试恢复**同一**结算；
 5. 对抗探针 C：篡改客户端提供的续接值。
 
 **可观测证据**：
 - E3.1 t₁ 时刻准入逐项读数：digest 完整 / validity='valid' / 依赖闭包逐项 present ∧ valid / 身份绑定 evaluate 结果（`SimiGoISAdmission.swift:92-99`【已核验】）；
-- **E3.2a 失效传播与拒绝（修订 2026-11-05 P2-R3）**：绑定来源的结算沿闭包翻转 validity='invalid'、**无关结算保持 valid**、无依赖者的变更不产生任何失效（"Unrelated settlements keep validity='valid'. A change with no dependents invalidates nothing."，`SimiGoESISDatabase.swift:4946-4949`【已核验】）；t₂ 对同一结算的恢复被拒且 typed reason 可审计（`Refusal.invalidated` / `dependencyInvalid` 路径，`SimiGoISAdmission.swift:146-160`【已核验】）——本读数验证 **R6 分离与依赖类 Refuse**；
+- **E3.2a 失效传播与拒绝（修订 2026-11-05 P2-R3）**：绑定来源的结算沿闭包翻转 validity='invalid'、**无关结算保持 valid**、无依赖者的变更不产生任何失效（"Unrelated settlements keep validity='valid'. A change with no dependents invalidates nothing."，`SimiGoESISDatabase.swift:6733-6747`【已核验 2026-11-10】）；t₂ 对同一结算的恢复被拒且 typed reason 可审计（`Refusal.invalidated` / `dependencyInvalid` 路径，`SimiGoISAdmission.swift:146-160`【已核验】）——本读数验证 **R6 分离与依赖类 Refuse**；
 - **E3.2b reexec 执行集合（条件读数）**：仅当本轮**实际执行了 reexec**时，记录实际执行集合并与受影响依赖闭包比较，验证 R3 闭包范围。**拒绝与重执行是两个不同事件**（Admission 拒绝不是执行命令）；若实验未实际触发 reexec，**R3 标为"本轮未验证"**——不得因出现 Refuse 而宣称 R3 执行范围已验证。不为本验证强行增加重执行。
 - E3.3 探针 C：到达模型的值仍来自权威存储（"the value that reaches the model comes from the authoritative store, not the client"，`ContinuationAdmission.swift:4-7`【已核验】），或请求被拒。
 

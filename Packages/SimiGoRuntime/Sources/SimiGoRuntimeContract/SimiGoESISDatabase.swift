@@ -485,7 +485,7 @@ public final class SimiGoESISDatabase {
         ON settlement_summaries(created_at, settlement_id);
     """
 
-    /// v11 is STAGE B: a settled unit may declare that it can be consumed
+    /// v11 is STAGE B: a settled result may declare that it can be consumed
     /// verbatim by a later execution state, and every consumption is recorded as
     /// its own row linked to the source it consumed. A settlement without a
     /// declaration is not consumable; a consumption never records KV bindings and
@@ -6103,7 +6103,7 @@ try bind(externalStmt, 1, rootID)
 
     /// The reuse terms a settlement publishes at settlement time. A settlement
     /// without this row is NOT consumable: reusability is a declared property of
-    /// the settled unit, never inferred from text similarity.
+    /// the settled result, never inferred from text similarity.
     public struct SettlementReuseDeclaration: Equatable, Sendable {
         public let settlementID: String
         public let contractID: String

@@ -126,7 +126,7 @@ public enum SimiGoISAdmission {
     }
 
     /// Verify an EXPLICITLY NAMED settlement. A consumer that reuses a settled
-    /// unit must name it: "the newest settlement for that state" is a different
+    /// result must name it: "the newest settlement for that state" is a different
     /// (and possibly ambiguous) lookup. The checks are the same ones the
     /// state-based entry runs, so there is exactly one admission authority.
     public static func admit(

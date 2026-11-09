@@ -90,7 +90,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         super.tearDown()
     }
 
-    // MARK: - Staging a consumable settled unit in the authoritative store
+    // MARK: - Staging a consumable settled result in the authoritative store
 
     @MainActor
     private func stageConsumableSource(
