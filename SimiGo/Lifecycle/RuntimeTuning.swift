@@ -139,8 +139,21 @@ nonisolated enum RuntimeTuning {
     /// 无法落盘而拒绝，未结算的在途生成直接丢弃，恢复交给 ES/IS 的已结算
     /// 锚点与重新执行。默认关闭（owner 裁定 U2，2026-10-27）；
     /// `SIMIGO_BRANCH_CHECKPOINTS=1` 显式开启，仅作为性能对照/研究实验模式。
-    static let branchCheckpointsEnabled =
-        ProcessInfo.processInfo.environment["SIMIGO_BRANCH_CHECKPOINTS"] == "1"
+    /// 取值顺序：文件 `~/.simigo/branch_checkpoints`（`1` 开 / `0` 关）>
+    /// 启动环境变量 `SIMIGO_BRANCH_CHECKPOINTS`。文件优先是因为**从 Finder
+    /// 启动的 app 拿不到 shell 环境变量**——只认环境变量等于这条研究臂没有入口，
+    /// 而它正是"卸载后多轮还能接上"的前提。
+    static let branchCheckpointsEnabled: Bool = {
+        let url = URL(
+            fileURLWithPath: NSString(string: "~/.simigo/branch_checkpoints")
+                .expandingTildeInPath)
+        if let s = try? String(contentsOf: url, encoding: .utf8) {
+            let v = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            if v == "1" { return true }
+            if v == "0" { return false }
+        }
+        return ProcessInfo.processInfo.environment["SIMIGO_BRANCH_CHECKPOINTS"] == "1"
+    }()
 
     /// EXP-B（B_HEDGE_SKIP_EXPERIMENT_DESIGN §1，实验）：hedge-skip 开关
     /// 与阈值。缺省关闭 = 实验 A 行为；threshold 仅为实验参数，不进入
@@ -310,19 +323,29 @@ nonisolated enum RuntimeTuning {
     }
     /// 内存黄色缓解（2026-10-23 用户反馈：推理结束后内存压力长时间为黄色 → 缩短）。
     /// 大会话自适应阈值此前可高达 ~14.5 分钟（121k tok ÷ 150 + 60）。给驻留窗口
-    /// 驻留窗口的下限与上限（2026-11-09 重定）。
+    /// 驻留窗口，**按会话能不能在卸载后活下来**分成两套（2026-11-09）。
     ///
-    /// 旧值 240–360 s 是 2026-10-23 从 `max(600s…)` 收紧来的，当时唯一的依据
-    /// 是"听起来够覆盖一次追问"。现在有量：本库 190 个真实追问间隔中，≤120 s
-    /// 只占 13.2%，≤360 s 占 34.7%，中位数 581 s——也就是说 360 s 的窗口已经
-    /// 漏掉三分之二的追问，"再长一点就能接住"从来不是它的实际效果，它只是
-    /// 让每次会话收尾多黄 6 分钟。
+    /// 卸载 = `state.sessions.removeAll()`，KV 一起丢。所以窗口不是"保温偏好"，
+    /// 而是"这段内存买的是什么"：
     ///
-    /// 新下限 90 s 的依据是工具回环：同库 96% 的相邻消息间隔 ≤60 s，90 s 足以
-    /// 不打断一次 agent 工具往返。上限 240 s 留给大会话（重建真的要一分钟的
-    /// 那种），由 `adaptiveIdleTimeout` 的估算挑，而不是一律吃满。
-    static var idleResidencyFloorSeconds: TimeInterval = 90
-    static var idleResidencyCapSeconds: TimeInterval = 240
+    /// · **KV 不落盘**（`branchCheckpointsEnabled == false`，现状）：卸载等于
+    ///   下一次整段冷 prefill（今天实测 27,409 token 用 58.3 s，最坏 98.4 s）。
+    ///   多轮办公会话的追问间隔中位数是 581 s（本库 190 个真实间隔），窗口再
+    ///   长也接不住，但缩短就是**直接放弃**这段连续性——所以维持 240–360 s
+    ///   不动，等落盘路径可用再收。
+    /// · **KV 落盘**（checkpoint 可用）：卸载后 40K 上下文 restore 3.5 s
+    ///   （`results_v17_1_longctx.json`，n=3 中位；同档 cold 80.0 s）。这时
+    ///   保温不再买连续性，只买 3.5 s 差异，窗口可以收到 90–240 s——黄色时长
+    ///   随之减半，而多轮不会被超时打断。
+    ///
+    /// 90 s 下限的依据是工具回环：同库 96% 的相邻消息间隔 ≤60 s。240 s 上限留给
+    /// 大会话（重建真的要一分钟那种），由估算挑而不是一律吃满。
+    static var idleResidencyFloorSeconds: TimeInterval = 240
+    static var idleResidencyCapSeconds: TimeInterval = 360
+
+    /// KV 可恢复时的驻留窗口（见上）。只有 `branchCheckpointsEnabled` 为真才用。
+    static var idleResidencyCheckpointedFloorSeconds: TimeInterval = 90
+    static var idleResidencyCheckpointedCapSeconds: TimeInterval = 240
 
     /// 加载完成但**一次都没用过**的驻留窗口（2026-11-09 新增）。
     ///
