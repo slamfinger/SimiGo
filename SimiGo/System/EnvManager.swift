@@ -241,7 +241,10 @@ public final class EnvManager: ObservableObject {
     }
 
     // MARK: - llama.cpp Environment Setup
-    public func setupEnvironment() async {
+    /// - Parameter force: 强制重建（设置里的「升级」、菜单的「更新已装二进制」）。
+    ///   默认 false 时，已安装且可执行的 `bin/llama-server` 直接满足依赖——
+    ///   首次运行向导与离线重跑都靠这一条避免白克隆一次上游。
+    public func setupEnvironment(force: Bool = false) async {
         // Dispatch by the selected engine's KIND. Native MLX needs no external
         // binary; external servers (ollama / LM Studio / slang) are ADOPTED, not
         // built here. Only source-build recipes fall through to the compile path.
@@ -273,7 +276,13 @@ public final class EnvManager: ObservableObject {
         // after a successful build, so without this check every re-run (or any
         // offline re-run) would force a fresh clone of upstream.
         let installedLlama = "\(Self.binDir)/llama-server"
-        if fm.fileExists(atPath: installedLlama), fm.isExecutableFile(atPath: installedLlama) {
+        if force {
+            // 显式升级：已有构建不构成理由。此前「升级」按钮也会走到下面那条
+            // 短路，于是按下去等于什么都没做（owner 2026-11-09 报）。
+            if fm.fileExists(atPath: installedLlama) {
+                appendCommandLog("🔄 升级模式：忽略已安装的 llama-server，按锁定版本重建。")
+            }
+        } else if fm.fileExists(atPath: installedLlama), fm.isExecutableFile(atPath: installedLlama) {
             appendCommandLog("✅ 检测到已安装的 llama-server（\(installedLlama)），跳过构建。")
             commandStatus = "构建完成"
             commandInput = Self.defaultCommandInput
@@ -745,21 +754,31 @@ public final class EnvManager: ObservableObject {
         ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
+    /// 显式升级 llama.cpp：不管当前选中的是哪个引擎、也不管 bin/ 里有没有
+    /// 构建，都按锁定版本重建一次，完成后恢复原来的引擎选择。
+    ///
+    /// 必须走这一条而不是直接 `setupEnvironment(force:)`：`setupEnvironment`
+    /// 开头按 selectedEngineID 分派，选中 Native MLX 时会直接 return
+    /// 「内置，无需外部依赖」，压根到不了 llama.cpp 的构建路径
+    /// （owner 2026-11-09：「升级」按钮按下去没反应）。
+    public func upgradeLlamaCpp() async {
+        let previous = selectedEngineID
+        selectedEngineID = "llama.cpp"
+        await setupEnvironment(force: true)
+        selectedEngineID = previous
+    }
+
     /// Update every installable binary in the managed bin (menu entry):
     /// llama.cpp rebuilds from the locked recipe (caches pruned to the
     /// binary), hf upgrades through brew when brew manages it. Returns a
     /// per-tool report.
     public func updateInstalledBinaries() async -> [String: Any] {
         var report: [String: Any] = [:]
-        // llama.cpp: drop the installed binary so setupEnvironment rebuilds
-        // from the (locked) recipe, then prune caches as usual.
+        // llama.cpp: rebuild from the (locked) recipe via force. 不再先删二进制——
+        // 先前那版删完再重建，一旦克隆/编译失败，手上就没有可用的 llama-server 了。
         let llama = SimiGoPaths.bin.appendingPathComponent("llama-server")
         if FileManager.default.fileExists(atPath: llama.path) {
-            try? FileManager.default.removeItem(at: llama)
-            let previous = selectedEngineID
-            selectedEngineID = "llama.cpp"
-            await setupEnvironment()
-            selectedEngineID = previous
+            await upgradeLlamaCpp()
             report["llama.cpp"] = ["status": commandStatus]
         }
         // hf: brew upgrade when present.

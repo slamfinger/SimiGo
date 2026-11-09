@@ -251,7 +251,9 @@ struct Settings: View {
 
                             Button("升级") {
                                 Task {
-                                    await envMgr.setupEnvironment()
+                                    // 显式升级：先切到 llama.cpp 再按锁定版本重建，
+                                    // 已安装的构建不构成跳过理由。
+                                    await envMgr.upgradeLlamaCpp()
                                 }
                             }
                             .buttonStyle(.bordered)
