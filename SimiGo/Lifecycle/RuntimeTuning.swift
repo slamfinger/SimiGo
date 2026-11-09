@@ -24,25 +24,30 @@ nonisolated enum RuntimeTuning {
     static let idleReleaseFootprintBytes =
         ProcessInfo.processInfo.physicalMemory / 5 * 3
 
-    /// 轮末归还的研究门（2026-11-09）。42e68f9 起，footprint 越过 3/5 就在每轮
-    /// 结束把 MLX 缓存与 malloc 空闲页还回去；在 32 GB 机器 + 20.6 GB 模型上
-    /// 这条判据**每轮必然成立**，代价是下一次复用要重付缓冲区分配——同模型
-    /// 实测（2026-11-09 17:38 vs 16:57）：无此路径首复用 0.35 s，有它 4.0 s。
-    /// 而归还没换来绿灯：归还后 `cache=0MB` 但 footprint 仍 20.5 GB，黄色照旧。
-    /// 值不值只能 A/B 量，所以给一个不改常数就能切的闸：
-    /// 文件 `~/.simigo/turn_end_release` 内容 `1` 强制归还、`0` 关闭（吃 KV
-    /// 复用），非法或缺失回落 `auto` = 现行 footprint 判据。每次轮末读取。
+    /// 轮末归还的研究门（2026-11-09）。
+    ///
+    /// 42e68f9 的立论是"单会话 swap 5.6 → 25.5 GB"，而那个读数后来被证实是
+    /// **同时驻留两个大模型**（第二个模型加载时第一个没卸）造成的，不是长会话
+    /// 的自然行为。前提不成立，默认就回到"不归还、吃 KV 复用"：同模型实测
+    /// （2026-11-09 17:38 vs 16:57）无此路径首复用 0.35 s，有它 4.0 s。而且
+    /// 归还没换来绿灯——归还后 `cache=0MB` 但 footprint 仍 20.5 GB。
+    /// 研究臂保留：文件 `~/.simigo/turn_end_release` 内容 `1` 强制归还、
+    /// `auto` 恢复旧的 footprint 判据、`0`/缺失 = 不归还。每次轮末读取。
     static func turnEndReleaseMode() -> String {
         let url = URL(
             fileURLWithPath: NSString(string: "~/.simigo/turn_end_release")
                 .expandingTildeInPath)
         if let s = try? String(contentsOf: url, encoding: .utf8) {
             let v = s.trimmingCharacters(in: .whitespacesAndNewlines)
-            if v == "0" || v == "1" { return v }
+            if v == "0" { return "off" }
+            if v == "1" { return "force" }
+            if v == "auto" { return "auto" }
         }
-        if let v = ProcessInfo.processInfo.environment["SIMIGO_TURN_END_RELEASE"],
-           v == "0" || v == "1" { return v }
-        return "auto"
+        if let v = ProcessInfo.processInfo.environment["SIMIGO_TURN_END_RELEASE"] {
+            if v == "1" { return "force" }
+            if v == "auto" { return "auto" }
+        }
+        return "off"
     }
 
     /// Responses store is protocol state, not inference memory.
@@ -289,13 +294,43 @@ nonisolated enum RuntimeTuning {
     static var suspendIdleTimeoutOverrideSeconds: TimeInterval? = nil
     #endif
 
-    /// 预填吞吐保守下限（tok/s）——512 档实测 188，取 150 估算闲置会话重建时长。
-    static let prefillThroughputFloor = 150.0
+    /// 预填吞吐保守下限（tok/s），按上下文档取——档位与 `prefillStepSize` 同源。
+    ///
+    /// 旧实现一律取 150（"512 档实测 188"），于是 28K 会话估出 27,409/150+60
+    /// ≈ 247 s，比真实重建 58.3 s 高三倍（2026-11-09 17:38 实测 27,409 token
+    /// / 58.3 s = 470 tok/s@2048）。估算偏高就直接变成更长的黄色窗口。
+    /// 分档取值来自 `results_v17_1_longctx.json` 的冷档吞吐：2048→455、1024→105、
+    /// 512→32 tok/s；能到哪一档由 `prefillStepSize(contextTokens:)` 决定。
+    static func prefillThroughputFloor(contextTokens: Int) -> Double {
+        switch contextTokens {
+        case ..<64_000: return 450
+        case ..<96_000: return 105
+        default: return 32
+        }
+    }
     /// 内存黄色缓解（2026-10-23 用户反馈：推理结束后内存压力长时间为黄色 → 缩短）。
     /// 大会话自适应阈值此前可高达 ~14.5 分钟（121k tok ÷ 150 + 60）。给驻留窗口
-    /// 加**上限**收敛最长黄色时长；并把基线下调（仍高于常见追问间隔，避免即时冷启动税抖动）。
-    static var idleResidencyFloorSeconds: TimeInterval = 240
-    static var idleResidencyCapSeconds: TimeInterval = 360
+    /// 驻留窗口的下限与上限（2026-11-09 重定）。
+    ///
+    /// 旧值 240–360 s 是 2026-10-23 从 `max(600s…)` 收紧来的，当时唯一的依据
+    /// 是"听起来够覆盖一次追问"。现在有量：本库 190 个真实追问间隔中，≤120 s
+    /// 只占 13.2%，≤360 s 占 34.7%，中位数 581 s——也就是说 360 s 的窗口已经
+    /// 漏掉三分之二的追问，"再长一点就能接住"从来不是它的实际效果，它只是
+    /// 让每次会话收尾多黄 6 分钟。
+    ///
+    /// 新下限 90 s 的依据是工具回环：同库 96% 的相邻消息间隔 ≤60 s，90 s 足以
+    /// 不打断一次 agent 工具往返。上限 240 s 留给大会话（重建真的要一分钟的
+    /// 那种），由 `adaptiveIdleTimeout` 的估算挑，而不是一律吃满。
+    static var idleResidencyFloorSeconds: TimeInterval = 90
+    static var idleResidencyCapSeconds: TimeInterval = 240
+
+    /// 加载完成但**一次都没用过**的驻留窗口（2026-11-09 新增）。
+    ///
+    /// 这个状态下没有会话、没有 KV，留着唯一的收益是省掉一次重载，而实测重载
+    /// 只要 4.4–5.1 s（17:26:32→37.995、17:36:41→45.781），不是冷 prefill 的
+    /// 58–98 s。所以它不该和"有热 KV"共用 240–360 s 的窗口：那等于用 4 分钟的
+    /// 黄色换 5 秒的重载。给 2 分钟让人把第一句话打完，超时就卸载。
+    static var idleResidencyNoSessionSeconds: TimeInterval = 120
 
     /// P1 卸载后 memory settle 等待上限。
     static var memorySettleTimeoutSeconds: TimeInterval = 10

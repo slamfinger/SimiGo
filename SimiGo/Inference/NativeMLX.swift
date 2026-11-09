@@ -757,11 +757,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    /// 自适应闲置超时：min(cap=360s, max(floor=240s, 最贵会话重建时长估算 + 60s 容错))。
-    /// 重建时长按 512 档保守吞吐估算。上限封顶（idleResidencyCapSeconds=360）是为缓解
-    /// "推理结束后内存压力长时间黄色"——大会话不再滞留 ~14.5 分钟才卸载，最长 6 分钟；
-    /// 下限兜底（idleResidencyFloorSeconds=240）保证小会话工具/思考间隙不反复缴冷启动税。
-    /// （2026-10-23 由 max(600s…) 收紧为带 cap 的收敛窗口。）
+    /// 自适应闲置超时，两个窗口分开算（2026-11-09）：
+    ///
+    /// · **没有热 KV**（一次都没跑过，或会话已空）：驻留只值一次 5 s 重载，用
+    ///   `idleResidencyNoSessionSeconds`。这覆盖"加载完大模型放着不动"那段——
+    ///   旧实现让它按 240–360 s 计，等于用 4 分钟黄色换 5 秒重载。
+    /// · **有热 KV**：min(cap=240 s, max(floor=90 s, 重建时长估算 + 60 s))。
+    ///   重建按上下文档的实测吞吐估算（`prefillThroughputFloor(contextTokens:)`），
+    ///   不再一律按 512 档的 150 tok/s——那让 28K 会话估出 247 s，是真实 58 s 的
+    ///   三倍。窗口的实际命中率也量过：190 个真实追问里 ≤360 s 只占 34.7%，
+    ///   中位 581 s，再长也接不住，只是更黄。
     private func adaptiveIdleTimeout() async -> TimeInterval {
         #if DEBUG
         if let override = RuntimeTuning.suspendIdleTimeoutOverrideSeconds {
@@ -774,8 +779,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             let tokens = (try? await managed.session.cacheStatus())?.processedTokenCount ?? 0
             maxTokens = max(maxTokens, tokens)
         }
-        let estimate = Double(maxTokens) / RuntimeTuning.prefillThroughputFloor + 60
-        // 收敛驻留窗口：floor 兜底小会话、cap 封顶大会话（内存黄色缓解，见 RuntimeTuning）。
+        guard maxTokens > 0 else { return RuntimeTuning.idleResidencyNoSessionSeconds }
+        let estimate = Double(maxTokens)
+            / RuntimeTuning.prefillThroughputFloor(contextTokens: maxTokens) + 60
+        // 收敛驻留窗口：floor 兜底工具间隙、cap 封顶大会话（见 RuntimeTuning）。
         return min(RuntimeTuning.idleResidencyCapSeconds,
                    max(RuntimeTuning.idleResidencyFloorSeconds, estimate))
     }
@@ -906,7 +913,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 malloc_zone_pressure_relief(nil, 0)
                 self.traceLogger.trace(
                     "[LIFECYCLE] suspend_done released_sessions=\(releasedCount)"
-                        + " kv_persist=\(kvPersist)")
+                        + " kv_persist=\(kvPersist)"
+                        // 哪个窗口判的：120 s = 无热 KV，90–240 s = 有热 KV。
+                        + " idleTimeout=\(Int(timeout))s")
                 self.observation.noteSuspend()
                 return true
             }
@@ -2527,18 +2536,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// 缓冲区留给下一轮复用。判断依据是 footprint 而不是"看起来大不大"：
     /// 模型本身就占 20 GB，只有越过物理内存 3/5 才说明是本进程把机器顶住了。
     private nonisolated func releaseIdleMemoryIfTight(trigger: String) {
-        // 归还与否的研究门：`~/.simigo/turn_end_release` 写 0 关掉（吃 KV
-        // 复用）、写 1 强制，缺省仍按 footprint 判据。
+        // 归还与否的研究门：缺省不归还（吃 KV 复用），`1` 强制、
+        // `auto` 恢复旧的 footprint 判据。见 RuntimeTuning.turnEndReleaseMode。
         let mode = RuntimeTuning.turnEndReleaseMode()
-        let tight = mode == "1"
-            || (mode != "0"
+        let tight = mode == "force"
+            || (mode == "auto"
                 && RuntimeTuning.footprintBytes() > RuntimeTuning.idleReleaseFootprintBytes)
         if tight {
             Memory.clearCache()
             malloc_zone_pressure_relief(nil, 0)
         }
         // 每轮一行：不紧时的读数同样有用，它证明"没越线"而不是"没测"。
-        logMemory(tight ? "idle-release:\(trigger)" : "turn:\(trigger)")
+        logMemory(tight ? "idle-release:\(trigger)" : "turn:\(trigger) mode=\(mode)")
     }
 
     /// #90 A：跨请求采纳活会话分片。判据本身是纯函数（`SessionAdoption`，

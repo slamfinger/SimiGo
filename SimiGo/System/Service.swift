@@ -1297,11 +1297,12 @@ public final class Service: ObservableObject {
 
     // MARK: - Health Check Tuning
 
-    // 空闲挂起超时自适应（NativeMLX.adaptiveIdleTimeout）：
-    // min(cap=360s, max(floor=240s, 最贵会话重建时长估算 + 60s))。带 cap 的收敛窗口
-    // 是为缓解"推理结束后内存压力长时间黄色"：大会话最长 6 分钟即卸载（原 ≈14.5 分钟）；
-    // floor 兜底保证小会话工具/思考间隙不反复缴冷启动税。
-    // 健康检查循环周期 30s，实际挂起延迟收敛到 idleTimeout～idleTimeout+30s（≤ 6.5 分钟）。
+    // 空闲挂起超时自适应（NativeMLX.adaptiveIdleTimeout），两个窗口分开（2026-11-09）：
+    // 无热 KV → 120 s（驻留只值一次 5 s 重载）；有热 KV → min(cap=240 s,
+    // max(floor=90 s, 按上下文档实测吞吐估算的重建时长 + 60 s))。旧值 240–360 s
+    // 已下修：本库 190 个真实追问里 ≤360 s 只占 34.7%（中位 581 s），窗口再长也
+    // 接不住，只是让每次会话收尾更黄。
+    // 健康检查循环周期 30s，实际挂起延迟收敛到 idleTimeout～idleTimeout+30s（≤ 4.5 分钟）。
 
     private func stopHealthCheck() {
         healthTaskGeneration = UUID()

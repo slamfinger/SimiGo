@@ -668,7 +668,7 @@ enum SimiGoG1G3Entry {
             let pre = footprintBytes()
             let snapPre = await MainActor.run { runtime.observation.snapshot() }
             // Suspend eligibility is gated on the *production* adaptive idle
-            // window (idleResidencyFloor/CapSeconds = 240-360 s). A Release build
+            // window (no-session 120 s; with warm KV 90-240 s, 2026-11-09). A Release build
             // has no seam for it (#if DEBUG only), so instead of overriding the
             // window the probe waits for it to elapse and then calls the
             // unmodified suspendIfIdle(). Ineligible calls are side-effect free,
