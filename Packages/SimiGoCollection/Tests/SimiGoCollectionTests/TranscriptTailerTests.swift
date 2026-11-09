@@ -1115,6 +1115,71 @@ final class TranscriptTailerTests: XCTestCase {
         XCTAssertTrue(sawParseFailure, "an oversized line is a parse failure, not content")
     }
 
+    /// The scan reads whole chunks, so a newline near the front of a chunk still
+    /// cost a whole chunk of disk. Charging only the reached position hands the
+    /// rest of the poll a budget larger than the disk work that is left.
+    func testOversizedLineChargesTheChunkItActuallyRead() throws {
+        let root = try makeRoot()
+        let file = projectFile(in: root, session: "late-newline")
+        let budget = 1 << 20
+        var bytes = Data(repeating: 0x78, count: budget)  // "x": no newline
+        bytes.append(0x0A)
+        bytes.append(Data(repeating: 0x79, count: 900 * 1024))
+        try bytes.write(to: file)
+
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxBytesPerPoll: budget,
+            maxLineBytes: 8 << 20)
+
+        XCTAssertTrue(poll(tailer).report.budgetExhausted, "the window spent the poll")
+
+        let resumed = poll(tailer)
+        XCTAssertEqual(
+            resumed.report.parseFailures, 1, "the newline ends the dropped line")
+        XCTAssertGreaterThan(
+            resumed.report.readBytes, Int64(512 * 1024),
+            "the chunk is read whole before its newline is found; readBytes must say so")
+    }
+
+    /// A scan position belongs to the file identity that produced it. Replacing
+    /// the file at the same path must drop it: otherwise the next append resumes
+    /// inside a prefix that no longer exists and the new content is never read.
+    func testReplacingAFileDropsThePendingOversizedScan() throws {
+        let root = try makeRoot()
+        let file = projectFile(in: root, session: "replaced")
+        try Data(repeating: 0x78, count: 20_000).write(to: file)
+
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxBytesPerPoll: 4_096,
+            maxLineBytes: 64 * 1024)
+        _ = poll(tailer)  // parks a pending scan against the old inode
+
+        // A different file at the same path: an identity reset, not a truncation.
+        try FileManager.default.removeItem(at: file)
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "u-old", answerUUID: "a-old", messageID: "m-old",
+                nextAnchor: "n-old"),
+            to: file)
+        _ = poll(tailer)
+
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "u-new", answerUUID: "a-new", messageID: "m-new",
+                nextAnchor: "n-new"),
+            to: file, append: true)
+        let appended = poll(tailer)
+
+        XCTAssertEqual(
+            appended.report.parseFailures, 0,
+            "the new file is ordinary content, not a continuation of the old line")
+        XCTAssertFalse(
+            appended.events.isEmpty,
+            "the appended turn must be read instead of being skipped by a stale scan offset")
+    }
+
     /// A scan that stops at its file budget is partial. A partial walk cannot
     /// prove deletion, so cursors it did not see must survive.
     func testScanBudgetIsPartialAndNeverRetiresUnseenCursors() throws {

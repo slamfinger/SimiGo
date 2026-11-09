@@ -755,6 +755,9 @@ public final class TranscriptTailer {
         if state.policy != baselinePolicy.rawValue {
             state.cursors.removeAll()
             accumulators.removeAll()
+            // A scan position belongs to the file identity that produced it, so
+            // it cannot survive a policy change any more than a cursor can.
+            oversizedScan.removeAll()
             state.policy = baselinePolicy.rawValue
             report.stateChanged = true
         }
@@ -831,6 +834,7 @@ public final class TranscriptTailer {
                             report.errors.append(
                                 "corrupt resume point for \(file.path): \(detail)")
                             accumulators.removeValue(forKey: file.path)
+                            oversizedScan.removeValue(forKey: file.path)
                             continue
                         }
                         if file.size > existing.offset
@@ -922,6 +926,10 @@ public final class TranscriptTailer {
             return nil
         }
         accumulators.removeValue(forKey: file.path)
+        // The scan position describes a line of the file that was just
+        // re-identified. Keeping it would let the next append resume mid-way
+        // through content that no longer shares that prefix.
+        oversizedScan.removeValue(forKey: file.path)
         switch reason {
         case .existingFileAtEnd:
             report.baselinedFiles += 1
@@ -1169,6 +1177,7 @@ public final class TranscriptTailer {
             // the durable replay offset instead of delivering or duplicating
             // candidates from an identity that no longer verifies.
             accumulators.removeValue(forKey: file.path)
+            oversizedScan.removeValue(forKey: file.path)
             return false
         }
         working.offset = newOffset
@@ -1210,6 +1219,7 @@ public final class TranscriptTailer {
         let lineAllowance = max(0, Int64(maxLineBytes) - alreadyScanned)
         let scanLimit = min(lineAllowance, Int64(max(0, budget)))
         var scanned: Int64 = 0
+        var charged: Int64 = 0
         var afterNewline: Int64?
         if scanLimit > 0 {
             let found = findNewline(
@@ -1217,7 +1227,8 @@ public final class TranscriptTailer {
                 limit: scanLimit, expectedInode: file.inode)
             afterNewline = found.position
             scanned = found.scanned
-            budget -= Int(scanned)
+            charged = found.charged
+            budget -= Int(charged)
         }
         if let afterNewline {
             oversizedScan.removeValue(forKey: file.path)
@@ -1239,7 +1250,7 @@ public final class TranscriptTailer {
             report.parseFailures += 1
             report.readFiles += 1
             // Bytes actually read this poll: the window plus the scan.
-            report.readBytes += Int64(partialBytes) + scanned
+            report.readBytes += Int64(partialBytes) + charged
             events.append(
                 .parseFailure(
                     ParseFailure(
@@ -1267,7 +1278,7 @@ public final class TranscriptTailer {
             // boundary) is left where it was; a cold start re-reads the line.
             report.parseFailures += 1
             report.readFiles += 1
-            report.readBytes += Int64(partialBytes) + scanned
+            report.readBytes += Int64(partialBytes) + charged
             events.append(
                 .parseFailure(
                     ParseFailure(
@@ -1310,24 +1321,30 @@ public final class TranscriptTailer {
 
     private func findNewline(
         path: String, from offset: Int64, limit: Int64, expectedInode: UInt64
-    ) -> (position: Int64?, scanned: Int64) {
+    ) -> (position: Int64?, scanned: Int64, charged: Int64) {
         guard offset >= 0, limit >= 0,
               let opened = try? openTranscriptFile(path: path, expectedInode: expectedInode)
-        else { return (nil, 0) }
+        else { return (nil, 0, 0) }
         defer { Darwin.close(opened.descriptor) }
         var scanned: Int64 = 0
+        // Bytes actually taken off disk. A chunk whose newline lands early is
+        // still read in full, so this is what the poll budget must be charged:
+        // charging `scanned` instead would leave the next file a budget larger
+        // than the disk work that remains.
+        var charged: Int64 = 0
         while scanned < limit {
             let count = Int(min(1 << 20, limit - scanned))
             guard let chunk = try? TranscriptPathAccess.read(
                 descriptor: opened.descriptor, offset: offset + scanned, count: count),
-                !chunk.isEmpty else { return (nil, scanned) }
+                !chunk.isEmpty else { return (nil, scanned, charged) }
+            charged += Int64(chunk.count)
             if let newline = chunk.firstIndex(of: 0x0A) {
                 let found = Int64(chunk.distance(from: chunk.startIndex, to: newline)) + 1
-                return (offset + scanned + found, scanned + found)
+                return (offset + scanned + found, scanned + found, charged)
             }
             scanned += Int64(chunk.count)
         }
-        return (nil, scanned)
+        return (nil, scanned, charged)
     }
 
     private func trailingFingerprint(
