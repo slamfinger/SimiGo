@@ -135,6 +135,30 @@ final class ESISDatabaseTests: XCTestCase {
         XCTAssertEqual(try db.count("execution_states"), 0)
     }
 
+    func testIntegrityCheckExecutionFailurePreservesSQLiteCodes() throws {
+        let url = tempURL("integrity-execution-failure")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        // The schema's SQL and integrity_check result exceed this deliberately
+        // tiny value, forcing SQLite to report SQLITE_TOOBIG while executing
+        // PRAGMA integrity_check rather than returning a corruption row.
+        let previousLimit = db.setSQLiteLengthLimitForTesting(1)
+        defer { _ = db.setSQLiteLengthLimitForTesting(previousLimit) }
+
+        XCTAssertThrowsError(try db.integrityCheck()) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, let message) = databaseError
+            else {
+                return XCTFail("expected a typed integrity-check execution failure, got: \(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_TOOBIG)
+            XCTAssertEqual(extended, SQLITE_TOOBIG)
+            XCTAssertFalse(message.isEmpty)
+        }
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try ESISDatabase(url: url)
