@@ -239,14 +239,23 @@ public struct CursorState: Codable, Sendable, Equatable {
     /// re-read from their first byte; the candidate keys are stable, so the
     /// inbox absorbs the replay instead of duplicating it.
     public var policy: String?
+    /// Directory-level scan positions are part of the durable read position,
+    /// not process-local scheduler state. Persisting them beside file cursors
+    /// lets a restarted tailer continue a budget-stopped walk.
+    public var scannerResumeWatermarks: [String: String]?
+    public var scannerRootResumeWatermark: String?
 
     public init(
         initializedAt: Date, cursors: [String: FileCursor] = [:],
-        policy: String? = nil
+        policy: String? = nil,
+        scannerResumeWatermarks: [String: String]? = nil,
+        scannerRootResumeWatermark: String? = nil
     ) {
         self.initializedAt = initializedAt
         self.cursors = cursors
         self.policy = policy
+        self.scannerResumeWatermarks = scannerResumeWatermarks
+        self.scannerRootResumeWatermark = scannerRootResumeWatermark
     }
 }
 
@@ -264,6 +273,7 @@ public final class FileCursorStore {
     /// while refusing corrupted or attacker-grown state before unbounded reads.
     static let maximumCursorStateBytes = 8 * 1024 * 1024
     static let maximumCursorCount = 4_096
+    static let maximumResumeWatermarkCount = 16_384
 
     public init(directoryURL: URL) {
         self.fileURL = directoryURL.appendingPathComponent("cursor.json")
@@ -319,16 +329,27 @@ public final class FileCursorStore {
             }
         }
 
+        let state: CursorState
         do {
-            return try JSONDecoder().decode(CursorState.self, from: data)
+            state = try JSONDecoder().decode(CursorState.self, from: data)
         } catch {
             throw CollectionStateFailure.corruptLegacyCursor(
                 path: fileURL.path, detail: String(describing: error))
         }
+        guard state.cursors.count <= Self.maximumCursorCount,
+              (state.scannerResumeWatermarks?.count ?? 0) <= Self.maximumResumeWatermarkCount
+        else {
+            throw CollectionStateFailure.corruptLegacyCursor(
+                path: fileURL.path,
+                detail: "cursor state exceeds the maximum cursor or scanner-watermark count")
+        }
+        return state
     }
 
     public func save(_ state: CursorState) throws {
-        guard state.cursors.count <= Self.maximumCursorCount else {
+        guard state.cursors.count <= Self.maximumCursorCount,
+              (state.scannerResumeWatermarks?.count ?? 0) <= Self.maximumResumeWatermarkCount
+        else {
             throw CollectionStateFailure.unreadableState(
                 path: fileURL.path,
                 detail: "cursor state exceeds the maximum tracked cursor or scanner-watermark count")
@@ -465,12 +486,16 @@ public struct TranscriptScanner {
     ]
 
     public init(root: URL, maxScannedFiles: Int = 4_096,
-                maxVisitedEntries: Int = 16_384) {
+                maxVisitedEntries: Int = 16_384,
+                resumeWatermarks: [String: String] = [:],
+                rootResumeWatermark: String? = nil) {
         self.root = URL(
             fileURLWithPath: TranscriptPathAccess.canonicalPath(root.path),
             isDirectory: true)
         self.maxScannedFiles = max(0, maxScannedFiles)
         self.maxVisitedEntries = max(0, maxVisitedEntries)
+        self.resumeWatermarks = resumeWatermarks
+        self.rootResumeWatermark = rootResumeWatermark
     }
 
     /// A lazy directory iterator. `FileManager.contentsOfDirectory` reads
@@ -927,17 +952,20 @@ public final class TranscriptTailer {
         let canonicalRoot = URL(
             fileURLWithPath: TranscriptPathAccess.canonicalPath(scanRoot.path),
             isDirectory: true)
+        let initialState = state ?? CursorState(initializedAt: now)
         self.scanRoot = canonicalRoot
         self.baselinePolicy = baselinePolicy
         self.scanner = TranscriptScanner(
             root: canonicalRoot, maxScannedFiles: maxScannedFiles,
-            maxVisitedEntries: maxVisitedEntries)
+            maxVisitedEntries: maxVisitedEntries,
+            resumeWatermarks: initialState.scannerResumeWatermarks ?? [:],
+            rootResumeWatermark: initialState.scannerRootResumeWatermark)
         self.maxBytesPerPoll = maxBytesPerPoll
         self.maxLineBytes = maxLineBytes
         self.maxEventsPerPoll = maxEventsPerPoll
         self.maxScannedFiles = maxScannedFiles
         self.maxVisitedEntries = maxVisitedEntries
-        self.state = state ?? CursorState(initializedAt: now)
+        self.state = initialState
     }
 
     public var cursorState: CursorState { state }
@@ -953,10 +981,25 @@ public final class TranscriptTailer {
             // A scan position belongs to the file identity that produced it, so
             // it cannot survive a policy change any more than a cursor can.
             oversizedScan.removeAll()
+            scanner.resumeWatermarks.removeAll()
+            scanner.rootResumeWatermark = nil
+            state.scannerResumeWatermarks = nil
+            state.scannerRootResumeWatermark = nil
             state.policy = baselinePolicy.rawValue
             report.stateChanged = true
         }
+        let previousResumeWatermarks = state.scannerResumeWatermarks ?? [:]
+        let previousRootResumeWatermark = state.scannerRootResumeWatermark
         let scan = scanner.scan()
+        if previousResumeWatermarks != scanner.resumeWatermarks
+            || previousRootResumeWatermark != scanner.rootResumeWatermark
+        {
+            state.scannerResumeWatermarks =
+                scanner.resumeWatermarks.isEmpty ? nil : scanner.resumeWatermarks
+            state.scannerRootResumeWatermark = scanner.rootResumeWatermark
+            // Persist watermark-only progress even when no candidates were emitted.
+            report.stateChanged = true
+        }
         // Least-recently-visited first, then path order: with a poll budget that
         // covers only part of the tree, the next poll starts where this one
         // stopped instead of re-reading the same head every time.
