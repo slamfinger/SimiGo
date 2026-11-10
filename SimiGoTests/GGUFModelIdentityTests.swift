@@ -34,6 +34,35 @@ final class GGUFModelIdentityTests: XCTestCase {
         return url.path
     }
 
+    private func ledgerEntry(for file: URL, digest: String) throws
+        -> GGUFModelIdentity.BlobDigestLedger.Entry
+    {
+        var info = stat()
+        guard file.path.withCString({ Darwin.stat($0, &info) }) == 0 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        }
+        let stamp = [
+            String(UInt64(info.st_dev)), String(UInt64(info.st_ino)),
+            String(Int64(info.st_size)),
+            String(Int64(info.st_mtimespec.tv_sec)),
+            String(Int64(info.st_mtimespec.tv_nsec)),
+            String(Int64(info.st_ctimespec.tv_sec)),
+            String(Int64(info.st_ctimespec.tv_nsec)),
+        ].joined(separator: ":")
+        return GGUFModelIdentity.BlobDigestLedger.Entry(
+            identityStamp: stamp, sha256: digest, verifiedAt: Date())
+    }
+
+    private func makeBlob(_ bytes: Data) throws -> (URL, String) {
+        let digest = SettlementAuthority.payloadDigest(bytes)
+        let directory = root.appendingPathComponent(
+            "hub/models--org--demo/blobs", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let file = directory.appendingPathComponent(digest)
+        try bytes.write(to: file)
+        return (file, digest)
+    }
+
     func testSameNameAndSizeWithDifferentBytesResolveToDifferentIdentities() throws {
         let first = Data("GGUF-placeholder-bytes-A".utf8)
         let second = Data("GGUF-placeholder-bytes-B".utf8)
@@ -217,6 +246,69 @@ final class GGUFModelIdentityTests: XCTestCase {
         XCTAssertNotEqual(a.producer.tokenizer, b.producer.tokenizer)
         XCTAssertEqual(a.model, a.producer.model)
         XCTAssertEqual(b.model, b.producer.model)
+    }
+
+    func testBlobDigestLedgerRejectsSymlinkedLedger() throws {
+        let (blob, expectedDigest) = try makeBlob(Data("symlink-ledger-model".utf8))
+        let forgedDigest = String(repeating: "0", count: 64)
+        let entry = try ledgerEntry(for: blob, digest: forgedDigest)
+        let forged = try JSONEncoder().encode(
+            GGUFModelIdentity.BlobDigestLedger(entries: [blob.path: entry]))
+        let external = root.appendingPathComponent("external-ledger.json")
+        try forged.write(to: external)
+        let ledgerURL = try XCTUnwrap(GGUFModelIdentity.blobLedgerURLOverride)
+        try FileManager.default.createSymbolicLink(
+            at: ledgerURL, withDestinationURL: external)
+
+        let identity = try GGUFModelIdentity.resolve(path: blob.path)
+        XCTAssertEqual(identity.contentSHA256, expectedDigest)
+        XCTAssertEqual(try Data(contentsOf: external), forged,
+                       "the cache read/write must not modify a symlink target")
+        XCTAssertThrowsError(
+            try FileManager.default.destinationOfSymbolicLink(atPath: ledgerURL.path),
+            "atomic cache replacement must leave a regular ledger, not the symlink")
+    }
+
+    func testBlobDigestLedgerRejectsOverfullEntrySet() throws {
+        let (blob, expectedDigest) = try makeBlob(Data("overfull-ledger-model".utf8))
+        let forgedDigest = String(repeating: "1", count: 64)
+        var entries: [String: GGUFModelIdentity.BlobDigestLedger.Entry] = [
+            blob.path: try ledgerEntry(for: blob, digest: forgedDigest)
+        ]
+        for index in 0..<GGUFModelIdentity.maximumBlobLedgerEntries {
+            entries["/unused/model-\(index)"] =
+                GGUFModelIdentity.BlobDigestLedger.Entry(
+                    identityStamp: "unused", sha256: forgedDigest,
+                    verifiedAt: Date(timeIntervalSince1970: Double(index)))
+        }
+        let ledger = GGUFModelIdentity.BlobDigestLedger(entries: entries)
+        try JSONEncoder().encode(ledger).write(
+            to: try XCTUnwrap(GGUFModelIdentity.blobLedgerURLOverride))
+
+        let identity = try GGUFModelIdentity.resolve(path: blob.path)
+        XCTAssertEqual(identity.contentSHA256, expectedDigest)
+        let stored = try Data(contentsOf: try XCTUnwrap(GGUFModelIdentity.blobLedgerURLOverride))
+        let decoded = try JSONDecoder().decode(
+            GGUFModelIdentity.BlobDigestLedger.self, from: stored)
+        XCTAssertLessThanOrEqual(decoded.entries.count, GGUFModelIdentity.maximumBlobLedgerEntries)
+    }
+
+    func testBlobDigestLedgerRejectsOversizedValidJSON() throws {
+        let (blob, expectedDigest) = try makeBlob(Data("oversized-ledger-model".utf8))
+        let forgedDigest = String(repeating: "2", count: 64)
+        let entry = try ledgerEntry(for: blob, digest: forgedDigest)
+        let encoded = try JSONEncoder().encode(
+            GGUFModelIdentity.BlobDigestLedger(entries: [blob.path: entry]))
+        var oversized = encoded
+        oversized.append(Data(
+            repeating: 0x20,
+            count: GGUFModelIdentity.maximumBlobLedgerBytes + 1 - encoded.count))
+        try oversized.write(to: try XCTUnwrap(GGUFModelIdentity.blobLedgerURLOverride))
+
+        let identity = try GGUFModelIdentity.resolve(path: blob.path)
+        XCTAssertEqual(identity.contentSHA256, expectedDigest)
+        let stored = try Data(contentsOf: try XCTUnwrap(GGUFModelIdentity.blobLedgerURLOverride))
+        XCTAssertLessThanOrEqual(stored.count, GGUFModelIdentity.maximumBlobLedgerBytes)
     }
 
     func testContentAddressLikeNameOutsideBlobLayoutIsNotTrusted() throws {

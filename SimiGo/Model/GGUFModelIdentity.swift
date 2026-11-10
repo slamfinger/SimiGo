@@ -1,5 +1,6 @@
 import CryptoKit
 import Darwin
+import Darwin
 import Foundation
 import SimiGoRuntimeContract
 
@@ -36,6 +37,10 @@ struct GGUFModelIdentity: Equatable, Sendable {
     /// Non-hex prefix for the per-file fallback marker produced by
     /// `unreadableMarker(forPath:)`. It can never be mistaken for a content digest.
     static let unreadableMarker = "unreadable"
+    /// The digest ledger is a disposable cache, never a reason to allocate
+    /// unbounded memory or trust a symlinked/non-owned file.
+    static let maximumBlobLedgerBytes = 8 * 1024 * 1024
+    static let maximumBlobLedgerEntries = 4_096
 
     enum ContentSource: String, Equatable, Sendable {
         /// A Hugging Face cache blob: a file inside `models--<repo>/blobs/` whose
@@ -314,16 +319,44 @@ struct GGUFModelIdentity: Equatable, Sendable {
         func record(path: String, identityStamp: String, sha256: String) {
             lock.lock()
             defer { lock.unlock() }
-            var value = ledger()
-            value.entries[path] = BlobDigestLedger.Entry(
+            var entries = ledger().entries
+            entries[path] = BlobDigestLedger.Entry(
                 identityStamp: identityStamp, sha256: sha256, verifiedAt: Date())
-            // Entries for files that no longer exist can never be consulted;
-            // dropping them keeps the file bounded by the model library.
-            value.entries = value.entries.filter {
+            entries = entries.filter {
                 FileManager.default.fileExists(atPath: $0.key)
             }
-            loaded = (url, value)
-            guard let data = try? JSONEncoder().encode(value) else { return }
+
+            // Retain the newest verified entries first. A path that no longer
+            // exists is removed above; a large but live model library is still
+            // bounded by both entry count and the encoded byte limit.
+            if entries.count > GGUFModelIdentity.maximumBlobLedgerEntries {
+                let newest = entries.sorted {
+                    if $0.value.verifiedAt != $1.value.verifiedAt {
+                        return $0.value.verifiedAt < $1.value.verifiedAt
+                    }
+                    return $0.key < $1.key
+                }.suffix(GGUFModelIdentity.maximumBlobLedgerEntries)
+                entries = Dictionary(uniqueKeysWithValues: newest.map { ($0.key, $0.value) })
+            }
+
+            var bounded = BlobDigestLedger(entries: entries)
+            var encoded = try? JSONEncoder().encode(bounded)
+            while let data = encoded,
+                  data.count > GGUFModelIdentity.maximumBlobLedgerBytes,
+                  let oldest = entries.min(by: {
+                      if $0.value.verifiedAt != $1.value.verifiedAt {
+                          return $0.value.verifiedAt < $1.value.verifiedAt
+                      }
+                      return $0.key < $1.key
+                  })?.key
+            {
+                entries.removeValue(forKey: oldest)
+                bounded = BlobDigestLedger(entries: entries)
+                encoded = try? JSONEncoder().encode(bounded)
+            }
+            loaded = (url, bounded)
+            guard let data = encoded,
+                  data.count <= GGUFModelIdentity.maximumBlobLedgerBytes else { return }
             try? FileManager.default.createDirectory(
                 at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? data.write(to: url, options: .atomic)
@@ -332,10 +365,66 @@ struct GGUFModelIdentity: Equatable, Sendable {
         private func ledger() -> BlobDigestLedger {
             let url = self.url
             if let loaded, loaded.url == url { return loaded.ledger }
-            let value = (try? Data(contentsOf: url)).flatMap {
-                try? JSONDecoder().decode(BlobDigestLedger.self, from: $0)
-            } ?? BlobDigestLedger()
+            let value = readLedger(at: url)
             loaded = (url, value)
+            return value
+        }
+
+        /// Read one bounded, owned regular file through a no-follow descriptor.
+        /// Any bad cache state is a miss: the caller re-hashes the model bytes.
+        private func readLedger(at url: URL) -> BlobDigestLedger {
+            let descriptor = url.path.withCString {
+                Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
+            }
+            guard descriptor >= 0 else { return BlobDigestLedger() }
+            defer { Darwin.close(descriptor) }
+
+            var before = stat()
+            guard Darwin.fstat(descriptor, &before) == 0,
+                  (before.st_mode & S_IFMT) == S_IFREG,
+                  before.st_uid == getuid(),
+                  before.st_nlink == 1,
+                  before.st_size >= 0,
+                  before.st_size <= off_t(GGUFModelIdentity.maximumBlobLedgerBytes)
+            else {
+                return BlobDigestLedger()
+            }
+
+            var data = Data()
+            var buffer = [UInt8](repeating: 0, count: 64 * 1024)
+            while true {
+                let count = buffer.withUnsafeMutableBytes { raw in
+                    Darwin.read(descriptor, raw.baseAddress, raw.count)
+                }
+                if count > 0 {
+                    guard count <= GGUFModelIdentity.maximumBlobLedgerBytes - data.count else {
+                        return BlobDigestLedger()
+                    }
+                    data.append(contentsOf: buffer.prefix(count))
+                } else if count == 0 {
+                    break
+                } else if errno != EINTR {
+                    return BlobDigestLedger()
+                }
+            }
+
+            var after = stat()
+            guard Darwin.fstat(descriptor, &after) == 0,
+                  before.st_dev == after.st_dev,
+                  before.st_ino == after.st_ino,
+                  before.st_size == after.st_size,
+                  before.st_mtimespec.tv_sec == after.st_mtimespec.tv_sec,
+                  before.st_mtimespec.tv_nsec == after.st_mtimespec.tv_nsec,
+                  before.st_ctimespec.tv_sec == after.st_ctimespec.tv_sec,
+                  before.st_ctimespec.tv_nsec == after.st_ctimespec.tv_nsec,
+                  let value = try? JSONDecoder().decode(BlobDigestLedger.self, from: data),
+                  value.entries.count <= GGUFModelIdentity.maximumBlobLedgerEntries,
+                  value.entries.values.allSatisfy({
+                      $0.sha256.count == 64 && $0.sha256.allSatisfy { $0.isHexDigit }
+                  })
+            else {
+                return BlobDigestLedger()
+            }
             return value
         }
     }
