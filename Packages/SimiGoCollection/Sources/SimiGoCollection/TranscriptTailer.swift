@@ -227,6 +227,21 @@ public struct FileCursor: Codable, Sendable, Equatable {
     }
 }
 
+public struct TranscriptScanRootIdentity: Codable, Sendable, Equatable {
+    /// Canonical path and filesystem object identity of the directory that was
+    /// actually opened for scanning. Path alone cannot distinguish replacement
+    /// of a directory at the same location.
+    public let canonicalPath: String
+    public let device: UInt64
+    public let inode: UInt64
+
+    public init(canonicalPath: String, device: UInt64, inode: UInt64) {
+        self.canonicalPath = canonicalPath
+        self.device = device
+        self.inode = inode
+    }
+}
+
 public struct CursorState: Codable, Sendable, Equatable {
     /// Files that already existed at this instant are opened at EOF, never
     /// backfilled. Files created afterwards are read from their first byte.
@@ -239,14 +254,28 @@ public struct CursorState: Codable, Sendable, Equatable {
     /// re-read from their first byte; the candidate keys are stable, so the
     /// inbox absorbs the replay instead of duplicating it.
     public var policy: String?
+    /// The root filesystem object that produced these cursors and watermarks.
+    /// Missing in older cursor JSON; a legacy state binds on its first safe scan.
+    public var scanRootIdentity: TranscriptScanRootIdentity?
+    /// Directory-level scan positions are part of the durable read position,
+    /// not process-local scheduler state. Persisting them beside file cursors
+    /// lets a restarted tailer continue a budget-stopped walk.
+    public var scannerResumeWatermarks: [String: String]?
+    public var scannerRootResumeWatermark: String?
 
     public init(
         initializedAt: Date, cursors: [String: FileCursor] = [:],
-        policy: String? = nil
+        policy: String? = nil,
+        scanRootIdentity: TranscriptScanRootIdentity? = nil,
+        scannerResumeWatermarks: [String: String]? = nil,
+        scannerRootResumeWatermark: String? = nil
     ) {
         self.initializedAt = initializedAt
         self.cursors = cursors
         self.policy = policy
+        self.scanRootIdentity = scanRootIdentity
+        self.scannerResumeWatermarks = scannerResumeWatermarks
+        self.scannerRootResumeWatermark = scannerRootResumeWatermark
     }
 }
 
@@ -264,6 +293,7 @@ public final class FileCursorStore {
     /// while refusing corrupted or attacker-grown state before unbounded reads.
     static let maximumCursorStateBytes = 8 * 1024 * 1024
     static let maximumCursorCount = 4_096
+    static let maximumResumeWatermarkCount = 16_384
 
     public init(directoryURL: URL) {
         self.fileURL = directoryURL.appendingPathComponent("cursor.json")
@@ -319,19 +349,30 @@ public final class FileCursorStore {
             }
         }
 
+        let state: CursorState
         do {
-            return try JSONDecoder().decode(CursorState.self, from: data)
+            state = try JSONDecoder().decode(CursorState.self, from: data)
         } catch {
             throw CollectionStateFailure.corruptLegacyCursor(
                 path: fileURL.path, detail: String(describing: error))
         }
+        guard state.cursors.count <= Self.maximumCursorCount,
+              (state.scannerResumeWatermarks?.count ?? 0) <= Self.maximumResumeWatermarkCount
+        else {
+            throw CollectionStateFailure.corruptLegacyCursor(
+                path: fileURL.path,
+                detail: "cursor state exceeds the maximum cursor or scanner-watermark count")
+        }
+        return state
     }
 
     public func save(_ state: CursorState) throws {
-        guard state.cursors.count <= Self.maximumCursorCount else {
+        guard state.cursors.count <= Self.maximumCursorCount,
+              (state.scannerResumeWatermarks?.count ?? 0) <= Self.maximumResumeWatermarkCount
+        else {
             throw CollectionStateFailure.unreadableState(
                 path: fileURL.path,
-                detail: "cursor state exceeds the maximum tracked cursor count (\(Self.maximumCursorCount))")
+                detail: "cursor state exceeds the maximum tracked cursor or scanner-watermark count")
         }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -444,6 +485,19 @@ public struct TranscriptScanner {
     /// carries this state forward.
     var resumeWatermarks: [String: String] = [:]
 
+    /// The same watermark one level up: the name of the root entry (project
+    /// directory) the previous walk stopped on, i.e. the first project that has
+    /// not been walked yet. Without it a budget-stopped root walk restarts at
+    /// the first project on every poll and charges that project's entries
+    /// again, so a root with more entries than one budget covers never reaches
+    /// the projects behind the wall.
+    var rootResumeWatermark: String?
+
+    /// Bound to the opened directory descriptor, not inferred from path text.
+    /// A mismatch stops the walk before any persisted cursor or watermark is used.
+    var rootIdentity: TranscriptScanRootIdentity?
+    private(set) var rootIdentityMismatch = false
+
     /// Entries the latest walk saw but did not re-process because a resume
     /// watermark skipped them. They are live as of this walk — a complete
     /// walk that skipped processed entries still proves that everything it
@@ -457,12 +511,18 @@ public struct TranscriptScanner {
     ]
 
     public init(root: URL, maxScannedFiles: Int = 4_096,
-                maxVisitedEntries: Int = 16_384) {
+                maxVisitedEntries: Int = 16_384,
+                resumeWatermarks: [String: String] = [:],
+                rootResumeWatermark: String? = nil,
+                rootIdentity: TranscriptScanRootIdentity? = nil) {
         self.root = URL(
             fileURLWithPath: TranscriptPathAccess.canonicalPath(root.path),
             isDirectory: true)
         self.maxScannedFiles = max(0, maxScannedFiles)
         self.maxVisitedEntries = max(0, maxVisitedEntries)
+        self.resumeWatermarks = resumeWatermarks
+        self.rootResumeWatermark = rootResumeWatermark
+        self.rootIdentity = rootIdentity
     }
 
     /// A lazy directory iterator. `FileManager.contentsOfDirectory` reads
@@ -525,6 +585,7 @@ public struct TranscriptScanner {
     /// which the tailer keeps across polls.
     public mutating func scan() -> TranscriptScanResult {
         skippedLivePaths = []
+        rootIdentityMismatch = false
         let rootDirectoryFD: Int32
         do {
             rootDirectoryFD = try TranscriptPathAccess.openDirectoryPathNoFollow(root.path)
@@ -534,6 +595,26 @@ public struct TranscriptScanner {
                 files: [], errors: ["cannot safely open scan root \(root.path): \(error)"])
         }
         defer { Darwin.close(rootDirectoryFD) }
+
+        var rootInfo = stat()
+        guard Darwin.fstat(rootDirectoryFD, &rootInfo) == 0 else {
+            let code = errno
+            return .partial(
+                files: [],
+                errors: ["cannot identify opened scan root \(root.path): \(String(cString: strerror(code)))"])
+        }
+        let openedRootIdentity = TranscriptScanRootIdentity(
+            canonicalPath: root.path,
+            device: UInt64(rootInfo.st_dev),
+            inode: UInt64(rootInfo.st_ino))
+        if let expectedRootIdentity = rootIdentity,
+           expectedRootIdentity != openedRootIdentity {
+            rootIdentityMismatch = true
+            return .partial(
+                files: [],
+                errors: ["scan root identity mismatch for \(root.path); refusing persisted cursors and watermarks"])
+        }
+        rootIdentity = openedRootIdentity
 
         let projectIterator = DirectoryEntries(root)
         if let openError = projectIterator.error {
@@ -556,7 +637,23 @@ public struct TranscriptScanner {
         }
 
         var files: [TranscriptFile] = []
+        // Resume where the previous root walk stopped: the projects before the
+        // watermark were walked already, so they are skipped without charging
+        // and left in `skippedLivePaths` (a directory that was seen keeps every
+        // cursor beneath it). The budget then goes to projects that have never
+        // had a turn instead of to the same head of the listing.
+        var rootResume = rootResumeWatermark
+        var pendingProject: String?
         projectLoop: while let project = projectIterator.next() {
+            if let resume = rootResume {
+                if project.lastPathComponent == resume {
+                    rootResume = nil
+                } else {
+                    skippedLivePaths.append(project.path)
+                    continue
+                }
+            }
+            pendingProject = project.lastPathComponent
             guard chargeEntry() else { break }
             guard
                 let projectValues = try? project.resourceValues(
@@ -741,6 +838,19 @@ public struct TranscriptScanner {
         }
         if let readError = projectIterator.error {
             errors.append("cannot list \(root.path): \(readError)")
+            rootResumeWatermark = pendingProject
+        } else if budgetError != nil {
+            // The walk stopped at a budget wall with `pendingProject` still
+            // owed; the next walk starts there instead of at the first project.
+            rootResumeWatermark = pendingProject
+        } else if rootResume != nil {
+            // The watermark entry is gone: this listing was not fully walked, so
+            // it must not count as complete. The next walk starts it over.
+            errors.append(
+                "scan resume entry not found in \(root.path); the next walk starts it over")
+            rootResumeWatermark = nil
+        } else {
+            rootResumeWatermark = nil
         }
 
         if let budgetError { errors.append(budgetError) }
@@ -749,6 +859,7 @@ public struct TranscriptScanner {
             // A complete walk leaves nothing pending; drop stale keys for
             // directories that no longer exist.
             resumeWatermarks.removeAll()
+            rootResumeWatermark = nil
         }
         return errors.isEmpty ? .complete(sorted) : .partial(files: sorted, errors: errors)
     }
@@ -867,10 +978,9 @@ public final class TranscriptTailer {
     private var visitClock: UInt64 = 0
     /// Progress inside a single line too long to scan in one poll. The scan is
     /// not a read the cursor can carry, so it is remembered here and continued
-    /// by the next poll; a restart simply re-scans from the line start.
-    /// `window` is the first read window of that line, which is what a
-    /// too-long line is dropped by.
-    private var oversizedScan: [String: (scanned: Int64, window: Int)] = [:]
+    /// by the next poll; a restart simply re-scans from the line start (or from
+    /// the committed drop point, once the hard limit has dropped the line).
+    private var oversizedScan: [String: Int64] = [:]
 
     /// Deterministic post-read fingerprint fault injection for package tests.
     /// Production callers leave this nil and use descriptor-backed reads.
@@ -890,23 +1000,58 @@ public final class TranscriptTailer {
         let canonicalRoot = URL(
             fileURLWithPath: TranscriptPathAccess.canonicalPath(scanRoot.path),
             isDirectory: true)
+        let initialState = state ?? CursorState(initializedAt: now)
         self.scanRoot = canonicalRoot
         self.baselinePolicy = baselinePolicy
         self.scanner = TranscriptScanner(
             root: canonicalRoot, maxScannedFiles: maxScannedFiles,
-            maxVisitedEntries: maxVisitedEntries)
+            maxVisitedEntries: maxVisitedEntries,
+            resumeWatermarks: initialState.scannerResumeWatermarks ?? [:],
+            rootResumeWatermark: initialState.scannerRootResumeWatermark,
+            rootIdentity: initialState.scanRootIdentity)
         self.maxBytesPerPoll = maxBytesPerPoll
         self.maxLineBytes = maxLineBytes
         self.maxEventsPerPoll = maxEventsPerPoll
         self.maxScannedFiles = maxScannedFiles
         self.maxVisitedEntries = maxVisitedEntries
-        self.state = state ?? CursorState(initializedAt: now)
+        self.state = initialState
     }
 
     public var cursorState: CursorState { state }
 
     public func poll(sink: Sink) -> PollReport {
         var report = PollReport()
+        let stateBeforeScan = state
+        let resumeWatermarksBeforeScan = scanner.resumeWatermarks
+        let rootResumeWatermarkBeforeScan = scanner.rootResumeWatermark
+
+        // A legacy cursor has no descriptor identity. Its absolute cursor paths
+        // must at least belong to this canonical root; otherwise a reused state
+        // directory could bind another root's read positions to this one.
+        if state.scanRootIdentity == nil {
+            let rootPath = scanRoot.standardizedFileURL.path
+            let rootPrefix = rootPath == "/" ? "/" : rootPath + "/"
+            func isBelowScanRoot(_ path: String) -> Bool {
+                let candidate = URL(fileURLWithPath: path).standardizedFileURL.path
+                return candidate != rootPath && candidate.hasPrefix(rootPrefix)
+            }
+            let legacyPaths = Array(state.cursors.keys)
+                + Array((state.scannerResumeWatermarks ?? [:]).keys)
+            if legacyPaths.contains(where: { !isBelowScanRoot($0) }) {
+                report.errors.append(
+                    "legacy cursor paths do not belong to configured scan root; refusing to bind root identity")
+                report.scanComplete = false
+                return report
+            }
+            if state.scannerRootResumeWatermark != nil
+                || !(state.scannerResumeWatermarks ?? [:]).isEmpty {
+                report.errors.append(
+                    "legacy scanner watermarks lack a scan-root identity; refusing to reuse them")
+                report.scanComplete = false
+                return report
+            }
+        }
+
         // A cursor is only meaningful under the policy that produced it: after
         // `skip_existing` parks a file at EOF, `read_existing` must not inherit
         // that position, or "选目录即采集既有会话" would silently collect nothing.
@@ -916,10 +1061,40 @@ public final class TranscriptTailer {
             // A scan position belongs to the file identity that produced it, so
             // it cannot survive a policy change any more than a cursor can.
             oversizedScan.removeAll()
+            scanner.resumeWatermarks.removeAll()
+            scanner.rootResumeWatermark = nil
+            state.scannerResumeWatermarks = nil
+            state.scannerRootResumeWatermark = nil
             state.policy = baselinePolicy.rawValue
             report.stateChanged = true
         }
         let scan = scanner.scan()
+        if scanner.rootIdentityMismatch {
+            // Do not commit a policy reset or any scan progress when the opened
+            // directory is not the filesystem object recorded with this state.
+            state = stateBeforeScan
+            scanner.resumeWatermarks = resumeWatermarksBeforeScan
+            scanner.rootResumeWatermark = rootResumeWatermarkBeforeScan
+            report.errors.append(contentsOf: scan.errors)
+            report.scanComplete = false
+            report.stateChanged = false
+            return report
+        }
+        if state.scanRootIdentity == nil, let openedRootIdentity = scanner.rootIdentity {
+            state.scanRootIdentity = openedRootIdentity
+            report.stateChanged = true
+        }
+        let previousResumeWatermarks = state.scannerResumeWatermarks ?? [:]
+        let previousRootResumeWatermark = state.scannerRootResumeWatermark
+        if previousResumeWatermarks != scanner.resumeWatermarks
+            || previousRootResumeWatermark != scanner.rootResumeWatermark
+        {
+            state.scannerResumeWatermarks =
+                scanner.resumeWatermarks.isEmpty ? nil : scanner.resumeWatermarks
+            state.scannerRootResumeWatermark = scanner.rootResumeWatermark
+            // Persist watermark-only progress even when no candidates were emitted.
+            report.stateChanged = true
+        }
         // Least-recently-visited first, then path order: with a poll budget that
         // covers only part of the tree, the next poll starts where this one
         // stopped instead of re-reading the same head every time.
@@ -1384,7 +1559,16 @@ public final class TranscriptTailer {
     /// poll's remaining byte budget on the scan as well: the search reads the
     /// same disk the tail reads. When the budget ends mid-line, the scan
     /// position is remembered for the next poll; past `maxLineBytes`, one
-    /// window is dropped with a parse failure so the stream still progresses.
+    /// window's worth of scanned bytes is dropped with a parse failure so the
+    /// stream still progresses.
+    ///
+    /// The drop commits at the scan frontier, not one window past the line
+    /// start: everything scanned so far is known to hold no newline, so
+    /// re-committing it would only be scanned again. The resume floor moves to
+    /// that frontier with it — a committed position whose resume point stayed
+    /// behind on the (unparseable) line start is read as "an open turn is
+    /// there", and every poll would replay the line from its first byte and
+    /// land back on the same frontier: the file never advances past the line.
     private func skipOversizedLine(
         _ file: TranscriptFile, cursor: inout FileCursor, available: Int64,
         partialBytes: Int, budget: inout Int,
@@ -1403,8 +1587,7 @@ public final class TranscriptTailer {
         // The window just read was itself searched for a newline and had none,
         // so its bytes count as scanned; a resumed scan picks up where the
         // previous poll stopped instead of re-reading that prefix.
-        let alreadyScanned = (pending?.scanned ?? 0) + Int64(partialBytes)
-        let window = pending?.window ?? max(partialBytes, 1)
+        let alreadyScanned = (pending ?? 0) + Int64(partialBytes)
         let lineAllowance = max(0, Int64(maxLineBytes) - alreadyScanned)
         let scanLimit = min(lineAllowance, Int64(max(0, budget)))
         var scanned: Int64 = 0
@@ -1449,7 +1632,11 @@ public final class TranscriptTailer {
         }
         if alreadyScanned + scanned >= Int64(maxLineBytes) {
             oversizedScan.removeValue(forKey: file.path)
-            let advance = min(Int64(window), available)
+            // Every byte before the frontier has been searched and holds no
+            // newline: commit exactly there. The frontier is also what a cold
+            // start re-derives from the same prefix, so a restart lands on the
+            // same position instead of rescanning dropped bytes.
+            let advance = min(alreadyScanned + scanned, available)
             guard advance > 0 else { return false }
             guard
                 let fingerprint = trailingFingerprint(
@@ -1462,8 +1649,16 @@ public final class TranscriptTailer {
             cursor.segmentLines += 1
             cursor.fingerprint = fingerprint
             cursor.updatedAt = Date()
-            // The drop lands mid-line, so the resume point (always a line
-            // boundary) is left where it was; a cold start re-reads the line.
+            // The drop lands mid-line, and that is the durable statement: the
+            // bytes behind this position were dropped, so the resume floor
+            // moves here ("continue, nothing to replay"). Leaving it on the
+            // line start would ask the next cold start to replay a line that is
+            // known to be unparseable. The cost is that a turn open when the
+            // line began cannot be rebuilt after a restart — its prompt lies
+            // behind bytes that no longer parse — which is why the in-memory
+            // accumulator is kept for the rest of this process.
+            cursor.resumeOffset = cursor.offset
+            cursor.resumeSegmentLines = cursor.segmentLines
             report.parseFailures += 1
             report.readFiles += 1
             report.readBytes += Int64(partialBytes) + charged
@@ -1472,10 +1667,11 @@ public final class TranscriptTailer {
                     ParseFailure(
                         path: file.path, sessionID: file.sessionID,
                         segmentLine: cursor.segmentLines,
-                        detail: "line exceeds \(maxLineBytes) bytes; window dropped")))
+                        detail: "line exceeds \(maxLineBytes) bytes; "
+                            + "\(advance) bytes dropped")))
             return true
         }
-        oversizedScan[file.path] = (alreadyScanned + scanned, window)
+        oversizedScan[file.path] = alreadyScanned + scanned
         if budget <= 0 { report.budgetExhausted = true }
         return false
     }

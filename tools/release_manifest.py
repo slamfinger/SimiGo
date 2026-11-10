@@ -22,8 +22,7 @@ Three properties are enforced rather than intended:
   covers the file and what that coverage can see, including the blind spots that were
   measured rather than assumed. `research/` is absent from the deliverable because the
   deliverable is the product tree; it is not exempted from scanning, and the exclusion
-  register stays silent about research files -- they are accounted by count in
-  `accounting.research_not_declared`.
+  register stays silent about research files -- `check` reports them by count.
 
 The documents are static, and that is a property rather than a style. Nothing in them
 names a commit, a tree, a build time or an aggregate of the deliverable: a manifest that
@@ -33,6 +32,15 @@ belong to the provenance sidecar `release_chain.py` writes next to each staging 
 where they can only ever describe the tree they were taken from. `check` enforces this
 by refusing any key outside the fixed schema, so re-adding a self-referential field is
 a failure and not a silent drift.
+
+No count of the tree is committed either, and that is a merge property rather than
+tidiness. Git merges two branches that both edited these documents by taking the union of
+the two file lists -- correct, because both authors' files belong in the result -- and by
+picking one side of every scalar. A committed aggregate is therefore the one thing a clean
+textual merge can quietly desynchronise: `main` went stale exactly that way after a PR
+whose own CI was green. With nothing but paths in the documents, the union of two true
+lists is true, and every count lives in `check`'s output where it describes the tree it
+was just measured on.
 
 `build` and `gate` are unchanged: this tool only fixes the input set in version control
 and proves the register is complete. The scan rules live in `release_artifact_audit.py`,
@@ -64,12 +72,10 @@ RESEARCH_PREFIX = "research/"
 INPUTS_FILE = "release/release-inputs-v2.2.x.json"
 EXCLUSIONS_FILE = "release/release-exclusions-v2.2.x.json"
 
-INPUTS_KEYS = frozenset({"manifest_version", "rules", "release_branch", "accounting",
+INPUTS_KEYS = frozenset({"manifest_version", "rules", "release_branch",
                          "directory_globs_used", "sources"})
-EXCLUSIONS_KEYS = frozenset({"manifest_version", "rules", "release_branch", "accounting",
+EXCLUSIONS_KEYS = frozenset({"manifest_version", "rules", "release_branch",
                              "record_fields", "excluded"})
-ACCOUNTING_KEYS = frozenset({"tracked", "research_not_declared", "non_research_candidates",
-                             "declared", "excluded"})
 # Names that belong to a provenance sidecar, never to a versioned manifest. Refused
 # wherever they appear, so the static documents cannot re-acquire a self-reference.
 DYNAMIC_PROVENANCE_FIELDS = frozenset({
@@ -90,6 +96,9 @@ RULE_CARRIER_REASONS = {
     "tools/test_release_sanitize.py": "rule carrier: the temp-path rule guts its fixture",
 }
 NON_UTF8_REASON = "non-UTF-8 source: redaction of it cannot be proven"
+# A line that tells the reader what to do next, not what is wrong. Printed without the
+# FAIL prefix so a log's failures stay a list of defects.
+REMEDY_PREFIX = "remedy: "
 
 FILE_TYPES = {
     ".sh": "shell script",
@@ -251,13 +260,12 @@ def exclusion_record(rel: str, data: bytes, reason: str, root: Path) -> dict:
     }
 
 
-def documents(root: Path) -> tuple[dict, dict]:
+def documents(root: Path) -> tuple[dict, dict, dict]:
     sources, excluded, stats = classify(root)
     inputs_doc = {
         "manifest_version": MANIFEST_VERSION,
         "rules": RULES,
         "release_branch": RELEASE_BRANCH,
-        "accounting": stats,
         "directory_globs_used": False,
         "sources": sources,
     }
@@ -265,7 +273,6 @@ def documents(root: Path) -> tuple[dict, dict]:
         "manifest_version": MANIFEST_VERSION,
         "rules": RULES,
         "release_branch": RELEASE_BRANCH,
-        "accounting": stats,
         "record_fields": [
             "path", "sha256", "bytes", "reason", "file_type",
             "repository_privacy_scan", "applies_to_future_releases",
@@ -273,7 +280,7 @@ def documents(root: Path) -> tuple[dict, dict]:
         ],
         "excluded": excluded,
     }
-    return inputs_doc, exclusions_doc
+    return inputs_doc, exclusions_doc, stats
 
 
 def dump(doc: dict) -> str:
@@ -281,11 +288,10 @@ def dump(doc: dict) -> str:
 
 
 def derive(root: Path, inputs_out: Path, exclusions_out: Path) -> int:
-    inputs_doc, exclusions_doc = documents(root)
+    inputs_doc, exclusions_doc, stats = documents(root)
     for path, doc in ((inputs_out, inputs_doc), (exclusions_out, exclusions_doc)):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(dump(doc), encoding="utf-8")
-    stats = inputs_doc["accounting"]
     for key in ("tracked", "research_not_declared", "non_research_candidates",
                 "declared", "excluded"):
         print(f"{key}={stats[key]}")
@@ -329,12 +335,6 @@ def static_schema_errors(name: str, doc: dict, allowed: frozenset[str]) -> list[
         errors.append(f"{name} carries dynamic provenance field(s) that belong to the "
                       f"chain sidecar, not to a versioned manifest: "
                       f"{', '.join(self_reference)}")
-    accounting = doc.get("accounting")
-    if isinstance(accounting, dict):
-        extra = sorted(set(accounting) - ACCOUNTING_KEYS)
-        if extra:
-            errors.append(f"{name} accounting has key(s) outside the fixed identity: "
-                          f"{', '.join(extra)}")
     return errors
 
 
@@ -405,13 +405,17 @@ def check(root: Path, inputs_path: Path, exclusions_path: Path) -> list[str]:
         errors.append(f"exclusion record has no derived reason: {rel}")
     for rel in sorted(derived_excluded_paths - register_paths):
         errors.append(f"candidate is excluded by derivation but not registered: {rel}")
-    if inputs_doc.get("accounting") != stats:
-        errors.append(f"accounting drift: document {inputs_doc.get('accounting')} != "
-                      f"{stats}")
-    if exclusions_doc.get("accounting") != stats:
-        errors.append("the two documents do not carry the same accounting")
     if stats["declared"] != len(sources) or stats["excluded"] != len(excluded):
-        errors.append("record counts do not match the accounting block")
+        # A duplicate entry makes the record count exceed the file set, which the
+        # set comparison above cannot see.
+        errors.append("a record is listed twice, or two records are missing")
+    if errors:
+        # The failure of this block is always the same failure: the tracked tree moved
+        # under the documents. Say that, and name the one command that fixes it, so a
+        # contributor does not have to reverse-engineer it from "in neither document".
+        errors.append(REMEDY_PREFIX + "the tracked tree moved under the two documents: "
+                      "run `python3 tools/release_manifest.py derive` and commit "
+                      "release/*.json -- derive rewrites both documents from git ls-files")
 
     # Source files must still be buildable inputs: existing, unrenamed, UTF-8.
     for entry in sources:
@@ -510,11 +514,14 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 1
     for error in errors:
-        print(f"FAIL: {error}", file=sys.stderr)
+        if error.startswith(REMEDY_PREFIX):
+            print(error)
+        else:
+            print(f"FAIL: {error}", file=sys.stderr)
     if errors:
         return 1
-    inputs_doc = load(inputs_path)
-    stats = inputs_doc["accounting"]
+    # Measured on this tree, reported here, never committed: see the module docstring.
+    stats = classify(root)[2]
     print(f"PASS: release manifest complete -- {stats['declared']} input(s), "
           f"{stats['excluded']} exclusion record(s), "
           f"{stats['non_research_candidates']} candidate(s) accounted, "
