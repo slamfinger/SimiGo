@@ -1123,6 +1123,36 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 27 {
+            try transaction {
+                // 检索索引。正文只在 is_objects 里存一份（47 MB，最大单条 1.6 MB），
+                // 按 LIKE 全扫是 0.21 s，关键词一多就线性叠上去；trigram 查询 < 0.01 s。
+                // trigram 是唯一能吃中文子串的分词器——unicode61 放中文进去是
+                // 0 命中且不报错，所以不能用默认分词。
+                //
+                // 用 external content：索引只存 3 字片段，不复制正文（复制一份
+                // 实测让 47 MB 变成 84 MB）。is_objects 是只增的内容寻址表：
+                // 全仓没有 UPDATE / DELETE，所以只需要一条 INSERT 触发器。
+                try Self.rawExec(handle, """
+                CREATE VIRTUAL TABLE IF NOT EXISTS is_objects_fts USING fts5(
+                    content,
+                    content='is_objects',
+                    content_rowid='rowid',
+                    tokenize='trigram'
+                );
+                CREATE TRIGGER IF NOT EXISTS is_objects_fts_ai
+                AFTER INSERT ON is_objects BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    VALUES (new.rowid, CAST(new.content AS TEXT));
+                END;
+                """)
+                // 已有对象一次性补进索引（建表时 INSERT 触发器还不存在）。
+                try Self.rawExec(handle,
+                    "INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');")
+                try recordMigrationRow(27, "simigo-object-fts-trigram-v27")
+            }
+        }
+
         // The declared head and the applied head must agree. A migration gate
         // that was written but never reached, or a version bumped in the
         // constant but not in a gate, otherwise shows up as a store that is
@@ -1136,7 +1166,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 26
+    public static let currentSchemaVersion = 27
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
@@ -5098,6 +5128,30 @@ try bind(externalStmt, 1, rootID)
     /// into Swift strings to find a few hundred hits costs 0.85 s, and the same
     /// predicate in C costs 0.02 s — measured 2026-11-09, 6 keywords,
     /// set-equal to the byte scan on the live space.
+    ///
+    /// 3 字以上的词走 `is_objects_fts`（trigram）索引；1–2 字的词 trigram 建不出
+    /// 片段，回落原来的 LIKE 全扫。两条路的命中集合相同：索引只覆盖挂在
+    /// is_objects 上的行，没有对象的行仍走 LIKE，两者的并集就是原来的 LIKE 结果。
+    /// trigram 索引吃得下的关键词：至少 3 个字符（trigram 按 3 字片段建索引，
+    /// 「合同」两个字的片段根本不存在）。按 Character 计，一个汉字算一个字符。
+    static func isFTSEligible(_ term: String) -> Bool {
+        term.count >= 3
+    }
+
+    /// FTS5 的字符串字面量：整串加双引号 = 短语，内部双引号翻倍。
+    /// 加了引号，`%`、`_`、括号、冒号都只是普通字符，不会被当成查询语法。
+    static func ftsPhrase(_ term: String) -> String {
+        "\"" + term.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+
+    /// LIKE 的转义（配合 `ESCAPE '\'`）。通配符在这里只是字面量。
+    static func likeEscaped(_ term: String) -> String {
+        term
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
+    }
+
     func chatIndexRows(
         sessionIDs: [String]?, matchingAny: [String]? = nil
     ) throws -> [ChatIndexRow] {
@@ -5111,21 +5165,32 @@ try bind(externalStmt, 1, rootID)
         """
         sql += sessionClause(sessionIDs)
         let terms = (matchingAny ?? []).filter { !$0.isEmpty }
+        var binds: [String] = []
         if !terms.isEmpty {
-            let alternatives = terms.map { _ in
-                "CAST(COALESCE(o.content, c.content) AS TEXT) LIKE ? ESCAPE '\\'"
+            var alternatives: [String] = []
+            for term in terms {
+                if Self.isFTSEligible(term) {
+                    // 索引命中的对象，加上没有对象的行（老会话正文还在 c.content 里）。
+                    alternatives.append(
+                        "(o.rowid IN (SELECT rowid FROM is_objects_fts"
+                            + " WHERE is_objects_fts MATCH ?)"
+                            + " OR (o.rowid IS NULL"
+                            + " AND CAST(c.content AS TEXT) LIKE ? ESCAPE '\\'))")
+                    binds.append(Self.ftsPhrase(term))
+                    binds.append("%" + Self.likeEscaped(term) + "%")
+                } else {
+                    alternatives.append(
+                        "CAST(COALESCE(o.content, c.content) AS TEXT) LIKE ? ESCAPE '\\'")
+                    binds.append("%" + Self.likeEscaped(term) + "%")
+                }
             }
             sql += " AND (" + alternatives.joined(separator: " OR ") + ")"
         }
         sql += " ORDER BY c.session_id, c.id;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (idx, term) in terms.enumerated() {
-            let escaped = term
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "%", with: "\\%")
-                .replacingOccurrences(of: "_", with: "\\_")
-            try bind(stmt, Int32(idx + 1), "%\(escaped)%")
+        for (idx, value) in binds.enumerated() {
+            try bind(stmt, Int32(idx + 1), value)
         }
         var rows: [ChatIndexRow] = []
         while try stepRowOrDone(stmt) {

@@ -456,6 +456,11 @@ extension HTTPServer {
                 "result_sha256": resolution.resultSHA256,
                 "retrieval_settlement_id": resolution.retrievalSettlementID,
                 "stale_items": resolution.staleItemIDs,
+                // 路况：1–2 字的关键词走不了 trigram 索引，回落 LIKE 全扫。
+                // 放在返回里，是为了让"这次快/慢"有据可查，而不是靠感觉。
+                "index": resolution.unindexedTerms.isEmpty
+                    ? "fts5-trigram" : "partial-scan",
+                "unindexed_terms": resolution.unindexedTerms,
                 "items": resolution.hits.map { hit -> [String: Any] in
                     [
                         "item_id": hit.itemID,

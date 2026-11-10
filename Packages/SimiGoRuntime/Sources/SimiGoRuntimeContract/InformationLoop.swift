@@ -97,13 +97,16 @@ public struct InformationLoop {
         /// Settled rows whose source bytes no longer match their digest. They are
         /// excluded from hits and force a new demand instead of a silent reuse.
         public let staleItemIDs: [String]
+        /// 这些关键词没走索引：trigram 需要 3 个字符，1–2 字的词回落 LIKE 全扫。
+        /// 空数组 = 本次全部关键词都走了索引。它是给人看的路况，不是命中质量。
+        public let unindexedTerms: [String]
 
         public var isEmpty: Bool { hits.isEmpty }
 
         public init(demandID: String, stateID: String?, reused: Bool,
                     hits: [Item], inputDigest: String, resultSHA256: String,
                     retrievalSettlementID: String, itemIDs: [String],
-                    staleItemIDs: [String]) {
+                    staleItemIDs: [String], unindexedTerms: [String] = []) {
             self.demandID = demandID
             self.stateID = stateID
             self.reused = reused
@@ -113,6 +116,7 @@ public struct InformationLoop {
             self.retrievalSettlementID = retrievalSettlementID
             self.itemIDs = itemIDs
             self.staleItemIDs = staleItemIDs
+            self.unindexedTerms = unindexedTerms
         }
     }
 
@@ -125,6 +129,8 @@ public struct InformationLoop {
         let staleItemIDs: [String]
         let includeChat: Bool
         let evaluatedAtUTC: String
+        /// 可选：老结果没有这个字段，解码成 nil（不改动既有结果的 digest）。
+        let unindexedTerms: [String]?
     }
 
     private static let resultSchema = "simigo.information-demand/v1"
@@ -163,6 +169,9 @@ public struct InformationLoop {
         var scored: [(item: Item, score: Int)] = []
         var addresses: [ESISDatabase.InformationInput] = []
         let keywords = Self.keywords(in: query)
+        // 路况：哪些关键词用不上 trigram 索引（1–2 字）。它只描述这一次查询
+        // 走了哪条路，不进 demand 身份——同一 query 的命中不会因为这条路而变。
+        let unindexedTerms = keywords.filter { !ESISDatabase.isFTSEligible($0) }
         // Every citation below is a line that must mention a keyword, and the
         // case-insensitive Unicode scan that decides it is the most expensive
         // thing in this function: measured 2026-11-09 on the live space, 38 MB
@@ -354,14 +363,16 @@ public struct InformationLoop {
                 resultSHA256: NativeSHA256.hexDigest(stored),
                 retrievalSettlementID: row.retrievalSettlementID ?? "",
                 itemIDs: decoded.items.map(\.itemID),
-                staleItemIDs: decoded.staleItemIDs)
+                staleItemIDs: decoded.staleItemIDs,
+                unindexedTerms: decoded.unindexedTerms ?? unindexedTerms)
         }
 
         let evaluatedAt = Self.utcStamp(Date())
         let payload = try JSONEncoder.sorted.encode(StoredResult(
             schema: Self.resultSchema, query: query, inputDigest: demandID,
             hitCount: items.count, items: items, staleItemIDs: stale,
-            includeChat: demand.includeChat, evaluatedAtUTC: evaluatedAt))
+            includeChat: demand.includeChat, evaluatedAtUTC: evaluatedAt,
+            unindexedTerms: unindexedTerms))
 
         // Only a source that can change in place gets a binding. A demand
         // resolved from chat turns or from the collection bridge has nothing to
@@ -431,7 +442,8 @@ public struct InformationLoop {
             hits: items, inputDigest: demandID,
             resultSHA256: commit.resultSHA256,
             retrievalSettlementID: commit.retrievalSettlementID,
-            itemIDs: items.map(\.itemID), staleItemIDs: stale)
+            itemIDs: items.map(\.itemID), staleItemIDs: stale,
+            unindexedTerms: unindexedTerms)
     }
 
     /// A bounded, citable context block. Only verified line fragments are
