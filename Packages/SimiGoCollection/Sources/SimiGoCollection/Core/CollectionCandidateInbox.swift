@@ -532,6 +532,11 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
         let statement = try connection.prepare(
             "SELECT payload FROM cursor_state WHERE id = 1")
         guard try statement.step() else { return nil }
+        let byteCount = statement.blobByteCount(at: 0)
+        guard byteCount <= FileCursorStore.maximumCursorStateBytes else {
+            throw CollectionStateError.corruptState(
+                path: databaseURL.path, detail: "cursor payload exceeds the maximum cursor-state byte limit")
+        }
         guard let data = statement.blob(at: 0) else {
             throw CollectionStateError.corruptState(
                 path: databaseURL.path, detail: "null cursor payload")
@@ -755,6 +760,10 @@ final class CollectionSQLiteStatement {
             let pointer = sqlite3_column_text(handle, index)
         else { return nil }
         return String(cString: pointer)
+    }
+
+    func blobByteCount(at index: Int32) -> Int {
+        Int(sqlite3_column_bytes(handle, index))
     }
 
     func blob(at index: Int32) -> Data? {
