@@ -331,7 +331,7 @@ public final class FileCursorStore {
         guard state.cursors.count <= Self.maximumCursorCount else {
             throw CollectionStateFailure.unreadableState(
                 path: fileURL.path,
-                detail: "cursor state exceeds the maximum tracked cursor count (\(Self.maximumCursorCount))")
+                detail: "cursor state exceeds the maximum tracked cursor or scanner-watermark count")
         }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]

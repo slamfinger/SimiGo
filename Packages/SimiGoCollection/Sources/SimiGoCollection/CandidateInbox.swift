@@ -129,12 +129,27 @@ final class CandidateInbox {
     func loadCursorState() throws -> CursorState? {
         try migrateLegacyCursorIfNeeded()
         guard let data = try store.loadPosition() else { return nil }
+        guard data.count <= FileCursorStore.maximumCursorStateBytes else {
+            throw CollectionStateFailure.corruptState(
+                path: databaseURL.path,
+                detail: "cursor state exceeds the maximum cursor-state byte limit")
+        }
+        let state: CursorState
         do {
-            return try JSONDecoder().decode(CursorState.self, from: data)
+            state = try JSONDecoder().decode(CursorState.self, from: data)
         } catch {
             throw CollectionStateFailure.corruptState(
                 path: databaseURL.path, detail: "cursor state decode: \(error)")
         }
+        guard state.cursors.count <= FileCursorStore.maximumCursorCount,
+              (state.scannerResumeWatermarks?.count ?? 0)
+                <= FileCursorStore.maximumResumeWatermarkCount
+        else {
+            throw CollectionStateFailure.corruptState(
+                path: databaseURL.path,
+                detail: "cursor state exceeds the maximum cursor or scanner-watermark count")
+        }
+        return state
     }
 
     @discardableResult
@@ -204,10 +219,24 @@ final class CandidateInbox {
     }
 
     private static func encodePosition(_ state: CursorState) throws -> Data {
+        guard state.cursors.count <= FileCursorStore.maximumCursorCount,
+              (state.scannerResumeWatermarks?.count ?? 0)
+                <= FileCursorStore.maximumResumeWatermarkCount
+        else {
+            throw CollectionStateFailure.encoding(
+                detail: "cursor state exceeds the maximum cursor or scanner-watermark count")
+        }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         do {
-            return try encoder.encode(state)
+            let data = try encoder.encode(state)
+            guard data.count <= FileCursorStore.maximumCursorStateBytes else {
+                throw CollectionStateFailure.encoding(
+                    detail: "cursor state exceeds the maximum cursor-state byte limit")
+            }
+            return data
+        } catch let error as CollectionStateFailure {
+            throw error
         } catch {
             throw CollectionStateFailure.encoding(detail: String(describing: error))
         }

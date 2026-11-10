@@ -1589,6 +1589,77 @@ final class TranscriptTailerTests: XCTestCase {
             "a complete walk retired the cursors of projects its watermark skipped")
     }
 
+    /// Reconstructing a tailer after every partial poll must still advance
+    /// beyond the first project; scanner watermarks are part of CursorState.
+    func testRootResumeWatermarkSurvivesTailerRestart() throws {
+        let projects = 5
+        let root = try makeRoot()
+        for index in 0..<projects {
+            let directory = root.appendingPathComponent(
+                "project-\(index)", isDirectory: true)
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true)
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "restart-u-\(index)", answerUUID: "restart-a-\(index)",
+                    messageID: "restart-m-\(index)", nextAnchor: "restart-n-\(index)"),
+                to: directory.appendingPathComponent("main.jsonl"))
+        }
+
+        let now = Date(timeIntervalSinceNow: -3600)
+        var persistedState: CursorState?
+        var polls = 0
+        while (persistedState?.cursors.count ?? 0) < projects {
+            polls += 1
+            XCTAssertLessThan(polls, 20, "a restarted root walk starved later projects")
+            let tailer = TranscriptTailer(
+                scanRoot: root, state: persistedState, now: now,
+                baselinePolicy: .readExisting, maxVisitedEntries: 3)
+            let result = poll(tailer)
+            XCTAssertTrue(
+                result.report.scanComplete || !result.report.errors.isEmpty
+                    || result.report.stateChanged,
+                "a partial walk must persist its resume position")
+            let encoded = try JSONEncoder().encode(tailer.cursorState)
+            persistedState = try JSONDecoder().decode(CursorState.self, from: encoded)
+        }
+        XCTAssertEqual(persistedState?.cursors.count, projects)
+    }
+
+    /// Empty-directory progress must trigger a durable cursor commit even
+    /// though the poll produced no candidate events or file cursors.
+    func testWatermarkOnlyProgressMarksCursorStateChanged() throws {
+        let root = try makeRoot()
+        for index in 0..<6 {
+            try FileManager.default.createDirectory(
+                at: root.appendingPathComponent("empty-\(index)", isDirectory: true),
+                withIntermediateDirectories: false)
+        }
+        let state = CursorState(
+            initializedAt: Date(timeIntervalSinceNow: -3600),
+            policy: BaselinePolicy.readExisting.rawValue)
+        let tailer = TranscriptTailer(
+            scanRoot: root, state: state,
+            baselinePolicy: .readExisting, maxVisitedEntries: 2)
+
+        let result = poll(tailer)
+        XCTAssertTrue(result.events.isEmpty)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertTrue(result.report.stateChanged)
+        XCTAssertTrue(
+            tailer.cursorState.scannerRootResumeWatermark != nil
+                || !(tailer.cursorState.scannerResumeWatermarks ?? [:]).isEmpty)
+    }
+
+    /// A cursor written before scanner watermarks existed remains readable.
+    func testCursorStateDecodesWithoutScannerWatermarks() throws {
+        let legacy = Data(#"{"initializedAt":0,"cursors":{},"policy":"read_existing"}"#.utf8)
+        let state = try JSONDecoder().decode(CursorState.self, from: legacy)
+        XCTAssertTrue(state.cursors.isEmpty)
+        XCTAssertNil(state.scannerResumeWatermarks)
+        XCTAssertNil(state.scannerRootResumeWatermark)
+    }
+
     /// A watermark naming an entry that no longer exists must not skip the
     /// whole listing forever: the poll reports the listing as not fully
     /// walked (never complete, so no cursor is retired) and the next walk
