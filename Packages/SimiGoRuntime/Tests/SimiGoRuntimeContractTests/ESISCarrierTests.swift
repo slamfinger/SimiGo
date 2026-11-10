@@ -411,11 +411,10 @@ final class ESISCarrierTests: XCTestCase {
         let entry = try XCTUnwrap(db.resolveIndexIdentity("demand:\(first.demandID)"))
         let resultData = try db.readObject(entry.objectID)
         XCTAssertEqual(NativeSHA256.hexDigest(resultData), first.resultSHA256)
-        let fileEntry = try XCTUnwrap(db.resolveIndexIdentity("file:work/doc.md"))
-        let input = try XCTUnwrap(
-            db.currentDependency("demand:\(first.demandID) -> file:work/doc.md"))
-        XCTAssertEqual(input.contentAddress, fileEntry.objectID)
-        XCTAssertEqual(input.reason, "demand-input")
+        // 候选不写依赖表：一条 demand 的 canonical input 是整个根的文件清单
+        // （实测约 700 条），把它们写进依赖边，184k 条里 99% 都是候选清单。
+        XCTAssertNil(
+            try db.currentDependency("demand:\(first.demandID) -> file:work/doc.md"))
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedRetrievalResults, 0)

@@ -1153,6 +1153,107 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 28 {
+            try transaction {
+                // v28：索引只覆盖结算产物/摘要，不再覆盖全部正文。
+                //
+                // v27 对 is_objects 全表建 trigram（7,098 个对象 / 45 MB 正文），
+                // 索引 88 MB，比正文还大；其中绝大多数是从没进过结算的会话
+                // 正文与登记文件。结算真正引用过的对象只有 714 个 / 9 MB。
+                // 索引是派生物，不是历史：重建它不抹任何记录。
+                //
+                // 未进索引的行不丢：检索 SQL 对「不在索引里的行」回落 LIKE，
+                // 两条路的并集仍是原来的命中集合。
+                try Self.rawExec(handle, """
+                DROP TRIGGER IF EXISTS is_objects_fts_ai;
+                DROP TABLE IF EXISTS is_objects_fts;
+                DROP TABLE IF EXISTS is_search_indexed;
+                CREATE VIRTUAL TABLE is_objects_fts USING fts5(
+                    content,
+                    content='is_objects',
+                    content_rowid='rowid',
+                    tokenize='trigram'
+                );
+                -- FTS5 的 external content 表不能全表扫描（只能 MATCH 或按 rowid），
+                -- 所以「这行在不在索引里」用一张小登记表回答，检索时据此决定
+                -- 走索引还是回落 LIKE。
+                CREATE TABLE is_search_indexed(
+                    object_rowid INTEGER PRIMARY KEY,
+                    object_id TEXT NOT NULL
+                );
+                INSERT INTO is_objects_fts(rowid, content)
+                SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                WHERE o.object_id IN (
+                    SELECT payload_object_id FROM settlements
+                     WHERE payload_object_id IS NOT NULL
+                    UNION SELECT summary_object_id FROM settlement_summaries
+                    UNION SELECT result_object_id FROM retrieval_settlements
+                     WHERE result_object_id IS NOT NULL
+                );
+                INSERT INTO is_search_indexed(object_rowid, object_id)
+                SELECT rowid, object_id FROM is_objects
+                WHERE object_id IN (
+                    SELECT payload_object_id FROM settlements
+                     WHERE payload_object_id IS NOT NULL
+                    UNION SELECT summary_object_id FROM settlement_summaries
+                    UNION SELECT result_object_id FROM retrieval_settlements
+                     WHERE result_object_id IS NOT NULL
+                );
+                CREATE TRIGGER IF NOT EXISTS is_fts_settlements_ai
+                AFTER INSERT ON settlements BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id;
+                END;
+                CREATE TRIGGER IF NOT EXISTS is_fts_settlements_au
+                AFTER UPDATE OF payload_object_id ON settlements BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id;
+                END;
+                CREATE TRIGGER IF NOT EXISTS is_fts_summaries_ai
+                AFTER INSERT ON settlement_summaries BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.summary_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.summary_object_id;
+                END;
+                CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_ai
+                AFTER INSERT ON retrieval_settlements BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.result_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.result_object_id;
+                END;
+                CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_au
+                AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.result_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.result_object_id;
+                END;
+                """)
+                try recordMigrationRow(28, "simigo-object-fts-settled-only-v28")
+            }
+        }
+
         // The declared head and the applied head must agree. A migration gate
         // that was written but never reached, or a version bumped in the
         // constant but not in a gate, otherwise shows up as a store that is
@@ -1166,7 +1267,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 27
+    public static let currentSchemaVersion = 28
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
@@ -3896,24 +3997,18 @@ try bind(externalStmt, 1, rootID)
             // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
             let canonicalInput = try canonicalDemandInput(
                 query: query, rootIDs: rootID.map { [$0] })
-            var inputs: [(root: String, path: String, objectID: String)] = []
-            var unresolvedInputs: [(root: String, path: String)] = []
-            for entry in canonicalInput.entries {
-                if let objectID = entry.objectID {
-                    inputs.append((entry.rootID, entry.relativePath, objectID))
-                } else {
-                    // Index-only settlement: the address is the identity record's
-                    // metadata object, not a copy of the entity bytes.
-                    unresolvedInputs.append((entry.rootID, entry.relativePath))
-                }
-            }
-            for input in unresolvedInputs {
-                let identity = "file:\(input.root)/\(input.path)"
-                guard let address = try latestIndexObjectID(identity: identity) else {
+            // 候选文件的地址必须可解析，缺了就报错。但候选不等于依赖：
+            // 一次 demand 的 canonical input 是整个根的文件清单（实测一条
+            // demand 带回约 700 个候选），把它们逐条写成依赖边，184k 条
+            // 里 99% 都是候选清单，不是被引用的信息。
+            for entry in canonicalInput.entries where entry.objectID == nil {
+                // Index-only settlement: the address is the identity record's
+                // metadata object, not a copy of the entity bytes.
+                let identity = "file:\(entry.rootID)/\(entry.relativePath)"
+                guard try latestIndexObjectID(identity: identity) != nil else {
                     throw DatabaseError.sql(
                         "executeInformationDemand: missing metadata object address for \(identity)")
                 }
-                inputs.append((input.root, input.path, address))
             }
             let canonical = canonicalInput.canonical
             // The result limit and filename-index matches both change the
@@ -4013,12 +4108,6 @@ try bind(externalStmt, 1, rootID)
             }
             _ = try appendIndexEntryInTransaction(
                 identity: "demand:\(demandID)", objectID: objectID)
-            for input in inputs {
-                _ = try appendDependencyInTransaction(
-                    dependencyID: "demand:\(demandID) -> file:\(input.root)/\(input.path)",
-                    contentAddress: input.objectID,
-                    reason: "demand-input")
-            }
 
             return DemandRetrieval(
                 demandID: demandID, reused: false, hits: hits,
@@ -5170,12 +5259,15 @@ try bind(externalStmt, 1, rootID)
             var alternatives: [String] = []
             for term in terms {
                 if Self.isFTSEligible(term) {
-                    // 索引命中的对象，加上没有对象的行（老会话正文还在 c.content 里）。
+                    // 索引命中的对象，加上没进索引的行（v28 起只索引结算产物，
+                    // 其余行——没有对象的、没被结算引用过的——回落 LIKE）。
                     alternatives.append(
                         "(o.rowid IN (SELECT rowid FROM is_objects_fts"
                             + " WHERE is_objects_fts MATCH ?)"
-                            + " OR (o.rowid IS NULL"
-                            + " AND CAST(c.content AS TEXT) LIKE ? ESCAPE '\\'))")
+                            + " OR ((o.rowid IS NULL"
+                            + " OR o.rowid NOT IN (SELECT object_rowid FROM is_search_indexed))"
+                            + " AND CAST(COALESCE(o.content, c.content) AS TEXT)"
+                            + " LIKE ? ESCAPE '\\'))")
                     binds.append(Self.ftsPhrase(term))
                     binds.append("%" + Self.likeEscaped(term) + "%")
                 } else {
@@ -5826,12 +5918,9 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 3, write.query)
                 try bind(stmt, 4, write.demandID)
             }
-            for input in write.inputs {
-                _ = try appendDependencyInTransaction(
-                    dependencyID: "demand:\(write.demandID) -> \(input.itemID)",
-                    contentAddress: input.contentAddress,
-                    reason: "demand-input")
-            }
+            // 候选不写依赖表：write.inputs 是这次检索的候选集，不是结果依赖的
+            // 信息。依赖边由 settlement_bindings 与 content-settle 那条路记，
+            // 这里再记一遍只会让每次检索多出几百行路径。
             // Sources and cited settlements are part of the same atomic claim
             // as the result itself. Writing them after COMMIT left a window in
             // which the source update could invalidate the (empty) closure and

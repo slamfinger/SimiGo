@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -38,10 +39,10 @@ final class ISObjectFTSTests: XCTestCase {
             model: nil, createdAt: Date())
     }
 
-    func testSchemaIsTwentySevenAndTrigramIndexExists() throws {
+    func testSchemaIsTwentyEightAndTrigramIndexExists() throws {
         let db = try open()
-        XCTAssertEqual(try db.schemaVersion(), 27)
-        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 27)
+        XCTAssertEqual(try db.schemaVersion(), 28)
+        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 28)
     }
 
     func testThreeCharacterTermFindsSubstringThroughIndex() throws {
@@ -108,5 +109,68 @@ final class ISObjectFTSTests: XCTestCase {
         // 全 ASCII 的词没有拆词，整词都走索引。
         let ascii = try loop.resolve(.init(sessionID: "r3", query: "contract", limit: 5))
         XCTAssertTrue(ascii.unindexedTerms.isEmpty)
+    }
+
+    /// v28：索引只覆盖结算引用过的对象，其余行靠 LIKE 回落。
+    /// 造两条消息，只让一条被结算摘要引用，看索引里是不是只有这一条。
+    func testOnlySettledObjectsEnterTheIndex() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        db.close()
+
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+        defer { sqlite3_close(handle) }
+        func exec(_ sql: String) throws {
+            var message: UnsafeMutablePointer<CChar>?
+            guard sqlite3_exec(handle, sql, nil, nil, &message) == SQLITE_OK else {
+                throw NSError(domain: "raw", code: 1, userInfo: [
+                    NSLocalizedDescriptionKey: message.map { String(cString: $0) } ?? "?",
+                ])
+            }
+        }
+        func scalar(_ sql: String) throws -> Int {
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK,
+                let stmt
+            else { throw NSError(domain: "raw", code: 2) }
+            defer { sqlite3_finalize(stmt) }
+            guard sqlite3_step(stmt) == SQLITE_ROW else {
+                throw NSError(domain: "raw", code: 3)
+            }
+            return Int(sqlite3_column_int64(stmt, 0))
+        }
+
+        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_search_indexed;"), 0,
+                       "没进过结算的对象不该在索引里")
+        // 两个内容对象：只让第一个被结算摘要引用。
+        try exec("""
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
+        SELECT 'aaaa000000000000000000000000000000000000000000000000000000000001',
+               length('本合同额为一千万元。'),
+               '本合同额为一千万元。', 900001, '2026-11-11T00:00:00Z';
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
+        SELECT 'aaaa000000000000000000000000000000000000000000000000000000000002',
+               length('另一段毫不相干的话。'),
+               '另一段毫不相干的话。', 900002, '2026-11-11T00:00:00Z';
+        """)
+        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_search_indexed;"), 0,
+                       "对象进库本身不等于进索引")
+        try exec("""
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at)
+        VALUES('S1', 's1', 'q', '摘要：本合同额', 'x',
+               'aaaa000000000000000000000000000000000000000000000000000000000001',
+               'x', '2026-11-11T00:00:00Z');
+        """)
+        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_search_indexed;"), 1,
+                       "结算摘要引用的对象应被触发器放进索引")
+        XCTAssertEqual(
+            try scalar("SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '合同额';"),
+            1)
     }
 }
