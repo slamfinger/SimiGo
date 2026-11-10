@@ -33,9 +33,8 @@ enum GGUFModelIdentityError: LocalizedError, Equatable {
 /// producer, continuation admission and continuation settlement, so all three
 /// derive the same value from the same file.
 struct GGUFModelIdentity: Equatable, Sendable {
-    /// The value a checkpoint gets when its bytes cannot be read. It is not a hex
-    /// string on purpose: it can never be mistaken for, or collide with, a real
-    /// digest, and two unreadable files never look like the same model by accident.
+    /// Non-hex prefix for the per-file fallback marker produced by
+    /// `unreadableMarker(forPath:)`. It can never be mistaken for a content digest.
     static let unreadableMarker = "unreadable"
 
     enum ContentSource: String, Equatable, Sendable {
