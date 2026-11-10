@@ -704,6 +704,7 @@ public final class ESISDatabase {
 
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
+        let versionBeforeMigrating = try schemaVersion()
         if try schemaVersion() < 1 {
             try transaction {
                 try Self.rawExec(handle, ESISDatabase.v1)
@@ -1252,6 +1253,13 @@ public final class ESISDatabase {
                 """)
                 try recordMigrationRow(28, "simigo-object-fts-settled-only-v28")
             }
+        }
+
+        // v28 把全表 trigram 索引换成只覆盖结算产物的索引：88 MB 的页进了
+        // freelist，但文件不会自己变小。VACUUM 把页还给文件系统——只能在
+        // 迁移事务之外跑。只在这次真的跨过 28 时做一次，之后每次打开不再重写。
+        if versionBeforeMigrating < 28, try schemaVersion() >= 28 {
+            try Self.rawExec(handle, "VACUUM;")
         }
 
         // The declared head and the applied head must agree. A migration gate
