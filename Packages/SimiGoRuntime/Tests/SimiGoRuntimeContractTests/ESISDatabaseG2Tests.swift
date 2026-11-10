@@ -187,6 +187,206 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.count("file_contents"), 0)
     }
 
+    /// A rename or a move does not touch the bytes but does bump ctime, so the
+    /// ctime clause alone cannot tell it apart from a same-size rewrite. Reading
+    /// must accept it: a working root is renamed constantly, and refusing here
+    /// would turn ordinary editing into collection failure.
+    func testRootReadAcceptsRenameDuringReadWithoutInvalidatingContent() throws {
+        let (databaseURL, db) = try open("root-read-rename")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-root-rename-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+        defer { db.close(); cleanup(databaseURL) }
+
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        let movedURL = rootURL.appendingPathComponent("moved.txt")
+        try Data(repeating: 0x41, count: 4096).write(to: fileURL)
+
+        _ = try db.settleWorkRootContents(
+            rootID: "root-read-rename", rootURL: rootURL,
+            fileByteCap: 256 * 1024, maxDepth: 1)
+        let baselineDigest = try XCTUnwrap(
+            try db.externalFileDigest(rootID: "root-read-rename", relativePath: "source.txt"))
+        let settlement = try mkSettlement(db, stateID: "S-RENAME", value: "renamed-source")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "root-read-rename", relativePath: "source.txt")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+
+        var before = stat()
+        XCTAssertEqual(fileURL.path.withCString { Darwin.fstatat(AT_FDCWD, $0, &before, 0) }, 0)
+        var didRename = false
+        var changedCTime = false
+        var mtimeHeld = false
+        var mutationError: Error?
+        db.beforeRootFileVerificationForTesting = {
+            didRename = true
+            do {
+                let result = fileURL.path.withCString { from in
+                    movedURL.path.withCString { to in Darwin.rename(from, to) }
+                }
+                guard result == 0 else { throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno)) }
+                var after = stat()
+                guard movedURL.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &after, 0) }) == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+                mtimeHeld = before.st_mtimespec.tv_sec == after.st_mtimespec.tv_sec
+                    && before.st_mtimespec.tv_nsec == after.st_mtimespec.tv_nsec
+                changedCTime = before.st_ctimespec.tv_sec != after.st_ctimespec.tv_sec
+                    || before.st_ctimespec.tv_nsec != after.st_ctimespec.tv_nsec
+            } catch {
+                mutationError = error
+            }
+        }
+
+        _ = try db.settleWorkRootContents(
+            rootID: "root-read-rename", rootURL: rootURL,
+            fileByteCap: 256 * 1024, maxDepth: 1)
+        XCTAssertTrue(didRename)
+        XCTAssertNil(mutationError)
+        XCTAssertTrue(changedCTime, "the probe must show a rename changes ctime")
+        XCTAssertTrue(mtimeHeld, "a rename must leave mtime alone")
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "root-read-rename", relativePath: "source.txt"),
+            baselineDigest, "renamed bytes are the same bytes")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+    }
+
+    /// Creating a hard link adds a name to the same inode: ctime and nlink move,
+    /// content does not. Same judgement as the rename case.
+    func testRootReadAcceptsHardLinkCreationDuringRead() throws {
+        let (databaseURL, db) = try open("root-read-hardlink")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-root-hardlink-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+        defer { db.close(); cleanup(databaseURL) }
+
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        let twinURL = rootURL.appendingPathComponent("twin.txt")
+        try Data(repeating: 0x43, count: 4096).write(to: fileURL)
+
+        _ = try db.settleWorkRootContents(
+            rootID: "root-read-hardlink", rootURL: rootURL,
+            fileByteCap: 256 * 1024, maxDepth: 1)
+        let baselineDigest = try XCTUnwrap(
+            try db.externalFileDigest(rootID: "root-read-hardlink", relativePath: "source.txt"))
+        let settlement = try mkSettlement(db, stateID: "S-HARDLINK", value: "linked-source")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "root-read-hardlink", relativePath: "source.txt")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+
+        var before = stat()
+        XCTAssertEqual(fileURL.path.withCString { Darwin.fstatat(AT_FDCWD, $0, &before, 0) }, 0)
+        var didLink = false
+        var linkCountChanged = false
+        var changedCTime = false
+        var mutationError: Error?
+        db.beforeRootFileVerificationForTesting = {
+            didLink = true
+            do {
+                let result = fileURL.path.withCString { existing in
+                    twinURL.path.withCString { fresh in Darwin.link(existing, fresh) }
+                }
+                guard result == 0 else { throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno)) }
+                var after = stat()
+                guard fileURL.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &after, 0) }) == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+                linkCountChanged = after.st_nlink > before.st_nlink
+                changedCTime = before.st_ctimespec.tv_sec != after.st_ctimespec.tv_sec
+                    || before.st_ctimespec.tv_nsec != after.st_ctimespec.tv_nsec
+            } catch {
+                mutationError = error
+            }
+        }
+
+        _ = try db.settleWorkRootContents(
+            rootID: "root-read-hardlink", rootURL: rootURL,
+            fileByteCap: 256 * 1024, maxDepth: 1)
+        XCTAssertTrue(didLink)
+        XCTAssertNil(mutationError)
+        XCTAssertTrue(linkCountChanged, "the probe must add a second link")
+        XCTAssertTrue(changedCTime, "linking changes ctime")
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "root-read-hardlink", relativePath: "source.txt"),
+            baselineDigest)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+    }
+
+    /// The other half of the boundary: an atomic replace moves the name off the
+    /// inode being read. Whether the read keeps the detached snapshot or fails
+    /// closed, the record must never claim the new path's version while carrying
+    /// the old bytes — the next quiescent scan has to disagree with it.
+    func testRootReadNeverStampsReplacedPathWithTheDetachedSnapshot() throws {
+        let (databaseURL, db) = try open("root-read-replaced")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-root-replaced-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+        defer { db.close(); cleanup(databaseURL) }
+
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        let original = Data(repeating: 0x41, count: 4096)
+        let replacement = Data(repeating: 0x42, count: original.count)
+        try original.write(to: fileURL)
+
+        _ = try db.settleWorkRootContents(
+            rootID: "root-read-replaced", rootURL: rootURL,
+            fileByteCap: 256 * 1024, maxDepth: 1)
+        let baselineDigest = try XCTUnwrap(
+            try db.externalFileDigest(rootID: "root-read-replaced", relativePath: "source.txt"))
+        let settlement = try mkSettlement(db, stateID: "S-REPLACED", value: "replaced-source")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "root-read-replaced", relativePath: "source.txt")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+
+        var didReplace = false
+        var mutationError: Error?
+        db.beforeRootFileVerificationForTesting = {
+            didReplace = true
+            do {
+                try replacement.write(to: fileURL, options: .atomic)
+            } catch {
+                mutationError = error
+            }
+        }
+
+        let raced = try? db.settleWorkRootContents(
+            rootID: "root-read-replaced", rootURL: rootURL,
+            fileByteCap: 256 * 1024, maxDepth: 1)
+        XCTAssertTrue(didReplace)
+        XCTAssertNil(mutationError)
+        XCTAssertNotNil(
+            raced, "a replacement mid-read must not abort the settle; the name moved, "
+                + "the bytes on the descriptor stayed whole")
+
+        let racedDigest = try db.externalFileDigest(
+            rootID: "root-read-replaced", relativePath: "source.txt")
+        if let racedDigest {
+            XCTAssertEqual(racedDigest, baselineDigest,
+                "a snapshot taken through the descriptor is the version it read, never the successor's")
+        }
+
+        // The guarantee that makes the above acceptable: the next quiescent scan
+        // reports the successor and retires anything bound to the older content.
+        _ = try db.settleWorkRootContents(
+            rootID: "root-read-replaced", rootURL: rootURL,
+            fileByteCap: 256 * 1024, maxDepth: 1)
+        let currentDigest = try XCTUnwrap(
+            try db.externalFileDigest(rootID: "root-read-replaced", relativePath: "source.txt"))
+        XCTAssertNotEqual(currentDigest, baselineDigest)
+        XCTAssertEqual(try db.settlementValidity(settlement), "invalid")
+        XCTAssertEqual(try db.validSettlementCount(), 0)
+    }
+
     /// A zero-depth walk cannot observe any child entry. It must be refused
     /// before removal reconciliation, otherwise an unobservable inventory is
     /// misreported as an empty root and every dependent settlement is invalidated.

@@ -3536,7 +3536,27 @@ try bind(externalStmt, 1, rootID)
                 + Double(initial.st_mtimespec.tv_nsec) / 1_000_000_000)
         let initialSize = Int64(initial.st_size)
 
-        func verifyUnchanged() throws {
+        func rereadWindow(
+            from offset: off_t, byteCount: Int) -> Data? {
+            var fresh = Data()
+            fresh.reserveCapacity(byteCount)
+            var buffer = [UInt8](repeating: 0, count: 64 * 1024)
+            while fresh.count < byteCount {
+                let requestCount = min(buffer.count, byteCount - fresh.count)
+                let amount = buffer.withUnsafeMutableBytes { raw -> Int in
+                    guard let base = raw.baseAddress else { return -1 }
+                    return Darwin.pread(fileFD, base, requestCount, offset + off_t(fresh.count))
+                }
+                if amount < 0 && errno == EINTR { continue }
+                guard amount > 0 else { return nil }
+                fresh.append(contentsOf: buffer.prefix(amount))
+            }
+            return fresh
+        }
+
+        func verifyUnchanged(
+            recheck readBytes: Data? = nil,
+            windowStart: off_t = 0) throws {
             if let hook = beforeRootFileVerificationForTesting {
                 beforeRootFileVerificationForTesting = nil
                 hook()
@@ -3547,9 +3567,25 @@ try bind(externalStmt, 1, rootID)
                   finalInfo.st_ino == initial.st_ino,
                   finalInfo.st_size == initial.st_size,
                   finalInfo.st_mtimespec.tv_sec == initial.st_mtimespec.tv_sec,
-                  finalInfo.st_mtimespec.tv_nsec == initial.st_mtimespec.tv_nsec,
-                  finalInfo.st_ctimespec.tv_sec == initial.st_ctimespec.tv_sec,
-                  finalInfo.st_ctimespec.tv_nsec == initial.st_ctimespec.tv_nsec else {
+                  finalInfo.st_mtimespec.tv_nsec == initial.st_mtimespec.tv_nsec else {
+                throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
+            }
+            let ctOK = finalInfo.st_ctimespec.tv_sec == initial.st_ctimespec.tv_sec
+                && finalInfo.st_ctimespec.tv_nsec == initial.st_ctimespec.tv_nsec
+            if ctOK { return }
+            // ctime moves for metadata too — rename, link, chmod — so a bare
+            // ctime change cannot tell a same-size rewrite (mtime restored, the
+            // #146 case) from an untouched file whose inode was merely renamed.
+            // Decide on bytes: re-read this exact window and require the content
+            // we indexed, then require ctime to have held across that re-read.
+            guard let readBytes, let fresh = rereadWindow(
+                from: windowStart, byteCount: readBytes.count), fresh == readBytes else {
+                throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
+            }
+            var afterReread = stat()
+            guard Darwin.fstat(fileFD, &afterReread) == 0,
+                  afterReread.st_ctimespec.tv_sec == finalInfo.st_ctimespec.tv_sec,
+                  afterReread.st_ctimespec.tv_nsec == finalInfo.st_ctimespec.tv_nsec else {
                 throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
             }
         }
@@ -3596,7 +3632,7 @@ try bind(externalStmt, 1, rootID)
                 }
                 tail.append(contentsOf: tailBuffer.prefix(amount))
             }
-            try verifyUnchanged()
+            try verifyUnchanged(recheck: tail, windowStart: off_t(start))
             guard tail.count == expectedByteCount else {
                 throw DatabaseError.sql(
                     "readRootFileNoFollow: short or inconsistent tail read")
@@ -3635,7 +3671,7 @@ try bind(externalStmt, 1, rootID)
             }
             data.append(contentsOf: buffer.prefix(amount))
         }
-        try verifyUnchanged()
+        try verifyUnchanged(recheck: data)
         guard Int64(data.count) == initialSize else {
             throw DatabaseError.sql("readRootFileNoFollow: short or inconsistent file read")
         }
