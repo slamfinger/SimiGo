@@ -231,12 +231,20 @@ public final class ESISDatabase {
         return messages == ["ok"] ? .ok : .corrupted(messages.joined(separator: "\n"))
     }
 
-    private static func integrityOK(_ db: OpaquePointer) -> Bool {
-        if case .ok = integrityOutcome(db) { return true }
-        return false
+    /// Corruption is a negative integrity verdict; an SQLite execution failure
+    /// is not. Preserve the latter's result codes through this throwing API so
+    /// callers never mistake BUSY/LOCKED/I/O conditions for damaged storage.
+    public func integrityCheck() throws -> Bool {
+        switch Self.integrityOutcome(handle) {
+        case .ok:
+            return true
+        case .corrupted(_):
+            return false
+        case .executionError(let primary, let extended, let message):
+            throw DatabaseError.executionFailure(
+                primary: primary, extended: extended, message: message)
+        }
     }
-
-    public func integrityCheck() throws -> Bool { Self.integrityOK(handle) }
 
     // MARK: - Migrations
 
