@@ -745,8 +745,10 @@ final class TranscriptTailerTests: XCTestCase {
         }
         XCTAssertThrowsError(try store.save(CursorState(
             initializedAt: Date(timeIntervalSince1970: 0), cursors: cursors))) { error in
+                // The claim is "rejected before encoding", not the wording of the
+                // refusal: the same bound now also covers scanner resume watermarks.
                 XCTAssertTrue(
-                    String(describing: error).contains("maximum tracked cursor count"),
+                    String(describing: error).contains("exceeds the maximum tracked cursor"),
                     "state writes must reject excess cursor entries before encoding: \(error)")
             }
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.fileURL.path))
