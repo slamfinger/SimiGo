@@ -117,6 +117,40 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.validSettlementCount(), 1)
     }
 
+    /// A zero-depth walk cannot observe any child entry. It must be refused
+    /// before removal reconciliation, otherwise an unobservable inventory is
+    /// misreported as an empty root and every dependent settlement is invalidated.
+    func testZeroDepthRootScanCannotInvalidateExistingInventory() throws {
+        let (databaseURL, db) = try open("zero-depth")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-zero-depth-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+        try Data("stable source".utf8).write(to: rootURL.appendingPathComponent("source.txt"))
+
+        defer { db.close(); cleanup(databaseURL) }
+        _ = try db.settleWorkRootContents(rootID: "zero-depth-root", rootURL: rootURL)
+        let baselineInventory = try db.listExternalFiles(rootID: "zero-depth-root")
+        XCTAssertEqual(baselineInventory.map(\.relativePath), ["source.txt"])
+
+        let settlement = try mkSettlement(db, stateID: "S-ZERO-DEPTH", value: "stable")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "zero-depth-root", relativePath: "source.txt")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "zero-depth-root", rootURL: rootURL, maxDepth: 0))
+
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "zero-depth-root"), baselineInventory)
+        XCTAssertEqual(try db.count("file_contents"), 1)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+    }
+
     // MARK: - Local invalidation preserves unrelated valid results
 
     func testG2LocalInvalidationOnlyAffectsClosurePreservesUnrelated() throws {
