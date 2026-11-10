@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 697,
+    "tracked": 698,
     "research_not_declared": 0,
-    "non_research_candidates": 697,
-    "declared": 639,
+    "non_research_candidates": 698,
+    "declared": 640,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -1078,6 +1078,10 @@
     {
       "path": "SimiGoTests/EnvBootstrapEntryTests.swift",
       "output": "SimiGoTests/EnvBootstrapEntryTests.swift"
+    },
+    {
+      "path": "SimiGoTests/EnvManagerInstallTests.swift",
+      "output": "SimiGoTests/EnvManagerInstallTests.swift"
     },
     {
       "path": "SimiGoTests/ExecutionControllingTests.swift",
