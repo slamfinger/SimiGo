@@ -123,7 +123,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
     func testZeroDepthRootScanCannotInvalidateExistingInventory() throws {
         let (databaseURL, db) = try open("zero-depth")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-g2-zero-depth-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-g2-zero-depth-\(UUID().uuidString)", isDirectory: true)
         let fm = FileManager.default
         try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: rootURL) }
@@ -132,7 +132,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         defer { db.close(); cleanup(databaseURL) }
         _ = try db.settleWorkRootContents(rootID: "zero-depth-root", rootURL: rootURL)
         let baselineInventory = try db.listExternalFiles(rootID: "zero-depth-root")
-        XCTAssertEqual(baselineInventory.map(\\.relativePath), ["source.txt"])
+        XCTAssertEqual(baselineInventory.map(\.relativePath), ["source.txt"])
 
         let settlement = try mkSettlement(db, stateID: "S-ZERO-DEPTH", value: "stable")
         try db.linkSettlementToExternalFile(
