@@ -70,12 +70,12 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
             // consumption resolves the same value. Resolve it here, off the
             // cooperative pool: hashing is once per file stamp, but "once" is a
             // multi-GB read and must not happen inside a request.
+            // One resolution, two renderings: see `ProducerIdentity.identities`.
             let seeds = await Task.detached(priority: .userInitiated) {
-                (ProducerIdentity.canonicalModelIdentity(fromPath: info.path),
-                 ProducerIdentity.identity(fromPath: info.path))
+                ProducerIdentity.identities(fromPath: info.path)
             }.value
             let producer = InformationTurnProducer(
-                modelIdentity: seeds.0, identity: seeds.1)
+                modelIdentity: seeds.model, identity: seeds.producer)
             let node = await MainActor.run {
                 InferenceNodeConfiguration.shared.snapshot()
             }

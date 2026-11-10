@@ -444,6 +444,14 @@ public struct TranscriptScanner {
     /// carries this state forward.
     var resumeWatermarks: [String: String] = [:]
 
+    /// The same watermark one level up: the name of the root entry (project
+    /// directory) the previous walk stopped on, i.e. the first project that has
+    /// not been walked yet. Without it a budget-stopped root walk restarts at
+    /// the first project on every poll and charges that project's entries
+    /// again, so a root with more entries than one budget covers never reaches
+    /// the projects behind the wall.
+    var rootResumeWatermark: String?
+
     /// Entries the latest walk saw but did not re-process because a resume
     /// watermark skipped them. They are live as of this walk — a complete
     /// walk that skipped processed entries still proves that everything it
@@ -556,7 +564,23 @@ public struct TranscriptScanner {
         }
 
         var files: [TranscriptFile] = []
+        // Resume where the previous root walk stopped: the projects before the
+        // watermark were walked already, so they are skipped without charging
+        // and left in `skippedLivePaths` (a directory that was seen keeps every
+        // cursor beneath it). The budget then goes to projects that have never
+        // had a turn instead of to the same head of the listing.
+        var rootResume = rootResumeWatermark
+        var pendingProject: String?
         projectLoop: while let project = projectIterator.next() {
+            if let resume = rootResume {
+                if project.lastPathComponent == resume {
+                    rootResume = nil
+                } else {
+                    skippedLivePaths.append(project.path)
+                    continue
+                }
+            }
+            pendingProject = project.lastPathComponent
             guard chargeEntry() else { break }
             guard
                 let projectValues = try? project.resourceValues(
@@ -741,6 +765,19 @@ public struct TranscriptScanner {
         }
         if let readError = projectIterator.error {
             errors.append("cannot list \(root.path): \(readError)")
+            rootResumeWatermark = pendingProject
+        } else if budgetError != nil {
+            // The walk stopped at a budget wall with `pendingProject` still
+            // owed; the next walk starts there instead of at the first project.
+            rootResumeWatermark = pendingProject
+        } else if rootResume != nil {
+            // The watermark entry is gone: this listing was not fully walked, so
+            // it must not count as complete. The next walk starts it over.
+            errors.append(
+                "scan resume entry not found in \(root.path); the next walk starts it over")
+            rootResumeWatermark = nil
+        } else {
+            rootResumeWatermark = nil
         }
 
         if let budgetError { errors.append(budgetError) }
@@ -749,6 +786,7 @@ public struct TranscriptScanner {
             // A complete walk leaves nothing pending; drop stale keys for
             // directories that no longer exist.
             resumeWatermarks.removeAll()
+            rootResumeWatermark = nil
         }
         return errors.isEmpty ? .complete(sorted) : .partial(files: sorted, errors: errors)
     }
@@ -867,10 +905,9 @@ public final class TranscriptTailer {
     private var visitClock: UInt64 = 0
     /// Progress inside a single line too long to scan in one poll. The scan is
     /// not a read the cursor can carry, so it is remembered here and continued
-    /// by the next poll; a restart simply re-scans from the line start.
-    /// `window` is the first read window of that line, which is what a
-    /// too-long line is dropped by.
-    private var oversizedScan: [String: (scanned: Int64, window: Int)] = [:]
+    /// by the next poll; a restart simply re-scans from the line start (or from
+    /// the committed drop point, once the hard limit has dropped the line).
+    private var oversizedScan: [String: Int64] = [:]
 
     /// Deterministic post-read fingerprint fault injection for package tests.
     /// Production callers leave this nil and use descriptor-backed reads.
@@ -1384,7 +1421,16 @@ public final class TranscriptTailer {
     /// poll's remaining byte budget on the scan as well: the search reads the
     /// same disk the tail reads. When the budget ends mid-line, the scan
     /// position is remembered for the next poll; past `maxLineBytes`, one
-    /// window is dropped with a parse failure so the stream still progresses.
+    /// window's worth of scanned bytes is dropped with a parse failure so the
+    /// stream still progresses.
+    ///
+    /// The drop commits at the scan frontier, not one window past the line
+    /// start: everything scanned so far is known to hold no newline, so
+    /// re-committing it would only be scanned again. The resume floor moves to
+    /// that frontier with it — a committed position whose resume point stayed
+    /// behind on the (unparseable) line start is read as "an open turn is
+    /// there", and every poll would replay the line from its first byte and
+    /// land back on the same frontier: the file never advances past the line.
     private func skipOversizedLine(
         _ file: TranscriptFile, cursor: inout FileCursor, available: Int64,
         partialBytes: Int, budget: inout Int,
@@ -1403,8 +1449,7 @@ public final class TranscriptTailer {
         // The window just read was itself searched for a newline and had none,
         // so its bytes count as scanned; a resumed scan picks up where the
         // previous poll stopped instead of re-reading that prefix.
-        let alreadyScanned = (pending?.scanned ?? 0) + Int64(partialBytes)
-        let window = pending?.window ?? max(partialBytes, 1)
+        let alreadyScanned = (pending ?? 0) + Int64(partialBytes)
         let lineAllowance = max(0, Int64(maxLineBytes) - alreadyScanned)
         let scanLimit = min(lineAllowance, Int64(max(0, budget)))
         var scanned: Int64 = 0
@@ -1449,7 +1494,11 @@ public final class TranscriptTailer {
         }
         if alreadyScanned + scanned >= Int64(maxLineBytes) {
             oversizedScan.removeValue(forKey: file.path)
-            let advance = min(Int64(window), available)
+            // Every byte before the frontier has been searched and holds no
+            // newline: commit exactly there. The frontier is also what a cold
+            // start re-derives from the same prefix, so a restart lands on the
+            // same position instead of rescanning dropped bytes.
+            let advance = min(alreadyScanned + scanned, available)
             guard advance > 0 else { return false }
             guard
                 let fingerprint = trailingFingerprint(
@@ -1462,8 +1511,16 @@ public final class TranscriptTailer {
             cursor.segmentLines += 1
             cursor.fingerprint = fingerprint
             cursor.updatedAt = Date()
-            // The drop lands mid-line, so the resume point (always a line
-            // boundary) is left where it was; a cold start re-reads the line.
+            // The drop lands mid-line, and that is the durable statement: the
+            // bytes behind this position were dropped, so the resume floor
+            // moves here ("continue, nothing to replay"). Leaving it on the
+            // line start would ask the next cold start to replay a line that is
+            // known to be unparseable. The cost is that a turn open when the
+            // line began cannot be rebuilt after a restart — its prompt lies
+            // behind bytes that no longer parse — which is why the in-memory
+            // accumulator is kept for the rest of this process.
+            cursor.resumeOffset = cursor.offset
+            cursor.resumeSegmentLines = cursor.segmentLines
             report.parseFailures += 1
             report.readFiles += 1
             report.readBytes += Int64(partialBytes) + charged
@@ -1472,10 +1529,11 @@ public final class TranscriptTailer {
                     ParseFailure(
                         path: file.path, sessionID: file.sessionID,
                         segmentLine: cursor.segmentLines,
-                        detail: "line exceeds \(maxLineBytes) bytes; window dropped")))
+                        detail: "line exceeds \(maxLineBytes) bytes; "
+                            + "\(advance) bytes dropped")))
             return true
         }
-        oversizedScan[file.path] = (alreadyScanned + scanned, window)
+        oversizedScan[file.path] = alreadyScanned + scanned
         if budget <= 0 { report.budgetExhausted = true }
         return false
     }

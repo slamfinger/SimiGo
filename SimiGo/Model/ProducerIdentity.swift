@@ -102,20 +102,42 @@ enum ProducerIdentity {
     /// case, because for a file outside the hub layout repo/revision are both
     /// null — two checkpoints with the same name and size would bind to the same
     /// producer and admit each other's settlements.
-    static func identity(fromPath path: String) -> SettlementIdentityBinding.Identity {
-        if let gguf = ggufModelIdentity(fromPath: path) { return gguf.producer }
-        if Self.isRegularFile(path) {
+    ///
+    /// Both values a runtime needs — the durable model identity and the
+    /// producer identity — come from ONE resolution: resolving them separately
+    /// let an unreadable checkpoint answer "unreadable" to the producer path and
+    /// a name+size fallback to the model-identity path, so the two halves of the
+    /// same runtime disagreed about the same file.
+    static func identities(
+        fromPath path: String
+    ) -> (model: String, producer: SettlementIdentityBinding.Identity) {
+        if let gguf = ggufModelIdentity(fromPath: path) {
+            return (gguf.modelIdentity, gguf.producer)
+        }
+        if isRegularFile(path) {
             // A checkpoint whose bytes cannot be read must not fall back to
             // name+size — that is the collision this identity exists to remove.
+            // The marker is used on both sides, so the pair stays consistent.
             let marker = GGUFModelIdentity.unreadableMarker
-            return SettlementIdentityBinding.Identity(
-                model: GGUFModelIdentity.contentFingerprint(
-                    sha256: marker, byteCount: Self.byteCount(of: path)),
-                tokenizer: GGUFModelIdentity.tokenizerFingerprint(modelContentSHA256: marker))
+            let model = GGUFModelIdentity.contentFingerprint(
+                sha256: marker, byteCount: byteCount(of: path))
+            return (
+                model,
+                SettlementIdentityBinding.Identity(
+                    model: model,
+                    tokenizer: GGUFModelIdentity.tokenizerFingerprint(
+                        modelContentSHA256: marker)))
         }
-        return SettlementIdentityBinding.Identity(
-            model: modelBindingFingerprint(modelIdentity(fromPath: path)),
-            tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: path)))
+        let model = modelBindingFingerprint(modelIdentity(fromPath: path))
+        return (
+            model,
+            SettlementIdentityBinding.Identity(
+                model: model,
+                tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: path))))
+    }
+
+    static func identity(fromPath path: String) -> SettlementIdentityBinding.Identity {
+        identities(fromPath: path).producer
     }
 
     /// A single durable identity string for an execution state: the model
@@ -123,8 +145,7 @@ enum ProducerIdentity {
     /// model revision carry the same value; a different model or revision does
     /// not.
     static func canonicalModelIdentity(fromPath path: String) -> String {
-        if let gguf = ggufModelIdentity(fromPath: path) { return gguf.modelIdentity }
-        return modelBindingFingerprint(modelIdentity(fromPath: path))
+        identities(fromPath: path).model
     }
 
     /// The content identity of a single-file checkpoint, or nil for a directory

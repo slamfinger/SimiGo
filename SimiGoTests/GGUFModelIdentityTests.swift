@@ -13,9 +13,14 @@ final class GGUFModelIdentityTests: XCTestCase {
         root = FileManager.default.temporaryDirectory.appendingPathComponent(
             "gguf-model-identity-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        // The verified-blob ledger is a real file under the managed root; tests
+        // must never write into the user's copy.
+        GGUFModelIdentity.blobLedgerURLOverride =
+            root.appendingPathComponent("model-content-digests.json")
     }
 
     override func tearDownWithError() throws {
+        GGUFModelIdentity.blobLedgerURLOverride = nil
         try? FileManager.default.removeItem(at: root)
     }
 
@@ -78,6 +83,41 @@ final class GGUFModelIdentityTests: XCTestCase {
         XCTAssertEqual(identity.repository, "org/demo")
         XCTAssertEqual(identity.revision, "rev-1")
         XCTAssertEqual(identity.rootID, "huggingface-cache")
+    }
+
+    /// The blob name is a claim about the bytes, and the claim is checked. Same
+    /// name, different bytes: the identity must be the bytes', so a rewritten
+    /// blob cannot inherit the settlements of the bytes it replaced.
+    func testBlobWhoseBytesDisagreeWithItsNameIsIdentifiedByItsBytes() throws {
+        let hub = root.appendingPathComponent("hub", isDirectory: true)
+        let blobs = hub.appendingPathComponent("models--org--demo/blobs", isDirectory: true)
+        try FileManager.default.createDirectory(at: blobs, withIntermediateDirectories: true)
+
+        let claimed = Data("weights-the-name-was-derived-from".utf8)
+        let blobName = SettlementAuthority.payloadDigest(claimed)
+        let blob = blobs.appendingPathComponent(blobName)
+        try claimed.write(to: blob)
+
+        let original = try GGUFModelIdentity.resolve(path: blob.path, hubs: [hub])
+        XCTAssertEqual(original.contentSource, .huggingFaceCacheBlob)
+        XCTAssertEqual(original.contentSHA256, blobName)
+
+        // The name stays; the bytes do not.
+        let replaced = Data("different-weights-under-the-old-name".utf8)
+        try replaced.write(to: blob)
+
+        let changed = try GGUFModelIdentity.resolve(path: blob.path)
+        XCTAssertEqual(
+            changed.contentSHA256, SettlementAuthority.payloadDigest(replaced),
+            "the resolved digest must be the bytes' digest, not the file name")
+        XCTAssertNotEqual(
+            changed.contentSHA256, blobName,
+            "the stale blob name must not survive a content change")
+        XCTAssertEqual(
+            changed.contentSource, .fileContents,
+            "a name that no longer describes the bytes is not a content address")
+        XCTAssertNotEqual(changed.modelIdentity, original.modelIdentity)
+        XCTAssertNotEqual(changed.producer, original.producer)
     }
 
     func testContentAddressLikeNameOutsideBlobLayoutIsNotTrusted() throws {

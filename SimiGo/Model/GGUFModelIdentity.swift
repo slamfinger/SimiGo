@@ -36,9 +36,10 @@ struct GGUFModelIdentity: Equatable, Sendable {
     static let unreadableMarker = "unreadable"
 
     enum ContentSource: String, Equatable, Sendable {
-        /// A Hugging Face cache blob whose file name is its own SHA-256. The
-        /// structure is verified before the name is trusted; multi-GB weights
-        /// are not re-hashed on every start.
+        /// A Hugging Face cache blob: a file inside `models--<repo>/blobs/` whose
+        /// name equals the SHA-256 of its own bytes. The name is checked against
+        /// the digest of the bytes, not taken on faith (see
+        /// `verifiedBlobDigest`); the hash itself is memoised per file version.
         case huggingFaceCacheBlob
         /// Every other file: streamed SHA-256 over the actual contents.
         case fileContents
@@ -97,9 +98,20 @@ struct GGUFModelIdentity: Equatable, Sendable {
 
         let digest: String
         let source: ContentSource
-        if let blob = huggingFaceBlobDigest(for: resolved) {
-            digest = blob
-            source = .huggingFaceCacheBlob
+        if let claimedName = huggingFaceBlobName(for: resolved) {
+            let actual = try verifiedBlobDigest(of: resolved)
+            digest = actual
+            if actual == claimedName {
+                source = .huggingFaceCacheBlob
+            } else {
+                // The name is a convention, the bytes are the object. A blob
+                // rewritten under its old name must lose the identity it no
+                // longer holds instead of inheriting settlements from it.
+                Service.log(
+                    "HF blob 名与字节摘要不一致，以字节为准: \(resolved.path)",
+                    level: .warning)
+                source = .fileContents
+            }
         } else {
             digest = try streamingSHA256(of: resolved)
             source = .fileContents
@@ -130,12 +142,17 @@ struct GGUFModelIdentity: Equatable, Sendable {
     /// same-inode in-place rewrite within one filesystem timestamp tick is the
     /// only miss, and that one is indistinguishable by stat anywhere.
     private static func identityStamp(of url: URL) -> String? {
+        guard let parts = identityParts(of: url) else { return nil }
+        return "\(url.path)|\(parts.size)|\(parts.inode)|\(parts.modified)"
+    }
+
+    private static func identityParts(of url: URL) -> (size: Int64, inode: UInt64, modified: Double)? {
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
               let size = (attributes[.size] as? NSNumber)?.int64Value,
               let inode = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value
         else { return nil }
         let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-        return "\(url.path)|\(size)|\(inode)|\(modified)"
+        return (size, inode, modified)
     }
 
     /// Content digest only. Byte count is included so a hash collision across
@@ -156,12 +173,14 @@ struct GGUFModelIdentity: Equatable, Sendable {
         ])
     }
 
-    /// The HF hub names blobs by the SHA-256 of their contents and snapshots
-    /// link to them. The fast path is accepted only when the resolved target is
-    /// a regular file in `models--<repo>/blobs/<64-hex>` — i.e. the layout the
-    /// hub writes — so an ordinary local file can never masquerade as a
-    /// content-addressed blob just by being named like one.
-    static func huggingFaceBlobDigest(for resolved: URL) -> String? {
+    /// The name an HF cache blob claims, or nil when the resolved target is not
+    /// shaped like one. Only a regular file in `models--<repo>/blobs/<64-hex>` —
+    /// the layout the hub writes — gets that far, so an ordinary local file
+    /// cannot masquerade as a content-addressed blob by being named like one.
+    ///
+    /// This is a *name*, not a digest: `verifiedBlobDigest` is what turns it
+    /// into an identity.
+    static func huggingFaceBlobName(for resolved: URL) -> String? {
         let name = resolved.lastPathComponent.lowercased()
         guard name.count == 64, name.allSatisfy({ $0.isHexDigit }) else { return nil }
         let blobs = resolved.deletingLastPathComponent()
@@ -173,6 +192,101 @@ struct GGUFModelIdentity: Equatable, Sendable {
               !isDirectory.boolValue
         else { return nil }
         return name
+    }
+
+    /// SHA-256 of the blob's actual bytes.
+    ///
+    /// A blob name is a claim the hub makes, and nothing in the file system
+    /// keeps it true: a truncated download, an in-place edit or a corrupt copy
+    /// leaves the name and changes the bytes. Hashing a multi-GB checkpoint on
+    /// every launch would be too expensive to pay for that check, so the digest
+    /// is remembered against the file's identity stamp: the first resolve of a
+    /// file version hashes it, later ones (and later launches) reuse the
+    /// verdict until the file itself changes.
+    static func verifiedBlobDigest(of url: URL) throws -> String {
+        if let parts = identityParts(of: url),
+           let recorded = blobLedger.digest(
+               path: url.path, size: parts.size, inode: parts.inode,
+               modified: parts.modified) {
+            return recorded
+        }
+        let digest = try streamingSHA256(of: url)
+        if let parts = identityParts(of: url) {
+            blobLedger.record(
+                path: url.path, size: parts.size, inode: parts.inode,
+                modified: parts.modified, sha256: digest)
+        }
+        return digest
+    }
+
+    /// Durable memo of verified blob digests. It is a cache, never an
+    /// authority: deleting it costs one re-hash and changes no identity.
+    struct BlobDigestLedger: Codable, Equatable {
+        struct Entry: Codable, Equatable {
+            var size: Int64
+            var inode: UInt64
+            var modified: Double
+            var sha256: String
+            var verifiedAt: Date
+        }
+        var entries: [String: Entry] = [:]
+    }
+
+    /// Tests point this at their own temporary file so no test writes into the
+    /// user's managed root.
+    static var blobLedgerURLOverride: URL?
+
+    private static let blobLedger = BlobLedgerStore()
+
+    private final class BlobLedgerStore: @unchecked Sendable {
+        private let lock = NSLock()
+        /// Cached by URL: an override that moves the file must not be served
+        /// from the previous location's copy.
+        private var loaded: (url: URL, ledger: BlobDigestLedger)?
+
+        private var url: URL {
+            GGUFModelIdentity.blobLedgerURLOverride
+                ?? ManagedPaths.managedRoot()
+                    .appendingPathComponent("model-content-digests.json")
+        }
+
+        func digest(path: String, size: Int64, inode: UInt64, modified: Double) -> String? {
+            lock.lock()
+            defer { lock.unlock() }
+            guard let entry = ledger().entries[path] else { return nil }
+            guard entry.size == size, entry.inode == inode, entry.modified == modified
+            else { return nil }
+            return entry.sha256
+        }
+
+        func record(path: String, size: Int64, inode: UInt64, modified: Double, sha256: String) {
+            lock.lock()
+            defer { lock.unlock() }
+            var value = ledger()
+            value.entries[path] = BlobDigestLedger.Entry(
+                size: size, inode: inode, modified: modified, sha256: sha256,
+                verifiedAt: Date())
+            // Entries for files that no longer exist can never be consulted;
+            // dropping them keeps the file bounded by the model library.
+            value.entries = value.entries.filter {
+                FileManager.default.fileExists(atPath: $0.key)
+            }
+            loaded = (url, value)
+            guard let data = try? JSONEncoder().encode(value) else { return }
+            try? FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? data.write(to: url, options: .atomic)
+        }
+
+        private func ledger() -> BlobDigestLedger {
+            let url = self.url
+            if let loaded, loaded.url == url { return loaded.ledger }
+            let value = (try? Data(contentsOf: url)).flatMap {
+                try? JSONDecoder().decode(BlobDigestLedger.self, from: $0)
+            } ?? BlobDigestLedger()
+            loaded = (url, value)
+            return value
+        }
     }
 
     static func streamingSHA256(of url: URL) throws -> String {
