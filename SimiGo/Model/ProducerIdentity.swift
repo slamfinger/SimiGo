@@ -118,7 +118,7 @@ enum ProducerIdentity {
             // A checkpoint whose bytes cannot be read must not fall back to
             // name+size — that is the collision this identity exists to remove.
             // The marker is used on both sides, so the pair stays consistent.
-            let marker = GGUFModelIdentity.unreadableMarker
+            let marker = GGUFModelIdentity.unreadableMarker(forPath: path)
             let model = GGUFModelIdentity.contentFingerprint(
                 sha256: marker, byteCount: byteCount(of: path))
             return (
