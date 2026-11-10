@@ -1,4 +1,5 @@
 import XCTest
+import Darwin
 import Foundation
 import SimiGoRuntimeContract
 
@@ -118,6 +119,90 @@ final class GGUFModelIdentityTests: XCTestCase {
             "a name that no longer describes the bytes is not a content address")
         XCTAssertNotEqual(changed.modelIdentity, original.modelIdentity)
         XCTAssertNotEqual(changed.producer, original.producer)
+    }
+
+    func testBlobDigestCachesDetectSameInodeRewriteWithRestoredMtime() throws {
+        let hub = root.appendingPathComponent("hub", isDirectory: true)
+        let blobs = hub.appendingPathComponent("models--org--demo/blobs", isDirectory: true)
+        try FileManager.default.createDirectory(at: blobs, withIntermediateDirectories: true)
+
+        let originalBytes = Data("same-size-original".utf8)
+        let replacementBytes = Data("same-size-replaced".utf8)
+        XCTAssertEqual(originalBytes.count, replacementBytes.count)
+        let claimedName = SettlementAuthority.payloadDigest(originalBytes)
+        let blob = blobs.appendingPathComponent(claimedName)
+        try originalBytes.write(to: blob)
+
+        let originalIdentity = try GGUFModelIdentity.resolve(path: blob.path)
+        XCTAssertEqual(originalIdentity.contentSHA256, claimedName)
+
+        var before = stat()
+        XCTAssertEqual(blob.path.withCString { Darwin.stat($0, &before) }, 0)
+        let handle = try FileHandle(forWritingTo: blob)
+        try handle.truncate(atOffset: 0)
+        try handle.write(contentsOf: replacementBytes)
+        try handle.synchronize()
+        try handle.close()
+
+        // Restore the exact mtime. The inode and size are also unchanged; ctime
+        // is the only stat field that records this in-place rewrite.
+        var times = [
+            timespec(tv_sec: before.st_atimespec.tv_sec, tv_nsec: before.st_atimespec.tv_nsec),
+            timespec(tv_sec: before.st_mtimespec.tv_sec, tv_nsec: before.st_mtimespec.tv_nsec),
+        ]
+        let timeResult = blob.path.withCString { path in
+            times.withUnsafeMutableBufferPointer { buffer in
+                Darwin.utimensat(AT_FDCWD, path, buffer.baseAddress, 0)
+            }
+        }
+        XCTAssertEqual(timeResult, 0, "restore the original mtime for the cache regression")
+
+        var after = stat()
+        XCTAssertEqual(blob.path.withCString { Darwin.stat($0, &after) }, 0)
+        XCTAssertEqual(before.st_dev, after.st_dev)
+        XCTAssertEqual(before.st_ino, after.st_ino)
+        XCTAssertEqual(before.st_size, after.st_size)
+        XCTAssertEqual(before.st_mtimespec.tv_sec, after.st_mtimespec.tv_sec)
+        XCTAssertEqual(before.st_mtimespec.tv_nsec, after.st_mtimespec.tv_nsec)
+        XCTAssertTrue(
+            before.st_ctimespec.tv_sec != after.st_ctimespec.tv_sec
+                || before.st_ctimespec.tv_nsec != after.st_ctimespec.tv_nsec,
+            "ctime must expose the in-place rewrite even when mtime is restored")
+
+        // Supplying hubs bypasses the in-memory resolved cache and exercises the
+        // durable blob ledger first. The ordinary call then exercises the
+        // in-memory cache key left by the original resolution.
+        let ledgerResolution = try GGUFModelIdentity.resolve(path: blob.path, hubs: [hub])
+        XCTAssertEqual(ledgerResolution.contentSHA256, SettlementAuthority.payloadDigest(replacementBytes))
+        XCTAssertEqual(ledgerResolution.contentSource, .fileContents)
+
+        let memoryResolution = try GGUFModelIdentity.resolve(path: blob.path)
+        XCTAssertEqual(memoryResolution.contentSHA256, SettlementAuthority.payloadDigest(replacementBytes))
+        XCTAssertNotEqual(memoryResolution.modelIdentity, originalIdentity.modelIdentity)
+    }
+
+    func testUnreadableSameSizeCheckpointsDoNotShareFallbackIdentity() throws {
+        let first = try write(Data("same-size-A".utf8), at: "unreadable-a/model.gguf")
+        let second = try write(Data("same-size-B".utf8), at: "unreadable-b/model.gguf")
+        XCTAssertEqual(
+            try Data(contentsOf: URL(fileURLWithPath: first)).count,
+            try Data(contentsOf: URL(fileURLWithPath: second)).count)
+
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: first)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: second)
+        do {
+            _ = try GGUFModelIdentity.resolve(path: first)
+            throw XCTSkip("this test process can still read a mode-000 fixture")
+        } catch GGUFModelIdentityError.unreadable {
+            // Expected: both regular files are unreadable to this process.
+        }
+
+        let a = ProducerIdentity.identities(fromPath: first)
+        let b = ProducerIdentity.identities(fromPath: second)
+        XCTAssertNotEqual(a.model, b.model)
+        XCTAssertNotEqual(a.producer.tokenizer, b.producer.tokenizer)
+        XCTAssertEqual(a.model, a.producer.model)
+        XCTAssertEqual(b.model, b.producer.model)
     }
 
     func testContentAddressLikeNameOutsideBlobLayoutIsNotTrusted() throws {
