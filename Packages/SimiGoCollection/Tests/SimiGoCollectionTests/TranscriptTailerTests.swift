@@ -637,7 +637,8 @@ final class TranscriptTailerTests: XCTestCase {
         try FileManager.default.createSymbolicLink(
             at: link, withDestinationURL: external)
 
-        let result = TranscriptScanner(root: root).scan()
+        var scanner = TranscriptScanner(root: root)
+        let result = scanner.scan()
         guard case .complete(let files) = result else {
             return XCTFail("symlinked subagents directory should be ignored, got \(result)")
         }
@@ -891,7 +892,7 @@ final class TranscriptTailerTests: XCTestCase {
     }
 
     func testScannerDistinguishesAbsentFromComplete() throws {
-        let scanner = TranscriptScanner(root: root)
+        var scanner = TranscriptScanner(root: root)
         guard case .complete(let empty) = scanner.scan() else {
             return XCTFail("an empty tree is a complete walk with no files")
         }
@@ -930,7 +931,8 @@ final class TranscriptTailerTests: XCTestCase {
         try fileManager.createSymbolicLink(
             at: subagents, withDestinationURL: outside)
 
-        let result = TranscriptScanner(root: root).scan()
+        var scanner = TranscriptScanner(root: root)
+        let result = scanner.scan()
         XCTAssertTrue(result.isComplete, "a rejected symlink is a skipped entry, not a scan failure")
         XCTAssertTrue(
             result.files.isEmpty,
@@ -939,7 +941,8 @@ final class TranscriptTailerTests: XCTestCase {
 
     func testScannerClassifiesMissingRootAndUnreadableRootByListingError() throws {
         let missing = root.appendingPathComponent("not-created", isDirectory: true)
-        XCTAssertEqual(TranscriptScanner(root: missing).scan(), .absent)
+        var missingScanner = TranscriptScanner(root: missing)
+        XCTAssertEqual(missingScanner.scan(), .absent)
 
         try XCTSkipIf(getuid() == 0, "root ignores directory permissions")
         let protected = root.appendingPathComponent("protected", isDirectory: true)
@@ -952,7 +955,8 @@ final class TranscriptTailerTests: XCTestCase {
                 [.posixPermissions: 0o755], ofItemAtPath: protected.path)
         }
 
-        let result = TranscriptScanner(root: protected).scan()
+        var scanner = TranscriptScanner(root: protected)
+        let result = scanner.scan()
         guard case .partial(let files, let errors) = result else {
             return XCTFail("an unreadable root must be partial, not absent")
         }
@@ -971,7 +975,8 @@ final class TranscriptTailerTests: XCTestCase {
                 [.posixPermissions: 0o755], ofItemAtPath: project.path)
         }
 
-        let result = TranscriptScanner(root: root).scan()
+        var scanner = TranscriptScanner(root: root)
+        let result = scanner.scan()
         XCTAssertFalse(result.isComplete)
         XCTAssertTrue(result.files.isEmpty)
         XCTAssertFalse(result.errors.isEmpty)
@@ -1366,5 +1371,227 @@ final class TranscriptTailerTests: XCTestCase {
         XCTAssertTrue(
             result.report.errors.contains { $0.contains("scan entry budget") },
             "the budget stop must be reported: \(result.report.errors)")
+    }
+
+    /// A budget-stopped scan leaves a resume watermark: each later poll
+    /// skips — without spending budget on — the entries earlier polls
+    /// already processed, so the files behind the budget wall take their
+    /// turn and the walk eventually covers the whole tree honestly. readdir
+    /// order is the filesystem's, so the assertions are order-agnostic.
+    func testPartialScanLeavesAResumePointThatAdvancesAcrossPolls() throws {
+        for index in 0..<8 {
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: project.appendingPathComponent("main-\(index).jsonl"))
+        }
+
+        // root(1) + three children(2..4) per poll: the fifth charge trips.
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxVisitedEntries: 4)
+        var surfaced: Set<String> = []
+        var complete = false
+        var polls = 0
+        for _ in 0..<8 {
+            let result = poll(tailer)
+            polls += 1
+            let names = Set(
+                Fixture.baselines(result.events).map {
+                    ($0.path as NSString).lastPathComponent
+                })
+            XCTAssertFalse(names.isEmpty, "a poll must surface fresh files")
+            XCTAssertEqual(
+                names.intersection(surfaced), [],
+                "a file was surfaced twice: \(names)")
+            surfaced.formUnion(names)
+            if result.report.scanComplete {
+                complete = true
+                break
+            }
+        }
+        XCTAssertTrue(complete, "the walk must eventually cover the whole tree")
+        XCTAssertEqual(surfaced.count, 8, "every file must have been surfaced")
+        XCTAssertEqual(tailer.cursorState.cursors.count, 8)
+        XCTAssertLessThanOrEqual(
+            polls, 5,
+            "the resume point must advance by more than one file per poll")
+    }
+
+    /// A watermark naming an entry that no longer exists must not skip the
+    /// whole listing forever: the poll reports the listing as not fully
+    /// walked (never complete, so no cursor is retired) and the next walk
+    /// starts the listing over. Deleting every file from the first walk
+    /// guarantees the watermark name is gone regardless of readdir order.
+    func testResumeWatermarkSelfHealsWhenItsEntryVanishes() throws {
+        var files: [URL] = []
+        for index in 0..<4 {
+            let file = project.appendingPathComponent("main-\(index).jsonl")
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: file)
+            files.append(file)
+        }
+
+        // root(1) + one child(2): the third charge trips with the first
+        // surfaced file as the watermark, whichever one readdir offers.
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxVisitedEntries: 2)
+        let first = poll(tailer)
+        XCTAssertEqual(first.report.scannedFiles, 1)
+        XCTAssertFalse(first.report.scanComplete)
+
+        for file in files {
+            try FileManager.default.removeItem(at: file)
+        }
+        let second = poll(tailer)
+        XCTAssertFalse(
+            second.report.scanComplete,
+            "a walk that never found its watermark is not a complete walk")
+        XCTAssertTrue(
+            second.report.errors.contains { $0.contains("scan resume entry not found") },
+            "the unresolved watermark must be reported: \(second.report.errors)")
+        XCTAssertTrue(
+            Fixture.baselines(second.events).isEmpty,
+            "the unresolved walk surfaced nothing")
+    }
+
+    /// A file created while a resume watermark is in force is read no later
+    /// than the poll after the first complete scan — the documented delay
+    /// bound, whatever readdir position the new entry lands in.
+    func testNewFileCreatedUnderAWatermarkIsReadNoLaterThanFirstCompletePlusOne() throws {
+        for index in 0..<6 {
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: project.appendingPathComponent("main-\(index).jsonl"))
+        }
+
+        // root(1) + one child(2) per poll: the third charge trips, and the
+        // walk advances one file per poll.
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxVisitedEntries: 2)
+        let first = poll(tailer)
+        XCTAssertFalse(first.report.scanComplete)
+
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "g-1", answerUUID: "ga-1", messageID: "gm-1",
+                nextAnchor: "gn-1"),
+            to: project.appendingPathComponent("late.jsonl"))
+
+        var completePoll = 0
+        var latePoll = 0
+        for pollIndex in 1...20 {
+            let result = poll(tailer)
+            if latePoll == 0,
+                Fixture.baselines(result.events).contains(
+                    where: { $0.path.hasSuffix("late.jsonl") })
+            {
+                latePoll = pollIndex
+            }
+            if result.report.scanComplete {
+                completePoll = pollIndex
+                break
+            }
+        }
+        XCTAssertGreaterThan(completePoll, 0, "the walk must reach a complete scan")
+        XCTAssertGreaterThan(latePoll, 0, "the new file must eventually be read")
+        XCTAssertLessThanOrEqual(
+            latePoll, completePoll + 1,
+            "the watermark delay is bounded by the first complete scan")
+    }
+
+    /// The file budget must stop *before* the entry it refuses. A watermark
+    /// left on the refused entry makes every later walk skip it, and the walk
+    /// then reaches "complete" without ever listing it.
+    func testFileBudgetNeverLeavesTheWatermarkOnTheRefusedEntry() throws {
+        for index in 0..<4 {
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: project.appendingPathComponent("main-\(index).jsonl"))
+        }
+
+        // Two files per poll: the third entry is charged, then refused.
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxScannedFiles: 2)
+
+        var surfaced: Set<String> = []
+        var complete = false
+        for _ in 0..<5 {
+            let result = poll(tailer)
+            surfaced.formUnion(
+                Fixture.baselines(result.events).map {
+                    ($0.path as NSString).lastPathComponent
+                })
+            if result.report.scanComplete {
+                complete = true
+                break
+            }
+        }
+        XCTAssertTrue(complete, "the walk must reach a complete scan")
+        XCTAssertEqual(
+            surfaced.count, 4,
+            "a refused entry must be offered again, not skipped: \(surfaced.sorted())")
+        XCTAssertEqual(tailer.cursorState.cursors.count, 4)
+    }
+
+    /// A budget that stops inside a session's subagents must leave the
+    /// session-level watermark on that session, not past it: skipping the
+    /// directory would never open its subagents again, and a later complete
+    /// walk would silently retire the files it never listed.
+    func testBudgetStoppedInsideSubagentsResumesThatDirectory() throws {
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "u-main", answerUUID: "a-main",
+                messageID: "m-main", nextAnchor: "n-main"),
+            to: projectFile(in: root, session: "s-1"))
+        let agents = project
+            .appendingPathComponent("s-1", isDirectory: true)
+            .appendingPathComponent("subagents", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: agents, withIntermediateDirectories: true)
+        for index in 0..<4 {
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-a\(index)", answerUUID: "a-a\(index)",
+                    messageID: "m-a\(index)", nextAnchor: "n-a\(index)"),
+                to: agents.appendingPathComponent("agent-\(index).jsonl"))
+        }
+
+        // Three files per poll. The session layer holds two entries and the
+        // subagents layer four, so the budget always stops inside subagents,
+        // whatever order readdir yields.
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxScannedFiles: 3)
+
+        var surfaced: Set<String> = []
+        var complete = false
+        for _ in 0..<6 {
+            let result = poll(tailer)
+            surfaced.formUnion(
+                Fixture.baselines(result.events).map {
+                    ($0.path as NSString).lastPathComponent
+                })
+            if result.report.scanComplete {
+                complete = true
+                break
+            }
+        }
+        XCTAssertTrue(complete, "the walk must reach a complete scan")
+        XCTAssertEqual(
+            surfaced.count, 5,
+            "every subagent behind the budget must be reached: \(surfaced.sorted())")
+        XCTAssertEqual(tailer.cursorState.cursors.count, 5)
     }
 }

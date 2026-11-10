@@ -431,6 +431,26 @@ public struct TranscriptScanner {
     public let maxScannedFiles: Int
     public let maxVisitedEntries: Int
 
+    /// Resume watermarks left by the previous walk, keyed by directory
+    /// path: the name of the entry that walk stopped *on*, i.e. the next
+    /// entry that has not been handled yet. The next walk skips — without
+    /// charging — the entries before that name and then handles the named
+    /// entry itself, so a budget wall never skips work it still owes: files
+    /// behind it get their turn within a few polls, and a budget that stops
+    /// inside a session's subagents leaves the watermark on that session so
+    /// the directory is reopened. A watermark whose entry has vanished marks
+    /// the listing not-fully-walked (never complete); the next walk starts
+    /// it over. The tailer keeps the scanner across polls, which is what
+    /// carries this state forward.
+    var resumeWatermarks: [String: String] = [:]
+
+    /// Entries the latest walk saw but did not re-process because a resume
+    /// watermark skipped them. They are live as of this walk — a complete
+    /// walk that skipped processed entries still proves that everything it
+    /// skipped exists — so the tailer unions them into the live set and
+    /// never retires their cursors as deleted.
+    public private(set) var skippedLivePaths: [String] = []
+
     private static let resourceKeys: Set<URLResourceKey> = [
         .isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey,
         .fileSizeKey, .creationDateKey, .contentModificationDateKey,
@@ -500,7 +520,11 @@ public struct TranscriptScanner {
         }
     }
 
-    public func scan() -> TranscriptScanResult {
+    /// Walks the root, leaving resume watermarks for the next walk (see
+    /// `resumeWatermarks`). Mutating: the watermarks live on the scanner,
+    /// which the tailer keeps across polls.
+    public mutating func scan() -> TranscriptScanResult {
+        skippedLivePaths = []
         let rootDirectoryFD: Int32
         do {
             rootDirectoryFD = try TranscriptPathAccess.openDirectoryPathNoFollow(root.path)
@@ -549,11 +573,31 @@ public struct TranscriptScanner {
                 errors.append("cannot list \(project.path): \(openError)")
                 continue
             }
+            // Resume where the previous walk of this listing stopped: skip
+            // the entries it already processed without charging them, so the
+            // budget is spent on entries that have never had a turn. The
+            // watermark names the next unhandled entry, not the last handled
+            // one, so the entry the budget refused is handled first next time.
+            var childResume = resumeWatermarks[project.path]
+            var pendingChild: String?
             while let child = childIterator.next() {
-                guard chargeEntry() else { break projectLoop }
+                if let resume = childResume {
+                    if child.lastPathComponent == resume {
+                        childResume = nil
+                    } else {
+                        skippedLivePaths.append(child.path)
+                        continue
+                    }
+                }
+                pendingChild = child.lastPathComponent
+                guard chargeEntry() else {
+                    resumeWatermarks[project.path] = pendingChild
+                    break projectLoop
+                }
                 guard files.count < maxScannedFiles else {
                     budgetError = "scan file budget exceeded (\(maxScannedFiles)); "
                         + "remaining files were not walked"
+                    resumeWatermarks[project.path] = pendingChild
                     break projectLoop
                 }
                 guard
@@ -622,11 +666,29 @@ public struct TranscriptScanner {
                     // Main files and subagent files spend the same two
                     // budgets: every surfaced entry is charged and the file
                     // cap is rechecked, exactly like the session layer above.
+                    // The resume watermark works like the session layer's.
+                    var agentResume = resumeWatermarks[subagents.path]
+                    var pendingAgent: String?
                     while let agent = agentIterator.next() {
-                        guard chargeEntry() else { break projectLoop }
+                        if let resume = agentResume {
+                            if agent.lastPathComponent == resume {
+                                agentResume = nil
+                            } else {
+                                skippedLivePaths.append(agent.path)
+                                continue
+                            }
+                        }
+                        pendingAgent = agent.lastPathComponent
+                        guard chargeEntry() else {
+                            resumeWatermarks[subagents.path] = pendingAgent
+                            resumeWatermarks[project.path] = child.lastPathComponent
+                            break projectLoop
+                        }
                         guard files.count < maxScannedFiles else {
                             budgetError = "scan file budget exceeded (\(maxScannedFiles)); "
                                 + "remaining files were not walked"
+                            resumeWatermarks[subagents.path] = pendingAgent
+                            resumeWatermarks[project.path] = child.lastPathComponent
                             break projectLoop
                         }
                         guard agent.pathExtension == "jsonl" else { continue }
@@ -651,11 +713,30 @@ public struct TranscriptScanner {
                     }
                     if let readError = agentIterator.error {
                         errors.append("cannot list \(subagents.path): \(readError)")
+                        resumeWatermarks[subagents.path] = pendingAgent
+                        resumeWatermarks[project.path] = child.lastPathComponent
+                    } else if agentResume != nil {
+                        // The watermark entry is gone; this listing was not
+                        // fully walked, so it must not count as complete.
+                        errors.append(
+                            "scan resume entry not found in \(subagents.path); "
+                                + "the next walk starts it over")
+                        resumeWatermarks[subagents.path] = nil
+                    } else {
+                        resumeWatermarks[subagents.path] = nil
                     }
                 }
             }
             if let readError = childIterator.error {
                 errors.append("cannot list \(project.path): \(readError)")
+                resumeWatermarks[project.path] = pendingChild
+            } else if childResume != nil {
+                errors.append(
+                    "scan resume entry not found in \(project.path); "
+                        + "the next walk starts it over")
+                resumeWatermarks[project.path] = nil
+            } else {
+                resumeWatermarks[project.path] = nil
             }
         }
         if let readError = projectIterator.error {
@@ -664,6 +745,11 @@ public struct TranscriptScanner {
 
         if let budgetError { errors.append(budgetError) }
         let sorted = files.sorted { $0.path < $1.path }
+        if errors.isEmpty {
+            // A complete walk leaves nothing pending; drop stale keys for
+            // directories that no longer exist.
+            resumeWatermarks.removeAll()
+        }
         return errors.isEmpty ? .complete(sorted) : .partial(files: sorted, errors: errors)
     }
 
@@ -769,7 +855,10 @@ public final class TranscriptTailer {
     public let maxScannedFiles: Int
     public let maxVisitedEntries: Int
 
-    private let scanner: TranscriptScanner
+    // A var because scan() leaves resume watermarks on it; keeping the same
+    // scanner across polls is what lets a budget-stopped walk continue
+    // instead of restarting at the root.
+    private var scanner: TranscriptScanner
     private var state: CursorState
     private var accumulators: [String: TurnAccumulator] = [:]
     /// Fair rotation: files processed least recently go first, so a budget that
@@ -846,7 +935,22 @@ public final class TranscriptTailer {
         // Everything the walk saw is live, including files this poll's budget
         // did not reach: a file that exists but was not read has not been
         // deleted, and retiring its cursor would replay it from the start.
-        let livePaths = Set(files.map(\.path))
+        // Entries a resume watermark skipped were seen too, so a complete
+        // walk that skipped processed entries still keeps their cursors. A
+        // skipped directory was seen as well, and its entries were not listed
+        // this time: a cursor beneath it is unreached, not deleted.
+        var livePaths = Set(files.map(\.path))
+        livePaths.formUnion(scanner.skippedLivePaths)
+        for path in state.cursors.keys where !livePaths.contains(path) {
+            var ancestor = (path as NSString).deletingLastPathComponent
+            while !ancestor.isEmpty, ancestor != "/" {
+                if livePaths.contains(ancestor) {
+                    livePaths.insert(path)
+                    break
+                }
+                ancestor = (ancestor as NSString).deletingLastPathComponent
+            }
+        }
         var budget = max(0, maxBytesPerPoll)
 
         for file in files {

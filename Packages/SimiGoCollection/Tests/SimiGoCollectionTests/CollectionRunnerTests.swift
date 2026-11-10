@@ -417,8 +417,8 @@ final class CollectionRunnerTests: XCTestCase {
         let file = mainFile()
         try Fixture.writeLines([Fixture.userLine(uuid: "u-1", text: "hello")], to: file)
 
-        let scanned = try XCTUnwrap(
-            TranscriptScanner(root: root).scan().files.first)
+        var scanner = TranscriptScanner(root: root)
+        let scanned = try XCTUnwrap(scanner.scan().files.first)
         let size = Int64(try Data(contentsOf: file).count)
         let inode = try XCTUnwrap(
             (FileManager.default.attributesOfItem(atPath: file.path)[.systemFileNumber]
