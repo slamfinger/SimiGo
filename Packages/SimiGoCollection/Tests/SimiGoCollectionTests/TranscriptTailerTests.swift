@@ -1651,11 +1651,90 @@ final class TranscriptTailerTests: XCTestCase {
                 || !(tailer.cursorState.scannerResumeWatermarks ?? [:]).isEmpty)
     }
 
+    func testScanRootReplacementAtSamePathFailsClosed() throws {
+        try Fixture.writeLines(Fixture.turnLines(), to: mainFile())
+        let firstTailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting)
+        let first = poll(firstTailer)
+        XCTAssertTrue(first.report.scanComplete, "the original root must be scanned completely")
+        let savedState = firstTailer.cursorState
+        XCTAssertNotNil(savedState.scanRootIdentity, "the first safe scan must bind root identity")
+
+        // Keep the original directory alive so the replacement cannot reuse its
+        // inode, then put a different directory at exactly the same pathname.
+        let backup = root.deletingLastPathComponent().appendingPathComponent(
+            "qoder-tailer-original-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.moveItem(at: root, to: backup)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.moveItem(at: backup, to: root)
+        }
+        try FileManager.default.createDirectory(
+            at: project, withIntermediateDirectories: true)
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "replacement-u", answerUUID: "replacement-a",
+                messageID: "replacement-m", nextAnchor: "replacement-n"),
+            to: mainFile())
+
+        let restarted = TranscriptTailer(
+            scanRoot: root, state: savedState, baselinePolicy: .readExisting)
+        let result = poll(restarted)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertTrue(
+            result.report.errors.contains { $0.contains("scan root identity mismatch") },
+            "a same-path directory replacement must be rejected: \(result.report.errors)")
+        XCTAssertTrue(result.events.isEmpty, "no cursor may be applied to the replacement root")
+        XCTAssertEqual(restarted.cursorState, savedState)
+    }
+
+    func testLegacyCursorFromAnotherRootCannotBeBoundToConfiguredRoot() throws {
+        let foreignPath = root.deletingLastPathComponent()
+            .appendingPathComponent("foreign-root", isDirectory: true)
+            .appendingPathComponent("project/session.jsonl").path
+        let cursor = FileCursor(
+            path: foreignPath, projectID: "project", sessionID: "session",
+            isSubagent: false, inode: 1, offset: 0, segmentLines: 0,
+            fingerprint: "legacy", updatedAt: Date())
+        let legacy = CursorState(
+            initializedAt: Date(timeIntervalSinceNow: -3600),
+            cursors: [foreignPath: cursor],
+            policy: BaselinePolicy.readExisting.rawValue)
+        let tailer = TranscriptTailer(
+            scanRoot: root, state: legacy, baselinePolicy: .readExisting)
+
+        let result = poll(tailer)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertTrue(result.report.errors.contains {
+            $0.contains("legacy cursor paths do not belong to configured scan root")
+        })
+        XCTAssertNil(tailer.cursorState.scanRootIdentity)
+        XCTAssertEqual(tailer.cursorState, legacy)
+    }
+
+    func testLegacyWatermarksWithoutRootIdentityAreRefused() throws {
+        let legacy = CursorState(
+            initializedAt: Date(timeIntervalSinceNow: -3600),
+            scannerRootResumeWatermark: "project-1")
+        let tailer = TranscriptTailer(
+            scanRoot: root, state: legacy, baselinePolicy: .readExisting)
+
+        let result = poll(tailer)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertTrue(result.report.errors.contains {
+            $0.contains("legacy scanner watermarks lack a scan-root identity")
+        })
+        XCTAssertNil(tailer.cursorState.scanRootIdentity)
+        XCTAssertEqual(tailer.cursorState, legacy)
+    }
+
     /// A cursor written before scanner watermarks existed remains readable.
     func testCursorStateDecodesWithoutScannerWatermarks() throws {
         let legacy = Data(#"{"initializedAt":0,"cursors":{},"policy":"read_existing"}"#.utf8)
         let state = try JSONDecoder().decode(CursorState.self, from: legacy)
         XCTAssertTrue(state.cursors.isEmpty)
+        XCTAssertNil(state.scanRootIdentity)
         XCTAssertNil(state.scannerResumeWatermarks)
         XCTAssertNil(state.scannerRootResumeWatermark)
     }

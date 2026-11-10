@@ -227,6 +227,21 @@ public struct FileCursor: Codable, Sendable, Equatable {
     }
 }
 
+public struct TranscriptScanRootIdentity: Codable, Sendable, Equatable {
+    /// Canonical path and filesystem object identity of the directory that was
+    /// actually opened for scanning. Path alone cannot distinguish replacement
+    /// of a directory at the same location.
+    public let canonicalPath: String
+    public let device: UInt64
+    public let inode: UInt64
+
+    public init(canonicalPath: String, device: UInt64, inode: UInt64) {
+        self.canonicalPath = canonicalPath
+        self.device = device
+        self.inode = inode
+    }
+}
+
 public struct CursorState: Codable, Sendable, Equatable {
     /// Files that already existed at this instant are opened at EOF, never
     /// backfilled. Files created afterwards are read from their first byte.
@@ -239,6 +254,9 @@ public struct CursorState: Codable, Sendable, Equatable {
     /// re-read from their first byte; the candidate keys are stable, so the
     /// inbox absorbs the replay instead of duplicating it.
     public var policy: String?
+    /// The root filesystem object that produced these cursors and watermarks.
+    /// Missing in older cursor JSON; a legacy state binds on its first safe scan.
+    public var scanRootIdentity: TranscriptScanRootIdentity?
     /// Directory-level scan positions are part of the durable read position,
     /// not process-local scheduler state. Persisting them beside file cursors
     /// lets a restarted tailer continue a budget-stopped walk.
@@ -248,12 +266,14 @@ public struct CursorState: Codable, Sendable, Equatable {
     public init(
         initializedAt: Date, cursors: [String: FileCursor] = [:],
         policy: String? = nil,
+        scanRootIdentity: TranscriptScanRootIdentity? = nil,
         scannerResumeWatermarks: [String: String]? = nil,
         scannerRootResumeWatermark: String? = nil
     ) {
         self.initializedAt = initializedAt
         self.cursors = cursors
         self.policy = policy
+        self.scanRootIdentity = scanRootIdentity
         self.scannerResumeWatermarks = scannerResumeWatermarks
         self.scannerRootResumeWatermark = scannerRootResumeWatermark
     }
@@ -473,6 +493,11 @@ public struct TranscriptScanner {
     /// the projects behind the wall.
     var rootResumeWatermark: String?
 
+    /// Bound to the opened directory descriptor, not inferred from path text.
+    /// A mismatch stops the walk before any persisted cursor or watermark is used.
+    var rootIdentity: TranscriptScanRootIdentity?
+    private(set) var rootIdentityMismatch = false
+
     /// Entries the latest walk saw but did not re-process because a resume
     /// watermark skipped them. They are live as of this walk — a complete
     /// walk that skipped processed entries still proves that everything it
@@ -488,7 +513,8 @@ public struct TranscriptScanner {
     public init(root: URL, maxScannedFiles: Int = 4_096,
                 maxVisitedEntries: Int = 16_384,
                 resumeWatermarks: [String: String] = [:],
-                rootResumeWatermark: String? = nil) {
+                rootResumeWatermark: String? = nil,
+                rootIdentity: TranscriptScanRootIdentity? = nil) {
         self.root = URL(
             fileURLWithPath: TranscriptPathAccess.canonicalPath(root.path),
             isDirectory: true)
@@ -496,6 +522,7 @@ public struct TranscriptScanner {
         self.maxVisitedEntries = max(0, maxVisitedEntries)
         self.resumeWatermarks = resumeWatermarks
         self.rootResumeWatermark = rootResumeWatermark
+        self.rootIdentity = rootIdentity
     }
 
     /// A lazy directory iterator. `FileManager.contentsOfDirectory` reads
@@ -558,6 +585,7 @@ public struct TranscriptScanner {
     /// which the tailer keeps across polls.
     public mutating func scan() -> TranscriptScanResult {
         skippedLivePaths = []
+        rootIdentityMismatch = false
         let rootDirectoryFD: Int32
         do {
             rootDirectoryFD = try TranscriptPathAccess.openDirectoryPathNoFollow(root.path)
@@ -567,6 +595,26 @@ public struct TranscriptScanner {
                 files: [], errors: ["cannot safely open scan root \(root.path): \(error)"])
         }
         defer { Darwin.close(rootDirectoryFD) }
+
+        var rootInfo = stat()
+        guard Darwin.fstat(rootDirectoryFD, &rootInfo) == 0 else {
+            let code = errno
+            return .partial(
+                files: [],
+                errors: ["cannot identify opened scan root \(root.path): \(String(cString: strerror(code)))"])
+        }
+        let openedRootIdentity = TranscriptScanRootIdentity(
+            canonicalPath: root.path,
+            device: UInt64(rootInfo.st_dev),
+            inode: UInt64(rootInfo.st_ino))
+        if let expectedRootIdentity = rootIdentity,
+           expectedRootIdentity != openedRootIdentity {
+            rootIdentityMismatch = true
+            return .partial(
+                files: [],
+                errors: ["scan root identity mismatch for \(root.path); refusing persisted cursors and watermarks"])
+        }
+        rootIdentity = openedRootIdentity
 
         let projectIterator = DirectoryEntries(root)
         if let openError = projectIterator.error {
@@ -959,7 +1007,8 @@ public final class TranscriptTailer {
             root: canonicalRoot, maxScannedFiles: maxScannedFiles,
             maxVisitedEntries: maxVisitedEntries,
             resumeWatermarks: initialState.scannerResumeWatermarks ?? [:],
-            rootResumeWatermark: initialState.scannerRootResumeWatermark)
+            rootResumeWatermark: initialState.scannerRootResumeWatermark,
+            rootIdentity: initialState.scanRootIdentity)
         self.maxBytesPerPoll = maxBytesPerPoll
         self.maxLineBytes = maxLineBytes
         self.maxEventsPerPoll = maxEventsPerPoll
@@ -972,6 +1021,37 @@ public final class TranscriptTailer {
 
     public func poll(sink: Sink) -> PollReport {
         var report = PollReport()
+        let stateBeforeScan = state
+        let resumeWatermarksBeforeScan = scanner.resumeWatermarks
+        let rootResumeWatermarkBeforeScan = scanner.rootResumeWatermark
+
+        // A legacy cursor has no descriptor identity. Its absolute cursor paths
+        // must at least belong to this canonical root; otherwise a reused state
+        // directory could bind another root's read positions to this one.
+        if state.scanRootIdentity == nil {
+            let rootPath = scanRoot.standardizedFileURL.path
+            let rootPrefix = rootPath == "/" ? "/" : rootPath + "/"
+            func isBelowScanRoot(_ path: String) -> Bool {
+                let candidate = URL(fileURLWithPath: path).standardizedFileURL.path
+                return candidate != rootPath && candidate.hasPrefix(rootPrefix)
+            }
+            let legacyPaths = Array(state.cursors.keys)
+                + Array((state.scannerResumeWatermarks ?? [:]).keys)
+            if legacyPaths.contains(where: { !isBelowScanRoot($0) }) {
+                report.errors.append(
+                    "legacy cursor paths do not belong to configured scan root; refusing to bind root identity")
+                report.scanComplete = false
+                return report
+            }
+            if state.scannerRootResumeWatermark != nil
+                || !(state.scannerResumeWatermarks ?? [:]).isEmpty {
+                report.errors.append(
+                    "legacy scanner watermarks lack a scan-root identity; refusing to reuse them")
+                report.scanComplete = false
+                return report
+            }
+        }
+
         // A cursor is only meaningful under the policy that produced it: after
         // `skip_existing` parks a file at EOF, `read_existing` must not inherit
         // that position, or "选目录即采集既有会话" would silently collect nothing.
@@ -988,9 +1068,24 @@ public final class TranscriptTailer {
             state.policy = baselinePolicy.rawValue
             report.stateChanged = true
         }
+        let scan = scanner.scan()
+        if scanner.rootIdentityMismatch {
+            // Do not commit a policy reset or any scan progress when the opened
+            // directory is not the filesystem object recorded with this state.
+            state = stateBeforeScan
+            scanner.resumeWatermarks = resumeWatermarksBeforeScan
+            scanner.rootResumeWatermark = rootResumeWatermarkBeforeScan
+            report.errors.append(contentsOf: scan.errors)
+            report.scanComplete = false
+            report.stateChanged = false
+            return report
+        }
+        if state.scanRootIdentity == nil, let openedRootIdentity = scanner.rootIdentity {
+            state.scanRootIdentity = openedRootIdentity
+            report.stateChanged = true
+        }
         let previousResumeWatermarks = state.scannerResumeWatermarks ?? [:]
         let previousRootResumeWatermark = state.scannerRootResumeWatermark
-        let scan = scanner.scan()
         if previousResumeWatermarks != scanner.resumeWatermarks
             || previousRootResumeWatermark != scanner.rootResumeWatermark
         {
