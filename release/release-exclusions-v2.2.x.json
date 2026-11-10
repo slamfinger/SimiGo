@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 698,
+    "tracked": 699,
     "research_not_declared": 0,
-    "non_research_candidates": 698,
-    "declared": 640,
+    "non_research_candidates": 699,
+    "declared": 641,
     "excluded": 58
   },
   "record_fields": [
