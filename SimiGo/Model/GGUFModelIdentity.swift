@@ -181,7 +181,12 @@ struct GGUFModelIdentity: Equatable, Sendable {
 
     private static func identityParts(of url: URL) -> FileIdentityParts? {
         var info = stat()
-        guard url.path.withCString({ Darwin.stat($0, &info) }) == 0 else { return nil }
+        // `Darwin.stat` is shadowed by the `stat` struct on some toolchains (the CI
+        // runner reads it as a call to the struct's memberwise init), so ask through
+        // `fstatat`, whose name has no struct twin. Flags 0 follow a symlinked model
+        // the way the content read below does.
+        guard url.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &info, 0) }) == 0
+        else { return nil }
         return identityParts(from: info)
     }
 

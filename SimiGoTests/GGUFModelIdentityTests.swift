@@ -38,7 +38,7 @@ final class GGUFModelIdentityTests: XCTestCase {
         -> GGUFModelIdentity.BlobDigestLedger.Entry
     {
         var info = stat()
-        guard file.path.withCString({ Darwin.stat($0, &info) }) == 0 else {
+        guard file.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &info, 0) }) == 0 else {
             throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
         }
         let stamp = [
@@ -180,7 +180,7 @@ final class GGUFModelIdentityTests: XCTestCase {
         XCTAssertEqual(originalIdentity.contentSHA256, claimedName)
 
         var before = stat()
-        XCTAssertEqual(blob.path.withCString { Darwin.stat($0, &before) }, 0)
+        XCTAssertEqual(blob.path.withCString { Darwin.fstatat(AT_FDCWD, $0, &before, 0) }, 0)
         let handle = try FileHandle(forWritingTo: blob)
         try handle.truncate(atOffset: 0)
         try handle.write(contentsOf: replacementBytes)
@@ -201,7 +201,7 @@ final class GGUFModelIdentityTests: XCTestCase {
         XCTAssertEqual(timeResult, 0, "restore the original mtime for the cache regression")
 
         var after = stat()
-        XCTAssertEqual(blob.path.withCString { Darwin.stat($0, &after) }, 0)
+        XCTAssertEqual(blob.path.withCString { Darwin.fstatat(AT_FDCWD, $0, &after, 0) }, 0)
         XCTAssertEqual(before.st_dev, after.st_dev)
         XCTAssertEqual(before.st_ino, after.st_ino)
         XCTAssertEqual(before.st_size, after.st_size)
