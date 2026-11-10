@@ -189,6 +189,14 @@ final class GGUFContinuationD6InvalidationTests: XCTestCase {
         let session = "d6d-\(UUID().uuidString)"
         let parent = try await settleParent(first, session: session, value: "1414213")
 
+        // Positive control on the OLD engine: without it, "every slot reports no
+        // prompt" after the restart would be the same reading a never-used engine
+        // gives, and would prove nothing.
+        let before = try await slotPromptTokens(runtime)
+        XCTAssertTrue(
+            before.contains { $0 > 0 },
+            "the parent prompt must occupy a slot before the restart; slots=\(before)")
+
         let oldEnginePort = try enginePort(runtime)
         let oldPublicPort = first.publicPort
         await runtime.stop()
@@ -197,9 +205,28 @@ final class GGUFContinuationD6InvalidationTests: XCTestCase {
         XCTAssertFalse(portAcceptsConnection(oldEnginePort))
         XCTAssertFalse(portAcceptsConnection(oldPublicPort))
 
-        let newPort = Int(try GGUFRestFixture.freePort())
-        try await runtime.start(ModelInfo(path: modelPath, kind: .gguf), port: newPort)
-        try GGUFRestFixture.waitUntilListening(port: newPort)
+        // `GGUFRestFixture.freePort` proves a port is bindable and then releases
+        // it, and it samples 42000...58000 — inside the macOS ephemeral range. On
+        // restart the gap between reservation and listen is a whole model load,
+        // and that gap was measured being filled by another process (NWListener:
+        // "Address already in use", no listener, engine fine). Re-reserving is the
+        // harness's job; the product's restart contract is what is under test.
+        var restarted: EngineHandle?
+        var lastFailure: String = "never attempted"
+        for _ in 0..<3 {
+            let candidate = Int(try GGUFRestFixture.freePort())
+            do {
+                try await runtime.start(ModelInfo(path: modelPath, kind: .gguf), port: candidate)
+                try GGUFRestFixture.waitUntilListening(port: candidate)
+                restarted = EngineHandle(runtime: runtime, publicPort: candidate)
+                break
+            } catch {
+                lastFailure = "\(error)"
+                await runtime.stop()
+            }
+        }
+        let handle = try XCTUnwrap(
+            restarted, "restart never reached a listening server: \(lastFailure)")
         XCTAssertTrue(runtime.isRunning)
         XCTAssertNotEqual(try enginePort(runtime), oldEnginePort)
 
@@ -207,15 +234,13 @@ final class GGUFContinuationD6InvalidationTests: XCTestCase {
         // the old process. `listBranchesHandler` is hardcoded to return nothing
         // on this backend, so asking it would prove nothing; the engine's own
         // slot table does.
-        let restarted = EngineHandle(runtime: runtime, publicPort: newPort)
         let fresh = try await slotPromptTokens(runtime)
         XCTAssertTrue(
             fresh.allSatisfy { $0 == 0 },
             "the restarted engine inherits no prompt KV; slots=\(fresh)")
 
-        try await assertPhantomRefused(restarted, parent: parent, session: session)
-        try await assertContinuation(
-            restarted, parent: parent, session: session)
+        try await assertPhantomRefused(handle, parent: parent, session: session)
+        try await assertContinuation(handle, parent: parent, session: session)
     }
 
     // MARK: - Scenario helpers
@@ -498,11 +523,15 @@ final class GGUFContinuationD6InvalidationTests: XCTestCase {
         return slots
     }
 
+    /// Tokens currently loaded in each slot's prompt. Measured on b11720: an
+    /// engine that has never processed a prompt answers `/slots` with
+    /// `id, speculative, is_processing, n_ctx` and NO `n_prompt_tokens` key at
+    /// all, so absence is the empty case rather than a broken probe. Every arm
+    /// that reads a zero must also read a non-zero from the same engine first
+    /// (arms A/C/D) — that positive control is what keeps this mapping honest.
     private func slotPromptTokens(_ runtime: ManagedGGUFRuntime) async throws -> [Int] {
         try await engineSlots(runtime).map { slot in
-            guard let count = (slot["n_prompt_tokens"] as? NSNumber)?.intValue
-            else { throw ProbeFailure.missingPromptCount(slot) }
-            return count
+            (slot["n_prompt_tokens"] as? NSNumber)?.intValue ?? 0
         }
     }
 
@@ -584,7 +613,6 @@ final class GGUFContinuationD6InvalidationTests: XCTestCase {
         case unreadableProps
         case emptySlotTable
         case didNotSleep
-        case missingPromptCount([String: Any])
         case missingSlotID([String: Any])
 
         var description: String {
@@ -593,7 +621,6 @@ final class GGUFContinuationD6InvalidationTests: XCTestCase {
             case .unreadableProps: return "GET /props returned no JSON object"
             case .emptySlotTable: return "/slots returned an empty table; no invalidation is observable"
             case .didNotSleep: return "engine never reported is_sleeping"
-            case .missingPromptCount(let slot): return "/slots entry carries no n_prompt_tokens: \(slot)"
             case .missingSlotID(let slot): return "/slots entry carries no id: \(slot)"
             }
         }
