@@ -1309,6 +1309,10 @@
       "output": "SimiGoTests/RuntimeTransitionRuleTests.swift"
     },
     {
+      "path": "SimiGoTests/ServiceHostFallbackTests.swift",
+      "output": "SimiGoTests/ServiceHostFallbackTests.swift"
+    },
+    {
       "path": "SimiGoTests/SessionAdoptionE2ETests.swift",
       "output": "SimiGoTests/SessionAdoptionE2ETests.swift"
     },
