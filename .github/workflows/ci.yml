@@ -28,6 +28,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate the release tooling
         run: python3 -m py_compile tools/png_text_chunks.py tools/release_sanitize.py tools/release_staging_audit.py tools/release_artifact_audit.py tools/release_chain.py tools/release_manifest.py tools/test_release_sanitize.py tools/test_release_staging_audit.py tools/test_repository_png_controls.py tools/test_release_chain.py tools/test_release_manifest.py
+      - name: Show what the tracked tree would add to the manifest
+        # Not the verdict -- `check` below is. This prints the exact entry a contributor
+        # is missing instead of leaving them with "in neither document", and the empty
+        # diff on a fresh checkout is the determinism of `derive` itself.
+        run: |
+          work="$(mktemp -d)"
+          python3 tools/release_manifest.py derive \
+            --inputs-out "$work/inputs.json" \
+            --exclusions-out "$work/exclusions.json" >/dev/null
+          diff -u release/release-inputs-v2.2.x.json "$work/inputs.json" || true
+          diff -u release/release-exclusions-v2.2.x.json "$work/exclusions.json" || true
       - name: Manifest and exclusion register are complete
         run: python3 tools/release_manifest.py check
       - name: Build, gate, audit and name the provenance of the staging tree

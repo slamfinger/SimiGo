@@ -242,6 +242,23 @@ enum GGUFRestFixture {
 /// text assembly, usage, tool-call fragments, termination reason and cancel.
 final class GGUFEngineClientTests: XCTestCase {
 
+    private var identityRoot: URL!
+
+    override func setUpWithError() throws {
+        identityRoot = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "GGUFIdentityLedger-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: identityRoot, withIntermediateDirectories: true)
+        GGUFModelIdentity.blobLedgerURLOverride =
+            identityRoot.appendingPathComponent("model-content-digests.json")
+    }
+
+    override func tearDown() {
+        GGUFModelIdentity.blobLedgerURLOverride = nil
+        if let identityRoot { try? FileManager.default.removeItem(at: identityRoot) }
+        super.tearDown()
+    }
+
     private func makeClient(port: UInt16, model: String = "stub-gguf-model") -> GGUFEngineClient {
         GGUFEngineClient(
             endpoint: .init(

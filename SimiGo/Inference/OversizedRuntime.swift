@@ -89,10 +89,11 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         // Same IS producer identity as the contiguous-model path: a pure
         // re-derivation from the snapshot, so an oversized turn settles under
         // the model revision that actually produced it.
+        let informationSeeds = ProducerIdentity.identities(
+            fromPath: modelDirectory.path)
         let informationProducer = InformationTurnProducer(
-            modelIdentity: ProducerIdentity.canonicalModelIdentity(
-                fromPath: modelDirectory.path),
-            identity: ProducerIdentity.identity(fromPath: modelDirectory.path))
+            modelIdentity: informationSeeds.model,
+            identity: informationSeeds.producer)
 
         let server = HTTPServer(
             port: port,
