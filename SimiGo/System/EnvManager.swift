@@ -1,4 +1,5 @@
 import Darwin
+import Dispatch
 import Foundation
 import Combine
 import SimiGoRuntimeContract
@@ -79,7 +80,19 @@ public final class EnvManager: ObservableObject {
         Self.findSystemLlamaServer() ?? "\(binDir)/llama-server"
     }
 
-    public var hasLlamaServer: Bool { Self.findSystemLlamaServer() != nil }
+    /// Probed once per process: "the file exists and is executable" is not the
+    /// same question as "it starts". Measured 2026-11-10 on this machine: the
+    /// installed `bin/llama-server` was a 49_984-byte shell whose libraries the
+    /// build/prune cycle had already deleted, so `fileExists && isExecutable`
+    /// said ready while `--version` died on `@rpath/libllama-server-impl.dylib`.
+    private var llamaServerProbeResult: Bool?
+
+    public var hasLlamaServer: Bool {
+        if let cached = llamaServerProbeResult { return cached }
+        let runs = Self.findSystemLlamaServer().map { Self.llamaServerRuns($0) } ?? false
+        llamaServerProbeResult = runs
+        return runs
+    }
     public var isEnvironmentReady: Bool { hasLlamaServer }
 
     // MARK: - Process State
@@ -92,7 +105,15 @@ public final class EnvManager: ObservableObject {
 
     // MARK: - Status
     public func checkStatus() {
-        statusMessage = hasLlamaServer ? "llama.cpp 就绪" : "仅 Native MLX 可用，llama.cpp 未安装"
+        if hasLlamaServer {
+            statusMessage = "llama.cpp 就绪"
+        } else if Self.findSystemLlamaServer() != nil {
+            // 文件在、权限在，但起不来：窗口只报"未安装"会让人去重装，报"无法启动"
+            // 才会让人去按升级。
+            statusMessage = "llama.cpp 已安装但无法启动（缺依赖库，请升级重建）"
+        } else {
+            statusMessage = "仅 Native MLX 可用，llama.cpp 未安装"
+        }
     }
 
     // MARK: - Shared Command Console
@@ -283,11 +304,14 @@ public final class EnvManager: ObservableObject {
                 appendCommandLog("🔄 升级模式：忽略已安装的 llama-server，按锁定版本重建。")
             }
         } else if fm.fileExists(atPath: installedLlama), fm.isExecutableFile(atPath: installedLlama) {
-            appendCommandLog("✅ 检测到已安装的 llama-server（\(installedLlama)），跳过构建。")
-            commandStatus = "构建完成"
-            commandInput = Self.defaultCommandInput
-            checkStatus()
-            return
+            if Self.llamaServerRuns(installedLlama) {
+                appendCommandLog("✅ 检测到已安装且可启动的 llama-server（\(installedLlama)），跳过构建。")
+                commandStatus = "构建完成"
+                commandInput = Self.defaultCommandInput
+                checkStatus()
+                return
+            }
+            appendCommandLog("⚠️ 已安装的 llama-server 存在但起不来（依赖库缺失？），改为按锁定版本重建。")
         }
 
         do {
@@ -374,6 +398,21 @@ public final class EnvManager: ObservableObject {
                     try fm.copyItem(atPath: binPath, toPath: targetBin)
                     try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: targetBin)
 
+                    // The produced `llama-server` is a thin shell: its work lives in
+                    // `@rpath/libllama-server-impl.dylib` and friends, which sit next
+                    // to it in `build/bin`. Copying only the shell and then pruning
+                    // `build/` (cachePathsToRemoveAfterBuild) leaves the installed
+                    // binary dying in dyld — measured 2026-11-10. So the libraries
+                    // come along, and `@executable_path` is added so they resolve
+                    // from `bin/` instead of from a directory that no longer exists.
+                    let libraries = Self.installSharedLibraries(from: binPath, into: Self.binDir)
+                    if !libraries.isEmpty {
+                        let rpathAdded = Self.addExecutablePathRPath(toBinaryAt: targetBin)
+                        appendCommandLog("📦 随二进制安装 \(libraries.count) 个动态库到 bin/"
+                                         + (rpathAdded ? "，并加入 @executable_path 搜索路径。"
+                                                       : "（@executable_path 已存在，未重复添加）。"))
+                    }
+
                     let home = NSHomeDirectory()
                     let localBin = "\(home)/.local/bin"
                     try? fm.createDirectory(atPath: localBin, withIntermediateDirectories: true)
@@ -411,6 +450,16 @@ public final class EnvManager: ObservableObject {
             guard installed else {
                 throw NSError(domain: "EnvManager", code: 501, userInfo: [NSLocalizedDescriptionKey: "llama-server 构建完成，但未找到构建产物。"])
             }
+
+            // Verify BEFORE pruning: the whole point of the check is that the
+            // install (binary + libraries) is self-sufficient on its own. Failing
+            // here keeps `build/` on disk, so a retry does not need a fresh clone.
+            guard Self.llamaServerRuns(targetBin) else {
+                throw NSError(domain: "EnvManager", code: 502, userInfo: [NSLocalizedDescriptionKey:
+                    "llama-server 安装后无法启动（依赖库没有随二进制落地）。已保留构建缓存，未清理，可直接重试。"])
+            }
+            appendCommandLog("✅ 安装校验：bin/llama-server --version 可执行。")
+            llamaServerProbeResult = nil
 
             // "构建完成后删除缓存只保留二进制": the installed binary already lives in
             // binDir, so drop exactly the cache set the recipe declares (single
@@ -1029,6 +1078,75 @@ public final class EnvManager: ObservableObject {
     }
 
     // MARK: - Tool Detection
+
+    // MARK: - Install verification
+
+    /// Does this binary actually start? `--version` is the cheapest question that
+    /// still loads every dependency, so a missing `@rpath` library is caught here
+    /// instead of at the first inference request. Measured 2026-11-10: 0.077 s on
+    /// the pinned llama.cpp build.
+    static func llamaServerRuns(_ path: String, timeout: TimeInterval = 10) -> Bool {
+        guard FileManager.default.isExecutableFile(atPath: path) else { return false }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = ["--version"]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        let finished = DispatchSemaphore(value: 0)
+        // Handler before run(): a process that exits instantly can otherwise signal
+        // before the handler exists, and the wait would burn the whole timeout.
+        process.terminationHandler = { _ in finished.signal() }
+        do {
+            try process.run()
+        } catch {
+            return false
+        }
+        if finished.wait(timeout: .now() + timeout) == .timedOut {
+            process.terminate()
+            return false
+        }
+        return process.terminationStatus == 0
+    }
+
+    /// Copy the shared libraries that sit beside a produced binary into the
+    /// destination directory. `build/bin` holds `libX.dylib -> libX.0.dylib`
+    /// symlinks, and `copyItem` preserves the link itself, which is what keeps the
+    /// rewritten install names resolvable.
+    @discardableResult
+    static func installSharedLibraries(from binaryPath: String, into destination: String) -> [String] {
+        let fm = FileManager.default
+        let sourceDir = (binaryPath as NSString).deletingLastPathComponent
+        guard let entries = try? fm.contentsOfDirectory(atPath: sourceDir) else { return [] }
+        var copied: [String] = []
+        for name in entries.sorted() where name.hasSuffix(".dylib") {
+            let source = "\(sourceDir)/\(name)"
+            let target = "\(destination)/\(name)"
+            if fm.fileExists(atPath: target) { try? fm.removeItem(atPath: target) }
+            if (try? fm.copyItem(atPath: source, toPath: target)) != nil { copied.append(name) }
+        }
+        return copied
+    }
+
+    /// Make `@rpath/...` dependencies resolve next to the executable. Idempotent:
+    /// `install_name_tool` refuses a duplicate rpath, and that refusal is success
+    /// for our purposes, so both outcomes report `true`.
+    @discardableResult
+    static func addExecutablePathRPath(toBinaryAt path: String) -> Bool {
+        let tool = "/usr/bin/install_name_tool"
+        guard FileManager.default.isExecutableFile(atPath: tool) else { return false }
+        let probe = Process()
+        probe.executableURL = URL(fileURLWithPath: tool)
+        probe.arguments = ["-add_rpath", "@executable_path", path]
+        probe.standardOutput = FileHandle.nullDevice
+        probe.standardError = FileHandle.nullDevice
+        do {
+            try probe.run()
+        } catch {
+            return false
+        }
+        probe.waitUntilExit()
+        return true
+    }
     public static func findTool(_ name: String) -> String? {
         let home = NSHomeDirectory()
         let paths = ["/opt/homebrew/bin/\(name)", "/usr/local/bin/\(name)", "/usr/bin/\(name)", "\(home)/.local/bin/\(name)", "\(binDir)/\(name)"]

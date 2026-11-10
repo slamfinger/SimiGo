@@ -2,13 +2,6 @@
   "manifest_version": 1,
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
-  "accounting": {
-    "tracked": 697,
-    "research_not_declared": 0,
-    "non_research_candidates": 697,
-    "declared": 639,
-    "excluded": 58
-  },
   "record_fields": [
     "path",
     "sha256",
