@@ -2994,7 +2994,7 @@ try apply(stmt)
         // and let an older observation overwrite a newer settlement.
         return try transactionResult {
         let fm = FileManager.default
-        guard fileByteCap >= 0, tailBytes >= 0, maxDepth >= 0,
+        guard fileByteCap >= 0, tailBytes >= 0, maxDepth > 0,
               maxObservedFiles >= 0, maxObservedFiles < Int.max,
               maxVisitedEntries >= 0, maxTotalBytesRead >= 0 else {
             throw DatabaseError.sql("settleWorkRootContents: invalid scan limits")
