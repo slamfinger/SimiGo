@@ -1,15 +1,18 @@
 import CryptoKit
+import Darwin
 import Foundation
 import SimiGoRuntimeContract
 
 enum GGUFModelIdentityError: LocalizedError, Equatable {
     case notAFile(String)
     case unreadable(String)
+    case changedDuringRead(String)
 
     var errorDescription: String? {
         switch self {
         case .notAFile(let path): return "GGUF 模型不是可读文件: \(path)"
         case .unreadable(let path): return "GGUF 模型内容无法读取: \(path)"
+        case .changedDuringRead(let path): return "GGUF 模型在身份核验期间发生变化: \(path)"
         }
     }
 }
@@ -92,9 +95,14 @@ struct GGUFModelIdentity: Equatable, Sendable {
 
         // Provenance is part of the cached value, so a call with its own `hubs`
         // skips the cache: a hit must never hand back another hub's answer.
-        let cacheKey =
-            hubs == nil ? identityStamp(of: resolved) : nil
-        if let cacheKey, let hit = resolvedCache.value(for: cacheKey) { return hit }
+        let fileStamp = identityStamp(of: resolved)
+        let cacheKey = hubs == nil ? fileStamp : nil
+        if let cacheKey, let hit = resolvedCache.value(for: cacheKey) {
+            guard identityStamp(of: resolved) == cacheKey else {
+                throw GGUFModelIdentityError.changedDuringRead(resolved.path)
+            }
+            return hit
+        }
 
         let digest: String
         let source: ContentSource
@@ -114,7 +122,13 @@ struct GGUFModelIdentity: Equatable, Sendable {
             }
         } else {
             digest = try streamingSHA256(of: resolved)
+            if let fileStamp, identityStamp(of: resolved) != fileStamp {
+                throw GGUFModelIdentityError.changedDuringRead(resolved.path)
+            }
             source = .fileContents
+        }
+        if let fileStamp, identityStamp(of: resolved) != fileStamp {
+            throw GGUFModelIdentityError.changedDuringRead(resolved.path)
         }
         let attributes = try? FileManager.default.attributesOfItem(atPath: resolved.path)
         let size = (attributes?[.size] as? NSNumber)?.int64Value ?? 0
@@ -137,22 +151,52 @@ struct GGUFModelIdentity: Equatable, Sendable {
         return identity
     }
 
-    /// Everything a hash depends on. A rewrite that keeps size and mtime but
-    /// changes bytes still changes the inode in every realistic copy path; a
-    /// same-inode in-place rewrite within one filesystem timestamp tick is the
-    /// only miss, and that one is indistinguishable by stat anywhere.
-    private static func identityStamp(of url: URL) -> String? {
-        guard let parts = identityParts(of: url) else { return nil }
-        return "\(url.path)|\(parts.size)|\(parts.inode)|\(parts.modified)"
+    /// File identity used by both the in-memory resolver cache and the durable
+    /// HF blob digest memo. ctime is essential: an in-place rewrite can preserve
+    /// inode, size and even restore mtime, while ctime still changes.
+    private struct FileIdentityParts: Equatable {
+        let size: Int64
+        let device: UInt64
+        let inode: UInt64
+        let modifiedSeconds: Int64
+        let modifiedNanoseconds: Int64
+        let changedSeconds: Int64
+        let changedNanoseconds: Int64
+
+        var stamp: String {
+            "\(device):\(inode):\(size):\(modifiedSeconds):\(modifiedNanoseconds):"
+                + "\(changedSeconds):\(changedNanoseconds)"
+        }
     }
 
-    private static func identityParts(of url: URL) -> (size: Int64, inode: UInt64, modified: Double)? {
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let size = (attributes[.size] as? NSNumber)?.int64Value,
-              let inode = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value
-        else { return nil }
-        let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-        return (size, inode, modified)
+    private static func identityStamp(of url: URL) -> String? {
+        guard let parts = identityParts(of: url) else { return nil }
+        return "\(url.path)|\(parts.stamp)"
+    }
+
+    private static func identityParts(of url: URL) -> FileIdentityParts? {
+        var info = stat()
+        guard url.path.withCString({ Darwin.stat($0, &info) }) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG else { return nil }
+        return FileIdentityParts(
+            size: Int64(info.st_size),
+            device: UInt64(info.st_dev),
+            inode: UInt64(info.st_ino),
+            modifiedSeconds: Int64(info.st_mtimespec.tv_sec),
+            modifiedNanoseconds: Int64(info.st_mtimespec.tv_nsec),
+            changedSeconds: Int64(info.st_ctimespec.tv_sec),
+            changedNanoseconds: Int64(info.st_ctimespec.tv_nsec))
+    }
+
+    /// An unreadable file cannot be identified by its contents. Keep that
+    /// fallback local to this exact filesystem object instead of assigning the
+    /// same constant marker to every file with the same byte count. A file that
+    /// cannot even be stat'ed gets a one-call nonce and therefore fails closed
+    /// on the next identity derivation.
+    static func unreadableMarker(forPath path: String) -> String {
+        let resolved = URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath()
+        let stamp = identityParts(of: resolved)?.stamp ?? UUID().uuidString
+        return "\(unreadableMarker):\(resolved.path):\(stamp)"
     }
 
     /// Content digest only. Byte count is included so a hash collision across
@@ -204,17 +248,24 @@ struct GGUFModelIdentity: Equatable, Sendable {
     /// file version hashes it, later ones (and later launches) reuse the
     /// verdict until the file itself changes.
     static func verifiedBlobDigest(of url: URL) throws -> String {
-        if let parts = identityParts(of: url),
-           let recorded = blobLedger.digest(
-               path: url.path, size: parts.size, inode: parts.inode,
-               modified: parts.modified) {
+        let before = identityParts(of: url)
+        if let before,
+           let recorded = blobLedger.digest(path: url.path, identityStamp: before.stamp) {
+            guard identityParts(of: url) == before else {
+                throw GGUFModelIdentityError.changedDuringRead(url.path)
+            }
             return recorded
         }
+
         let digest = try streamingSHA256(of: url)
-        if let parts = identityParts(of: url) {
+        if let before {
+            // Never bind a digest to a stamp sampled after the read: the file
+            // must still be the exact object/version whose bytes were hashed.
+            guard identityParts(of: url) == before else {
+                throw GGUFModelIdentityError.changedDuringRead(url.path)
+            }
             blobLedger.record(
-                path: url.path, size: parts.size, inode: parts.inode,
-                modified: parts.modified, sha256: digest)
+                path: url.path, identityStamp: before.stamp, sha256: digest)
         }
         return digest
     }
@@ -223,9 +274,7 @@ struct GGUFModelIdentity: Equatable, Sendable {
     /// authority: deleting it costs one re-hash and changes no identity.
     struct BlobDigestLedger: Codable, Equatable {
         struct Entry: Codable, Equatable {
-            var size: Int64
-            var inode: UInt64
-            var modified: Double
+            var identityStamp: String
             var sha256: String
             var verifiedAt: Date
         }
@@ -250,22 +299,20 @@ struct GGUFModelIdentity: Equatable, Sendable {
                     .appendingPathComponent("model-content-digests.json")
         }
 
-        func digest(path: String, size: Int64, inode: UInt64, modified: Double) -> String? {
+        func digest(path: String, identityStamp: String) -> String? {
             lock.lock()
             defer { lock.unlock() }
-            guard let entry = ledger().entries[path] else { return nil }
-            guard entry.size == size, entry.inode == inode, entry.modified == modified
-            else { return nil }
+            guard let entry = ledger().entries[path],
+                  entry.identityStamp == identityStamp else { return nil }
             return entry.sha256
         }
 
-        func record(path: String, size: Int64, inode: UInt64, modified: Double, sha256: String) {
+        func record(path: String, identityStamp: String, sha256: String) {
             lock.lock()
             defer { lock.unlock() }
             var value = ledger()
             value.entries[path] = BlobDigestLedger.Entry(
-                size: size, inode: inode, modified: modified, sha256: sha256,
-                verifiedAt: Date())
+                identityStamp: identityStamp, sha256: sha256, verifiedAt: Date())
             // Entries for files that no longer exist can never be consulted;
             // dropping them keeps the file bounded by the model library.
             value.entries = value.entries.filter {
