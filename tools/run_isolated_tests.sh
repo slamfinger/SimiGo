@@ -6,6 +6,12 @@
 #                               [--base-xctestrun PATH] [--destination DEST]
 #                               [--only-testing TEST-ID]... [--expected-cases N]
 #                               [--cache-write-not-required] [--extra-root PATH]...
+#                               [--gguf-model PATH --gguf-bin PATH]
+#
+# The GGUF pair is forwarded to make_isolated_xctestrun.py. Without it the gated
+# real-engine suites skip, and a run that skips everything still exits 0 unless
+# --expected-cases is given; pass --expected-cases when you mean to prove those
+# suites actually executed.
 #
 # Why a runner and not "just add env vars": testF3DeviceAcceptanceBattery is NOT
 # idempotent w.r.t. the prefix pool on disk (its D4 step asserts mode=extend and
@@ -45,6 +51,8 @@ EXTRA=()
 ONLY_TESTING=()
 EXPECTED_CASES=""
 CACHE_WRITE_NOT_REQUIRED=0
+GGUF_MODEL=""
+GGUF_BIN=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --app) APP="$2"; shift 2 ;;
@@ -60,6 +68,16 @@ while [ $# -gt 0 ]; do
       shift 2 ;;
     --expected-cases) EXPECTED_CASES="$2"; shift 2 ;;
     --cache-write-not-required) CACHE_WRITE_NOT_REQUIRED=1; shift ;;
+    --gguf-model)
+      [ $# -ge 2 ] && [ -n "$2" ] || {
+        echo "RUN_ISOLATED: --gguf-model needs a path" >&2; exit 2;
+      }
+      GGUF_MODEL="$2"; shift 2 ;;
+    --gguf-bin)
+      [ $# -ge 2 ] && [ -n "$2" ] || {
+        echo "RUN_ISOLATED: --gguf-bin needs a path" >&2; exit 2;
+      }
+      GGUF_BIN="$2"; shift 2 ;;
     --extra-root) EXTRA+=("$2"); shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "RUN_ISOLATED: unknown argument $1" >&2; usage >&2; exit 2 ;;
@@ -67,6 +85,9 @@ while [ $# -gt 0 ]; do
 done
 if [ -n "$EXPECTED_CASES" ] && ! [[ "$EXPECTED_CASES" =~ ^[1-9][0-9]*$ ]]; then
   echo "RUN_ISOLATED: --expected-cases must be a positive integer" >&2; exit 2
+fi
+if [ "${GGUF_MODEL:+set}" != "${GGUF_BIN:+set}" ]; then
+  echo "RUN_ISOLATED: --gguf-model and --gguf-bin must be supplied together" >&2; exit 2
 fi
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -142,6 +163,9 @@ START=$(date +%s)
 GEN=(python3 "$ROOT/tools/make_isolated_xctestrun.py" --app "$APP"
      --isolation-root "$ISO" --record "$EVIDENCE/xctestrun_isolation.json")
 [ -n "$BASE" ] && GEN+=(--base-xctestrun "$BASE")
+if [ -n "$GGUF_MODEL" ]; then
+  GEN+=(--gguf-model "$GGUF_MODEL" --gguf-bin "$GGUF_BIN")
+fi
 "${GEN[@]}" || exit 4
 XR="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["isolated_xctestrun"])' \
       "$EVIDENCE/xctestrun_isolation.json")" || exit 4

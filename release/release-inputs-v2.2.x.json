@@ -1116,6 +1116,10 @@
       "output": "SimiGoTests/G1G3HeadlessEntryTests.swift"
     },
     {
+      "path": "SimiGoTests/GGUFContinuationD6InvalidationTests.swift",
+      "output": "SimiGoTests/GGUFContinuationD6InvalidationTests.swift"
+    },
+    {
       "path": "SimiGoTests/GGUFManagedEntryHTTPTests.swift",
       "output": "SimiGoTests/GGUFManagedEntryHTTPTests.swift"
     },

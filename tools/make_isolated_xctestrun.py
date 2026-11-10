@@ -7,7 +7,7 @@ the roots are overridden. Only a run with all three roots pointing into a fresh
 isolation root is evidence about the suite; anything else writes user state.
 
 Reproducibility: the isolated document is re-derived from the build's own file and
-BOTH documents are re-read and diffed leaf by leaf, so "only the three injected
+BOTH documents are re-read and diffed leaf by leaf, so "only the declared injection
 keys changed" is a measurement (`other_differences`), not a claim.
 
 Placement: `__TESTROOT__` inside an xctestrun resolves relative to the xctestrun's
@@ -15,16 +15,29 @@ own directory. The isolated copy is therefore written NEXT TO the original; a co
 anywhere else would point the test host at a non-existent bundle and "pass" by
 testing nothing. `--out` outside the base's directory is rejected.
 
+Real-engine inputs: the gated GGUF suites (`GGUFManagedEntryRealModelE2ETests`,
+`GGUFContinuationD6InvalidationTests`) skip unless `SIMIGO_GGUF_E2E_MODEL` and
+`SIMIGO_GGUF_E2E_BIN` are present, so without a way to inject them an isolated run
+reports green while executing nothing. `--gguf-model` / `--gguf-bin` inject the
+pair. Unlike the three roots they are READ-ONLY inputs and legitimately live
+outside the isolation root (a checkpoint is gigabytes; copying it per run is not
+an option), so they are validated for absolute path, existence, kind and — for the
+binary — executability, never for containment. Supplying only one of the pair is
+rejected: a half-injected run would skip every real-engine case and still look
+like a pass.
+
 usage:
   make_isolated_xctestrun.py --app <.../Debug/SimiGo.app> --isolation-root <dir>
       [--base-xctestrun PATH] [--out PATH] [--record PATH] [--secure-localb]
+      [--gguf-model PATH --gguf-bin PATH]
 
 exit: 0 ok · 2 unexpected plist differences · 3 unusable input
 """
 import argparse, glob, hashlib, json, os, plistlib, sys, time
 
 INJECT_ROOTS = ("SIMIGO_HOME", "SIMIGO_CACHE_ROOT", "SIMIGO_STATE_GRAPH_STORE")
-INJECT_ENVIRONMENT_KEYS = ("SIMIGO_TRANSPORT",)
+INJECT_ENVIRONMENT_KEYS = (
+    "SIMIGO_TRANSPORT", "SIMIGO_GGUF_E2E_MODEL", "SIMIGO_GGUF_E2E_BIN")
 ISOLATED_BASENAME = "xctestrun_isolated.xctestrun"
 
 
@@ -70,7 +83,19 @@ def main():
     ap.add_argument(
         "--secure-localb", action="store_true",
         help="inject SIMIGO_TRANSPORT=secure into each XCTest target process")
+    ap.add_argument(
+        "--gguf-model",
+        help="absolute path to an existing .gguf checkpoint; injected as "
+             "SIMIGO_GGUF_E2E_MODEL so the gated real-engine suites run instead of skipping")
+    ap.add_argument(
+        "--gguf-bin",
+        help="absolute path to an executable llama-server; injected as "
+             "SIMIGO_GGUF_E2E_BIN (must be supplied together with --gguf-model)")
     a = ap.parse_args()
+
+    if bool(a.gguf_model) != bool(a.gguf_bin):
+        die("--gguf-model and --gguf-bin must be supplied together; a half-injected "
+            "run skips every real-engine case and still reports success")
 
     app = os.path.abspath(a.app)
     iso = os.path.abspath(a.isolation_root)
@@ -105,6 +130,9 @@ def main():
     }
     if a.secure_localb:
         env["SIMIGO_TRANSPORT"] = "secure"
+    if a.gguf_model:
+        env["SIMIGO_GGUF_E2E_MODEL"] = os.path.abspath(a.gguf_model)
+        env["SIMIGO_GGUF_E2E_BIN"] = os.path.abspath(a.gguf_bin)
     for key, val in env.items():
         if key in INJECT_ROOTS:
             if not os.path.isabs(val) or os.path.commonpath([os.path.abspath(val), iso]) != iso:
@@ -112,6 +140,12 @@ def main():
         elif key == "SIMIGO_TRANSPORT":
             if val != "secure":
                 die("unsupported SIMIGO_TRANSPORT value for isolated LOCALB tests: %s" % val)
+        elif key == "SIMIGO_GGUF_E2E_MODEL":
+            if not os.path.isfile(val) or not val.endswith(".gguf"):
+                die("SIMIGO_GGUF_E2E_MODEL must be an absolute path to an existing .gguf file: %s" % val)
+        elif key == "SIMIGO_GGUF_E2E_BIN":
+            if not os.path.isfile(val) or not os.access(val, os.X_OK):
+                die("SIMIGO_GGUF_E2E_BIN must be an absolute path to an executable file: %s" % val)
         else:
             die("unsupported injected XCTest environment key: %s" % key)
 
@@ -176,7 +210,7 @@ def main():
     print(json.dumps({"isolated": out, "sha256": rec["isolated_sha256"],
                       "targets": touched, "other_differences": other}, indent=1))
     if other:
-        sys.stderr.write("make_isolated_xctestrun: plist changed beyond the three roots\n")
+        sys.stderr.write("make_isolated_xctestrun: plist changed beyond the declared injection keys\n")
         sys.exit(2)
 
 
