@@ -16,9 +16,10 @@
 
 ## 证据完整性（2026-11-10 核对）
 
-- 载体实验二进制：`~/Library/Developer/Xcode/DerivedData/SimiGo-ekwkooivsotoisflwmxlxxlxswom/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo`，
-  `sha256 4398b5aa15a24261d28057dd64ddec90fb2d960018846f56089d182007d85fc5`，与 `ledgers/carrier/manifest.json` 一致。
-  该二进制在 DerivedData 内（被 gitignore），清理 DerivedData 即销毁此证据；记录可复现，但重建二进制不保证同哈希。
+- 载体实验二进制：`sha256 4398b5aa15a24261d28057dd64ddec90fb2d960018846f56089d182007d85fc5`，与 `ledgers/carrier/manifest.json` 一致。
+  原在 `~/Library/Developer/Xcode/DerivedData/SimiGo-ekwkooivsotoisflwmxlxxlxswom/...`（该目录 2026-11-10 整体清空）。
+  **已留档**：`~/Documents/SimiGo-archive-20261105/evidence-binaries/carrier-4398b5aa/SimiGo.app`（121 M，副本哈希复核一致，见该目录 README）。
+  重建同基线源码不保证同哈希，这份副本是唯一的同哈希实例。
 - 实验库：`runs/*/simigo.sqlite3` 未入仓，账本逐行含步骤与读数，可回查。
 - 账本与 manifest 里的本机绝对路径已按仓规脱敏为 `~`（只替换路径前缀，未动任何读数、时间戳或哈希字段）。
   因此仓内账本文件的 sha256 与记录正文里写的原件哈希不同；原件哈希见各记录头部的账本行。
