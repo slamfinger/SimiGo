@@ -94,7 +94,8 @@ struct GGUFModelIdentity: Equatable, Sendable {
 
         // Provenance is part of the cached value, so a call with its own `hubs`
         // skips the cache: a hit must never hand back another hub's answer.
-        let fileStamp = identityStamp(of: resolved)
+        let fileIdentity = identityParts(of: resolved)
+        let fileStamp = fileIdentity.map { "\(resolved.path)|\($0.stamp)" }
         let cacheKey = hubs == nil ? fileStamp : nil
         if let cacheKey, let hit = resolvedCache.value(for: cacheKey) {
             guard identityStamp(of: resolved) == cacheKey else {
@@ -120,8 +121,8 @@ struct GGUFModelIdentity: Equatable, Sendable {
                 source = .fileContents
             }
         } else {
-            digest = try streamingSHA256(of: resolved)
-            if let fileStamp, identityStamp(of: resolved) != fileStamp {
+            digest = try streamingSHA256(of: resolved, expectedIdentity: fileIdentity)
+            if let fileIdentity, identityParts(of: resolved) != fileIdentity {
                 throw GGUFModelIdentityError.changedDuringRead(resolved.path)
             }
             source = .fileContents
@@ -175,8 +176,12 @@ struct GGUFModelIdentity: Equatable, Sendable {
 
     private static func identityParts(of url: URL) -> FileIdentityParts? {
         var info = stat()
-        guard url.path.withCString({ Darwin.stat($0, &info) }) == 0,
-              (info.st_mode & S_IFMT) == S_IFREG else { return nil }
+        guard url.path.withCString({ Darwin.stat($0, &info) }) == 0 else { return nil }
+        return identityParts(from: info)
+    }
+
+    private static func identityParts(from info: stat) -> FileIdentityParts? {
+        guard (info.st_mode & S_IFMT) == S_IFREG, info.st_size >= 0 else { return nil }
         return FileIdentityParts(
             size: Int64(info.st_size),
             device: UInt64(info.st_dev),
@@ -256,7 +261,7 @@ struct GGUFModelIdentity: Equatable, Sendable {
             return recorded
         }
 
-        let digest = try streamingSHA256(of: url)
+        let digest = try streamingSHA256(of: url, expectedIdentity: before)
         if let before {
             // Never bind a digest to a stamp sampled after the read: the file
             // must still be the exact object/version whose bytes were hashed.
@@ -336,25 +341,55 @@ struct GGUFModelIdentity: Equatable, Sendable {
     }
 
     static func streamingSHA256(of url: URL) throws -> String {
-        let handle: FileHandle
-        do {
-            handle = try FileHandle(forReadingFrom: url)
-        } catch {
+        try streamingSHA256(of: url, expectedIdentity: nil)
+    }
+
+    /// Hash one opened regular-file descriptor, not a pathname that can be
+    /// swapped between stat and open. The descriptor identity is checked before
+    /// and after the read; callers that sampled the path first pass that identity
+    /// so a replacement before open is refused as well.
+    private static func streamingSHA256(
+        of url: URL, expectedIdentity: FileIdentityParts?
+    ) throws -> String {
+        let descriptor = url.path.withCString {
+            Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        guard descriptor >= 0 else {
             throw GGUFModelIdentityError.unreadable(url.path)
         }
-        defer { try? handle.close() }
-        var hasher = SHA256()
-        do {
-            while let chunk = try handle.read(upToCount: 4 * 1024 * 1024), !chunk.isEmpty {
-                hasher.update(data: chunk)
-                if Task.isCancelled { throw CancellationError() }
-            }
-        } catch let error as GGUFModelIdentityError {
-            throw error
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
+        defer { Darwin.close(descriptor) }
+
+        var beforeInfo = stat()
+        guard Darwin.fstat(descriptor, &beforeInfo) == 0,
+              let openedIdentity = identityParts(from: beforeInfo)
+        else {
             throw GGUFModelIdentityError.unreadable(url.path)
+        }
+        if let expectedIdentity, openedIdentity != expectedIdentity {
+            throw GGUFModelIdentityError.changedDuringRead(url.path)
+        }
+
+        var hasher = SHA256()
+        var buffer = [UInt8](repeating: 0, count: 4 * 1024 * 1024)
+        while true {
+            let count = buffer.withUnsafeMutableBytes { raw in
+                Darwin.read(descriptor, raw.baseAddress, raw.count)
+            }
+            if count > 0 {
+                hasher.update(data: Data(buffer.prefix(count)))
+                if Task.isCancelled { throw CancellationError() }
+            } else if count == 0 {
+                break
+            } else if errno != EINTR {
+                throw GGUFModelIdentityError.unreadable(url.path)
+            }
+        }
+
+        var afterInfo = stat()
+        guard Darwin.fstat(descriptor, &afterInfo) == 0,
+              identityParts(from: afterInfo) == openedIdentity
+        else {
+            throw GGUFModelIdentityError.changedDuringRead(url.path)
         }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }

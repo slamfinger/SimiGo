@@ -86,6 +86,20 @@ final class GGUFModelIdentityTests: XCTestCase {
         XCTAssertEqual(identity.rootID, "huggingface-cache")
     }
 
+    func testStreamingSHA256RefusesFinalComponentSymlink() throws {
+        let target = try write(Data("regular-model-bytes".utf8), at: "target/model.gguf")
+        let link = root.appendingPathComponent("model-link.gguf")
+        try FileManager.default.createSymbolicLink(
+            atPath: link.path, withDestinationPath: target)
+
+        XCTAssertThrowsError(try GGUFModelIdentity.streamingSHA256(of: link)) { error in
+            guard case .unreadable(let path) = error as? GGUFModelIdentityError else {
+                return XCTFail("expected no-follow read to reject a symlink, got: \(error)")
+            }
+            XCTAssertEqual(path, link.path)
+        }
+    }
+
     /// The blob name is a claim about the bytes, and the claim is checked. Same
     /// name, different bytes: the identity must be the bytes', so a rewritten
     /// blob cannot inherit the settlements of the bytes it replaced.
