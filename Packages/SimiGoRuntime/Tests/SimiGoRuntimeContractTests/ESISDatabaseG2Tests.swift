@@ -132,7 +132,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try original.write(to: fileURL)
 
         var before = stat()
-        XCTAssertEqual(fileURL.path.withCString { Darwin.stat($0, &before) }, 0)
+        XCTAssertEqual(fileURL.path.withCString { Darwin.fstatat(AT_FDCWD, $0, &before, 0) }, 0)
         var didMutate = false
         var restoredMTime = false
         var changedCTime = false
@@ -161,7 +161,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
                 }
 
                 var after = stat()
-                guard fileURL.path.withCString({ Darwin.stat($0, &after) }) == 0 else {
+                guard fileURL.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &after, 0) }) == 0 else {
                     throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
                 }
                 restoredMTime =
