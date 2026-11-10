@@ -35,7 +35,15 @@ struct Settings: View {
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let r = EnvManager.shared.registerWorkRoot(url.path)
-        envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))"
+        let imported = r["name_import"] as? [String: Any]
+        let detail = imported.map { import_ in
+            "文件 \(import_["files"] ?? 0) · 新增 \(import_["inserted"] ?? 0) · "
+                + "刷新 \(import_["refreshed"] ?? 0) · 缺失 \(import_["missing"] ?? 0)"
+        } ?? ""
+        envMessage = """
+        \(url.lastPathComponent): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))
+        \(detail)
+        """
         refreshWorkRoots()
     }
 
@@ -366,10 +374,24 @@ struct Settings: View {
                     url: ManagedPaths.databaseURL, createIfNeeded: true)
                 try db.runMigrations()
                 let result = try db.reconcileRegisteredRoots(category: "work")
+                // 对账之后再过一遍文件名：磁盘上新增的进门、没了的标 missing。
+                // 这就是"再重新导入一次"，等于做了一次目录内文件路径和文件名复核。
+                var imported = 0, inserted = 0, refreshed = 0, missing = 0
+                for root in try db.listRoots(category: "work") {
+                    guard root.locatorType == "path",
+                          let path = root.displayName, !path.isEmpty else { continue }
+                    let names = try db.importDirectoryNames(
+                        rootID: root.rootID, rootURL: URL(fileURLWithPath: path))
+                    imported += names.files
+                    inserted += names.inserted
+                    refreshed += names.refreshed
+                    missing += names.missing
+                }
                 text = """
                 对账完成：根 \(result.rootCount)（已结算 \(result.settledRoots) / 近期已扫 \(result.freshRoots)）· \
                 扫描 \(result.scanned) · 复用 \(result.reused) · 变更 \(result.changed) · 删除 \(result.removed) · \
                 失效结算 \(result.invalidatedSettlements) · 缺失 \(result.missingRoots) · 失败 \(result.failedRoots)
+                文件名复核：文件 \(imported) · 新增 \(inserted) · 刷新 \(refreshed) · 库里有磁盘上没有 \(missing)
                 """
             } catch {
                 text = "对账失败：\(error)"

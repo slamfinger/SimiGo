@@ -537,10 +537,18 @@ extension HTTPServer {
             let settle = try db.settleWorkRootContents(
                 rootID: rootID, rootURL: URL(fileURLWithPath: standardized),
                 carryText: false)
+            let names = try db.importDirectoryNames(
+                rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
             return [
                 "root_id": rootID,
                 "path": standardized,
                 "registered": true,
+                "name_import": [
+                    "files": names.files,
+                    "inserted": names.inserted,
+                    "refreshed": names.refreshed,
+                    "missing": names.missing,
+                ],
                 "content_settle": [
                     "scanned": settle.scanned,
                     "reused": settle.reused,

@@ -1112,6 +1112,17 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 26 {
+            try transaction {
+                // 标题只是给人看的名字，不进唯一键（键是 root_id + relative_path）。
+                // 默认值由文件名推导；人改过之后，重新导入不再覆盖。
+                if try !columnExists("external_files", "title") {
+                    try Self.rawExec(handle, "ALTER TABLE external_files ADD COLUMN title TEXT;")
+                }
+                try recordMigrationRow(26, "simigo-external-file-title-v26")
+            }
+        }
+
         // The declared head and the applied head must agree. A migration gate
         // that was written but never reached, or a version bumped in the
         // constant but not in a gate, otherwise shows up as a store that is
@@ -1125,7 +1136,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 25
+    public static let currentSchemaVersion = 26
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
@@ -6625,6 +6636,117 @@ try bind(externalStmt, 1, rootID)
             try bind(stmt, 8, now)
             try bind(stmt, 9, status)
         }
+    }
+
+    /// 目录导入（复核）：把选定目录里每个文件按（目录，文件名）落一行，标题从文件名推。
+    ///
+    /// 这就是「目录内文件路径和文件名复核」：磁盘上有的都有一行（二进制也一样，
+    /// 内容为空、只落档）；库里有的、磁盘上没了，标 `missing`，**不删**——来源消失
+    /// 不改历史。人改过的标题不覆盖：标题是显示名，重新导入只复核路径与文件名。
+    ///
+    /// 幂等：同名同路径重复导入只是刷新 size / modified / last_seen_at。
+    @discardableResult
+    public func importDirectoryNames(
+        rootID: String, rootURL: URL, maxDepth: Int = 64
+    ) throws -> DirectoryNameImportReport {
+        let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
+        let entries = Self.manifestWalk(root: root, maxDepth: maxDepth, skipping: nil)
+        let mainStems = Self.mainStemsByDirectory(entries)
+        let stamp = Self.manifestFormatter()
+
+        return try transactionResult {
+            // 根不存在就补一条（外键约束），已存在则不动它的分类与显示名。
+            let probe = try prepare("SELECT 1 FROM roots WHERE root_id=?;")
+            try bind(probe, 1, rootID)
+            let rootExists = try stepRowOrDone(probe)
+            sqlite3_finalize(probe)
+            if !rootExists {
+                try upsertRoot(rootID: rootID, category: "work", displayName: root.path,
+                               locatorType: "path", status: "registered")
+            }
+
+            var known: [String: String] = [:]
+            let select = try prepare(
+                "SELECT relative_path, COALESCE(title,'') FROM external_files WHERE root_id=?;")
+            defer { sqlite3_finalize(select) }
+            try bind(select, 1, rootID)
+            while try stepRowOrDone(select) {
+                let path = sqlite3_column_text(select, 0).map { String(cString: $0) } ?? ""
+                let title = sqlite3_column_text(select, 1).map { String(cString: $0) } ?? ""
+                known[path] = title
+            }
+
+            var inserted = 0
+            var refreshed = 0
+            for (relative, url) in entries {
+                let directory = (relative as NSString).deletingLastPathComponent
+                let (derived, _) = Self.manifestTitle(
+                    ofFile: url.lastPathComponent, mainStem: mainStems[directory])
+                let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+                let size = (attributes?[.size] as? NSNumber)?.int64Value
+                let modified = (attributes?[.modificationDate] as? Date)
+                    .map { stamp.string(from: $0) }
+                let previous = known.removeValue(forKey: relative)
+                let title = (previous?.isEmpty == false) ? previous! : derived
+                let now = Self.stamp(Date())
+                try execBinding("""
+                INSERT INTO external_files(root_id, relative_path, kind, size, modified_at,
+                    content_digest, indexed_at, last_seen_at, status, title)
+                VALUES(?,?,NULL,?,?,NULL,?,?,'present',?)
+                ON CONFLICT(root_id, relative_path) DO UPDATE SET
+                    size=excluded.size, modified_at=excluded.modified_at,
+                    last_seen_at=excluded.last_seen_at, status='present',
+                    title=excluded.title;
+                """) { stmt in
+                    try bind(stmt, 1, rootID)
+                    try bind(stmt, 2, relative)
+                    try bind(stmt, 3, size)
+                    try bind(stmt, 4, modified)
+                    try bind(stmt, 5, now)
+                    try bind(stmt, 6, now)
+                    try bind(stmt, 7, title)
+                }
+                if previous == nil { inserted += 1 } else { refreshed += 1 }
+            }
+
+            for relative in known.keys {
+                try execBinding("""
+                UPDATE external_files SET status='missing' WHERE root_id=? AND relative_path=?;
+                """) { stmt in
+                    try bind(stmt, 1, rootID)
+                    try bind(stmt, 2, relative)
+                }
+            }
+
+            return DirectoryNameImportReport(
+                files: entries.count, inserted: inserted, refreshed: refreshed,
+                missing: known.count)
+        }
+    }
+
+    /// 人改标题：只改给人看的名字，不动唯一键（root_id + relative_path）。
+    /// 改过之后重新导入目录不会覆盖它。
+    public func updateExternalFileTitle(
+        rootID: String, relativePath: String, title: String
+    ) throws {
+        try execBinding("""
+        UPDATE external_files SET title=? WHERE root_id=? AND relative_path=?;
+        """) { stmt in
+            try bind(stmt, 1, title)
+            try bind(stmt, 2, rootID)
+            try bind(stmt, 3, relativePath)
+        }
+    }
+
+    /// 读一行的标题（复核用）。
+    public func externalFileTitle(rootID: String, relativePath: String) throws -> String? {
+        let stmt = try prepare(
+            "SELECT title FROM external_files WHERE root_id=? AND relative_path=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, rootID)
+        try bind(stmt, 2, relativePath)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else { return nil }
+        return String(cString: c)
     }
 
     /// Index an agent session, referencing its source root by id only.

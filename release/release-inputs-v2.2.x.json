@@ -549,6 +549,10 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ChatRoundText.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/DirectoryManifestExport.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/DirectoryManifestExport.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabase.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabase.swift"
     },
@@ -641,6 +645,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ConflictingSettlementTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/DirectoryManifestExportTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/DirectoryManifestExportTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISArmsTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISArmsTests.swift"
     },
@@ -655,6 +663,10 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDirectoryNameImportTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDirectoryNameImportTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/EngineRecipeTests.swift",

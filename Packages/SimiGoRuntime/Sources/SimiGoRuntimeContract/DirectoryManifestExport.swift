@@ -19,6 +19,14 @@ public extension ESISDatabase {
         public let csvPath: String
     }
 
+    /// 一次「目录复核」的结果：磁盘上有几个文件、新进几行、刷新几行、库里几行在磁盘上没了。
+    struct DirectoryNameImportReport: Equatable, Sendable {
+        public let files: Int
+        public let inserted: Int
+        public let refreshed: Int
+        public let missing: Int
+    }
+
     enum ManifestTitleOutcome: Sendable {
         case fromFileName
         case fromMainFile
@@ -78,7 +86,7 @@ public extension ESISDatabase {
     // MARK: - 标题
 
     /// 标题 = 文件名去后缀、去「附件N：」前缀；剩下空的时候用「主文件名 + 附件标签」。
-    private static func manifestTitle(
+    static func manifestTitle(
         ofFile name: String, mainStem: String?
     ) -> (String, ManifestTitleOutcome) {
         let stem = (name as NSString).deletingPathExtension
@@ -92,7 +100,7 @@ public extension ESISDatabase {
 
     /// 拆开「(可选编号)附件(标签)(分隔符)」：`附件1：xx` / `641附件：xx` / `附件1.xx` / `附件10-1~10-4`。
     /// 半角冒号不作为分隔符认——文件名里出现它本身就是不规范的写法，剩下那截原样留给人看。
-    private static func splitAttachmentPrefix(_ stem: String) -> (label: String?, rest: String) {
+    static func splitAttachmentPrefix(_ stem: String) -> (label: String?, rest: String) {
         let pattern = "^[0-9]{0,4}\\s*(附件(?:[0-9一二三四五六七八九十]+(?:[~～－-][0-9]+)*)?)([：、.．])?"
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(in: stem, range: NSRange(stem.startIndex..., in: stem)),
@@ -113,7 +121,7 @@ public extension ESISDatabase {
     }
 
     /// 同目录里认得出的主文件：只有一个不带附件标签的文件时，拿它当主文件名。
-    private static func mainStemsByDirectory(_ entries: [(String, URL)]) -> [String: String] {
+    static func mainStemsByDirectory(_ entries: [(String, URL)]) -> [String: String] {
         var names: [String: [String]] = [:]
         for (relative, url) in entries {
             names[(relative as NSString).deletingLastPathComponent, default: []]
@@ -134,7 +142,7 @@ public extension ESISDatabase {
 
     /// 走相对路径，不走绝对路径：枚举器会把 `/var` 还原成 `/private/var`，
     /// 拿绝对路径对齐根目录就会把相对路径算错，而相对路径正是 `relative_path` 这一列。
-    private static func manifestWalk(
+    static func manifestWalk(
         root: URL, maxDepth: Int, skipping outputRelative: String?
     ) -> [(String, URL)] {
         guard let enumerator = FileManager.default.enumerator(atPath: root.path) else { return [] }
@@ -178,7 +186,7 @@ public extension ESISDatabase {
         return "\"" + text.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 
-    private static func manifestFormatter() -> DateFormatter {
+    static func manifestFormatter() -> DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         formatter.locale = Locale(identifier: "en_US_POSIX")
