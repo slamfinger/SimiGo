@@ -1,0 +1,20 @@
+{
+  "driver": "carrier_driver.py v1",
+  "purpose": "carrier-independence",
+  "started_at": "2026-11-10T08:39:34+0800",
+  "binary_sha256": "4398b5aa15a24261d28057dd64ddec90fb2d960018846f56089d182007d85fc5",
+  "binary_path": "~/Library/Developer/Xcode/DerivedData/SimiGo-ekwkooivsotoisflwmxlxxlxswom/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo",
+  "model_snapshot": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "max_tokens": 256,
+  "port": 8321,
+  "quiet_window": "EXEMPT（用户裁定 2026-11-10 保留生产实例并行；生产实例未挂大模型，用户确认）",
+  "timing_readings": "contaminated（CPU/GPU 并发）",
+  "contract_constants": {
+    "contract_id": "simigo.settlement-consumption",
+    "demand_class": "exact-repeat",
+    "version": "v1",
+    "extract": "content"
+  },
+  "commit": "29217b0 fix(collector): 预算触顶留续点，下一轮从停下的那条继续",
+  "worktree_dirty_entries": 0
+}

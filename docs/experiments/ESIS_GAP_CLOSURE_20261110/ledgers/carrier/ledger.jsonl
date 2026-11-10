@@ -1,0 +1,20 @@
+{"ts": 1794271174.881, "event": "manifest", "driver": "carrier_driver.py v1", "commit": "29217b0 fix(collector): 预算触顶留续点，下一轮从停下的那条继续", "binary_sha256": "4398b5aa15a24261d28057dd64ddec90fb2d960018846f56089d182007d85fc5", "quiet_window": "EXEMPT（用户裁定 2026-11-10 保留生产实例并行；生产实例未挂大模型，用户确认）"}
+{"ts": 1794271175.199, "event": "db_initialized", "path": "/tmp/esis-carrier/home/simigo.sqlite3"}
+{"ts": 1794271175.233, "event": "quiet_window_exempt", "session": "s1", "reason": "用户裁定 2026-11-10：生产实例(IS载体)保留并行；未挂大模型(用户确认)"}
+{"ts": 1794271175.233, "event": "server_spawn", "session": "s1", "binary": "~/Library/Developer/Xcode/DerivedData/SimiGo-ekwkooivsotoisflwmxlxxlxswom/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo", "port": 8321}
+{"ts": 1794271181.3, "event": "model_ready", "session": "s1", "global_load_seq": 1, "pid": 44022}
+{"ts": 1794271181.324, "event": "root_registered", "session": "s1", "root_id": "work-000000004991ef4b"}
+{"ts": 1794271181.324, "event": "first_request_gate", "session": "s1", "delta_s": 0.03, "budget_s": 5.0, "contaminated": true}
+{"ts": 1794271189.181, "event": "s0_settled", "settlement": "15BA56DE-FD99-48BA-803D-5940A949D96A", "state": "chat-d7b43f19-6cef-44b9-b739-4e26f8461a3d", "gen_total_s": 7.828, "contaminated": true, "text_head": "Content addressing uses cryptographic hashes of content to uniquely identify data blocks. Each piece"}
+{"ts": 1794271189.216, "event": "carrier_alive", "rss_kb": 1829296, "kv_binding_tables": {}, "runtime_json": {"admission": {"active": 1, "waiting": 0}, "backend": "MLX Native", "by_state": {"RUNNING": 1}, "in_flight": 1, "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit", "pid": 44022, "registered": 1, "schema": 1, "tracked": 1, "transitions": {"CREATED→QUEUED": 1, "QUEUED→RUNNING": 1}, "updated_at": "2026-11-10T00:39:41.739Z"}, "pre_kill_max_set_rowid": 2, "pre_kill_max_state_rowid": 1}
+{"ts": "2026-11-10T08:39:49+0800", "event": "carrier_killed", "pid": 44022, "signal": "SIGKILL", "graceful": false, "rss_kb_at_kill": null}
+{"ts": 1794271189.791, "event": "port_released_after_kill", "port": 8321}
+{"ts": 1794271189.828, "event": "quiet_window_exempt", "session": "s2", "reason": "用户裁定 2026-11-10：生产实例(IS载体)保留并行；未挂大模型(用户确认)"}
+{"ts": 1794271189.828, "event": "server_spawn", "session": "s2", "binary": "~/Library/Developer/Xcode/DerivedData/SimiGo-ekwkooivsotoisflwmxlxxlxswom/Build/Products/Release/SimiGo.app/Contents/MacOS/SimiGo", "port": 8321}
+{"ts": 1794271193.349, "event": "model_ready", "session": "s2", "global_load_seq": 2, "pid": 44049}
+{"ts": 1794271193.367, "event": "root_registered", "session": "s2", "root_id": "work-000000004991ef4b"}
+{"ts": 1794271193.367, "event": "first_request_gate", "session": "s2", "delta_s": 0.02, "budget_s": 5.0, "contaminated": true}
+{"ts": 1794271193.425, "event": "cold_consumed", "settlement": "15BA56DE-FD99-48BA-803D-5940A949D96A", "consumer_es": "es-a557c956-bdfc-4c27-8b27-13d6cfc17084", "consumer_settlement": "5CD75C36-3BBC-474D-8738-E5400F569521", "model_calls": 0, "value_verified": true, "new_consumption_rows": "0", "total_s": 0.022, "contaminated": true, "out_head": "Content addressing uses cryptographic hashes of content to uniquely identify data blocks. Each piece"}
+{"ts": 1794271201.366, "event": "cold_generate_control", "chunks": 134, "answer_reuse_seen": false, "ttft_s": 5.199, "total_s": 7.942, "contaminated": true, "text_head": "A reuse contract is a contractual agreement that allows for the reuse of existing resources or compo"}
+{"ts": 1794271202.337, "event": "server_quit_clean", "prod_sha_unchanged": true, "port_released": true}
+{"ts": 1794271202.338, "event": "summary", "cold_consumed": true, "c_model_calls": 0, "value_verified": true, "consumer_new_objects": {"settlement": 1, "state": 1}, "new_consumption_rows": "0", "control_arm": {"chunks": 134, "answer_reuse_seen": false}, "carrier_evidence": {"rss_kb": 1829296, "kv_binding_tables": {}}, "loads": 2, "timing": "contaminated（并发）"}

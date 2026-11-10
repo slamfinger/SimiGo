@@ -1,0 +1,7 @@
+{"event": "third_intake", "phase": "third-intake", "delta": {"settlements": 0, "execution_states": 0, "chat_messages": 2, "settlement_consumptions": 0}, "rows": "user|committed|external|qoder|ext-cloud/declared-model-alpha\nassistant|committed|external|qoder|ext-cloud/declared-model-alpha", "settlements_delta_must_be_0": true, "states_delta_must_be_0": true}
+{"event": "third_intake_retrieval", "phase": "third-intake-retrieval", "hits": 2, "demand": "16eaf41d55c3735fade2e733a97c4fce5818550a25261f17bcd13d770ee5e7e8", "reused": false}
+{"event": "quiet_window_exempt", "reason": "用户裁定 2026-11-10 保留生产实例并行；未挂大模型"}
+{"event": "second_intake_settled", "state": "91959DE8-6368-40AF-94BC-A8C8C1DF177E", "settlement": "520E3AF2-F251-4147-B029-E5082FFB963D", "declared_model": "ext-cloud/declared-model-alpha", "product_model_calls": 0}
+{"event": "cross_model_consumed", "settlement": "520E3AF2-F251-4147-B029-E5082FFB963D", "consumer_es": "es-2dbf6b6e-d42d-4c40-8e58-629f22777b02", "model_calls": 0, "value_verified": true, "declared_model": "ext-cloud/declared-model-alpha", "total_s": 0.016, "contaminated": true}
+{"event": "local_generate_control", "chunks": 89, "answer_reuse_seen": false, "contaminated": true}
+{"event": "server_quit_clean", "loads": 1}

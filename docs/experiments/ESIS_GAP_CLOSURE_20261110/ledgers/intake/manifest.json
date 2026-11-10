@@ -1,0 +1,10 @@
+{
+  "driver": "intake_driver.py v1",
+  "purpose": "intake-trials",
+  "started_at": "2026-11-10T08:52:34+0800",
+  "binary_sha256": "4398b5aa15a24261d28057dd64ddec90fb2d960018846f56089d182007d85fc5",
+  "ext_declared_identity": "ext-cloud/declared-model-alpha / ext-tokenizer-alpha",
+  "quiet_window": "EXEMPT（同 carrier_driver，用户裁定）",
+  "timing_readings": "contaminated（CPU/GPU 并发）",
+  "commit": "29217b0 fix(collector): 预算触顶留续点，下一轮从停下的那条继续"
+}

@@ -1,0 +1,2 @@
+{"ts": "2026-11-10T08:39:41+0800", "seq": 1, "purpose": "carrier-independence", "session": "s1", "model": "~/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d", "pid": 44022}
+{"ts": "2026-11-10T08:39:53+0800", "seq": 2, "purpose": "carrier-independence", "session": "s2", "model": "~/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d", "pid": 44049}

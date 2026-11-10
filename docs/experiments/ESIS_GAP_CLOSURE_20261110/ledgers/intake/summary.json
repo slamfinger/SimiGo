@@ -1,0 +1,31 @@
+{
+  "third_intake": {
+    "phase": "third-intake",
+    "delta": {
+      "settlements": 0,
+      "execution_states": 0,
+      "chat_messages": 2,
+      "settlement_consumptions": 0
+    },
+    "rows": "user|committed|external|qoder|ext-cloud/declared-model-alpha\nassistant|committed|external|qoder|ext-cloud/declared-model-alpha",
+    "settlements_delta_must_be_0": true,
+    "states_delta_must_be_0": true
+  },
+  "third_intake_retrieval": {
+    "phase": "third-intake-retrieval",
+    "hits": 2,
+    "demand": "16eaf41d55c3735fade2e733a97c4fce5818550a25261f17bcd13d770ee5e7e8",
+    "reused": false
+  },
+  "second_intake_cross_model": {
+    "consumed": true,
+    "model_calls": 0,
+    "value_verified": true,
+    "new_objects": {
+      "settlement": 1,
+      "state": 1
+    },
+    "control_chunks": 89
+  },
+  "loads": 1
+}

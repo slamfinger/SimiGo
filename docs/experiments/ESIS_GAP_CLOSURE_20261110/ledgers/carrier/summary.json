@@ -1,0 +1,20 @@
+{
+  "cold_consumed": true,
+  "c_model_calls": 0,
+  "value_verified": true,
+  "consumer_new_objects": {
+    "settlement": 1,
+    "state": 1
+  },
+  "new_consumption_rows": "0",
+  "control_arm": {
+    "chunks": 134,
+    "answer_reuse_seen": false
+  },
+  "carrier_evidence": {
+    "rss_kb": 1829296,
+    "kv_binding_tables": {}
+  },
+  "loads": 2,
+  "timing": "contaminated（并发）"
+}
