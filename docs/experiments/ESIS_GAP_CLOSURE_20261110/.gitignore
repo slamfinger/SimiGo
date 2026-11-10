@@ -1,0 +1,7 @@
+# 证据库与构建产物不入仓
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+.build/
+__pycache__/
+*.dmg
