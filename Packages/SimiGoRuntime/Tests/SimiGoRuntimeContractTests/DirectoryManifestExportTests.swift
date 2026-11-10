@@ -268,6 +268,28 @@ final class DirectoryManifestExportTests: XCTestCase {
         XCTAssertEqual(all.files, 2)
     }
 
+    /// 隐藏文件出现在列表中间时，不能把它后面的同级文件一起吃掉
+    /// （`skipDescendants` 跳的是"当前目录剩下的部分"，对文件调用等于截断目录）。
+    func testHiddenFileDoesNotSwallowItsSiblings() throws {
+        let db = try open()
+        let root = try makeRoot()
+        for name in ["a.txt", ".DS_Store", "b.txt", "~$锁.docx", "c.txt"] {
+            try "行\n".write(to: root.appendingPathComponent(name),
+                            atomically: true, encoding: .utf8)
+        }
+        let sub = root.appendingPathComponent("子目录")
+        try FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
+        for name in ["d.txt", "e.txt"] {
+            try "行\n".write(to: sub.appendingPathComponent(name),
+                            atomically: true, encoding: .utf8)
+        }
+
+        let (report, table, _) = try export(db, root: root)
+        XCTAssertEqual(report.files, 5)
+        XCTAssertEqual(table.dropFirst().map { $0[2] }.sorted(),
+                       ["a.txt", "b.txt", "c.txt", "d.txt", "e.txt"])
+    }
+
     /// Windows 换行、GB18030 编码的旧文本文件：标题仍然是首行，不是整份文件。
     func testWindowsLineEndingsAndLegacyChineseEncoding() throws {
         let db = try open()
@@ -292,9 +314,12 @@ final class DirectoryManifestExportTests: XCTestCase {
         guard let path = ProcessInfo.processInfo.environment["SIMIGO_MANIFEST_PROBE_DIR"]
         else { throw XCTSkip("未指定 SIMIGO_MANIFEST_PROBE_DIR") }
         let root = URL(fileURLWithPath: path)
-        let csv = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-manifest-probe-\(UUID().uuidString).csv")
-        scratch.append(csv)
+        // 指定了输出路径就是给人留的，跑完不能删；没指定才落在临时目录里。
+        let explicit = ProcessInfo.processInfo.environment["SIMIGO_MANIFEST_PROBE_OUT"]
+        let csv = explicit.map { URL(fileURLWithPath: $0) }
+            ?? FileManager.default.temporaryDirectory
+                .appendingPathComponent("simigo-manifest-probe-\(UUID().uuidString).csv")
+        if explicit == nil { scratch.append(csv) }
         let report = try open().exportDirectoryManifest(rootID: "probe", rootURL: root, to: csv)
         let text = String(decoding: try Data(contentsOf: csv), as: UTF8.self)
         print("MANIFEST_PROBE files=\(report.files) titled=\(report.titled) must_fix=\(report.mustFix)")

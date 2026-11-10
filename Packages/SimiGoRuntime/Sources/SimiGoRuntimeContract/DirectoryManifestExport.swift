@@ -69,19 +69,27 @@ public extension ESISDatabase {
         guard let enumerator = FileManager.default.enumerator(atPath: root.path) else { return [] }
         var out: [(String, URL)] = []
         for case let relative as String in enumerator {
+            let url = root.appendingPathComponent(relative)
+            let values = try? url.resourceValues(
+                forKeys: [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey])
             let name = (relative as NSString).lastPathComponent
+            let isDirectory = values?.isDirectory == true
+            let depth = relative.components(separatedBy: "/").count - 1
             // Office 锁文件、系统垃圾、隐藏目录（.git 之类）都不算文件，也不必往下走。
+            // 注意：skipDescendants 跳的是"当前所在目录的剩余部分"，对文件调用会把同级后面
+            // 的文件一起跳掉——这在本机 1332 个文件的真实目录上一次漏了 854 个，所以只对目录调。
             if name.hasPrefix(".") || name.hasPrefix("~$") || name == "Thumbs.db" {
-                enumerator.skipDescendants()
+                if isDirectory { enumerator.skipDescendants() }
                 continue
             }
-            if relative.components(separatedBy: "/").count - 1 > maxDepth {
-                enumerator.skipDescendants()
+            if isDirectory {
+                if depth >= maxDepth { enumerator.skipDescendants() }
+                continue
+            }
+            if depth > maxDepth {
                 continue
             }
             if relative == outputRelative { continue }
-            let url = root.appendingPathComponent(relative)
-            let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
             guard values?.isRegularFile == true, values?.isSymbolicLink != true else { continue }
             out.append((relative, url))
         }
