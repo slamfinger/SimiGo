@@ -447,11 +447,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 retaining: self.state.withLock { Set($0.sessions.keys) })
 
             // Resolved once at load time (not per request): the IS producer
-            // identity is a pure re-derivation from the snapshot on disk.
+            // identity is a pure re-derivation from the snapshot on disk. One
+            // resolution feeds both values, so they cannot describe different
+            // files (see `ProducerIdentity.identities`).
+            let informationSeeds = ProducerIdentity.identities(fromPath: info.path)
             let informationProducer = InformationTurnProducer(
-                modelIdentity: ProducerIdentity.canonicalModelIdentity(
-                    fromPath: info.path),
-                identity: ProducerIdentity.identity(fromPath: info.path))
+                modelIdentity: informationSeeds.model,
+                identity: informationSeeds.producer)
 
             let server = await MainActor.run {
                 HTTPServer(

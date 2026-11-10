@@ -139,11 +139,34 @@ class ManifestTest(unittest.TestCase):
         code, text = self.run_check()
         self.assertEqual(0, code, text)
         inputs, _ = self.repo.documents()
-        self.assertEqual({"tracked": 10, "research_not_declared": 1,
-                          "non_research_candidates": 9, "declared": 3,
-                          "excluded": 6}, inputs["accounting"])
         self.assertIs(False, inputs["directory_globs_used"])
         self.assertIn("no directory glob", text)
+        self.assertIn("3 input(s)", text)
+        self.assertNotIn(manifest.REMEDY_PREFIX, text)
+
+    def test_the_documents_commit_no_count_of_the_tree(self) -> None:
+        # The incident this prevents: two PRs that each added a file were merged, git
+        # took the union of the two file lists (correct) and one side of every counter
+        # (silently stale), and `main` failed its own check while both PRs had been
+        # green. Paths union; counts cannot. So the counts live in `check`'s output.
+        inputs, exclusions = self.repo.documents()
+        for doc in (inputs, exclusions):
+            self.assertNotIn("accounting", doc)
+        code, text = self.run_check()
+        self.assertEqual(0, code, text)
+        self.assertIn("9 candidate(s) accounted", text)
+
+    def test_staleness_names_the_command_that_fixes_it(self) -> None:
+        # The trap this closes: adding a file makes the register stale, and the failure
+        # used to read like a defect in the contributor's change. It is a one-command
+        # regeneration, and the log has to say so.
+        self.repo.write("docs/added.md", "a file the documents never saw\n")
+        self.repo.commit()
+        code, text = self.run_check()
+        self.assertEqual(1, code, text)
+        self.assertIn("in neither document", text)
+        self.assertIn(manifest.REMEDY_PREFIX, text)
+        self.assertIn("release_manifest.py derive", text)
 
     def test_records_carry_every_registered_field(self) -> None:
         _, exclusions = self.repo.documents()
@@ -157,7 +180,7 @@ class ManifestTest(unittest.TestCase):
         listed = ({e["path"] for e in inputs["sources"]}
                   | {r["path"] for r in exclusions["excluded"]})
         self.assertNotIn("research/evidence.md", listed)
-        self.assertEqual(1, inputs["accounting"]["research_not_declared"])
+        self.assertEqual(1, manifest.classify(self.root)[2]["research_not_declared"])
 
     def test_rule_carriers_keep_their_recorded_reasons(self) -> None:
         for rel, reason in manifest.RULE_CARRIER_REASONS.items():
@@ -199,7 +222,7 @@ class ManifestTest(unittest.TestCase):
         code, text = self.run_check()
         self.assertEqual(0, code, text)
         inputs, _ = self.repo.documents()
-        self.assertEqual(5, inputs["accounting"]["declared"])
+        self.assertEqual(5, manifest.classify(self.root)[2]["declared"])
         declared = {e["path"] for e in inputs["sources"]}
         self.assertIn(manifest.INPUTS_FILE, declared)
         self.assertIn(manifest.EXCLUSIONS_FILE, declared)
@@ -302,12 +325,12 @@ class ManifestTest(unittest.TestCase):
         errors = self.check_errors()
         self.assertTrue(any("dynamic provenance field" in e for e in errors), errors)
 
-    def test_a_provenance_field_hidden_in_accounting_is_refused(self) -> None:
+    def test_a_provenance_field_hidden_in_a_record_is_refused(self) -> None:
         # A self-reference smuggled one level down is still a self-reference: the
-        # document would claim to describe a commit while looking like a count.
-        path = self.root / manifest.INPUTS_FILE
+        # record would claim to describe the commit that wrote it.
+        path = self.root / manifest.EXCLUSIONS_FILE
         doc = json.loads(path.read_text(encoding="utf-8"))
-        doc["accounting"]["source_commit"] = "0" * 40
+        doc["excluded"][0]["repository_privacy_scan"]["source_commit"] = "0" * 40
         path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n",
                         encoding="utf-8")
         errors = self.check_errors()

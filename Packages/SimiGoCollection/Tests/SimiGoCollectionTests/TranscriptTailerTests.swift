@@ -745,8 +745,10 @@ final class TranscriptTailerTests: XCTestCase {
         }
         XCTAssertThrowsError(try store.save(CursorState(
             initializedAt: Date(timeIntervalSince1970: 0), cursors: cursors))) { error in
+                // The claim is "rejected before encoding", not the wording of the
+                // refusal: the same bound now also covers scanner resume watermarks.
                 XCTAssertTrue(
-                    String(describing: error).contains("maximum tracked cursor count"),
+                    String(describing: error).contains("exceeds the maximum tracked cursor"),
                     "state writes must reject excess cursor entries before encoding: \(error)")
             }
         XCTAssertFalse(FileManager.default.fileExists(atPath: store.fileURL.path))
@@ -1147,6 +1149,125 @@ final class TranscriptTailerTests: XCTestCase {
             "the chunk is read whole before its newline is found; readBytes must say so")
     }
 
+    /// A line past the hard limit is dropped, not swallowed whole: the commit
+    /// point is the scan frontier, so the file keeps moving and the records
+    /// behind the dropped line are still collected.
+    func testLinePastTheHardLimitAdvancesAndLaterRecordsAreCollected() throws {
+        let root = try makeRoot()
+        let file = projectFile(in: root, session: "over-limit")
+        let maxLineBytes = 32 * 1024
+        let budget = 4 * 1024
+        try Data(repeating: 0x78, count: 100 * 1024).write(to: file)
+        try Fixture.appendLine("", to: file)  // ends the oversized physical line
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "u-after", answerUUID: "a-after", messageID: "m-after",
+                prompt: "after the giant line", answer: "collected",
+                nextAnchor: "n-after"),
+            to: file, append: true)
+        let size = Int64(try Data(contentsOf: file).count)
+
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxBytesPerPoll: budget,
+            maxLineBytes: maxLineBytes)
+
+        var polls = 0
+        var answers: [String] = []
+        var dropped = 0
+        while tailer.cursorState.cursors.values.first?.offset != size {
+            polls += 1
+            XCTAssertLessThan(
+                polls, 200, "the file never advanced past the oversized line")
+            let result = poll(tailer)
+            XCTAssertLessThanOrEqual(
+                result.report.readBytes, Int64(budget),
+                "poll \(polls) read past the poll budget")
+            dropped += Fixture.failures(result.events).filter {
+                $0.detail.contains("line exceeds")
+            }.count
+            answers += result.events.compactMap {
+                if case .turn(let turn) = $0 { return turn.answerText }
+                return nil
+            }
+        }
+        XCTAssertGreaterThan(dropped, 0, "the over-long line must be dropped and reported")
+        XCTAssertEqual(
+            answers, ["collected"],
+            "the turn behind the dropped line must be collected exactly once")
+    }
+
+    /// After the hard-limit drop the cursor is mid-line on purpose. A restart
+    /// must resume there: replaying from the line start would rescan the same
+    /// dropped prefix and land back on the same frontier, so the file would
+    /// never move again.
+    func testRestartAfterTheHardLimitResumesAtTheDropPoint() throws {
+        let root = try makeRoot()
+        let file = projectFile(in: root, session: "restart-over-limit")
+        let maxLineBytes = 32 * 1024
+        let budget = 4 * 1024
+        try Data(repeating: 0x78, count: maxLineBytes + 8 * 1024).write(to: file)
+        try Fixture.appendLine("", to: file)
+
+        let first = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxBytesPerPoll: budget,
+            maxLineBytes: maxLineBytes)
+        // Drive to the hard-limit drop: the first parse failure is the drop,
+        // because no newline exists anywhere before the limit.
+        var polls = 0
+        var resets = 0
+        var droppedState: CursorState?
+        while droppedState == nil {
+            polls += 1
+            XCTAssertLessThan(polls, 50, "the hard-limit drop never happened")
+            let result = poll(first)
+            resets += result.report.resetFiles
+            if result.report.parseFailures > 0 { droppedState = first.cursorState }
+        }
+        XCTAssertEqual(resets, 0, "a dropped line must not look like a replaced file")
+        let dropped = try XCTUnwrap(try XCTUnwrap(droppedState).cursors.values.first)
+        XCTAssertGreaterThanOrEqual(
+            dropped.offset, Int64(maxLineBytes),
+            "the drop must commit at the scanned frontier, not one window past the line start")
+        XCTAssertEqual(
+            dropped.resumeOffset, dropped.offset,
+            "the resume floor must move with the drop, not stay on the line start")
+
+        let restart = TranscriptTailer(
+            scanRoot: root, state: droppedState, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxBytesPerPoll: budget,
+            maxLineBytes: maxLineBytes)
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "u-restart", answerUUID: "a-restart", messageID: "m-restart",
+                prompt: "after restart", answer: "survived", nextAnchor: "n-restart"),
+            to: file, append: true)
+        let size = Int64(try Data(contentsOf: file).count)
+
+        var read: Int64 = 0
+        var answers: [String] = []
+        while (restart.cursorState.cursors.values.first?.offset ?? -1) != size {
+            polls += 1
+            XCTAssertLessThan(polls, 400, "the restarted tailer must reach the end")
+            let result = poll(restart)
+            read += result.report.readBytes
+            resets += result.report.resetFiles
+            answers += result.events.compactMap {
+                if case .turn(let turn) = $0 { return turn.answerText }
+                return nil
+            }
+        }
+        XCTAssertEqual(
+            resets, 0, "resuming at the drop point must not read as a replaced file")
+        XCTAssertLessThan(
+            read, Int64(maxLineBytes),
+            "a restart must continue at the drop point, not rescan the dropped prefix")
+        XCTAssertEqual(
+            answers, ["survived"],
+            "the record appended after a restart must be collected once")
+    }
+
     /// A scan position belongs to the file identity that produced it. Replacing
     /// the file at the same path must drop it: otherwise the next append resumes
     /// inside a prefix that no longer exists and the new content is never read.
@@ -1417,6 +1538,207 @@ final class TranscriptTailerTests: XCTestCase {
         XCTAssertLessThanOrEqual(
             polls, 5,
             "the resume point must advance by more than one file per poll")
+    }
+
+    /// The root listing needs a resume point of its own. Without one, a walk
+    /// that stops at the entry budget starts at the first project again on
+    /// every poll and charges it again, so a root with more projects than one
+    /// budget covers never reaches the projects behind the wall.
+    func testRootResumeWatermarkAdvancesAcrossProjects() throws {
+        let projects = 5
+        let root = try makeRoot()
+        for index in 0..<projects {
+            let directory = root.appendingPathComponent(
+                "project-\(index)", isDirectory: true)
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true)
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "u-\(index)", answerUUID: "a-\(index)",
+                    messageID: "m-\(index)", nextAnchor: "n-\(index)"),
+                to: directory.appendingPathComponent("main.jsonl"))
+        }
+
+        // Root(1) + one file(2) + the next project(3): the following charge
+        // trips the budget, so each poll can cover at most one project's file.
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxVisitedEntries: 3)
+
+        var polls = 0
+        while tailer.cursorState.cursors.count < projects {
+            polls += 1
+            XCTAssertLessThan(
+                polls, 20, "the root walk never reached the later projects")
+            let result = poll(tailer)
+            XCTAssertTrue(
+                result.report.scanComplete || !result.report.errors.isEmpty,
+                "a partial walk must say why it stopped: \(result.report.errors)")
+        }
+        XCTAssertEqual(tailer.cursorState.cursors.count, projects)
+
+        // The walk finishes and still keeps the cursors of projects it skipped
+        // on the way: a skipped directory was seen, so nothing beneath it was
+        // deleted.
+        var completes = 0
+        while completes < 20 {
+            completes += 1
+            if poll(tailer).report.scanComplete { break }
+        }
+        XCTAssertLessThan(completes, 20, "the root walk must reach a complete scan")
+        XCTAssertEqual(
+            tailer.cursorState.cursors.count, projects,
+            "a complete walk retired the cursors of projects its watermark skipped")
+    }
+
+    /// Reconstructing a tailer after every partial poll must still advance
+    /// beyond the first project; scanner watermarks are part of CursorState.
+    func testRootResumeWatermarkSurvivesTailerRestart() throws {
+        let projects = 5
+        let root = try makeRoot()
+        for index in 0..<projects {
+            let directory = root.appendingPathComponent(
+                "project-\(index)", isDirectory: true)
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true)
+            try Fixture.writeLines(
+                Fixture.turnLines(
+                    anchor: "restart-u-\(index)", answerUUID: "restart-a-\(index)",
+                    messageID: "restart-m-\(index)", nextAnchor: "restart-n-\(index)"),
+                to: directory.appendingPathComponent("main.jsonl"))
+        }
+
+        let now = Date(timeIntervalSinceNow: -3600)
+        var persistedState: CursorState?
+        var polls = 0
+        while (persistedState?.cursors.count ?? 0) < projects {
+            polls += 1
+            XCTAssertLessThan(polls, 20, "a restarted root walk starved later projects")
+            let tailer = TranscriptTailer(
+                scanRoot: root, state: persistedState, now: now,
+                baselinePolicy: .readExisting, maxVisitedEntries: 3)
+            let result = poll(tailer)
+            XCTAssertTrue(
+                result.report.scanComplete || !result.report.errors.isEmpty
+                    || result.report.stateChanged,
+                "a partial walk must persist its resume position")
+            let encoded = try JSONEncoder().encode(tailer.cursorState)
+            persistedState = try JSONDecoder().decode(CursorState.self, from: encoded)
+        }
+        XCTAssertEqual(persistedState?.cursors.count, projects)
+    }
+
+    /// Empty-directory progress must trigger a durable cursor commit even
+    /// though the poll produced no candidate events or file cursors.
+    func testWatermarkOnlyProgressMarksCursorStateChanged() throws {
+        let root = try makeRoot()
+        for index in 0..<6 {
+            try FileManager.default.createDirectory(
+                at: root.appendingPathComponent("empty-\(index)", isDirectory: true),
+                withIntermediateDirectories: false)
+        }
+        let state = CursorState(
+            initializedAt: Date(timeIntervalSinceNow: -3600),
+            policy: BaselinePolicy.readExisting.rawValue)
+        let tailer = TranscriptTailer(
+            scanRoot: root, state: state,
+            baselinePolicy: .readExisting, maxVisitedEntries: 2)
+
+        let result = poll(tailer)
+        XCTAssertTrue(result.events.isEmpty)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertTrue(result.report.stateChanged)
+        XCTAssertTrue(
+            tailer.cursorState.scannerRootResumeWatermark != nil
+                || !(tailer.cursorState.scannerResumeWatermarks ?? [:]).isEmpty)
+    }
+
+    func testScanRootReplacementAtSamePathFailsClosed() throws {
+        try Fixture.writeLines(Fixture.turnLines(), to: mainFile())
+        let firstTailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting)
+        let first = poll(firstTailer)
+        XCTAssertTrue(first.report.scanComplete, "the original root must be scanned completely")
+        let savedState = firstTailer.cursorState
+        XCTAssertNotNil(savedState.scanRootIdentity, "the first safe scan must bind root identity")
+
+        // Keep the original directory alive so the replacement cannot reuse its
+        // inode, then put a different directory at exactly the same pathname.
+        let backup = root.deletingLastPathComponent().appendingPathComponent(
+            "qoder-tailer-original-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.moveItem(at: root, to: backup)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.moveItem(at: backup, to: root)
+        }
+        try FileManager.default.createDirectory(
+            at: project, withIntermediateDirectories: true)
+        try Fixture.writeLines(
+            Fixture.turnLines(
+                anchor: "replacement-u", answerUUID: "replacement-a",
+                messageID: "replacement-m", nextAnchor: "replacement-n"),
+            to: mainFile())
+
+        let restarted = TranscriptTailer(
+            scanRoot: root, state: savedState, baselinePolicy: .readExisting)
+        let result = poll(restarted)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertTrue(
+            result.report.errors.contains { $0.contains("scan root identity mismatch") },
+            "a same-path directory replacement must be rejected: \(result.report.errors)")
+        XCTAssertTrue(result.events.isEmpty, "no cursor may be applied to the replacement root")
+        XCTAssertEqual(restarted.cursorState, savedState)
+    }
+
+    func testLegacyCursorFromAnotherRootCannotBeBoundToConfiguredRoot() throws {
+        let foreignPath = root.deletingLastPathComponent()
+            .appendingPathComponent("foreign-root", isDirectory: true)
+            .appendingPathComponent("project/session.jsonl").path
+        let cursor = FileCursor(
+            path: foreignPath, projectID: "project", sessionID: "session",
+            isSubagent: false, inode: 1, offset: 0, segmentLines: 0,
+            fingerprint: "legacy", updatedAt: Date())
+        let legacy = CursorState(
+            initializedAt: Date(timeIntervalSinceNow: -3600),
+            cursors: [foreignPath: cursor],
+            policy: BaselinePolicy.readExisting.rawValue)
+        let tailer = TranscriptTailer(
+            scanRoot: root, state: legacy, baselinePolicy: .readExisting)
+
+        let result = poll(tailer)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertTrue(result.report.errors.contains {
+            $0.contains("legacy cursor paths do not belong to configured scan root")
+        })
+        XCTAssertNil(tailer.cursorState.scanRootIdentity)
+        XCTAssertEqual(tailer.cursorState, legacy)
+    }
+
+    func testLegacyWatermarksWithoutRootIdentityAreRefused() throws {
+        let legacy = CursorState(
+            initializedAt: Date(timeIntervalSinceNow: -3600),
+            scannerRootResumeWatermark: "project-1")
+        let tailer = TranscriptTailer(
+            scanRoot: root, state: legacy, baselinePolicy: .readExisting)
+
+        let result = poll(tailer)
+        XCTAssertFalse(result.report.scanComplete)
+        XCTAssertTrue(result.report.errors.contains {
+            $0.contains("legacy scanner watermarks lack a scan-root identity")
+        })
+        XCTAssertNil(tailer.cursorState.scanRootIdentity)
+        XCTAssertEqual(tailer.cursorState, legacy)
+    }
+
+    /// A cursor written before scanner watermarks existed remains readable.
+    func testCursorStateDecodesWithoutScannerWatermarks() throws {
+        let legacy = Data(#"{"initializedAt":0,"cursors":{},"policy":"read_existing"}"#.utf8)
+        let state = try JSONDecoder().decode(CursorState.self, from: legacy)
+        XCTAssertTrue(state.cursors.isEmpty)
+        XCTAssertNil(state.scanRootIdentity)
+        XCTAssertNil(state.scannerResumeWatermarks)
+        XCTAssertNil(state.scannerRootResumeWatermark)
     }
 
     /// A watermark naming an entry that no longer exists must not skip the

@@ -871,12 +871,12 @@ public final class Service: ObservableObject {
         }
 
         guard !path.isEmpty else {
-            status = "❌ 路径为空"
+            await fallBackToInformationSpaceHost(after: "路径为空")
             return
         }
 
         guard FileManager.default.fileExists(atPath: path) else {
-            status = "❌ 不存在"
+            await fallBackToInformationSpaceHost(after: "模型文件不存在：\(path)")
             return
         }
 
@@ -898,7 +898,7 @@ public final class Service: ObservableObject {
         if info.kind != expectedKind {
             let message = "❌ 模型类型不匹配：选择的是 \(backendSelection.displayName)，但模型是 \(info.backendName)"
             Self.log(message, level: .error)
-            status = message
+            await fallBackToInformationSpaceHost(after: "模型类型不匹配（\(info.backendName)）")
             return
         }
 
@@ -918,7 +918,7 @@ public final class Service: ObservableObject {
             guard FileManager.default.fileExists(atPath: backendConfig.executable) else {
                 let errorMessage = "❌ 未找到 llama-server 可执行文件"
                 Self.log(errorMessage, level: .error)
-                status = errorMessage
+                await fallBackToInformationSpaceHost(after: "未找到 llama-server 可执行文件")
                 return
             }
 
@@ -966,6 +966,26 @@ public final class Service: ObservableObject {
             runtimeState.withLock {
                 $0 = nil
             }
+
+            // 模型没起来不等于产品不该服务：`/mcp` 与 IS 读写接口由信息空间宿主
+            // 自己持有，不依赖模型加载成功。实测 2026-11-10：llama.cpp 启动失败
+            // （exit 6 → 服务启动超时）之后，端口 8000 上再无监听者，MCP 整个消失，
+            // 直到 App 重启才回来——因为 internalStart 一开始就 stop() 掉了宿主，
+            // 失败路径却没有把它放回去。
+            await fallBackToInformationSpaceHost(after: error.localizedDescription)
+        }
+    }
+
+    /// 把同一端口交还无模型的信息空间宿主。与 `stopModelService()` 是同一条契约：
+    /// 模型缺席（用户停下、或启动失败）时，MCP 与 IS 读写接口都要继续可用。
+    /// 状态里保留失败原因，免得"运行中"掩盖"模型没起来"。
+    private func fallBackToInformationSpaceHost(after reason: String) async {
+        Self.log("↩️ 模型未启动，回落到信息空间服务：\(reason)", level: .warning)
+        await internalStartInformationSpaceService()
+        if hostMode == .informationSpace {
+            status = "● 运行中 (信息空间服务) — 模型启动失败：\(reason)"
+        } else {
+            status = "❌ \(reason)"
         }
     }
 
