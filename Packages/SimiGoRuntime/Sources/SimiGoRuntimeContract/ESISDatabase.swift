@@ -82,6 +82,9 @@ public final class ESISDatabase {
     private let handle: OpaquePointer
     private let url: URL
 
+    /// One-shot mutation hook for the deterministic same-inode read regression.
+    var beforeRootFileVerificationForTesting: (() -> Void)?
+
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
     private static func canonicalLeafPath(for url: URL) -> String {
@@ -3526,13 +3529,19 @@ try bind(externalStmt, 1, rootID)
         let initialSize = Int64(initial.st_size)
 
         func verifyUnchanged() throws {
+            if let hook = beforeRootFileVerificationForTesting {
+                beforeRootFileVerificationForTesting = nil
+                hook()
+            }
             var finalInfo = stat()
             guard Darwin.fstat(fileFD, &finalInfo) == 0,
                   finalInfo.st_dev == initial.st_dev,
                   finalInfo.st_ino == initial.st_ino,
                   finalInfo.st_size == initial.st_size,
                   finalInfo.st_mtimespec.tv_sec == initial.st_mtimespec.tv_sec,
-                  finalInfo.st_mtimespec.tv_nsec == initial.st_mtimespec.tv_nsec else {
+                  finalInfo.st_mtimespec.tv_nsec == initial.st_mtimespec.tv_nsec,
+                  finalInfo.st_ctimespec.tv_sec == initial.st_ctimespec.tv_sec,
+                  finalInfo.st_ctimespec.tv_nsec == initial.st_ctimespec.tv_nsec else {
                 throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
             }
         }

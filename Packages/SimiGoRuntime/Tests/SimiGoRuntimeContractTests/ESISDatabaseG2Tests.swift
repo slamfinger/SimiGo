@@ -117,6 +117,76 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.validSettlementCount(), 1)
     }
 
+    func testRootReadRejectsSameInodeRewriteWithRestoredMtime() throws {
+        let (databaseURL, db) = try open("root-read-ctime")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-root-ctime-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: rootURL) }
+        defer { db.close(); cleanup(databaseURL) }
+
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        let original = Data(repeating: 0x41, count: 128 * 1024)
+        let replacement = Data(repeating: 0x42, count: original.count)
+        try original.write(to: fileURL)
+
+        var before = stat()
+        XCTAssertEqual(fileURL.path.withCString { Darwin.stat($0, &before) }, 0)
+        var didMutate = false
+        var restoredMTime = false
+        var changedCTime = false
+        var mutationError: Error?
+        db.beforeRootFileVerificationForTesting = {
+            didMutate = true
+            do {
+                let writer = try FileHandle(forWritingTo: fileURL)
+                try writer.seek(toOffset: 0)
+                try writer.write(contentsOf: replacement)
+                try writer.close()
+
+                var times = [
+                    timespec(tv_sec: before.st_atimespec.tv_sec,
+                             tv_nsec: before.st_atimespec.tv_nsec),
+                    timespec(tv_sec: before.st_mtimespec.tv_sec,
+                             tv_nsec: before.st_mtimespec.tv_nsec),
+                ]
+                let restoreResult = times.withUnsafeBufferPointer { buffer in
+                    fileURL.path.withCString {
+                        Darwin.utimensat(AT_FDCWD, $0, buffer.baseAddress, 0)
+                    }
+                }
+                guard restoreResult == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+
+                var after = stat()
+                guard fileURL.path.withCString({ Darwin.stat($0, &after) }) == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+                restoredMTime =
+                    before.st_mtimespec.tv_sec == after.st_mtimespec.tv_sec
+                    && before.st_mtimespec.tv_nsec == after.st_mtimespec.tv_nsec
+                changedCTime =
+                    before.st_ctimespec.tv_sec != after.st_ctimespec.tv_sec
+                    || before.st_ctimespec.tv_nsec != after.st_ctimespec.tv_nsec
+            } catch {
+                mutationError = error
+            }
+        }
+
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "root-read-ctime", rootURL: rootURL,
+            fileByteCap: 256 * 1024, maxDepth: 1))
+        XCTAssertTrue(didMutate)
+        XCTAssertNil(mutationError)
+        XCTAssertTrue(restoredMTime, "the probe must restore the original mtime")
+        XCTAssertTrue(changedCTime, "the same inode rewrite must change ctime")
+        XCTAssertNil(db.beforeRootFileVerificationForTesting)
+        XCTAssertEqual(try db.count("external_files"), 0)
+        XCTAssertEqual(try db.count("file_contents"), 0)
+    }
+
     // MARK: - Local invalidation preserves unrelated valid results
 
     func testG2LocalInvalidationOnlyAffectsClosurePreservesUnrelated() throws {
