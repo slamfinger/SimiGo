@@ -1080,6 +1080,10 @@
       "output": "SimiGoTests/EnvBootstrapEntryTests.swift"
     },
     {
+      "path": "SimiGoTests/EnvManagerInstallTests.swift",
+      "output": "SimiGoTests/EnvManagerInstallTests.swift"
+    },
+    {
       "path": "SimiGoTests/ExecutionControllingTests.swift",
       "output": "SimiGoTests/ExecutionControllingTests.swift"
     },
