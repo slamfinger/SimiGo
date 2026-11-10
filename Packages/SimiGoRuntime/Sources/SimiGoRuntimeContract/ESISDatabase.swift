@@ -3557,6 +3557,10 @@ try bind(externalStmt, 1, rootID)
         func verifyUnchanged(
             recheck readBytes: Data? = nil,
             windowStart: off_t = 0) throws {
+            // 挂牌（过渡措施，非契约）：本校验只在「结算仍要读盘」时成立——它守的是
+            // 这次 read 的字节没被并发改写，不回答「这条值现在还可不可信」。等结算
+            // 不再读盘（内容进对象库、依赖按内容判同）时，verifyUnchanged 与
+            // rereadWindow 一并删除。见 #147。
             if let hook = beforeRootFileVerificationForTesting {
                 beforeRootFileVerificationForTesting = nil
                 hook()
