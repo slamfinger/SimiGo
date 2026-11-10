@@ -3,10 +3,10 @@
   "rules": "release-manifest-2026-11-01.2",
   "release_branch": "v2.2.x",
   "accounting": {
-    "tracked": 660,
+    "tracked": 698,
     "research_not_declared": 0,
-    "non_research_candidates": 660,
-    "declared": 602,
+    "non_research_candidates": 698,
+    "declared": 640,
     "excluded": 58
   },
   "directory_globs_used": false,
@@ -1308,6 +1308,10 @@
       "output": "SimiGoTests/RuntimeTransitionRuleTests.swift"
     },
     {
+      "path": "SimiGoTests/ServiceHostFallbackTests.swift",
+      "output": "SimiGoTests/ServiceHostFallbackTests.swift"
+    },
+    {
       "path": "SimiGoTests/SessionAdoptionE2ETests.swift",
       "output": "SimiGoTests/SessionAdoptionE2ETests.swift"
     },
@@ -1630,6 +1634,150 @@
     {
       "path": "docs/experiments/C2_SESSION_READINESS_MATRIX_20260922.md",
       "output": "docs/experiments/C2_SESSION_READINESS_MATRIX_20260922.md"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/.gitignore",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/.gitignore"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/README.md",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/README.md"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/global_load_ledger.jsonl",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/global_load_ledger.jsonl"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/ledger.jsonl",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/ledger.jsonl"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/manifest.json",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/manifest.json"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/server-s1.log",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/server-s1.log"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/server-s2.log",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/server-s2.log"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/summary.json",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/carrier/summary.json"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/global_load_ledger.jsonl",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/global_load_ledger.jsonl"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/ledger.jsonl",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/ledger.jsonl"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/manifest.json",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/manifest.json"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/server-s3.log",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/server-s3.log"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/summary.json",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/intake/summary.json"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/ledger-run-b.jsonl",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/ledger-run-b.jsonl"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/ledger-run-product-20261110.jsonl",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/ledgers/ledger-run-product-20261110.jsonl"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFBranchContinuityRealModelE2ETests.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFBranchContinuityRealModelE2ETests.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFBranchLedgerTests.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFBranchLedgerTests.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFContinuationD6InvalidationTests.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFContinuationD6InvalidationTests.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFContinuationE1RealModelE2ETests.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFContinuationE1RealModelE2ETests.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFContinuationE2CrossProcessTests.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFContinuationE2CrossProcessTests.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFContinuationESISTests.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/GGUFContinuationESISTests.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/README.md",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/pending-tests/README.md"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/records/EXPERIMENT_CARRIER_INDEPENDENCE_V0.1_20261110.md",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/records/EXPERIMENT_CARRIER_INDEPENDENCE_V0.1_20261110.md"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/records/EXPERIMENT_E1E2_PRODUCT_PATH_V0.1_20261110.md",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/records/EXPERIMENT_E1E2_PRODUCT_PATH_V0.1_20261110.md"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/records/EXPERIMENT_INTAKE_TRIALS_V0.1_20261110.md",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/records/EXPERIMENT_INTAKE_TRIALS_V0.1_20261110.md"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/records/READINGS_GRAPH_AND_ANCHORS_20261110.md",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/records/READINGS_GRAPH_AND_ANCHORS_20261110.md"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/baseline_driver.py",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/baseline_driver.py"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/carrier_driver.py",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/carrier_driver.py"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/contract_cli.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/contract_cli.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/contract_cli_v2.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/contract_cli_v2.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/intake_driver.py",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/baseline/intake_driver.py"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/compose_probe.py",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/compose_probe.py"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/compose_probe_product.py",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/compose_probe_product.py"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/product_rig/Package.resolved",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/product_rig/Package.resolved"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/product_rig/Package.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/product_rig/Package.swift"
+    },
+    {
+      "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/product_rig/Sources/turn-cli/main.swift",
+      "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/rig/compose_probe/product_rig/Sources/turn-cli/main.swift"
     },
     {
       "path": "docs/experiments/EVOLUTION_TRACK.md",
@@ -2118,6 +2266,10 @@
     {
       "path": "docs/releases/README.md",
       "output": "docs/releases/README.md"
+    },
+    {
+      "path": "docs/releases/RELEASES_ARTIFACTS_MANIFEST.tsv",
+      "output": "docs/releases/RELEASES_ARTIFACTS_MANIFEST.tsv"
     },
     {
       "path": "docs/releases/RELEASE_NOTES_v1.3.md",
