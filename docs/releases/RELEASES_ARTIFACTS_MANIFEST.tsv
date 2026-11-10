@@ -1,0 +1,40 @@
+# SimiGo historical release artifacts manifest
+# generated: 2026-11-10 from releases-inventory.json (sha256 f5b42bbeb9e061a99fdf1a8e6e014ed16c5569d147b88f2912bc8fcaee91355b)
+# releases: 31   assets: 31   total bytes: 815247268 (includes the duplicate below)
+# duplicates: v2.0-beta == v2.0.0-beta.5 (same sha256; the v2.0-beta copy was removed locally on 2026-11-10)
+# local check 2026-11-10: 31/31 DMG sha256 recomputed before dedupe, all equal to digest; 0 missing, 0 mismatched
+# local copies kept: 30 of 31 (789672310 bytes); the v2.0-beta row stays as release history only
+# the binaries themselves are NOT in this repository (see README.md); digests below are the identity record
+#
+tag	asset	bytes	sha256	published	prerelease	downloads	duplicate_of	release_url
+v2.2.3	SimiGo-v2.2.3-33-740484b5.dmg	33609771	sha256:f34b74d784e040297224479ca2ba0aa1c8390a4cfbbadd97111325fb212ec322	2026-10-30	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.2.3
+v2.2.2	SimiGo-v2.2.2-32-2261b1d7.dmg	34620943	sha256:cbad802d97788495823b5f8babf96502693f0382c293152ae1ac322e2ff8aa98	2026-10-30	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v2.2.2
+v2.2.1	SimiGo-v2.2.1-30-f6a4decf.dmg	33169238	sha256:07e62a598d27529949e48ebc7404849432087a288c650b2ce04ea9fc744882b2	2026-10-27	no	3		https://github.com/slamfinger/SimiGo/releases/tag/v2.2.1
+v2.1.14	SimiGo-v2.1.14.dmg	26236697	sha256:68d07fbe43cd50e565c2daa2cdfc5b5325340c52f03155b11b511a6b7fb64262	2026-10-16	no	7		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.14
+v2.1.13	SimiGo-v2.1.13.dmg	26235178	sha256:6533e45f1bf9836b9197c29ea54dd71ea34b40c5ae353569c8251465164486bf	2026-10-16	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.13
+v2.1.12	SimiGo-v2.1.12.dmg	26223283	sha256:3e1bb202ad36f11ba4ac76b9e79257596cf514bc3644fdc98ab949e941bc81f5	2026-10-16	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.12
+v2.1.11	SimiGo-v2.1.11.dmg	26223281	sha256:526dd2b558d99b20be7c1af56932ff2b4c0b26dc0b576d72b3ec998f14aaba01	2026-10-16	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.11
+v2.1.10	SimiGo-v2.1.10.dmg	25989253	sha256:7c96e91d63f496133df1c0bce265dbe6f4c2a31b4858f7f33511995846d7f278	2026-10-16	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.10
+v2.1.9	SimiGo-v2.1.9.dmg	25833723	sha256:9b1c631268a555866807b3a43d6695e77fc0570a72b32aadeefce4695538c0b8	2026-10-15	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.9
+v2.1.8	SimiGo-v2.1.8.dmg	25818791	sha256:a383675a058c1c033e137c751ea128bb5cccfa68cc3875df27574a4513e6626f	2026-10-15	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.8
+v2.1.7	SimiGo-v2.1.7.dmg	25978756	sha256:d389d73789089f2c829c6530a5ee964ca881ebf7cb9f5698dda7bb5bbb8bf3e1	2026-10-15	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.7
+v2.1.6	SimiGo-v2.1.6.dmg	25974703	sha256:8f1fe3910d062ba7afde8ac9ae770a8494d7d03702498c54ec017d2308c71927	2026-10-14	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.6
+v2.1.5	SimiGo-v2.1.5.dmg	25975528	sha256:a93a9c860638830aaf843d5399bd1b1fdb65282cd17b6e877a54592024b55644	2026-10-14	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.5
+v2.1.4	SimiGo-v2.1.4.dmg	25859846	sha256:22fbb67c1b015b37ef9ff256e88a7709c70343a5c7832349057b0c9989847d07	2026-10-14	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.4
+v2.1.3	SimiGo-v2.1.3.dmg	25860063	sha256:618064b0a0070ca2ed230ce9ca42c5e9ec83dfac115e71619270fc5a64c1cc32	2026-10-14	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.3
+v2.1.2	SimiGo-v2.1.2.dmg	25974598	sha256:2cc906dcaf3cbc52f378b109412a1f3d66540c18070fe8de3209d7b1ec6daa2b	2026-10-14	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.2
+v2.1.1	SimiGo-v2.1.1.dmg	25968313	sha256:f7ba3a7d332711caa7eea836bfd2cb81fd58d5d4c60be7d0b24fb8d6f3111bc2	2026-10-14	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.1
+v2.1.0	SimiGo-v2.1.0.dmg	25672254	sha256:c3cf05e82c0970faae826460c39099c448dd3c38362af4c874e6149a35507d6c	2026-10-01	no	4		https://github.com/slamfinger/SimiGo/releases/tag/v2.1.0
+v2.0.0	SimiGo-v2.0.0.dmg	25568348	sha256:3194385bdfd630eabac3040a743dd11457b07b14832434ded57a088deac62486	2026-09-30	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0
+v2.0.0-beta.5	SimiGo-v2.0.0-beta.5.dmg	25574958	sha256:9eb599eba4e4fafb643e5470f434785776330d0174c5c6c62fbd483714530d17	2026-09-29	yes	1		https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0-beta.5
+v2.0.0-beta.4	SimiGo-v2.0.0-beta.4.dmg	26470244	sha256:18a205e18257779814704f23a7bc42b32d7b7df54f43d2683732b9216ea62f0d	2026-09-29	yes	1		https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0-beta.4
+v2.0-beta	SimiGo-v2.0-beta.dmg	25574958	sha256:9eb599eba4e4fafb643e5470f434785776330d0174c5c6c62fbd483714530d17	2026-09-28	no	0	v2.0.0-beta.5	https://github.com/slamfinger/SimiGo/releases/tag/v2.0-beta
+v2.0.0-beta.3	SimiGo-v2.0.0-beta.3.dmg	25462357	sha256:cad73117d31ded7daf91a5e90eca3e27d43c20983cd463027a1d4b66b548268a	2026-09-27	yes	2		https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0-beta.3
+v2.0.0-beta.2	SimiGo-v2.0.0-beta.2.dmg	25467522	sha256:2b23738339b51f087f1a43e11627d210cd15bea5e0864a0379a505bf0cb7a81c	2026-09-26	yes	1		https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0-beta.2
+v1.7	SimiGo-v1.7.dmg	24050253	sha256:109a6bb6ce322ae755ac18704aa547dfa59e44eff0bd8fb2f150ca52eda23c4e	2026-09-20	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v1.7
+v1.6	SimiGo-v1.6.dmg	24151781	sha256:adea761f731687f04f8075d201f5fc2fb5e12910ba16ced4164d8c8588260c5b	2026-09-18	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v1.6
+v1.5	SimiGo-v1.5.dmg	24018938	sha256:5d39f29fbea702077ff9d38614c428f68e69920342b44d72469ccbb84e691445	2026-09-18	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v1.5
+v1.4	SimiGo-v1.4.dmg	24073418	sha256:0bed94a571dadf8e2b0bbef352e294dec3eb02834d882e5e5684e4538ea05026	2026-09-17	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v1.4
+v1.3	SimiGo-v1.3.dmg	24552028	sha256:269bb845d59c5af0392922f67f83de144546d448f975e435f526ddcb4f879724	2026-09-13	no	2		https://github.com/slamfinger/SimiGo/releases/tag/v1.3
+v1.2	SimiGo-v1.2.dmg	24562096	sha256:bbddfabe77ad3c6b84a1ae0e4aa82f40134f493123fe8677c5efb9b421c17d9e	2026-09-11	no	1		https://github.com/slamfinger/SimiGo/releases/tag/v1.2
+v1.1	SimiGo-v1.1.dmg	24496148	sha256:2c38232718bdd6328c00c022fbfc955bb45428b2627aeb9d22ff6d4d4cfb0883	2026-09-11	no	6		https://github.com/slamfinger/SimiGo/releases/tag/v1.1

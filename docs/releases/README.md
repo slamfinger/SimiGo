@@ -21,6 +21,10 @@
 - [v1.6 final baseline](V16_FINAL_BASELINE_20260919.md)
 - [v2.0 Beta Execution State freeze](BETA_RELEASE_FREEZE_EXECUTION_STATE_20260929.md)
 
+## Artifact manifest
+
+本目录**不保存安装包本体**。[RELEASES_ARTIFACTS_MANIFEST.tsv](RELEASES_ARTIFACTS_MANIFEST.tsv) 记录历史 31 个 DMG 的 tag、文件名、字节数与 SHA-256（取自发布时的上游 asset digest），并标注重复产物。上游 release 与 tag 均已不存在，该 manifest 是这些产物的身份记录；DMG 本体只保存在本仓之外的本地归档中。
+
 ## Current distribution status
 
 See the repository-root [README](../../README.md) and [RELEASE.md](../../RELEASE.md). A historical release note does not establish that its artifact is still available, supported, or compatible with current `main`.
