@@ -370,7 +370,8 @@ public final class TurnAccumulator {
                 let nextBytes = turn.retainedTerminalTextBytes - oldBytes + newBytes
                 if nextBytes <= retentionLimits.maxPendingTerminalTextBytes {
                     snapshot.latestTerminal = Terminal(
-                        line: line, timestamp: boundedMetadata(entry.timestamp), stop: message.stopReason,
+                        line: line, timestamp: boundedMetadata(entry.timestamp),
+                        stop: boundedMetadata(message.stopReason),
                         text: message.text, digest: digest,
                         apiError: entry.isAPIMessageError)
                     turn.retainedTerminalTextBytes = nextBytes
@@ -466,8 +467,14 @@ public final class TurnAccumulator {
     }
 
     private func boundedIdentifier(_ value: String) -> String {
-        guard value.utf8.count > retentionLimits.maxIdentifierBytes else { return value }
-        return "oversized:" + SourceDigest.sha256Hex(value)
+        let maximumBytes = retentionLimits.maxIdentifierBytes
+        guard value.utf8.count > maximumBytes else { return value }
+        let digest = SourceDigest.sha256Hex(value)
+        let marker = "oversized:"
+        guard maximumBytes > marker.utf8.count else {
+            return String(digest.prefix(maximumBytes))
+        }
+        return marker + String(digest.prefix(maximumBytes - marker.utf8.count))
     }
 
     private func boundedMetadata(_ value: String?) -> String? {
