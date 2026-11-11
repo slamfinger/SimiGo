@@ -76,3 +76,17 @@ python3 -I tools/baseline/carrier_driver.py --binary <SimiGo 二进制> \
 ```
 
 断言失败即实验失败；`CARRIER-DONE` 前任何 `BASELINE-STOP` 都是硬停。
+
+## 勘误（2026-11-12）
+
+第 4 行的「KV/carrier 绑定类表：schema 中不存在」与结论 2 的「零表」不成立。
+
+- 实验基线 `29217b0` 的 `Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabase.swift:282`
+  已有 `CREATE TABLE settlement_bindings(...)`；`SettlementKVBinding` 以
+  `kv.pool_key` / `kv.cache_fingerprint` 两个名字把摘要写进该表。
+- 当时读到 `{}` 的原因在测量器：`rig/baseline/carrier_driver.py:99 kv_binding_reading()`
+  只枚举表名含 `%kv%` / `%carrier%` 的表，`settlement_bindings` 不匹配，永远读不到。
+- 正确表述是「本装置没有读到 KV 绑定行」，不是「schema 没有这张表」。该实验库未入仓，
+  当日 `settlement_bindings` 里是否真有 `kv.*` 行无法回查；能确定的只有表存在。
+- 原文其余读数（SIGKILL、冷启动、`consumed / model_calls=0`、控制臂 134 chunks）不受影响；
+  「载体在场只能由进程 RSS 与 `state/runtime.json` 观测」这个边界也不变。
