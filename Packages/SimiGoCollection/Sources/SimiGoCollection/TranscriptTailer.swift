@@ -55,6 +55,51 @@ enum TranscriptPathAccess {
         return descriptor
     }
 
+    /// Open a directory beneath the pinned root without following any
+    /// symlink component. The returned descriptor is owned by the caller.
+    static func openDirectory(
+        rootDirectoryFD: Int32, relativePath: String
+    ) throws -> Int32 {
+        let components: [Substring] = relativePath.isEmpty
+            ? [] : relativePath.split(separator: "/", omittingEmptySubsequences: false)
+        guard components.allSatisfy({
+            !$0.isEmpty && $0 != "." && $0 != ".."
+        }) else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(EINVAL))
+        }
+
+        var descriptor = Darwin.dup(rootDirectoryFD)
+        guard descriptor >= 0 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        }
+        for component in components {
+            let next = String(component).withCString {
+                Darwin.openat(
+                    descriptor, $0,
+                    O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+            }
+            guard next >= 0 else {
+                let code = errno
+                Darwin.close(descriptor)
+                throw NSError(domain: NSPOSIXErrorDomain, code: Int(code))
+            }
+            Darwin.close(descriptor)
+            descriptor = next
+        }
+
+        var info = stat()
+        guard Darwin.fstat(descriptor, &info) == 0 else {
+            let code = errno
+            Darwin.close(descriptor)
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(code))
+        }
+        guard (info.st_mode & S_IFMT) == S_IFDIR else {
+            Darwin.close(descriptor)
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(ENOTDIR))
+        }
+        return descriptor
+    }
+
     static func relativePath(_ path: String, under root: URL) throws -> String {
         let rootParts = root.standardizedFileURL.pathComponents
         let pathParts = URL(fileURLWithPath: path).standardizedFileURL.pathComponents
@@ -539,18 +584,29 @@ public struct TranscriptScanner {
     /// nil forever, so there is no "second iteration reads as a complete
     /// scan of an empty directory" shape to trip over.
     private final class DirectoryEntries: IteratorProtocol {
-        /// Set when the directory could not be opened, or when a readdir
-        /// failed mid-stream. Absence is `POSIXError(.ENOENT)`; each layer
-        /// decides whether that is normal for it.
+        /// Set when the descriptor-relative directory could not be opened, or
+        /// when readdir failed mid-stream. Absence is POSIXError(.ENOENT).
         private(set) var error: Error?
 
         private var dirp: UnsafeMutablePointer<DIR>?
         private let directory: URL
 
-        init(_ directory: URL) {
+        init(
+            rootDirectoryFD: Int32, relativePath: String, directory: URL
+        ) {
             self.directory = directory
-            guard let handle = opendir(directory.path) else {
-                error = POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+            let descriptor: Int32
+            do {
+                descriptor = try TranscriptPathAccess.openDirectory(
+                    rootDirectoryFD: rootDirectoryFD, relativePath: relativePath)
+            } catch {
+                self.error = error
+                return
+            }
+            guard let handle = fdopendir(descriptor) else {
+                let code = errno
+                Darwin.close(descriptor)
+                error = POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
                 return
             }
             dirp = handle
@@ -616,7 +672,8 @@ public struct TranscriptScanner {
         }
         rootIdentity = openedRootIdentity
 
-        let projectIterator = DirectoryEntries(root)
+        let projectIterator = DirectoryEntries(
+            rootDirectoryFD: rootDirectoryFD, relativePath: "", directory: root)
         if let openError = projectIterator.error {
             if isNoSuchFileError(openError) { return .absent }
             return .partial(
@@ -665,7 +722,8 @@ public struct TranscriptScanner {
             guard projectValues.isDirectory == true, projectValues.isSymbolicLink != true
             else { continue }
             let projectID = project.lastPathComponent
-            let childIterator = DirectoryEntries(project)
+            let childIterator = DirectoryEntries(
+                rootDirectoryFD: rootDirectoryFD, relativePath: projectID, directory: project)
             if let openError = childIterator.error {
                 errors.append("cannot list \(project.path): \(openError)")
                 continue
@@ -747,7 +805,9 @@ public struct TranscriptScanner {
                               subagentValues.isSymbolicLink != true else {
                             continue
                         }
-                        agentIterator = DirectoryEntries(subagents)
+                        agentIterator = DirectoryEntries(
+                            rootDirectoryFD: rootDirectoryFD,
+                            relativePath: projectID + "/subagents", directory: subagents)
                     } catch {
                         if !isNoSuchFileError(error) {
                             errors.append("cannot list \(subagents.path): \(error)")
