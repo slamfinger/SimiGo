@@ -106,9 +106,6 @@ public final class TurnAccumulator {
 
     private struct Snapshot {
         let messageID: String
-        let firstUUID: String
-        let firstLine: Int64
-        var lastLine: Int64
         var model: String?
         var isSidechain: Bool
         var lastTerminalLine: Int64?
@@ -341,13 +338,11 @@ public final class TurnAccumulator {
                     return events
                 }
                 snapshot = Snapshot(
-                    messageID: messageID, firstUUID: uuid, firstLine: line,
-                    lastLine: line, model: message.model,
+                    messageID: messageID, model: message.model,
                     isSidechain: entry.isSidechain, lastTerminalLine: nil,
                     latestTerminal: nil, firstTerminalDigest: nil,
                     hasConflictingTerminals: false, relation: relation)
             }
-            snapshot.lastLine = line
             snapshot.model = message.model ?? snapshot.model
             snapshot.isSidechain = snapshot.isSidechain || entry.isSidechain
             if isTerminal, snapshot.lastTerminalLine != line {
@@ -639,4 +634,5 @@ public final class TurnAccumulator {
                     firstSegmentLine: turn.anchor.line,
                     lastSegmentLine: final.terminal.line,
                     finalizedBy: boundary)))
-    }}
+    }
+}
