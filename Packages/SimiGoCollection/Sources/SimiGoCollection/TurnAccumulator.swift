@@ -345,6 +345,7 @@ public final class TurnAccumulator {
             }
             snapshot.model = message.model ?? snapshot.model
             snapshot.isSidechain = snapshot.isSidechain || entry.isSidechain
+            snapshot.relation = conservativeRelation(snapshot.relation, relation)
             if isTerminal, snapshot.lastTerminalLine != line {
                 let digest = SourceDigest.sha256Hex(message.text)
                 if let firstDigest = snapshot.firstTerminalDigest {
@@ -467,6 +468,20 @@ public final class TurnAccumulator {
                 return $0.id < $1.id
             }
         nodeOrderHead = 0
+    }
+
+    /// Attribution can only lose evidence as ancestry is evicted. A later
+    /// message that happens to resolve through file order must not upgrade a
+    /// snapshot whose earlier parent chain was already truncated.
+    private func conservativeRelation(
+        _ current: AttributionRelation, _ next: AttributionRelation
+    ) -> AttributionRelation {
+        if current == .parentChain { return next }
+        if next == .parentChain { return current }
+        if current == .fileOrderNoChain || next == .fileOrderNoChain {
+            return .fileOrderNoChain
+        }
+        return .fileOrderAfterCompaction
     }
 
     private func resolveRelation(
