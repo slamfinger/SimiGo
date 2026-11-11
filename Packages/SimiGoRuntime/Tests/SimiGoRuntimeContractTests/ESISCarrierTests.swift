@@ -720,7 +720,7 @@ final class ESISCarrierTests: XCTestCase {
         VALUES('demand:d1 -> file:a', 'aa', 1, 'demand-input', '2026-11-11T00:00:00Z'),
               ('demand:d1 -> file:b', 'bb', 1, 'demand-input', '2026-11-11T00:00:00Z'),
               ('file:a', 'aa', 1, 'content-settle', '2026-11-11T00:00:00Z');
-        DELETE FROM schema_migrations WHERE version IN (29,30);
+        DELETE FROM schema_migrations WHERE version >= 29;
         """
         XCTAssertEqual(sqlite3_exec(handle, seed, nil, nil, &message), SQLITE_OK,
                        message.map { String(cString: $0) } ?? "")
@@ -794,7 +794,7 @@ final class ESISCarrierTests: XCTestCase {
                '\(String(repeating: "a", count: 64))', 'd', '2026-11-11T00:00:00Z'),
               ('s-short', 's', '短问题', 'ok', 'h',
                '\(String(repeating: "b", count: 64))', 'd', '2026-11-11T00:00:01Z');
-        DELETE FROM schema_migrations WHERE version=30;
+        DELETE FROM schema_migrations WHERE version >= 30;
         """
         XCTAssertEqual(sqlite3_exec(handle, seed, nil, nil, &message), SQLITE_OK,
                        message.map { String(cString: $0) } ?? "")
@@ -816,6 +816,83 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(
             try rawText(url, "SELECT query_truncated FROM settlement_summaries WHERE settlement_id='s-short';"),
             "0")
+    }
+
+    /// v31：一轮摘要落一行摘要 + 一组词；同一轮重写是覆盖，不是写第二行；
+    /// 有轮号没摘要的轮次一眼能数出来。
+    func testRecordTurnDigestKeepsOneRowPerTurn() throws {
+        let (url, db) = try open("turn-digest")
+        defer { db.close(); cleanup(url) }
+
+        try rawExec(url, """
+        INSERT INTO chat_turn_ledger(session_id, turn_index, request_id, seen_at)
+            VALUES('s',1,'t1','2026-11-11T00:00:00Z'),
+                  ('s',2,'t2','2026-11-11T00:00:01Z'),
+                  ('s',3,'t3','2026-11-11T00:00:02Z');
+        """)
+
+        let first = try db.recordTurnDigest(
+            sessionID: "s", turnIndex: 1,
+            digest: "  用户问前台为什么没有输出，结论是模型卡在工具调用死循环  ",
+            keywords: "日志分析 工具调用死循环 日志分析", model: "gemma-4-12b")
+        XCTAssertEqual(first.digest, "用户问前台为什么没有输出，结论是模型卡在工具调用死循环")
+        XCTAssertEqual(first.keywords, ["日志分析", "工具调用死循环"], "同一轮重复的词只留一次")
+        XCTAssertEqual(try db.count("keywords"), 2)
+        XCTAssertEqual(try db.count("turn_keywords"), 2)
+
+        // 同一轮重写：覆盖那一行；这一轮只挂当前的词，旧词解绑，词表本身
+        // 全库共用、不删。
+        try db.recordTurnDigest(
+            sessionID: "s", turnIndex: 1,
+            digest: "用户问前台为什么没有输出，结论是工具调用死循环导致上下文膨胀。",
+            keywords: "工具调用死循环 上下文膨胀")
+        XCTAssertEqual(try db.count("turn_digests"), 1)
+        XCTAssertEqual(try db.count("keywords"), 3)
+        XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM turn_keywords;"), "2")
+
+        let reread = try XCTUnwrap(try db.turnDigest(sessionID: "s", turnIndex: 1))
+        XCTAssertEqual(reread.keywords, ["工具调用死循环", "上下文膨胀"])
+        XCTAssertEqual(reread.model, "gemma-4-12b", "重写没带 model 时不把原来的擦掉")
+
+        XCTAssertEqual(try db.turnsWithoutDigest(sessionID: "s"), [2, 3])
+        XCTAssertEqual(try db.recentTurnDigests(sessionID: "s").count, 1)
+        XCTAssertThrowsError(
+            try db.recordTurnDigest(sessionID: "s", turnIndex: 2, digest: "   ", keywords: "x"),
+            "空摘要不许落库")
+    }
+
+    /// v31 迁移：三张辅助表建起来；已有标题的行标成 filename，
+    /// 没标题的行不标（占位标题和真标题要分得开）。
+    func testMigrationThirtyOneCreatesTurnDigestTables() throws {
+        let (url, db) = try open("v31-migrate")
+        defer { cleanup(url) }
+        db.close()
+
+        try rawExec(url, """
+        DROP TABLE IF EXISTS turn_keywords;
+        DROP TABLE IF EXISTS keywords;
+        DROP TABLE IF EXISTS turn_digests;
+        ALTER TABLE external_files DROP COLUMN title_source;
+        INSERT INTO roots(root_id, category, display_name, locator_type, status)
+            VALUES('work','work',NULL,'path','present');
+        INSERT INTO external_files(root_id, relative_path, title, status)
+            VALUES('work','a.md','甲文件','present'),
+                  ('work','b.md',NULL,'present');
+        DELETE FROM schema_migrations WHERE version=31;
+        """)
+
+        let reopened = try ESISDatabase(url: url)
+        defer { reopened.close() }
+        try reopened.runMigrations()
+        XCTAssertEqual(try reopened.schemaVersion(), ESISDatabase.currentSchemaVersion)
+        XCTAssertEqual(try reopened.count("turn_digests"), 0)
+        XCTAssertEqual(try reopened.count("keywords"), 0)
+        XCTAssertEqual(
+            try rawText(url, "SELECT title_source FROM external_files WHERE relative_path='a.md';"),
+            "filename")
+        XCTAssertEqual(
+            try rawText(url, "SELECT COALESCE(title_source,'-') FROM external_files WHERE relative_path='b.md';"),
+            "-", "没标题的行不该被标成 filename")
     }
 
     /// VACUUM 失败必须留痕：写在库同目录的 simigo.maintenance.json，

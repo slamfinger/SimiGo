@@ -1342,6 +1342,66 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 31 {
+            try transaction {
+                // v31：轮次摘要 + 关键字索引，另加 external_files.title_source。
+                //
+                // 三张表都是辅助层：删掉整张表，ES/IS 照常工作——摘要对应的
+                // 问题与回答正文在 is_objects 里，经 chat_messages.content_object_id
+                // 取回，这里不再存第二份指针。v30 刚因为「同一事实存两处」把
+                // query 列截短，这张表不重犯。
+                //
+                // 主键用 (session_id, turn_index) 而不是 answer_message_id：
+                // turn_index 就是 chat_turn_ledger 的编号，「摘要缺哪轮」和
+                // 「轮号缺口」是同一件事，一次对齐即可核。同一轮再摘要一次
+                // 是覆盖（派生内容可重建），不是写第二行。
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS turn_digests(
+                    session_id TEXT NOT NULL,
+                    turn_index INTEGER NOT NULL,
+                    question_message_id INTEGER REFERENCES chat_messages(id) ON DELETE SET NULL,
+                    answer_message_id INTEGER REFERENCES chat_messages(id) ON DELETE SET NULL,
+                    digest TEXT NOT NULL,
+                    keywords TEXT NOT NULL,
+                    model TEXT,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY(session_id, turn_index)
+                );
+                CREATE INDEX IF NOT EXISTS turn_digests_answer
+                    ON turn_digests(answer_message_id);
+                CREATE TABLE IF NOT EXISTS keywords(
+                    keyword_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    term TEXT NOT NULL UNIQUE,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS turn_keywords(
+                    session_id TEXT NOT NULL,
+                    turn_index INTEGER NOT NULL,
+                    keyword_id INTEGER NOT NULL
+                        REFERENCES keywords(keyword_id) ON DELETE CASCADE,
+                    PRIMARY KEY(session_id, turn_index, keyword_id),
+                    FOREIGN KEY(session_id, turn_index)
+                        REFERENCES turn_digests(session_id, turn_index) ON DELETE CASCADE
+                );
+                """)
+                // 标题的来源。人整理文件时文件名常常就是标题，这种行标
+                // 'filename'；标题从文内读出的是 'document'，人改过的是
+                // 'human'。有了这一列，占位标题和真标题才分得开：以后文内
+                // 标题补上了，只换 'filename' 那些行，人定的不被覆盖。
+                //
+                // 目录不另建节点表：人按类别分文件夹，就是先定了粗身份，
+                // 那个身份就在 relative_path 的前缀里，derive 得出来。
+                if try !columnExists("external_files", "title_source") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE external_files ADD COLUMN title_source TEXT;
+                    UPDATE external_files SET title_source='filename'
+                     WHERE title IS NOT NULL AND title<>'';
+                    """)
+                }
+                try recordMigrationRow(31, "simigo-turn-digests-v31")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1379,7 +1439,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 30
+    public static let currentSchemaVersion = 31
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -4799,6 +4859,176 @@ try bind(externalStmt, 1, rootID)
         return rowID
     }
 
+    // MARK: - Turn digests（每轮问了什么、答出什么，供以后直接读）
+
+    /// 一轮会话的精编结果。正文不在这里：问题与回答在 `is_objects` 里，
+    /// 经 `chat_messages.content_object_id` 取回。
+    public struct TurnDigestRecord: Equatable, Sendable {
+        public let sessionID: String
+        public let turnIndex: Int
+        public let questionMessageID: Int64?
+        public let answerMessageID: Int64?
+        public let digest: String
+        public let keywords: [String]
+        public let model: String?
+        public let createdAt: String
+    }
+
+    /// 写一轮摘要，同时把关键字拆进 `keywords` / `turn_keywords`。
+    ///
+    /// 同一轮重复写是覆盖，不是新增：摘要是派生内容（模型再跑一次结果不同），
+    /// 只留一行最新那次，才核得上 `chat_turn_ledger` 的轮号账。
+    @discardableResult
+    public func recordTurnDigest(
+        sessionID: String, turnIndex: Int,
+        questionMessageID: Int64? = nil, answerMessageID: Int64? = nil,
+        digest: String, keywords: String, model: String? = nil,
+        createdAt: Date = Date()
+    ) throws -> TurnDigestRecord {
+        let text = digest.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            throw DatabaseError.sql("recordTurnDigest: digest is empty")
+        }
+        var seen = Set<String>()
+        let terms = keywords.split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+        let now = Self.stamp(createdAt)
+
+        return try transactionResult {
+            try execBinding("""
+            INSERT INTO turn_digests(
+                session_id, turn_index, question_message_id, answer_message_id,
+                digest, keywords, model, created_at)
+            VALUES(?,?,?,?,?,?,?,?)
+            ON CONFLICT(session_id, turn_index) DO UPDATE SET
+                question_message_id=excluded.question_message_id,
+                answer_message_id=excluded.answer_message_id,
+                digest=excluded.digest, keywords=excluded.keywords,
+                model=COALESCE(excluded.model, turn_digests.model),
+                created_at=excluded.created_at;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+                try bind(stmt, 3, questionMessageID)
+                try bind(stmt, 4, answerMessageID)
+                try bind(stmt, 5, text)
+                try bind(stmt, 6, terms.joined(separator: " "))
+                try bind(stmt, 7, model)
+                try bind(stmt, 8, now)
+            }
+            // 这一轮的词换过一次，旧关联就得摘掉：否则改过摘要之后，旧词
+            // 还能把这一轮捞出来。
+            try execBinding("""
+            DELETE FROM turn_keywords WHERE session_id=? AND turn_index=?;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+            }
+            for term in terms {
+                try execBinding("""
+                INSERT INTO keywords(term, created_at) VALUES(?,?)
+                ON CONFLICT(term) DO NOTHING;
+                """) { stmt in
+                    try bind(stmt, 1, term)
+                    try bind(stmt, 2, now)
+                }
+                let keywordID: Int64 = try {
+                    let stmt = try prepare("SELECT keyword_id FROM keywords WHERE term=?;")
+                    defer { sqlite3_finalize(stmt) }
+                    try bind(stmt, 1, term)
+                    guard try stepRowOrDone(stmt) else {
+                        throw DatabaseError.sql("recordTurnDigest: keyword row missing")
+                    }
+                    return sqlite3_column_int64(stmt, 0)
+                }()
+                try execBinding("""
+                INSERT OR IGNORE INTO turn_keywords(session_id, turn_index, keyword_id)
+                VALUES(?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, sessionID)
+                    try bind(stmt, 2, Int64(turnIndex))
+                    try bind(stmt, 3, keywordID)
+                }
+            }
+            // 返回落盘的那一行，而不是入参：覆盖写之后调用方看到的应当
+            // 就是库里现在的内容。
+            guard let stored = try turnDigest(sessionID: sessionID, turnIndex: turnIndex)
+            else { throw DatabaseError.sql("recordTurnDigest: row missing after write") }
+            return stored
+        }
+    }
+
+    private static let turnDigestColumns = """
+    session_id, turn_index, question_message_id, answer_message_id,
+    digest, keywords, model, created_at
+    """
+
+    private func turnDigestRecord(_ stmt: OpaquePointer) -> TurnDigestRecord {
+        TurnDigestRecord(
+            sessionID: sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+            turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+            questionMessageID: sqlite3_column_type(stmt, 2) == SQLITE_NULL
+                ? nil : sqlite3_column_int64(stmt, 2),
+            answerMessageID: sqlite3_column_type(stmt, 3) == SQLITE_NULL
+                ? nil : sqlite3_column_int64(stmt, 3),
+            digest: sqlite3_column_text(stmt, 4).map { String(cString: $0) } ?? "",
+            keywords: (sqlite3_column_text(stmt, 5).map { String(cString: $0) } ?? "")
+                .split(whereSeparator: { $0.isWhitespace }).map(String.init),
+            model: sqlite3_column_text(stmt, 6).map { String(cString: $0) },
+            createdAt: sqlite3_column_text(stmt, 7).map { String(cString: $0) } ?? "")
+    }
+
+    public func turnDigest(sessionID: String, turnIndex: Int) throws -> TurnDigestRecord? {
+        let stmt = try prepare("""
+        SELECT \(Self.turnDigestColumns) FROM turn_digests
+         WHERE session_id=? AND turn_index=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        guard try stepRowOrDone(stmt) else { return nil }
+        return turnDigestRecord(stmt)
+    }
+
+    /// 最近的摘要，`sessionID` 传 nil 就是全库。按写入时间倒序：检索要的是
+    /// 最新那一版说法。
+    public func recentTurnDigests(sessionID: String? = nil, limit: Int = 50)
+        throws -> [TurnDigestRecord]
+    {
+        let stmt = try prepare("""
+        SELECT \(Self.turnDigestColumns) FROM turn_digests
+         WHERE (? IS NULL OR session_id = ?)
+         ORDER BY created_at DESC, session_id DESC, turn_index DESC
+         LIMIT ?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, sessionID)
+        try bind(stmt, 3, Int64(limit))
+        var rows: [TurnDigestRecord] = []
+        while try stepRowOrDone(stmt) { rows.append(turnDigestRecord(stmt)) }
+        return rows
+    }
+
+    /// 轮号有、摘要没有的轮次。和菜单栏的轮号缺口是同一份账：一处漏写，
+    /// 另一处就能看见。
+    public func turnsWithoutDigest(sessionID: String) throws -> [Int] {
+        let stmt = try prepare("""
+        SELECT l.turn_index FROM chat_turn_ledger l
+         WHERE l.session_id=?
+           AND NOT EXISTS (SELECT 1 FROM turn_digests d
+                            WHERE d.session_id=l.session_id
+                              AND d.turn_index=l.turn_index)
+         ORDER BY l.turn_index;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        var rows: [Int] = []
+        while try stepRowOrDone(stmt) { rows.append(Int(sqlite3_column_int64(stmt, 0))) }
+        return rows
+    }
+
     // MARK: - External-provider turns (recorded → verified → retrievable)
 
     /// Record an upstream-API turn's question as soon as its request arrives.
@@ -7006,8 +7236,8 @@ try bind(externalStmt, 1, rootID)
                 let now = Self.stamp(Date())
                 try execBinding("""
                 INSERT INTO external_files(root_id, relative_path, kind, size, modified_at,
-                    content_digest, indexed_at, last_seen_at, status, title)
-                VALUES(?,?,NULL,?,?,NULL,?,?,'present',?)
+                    content_digest, indexed_at, last_seen_at, status, title, title_source)
+                VALUES(?,?,NULL,?,?,NULL,?,?,'present',?,'filename')
                 ON CONFLICT(root_id, relative_path) DO UPDATE SET
                     size=excluded.size, modified_at=excluded.modified_at,
                     last_seen_at=excluded.last_seen_at, status='present',
@@ -7045,7 +7275,8 @@ try bind(externalStmt, 1, rootID)
         rootID: String, relativePath: String, title: String
     ) throws {
         try execBinding("""
-        UPDATE external_files SET title=? WHERE root_id=? AND relative_path=?;
+        UPDATE external_files SET title=?, title_source='human'
+         WHERE root_id=? AND relative_path=?;
         """) { stmt in
             try bind(stmt, 1, title)
             try bind(stmt, 2, rootID)
