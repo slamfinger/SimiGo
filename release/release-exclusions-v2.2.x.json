@@ -14,6 +14,66 @@
   ],
   "excluded": [
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/amount-v1.xlsx",
+      "sha256": "80b43c2a261920f4acd05f3ccebd8ed902cf349fed8729898c93baf0ed414c85",
+      "bytes": 4862,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML spreadsheet (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1-resaved.docx",
+      "sha256": "68bfe6d7ceb1a0a4976bf775e456554aa16b5c90c2e2c764f8de48fe2ef4344d",
+      "bytes": 36618,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1.docx",
+      "sha256": "360d264c92f128ec824bb46a14b01f4caa3b52f2add4c8671247b7f391d66e16",
+      "bytes": 36618,
+      "reason": "non-UTF-8 source: redaction of it cannot be proven",
+      "file_type": "OOXML word-processing document (zip container)",
+      "repository_privacy_scan": {
+        "covered": true,
+        "uncertifiable": false,
+        "engine": "office container",
+        "hits": 0,
+        "coverage": "raw bytes plus every zip member, inflated where deflate applies"
+      },
+      "applies_to_future_releases": {
+        "applies": true,
+        "while": "the file remains non-UTF-8, which is when its redaction cannot be proven",
+        "recheck_when": "the hash recorded here changes: a regenerated file is re-derived, not inherited"
+      },
+      "release_branch_whole_tree_scan_required": true
+    },
+    {
       "path": "docs/experiments/V17_RUNTIME_MATRIX/office_out/docs/docs_weekly_report_a1.docx",
       "sha256": "ecd9f3a09326c29a1c5d09b6ab1a30f5cef4d017dbb06fb254f004da79db9460",
       "bytes": 36915,
