@@ -1493,6 +1493,47 @@ final class InformationLoopTests: XCTestCase {
         """), "invalidated")
     }
 
+    func testResolveRetriesWhenSourceChangesDuringRead() throws {
+        let (url, dbRead) = try open("read-race-retry")
+        let root = try makeWorkRoot()
+        defer {
+            dbRead.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("omega revision 0", to: root, name: "a.md")
+        try dbRead.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+
+        var didMutate = false
+        var mutationError: Error?
+        dbRead.beforeRootFileVerificationForTesting = {
+            didMutate = true
+            do {
+                let file = root.appendingPathComponent("a.md")
+                let writer = try FileHandle(forWritingTo: file)
+                try writer.seek(toOffset: 0)
+                try writer.write(contentsOf: Data("omega revision 1".utf8))
+                try writer.close()
+            } catch {
+                mutationError = error
+            }
+        }
+
+        let resolution = try InformationLoop(database: dbRead).resolve(.init(
+            requestIdentity: "read-race-retry", query: "omega", includeChat: false))
+
+        XCTAssertTrue(didMutate)
+        XCTAssertNil(mutationError)
+        XCTAssertNil(dbRead.beforeRootFileVerificationForTesting)
+        XCTAssertTrue(resolution.hits.isEmpty)
+        XCTAssertEqual(resolution.staleItemIDs, ["file:work/a.md"])
+        XCTAssertEqual(try rawText(url, """
+            SELECT COUNT(*) FROM settlement_bindings
+            WHERE settlement_id='\\(resolution.retrievalSettlementID)'
+              AND source_root_id='work';
+            """), "0", "the retry must not bind the stale source revision")
+    }
+
     /// Resolves and source updates racing on two connections. After a final
     /// revision, no retrieval that cited the file may still be valid — whatever
     /// the interleaving was, the outcome is the same.
