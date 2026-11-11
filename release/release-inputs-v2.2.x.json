@@ -661,6 +661,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISCarrierTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISContentIdentityProbeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISContentIdentityProbeTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseG2Tests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDatabaseG2Tests.swift"
     },
@@ -673,12 +677,60 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISDirectoryNameImportTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISFormatSwapProbeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISFormatSwapProbeTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISImportedConversationProbeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISImportedConversationProbeTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISSourceInvalidationArmsTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISSourceInvalidationArmsTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISStableIdentityProbeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISStableIdentityProbeTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/EngineRecipeTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/EngineRecipeTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnContractTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnContractTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/amount-v1.csv",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/amount-v1.csv"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/amount-v1.csv.extract.txt",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/amount-v1.csv.extract.txt"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/amount-v1.xlsx.extract.txt",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/amount-v1.xlsx.extract.txt"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1-resaved.docx.extract.txt",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1-resaved.docx.extract.txt"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1.docx.extract.txt",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1.docx.extract.txt"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1.txt",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1.txt"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1.txt.extract.txt",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/contract-v1.txt.extract.txt"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/make_fixtures.py",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/make_fixtures.py"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISAdmissionTests.swift",
