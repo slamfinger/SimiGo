@@ -159,6 +159,41 @@ final class ESISDatabaseTests: XCTestCase {
         }
     }
 
+    func testReadOnlyOpenDoesNotChangeJournalModeOrAllowWrites() throws {
+        let url = tempURL("read-only-open")
+        defer { cleanup(url) }
+
+        do {
+            let writable = try ESISDatabase(url: url)
+            try writable.runMigrations()
+        }
+        try rawExec(url, "PRAGMA journal_mode=DELETE;")
+        XCTAssertEqual(try rawText(url, "PRAGMA journal_mode;"), "delete")
+
+        do {
+            let readOnly = try ESISDatabase(
+                url: url, createIfNeeded: false, readOnly: true)
+            XCTAssertEqual(
+                try readOnly.schemaVersion(), ESISDatabase.currentSchemaVersion)
+            XCTAssertThrowsError(
+                try readOnly.upsertRoot(
+                    rootID: "must-not-write", category: "work",
+                    displayName: nil, locatorType: "path", status: "present")
+            ) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, _, _) = databaseError else {
+                    return XCTFail("expected a read-only SQLite failure, got: \\(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_READONLY)
+            }
+        }
+
+        XCTAssertEqual(try rawText(url, "PRAGMA journal_mode;"), "delete")
+        XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM roots;"), "0")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path + "-wal"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path + "-shm"))
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try ESISDatabase(url: url)
