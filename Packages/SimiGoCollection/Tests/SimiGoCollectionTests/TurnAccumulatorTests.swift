@@ -342,8 +342,8 @@ final class TurnAccumulatorTests: XCTestCase {
         var lines = [Fixture.userLine(uuid: "u-1", text: "hello")]
         for index in 0..<12 {
             lines.append(Fixture.assistantLine(
-                uuid: "a-\\(index)", parent: "u-1", messageID: "m-\\(index)",
-                text: "answer-\\(index)"))
+                uuid: "a-\(index)", parent: "u-1", messageID: "m-\(index)",
+                text: "answer-\(index)"))
         }
         _ = Fixture.feed(accumulator, lines)
 
@@ -376,11 +376,11 @@ final class TurnAccumulatorTests: XCTestCase {
         let lines = [
             Fixture.userLine(uuid: "u-1", text: "hello"),
             Fixture.assistantLine(
-                uuid: "a-1", parent: "u-1", messageID: "m-1", text: "part one"),
+                uuid: "a-1", parent: "u-1", messageID: "m-1", text: "part one", stop: nil),
             Fixture.assistantLine(
-                uuid: "a-2", parent: "a-1", messageID: "m-1", text: "part two"),
+                uuid: "a-2", parent: "a-1", messageID: "m-1", text: "part two", stop: nil),
             Fixture.assistantLine(
-                uuid: "a-3", parent: "a-2", messageID: "m-1", text: "part three"),
+                uuid: "a-3", parent: "a-2", messageID: "m-1", text: "part three", stop: nil),
             Fixture.assistantLine(
                 uuid: "a-4", parent: "a-3", messageID: "m-1", text: "answer"),
             Fixture.userLine(uuid: "u-2", parent: "a-4", text: "next"),
