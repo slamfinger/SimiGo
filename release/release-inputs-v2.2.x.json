@@ -1841,6 +1841,10 @@
       "output": "docs/experiments/FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md"
     },
     {
+      "path": "docs/experiments/GGUF_D6_KV_INVALIDATION_20261110/README.md",
+      "output": "docs/experiments/GGUF_D6_KV_INVALIDATION_20261110/README.md"
+    },
+    {
       "path": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/README.md",
       "output": "docs/experiments/ISSUE15_SLOT_PROGRESS_20261108/README.md"
     },
