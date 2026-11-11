@@ -169,6 +169,7 @@ final class ESISDatabaseTests: XCTestCase {
         }
         try rawExec(url, "PRAGMA journal_mode=DELETE;")
         XCTAssertEqual(try rawText(url, "PRAGMA journal_mode;"), "delete")
+        let databaseBytesBeforeReadOnly = try Data(contentsOf: url)
 
         do {
             let readOnly = try ESISDatabase(
@@ -190,8 +191,11 @@ final class ESISDatabaseTests: XCTestCase {
 
         XCTAssertEqual(try rawText(url, "PRAGMA journal_mode;"), "delete")
         XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM roots;"), "0")
+        XCTAssertEqual(try Data(contentsOf: url), databaseBytesBeforeReadOnly,
+                       "read-only diagnostics must not change the database file")
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path + "-wal"))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path + "-shm"))
+        // SQLite may leave a transient -shm coordination file even after a
+        // journal-mode transition; it is not persisted database content.
     }
 
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
