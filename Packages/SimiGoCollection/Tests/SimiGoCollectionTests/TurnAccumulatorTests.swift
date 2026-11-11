@@ -333,6 +333,174 @@ final class TurnAccumulatorTests: XCTestCase {
         XCTAssertEqual(Fixture.turns(events).first?.promptText, "hello")
     }
 
+    func testPendingTurnRetentionIsBoundedAndFailsClosed() {
+        let limits = TurnAccumulator.RetentionLimits(
+            maxRetainedNodes: 16, maxSeenAnchorIDs: 16,
+            maxPendingMessages: 3, maxPendingTerminalTextBytes: 16)
+        let accumulator = TurnAccumulator(
+            context: Fixture.context(), retentionLimits: limits)
+        var lines = [Fixture.userLine(uuid: "u-1", text: "hello")]
+        for index in 0..<12 {
+            lines.append(Fixture.assistantLine(
+                uuid: "a-\(index)", parent: "u-1", messageID: "m-\(index)",
+                text: "answer-\(index)"))
+        }
+        _ = Fixture.feed(accumulator, lines)
+
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingMessageCountForTesting,
+            limits.maxPendingMessages)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingTerminalCountForTesting,
+            limits.maxPendingMessages)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingTerminalTextBytesForTesting,
+            limits.maxPendingTerminalTextBytes)
+        XCTAssertTrue(accumulator.pendingHistoryTruncatedForTesting)
+
+        let closeEvents = Fixture.feed(
+            accumulator,
+            [Fixture.userLine(uuid: "u-2", parent: "a-11", text: "next")],
+            startingAt: Int64(lines.count + 1))
+        XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
+        XCTAssertEqual(
+            Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
+    }
+
+    func testEvictedAncestryNeverUpgradesAttributionToEligible() {
+        let limits = TurnAccumulator.RetentionLimits(
+            maxRetainedNodes: 4, maxSeenAnchorIDs: 16,
+            maxPendingMessages: 8, maxPendingTerminalTextBytes: 128)
+        let accumulator = TurnAccumulator(
+            context: Fixture.context(), retentionLimits: limits)
+        let lines = [
+            Fixture.userLine(uuid: "u-1", text: "hello"),
+            Fixture.assistantLine(
+                uuid: "a-1", parent: "u-1", messageID: "m-1", text: "part one", stop: nil),
+            Fixture.assistantLine(
+                uuid: "a-2", parent: "a-1", messageID: "m-1", text: "part two", stop: nil),
+            Fixture.assistantLine(
+                uuid: "a-3", parent: "a-2", messageID: "m-1", text: "part three", stop: nil),
+            Fixture.assistantLine(
+                uuid: "a-4", parent: "a-3", messageID: "m-1", text: "answer"),
+            Fixture.userLine(uuid: "u-2", parent: "a-4", text: "next"),
+        ]
+        let events = Fixture.feed(accumulator, lines)
+        let turns = Fixture.turns(events)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeCountForTesting, limits.maxRetainedNodes)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeOrderCountForTesting, limits.maxRetainedNodes * 2)
+        XCTAssertEqual(turns.count, 1)
+        XCTAssertEqual(turns.first?.relation, .fileOrderNoChain)
+        XCTAssertEqual(turns.first?.disposition, .requiresReview(.fileOrderNoChain))
+    }
+
+    func testAnchorHistoryCapMakesLaterTurnsFailClosed() {
+        let limits = TurnAccumulator.RetentionLimits(
+            maxRetainedNodes: 32, maxSeenAnchorIDs: 2,
+            maxPendingMessages: 8, maxPendingTerminalTextBytes: 128)
+        let accumulator = TurnAccumulator(
+            context: Fixture.context(), retentionLimits: limits)
+        let lines = [
+            Fixture.userLine(uuid: "u-1", text: "one"),
+            Fixture.assistantLine(
+                uuid: "a-1", parent: "u-1", messageID: "m-1", text: "answer one"),
+            Fixture.userLine(uuid: "u-2", parent: "a-1", text: "two"),
+            Fixture.assistantLine(
+                uuid: "a-2", parent: "u-2", messageID: "m-2", text: "answer two"),
+            Fixture.userLine(uuid: "u-3", parent: "a-2", text: "three"),
+        ]
+        let events = Fixture.feed(accumulator, lines)
+        XCTAssertEqual(accumulator.retainedAnchorIDCountForTesting, 2)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeCountForTesting, limits.maxRetainedNodes)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeOrderCountForTesting, limits.maxRetainedNodes * 2)
+        XCTAssertTrue(accumulator.pendingHistoryTruncatedForTesting)
+        XCTAssertTrue(Fixture.turns(events).allSatisfy { $0.disposition == .eligible })
+        let closeEvents = Fixture.feed(
+            accumulator,
+            [Fixture.userLine(uuid: "u-4", parent: "u-3", text: "four")],
+            startingAt: Int64(lines.count + 1))
+        XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
+        XCTAssertEqual(
+            Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
+    }
+
+    func testOversizedIdentifiersAndPromptsFailClosedWithoutRetention() {
+        let limits = TurnAccumulator.RetentionLimits(
+            maxRetainedNodes: 8, maxSeenAnchorIDs: 4,
+            maxPendingMessages: 2, maxPendingTerminalTextBytes: 64,
+            maxIdentifierBytes: 32, maxPendingPromptBytes: 128)
+        let accumulator = TurnAccumulator(
+            context: Fixture.context(), retentionLimits: limits)
+        let oversized = String(repeating: "x", count: 1_024)
+        let lines = [
+            Fixture.userLine(uuid: oversized, text: oversized),
+            Fixture.assistantLine(
+                uuid: oversized + "-assistant", parent: oversized,
+                messageID: oversized, text: "answer"),
+        ]
+        _ = Fixture.feed(accumulator, lines)
+
+        XCTAssertTrue(accumulator.pendingHistoryTruncatedForTesting)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeCountForTesting, limits.maxRetainedNodes)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeOrderCountForTesting, limits.maxRetainedNodes * 2)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedAnchorIDCountForTesting, limits.maxSeenAnchorIDs)
+        XCTAssertTrue(
+            accumulator.retainedIdentifiersForTesting.allSatisfy {
+                $0.utf8.count <= limits.maxIdentifierBytes
+            })
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingMessageCountForTesting, limits.maxPendingMessages)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingTerminalTextBytesForTesting,
+            limits.maxPendingTerminalTextBytes)
+
+        let closeEvents = Fixture.feed(
+            accumulator,
+            [Fixture.userLine(uuid: "u-2", text: "next")],
+            startingAt: Int64(lines.count + 1))
+        XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
+        XCTAssertEqual(
+            Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
+    }
+
+    func testRepeatedTerminalUpdatesRetainOneTextAndDetectConflict() {
+        let limits = TurnAccumulator.RetentionLimits(
+            maxRetainedNodes: 64, maxSeenAnchorIDs: 32,
+            maxPendingMessages: 2, maxPendingTerminalTextBytes: 64)
+        let accumulator = TurnAccumulator(
+            context: Fixture.context(), retentionLimits: limits)
+        var lines = [Fixture.userLine(uuid: "u-1", text: "hello")]
+        for index in 0..<20 {
+            let parent = index == 0 ? "u-1" : "a-\(index - 1)"
+            lines.append(Fixture.assistantLine(
+                uuid: "a-\(index)", parent: parent, messageID: "m-1",
+                text: "answer-\(index)"))
+        }
+        _ = Fixture.feed(accumulator, lines)
+
+        XCTAssertEqual(accumulator.retainedPendingMessageCountForTesting, 1)
+        XCTAssertEqual(accumulator.retainedPendingTerminalCountForTesting, 1)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingTerminalTextBytesForTesting,
+            limits.maxPendingTerminalTextBytes)
+        XCTAssertFalse(accumulator.pendingHistoryTruncatedForTesting)
+
+        let closeEvents = Fixture.feed(
+            accumulator,
+            [Fixture.userLine(uuid: "u-2", parent: "a-19", text: "next")],
+            startingAt: Int64(lines.count + 1))
+        XCTAssertEqual(
+            Fixture.closures(closeEvents).first?.reason, .ambiguousTerminal)
+        XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
+    }
+
     func testFlushCurrentTurnUsesEndOfInputBoundary() {
         let accumulator = TurnAccumulator(context: Fixture.context())
         _ = Fixture.feed(accumulator, [
