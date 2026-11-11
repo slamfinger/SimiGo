@@ -104,6 +104,25 @@ final class ESISDatabaseTests: XCTestCase {
         }
     }
 
+    func testCloseIsIdempotentAcrossConcurrentCallsAndDeinit() throws {
+        let url = tempURL("close-once")
+        do {
+            let db = try ESISDatabase(url: url)
+            try db.runMigrations()
+            DispatchQueue.concurrentPerform(iterations: 16) { _ in
+                db.close()
+            }
+            db.close()
+        }
+
+        // The prior instance has deinitialized after the concurrent explicit
+        // closes. Reopening must recover the same persisted database cleanly.
+        let reopened = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { reopened.close(); cleanup(url) }
+        try reopened.runMigrations()
+        XCTAssertTrue(try reopened.integrityCheck())
+    }
+
     func testStatementFailurePreservesPrimaryAndExtendedSQLiteCodes() throws {
         let url = tempURL("statement-error")
         let db = try ESISDatabase(url: url)
