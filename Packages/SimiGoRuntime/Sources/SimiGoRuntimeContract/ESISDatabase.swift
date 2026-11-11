@@ -7642,10 +7642,11 @@ try bind(externalStmt, 1, rootID)
         var settledAt = ""
         var legacy = Data()
         var status: String?
+        var indexedSize: Int64?
         var found = false
 
         let stmt = try prepare("""
-        SELECT f.content_sha256, f.object_id, f.settled_at, f.content, e.status
+        SELECT f.content_sha256, f.object_id, f.settled_at, f.content, e.status, e.size
         FROM file_contents f
         LEFT JOIN external_files e
           ON e.root_id=f.root_id AND e.relative_path=f.relative_path
@@ -7667,19 +7668,38 @@ try bind(externalStmt, 1, rootID)
                 legacy = Data(bytes: base, count: bytes)
             }
             status = text(4)
+            indexedSize = sqlite3_column_type(stmt, 5) == SQLITE_NULL
+                ? nil : sqlite3_column_int64(stmt, 5)
         }
         try reset(stmt)
         guard found else { return nil }
 
+        func matchesIndexedDigest(_ data: Data) -> Bool {
+            if NativeSHA256.hexDigest(data) == digest { return true }
+            guard let indexedSize, indexedSize >= 0 else { return false }
+            return NativeSHA256.hexDigest(
+                Data("tail:\(indexedSize):".utf8) + data) == digest
+        }
+
         let content: Data
         if let objectID, !objectID.isEmpty {
             content = try readObject(objectID)
+            guard matchesIndexedDigest(content) else {
+                throw DatabaseError.sql(
+                    "carriedFileContent: stored object digest mismatch for \(rootID)/\(relativePath)")
+            }
         } else if !legacy.isEmpty {
             content = legacy
+            guard matchesIndexedDigest(content) else {
+                throw DatabaseError.sql(
+                    "carriedFileContent: legacy content digest mismatch for \(rootID)/\(relativePath)")
+            }
         } else {
-            // Index-only row: the entity bytes never left the locator, so read
-            // them there and verify against the settled digest (fail closed).
+            // Index-only rows carry a metadata object describing whether the
+            // digest covers the whole file or a bounded tail window. Never read
+            // an arbitrarily large source merely to answer this content query.
             guard let locator = try rootLocatorPath(rootID),
+                !relativePath.isEmpty,
                 !relativePath.split(separator: "/").contains("..")
             else { return nil }
             let rootDirectoryFD: Int32
@@ -7691,25 +7711,85 @@ try bind(externalStmt, 1, rootID)
             }
             defer { Darwin.close(rootDirectoryFD) }
 
-            let read: NoFollowFileRead
-            do {
-                read = try readRootFileNoFollow(
-                    rootDirectoryFD: rootDirectoryFD,
-                    relativePath: relativePath,
-                    maximumBytes: nil)
-            } catch let error as DatabaseError {
-                if case .sourceGone = error { return nil }
-                throw error
-            }
-            guard let data = read.data else {
+            let identity = "file:\(rootID)/\(relativePath)"
+            guard let metadataObjectID = try latestIndexObjectID(identity: identity),
+                  !metadataObjectID.isEmpty else {
                 throw DatabaseError.sql(
-                    "carriedFileContent: index-only source read returned no bytes")
+                    "carriedFileContent: missing index-only metadata for \(rootID)/\(relativePath)")
             }
-            guard NativeSHA256.hexDigest(data) == digest else {
+            let metadataData = try readObject(metadataObjectID)
+            guard let metadata = try JSONSerialization.jsonObject(with: metadataData)
+                    as? [String: Any],
+                  let metadataLocator = metadata["locator"] as? String,
+                  let metadataDigest = metadata["sha256"] as? String,
+                  let metadataSize = metadata["size"] as? Int64,
+                  metadataSize >= 0 else {
+                throw DatabaseError.sql(
+                    "carriedFileContent: malformed index-only metadata for \(rootID)/\(relativePath)")
+            }
+            guard metadataLocator == identity, metadataDigest == digest,
+                  indexedSize == nil || indexedSize == metadataSize else {
                 throw DatabaseError.staleExternalSource(
                     rootID: rootID, relativePath: relativePath)
             }
-            content = data
+
+            func readSource(
+                maximumBytes: Int?, tailBytes: Int? = nil,
+                maximumTotalBytesRead: Int
+            ) throws -> NoFollowFileRead? {
+                do {
+                    return try readRootFileNoFollow(
+                        rootDirectoryFD: rootDirectoryFD,
+                        relativePath: relativePath,
+                        maximumBytes: maximumBytes,
+                        tailBytes: tailBytes,
+                        maximumTotalBytesRead: maximumTotalBytesRead)
+                } catch let error as DatabaseError {
+                    if case .sourceGone = error { return nil }
+                    throw error
+                }
+            }
+
+            if metadata["is_tail"] as? Bool == true {
+                let maximumTailReadBytes = 64 * 1024 * 1024
+                guard let tailWindowBytes = metadata["tail_bytes"] as? Int,
+                      tailWindowBytes > 0, tailWindowBytes <= maximumTailReadBytes,
+                      metadataSize > 0, metadataSize <= Int64(Int.max) else {
+                    throw DatabaseError.staleExternalSource(
+                        rootID: rootID, relativePath: relativePath)
+                }
+                guard let read = try readSource(
+                    maximumBytes: tailWindowBytes - 1,
+                    tailBytes: tailWindowBytes,
+                    maximumTotalBytesRead: tailWindowBytes) else { return nil }
+                guard read.isTail, read.size == metadataSize, let rawTail = read.data else {
+                    throw DatabaseError.staleExternalSource(
+                        rootID: rootID, relativePath: relativePath)
+                }
+                let indexedData = Self.indexedTailData(rawTail)
+                let tailDigest = NativeSHA256.hexDigest(
+                    Data("tail:\(metadataSize):".utf8) + indexedData)
+                guard tailDigest == digest else {
+                    throw DatabaseError.staleExternalSource(
+                        rootID: rootID, relativePath: relativePath)
+                }
+                content = indexedData
+            } else {
+                let maximumFullReadBytes = 64 * 1024 * 1024
+                guard metadataSize <= Int64(maximumFullReadBytes) else {
+                    throw DatabaseError.staleExternalSource(
+                        rootID: rootID, relativePath: relativePath)
+                }
+                guard let read = try readSource(
+                    maximumBytes: Int(metadataSize),
+                    maximumTotalBytesRead: maximumFullReadBytes) else { return nil }
+                guard !read.isTail, read.size == metadataSize, let data = read.data,
+                      NativeSHA256.hexDigest(data) == digest else {
+                    throw DatabaseError.staleExternalSource(
+                        rootID: rootID, relativePath: relativePath)
+                }
+                content = data
+            }
         }
         return CarriedFileContent(
             rootID: rootID, relativePath: relativePath,
