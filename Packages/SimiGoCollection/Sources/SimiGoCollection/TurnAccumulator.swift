@@ -22,6 +22,35 @@ public final class TurnAccumulator {
         }
     }
 
+    /// Hard in-memory limits for one transcript accumulator. Tests can inject
+    /// smaller values to exercise the fail-closed paths without huge fixtures.
+    struct RetentionLimits: Sendable, Equatable {
+        let maxRetainedNodes: Int
+        let maxSeenAnchorIDs: Int
+        let maxPendingMessages: Int
+        let maxPendingTerminalTextBytes: Int
+        let maxIdentifierBytes: Int
+        let maxPendingPromptBytes: Int
+
+        init(
+            maxRetainedNodes: Int = 100_000,
+            maxSeenAnchorIDs: Int = 65_536,
+            maxPendingMessages: Int = 256,
+            maxPendingTerminalTextBytes: Int = 8 * 1024 * 1024,
+            maxIdentifierBytes: Int = 256,
+            maxPendingPromptBytes: Int = 4 * 1024 * 1024
+        ) {
+            self.maxRetainedNodes = max(1, maxRetainedNodes)
+            self.maxSeenAnchorIDs = max(1, maxSeenAnchorIDs)
+            self.maxPendingMessages = max(1, maxPendingMessages)
+            self.maxPendingTerminalTextBytes = max(1, maxPendingTerminalTextBytes)
+            self.maxIdentifierBytes = max(1, maxIdentifierBytes)
+            self.maxPendingPromptBytes = max(1, maxPendingPromptBytes)
+        }
+
+        static let production = RetentionLimits()
+    }
+
     private enum NodeKind: Equatable {
         case humanPrompt
         case supervisionCallback
@@ -83,22 +112,30 @@ public final class TurnAccumulator {
 
     private struct Snapshot {
         let messageID: String
-        let firstUUID: String
-        let firstLine: Int64
-        var lastLine: Int64
-        var lastText: String
-        var lastStop: String?
         var model: String?
         var isSidechain: Bool
-        var terminals: [Terminal]
+        var lastTerminalLine: Int64?
+        var latestTerminal: Terminal?
+        var firstTerminalDigest: String?
+        var hasConflictingTerminals: Bool
         var relation: AttributionRelation
     }
 
     private struct PendingTurn {
         let anchor: Anchor
         var messages: [String: Snapshot]
+        var messageCount: Int
+        var terminalCount: Int
+        var lastLine: Int64
+        var retainedTerminalTextBytes: Int
+        var historyTruncated: Bool
         var interrupted: Bool
         var interruptLine: Int64?
+    }
+
+    private struct NodeOrderEntry {
+        let id: String
+        let line: Int64
     }
 
     private enum RelationResolution {
@@ -108,15 +145,50 @@ public final class TurnAccumulator {
     }
 
     private let context: Context
+    private let retentionLimits: RetentionLimits
     private var nodes: [String: Node] = [:]
+    private var nodeOrder: [NodeOrderEntry] = []
+    private var nodeOrderHead = 0
+    // Keep the first bounded window exactly. Once it fills, later anchors are
+    // still parsed but their turns are closed as history-limit outcomes.
     private var seenAnchorIDs: Set<String> = []
     private var pending: PendingTurn?
 
     public init(context: Context) {
         self.context = context
+        self.retentionLimits = .production
+    }
+
+    init(context: Context, retentionLimits: RetentionLimits) {
+        self.context = context
+        self.retentionLimits = retentionLimits
     }
 
     public var hasOpenTurn: Bool { pending != nil }
+
+    var retainedNodeCountForTesting: Int { nodes.count }
+    var retainedNodeOrderCountForTesting: Int { nodeOrder.count }
+    var retainedAnchorIDCountForTesting: Int { seenAnchorIDs.count }
+    var retainedIdentifiersForTesting: [String] {
+        var values = Array(nodes.keys)
+        values.append(contentsOf: nodeOrder.map(\.id))
+        values.append(contentsOf: nodes.values.compactMap(\.parent))
+        values.append(contentsOf: nodes.values.compactMap(\.anchorID))
+        values.append(contentsOf: seenAnchorIDs)
+        if let pending {
+            values.append(pending.anchor.id)
+            values.append(contentsOf: pending.messages.keys)
+        }
+        return values
+    }
+    var retainedPendingMessageCountForTesting: Int { pending?.messages.count ?? 0 }
+    var retainedPendingTerminalCountForTesting: Int {
+        pending?.messages.values.reduce(0) { $0 + ($1.latestTerminal == nil ? 0 : 1) } ?? 0
+    }
+    var retainedPendingTerminalTextBytesForTesting: Int {
+        pending?.retainedTerminalTextBytes ?? 0
+    }
+    var pendingHistoryTruncatedForTesting: Bool { pending?.historyTruncated ?? false }
 
     /// Segment line that opened the still-open turn. The tailer persists this
     /// as the replay point so a restart rebuilds the turn from the transcript.
@@ -236,9 +308,13 @@ public final class TurnAccumulator {
     ) -> [CollectionEvent] {
         registerNode(entry, line: line, kind: .assistant, anchorID: nil)
         var events: [CollectionEvent] = []
-        guard let message = entry.message, let messageID = message.id,
+        guard let message = entry.message, let rawMessageID = message.id,
             let uuid = entry.uuid
         else { return events }
+        let messageID = boundedIdentifier(rawMessageID)
+        let identifiersTooLong =
+            rawMessageID.utf8.count > retentionLimits.maxIdentifierBytes
+            || uuid.utf8.count > retentionLimits.maxIdentifierBytes
         guard var turn = pending else {
             if message.stopReason != nil || entry.isAPIMessageError {
                 events.append(
@@ -269,29 +345,56 @@ public final class TurnAccumulator {
                         reason: .beforeCurrentAnchor)))
             return events
         case .resolved(let relation):
-            var snapshot =
-                turn.messages[messageID]
-                ?? Snapshot(
-                    messageID: messageID, firstUUID: uuid, firstLine: line,
-                    lastLine: line, lastText: message.text,
-                    lastStop: message.stopReason, model: message.model,
-                    isSidechain: entry.isSidechain, terminals: [], relation: relation)
-            snapshot.lastLine = line
-            snapshot.lastText = message.text
-            snapshot.lastStop = message.stopReason
-            snapshot.model = message.model ?? snapshot.model
-            snapshot.isSidechain = snapshot.isSidechain || entry.isSidechain
+            turn.lastLine = max(turn.lastLine, line)
+            if identifiersTooLong { turn.historyTruncated = true }
             let isTerminal =
                 message.stopReason == "end_turn" || message.stopReason == "tool_use"
                 || message.stopReason == "stop_sequence" || entry.isAPIMessageError
-            if isTerminal,
-                !snapshot.terminals.contains(where: { $0.line == line })
-            {
-                snapshot.terminals.append(
-                    Terminal(
-                        line: line, timestamp: entry.timestamp, stop: message.stopReason,
-                        text: message.text, digest: SourceDigest.sha256Hex(message.text),
-                        apiError: entry.isAPIMessageError))
+            var snapshot: Snapshot
+            if let existing = turn.messages[messageID] {
+                snapshot = existing
+            } else {
+                turn.messageCount += 1
+                guard turn.messages.count < retentionLimits.maxPendingMessages else {
+                    turn.historyTruncated = true
+                    if isTerminal { turn.terminalCount += 1 }
+                    pending = turn
+                    return events
+                }
+                snapshot = Snapshot(
+                    messageID: messageID, model: boundedMetadata(message.model),
+                    isSidechain: entry.isSidechain, lastTerminalLine: nil,
+                    latestTerminal: nil, firstTerminalDigest: nil,
+                    hasConflictingTerminals: false, relation: relation)
+            }
+            snapshot.model = boundedMetadata(message.model) ?? snapshot.model
+            snapshot.isSidechain = snapshot.isSidechain || entry.isSidechain
+            snapshot.relation = conservativeRelation(snapshot.relation, relation)
+            if isTerminal, snapshot.lastTerminalLine != line {
+                let digest = SourceDigest.sha256Hex(message.text)
+                if let firstDigest = snapshot.firstTerminalDigest {
+                    if digest != firstDigest { snapshot.hasConflictingTerminals = true }
+                } else {
+                    snapshot.firstTerminalDigest = digest
+                }
+
+                let oldBytes = snapshot.latestTerminal?.text.utf8.count ?? 0
+                let newBytes = message.text.utf8.count
+                let nextBytes = turn.retainedTerminalTextBytes - oldBytes + newBytes
+                if nextBytes <= retentionLimits.maxPendingTerminalTextBytes {
+                    snapshot.latestTerminal = Terminal(
+                        line: line, timestamp: boundedMetadata(entry.timestamp),
+                        stop: boundedMetadata(message.stopReason),
+                        text: message.text, digest: digest,
+                        apiError: entry.isAPIMessageError)
+                    turn.retainedTerminalTextBytes = nextBytes
+                } else {
+                    // Keep only the digest/conflict evidence. Finalization below
+                    // emits an explicit closure instead of an eligible answer.
+                    turn.historyTruncated = true
+                }
+                snapshot.lastTerminalLine = line
+                turn.terminalCount += 1
             }
             turn.messages[messageID] = snapshot
             pending = turn
@@ -317,35 +420,139 @@ public final class TurnAccumulator {
         injectedPrefixes: [String], isSidechain: Bool, requestSetID: String?,
         events: inout [CollectionEvent]
     ) {
-        guard !seenAnchorIDs.contains(id) else { return }
+        let identifierTooLong = id.utf8.count > retentionLimits.maxIdentifierBytes
+        let storedID = boundedIdentifier(id)
+        guard !seenAnchorIDs.contains(storedID) else { return }
         finalizePending(boundary: .nextAnchor, events: &events)
         pruneNodes(before: line)
+
         let trimmedPrompt = promptText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefixBytes = injectedPrefixes.reduce(0) { total, prefix in
+            let (sum, overflow) = total.addingReportingOverflow(prefix.utf8.count)
+            return overflow ? Int.max : sum
+        }
+        let (promptAndTextBytes, firstOverflow) =
+            promptRaw.utf8.count.addingReportingOverflow(trimmedPrompt.utf8.count)
+        let (allPromptBytes, secondOverflow) =
+            promptAndTextBytes.addingReportingOverflow(prefixBytes)
+        let promptTooLarge = firstOverflow || secondOverflow
+            || allPromptBytes > retentionLimits.maxPendingPromptBytes
+            || injectedPrefixes.count > 32
+        let safeOriginKind = boundedMetadata(originKind)
+        let safeRequestSetID = boundedMetadata(requestSetID)
+        let metadataTooLarge =
+            (originKind != nil && safeOriginKind == nil)
+            || (requestSetID != nil && safeRequestSetID == nil)
         let anchor = Anchor(
-            id: id, kind: kind, line: line, timestamp: timestamp,
-            originKind: originKind, promptRaw: promptRaw, promptText: trimmedPrompt,
+            id: storedID, kind: kind, line: line, timestamp: boundedMetadata(timestamp),
+            originKind: safeOriginKind,
+            promptRaw: promptTooLarge ? "" : promptRaw,
+            promptText: promptTooLarge ? "" : trimmedPrompt,
             promptRawDigest: SourceDigest.sha256Hex(promptRaw),
             promptDigest: SourceDigest.sha256Hex(trimmedPrompt),
-            injectedPrefixes: injectedPrefixes, isSidechain: isSidechain,
-            requestSetID: requestSetID)
+            injectedPrefixes: promptTooLarge ? [] : injectedPrefixes,
+            isSidechain: isSidechain, requestSetID: safeRequestSetID)
+        let canRememberAnchor = seenAnchorIDs.count < retentionLimits.maxSeenAnchorIDs
         pending = PendingTurn(
-            anchor: anchor, messages: [:], interrupted: false, interruptLine: nil)
-        seenAnchorIDs.insert(id)
+            anchor: anchor, messages: [:], messageCount: 0, terminalCount: 0,
+            lastLine: line, retainedTerminalTextBytes: 0,
+            historyTruncated: identifierTooLong || metadataTooLarge || promptTooLarge
+                || !canRememberAnchor,
+            interrupted: false, interruptLine: nil)
+        if canRememberAnchor { seenAnchorIDs.insert(storedID) }
         _ = events
     }
 
     private func registerNode(
         _ entry: TranscriptEntry, line: Int64, kind: NodeKind, anchorID: String?
     ) {
-        guard let uuid = entry.uuid else { return }
+        guard let uuid = entry.uuid,
+            uuid.utf8.count <= retentionLimits.maxIdentifierBytes
+        else { return }
+        let parent = entry.parentUUID.flatMap {
+            $0.utf8.count <= retentionLimits.maxIdentifierBytes ? $0 : nil
+        }
+        let safeAnchorID = anchorID.map { boundedIdentifier($0) }
         nodes[uuid] = Node(
-            parent: entry.parentUUID, kind: kind, anchorID: anchorID, line: line)
+            parent: parent, kind: kind, anchorID: safeAnchorID, line: line)
+        nodeOrder.append(NodeOrderEntry(id: uuid, line: line))
+        enforceNodeLimit()
+    }
+
+    private func boundedIdentifier(_ value: String) -> String {
+        let maximumBytes = retentionLimits.maxIdentifierBytes
+        guard value.utf8.count > maximumBytes else { return value }
+        let digest = SourceDigest.sha256Hex(value)
+        let marker = "oversized:"
+        guard maximumBytes > marker.utf8.count else {
+            return String(digest.prefix(maximumBytes))
+        }
+        return marker + String(digest.prefix(maximumBytes - marker.utf8.count))
+    }
+
+    private func boundedMetadata(_ value: String?) -> String? {
+        guard let value,
+            value.utf8.count <= retentionLimits.maxIdentifierBytes
+        else { return nil }
+        return value
     }
 
     private func pruneNodes(before line: Int64) {
-        nodes = nodes.filter { _, node in
-            node.kind.isAnchor || node.kind == .compactSummary || node.line >= line
+        let lookback = Int64(clamping: retentionLimits.maxRetainedNodes)
+        let cutoff = line > lookback ? line - lookback : 0
+        nodes = nodes.filter { _, node in node.line >= cutoff }
+        rebuildNodeOrder()
+    }
+
+    private func enforceNodeLimit() {
+        while nodes.count > retentionLimits.maxRetainedNodes {
+            if nodeOrderHead >= nodeOrder.count {
+                rebuildNodeOrder()
+                if nodeOrder.isEmpty { return }
+            }
+            let candidate = nodeOrder[nodeOrderHead]
+            nodeOrderHead += 1
+            if nodes[candidate.id]?.line == candidate.line {
+                nodes.removeValue(forKey: candidate.id)
+            }
         }
+        compactNodeOrderIfNeeded()
+    }
+
+    private func compactNodeOrderIfNeeded() {
+        if nodeOrderHead > 0,
+           nodeOrderHead >= 1_024 || nodeOrderHead * 2 >= nodeOrder.count {
+            nodeOrder = Array(nodeOrder[nodeOrderHead...])
+            nodeOrderHead = 0
+        }
+        let maximumQueueEntries = retentionLimits.maxRetainedNodes > Int.max / 2
+            ? Int.max : retentionLimits.maxRetainedNodes * 2
+        if nodeOrder.count > maximumQueueEntries {
+            rebuildNodeOrder()
+        }
+    }
+
+    private func rebuildNodeOrder() {
+        nodeOrder = nodes.map { NodeOrderEntry(id: $0.key, line: $0.value.line) }
+            .sorted {
+                if $0.line != $1.line { return $0.line < $1.line }
+                return $0.id < $1.id
+            }
+        nodeOrderHead = 0
+    }
+
+    /// Attribution can only lose evidence as ancestry is evicted. A later
+    /// message that happens to resolve through file order must not upgrade a
+    /// snapshot whose earlier parent chain was already truncated.
+    private func conservativeRelation(
+        _ current: AttributionRelation, _ next: AttributionRelation
+    ) -> AttributionRelation {
+        if current == .parentChain { return next }
+        if next == .parentChain { return current }
+        if current == .fileOrderNoChain || next == .fileOrderNoChain {
+            return .fileOrderNoChain
+        }
+        return .fileOrderAfterCompaction
     }
 
     private func resolveRelation(
@@ -381,23 +588,31 @@ public final class TurnAccumulator {
         guard let turn = pending else { return }
         pending = nil
 
+        if turn.historyTruncated {
+            events.append(
+                .closedWithoutAnswer(
+                    TurnClosure(
+                        projectID: context.projectID, sessionID: context.sessionID,
+                        isSubagent: context.isSubagent, anchor: turn.anchor.summary,
+                        reason: .historyLimitExceeded, messageCount: turn.messageCount,
+                        terminalCount: turn.terminalCount, apiErrorAttempts: 0,
+                        firstSegmentLine: turn.anchor.line, lastSegmentLine: turn.lastLine,
+                        finalizedBy: boundary)))
+            return
+        }
+
         var candidates: [(snapshot: Snapshot, terminal: Terminal)] = []
         var ambiguous = false
         var apiErrorAttempts = 0
         var emptyAnswers = 0
         var stopSequences = 0
         var toolOnly = 0
-        var terminalCount = 0
 
         for snapshot in turn.messages.values {
-            terminalCount += snapshot.terminals.count
-            guard let last = snapshot.terminals.max(by: {
-                ($0.line, $0.timestamp ?? "") < ($1.line, $1.timestamp ?? "")
-            }) else { continue }
-            let distinct = Set(snapshot.terminals.map(\.digest))
+            guard let last = snapshot.latestTerminal else { continue }
             let kind = TranscriptClassifier.classifyTerminal(
                 stop: last.stop, text: last.text, apiError: last.apiError,
-                ambiguous: snapshot.terminals.count > 1 && distinct.count > 1)
+                ambiguous: snapshot.hasConflictingTerminals)
             switch kind {
             case .answerCandidate:
                 candidates.append((snapshot, last))
@@ -440,16 +655,15 @@ public final class TurnAccumulator {
             } else {
                 reason = .noAnswer
             }
-            let lastLine = turn.messages.values.map(\.lastLine).max() ?? turn.anchor.line
             events.append(
                 .closedWithoutAnswer(
                     TurnClosure(
                         projectID: context.projectID, sessionID: context.sessionID,
                         isSubagent: context.isSubagent, anchor: turn.anchor.summary,
-                        reason: reason, messageCount: turn.messages.count,
-                        terminalCount: terminalCount,
+                        reason: reason, messageCount: turn.messageCount,
+                        terminalCount: turn.terminalCount,
                         apiErrorAttempts: apiErrorAttempts,
-                        firstSegmentLine: turn.anchor.line, lastSegmentLine: lastLine,
+                        firstSegmentLine: turn.anchor.line, lastSegmentLine: turn.lastLine,
                         finalizedBy: boundary)))
             return
         }

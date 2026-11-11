@@ -1,3 +1,4 @@
+import Dispatch
 import Foundation
 import SQLite3
 import XCTest
@@ -109,6 +110,25 @@ final class ESISDatabaseTests: XCTestCase {
             let direct = try ESISDatabase(url: target, createIfNeeded: false)
             XCTAssertTrue(try direct.integrityCheck())
         }
+    }
+
+    func testCloseIsIdempotentAcrossConcurrentCallsAndDeinit() throws {
+        let url = tempURL("close-once")
+        do {
+            let db = try ESISDatabase(url: url)
+            try db.runMigrations()
+            DispatchQueue.concurrentPerform(iterations: 16) { _ in
+                db.close()
+            }
+            db.close()
+        }
+
+        // The prior instance has deinitialized after the concurrent explicit
+        // closes. Reopening must recover the same persisted database cleanly.
+        let reopened = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { reopened.close(); cleanup(url) }
+        try reopened.runMigrations()
+        XCTAssertTrue(try reopened.integrityCheck())
     }
 
     func testStatementFailurePreservesPrimaryAndExtendedSQLiteCodes() throws {
