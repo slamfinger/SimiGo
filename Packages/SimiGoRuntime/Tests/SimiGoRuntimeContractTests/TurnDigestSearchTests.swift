@@ -97,4 +97,47 @@ final class TurnDigestSearchTests: XCTestCase {
         let messy = TurnDigestText.parse("**摘要：**带星号的一行\n**关键词：**甲，乙、丙")
         XCTAssertEqual(messy?.keywords, ["甲", "乙", "丙"])
     }
+
+    /// 分层投喂：散文全留，代码体只留前几行 + 声明 + 报错，并给出代码概况。
+    func testLayeredFeedKeepsProseAndDropsCodeBody() {
+        let answer = """
+        这一轮把端口检测改成了 socket bind。
+
+        ```swift
+        struct PortProbe {
+            func available() -> Bool { true }
+            let f1 = "占位占位占位占位占位占位占位占位占位占位"
+            let f2 = "占位占位占位占位占位占位占位占位占位占位"
+            let f3 = "占位占位占位占位占位占位占位占位占位占位"
+            let f4 = "占位占位占位占位占位占位占位占位占位占位"
+            let f5 = "占位占位占位占位占位占位占位占位占位占位"
+            let f6 = "占位占位占位占位占位占位占位占位占位占位"
+            let f7 = "占位占位占位占位占位占位占位占位占位占位"
+        }
+        ```
+
+        结论：端口冲突已解决，未做 IPv6 分支。
+        """
+        let prompt = TurnDigestText.prompt(question: "问", answer: answer)
+        XCTAssertTrue(prompt.contains("这一轮把端口检测改成了 socket bind"), "散文要留")
+        XCTAssertTrue(prompt.contains("结论：端口冲突已解决"), "结论要留")
+        XCTAssertTrue(prompt.contains("struct PortProbe"), "声明要留")
+        XCTAssertTrue(prompt.contains("【代码概况】1 个代码块"), "要给代码概况")
+        XCTAssertTrue(prompt.contains("这一层也不在摘要范围内"), "要说明代码完整性不在范围")
+
+        // 没有代码块的短回答：原样进 prompt，不加代码概况、不加说明。
+        let plain = TurnDigestText.prompt(question: "问", answer: "短回答，不该被动。")
+        XCTAssertTrue(plain.contains("回答：\n短回答，不该被动。"))
+        XCTAssertFalse(plain.contains("【代码概况】"))
+        XCTAssertFalse(plain.contains("这一层也不在摘要范围内"))
+    }
+
+    /// 投喂总量封顶：再长的回答也不会把 prompt 撑爆。
+    func testLayeredFeedRespectsBudget() {
+        let long = (0..<400)
+            .map { _ in "这是一句散文，用来把投喂撑过上限。" }
+            .joined(separator: "\n")
+        let prompt = TurnDigestText.prompt(question: "问", answer: long)
+        XCTAssertLessThan(prompt.count, 4_000, "封顶后 prompt 不该随原文线性增长")
+    }
 }

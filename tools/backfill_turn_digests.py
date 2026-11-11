@@ -14,6 +14,7 @@
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -22,22 +23,119 @@ import urllib.request
 DB = os.path.expanduser("~/.simigo/simigo.sqlite3")
 ENDPOINT = "http://127.0.0.1:8000/v1/chat/completions"
 MODEL = "local"
-MAX_QUESTION = 3000
-MAX_ANSWER = 9000
+# 分层投喂：散文行全留，代码块只留首行和报错行，散文太薄才补声明行。
+# 长回答里代码占 86%–97%，而语义全在散文里（2026-11-11 实测：纯散文那一路
+# 用 178 字写出比喂 3004 字更具体的摘要）。与 TurnDigestText 同一把尺子。
+MAX_QUESTION = 1200
+MAX_FEED = 1800
+MAX_DECL_LINES = 12
+HEAD_LINES = 6
+MAX_ERROR_LINES = 8
+MAX_HEAD_LINES = 10
 DIGEST_LIMIT = 300
+MAX_KEYWORDS = 8
 
-PROMPT = """你在给一个信息空间写轮次摘要。下面是一轮会话的问题和回答。
+DECL_LINE = re.compile(
+    r"^\s*(?:public |private |internal |fileprivate |open |static |final |"
+    r"@\w+\s+)*(?:func|class|struct|enum|protocol|extension|actor|let|var|"
+    r"init|case|import|def|async def|function|export|interface|type)\b")
+ERROR_LINE = re.compile(
+    r"(error|Error|ERROR|错误|报错|失败|warning|Warning|警告|Exception|"
+    r"Traceback|fatal|panic)")
+CODE_FENCE = re.compile(r"^\s*```")
+
+
+def layer_answer(text, budget=MAX_FEED):
+    """散文行 + 每块前 6 行 + 声明行 + 报错行。代码体不进 prompt。
+
+    代码体是「修饰」不是「主谓宾」：长回答里它占 86%–97%，而语义全在散文里
+    （2026-11-11 实测：纯散文用 178 字写出比喂 3004 字更具体的摘要）。留着
+    声明行是因为「提供了什么代码」只能从声明看出来，否则模型会误判成没给代码。
+    """
+    prose, heads, errors, decls = [], [], [], []
+    inside = False
+    first_n = 0
+    heads_hidden = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if CODE_FENCE.match(raw):
+            inside = not inside
+            first_n = 0
+            continue
+        if not line:
+            continue
+        if not inside:
+            prose.append(line)
+            continue
+        if first_n < HEAD_LINES:
+            heads.append(line)
+            first_n += 1
+        else:
+            heads_hidden.append(line)
+        if ERROR_LINE.search(line):
+            errors.append(line)
+        if DECL_LINE.match(line):
+            decls.append(line)
+
+    parts = list(prose) + decls[:MAX_DECL_LINES]
+    parts += [h for h in heads[:MAX_HEAD_LINES] if h not in parts]
+    parts += [e for e in errors[:MAX_ERROR_LINES] if e not in parts]
+    shaped = "\n".join(parts)
+    layered = len(heads_hidden) > 0
+    if len(shaped) <= budget:
+        return shaped, layered
+    return shaped[: budget // 2] + "\n……\n" + shaped[-budget // 2:], True
+
+
+INSTRUCTION = """你在给一个信息空间写轮次摘要。下面是一轮会话的问题和回答。
 
 只输出两行，不要任何解释：
 摘要：<两到三句。这一轮要解决什么、最后的结论是什么、哪件事明确没做。不要写"用户说/助手回答"这类套话，不要抄原句>
 关键词：<5 到 8 个词，空格分隔。每个词 2 到 8 个字，是以后要拿它检索的东西的名字（如 依赖区间 双时钟 FTS5），不要标点，不要整句>
-
-问题：
-%s
-
-回答：
-%s
 """
+
+# 说明写在指令区、不塞进正文（塞正文会被当成原文缺陷）。而且不能只说「别提」，
+# 要说清「这一层你看不到、也不在摘要范围内」——只说别提，模型照样写「代码未全部提供」。
+NOTE = """注意：回答里的代码体已略去，只留下散文、声明行与报错行。所以你**看不到**代码是否完整，\
+这一层也不在摘要范围内——不要评价代码完不完整、有没有给全、是否只是片段。\
+原文只要出现代码块，就说明这一轮把代码给出了，不要写「只给了片段」「未提供完整代码」。\
+摘要只写：这一轮要解决什么、结论是什么、哪件事明确没做。
+
+"""
+
+
+def code_meta(text):
+    """代码概况：几块、多少行、有哪些声明。
+
+    只留散文时模型会误判成「没给代码 / 只给了片段」——实测 t241 三轮都这么说。
+    补一行规模与声明清单，它就知道「给了什么」，而不用看代码体。
+    """
+    blocks = lines = 0
+    inside = False
+    decls = []
+    for raw in text.splitlines():
+        if CODE_FENCE.match(raw):
+            inside = not inside
+            blocks += 1 if inside else 0
+            continue
+        if not inside:
+            continue
+        lines += 1
+        if len(decls) < 12 and DECL_LINE.match(raw.strip()):
+            decls.append(raw.strip()[:60])
+    if not blocks:
+        return ""
+    return f"【代码概况】{blocks} 个代码块，共 {lines} 行；声明：{'；'.join(decls)}"
+
+
+def build_prompt(question, answer):
+    feed, layered = layer_answer(answer)
+    meta = code_meta(answer)
+    note = NOTE if layered else ""
+    if meta:
+        feed = f"{feed}\n\n{meta}"
+    return (f"{INSTRUCTION}\n{note}问题：\n{question[:MAX_QUESTION]}"
+            f"\n\n回答：\n{feed}\n")
 
 
 def connect(path, readonly=False):
@@ -114,6 +212,8 @@ def parse(out):
         if term and term not in seen:
             seen.add(term)
             terms.append(term)
+            if len(terms) == MAX_KEYWORDS:
+                break
     if not terms:
         return digest[:DIGEST_LIMIT], None
     return digest[:DIGEST_LIMIT], terms
@@ -163,18 +263,18 @@ def main():
     started = time.time()
     for n, (session, turn, qobj, aobj, qid, aid) in enumerate(todo, 1):
         q = payload(ro, qobj)[:MAX_QUESTION]
-        a = payload(ro, aobj)[:MAX_ANSWER]
+        a = payload(ro, aobj)
         if not q and not a:
             print(f"[skip] {session} t{turn} 没有正文", flush=True)
             failed += 1
             continue
         t0 = time.time()
         try:
-            out = call_model(PROMPT % (q, a))
+            out = call_model(build_prompt(q, a))
             digest, terms = parse(out)
             if not digest:
                 out = call_model(
-                    PROMPT % (q, a),
+                    build_prompt(q, a),
                     "上一轮的输出不合格式。只输出两行，第一行以「摘要：」开头，"
                     "第二行以「关键词：」开头。\n\n")
                 digest, terms = parse(out)
