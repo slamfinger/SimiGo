@@ -704,7 +704,6 @@ public final class ESISDatabase {
 
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
-        let versionBeforeMigrating = try schemaVersion()
         if try schemaVersion() < 1 {
             try transaction {
                 try Self.rawExec(handle, ESISDatabase.v1)
@@ -1299,12 +1298,19 @@ public final class ESISDatabase {
             _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
         }
 
-        // v28 把全表 trigram 索引换成只覆盖结算产物的索引：88 MB 的页进了
-        // freelist，但文件不会自己变小。VACUUM 把页还给文件系统——只能在
-        // 迁移事务之外跑。只在这次真的跨过 28 时做一次，之后每次打开不再重写。
-        if versionBeforeMigrating < 29, try schemaVersion() >= 29 {
-            try Self.rawExec(handle, "VACUUM;")
-        }
+        // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
+        // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
+        //
+        // 不能写成「只在跨过某个版本时做一次」：真机上那次 VACUUM 撞上另一个
+        // 连接会失败，而迁移已经提交，于是文件永远停在 258 MB，再也没人回收。
+        // 所以判据是实际状态（freelist），不是版本号；失败也不阻断启动，
+        // 下次打开再试。
+        let freedPages: Int = try {
+            let stmt = try prepare("PRAGMA freelist_count;")
+            defer { sqlite3_finalize(stmt) }
+            return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+        }()
+        if freedPages > 2000 { try? Self.rawExec(handle, "VACUUM;") }
 
         // The declared head and the applied head must agree. A migration gate
         // that was written but never reached, or a version bumped in the
