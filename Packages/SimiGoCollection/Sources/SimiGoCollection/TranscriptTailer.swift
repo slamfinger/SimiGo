@@ -807,7 +807,8 @@ public struct TranscriptScanner {
                         }
                         agentIterator = DirectoryEntries(
                             rootDirectoryFD: rootDirectoryFD,
-                            relativePath: projectID + "/subagents", directory: subagents)
+                            relativePath: try TranscriptPathAccess.relativePath(subagents.path, under: root),
+                            directory: subagents)
                     } catch {
                         if !isNoSuchFileError(error) {
                             errors.append("cannot list \(subagents.path): \(error)")
