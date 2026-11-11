@@ -55,7 +55,7 @@ python3 -I rig/baseline/intake_driver.py  ...
 
 - 全部臂 **n=1**（单结算、单轮消费、单 intake），不构成样本，不与 11 对行为试验或 P2 Run A 读数合并。
 - 时延读数全部 `contaminated`（并行生产实例，用户 2026-11-10 裁定静默窗豁免）；`[READY]` 间隔是 HTTP 面就绪，不是权重驻留证明。
-- 「KV 随进程释放」是进程死亡推论 + RSS 归零观测，未做逐层 KV 内部取证；现行 schema 里 KV 绑定连表都没有（不是零行）。
+- 「KV 随进程释放」是进程死亡推论 + RSS 归零观测，未做逐层 KV 内部取证；KV 绑定有 schema 载体（`settlement_bindings`），当时装置按表名过滤没读到行，见记录末尾勘误（2026-11-12）。
 - 消费走的是 `exact-repeat` + 显式 opt-in 路径；**自动**答案复用不在本轮。
 - 第二 intake 的「外部 agent」由驱动模拟，真实云端 agent 的声明与幂等重试形态未测；第三 intake 只验 sink 落点，未测 transcript 解析前置链路。
 - C 是两时点差（11-09 vs 11-10），无逐时点采样；密度 2.8% 只证增长，不证拓扑化。

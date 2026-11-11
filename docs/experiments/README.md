@@ -18,6 +18,7 @@
 - [EXECUTION_FORK_F0_PROBE_20260918.md](EXECUTION_FORK_F0_PROBE_20260918.md)：Execution Fork F0 探针。该实验已执行，结果见 [F0 Results](EXECUTION_FORK_F0_PROBE_RESULTS_20260919.md)；旧索引的“未动工”状态已过期。
 - [Upstream issue #629 submission archive](UPSTREAM_ISSUE_SUBMISSION_READY.md)：2026-09-19 的提交内容快照；提交时 OPEN 不代表当前上游状态。
 - [ESIS gap closure（2026-11-10）](ESIS_GAP_CLOSURE_20261110/README.md)：载体独立性 SIGKILL→冷启动→零调用消费、intake paired trials、图增长与 E1/E2 四臂。全部 n=1，结论边界见正文「本目录不主张的事」。
+- [GGUF D6 KV invalidation（2026-11-10）](GGUF_D6_KV_INVALIDATION_20261110/README.md)：槽擦除 / sleep-wake / RAM cache 缺席 / 引擎重启后，续接靠 IS 取回的值继续（真机 4 臂，`cached_tokens=0`）；无原始日志，读数按提交信息转写。
 
 ## 其他实验
 
