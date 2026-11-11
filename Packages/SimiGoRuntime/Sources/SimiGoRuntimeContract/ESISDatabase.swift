@@ -81,6 +81,8 @@ public final class ESISDatabase {
 
     private let handle: OpaquePointer
     private let url: URL
+    private let closeLock = NSLock()
+    private var handleIsClosed = false
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -146,8 +148,19 @@ public final class ESISDatabase {
         Self.installCarrierAuthorizer(handle)
     }
 
-    public func close() { sqlite3_close_v2(handle) }
-    deinit { sqlite3_close_v2(handle) }
+    /// Explicit close and deinitialization share one serialized, one-shot close.
+    /// Keep the handle retryable if SQLite reports that closing did not succeed.
+    private func closeHandleIfNeeded() {
+        closeLock.lock()
+        defer { closeLock.unlock() }
+        guard !handleIsClosed else { return }
+        if sqlite3_close_v2(handle) == SQLITE_OK {
+            handleIsClosed = true
+        }
+    }
+
+    public func close() { closeHandleIfNeeded() }
+    deinit { closeHandleIfNeeded() }
 
     private static func applyPragmas(_ db: OpaquePointer) throws {
         for sql in [
