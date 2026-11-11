@@ -2166,7 +2166,7 @@ public final class HTTPServer: @unchecked Sendable {
 
         var schemaVersion: Int?
         do {
-            let database = try ESISDatabase(url: url, createIfNeeded: false)
+            let database = try ESISDatabase(url: url, createIfNeeded: false, readOnly: true)
             schemaVersion = try database.schemaVersion()
             let roots = try database.listRoots().map(\.rootID)
             return SimigoDatabaseStatus(
@@ -2182,7 +2182,7 @@ public final class HTTPServer: @unchecked Sendable {
     /// Read registered roots without converting SQLite failures into an empty
     /// successful registry. The caller owns the HTTP error mapping.
     static func simigoRegisteredRoots(at url: URL) throws -> [ESISDatabase.RootRow] {
-        let database = try ESISDatabase(url: url, createIfNeeded: false)
+        let database = try ESISDatabase(url: url, createIfNeeded: false, readOnly: true)
         return try database.listRoots()
     }
 
