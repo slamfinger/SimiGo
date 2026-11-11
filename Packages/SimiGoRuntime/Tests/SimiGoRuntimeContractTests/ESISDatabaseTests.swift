@@ -173,13 +173,13 @@ final class ESISDatabaseTests: XCTestCase {
         let previousLimit = db.setSQLiteLengthLimitForTesting(256)
         defer { _ = db.setSQLiteLengthLimitForTesting(previousLimit) }
 
-        func assertSQLiteTooBig(_ error: Error, file: StaticString = #filePath, line: UInt = #line) {
+        let assertSQLiteTooBig: (Error) -> Void = { error in
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .executionFailure(let primary, let extended, _) = databaseError else {
-                return XCTFail("expected a typed SQLite execution failure, got: \\(error)", file: file, line: line)
+                return XCTFail("expected a typed SQLite execution failure, got: \\(error)")
             }
-            XCTAssertEqual(primary, SQLITE_TOOBIG, file: file, line: line)
-            XCTAssertEqual(extended, SQLITE_TOOBIG, file: file, line: line)
+            XCTAssertEqual(primary, SQLITE_TOOBIG)
+            XCTAssertEqual(extended, SQLITE_TOOBIG)
         }
 
         XCTAssertThrowsError(try db.verifyObject(objectID), assertSQLiteTooBig)
