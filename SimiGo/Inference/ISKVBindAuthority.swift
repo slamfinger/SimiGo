@@ -15,9 +15,15 @@ import SimiGoRuntimeContract
 ///   path uses as its `logicalBranchId` — no inference-side guessing;
 /// * consumed exactly once, so a grant cannot leak into a later turn of a
 ///   different ES;
-/// * bounded, so an abandoned request cannot grow the map;
-/// * it carries ONLY the recorded digests, never the prefix itself. The final
-///   safety boundary is not this map: the bind site recomputes the pool entry's
+/// * bounded: live grants are capped at `capacity` (FIFO), and an evicted id is
+///   remembered in a SEPARATE bounded tombstone ledger so a governed
+///   continuation whose grant was dropped still fails closed at the bind site.
+///   The ledger is itself capped (`tombstoneCapacity`); an id evicted from it
+///   reverts to the ordinary ungoverned path — a request still in flight after
+///   that many intervening registrations is treated as gone. Tombstones never
+///   re-enter the live eviction queue, so neither structure grows without bound;
+/// * it carries ONLY the recorded digests, never the prefix itself. For an
+///   authorized grant the bind site additionally recomputes the pool entry's
 ///   content hash and compares it against the recorded digests, so a stale,
 ///   wrong, or absent entry still falls back to a cold prefill.
 nonisolated final class ISKVBindAuthority: @unchecked Sendable {
@@ -51,11 +57,18 @@ nonisolated final class ISKVBindAuthority: @unchecked Sendable {
     }
 
     private static let capacity = 64
+    /// Evicted-id ledger bound, kept equal to `capacity`: a small FIFO ring of
+    /// recently evicted ids. An id pushed out of the ring is treated as an
+    /// ordinary (ungoverned) turn again — a request still in flight after that
+    /// many intervening registrations is treated as gone.
+    private static let tombstoneCapacity = 64
 
     private let lock = NSLock()
     private var entries: [String: Entry] = [:]
     private var sequence = 0
     private var insertionOrder: [String] = []
+    private var tombstones: Set<String> = []
+    private var tombstoneOrder: [String] = []
 
     private init() {}
 
@@ -66,6 +79,10 @@ nonisolated final class ISKVBindAuthority: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         sequence += 1
+        // Re-registration revives an id that was previously evicted.
+        if tombstones.remove(esStateID) != nil {
+            tombstoneOrder.removeAll { $0 == esStateID }
+        }
         if entries[esStateID] == nil {
             insertionOrder.append(esStateID)
         } else {
@@ -73,9 +90,18 @@ nonisolated final class ISKVBindAuthority: @unchecked Sendable {
             insertionOrder.append(esStateID)
         }
         entries[esStateID] = Entry(verdict: verdict, sequence: sequence)
+        // Evict the oldest LIVE grant into the tombstone ledger. The id leaves
+        // the live queue for good (no re-append), so this loop shrinks the queue
+        // and terminates; the grant stays fail-closed via the ledger.
         while insertionOrder.count > Self.capacity {
             let oldest = insertionOrder.removeFirst()
             entries[oldest] = nil
+            tombstones.insert(oldest)
+            tombstoneOrder.append(oldest)
+        }
+        while tombstoneOrder.count > Self.tombstoneCapacity {
+            let dropped = tombstoneOrder.removeFirst()
+            tombstones.remove(dropped)
         }
     }
 
@@ -85,18 +111,25 @@ nonisolated final class ISKVBindAuthority: @unchecked Sendable {
     func consume(esStateID: String) -> Lookup {
         lock.lock()
         defer { lock.unlock() }
-        guard let entry = entries.removeValue(forKey: esStateID) else {
-            return .notGoverned
+        if let entry = entries.removeValue(forKey: esStateID) {
+            insertionOrder.removeAll { $0 == esStateID }
+            return .verdict(entry.verdict)
         }
-        insertionOrder.removeAll { $0 == esStateID }
-        return .verdict(entry.verdict)
+        if tombstones.remove(esStateID) != nil {
+            tombstoneOrder.removeAll { $0 == esStateID }
+            return .verdict(.unauthorized(reason: "kv_authority_evicted"))
+        }
+        return .notGoverned
     }
 
     func peek(esStateID: String) -> Lookup {
         lock.lock()
         defer { lock.unlock() }
-        guard let entry = entries[esStateID] else { return .notGoverned }
-        return .verdict(entry.verdict)
+        if let entry = entries[esStateID] { return .verdict(entry.verdict) }
+        if tombstones.contains(esStateID) {
+            return .verdict(.unauthorized(reason: "kv_authority_evicted"))
+        }
+        return .notGoverned
     }
 
     var count: Int {
@@ -110,5 +143,7 @@ nonisolated final class ISKVBindAuthority: @unchecked Sendable {
         defer { lock.unlock() }
         entries.removeAll()
         insertionOrder.removeAll()
+        tombstones.removeAll()
+        tombstoneOrder.removeAll()
     }
 }

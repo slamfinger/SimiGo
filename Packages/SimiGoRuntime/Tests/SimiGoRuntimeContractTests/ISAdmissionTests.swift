@@ -136,6 +136,8 @@ final class ISAdmissionTests: XCTestCase {
         // Seal the payload under a digest that does not match it (tamper).
         let tampered = SettlementAuthority.SettledResult(
             schemaVersion: good.schemaVersion,
+            contractID: good.contractID,
+            contractDigest: good.contractDigest,
             validatedPayload: good.validatedPayload,
             payloadDigest: String(repeating: "0", count: 64),
             trace: good.trace, settledAt: good.settledAt)

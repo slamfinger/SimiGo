@@ -88,16 +88,43 @@ final class ISKVBindAuthorityTests: XCTestCase {
             tokenCount: 12, boundaryHash: boundaryHash)
     }
 
+    /// Stage a settled parent: the continuation-parent dependency edge is
+    /// validated against a real, valid parent settlement in the same commit.
     @MainActor
-    private func stageUnsettledAnchor(value: String) throws -> String {
+    private func stageSettledAnchor(value: String) throws -> (stateID: String, settlementID: String) {
         let store = ExecutionStateGraphStore()
         let root = try store.create()
-        try store.continueState(root, input: value)
-        return root.id
+        let state = try store.continueState(root, input: value)
+        try store.settleProducerResult(
+            generatedText: "RESULT=\(value)",
+            boundToState: state,
+            producerIdentity: ProducerIdentity.identity(fromPath: modelPath!))
+        let settlementID = try XCTUnwrap(store.esis?.latestSettlementID(forStateID: state.id))
+        return (state.id, settlementID)
     }
 
     @MainActor
     private func store() -> ExecutionStateGraphStore { ExecutionStateGraphStore() }
+
+    /// The engine identity the model-free stand-in resolves to. Both halves are
+    /// non-empty content digests, so a settle -> admit round-trip on the same
+    /// stand-in matches the producer rows the settlement recorded.
+    private var engineIdentity: SettlementIdentityBinding.Identity {
+        ProducerIdentity.identity(fromPath: modelPath!)
+    }
+
+    /// The recorded dictionary the bind site sees in production: the settled
+    /// kv.* rows merged with the producer.* identity rows (HTTPServerResponses
+    /// registers exactly this merge). The two namespaces are disjoint, so the
+    /// KV evaluator ignores the producer rows and vice versa.
+    private func recordedBindings(_ admitted: ISAdmission.Admitted) -> [String: String] {
+        admitted.kvBindings.merging(admitted.producerBindings) { kv, _ in kv }
+    }
+
+    /// A specified identity for the fabricated-recorded gate tests (no settlement,
+    /// no engine): both halves non-empty so the gate reaches the digest comparison.
+    private let gateIdentity = SettlementIdentityBinding.Identity(
+        model: "a2-gate-model", tokenizer: "a2-gate-tokenizer")
 
     /// Settle one continuation over the REAL adapter path with a KV
     /// representation, then admit it back through the real IS admission.
@@ -105,13 +132,14 @@ final class ISKVBindAuthorityTests: XCTestCase {
     private func settleAndAdmit(
         tag: String, kvRepresentation: SettlementKVBinding.Representation?
     ) throws -> (outcome: ContinuationSettlementOutcome, admitted: ISAdmission.Admitted) {
-        let anchor = try stageUnsettledAnchor(value: tag)
+        let anchor = try stageSettledAnchor(value: tag)
         let child = "es-child-\(UUID().uuidString.lowercased())"
         let outcome = try settleForNativeMLXContinuation(
             store: store(),
             request: ContinuationSettlementRequest(
                 generatedText: "RESULT=\(tag)",
-                parentESStateID: anchor,
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
                 childESStateID: child,
                 verifiedBindings: ["next_input": .string(tag)]),
             modelPath: modelPath!,
@@ -156,6 +184,12 @@ final class ISKVBindAuthorityTests: XCTestCase {
                        "IS admission must carry the settled KV rows to the next ES")
         XCTAssertEqual(Set(admitted.kvBindings.keys),
                        [SettlementKVBinding.poolKey, SettlementKVBinding.cacheFingerprint])
+        // T9 read half: admission also carries the producer identity rows the
+        // physical KV bind site gates on (model + tokenizer content digests).
+        XCTAssertEqual(
+            admitted.producerBindings,
+            SettlementIdentityBinding.bindings(for: engineIdentity),
+            "admission must carry the producer identity rows for the physical KV gate")
     }
 
     // MARK: - Read side: the bind site authorizes one boundary only
@@ -168,21 +202,23 @@ final class ISKVBindAuthorityTests: XCTestCase {
         let settledRepresentation = representation(in: ns, boundaryHash: 0x0a0b_0c0d_0e0f_1011)
         let (_, admitted) = try settleAndAdmit(
             tag: "A2-KV-EVALUATE-7102", kvRepresentation: settledRepresentation)
-        let recorded = admitted.kvBindings
+        let recorded = recordedBindings(admitted)
 
         // The boundary the settlement actually exported: authorized.
         XCTAssertEqual(
             NativeMLXPrefixPool.bindVerdict(
                 .verdict(.authorized(recorded)), namespace: ns,
                 tokenCount: settledRepresentation.tokenCount,
-                boundaryHash: settledRepresentation.boundaryHash),
+                boundaryHash: settledRepresentation.boundaryHash,
+                engineIdentity: engineIdentity),
             .allowed)
 
         // Same artifact, one more token covered: the content claim differs.
         let longer = NativeMLXPrefixPool.bindVerdict(
             .verdict(.authorized(recorded)), namespace: ns,
             tokenCount: settledRepresentation.tokenCount + 1,
-            boundaryHash: settledRepresentation.boundaryHash)
+            boundaryHash: settledRepresentation.boundaryHash,
+            engineIdentity: engineIdentity)
         XCTAssertEqual(longer, .rejected(reason: SettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
         XCTAssertFalse(longer.permitsBind, "a longer reuse than settled must not bind")
 
@@ -191,7 +227,8 @@ final class ISKVBindAuthorityTests: XCTestCase {
             NativeMLXPrefixPool.bindVerdict(
                 .verdict(.authorized(recorded)), namespace: ns,
                 tokenCount: settledRepresentation.tokenCount,
-                boundaryHash: settledRepresentation.boundaryHash &+ 1),
+                boundaryHash: settledRepresentation.boundaryHash &+ 1,
+                engineIdentity: engineIdentity),
             .rejected(reason: SettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
 
         // Different KV namespace (different kvSettings / thinking flag) — the same
@@ -200,7 +237,8 @@ final class ISKVBindAuthorityTests: XCTestCase {
         let otherFingerprint = NativeMLXPrefixPool.bindVerdict(
             .verdict(.authorized(recorded)), namespace: otherNamespace,
             tokenCount: settledRepresentation.tokenCount,
-            boundaryHash: settledRepresentation.boundaryHash)
+            boundaryHash: settledRepresentation.boundaryHash,
+            engineIdentity: engineIdentity)
         XCTAssertEqual(
             otherFingerprint,
             .rejected(reason: SettlementKVBinding.Refusal.fingerprintMismatch.rawValue))
@@ -208,15 +246,74 @@ final class ISKVBindAuthorityTests: XCTestCase {
         // Missing rows fail closed (a settlement from before this wiring).
         XCTAssertEqual(
             NativeMLXPrefixPool.bindVerdict(.verdict(.authorized([:])), namespace: ns,
-                                            tokenCount: 12, boundaryHash: 1),
+                                            tokenCount: 12, boundaryHash: 1,
+                                            engineIdentity: engineIdentity),
             .rejected(reason: SettlementKVBinding.Refusal.fingerprintAbsent.rawValue))
         var halfOnly = recorded
         halfOnly[SettlementKVBinding.poolKey] = nil
         XCTAssertEqual(
             NativeMLXPrefixPool.bindVerdict(.verdict(.authorized(halfOnly)), namespace: ns,
                                             tokenCount: settledRepresentation.tokenCount,
-                                            boundaryHash: settledRepresentation.boundaryHash),
+                                            boundaryHash: settledRepresentation.boundaryHash,
+                                            engineIdentity: engineIdentity),
             .rejected(reason: SettlementKVBinding.Refusal.poolKeyAbsent.rawValue))
+    }
+
+    // MARK: - Physical identity gate: model + tokenizer must match exactly
+
+    /// Post-#169: identity is provenance for semantic reuse, but a PHYSICAL KV
+    /// restore is gated on an exact model + tokenizer match against the producer
+    /// rows the settlement recorded. The KV boundary is checked first; only a
+    /// matching boundary reaches the identity gate, and a different model or
+    /// tokenizer falls back to cold prefill (fail-closed). An unnamed engine is
+    /// never a wildcard, and a settlement with no producer rows grants no restore.
+    @MainActor
+    func testPhysicalKVBindRequiresExactProducerIdentity() async throws {
+        let ns = namespace()
+        let settledRepresentation = representation(in: ns, boundaryHash: 0xfeed_face)
+        let (_, admitted) = try settleAndAdmit(
+            tag: "A2-KV-IDENTITY-7104", kvRepresentation: settledRepresentation)
+        let recorded = recordedBindings(admitted)
+        let producer = engineIdentity
+        XCTAssertTrue(producer.isSpecified, "the stand-in must resolve a specified identity")
+
+        func verdict(_ identity: SettlementIdentityBinding.Identity) -> NativeMLXPrefixPool.BindAuthority {
+            NativeMLXPrefixPool.bindVerdict(
+                .verdict(.authorized(recorded)), namespace: ns,
+                tokenCount: settledRepresentation.tokenCount,
+                boundaryHash: settledRepresentation.boundaryHash,
+                engineIdentity: identity)
+        }
+
+        // Same model + tokenizer: the physical representation is restorable.
+        XCTAssertEqual(verdict(producer), .allowed)
+
+        // A different model cannot restore this KV artifact even at the right boundary.
+        XCTAssertEqual(
+            verdict(SettlementIdentityBinding.Identity(
+                model: producer.model + "-other", tokenizer: producer.tokenizer)),
+            .rejected(reason: SettlementIdentityBinding.Refusal.modelMismatch.rawValue))
+
+        // A different tokenizer is a different physical layout: refused.
+        XCTAssertEqual(
+            verdict(SettlementIdentityBinding.Identity(
+                model: producer.model, tokenizer: producer.tokenizer + "-other")),
+            .rejected(reason: SettlementIdentityBinding.Refusal.tokenizerMismatch.rawValue))
+
+        // An unnamed engine is not a wildcard: fail closed.
+        XCTAssertEqual(
+            verdict(.absent),
+            .rejected(reason: SettlementIdentityBinding.Refusal.consumerAbsent.rawValue))
+
+        // KV rows without producer identity rows (a pre-T9 settlement) grant no
+        // physical restore: the identity gate fails closed on the absent model row.
+        XCTAssertEqual(
+            NativeMLXPrefixPool.bindVerdict(
+                .verdict(.authorized(admitted.kvBindings)), namespace: ns,
+                tokenCount: settledRepresentation.tokenCount,
+                boundaryHash: settledRepresentation.boundaryHash,
+                engineIdentity: producer),
+            .rejected(reason: SettlementIdentityBinding.Refusal.modelAbsent.rawValue))
     }
 
     // MARK: - No KV row => no authority
@@ -241,7 +338,8 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 : .authorized(admitted.kvBindings))
         let decision = NativeMLXPrefixPool.bindVerdict(
             ISKVBindAuthority.shared.consume(esStateID: esID),
-            namespace: namespace(), tokenCount: 12, boundaryHash: 1)
+            namespace: namespace(), tokenCount: 12, boundaryHash: 1,
+            engineIdentity: engineIdentity)
         XCTAssertEqual(decision, .rejected(reason: "no_settled_kv_binding"))
         XCTAssertFalse(decision.permitsBind)
     }
@@ -256,12 +354,14 @@ final class ISKVBindAuthorityTests: XCTestCase {
         let ns = namespace()
         let settledRepresentation = representation(in: ns, boundaryHash: 0x9999_8888)
         let recorded = SettlementKVBinding.bindings(for: settledRepresentation)
+            .merging(SettlementIdentityBinding.bindings(for: gateIdentity)) { kv, _ in kv }
 
         // Unmanaged = the pool edge as it was before A-2.
         let ungoverned = NativeMLXPrefixPool.bindVerdict(
             ISKVBindAuthority.shared.consume(esStateID: "es-never-registered-\(UUID().uuidString)"),
             namespace: ns, tokenCount: settledRepresentation.tokenCount,
-            boundaryHash: settledRepresentation.boundaryHash)
+            boundaryHash: settledRepresentation.boundaryHash,
+            engineIdentity: gateIdentity)
         XCTAssertEqual(ungoverned, .notGoverned)
         XCTAssertTrue(ungoverned.permitsBind, "an ungoverned turn must not be blocked by A-2")
 
@@ -273,7 +373,8 @@ final class ISKVBindAuthorityTests: XCTestCase {
             NativeMLXPrefixPool.bindVerdict(
                 ISKVBindAuthority.shared.consume(esStateID: esID),
                 namespace: ns, tokenCount: settledRepresentation.tokenCount,
-                boundaryHash: settledRepresentation.boundaryHash),
+                boundaryHash: settledRepresentation.boundaryHash,
+                engineIdentity: gateIdentity),
             .allowed)
         XCTAssertEqual(
             ISKVBindAuthority.shared.consume(esStateID: esID), .notGoverned,
@@ -294,9 +395,10 @@ final class ISKVBindAuthorityTests: XCTestCase {
             .verdict(.unauthorized(reason: "revoked")))
     }
 
-    /// The bound table is bounded: an old unconsumed grant is evicted rather than
-    /// growing forever (the everyday path never registers, so evictions here only
-    /// drop grants whose request is already gone).
+    /// The bound table is bounded: an old unconsumed grant is evicted rather
+    /// than growing forever. Eviction tombstones the grant — the evicted ES
+    /// stays governed and must be refused at the bind site, never downgraded
+    /// to an ungoverned everyday turn.
     @MainActor
     func testGateTableStaysBoundedUnderChurn() {
         ISKVBindAuthority.shared.reset()
@@ -306,9 +408,92 @@ final class ISKVBindAuthorityTests: XCTestCase {
         }
         XCTAssertLessThanOrEqual(ISKVBindAuthority.shared.count, 64,
                                 "the grant table must stay bounded")
-        // The oldest entries were dropped; the newest is still governed.
-        XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids.first!).isGoverned, false)
+        // The oldest entries were tombstoned, not forgotten.
+        XCTAssertEqual(
+            ISKVBindAuthority.shared.peek(esStateID: ids.first!),
+            .verdict(.unauthorized(reason: "kv_authority_evicted")))
         XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids.last!).isGoverned, true)
+        ISKVBindAuthority.shared.reset()
+    }
+
+    /// An in-flight governed continuation whose grant was evicted must fail
+    /// closed at the bind site (cold prefill); a never-registered everyday turn
+    /// keeps the pre-A-2 behaviour; re-registration replaces the tombstone.
+    @MainActor
+    func testEvictedInFlightGrantFailsClosedAtBind() {
+        ISKVBindAuthority.shared.reset()
+        let ns = namespace()
+        let settledRepresentation = representation(in: ns)
+        let recorded = SettlementKVBinding.bindings(for: settledRepresentation)
+            .merging(SettlementIdentityBinding.bindings(for: gateIdentity)) { kv, _ in kv }
+
+        let inFlight = "es-" + UUID().uuidString.lowercased()
+        ISKVBindAuthority.shared.register(esStateID: inFlight, verdict: .authorized(recorded))
+        // Churn past capacity before the in-flight request reaches its bind site.
+        for _ in 0..<64 {
+            ISKVBindAuthority.shared.register(
+                esStateID: "es-" + UUID().uuidString.lowercased(),
+                verdict: .unauthorized(reason: "churn"))
+        }
+        let decision = NativeMLXPrefixPool.bindVerdict(
+            ISKVBindAuthority.shared.consume(esStateID: inFlight),
+            namespace: ns, tokenCount: settledRepresentation.tokenCount,
+            boundaryHash: settledRepresentation.boundaryHash,
+            engineIdentity: gateIdentity)
+        XCTAssertEqual(decision, .rejected(reason: "kv_authority_evicted"))
+        XCTAssertFalse(decision.permitsBind,
+                       "an evicted in-flight grant must not restore pooled KV")
+
+        // The everyday path is unchanged: never registered = not governed.
+        let everyday = NativeMLXPrefixPool.bindVerdict(
+            ISKVBindAuthority.shared.consume(esStateID: "es-never-\(UUID().uuidString)"),
+            namespace: ns, tokenCount: settledRepresentation.tokenCount,
+            boundaryHash: settledRepresentation.boundaryHash,
+            engineIdentity: gateIdentity)
+        XCTAssertEqual(everyday, .notGoverned)
+        XCTAssertTrue(everyday.permitsBind)
+
+        // Re-registration replaces the tombstone with a fresh grant.
+        ISKVBindAuthority.shared.register(esStateID: inFlight, verdict: .authorized(recorded))
+        XCTAssertEqual(
+            NativeMLXPrefixPool.bindVerdict(
+                ISKVBindAuthority.shared.consume(esStateID: inFlight),
+                namespace: ns, tokenCount: settledRepresentation.tokenCount,
+                boundaryHash: settledRepresentation.boundaryHash,
+                engineIdentity: gateIdentity),
+            .allowed)
+        ISKVBindAuthority.shared.reset()
+    }
+
+    /// The tombstone ledger is itself bounded: live grants stay within capacity,
+    /// recently evicted ids stay fail-closed, and an id pushed out of the ledger
+    /// reverts to the ordinary ungoverned path. This forces the bounded-window
+    /// invariant instead of assuming an evicted request is always already gone.
+    @MainActor
+    func testTombstoneLedgerIsBoundedAndWindowExpires() {
+        ISKVBindAuthority.shared.reset()
+        // 64 live + 64 tombstone ring + 5 pushed out of the ring = 133.
+        let ids = (0..<133).map { "es-\($0)" }
+        for id in ids {
+            ISKVBindAuthority.shared.register(esStateID: id, verdict: .unauthorized(reason: "x"))
+        }
+        XCTAssertLessThanOrEqual(ISKVBindAuthority.shared.count, 64,
+                                "live grants must stay bounded under churn")
+        // Newest 64 (indices 69...132) are live.
+        XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids[69]).isGoverned, true)
+        XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids[132]).isGoverned, true)
+        // Retained tombstones (indices 5...68) stay fail-closed.
+        XCTAssertEqual(
+            ISKVBindAuthority.shared.peek(esStateID: ids[5]),
+            .verdict(.unauthorized(reason: "kv_authority_evicted")))
+        XCTAssertEqual(
+            ISKVBindAuthority.shared.peek(esStateID: ids[68]),
+            .verdict(.unauthorized(reason: "kv_authority_evicted")))
+        // The 5 oldest were pushed out of the bounded ring: ordinary again.
+        for i in 0..<5 {
+            XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids[i]), .notGoverned,
+                           "an id evicted from the bounded ledger reverts to ungoverned")
+        }
         ISKVBindAuthority.shared.reset()
     }
 }

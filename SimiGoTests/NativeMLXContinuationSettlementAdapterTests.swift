@@ -101,18 +101,20 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// Stage a live, NOT-yet-settled ES state in the product's authoritative
-    /// store, mirroring how a continuation anchor exists before the hot path
-    /// settles it. Returns the state id used as `previous_es_state_id`.
+    /// Stage a live, SETTLED ES state in the product's authoritative store.
+    /// A continuation settles against the parent settlement its admission
+    /// verified, so the anchor must carry a valid settlement of its own.
     @MainActor
-    private func stageUnsettledAnchor(value: String) throws -> String {
+    private func stageSettledAnchor(value: String) throws -> (stateID: String, settlementID: String) {
         let store = ExecutionStateGraphStore()
         let root = try store.create()
-        try store.continueState(root, input: value)
-        let state = try XCTUnwrap(store.state(root.id))
-        XCTAssertNil(try store.esis?.latestSettlementID(forStateID: state.id),
-                     "the staged anchor must start unsettled")
-        return state.id
+        let state = try store.continueState(root, input: value)
+        try store.settleProducerResult(
+            generatedText: "RESULT=\(value)",
+            boundToState: state,
+            producerIdentity: ProducerIdentity.identity(fromPath: modelPath!))
+        let settlementID = try XCTUnwrap(store.esis?.latestSettlementID(forStateID: state.id))
+        return (state.id, settlementID)
     }
 
     @MainActor
@@ -168,6 +170,49 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     @MainActor
     private func store() -> ExecutionStateGraphStore { ExecutionStateGraphStore() }
 
+    /// Read back the v36 result-contract identity columns for one settlement.
+    /// Test-only: the production read path (`readSettlementReceipts`) does not
+    /// surface these columns, so the directed proof reads them straight from the
+    /// isolated authoritative store to verify they were recorded at settle time.
+    private func readResultContractIdentity(
+        settlementID: String
+    ) throws -> (id: String?, digest: String?) {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open(ManagedPaths.databaseURL.path, &handle)
+        guard openRC == SQLITE_OK, let handle else {
+            if let handle { sqlite3_close(handle) }
+            throw NSError(
+                domain: "NativeMLXContinuationSettlementAdapterTests.SQLite",
+                code: Int(openRC),
+                userInfo: [NSLocalizedDescriptionKey: "could not open isolated test database"])
+        }
+        defer { sqlite3_close(handle) }
+        var stmt: OpaquePointer?
+        let sql = """
+        SELECT result_contract_id, result_contract_digest
+        FROM settlements WHERE settlement_id = ? LIMIT 1;
+        """
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK, let stmt else {
+            throw NSError(
+                domain: "NativeMLXContinuationSettlementAdapterTests.SQLite",
+                code: Int(sqlite3_errcode(handle)),
+                userInfo: [NSLocalizedDescriptionKey: "prepare failed for result-contract read"])
+        }
+        defer { sqlite3_finalize(stmt) }
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        sqlite3_bind_text(stmt, 1, settlementID, -1, transient)
+        guard sqlite3_step(stmt) == SQLITE_ROW else {
+            throw NSError(
+                domain: "NativeMLXContinuationSettlementAdapterTests.SQLite",
+                code: Int(sqlite3_errcode(handle)),
+                userInfo: [NSLocalizedDescriptionKey: "no settlement row for \(settlementID)"])
+        }
+        func col(_ i: Int32) -> String? {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        }
+        return (col(0), col(1))
+    }
+
     // MARK: - Tests
 
     /// Positive: the production adapter settles the ACTUAL generated text over
@@ -177,7 +222,7 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     @MainActor
     func testProductionAdapterSettlesAndStaysAdmissible() async throws {
         let value = "ADAPTER-SETTLE-6311"
-        let anchor = try stageUnsettledAnchor(value: value)
+        let anchor = try stageSettledAnchor(value: value)
 
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
         // Model-free generation stand-in: the text a real generation would have
@@ -186,7 +231,8 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         let child = "es-child-\(UUID().uuidString.lowercased())"
         let outcome = try await handler(ContinuationSettlementRequest(
             generatedText: "RESULT=\(value)",
-            parentESStateID: anchor,
+            parentESStateID: anchor.stateID,
+            parentSettlementID: anchor.settlementID,
             childESStateID: child,
             verifiedBindings: ["next_input": .string(value)]))
 
@@ -203,9 +249,19 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
                        "the adapter must report the id the authoritative store issued")
         XCTAssertEqual(receipts(for: fresh, stateID: child).count, 1)
         XCTAssertEqual(try authoritativeReceiptCount(stateID: child), 1)
-        XCTAssertNotEqual(child, anchor)
-        XCTAssertEqual(fresh.state(child)?.parentID, anchor,
+        XCTAssertNotEqual(child, anchor.stateID)
+        XCTAssertEqual(fresh.state(child)?.parentID, anchor.stateID,
                        "the settled state must be a child of the continuation anchor")
+        XCTAssertEqual(fresh.state(child)?.nextInput, value,
+                       "the child ES projection must carry the settled value")
+        let childRow = try XCTUnwrap(
+            fresh.esis?.readGraph().states.first { $0.id == child })
+        XCTAssertEqual(childRow.nextInput, value,
+                       "the child ES row must persist the settled value as next_input")
+        XCTAssertTrue(
+            try XCTUnwrap(fresh.esis).upstreamDependencyClosure(
+                ofSettlement: outcome.settlementID).contains(anchor.settlementID),
+            "the child settlement must depend on the admission-verified parent settlement")
 
         // Identity binding really landed in settlement_bindings (read back).
         // The store persists `digest(identity.model|tokenizer)`, the same form
@@ -233,14 +289,15 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     /// written — neither the graph receipt nor the authoritative row.
     @MainActor
     func testContractRefusalLeavesNoHalfSettledRecord() async throws {
-        let anchor = try stageUnsettledAnchor(value: "ADAPTER-REFUSE-6312")
+        let anchor = try stageSettledAnchor(value: "ADAPTER-REFUSE-6312")
 
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
         let child = "es-child-\(UUID().uuidString.lowercased())"
         let error = await catchAsyncError {
             _ = try await handler(ContinuationSettlementRequest(
                 generatedText: "NOISE-OFF-CONTRACT",
-                parentESStateID: anchor,
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
                 childESStateID: child,
                 verifiedBindings: ["next_input": .string("ADAPTER-REFUSE-6312")]))
         }
@@ -258,6 +315,135 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
                      "a refused settlement must not leave a child execution state")
     }
 
+    /// #6 confirmed result-contract (IS codex-2026-11-11-ben#t8): continuation is
+    /// restatement-after-recovery, NOT derivation. Pin both arms at the product
+    /// adapter so the confirmed boundary is enforceable and auditable:
+    ///  * restating the admission-verified value settles, and the authoritative
+    ///    settlement row records the contract identity (`schema_version`);
+    ///  * a well-formed `RESULT=` that DERIVES a different value is refused by the
+    ///    `equals_binding` constraint (not the pattern) with ZERO writes.
+    /// This locks the confirmed boundary; it does not open derivation.
+    @MainActor
+    func testContinuationContractIsConfirmedRestatementNotDerivation() async throws {
+        let value = "ADAPTER-RESTATE-6316"
+        let derived = "ADAPTER-DERIVE-6316-NEW"
+        let anchor = try stageSettledAnchor(value: value)
+        let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
+        let own = ProducerIdentity.identity(fromPath: modelPath!)
+
+        // Restatement arm: RESULT=<verified value> settles under the confirmed
+        // contract, and the row carries the contract identity for later audit.
+        let restatedChild = "es-child-\(UUID().uuidString.lowercased())"
+        let outcome = try await handler(ContinuationSettlementRequest(
+            generatedText: "RESULT=\(value)",
+            parentESStateID: anchor.stateID,
+            parentSettlementID: anchor.settlementID,
+            childESStateID: restatedChild,
+            verifiedBindings: ["next_input": .string(value)]))
+        let fresh = store()
+        let row = try XCTUnwrap(
+            fresh.esis?.readSettlementReceipts().first { $0.id.uuidString == outcome.settlementID })
+        XCTAssertEqual(row.schemaVersion, "simigo.result-contract/v1",
+                       "the settled row must record which result-contract it was settled under")
+        XCTAssertEqual(fresh.state(restatedChild)?.nextInput, value)
+        XCTAssertEqual(
+            try fresh.admitContinuation(stateID: restatedChild, consumer: own).recoveredValue,
+            value, "a restated child stays admissible — the restatement chain continues")
+
+        // Derivation arm: a well-formed RESULT= carrying a NEW value passes the
+        // pattern but violates equals_binding(next_input). It must be refused as
+        // a contract rejection (not an engine fault) and write nothing.
+        let before = try authoritativeReceiptCountTotal()
+        let derivedChild = "es-child-\(UUID().uuidString.lowercased())"
+        let error = await catchAsyncError {
+            _ = try await handler(ContinuationSettlementRequest(
+                generatedText: "RESULT=\(derived)",
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
+                childESStateID: derivedChild,
+                verifiedBindings: ["next_input": .string(value)]))
+        }
+        let unwrapped = try XCTUnwrap(error, "a derived (non-restated) value must be refused")
+        let terminal = continuationSettlementTerminal(for: unwrapped)
+        XCTAssertEqual(terminal.status, 422)
+        XCTAssertEqual(terminal.errorKind, "NATIVE_RESULT_CONTRACT_REJECTED")
+        // It is the equals_binding constraint that refuses, not the RESULT=
+        // pattern: the output was well-formed, it simply derived a new value.
+        let contractError = try XCTUnwrap(unwrapped as? NativeResultContractError)
+        XCTAssertEqual(contractError.code, "PRODUCER_RESULT_BINDING_MISMATCH")
+
+        let after = store()
+        XCTAssertNil(try after.esis?.latestSettlementID(forStateID: derivedChild))
+        XCTAssertNil(after.state(derivedChild),
+                     "a refused derivation must not leave a child execution state")
+        XCTAssertTrue(receipts(for: after, stateID: derivedChild).isEmpty)
+        XCTAssertEqual(try authoritativeReceiptCountTotal(), before,
+                       "a refused derivation must add no settlement row")
+    }
+
+    /// T7 (#6 opened): derivation is authorized by a TASK-LEVEL contract, never by
+    /// silently swapping the default. Supplying a versioned deriving contract (its
+    /// own `contract_id`, no `equals_binding` pin) to `settleContinuationResult`
+    /// settles a NEW value computed from the verified input; the settlement row
+    /// records that contract's id / schema version / digest, and the child still
+    /// depends on the admission-verified parent through the continuation-parent
+    /// edge. The default restatement contract is unchanged (the prior test pins it).
+    @MainActor
+    func testTaskLevelContractOpensDerivationAndRecordsContractIdentity() async throws {
+        let value = "ADAPTER-DERIVE-OPEN-6317"
+        let derived = "ADAPTER-DERIVE-OPEN-6317-NEW"
+        let anchor = try stageSettledAnchor(value: value)
+        let own = ProducerIdentity.identity(fromPath: modelPath!)
+
+        // A versioned deriving contract: same RESULT= field shape, its own
+        // contract_id, and NO equals_binding pin — so a new value is admissible.
+        let derivingContractJSON = Data(#"{"schema_version":"simigo.result-contract/v1","contract_id":"simigo.continuation.derivation.test","fields":{"content":{"pattern":"^RESULT=(.+)$","capture_group":1,"type":"string","normalize":"trim","nonempty":true}},"constraints":[]}"#.utf8)
+
+        let child = "es-child-\(UUID().uuidString.lowercased())"
+        let commit = try store().settleContinuationResult(
+            generatedText: "RESULT=\(derived)",
+            parentStateID: anchor.stateID,
+            parentSettlementID: anchor.settlementID,
+            childStateID: child,
+            verifiedBindings: ["next_input": .string(value)],
+            contractJSON: derivingContractJSON,
+            producerIdentity: own)
+
+        let fresh = store()
+        // A NEW value settled — not a restatement of the verified input.
+        XCTAssertEqual(commit.childStateID, child)
+        XCTAssertNotEqual(derived, value)
+        XCTAssertEqual(fresh.state(child)?.nextInput, derived)
+        let childRow = try XCTUnwrap(fresh.esis?.readGraph().states.first { $0.id == child })
+        XCTAssertEqual(childRow.nextInput, derived)
+
+        // The row records WHICH versioned contract authorized the derivation.
+        let row = try XCTUnwrap(
+            fresh.esis?.readSettlementReceipts().first { $0.id.uuidString == commit.settlementID })
+        XCTAssertEqual(row.schemaVersion, "simigo.result-contract/v1")
+        let identity = try readResultContractIdentity(settlementID: commit.settlementID)
+        XCTAssertEqual(identity.id, "simigo.continuation.derivation.test",
+                       "the settlement must name the task-level contract that authorized it")
+        XCTAssertEqual(identity.digest, SettlementAuthority.payloadDigest(derivingContractJSON),
+                       "the settlement must pin the exact contract bytes (version digest)")
+        // The default restatement contract is a DIFFERENT version: same input,
+        // different task contract => different recorded digest (no key collision).
+        XCTAssertNotEqual(
+            identity.digest,
+            SettlementAuthority.payloadDigest(ExecutionStateGraphStore.referenceResultContractJSON))
+
+        // Derivation still explicitly depends on the admission-verified parent.
+        XCTAssertTrue(
+            try XCTUnwrap(fresh.esis).upstreamDependencyClosure(
+                ofSettlement: commit.settlementID).contains(anchor.settlementID),
+            "a derived child must depend on the verified parent settlement")
+
+        // The derived child stays admissible — the chain continues under provenance.
+        XCTAssertEqual(
+            try fresh.admitContinuation(stateID: child, consumer: own).recoveredValue,
+            derived)
+    }
+
     /// An anchor that names no state in the authoritative graph is an engine
     /// fault (500), never a business 422, and writes nothing. Receipt counts are
     /// asserted delta-wise because the isolated store is shared across the
@@ -272,6 +458,7 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
             _ = try await handler(ContinuationSettlementRequest(
                 generatedText: "RESULT=anything",
                 parentESStateID: ghostAnchor,
+                parentSettlementID: "settlement-ghost",
                 childESStateID: "es-child-\(UUID().uuidString.lowercased())",
                 verifiedBindings: ["next_input": .string("anything")]))
         }
@@ -292,11 +479,12 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     /// DIFFERENT identity while remaining admissible to the adapter's own.
     @MainActor
     func testIdentityIsNotBorrowableAcrossExecutions() async throws {
-        let anchor = try stageUnsettledAnchor(value: "ADAPTER-IDENTITY-6313")
+        let anchor = try stageSettledAnchor(value: "ADAPTER-IDENTITY-6313")
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
         let outcome = try await handler(ContinuationSettlementRequest(
             generatedText: "RESULT=ADAPTER-IDENTITY-6313",
-            parentESStateID: anchor,
+            parentESStateID: anchor.stateID,
+            parentSettlementID: anchor.settlementID,
             childESStateID: "es-child-\(UUID().uuidString.lowercased())",
             verifiedBindings: ["next_input": .string("ADAPTER-IDENTITY-6313")]))
         XCTAssertTrue(outcome.identityBindingPublished)
@@ -321,7 +509,7 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     /// the authoritative transaction has returned successfully.
     @MainActor
     func testIdentityBindingWriteFailureRollsBackWholeSettlement() async throws {
-        let anchor = try stageUnsettledAnchor(value: "ADAPTER-ATOMIC-6314")
+        let anchor = try stageSettledAnchor(value: "ADAPTER-ATOMIC-6314")
         let settlementsBefore = try authoritativeReceiptCountTotal()
         let bindingsBefore = try authoritativeBindingCountTotal()
         let trigger = "fail_identity_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
@@ -340,7 +528,8 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         let error = await catchAsyncError {
             _ = try await handler(ContinuationSettlementRequest(
                 generatedText: "RESULT=ADAPTER-ATOMIC-6314",
-                parentESStateID: anchor,
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
                 childESStateID: child,
                 verifiedBindings: ["next_input": .string("ADAPTER-ATOMIC-6314")]))
         }
@@ -368,7 +557,7 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     @MainActor
     func testConcurrentSameAnchorSettlementsReturnTheirOwnIDs() async throws {
         let value = "ADAPTER-CONCURRENT-6315"
-        let anchor = try stageUnsettledAnchor(value: value)
+        let anchor = try stageSettledAnchor(value: value)
         let fixedDate = Date(timeIntervalSince1970: 1_798_000_000)
         let settled = try SettlementAuthority.authorize(
             generatedText: "RESULT=\(value)",
@@ -392,7 +581,7 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
                 let db = try ESISDatabase(url: databaseURL, createIfNeeded: false)
                 let id = try db.recordNativeSettlementWithIdentity(
                     settled,
-                    stateID: anchor,
+                    stateID: anchor.stateID,
                     identity: identities[index]
                 )
                 results.set(.success(id.uuidString), for: index)
@@ -438,7 +627,7 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
             bindings1[SettlementIdentityBinding.tokenizerKey],
             SettlementIdentityBinding.digest(identities[1].tokenizer))
 
-        let latest = try XCTUnwrap(verifier.latestSettlementID(forStateID: anchor))
+        let latest = try XCTUnwrap(verifier.latestSettlementID(forStateID: anchor.stateID))
         XCTAssertTrue(latest == id0 || latest == id1)
         XCTAssertTrue(id0 != latest || id1 != latest,
                       "same settledAt yields one latest ID, but both calls retain their own IDs")

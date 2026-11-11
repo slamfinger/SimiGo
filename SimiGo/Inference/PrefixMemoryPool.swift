@@ -76,6 +76,10 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
     /// digest 比较——迁到内存不得让已结算复用失检（§II.3）。
     private var adoptionContext: String?
     private var adoptionAuthority = ISKVBindAuthority.Lookup.notGoverned
+    /// This resident model's re-derived identity, recorded at hook install. The
+    /// governed adopt path gates physical KV restore on it matching the producer
+    /// rows the settlement recorded; `.absent` fails closed (no restore).
+    private var engineIdentity = SettlementIdentityBinding.Identity.absent
 
     // MARK: - 授权上下文
 
@@ -86,6 +90,10 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
             adoptionContext = esStateID
             adoptionAuthority = authority
         }
+    }
+
+    func setEngineIdentity(_ identity: SettlementIdentityBinding.Identity) {
+        lock.withLock { engineIdentity = identity }
     }
 
     // MARK: - 捕获
@@ -244,15 +252,16 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
         authority: ISKVBindAuthority.Lookup,
         source: String
     ) -> Entry? {
-        let candidates = lock.withLock {
-            entries.values
+        let (candidates, identity) = lock.withLock {
+            (entries.values
                 .filter {
                     $0.modelID == namespace.modelID
                         && $0.kvFingerprint == namespace.kvFingerprint
                         && $0.tokenCount < promptTokenIds.count
                         && $0.esStateID == esStateID
                 }
-                .sorted { $0.tokenCount > $1.tokenCount }
+                .sorted { $0.tokenCount > $1.tokenCount },
+             engineIdentity)
         }
         guard !candidates.isEmpty else { return nil }
         // 链哈希一次算全（同 #4 的口径）：cumulative[i] == hash(tokens[0...i])。
@@ -268,7 +277,8 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
             // 不是复用许可，这一条不因为换了内存池而失效。
             let bind = NativeMLXPrefixPool.bindVerdict(
                 authority, namespace: namespace,
-                tokenCount: candidate.tokenCount, boundaryHash: candidate.boundaryHash)
+                tokenCount: candidate.tokenCount, boundaryHash: candidate.boundaryHash,
+                engineIdentity: identity)
             guard bind.permitsBind else {
                 bindRejected = true
                 RuntimeTraceLogger.shared.trace(

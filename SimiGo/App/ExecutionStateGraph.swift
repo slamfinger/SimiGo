@@ -405,7 +405,14 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// (`next_input`) that is already persisted with the graph. It exercises the
     /// production-native constraint family only, so the gate never falls back to a
     /// Python validator, and an unknown/mismatched value refuses fail-closed.
-    static let referenceResultContractJSON: Data = Data("{\"schema_version\":\"simigo.result-contract/v1\",\"fields\":{\"content\":{\"pattern\":\"^RESULT=(.+)$\",\"capture_group\":1,\"type\":\"string\",\"normalize\":\"trim\",\"nonempty\":true}},\"constraints\":[{\"kind\":\"equals_binding\",\"field\":\"content\",\"binding\":\"next_input\"}]}".utf8)
+    ///
+    /// The DEFAULT continuation contract = restatement-after-recovery (IS
+    /// codex-2026-11-11-ben#t8): `equals_binding` to `next_input` commits the
+    /// recovered value verbatim. Derivation is opened separately by supplying a
+    /// task-level contract (carrying its own `contract_id`) to
+    /// `settleContinuationResult`; this constant stays the restatement default and
+    /// is never silently swapped for a deriving contract.
+    static let referenceResultContractJSON: Data = Data("{\"schema_version\":\"simigo.result-contract/v1\",\"contract_id\":\"simigo.continuation.restatement\",\"fields\":{\"content\":{\"pattern\":\"^RESULT=(.+)$\",\"capture_group\":1,\"type\":\"string\",\"normalize\":\"trim\",\"nonempty\":true}},\"constraints\":[{\"kind\":\"equals_binding\",\"field\":\"content\",\"binding\":\"next_input\"}]}".utf8)
 
     /// Production settlement entry for a reference state.
     ///
@@ -514,16 +521,31 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// The bindings are the ones the pre-generation IS admission verified for
     /// THIS request — never re-derived from `nextInput`, which the graph may have
     /// mutated (`continueState`) after the parent settled. The native contract
-    /// gate runs BEFORE anything is written, and the child state row, the
-    /// settlement row, its constraint rows and the producer identity bindings all
-    /// commit in ONE SQLite transaction: a refusal leaves no child ES, and a
-    /// store failure can never report a partial settlement as success.
+    /// gate runs BEFORE anything is written, and the child state row (carrying
+    /// the settled value as its durable `nextInput`), the settlement row, its
+    /// constraint rows, the producer identity bindings and the
+    /// `continuation-parent` dependency edge to the admission-verified parent
+    /// settlement all commit in ONE SQLite transaction: a refusal leaves no
+    /// child ES, and a store failure can never report a partial settlement as
+    /// success. The dependency edge makes a later parent-source invalidation
+    /// cascade to this child.
+    ///
+    /// `contractJSON` is the task-level result contract that authorizes THIS
+    /// settlement. It defaults to the restatement contract (commit the recovered
+    /// value verbatim); a caller may supply a versioned deriving contract (its own
+    /// `contract_id`) to settle a NEW value computed from the verified input. The
+    /// derivation still depends on the admission-verified parent through the same
+    /// `continuation-parent` edge, and the supplied contract's id/version/digest
+    /// are recorded on the settlement row. The gate validates the contract BEFORE
+    /// any write, so a deriving contract that rejects leaves zero rows.
     @discardableResult
     func settleContinuationResult(
         generatedText: String,
         parentStateID: String,
+        parentSettlementID: String,
         childStateID: String,
         verifiedBindings: [String: NativeContractValue],
+        contractJSON: Data = ExecutionStateGraphStore.referenceResultContractJSON,
         producerIdentity: SettlementIdentityBinding.Identity,
         kvRepresentation: SettlementKVBinding.Representation? = nil
     ) throws -> ContinuationSettlementCommit {
@@ -539,7 +561,7 @@ final class ExecutionStateGraphStore: ObservableObject {
 
         let settled = try SettlementAuthority.authorize(
             generatedText: generatedText,
-            contractJSON: Self.referenceResultContractJSON,
+            contractJSON: contractJSON,
             verifiedBindings: verifiedBindings
         )
 
@@ -555,18 +577,22 @@ final class ExecutionStateGraphStore: ObservableObject {
             position: parent.position + 1,
             continuationID: UUID().uuidString,
             anchor: settled.payloadDigest,
-            createdAt: createdAt
+            createdAt: createdAt,
+            nextInput: Self.settledContent(settled)
         )
         // One transaction: child ES + settlement + constraint rows + producer
-        // identity bindings + (when the engine exported one) the derived KV
-        // prefix-representation bindings. The method returns only after all of it
-        // committed.
+        // identity bindings + the continuation-parent dependency edge + (when
+        // the engine exported one) the derived KV prefix-representation
+        // bindings. The method returns only after all of it committed.
         let settlementUUID = try db.recordNativeSettlementWithIdentity(
             settled,
             stateID: childStateID,
             identity: producerIdentity,
             childState: child,
-            kvRepresentation: kvRepresentation
+            kvRepresentation: kvRepresentation,
+            settlementDependencies: [
+                .init(settlementID: parentSettlementID, kind: "continuation-parent")
+            ]
         )
 
         // Update ONLY the in-memory projection, and only after the whole

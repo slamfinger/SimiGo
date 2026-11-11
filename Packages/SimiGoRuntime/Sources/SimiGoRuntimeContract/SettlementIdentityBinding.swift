@@ -175,4 +175,12 @@ public enum SettlementIdentityBinding {
                        detail: "derived settlement bound to this consumer model and tokenizer",
                        boundModel: true, boundTokenizer: true)
     }
+
+    /// The `producer.`-prefixed identity rows of one settlement, ready to hand to
+    /// `evaluate` at a physical-representation bind site. Constraint, `kv.*` and
+    /// `consumer.*` rows live in the same table and are excluded here so a caller
+    /// cannot pass the whole dictionary and get a false pass.
+    public static func recordedProducerBindings(from all: [String: String]) -> [String: String] {
+        all.filter { $0.key == modelKey || $0.key == tokenizerKey }
+    }
 }

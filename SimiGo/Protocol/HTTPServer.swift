@@ -2276,7 +2276,7 @@ public final class HTTPServer: @unchecked Sendable {
                 $0.name == "deep" && ["1", "true", "yes"].contains($0.value ?? "")
             }) ?? false
         guard let db = try? ESISDatabase(
-            url: ManagedPaths.databaseURL, createIfNeeded: false)
+            url: ManagedPaths.databaseURL, createIfNeeded: false, readOnly: true)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2315,6 +2315,23 @@ public final class HTTPServer: @unchecked Sendable {
                 ["error": "CARRIER_UNREADABLE", "detail": "\(error)"],
                 status: 503, on: context.connection, context: context)
         }
+    }
+
+    /// SQLite execution faults are 500, an unusable store 503, content-verification failures 409.
+    private func simigoReadFailure(
+        _ error: Error, contentCode: String, readCode: String
+    ) -> (status: Int, body: [String: Any]) {
+        if let dbError = error as? ESISDatabase.DatabaseError {
+            switch dbError {
+            case .executionFailure:
+                return (500, ["error": readCode, "detail": "\(error)"])
+            case .cannotOpen, .notADatabase:
+                return (503, ["error": "DATABASE_UNAVAILABLE", "detail": "\(error)"])
+            default:
+                return (409, ["error": contentCode, "detail": "\(error)"])
+            }
+        }
+        return (500, ["error": readCode, "detail": "\(error)"])
     }
 
     private func simigoQueryItem(_ request: HTTPRequest, _ name: String) -> String? {
@@ -2366,7 +2383,7 @@ public final class HTTPServer: @unchecked Sendable {
             return
         }
         guard let db = try? ESISDatabase(
-            url: ManagedPaths.databaseURL, createIfNeeded: false)
+            url: ManagedPaths.databaseURL, createIfNeeded: false, readOnly: true)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2397,9 +2414,12 @@ public final class HTTPServer: @unchecked Sendable {
             body.merge(simigoPayloadFields(receipt.payload)) { _, new in new }
             sendJSON(body, status: 200, on: context.connection, context: context)
         } catch {
+            let failure = simigoReadFailure(
+                error, contentCode: "SETTLEMENT_PAYLOAD_UNVERIFIED",
+                readCode: "SETTLEMENT_READ_FAILED")
             sendJSON(
-                ["error": "SETTLEMENT_PAYLOAD_UNVERIFIED", "detail": "\(error)"],
-                status: 409, on: context.connection, context: context)
+                failure.body, status: failure.status,
+                on: context.connection, context: context)
         }
     }
 
@@ -2414,7 +2434,7 @@ public final class HTTPServer: @unchecked Sendable {
             return
         }
         guard let db = try? ESISDatabase(
-            url: ManagedPaths.databaseURL, createIfNeeded: false)
+            url: ManagedPaths.databaseURL, createIfNeeded: false, readOnly: true)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2457,7 +2477,7 @@ public final class HTTPServer: @unchecked Sendable {
             return
         }
         guard let db = try? ESISDatabase(
-            url: ManagedPaths.databaseURL, createIfNeeded: false)
+            url: ManagedPaths.databaseURL, createIfNeeded: false, readOnly: true)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],
@@ -2484,9 +2504,12 @@ public final class HTTPServer: @unchecked Sendable {
             body.merge(simigoPayloadFields(content.content)) { _, new in new }
             sendJSON(body, status: 200, on: context.connection, context: context)
         } catch {
+            let failure = simigoReadFailure(
+                error, contentCode: "FILE_CONTENT_UNVERIFIED",
+                readCode: "FILE_READ_FAILED")
             sendJSON(
-                ["error": "FILE_CONTENT_UNVERIFIED", "detail": "\(error)"],
-                status: 409, on: context.connection, context: context)
+                failure.body, status: failure.status,
+                on: context.connection, context: context)
         }
     }
 
@@ -2501,7 +2524,7 @@ public final class HTTPServer: @unchecked Sendable {
             return
         }
         guard let db = try? ESISDatabase(
-            url: ManagedPaths.databaseURL, createIfNeeded: false)
+            url: ManagedPaths.databaseURL, createIfNeeded: false, readOnly: true)
         else {
             sendJSON(
                 ["error": "DATABASE_UNAVAILABLE"],

@@ -37,19 +37,28 @@ public enum ISAdmission {
         /// to reuse is the one recorded by the settlement and independently checked
         /// by the engine against its concrete model/KV namespace and prefix boundary.
         public let kvBindings: [String: String]
+        /// The producer identity rows (`producer.model_identity` /
+        /// `producer.tokenizer_identity`) the settlement recorded, as name -> digest.
+        /// These are provenance for semantic reuse, but at a PHYSICAL KV bind site
+        /// they are a strict gate: the engine may only restore a settled prefix
+        /// representation when its own re-derived model + tokenizer identity matches
+        /// the producer's. Empty for a derived consumption (no producer KV claim).
+        public let producerBindings: [String: String]
 
         public init(
             settlementID: String,
             payloadDigest: String,
             recoveredValue: String,
             verifiedBindings: [String: NativeContractValue],
-            kvBindings: [String: String] = [:]
+            kvBindings: [String: String] = [:],
+            producerBindings: [String: String] = [:]
         ) {
             self.settlementID = settlementID
             self.payloadDigest = payloadDigest
             self.recoveredValue = recoveredValue
             self.verifiedBindings = verifiedBindings
             self.kvBindings = kvBindings
+            self.producerBindings = producerBindings
         }
     }
 
@@ -179,6 +188,13 @@ public enum ISAdmission {
         let kvBindings = derived
             ? [:]
             : SettlementKVBinding.recordedBindings(from: recorded)
+        // Producer identity travels with the admission as provenance. Semantic
+        // reuse ignores it (post-#169); the physical KV bind site is the one place
+        // that turns it into a strict model+tokenizer gate. A derived consumption
+        // records consumer.* rows, never a producer KV claim, so it carries none.
+        let producerBindings = derived
+            ? [:]
+            : SettlementIdentityBinding.recordedProducerBindings(from: recorded)
         // 7. recover the settled semantic value; mint verifiedBindings for the new ES.
         guard let value = recoveredValue(from: row.payload, field: valueField), !value.isEmpty else {
             throw Refusal.emptyValue(settlementID: settlementID)
@@ -188,7 +204,8 @@ public enum ISAdmission {
             payloadDigest: row.recordedPayloadDigest,
             recoveredValue: value,
             verifiedBindings: [bindingName: .string(value)],
-            kvBindings: kvBindings
+            kvBindings: kvBindings,
+            producerBindings: producerBindings
         )
     }
 

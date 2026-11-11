@@ -106,6 +106,7 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
         box.behavior = { anchor in
             ContinuationAdmissionOutcome(
                 esStateID: anchor,
+                settlementID: "settlement-\(anchor)",
                 recoveredValue: "RECOVERED-\(anchor)",
                 verifiedBindings: ["next_input": .string("RECOVERED-\(anchor)")])
         }
@@ -197,7 +198,7 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
         let server = makeServer(admission: { _ in
             XCTFail("authority must not run for a malformed anchor")
             return ContinuationAdmissionOutcome(
-                esStateID: "", recoveredValue: "", verifiedBindings: [:])
+                esStateID: "", settlementID: "", recoveredValue: "", verifiedBindings: [:])
         })
         let parsed = try parse(server, [
             "model": "admission-gate-test",

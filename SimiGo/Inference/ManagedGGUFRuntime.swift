@@ -141,9 +141,11 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                         }
                         return ContinuationAdmissionOutcome(
                             esStateID: esStateID,
+                            settlementID: admitted.settlementID,
                             recoveredValue: admitted.recoveredValue,
                             verifiedBindings: admitted.verifiedBindings,
-                            kvBindings: admitted.kvBindings)
+                            kvBindings: admitted.kvBindings,
+                            producerBindings: admitted.producerBindings)
                     },
                     continuationSettlement: makeContinuationSettlementHandler(
                         modelPath: info.path) { _ in nil },

@@ -19,6 +19,12 @@ public enum SettlementAuthority {
     /// A native-authorized, canonical settlement. Carries only validated fields.
     public struct SettledResult: Codable, Sendable, Equatable {
         public let schemaVersion: String
+        /// Task-level contract identity that authorized this result (the contract's
+        /// `contract_id`, or a stable default). Recorded so a derived result names
+        /// which versioned contract produced it, not just the schema version.
+        public let contractID: String
+        /// SHA-256 over the exact contract bytes used, pinning that contract version.
+        public let contractDigest: String
         /// Canonical JSON of the validated contract fields (raw model text excluded).
         public let validatedPayload: Data
         /// SHA-256 (lowercase hex) over `validatedPayload`, for the IS digest index.
@@ -42,11 +48,20 @@ public enum SettlementAuthority {
             contractJSON: contractJSON,
             verifiedBindings: verifiedBindings
         )
+        // The gate already validated the contract; read its optional task-level id
+        // for the settlement record. Built-in contracts omit it and take the default.
+        var contractID = "simigo.result-contract"
+        if let object = try? JSONSerialization.jsonObject(with: contractJSON) as? [String: Any],
+           let declared = object["contract_id"] as? String, !declared.isEmpty {
+            contractID = declared
+        }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         let payload = try encoder.encode(trace.values)
         return SettledResult(
             schemaVersion: trace.schemaVersion,
+            contractID: contractID,
+            contractDigest: NativeSHA256.hexDigest(contractJSON),
             validatedPayload: payload,
             payloadDigest: NativeSHA256.hexDigest(payload),
             trace: trace,

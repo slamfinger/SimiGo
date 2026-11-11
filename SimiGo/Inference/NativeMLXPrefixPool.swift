@@ -219,7 +219,14 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     ///
     /// 命名空间绑定**基配置**指纹；非基 kvSettings 的会话既不导出也不捕获
     /// （登记的 beta 边界：跨 plan 类的静默误装不可能发生）。
-    func installHook(modelID: String, kvFingerprint: String?, thinkingDisabled: Bool) {
+    func installHook(
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        engineIdentity: SettlementIdentityBinding.Identity
+    ) {
+        // The memory pool's governed adopt path reads this identity at bind time;
+        // it is the same re-derived model+tokenizer identity the disk bind site is
+        // handed per call, recorded once for the resident model.
+        PrefixMemoryPool.shared.setEngineIdentity(engineIdentity)
         let diskEnabled = RuntimeTuning.prefixPoolEnabled
         guard diskEnabled || RuntimeTuning.prefixMemoryPoolEnabled else { return }
         let namespace = Self.namespace(
@@ -497,10 +504,18 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// security boundary (digest comparison) is testable without a live pool
     /// entry or a disk artifact — the entry's own claim is what gets checked,
     /// never a caller's assurance that a matching artifact exists.
+    ///
+    /// `engineIdentity` is THIS runtime's re-derived model + tokenizer identity
+    /// (content digests). A governed KV restore is a PHYSICAL representation
+    /// reuse, so it is gated on an exact identity match against the producer rows
+    /// the settlement recorded — a different model or tokenizer cannot directly
+    /// restore the artifact and falls back to cold prefill. This is the one place
+    /// producer identity is a gate; semantic value reuse stays provenance-only.
     static func bindVerdict(
         _ lookup: ISKVBindAuthority.Lookup,
         namespace: PrefixPoolNamespace,
-        tokenCount: Int, boundaryHash: UInt64
+        tokenCount: Int, boundaryHash: UInt64,
+        engineIdentity: SettlementIdentityBinding.Identity
     ) -> BindAuthority {
         switch lookup {
         case .notGoverned:
@@ -518,6 +533,13 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             guard verdict.status == .ok else {
                 return .rejected(reason: verdict.code ?? "kv_binding_blocked")
             }
+            // KV layout / namespace / prefix boundary matched. Now the physical
+            // identity gate: model + tokenizer content digests must match exactly.
+            let identity = SettlementIdentityBinding.evaluate(
+                recorded: recorded, consumer: engineIdentity)
+            guard identity.status == .ok else {
+                return .rejected(reason: identity.code ?? "kv_identity_blocked")
+            }
             return .allowed
         }
     }
@@ -534,7 +556,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     func checkBindAuthority(
         esStateID: String,
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
-        entry: PrefixPoolEntry
+        entry: PrefixPoolEntry,
+        engineIdentity: SettlementIdentityBinding.Identity
     ) -> BindAuthority {
         Self.bindVerdict(
             ISKVBindAuthority.shared.consume(esStateID: esStateID),
@@ -542,7 +565,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                 modelID: modelID, kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled),
             tokenCount: entry.tokenCount,
-            boundaryHash: entry.boundaryHash)
+            boundaryHash: entry.boundaryHash,
+            engineIdentity: engineIdentity)
     }
 
     /// 将快照的 KV 层截断到 claimed 边界（Gate C/D：artifact 是候选，

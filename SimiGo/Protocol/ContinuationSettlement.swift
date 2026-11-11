@@ -127,17 +127,22 @@ public struct ContinuationSettlementOutcome: Sendable, Equatable {
 public struct ContinuationSettlementRequest: Sendable {
     public let generatedText: String
     public let parentESStateID: String
+    /// The parent settlement the pre-generation admission verified. The child
+    /// settlement records it as its `continuation-parent` dependency.
+    public let parentSettlementID: String
     public let childESStateID: String
     public let verifiedBindings: [String: NativeContractValue]
 
     public init(
         generatedText: String,
         parentESStateID: String,
+        parentSettlementID: String,
         childESStateID: String,
         verifiedBindings: [String: NativeContractValue]
     ) {
         self.generatedText = generatedText
         self.parentESStateID = parentESStateID
+        self.parentSettlementID = parentSettlementID
         self.childESStateID = childESStateID
         self.verifiedBindings = verifiedBindings
     }
@@ -306,6 +311,7 @@ func settleForNativeMLXContinuation(
     let commit = try store.settleContinuationResult(
         generatedText: request.generatedText,
         parentStateID: request.parentESStateID,
+        parentSettlementID: request.parentSettlementID,
         childStateID: request.childESStateID,
         verifiedBindings: request.verifiedBindings,
         producerIdentity: producer,

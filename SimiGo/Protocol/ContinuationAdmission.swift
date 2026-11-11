@@ -12,22 +12,33 @@ import SimiGoRuntimeContract
 /// `nextInput` after the parent settled).
 public struct ContinuationAdmissionOutcome: Sendable {
     public let esStateID: String
+    /// The parent settlement THIS admission verified; the child settlement
+    /// records it as its `continuation-parent` dependency, never a re-query.
+    public let settlementID: String
     public let recoveredValue: String
     public let verifiedBindings: [String: NativeContractValue]
     /// The `kv.*` binding digests the admitted settlement recorded, if any.
     /// Empty means the settlement claimed no prefix representation, so the
     /// continuation has no authority to reuse KV state.
     public let kvBindings: [String: String]
+    /// The `producer.*` identity digests the admitted settlement recorded. Carried
+    /// to the KV bind site, where they gate PHYSICAL prefix restore on an exact
+    /// model + tokenizer match; they remain provenance-only for semantic reuse.
+    public let producerBindings: [String: String]
     public init(
         esStateID: String,
+        settlementID: String,
         recoveredValue: String,
         verifiedBindings: [String: NativeContractValue],
-        kvBindings: [String: String] = [:]
+        kvBindings: [String: String] = [:],
+        producerBindings: [String: String] = [:]
     ) {
         self.esStateID = esStateID
+        self.settlementID = settlementID
         self.recoveredValue = recoveredValue
         self.verifiedBindings = verifiedBindings
         self.kvBindings = kvBindings
+        self.producerBindings = producerBindings
     }
 }
 
@@ -37,6 +48,7 @@ public struct ContinuationAdmissionOutcome: Sendable {
 /// request executes under, and the bindings the admission verified.
 struct ContinuationRequestBinding: Sendable {
     let parentESStateID: String
+    let parentSettlementID: String
     let childESStateID: String
     let verifiedBindings: [String: NativeContractValue]
 }

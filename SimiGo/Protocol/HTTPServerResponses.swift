@@ -522,6 +522,7 @@ extension HTTPServer {
             context.setContinuationBinding(
                 ContinuationRequestBinding(
                     parentESStateID: anchor,
+                    parentSettlementID: outcome.settlementID,
                     childESStateID: childESStateID,
                     verifiedBindings: outcome.verifiedBindings))
             // A-2: the IS settlement is the PRE-AUTHORITY for KV reuse on this
@@ -531,11 +532,15 @@ extension HTTPServer {
             // NO authority to reuse KV state — the bind is refused and the turn
             // prefills cold. Requests without an ES anchor register nothing, so the
             // everyday path stays byte-identical to before A-2.
+            //
+            // The producer identity rows travel in the SAME grant (disjoint `kv.*`
+            // / `producer.*` namespaces): the bind site gates physical restore on
+            // both the prefix boundary AND an exact model+tokenizer identity match.
             ISKVBindAuthority.shared.register(
                 esStateID: childESStateID,
                 verdict: outcome.kvBindings.isEmpty
                     ? .unauthorized(reason: "no_settled_kv_binding")
-                    : .authorized(outcome.kvBindings))
+                    : .authorized(outcome.kvBindings.merging(outcome.producerBindings) { kv, _ in kv }))
             RuntimeTraceLogger.shared.trace(
                 "[PROTOCOL] continuation_admitted"
                 + " r=\(RuntimeTraceLogger.short(context.requestId))"
@@ -599,6 +604,7 @@ extension HTTPServer {
                     ContinuationSettlementRequest(
                         generatedText: generatedText,
                         parentESStateID: binding.parentESStateID,
+                        parentSettlementID: binding.parentSettlementID,
                         childESStateID: binding.childESStateID,
                         verifiedBindings: binding.verifiedBindings)))
         } catch {

@@ -387,6 +387,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                 }
                 return ContinuationAdmissionOutcome(
                     esStateID: esStateID,
+                    settlementID: admitted.settlementID,
                     recoveredValue: admitted.recoveredValue,
                     verifiedBindings: admitted.verifiedBindings)
             }

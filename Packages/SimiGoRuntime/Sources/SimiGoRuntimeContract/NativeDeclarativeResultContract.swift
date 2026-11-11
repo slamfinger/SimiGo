@@ -213,16 +213,21 @@ public struct NativeResultContract: Codable, Sendable, Equatable {
     public var schemaVersion: String
     public var fields: [String: Field]
     public var constraints: [Constraint]
+    /// Optional task-level identity: names WHICH versioned contract authorized a
+    /// derived result. Absent for built-in contracts (a stable default id is used).
+    public var contractID: String?
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
         case fields, constraints
+        case contractID = "contract_id"
     }
 
-    public init(schemaVersion: String = NativeResultContract.supportedVersion, fields: [String: Field], constraints: [Constraint] = []) {
+    public init(schemaVersion: String = NativeResultContract.supportedVersion, fields: [String: Field], constraints: [Constraint] = [], contractID: String? = nil) {
         self.schemaVersion = schemaVersion
         self.fields = fields
         self.constraints = constraints
+        self.contractID = contractID
     }
 
     public init(from decoder: Decoder) throws {
@@ -230,6 +235,7 @@ public struct NativeResultContract: Codable, Sendable, Equatable {
         schemaVersion = try container.decode(String.self, forKey: .schemaVersion)
         fields = try container.decode([String: Field].self, forKey: .fields)
         constraints = try container.decodeIfPresent([Constraint].self, forKey: .constraints) ?? []
+        contractID = try container.decodeIfPresent(String.self, forKey: .contractID)
     }
 
     /// Decode with strict-key validation. Unknown keys fail closed instead of being ignored by Codable.
@@ -243,7 +249,7 @@ public struct NativeResultContract: Codable, Sendable, Equatable {
         guard let object = root as? [String: Any] else {
             throw NativeResultContractError(code: "CONTRACT_INVALID_SCHEMA", detail: "contract root must be an object")
         }
-        try requireOnlyKeys(Set(["schema_version", "fields", "constraints"]), actual: Set(object.keys), where: "contract")
+        try requireOnlyKeys(Set(["schema_version", "fields", "constraints", "contract_id"]), actual: Set(object.keys), where: "contract")
         guard let fields = object["fields"] as? [String: Any], !fields.isEmpty else {
             throw NativeResultContractError(code: "CONTRACT_INVALID_SCHEMA", detail: "fields must be a non-empty object")
         }
@@ -278,6 +284,9 @@ public struct NativeResultContract: Codable, Sendable, Equatable {
     public func validateDefinition() throws {
         guard schemaVersion == Self.supportedVersion else {
             throw NativeResultContractError(code: "CONTRACT_UNKNOWN_SCHEMA_VERSION", detail: "unsupported schema_version \(schemaVersion)")
+        }
+        if let contractID = contractID, contractID.isEmpty {
+            throw NativeResultContractError(code: "CONTRACT_INVALID_SCHEMA", detail: "contract_id must be non-empty when present")
         }
         guard !fields.isEmpty else {
             throw NativeResultContractError(code: "CONTRACT_INVALID_SCHEMA", detail: "fields must not be empty")

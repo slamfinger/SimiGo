@@ -42,12 +42,12 @@ public enum RecomputePolicy: String, Sendable, CaseIterable {
     }
 }
 
-/// Six-dimension idempotency fingerprint. v1 is globally unique: one execution
+/// Seven-dimension idempotency fingerprint. v1 is globally unique: one execution
 /// per fingerprint, regardless of which caller submits it.
 public struct IdempotencyFingerprint: Sendable, Equatable {
     public static let dimensions = [
         "anchor_state_id", "anchor_settlement_id", "declared_input_digest",
-        "contract", "root_ids", "recompute_policy"
+        "contract", "result_contract", "root_ids", "recompute_policy"
     ]
 
     public let digest: String
@@ -59,13 +59,18 @@ public struct IdempotencyFingerprint: Sendable, Equatable {
         declaredInputDigest: String,
         contractJSON: Data?,
         rootIDs: [String],
-        policy: RecomputePolicy
+        policy: RecomputePolicy,
+        resultContractJSON: Data? = nil
     ) -> IdempotencyFingerprint {
         let components: [String: String] = [
             "anchor_state_id": anchorStateID,
             "anchor_settlement_id": anchorSettlementID,
             "declared_input_digest": declaredInputDigest,
             "contract": contractJSON.map(SnapshotContract.sha256Hex) ?? "-",
+            // The task-level RESULT contract is bound separately from the snapshot
+            // contract: opening derivation lets one input settle under different
+            // task contracts, and those must never share an idempotency key.
+            "result_contract": resultContractJSON.map(SnapshotContract.sha256Hex) ?? "-",
             "root_ids": SnapshotContract.sha256Hex(
                 Data(rootIDs.sorted().joined(separator: "\u{1f}").utf8)),
             "recompute_policy": policy.rawValue,
@@ -107,7 +112,7 @@ public enum ManagedContinuation {
         public let identity: SettlementIdentityBinding.Identity
         public let capturedAt: Date
         /// Caller-supplied opaque key (optional). When present it is the row key;
-        /// the six-dimension fingerprint is still re-checked on replay so the same
+        /// the seven-dimension fingerprint is still re-checked on replay so the same
         /// key with different inputs is a conflict, never a silent replay.
         public let idempotencyKey: String?
 
@@ -252,14 +257,18 @@ public enum ManagedContinuation {
             declaredInputDigest: currentDigest,
             contractJSON: config.snapshotRequest.contractJSON,
             rootIDs: config.snapshotRequest.rootIDs,
-            policy: config.policy)
+            policy: config.policy,
+            // The managed entry settles under this same contract (one contract for
+            // snapshot + gate), so the result-contract dimension is re-derivable on
+            // replay from the persisted declared request.
+            resultContractJSON: config.snapshotRequest.contractJSON)
 
         let executionKey = config.idempotencyKey ?? fingerprint.digest
 
         if let owner = try db.executionStateID(idempotencyKey: executionKey) {
             // Lookup by key alone is not proof of equality: with a caller key the
             // same key may describe different inputs. Only a committed execution
-            // whose six-dimension fingerprint is identical is a replay; anything
+            // whose seven-dimension fingerprint is identical is a replay; anything
             // else proceeds and is refused inside P2's write transaction.
             if try committedFingerprint(db: db, stateID: owner) == fingerprint.digest {
                 let settlementID = try db.latestSettlementID(forStateID: owner) ?? ""
@@ -423,7 +432,7 @@ public enum ManagedContinuation {
         return prior.declaredInputDigest
     }
 
-    /// Re-derive the six-dimension fingerprint an already-committed execution
+    /// Re-derive the seven-dimension fingerprint an already-committed execution
     /// recorded, from its final + declared snapshot objects. nil means "this
     /// owner carries no comparable evidence", which is never treated as equal.
     static func committedFingerprint(
@@ -444,7 +453,8 @@ public enum ManagedContinuation {
             declaredInputDigest: priorFinal.declaredInputDigest,
             contractJSON: priorDeclared.request.contractJSON,
             rootIDs: priorDeclared.request.rootIDs,
-            policy: policy).digest
+            policy: policy,
+            resultContractJSON: priorDeclared.request.contractJSON).digest
     }
 
     // MARK: - Refusals and audit

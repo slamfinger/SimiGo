@@ -89,6 +89,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         let commit = try store.settleContinuationResult(
             generatedText: "RESULT=A",
             parentStateID: parent.id,
+            parentSettlementID: admitted.settlementID,
             childStateID: child,
             verifiedBindings: admitted.verifiedBindings,
             producerIdentity: consumer)
@@ -101,6 +102,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         XCTAssertThrowsError(try store.settleContinuationResult(
             generatedText: "RESULT=B",
             parentStateID: parent.id,
+            parentSettlementID: admitted.settlementID,
             childStateID: refusedChild,
             verifiedBindings: admitted.verifiedBindings,
             producerIdentity: consumer)) { error in
@@ -126,6 +128,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         let commit = try store.settleContinuationResult(
             generatedText: "RESULT=CHAIN-A",
             parentStateID: parent.id,
+            parentSettlementID: admitted.settlementID,
             childStateID: child,
             verifiedBindings: admitted.verifiedBindings,
             producerIdentity: consumer)
@@ -164,6 +167,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         try store.settleContinuationResult(
             generatedText: "RESULT=EXCL-A",
             parentStateID: parent.id,
+            parentSettlementID: admitted.settlementID,
             childStateID: child,
             verifiedBindings: admitted.verifiedBindings,
             producerIdentity: consumer)
@@ -172,6 +176,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         XCTAssertThrowsError(try store.settleContinuationResult(
             generatedText: "RESULT=EXCL-A",
             parentStateID: parent.id,
+            parentSettlementID: admitted.settlementID,
             childStateID: child,
             verifiedBindings: admitted.verifiedBindings,
             producerIdentity: consumer))
@@ -182,6 +187,7 @@ final class ContinuationAdmissionSettlementBindingTests: XCTestCase {
         XCTAssertThrowsError(try store.settleContinuationResult(
             generatedText: "RESULT=EXCL-A",
             parentStateID: parent.id,
+            parentSettlementID: admitted.settlementID,
             childStateID: afterDiscard,
             verifiedBindings: admitted.verifiedBindings,
             producerIdentity: consumer))

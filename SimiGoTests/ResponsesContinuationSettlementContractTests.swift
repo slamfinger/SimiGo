@@ -28,6 +28,7 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
         var admissionBehavior: (String) throws -> ContinuationAdmissionOutcome = {
             ContinuationAdmissionOutcome(
                 esStateID: $0,
+                settlementID: "settle-parent-1",
                 recoveredValue: "RECOVERED",
                 verifiedBindings: ["next_input": .string("RECOVERED")])
         }
@@ -280,6 +281,8 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
             received.verifiedBindings["next_input"], .string("RECOVERED"),
             "settlement must bind the value the admission VERIFIED, not ES state")
         XCTAssertNotEqual(received.childESStateID, "S-1")
+        XCTAssertEqual(received.parentSettlementID, "settle-parent-1",
+                       "settlement must carry the parent settlement THIS admission verified")
         XCTAssertEqual(payload["child_es_state_id"] as? String, received.childESStateID,
                        "the returned child ES id is the one the settlement belongs to")
 

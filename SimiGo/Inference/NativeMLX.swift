@@ -556,9 +556,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         }
                         return ContinuationAdmissionOutcome(
                             esStateID: esStateID,
+                            settlementID: admitted.settlementID,
                             recoveredValue: admitted.recoveredValue,
                             verifiedBindings: admitted.verifiedBindings,
-                            kvBindings: admitted.kvBindings)
+                            kvBindings: admitted.kvBindings,
+                            producerBindings: admitted.producerBindings)
                     },
                     continuationSettlement: makeNativeMLXContinuationSettlementHandler(
                         modelPath: self.modelPath
@@ -657,7 +659,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             NativeMLXPrefixPool.shared.installHook(
                 modelID: modelName(from: info.path),
                 kvFingerprint: baseConfig.kvCache.map { String(describing: $0) },
-                thinkingDisabled: baseConfig.disableThinking
+                thinkingDisabled: baseConfig.disableThinking,
+                engineIdentity: ProducerIdentity.identity(fromPath: info.path)
             )
 
             self.traceLogger.trace("NativeMLX ready: model=\(modelId) port=\(nodeConfiguration.port)")
@@ -1658,7 +1661,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     modelID: modelName(from: modelPath),
                     kvFingerprint: kvFingerprint,
                     thinkingDisabled: thinkingDisabled,
-                    entry: candidate.entry
+                    entry: candidate.entry,
+                    engineIdentity: ProducerIdentity.identity(fromPath: modelPath)
                 )
                 if !bindGate.permitsBind {
                     traceLogger.trace(

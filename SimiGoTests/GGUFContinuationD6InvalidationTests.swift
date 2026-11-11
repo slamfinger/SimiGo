@@ -411,14 +411,15 @@ final class GGUFContinuationD6InvalidationTests: XCTestCase {
             try parent.esis.readGraph().states.first { $0.id == parent.stateID })
         XCTAssertEqual(child.parentID, parent.stateID)
         // The child settlement's payload IS the recovered value: both
-        // settlements carry the same content-addressed digest. Note what the
-        // store does NOT do — the child ES row keeps next_input NULL, because
-        // `settleContinuationResult` writes the value only into its in-memory
-        // projection (ExecutionStateGraph.swift:574-586). Measured 2026-11-10.
+        // settlements carry the same content-addressed digest, and the child
+        // ES row persists it as next_input in the same commit (the restart
+        // contract of ChildExecutionState).
         XCTAssertEqual(
             try parent.esis.settlementPayloadDigest(childSettlementID),
             try parent.esis.settlementPayloadDigest(parent.settlementID),
             "the settled child payload must be the recovered value")
+        XCTAssertEqual(child.nextInput, try parentValue(parent),
+                       "the child ES row must persist the settled value as next_input")
         XCTAssertEqual(child.modelIdentity, parentRow.modelIdentity)
         XCTAssertEqual(
             try parent.esis.latestSettlementID(forStateID: childStateID),
@@ -426,17 +427,13 @@ final class GGUFContinuationD6InvalidationTests: XCTestCase {
         XCTAssertEqual(
             try parent.esis.currentChatStateID(sessionID: session), childStateID,
             "the settled child becomes the session's state")
-        // Measured gap, asserted so it cannot be read as coverage: a continuation
-        // settlement records NO edge to the parent settlement. The commit goes
-        // through `recordNativeSettlementWithIdentity` (ExecutionStateGraph.swift:564),
-        // which accepts no declaredDependencies, and `is_dependency_entries` for
-        // the child holds only its own information-demand row. Invalidation
-        // therefore does not travel along a continuation chain today; the ES
-        // parent edge above is the only lineage this path writes.
-        XCTAssertFalse(
+        // The continuation settlement records its admission-verified parent as
+        // an upstream dependency in the same commit, so a later parent-source
+        // invalidation cascades to the child along the closure.
+        XCTAssertTrue(
             try parent.esis.upstreamDependencyClosure(ofSettlement: childSettlementID)
                 .contains(parent.settlementID),
-            "characterization: continuation settlements are dependency-isolated today")
+            "the child settlement must depend on the parent settlement it was admitted against")
         XCTAssertEqual(
             try parent.esis.latestSettlementID(forStateID: parent.stateID),
             parent.settlementID,

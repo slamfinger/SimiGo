@@ -157,11 +157,11 @@ final class ManagedContinuationTests: XCTestCase {
             .never)
     }
 
-    func testFingerprintCoversSixDimensionsAndChangesWithPolicy() {
+    func testFingerprintCoversSevenDimensionsAndChangesWithPolicy() {
         let base = IdempotencyFingerprint.make(
             anchorStateID: "s", anchorSettlementID: "t", declaredInputDigest: "d",
             contractJSON: Data("{}".utf8), rootIDs: ["b", "a"], policy: .never)
-        XCTAssertEqual(base.components.count, 6)
+        XCTAssertEqual(base.components.count, 7)
         XCTAssertEqual(Set(base.components.keys), Set(IdempotencyFingerprint.dimensions))
 
         let reordered = IdempotencyFingerprint.make(
@@ -173,6 +173,28 @@ final class ManagedContinuationTests: XCTestCase {
             anchorStateID: "s", anchorSettlementID: "t", declaredInputDigest: "d",
             contractJSON: Data("{}".utf8), rootIDs: ["a", "b"], policy: .allowSafeRecompute)
         XCTAssertNotEqual(base.digest, allowed.digest)
+    }
+
+    func testFingerprintBindsResultContractSoDifferentTasksDoNotCollide() {
+        // Same anchor, same declared input, same snapshot contract, same roots and
+        // policy — only the task-level RESULT contract differs. Opening derivation
+        // lets one input settle under different task contracts; those must never
+        // share an idempotency key, or a deriving task would be served the
+        // restatement's already-committed settlement.
+        let restatement = IdempotencyFingerprint.make(
+            anchorStateID: "s", anchorSettlementID: "t", declaredInputDigest: "d",
+            contractJSON: Data("{}".utf8), rootIDs: ["a"], policy: .never,
+            resultContractJSON: Data("{\"contract_id\":\"simigo.continuation.restatement\"}".utf8))
+        let derivation = IdempotencyFingerprint.make(
+            anchorStateID: "s", anchorSettlementID: "t", declaredInputDigest: "d",
+            contractJSON: Data("{}".utf8), rootIDs: ["a"], policy: .never,
+            resultContractJSON: Data("{\"contract_id\":\"simigo.continuation.derive.v1\"}".utf8))
+        XCTAssertNotEqual(restatement.digest, derivation.digest)
+        XCTAssertEqual(
+            restatement.components["contract"], derivation.components["contract"],
+            "the snapshot/input contract is unchanged between the two tasks")
+        XCTAssertNotEqual(
+            restatement.components["result_contract"], derivation.components["result_contract"])
     }
 
     // MARK: - Happy path

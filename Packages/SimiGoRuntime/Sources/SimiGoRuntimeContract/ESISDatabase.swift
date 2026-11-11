@@ -1576,6 +1576,29 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 36 {
+            try transaction {
+                // v36：结算行要落「哪一版任务级结果契约授权了它」。
+                //
+                // 放开派生后，同一份输入可以被不同任务契约结算成不同结果。
+                // 只记 payload 摘要分不清这是复述还是某个派生任务的产物，也
+                // 审计不到它依据的契约版本。所以把契约 id 与契约内容摘要写进
+                // 行里：id 命名契约，摘要钉住那一版的确切字节。旧行没有这两列，
+                // 留 NULL——不回填、不猜历史契约。
+                if try !columnExists("settlements", "result_contract_id") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE settlements ADD COLUMN result_contract_id TEXT;
+                    """)
+                }
+                if try !columnExists("settlements", "result_contract_digest") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE settlements ADD COLUMN result_contract_digest TEXT;
+                    """)
+                }
+                try recordMigrationRow(36, "simigo-result-contract-identity-v36")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1613,7 +1636,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 35
+    public static let currentSchemaVersion = 36
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -3297,8 +3320,8 @@ try apply(stmt)
             }
         }
         try execBinding("""
-        INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status, payload_object_id, input_snapshot_object_id)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?);
+        INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status, payload_object_id, input_snapshot_object_id, result_contract_id, result_contract_digest)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);
         """) { stmt in
             try bind(stmt, 1, settlementID)
             try bind(stmt, 2, stateID)
@@ -3311,6 +3334,8 @@ try apply(stmt)
             try bind(stmt, 9, validationStatusOverride ?? settled.trace.validationStatus)
             try bind(stmt, 10, payloadObject)
             try bind(stmt, 11, inputSnapshotObjectID)
+            try bind(stmt, 12, settled.contractID)
+            try bind(stmt, 13, settled.contractDigest)
         }
         try recordSettlementValidityEventInTransaction(
             settlementID: settlementID, validity: "valid", cause: nil,
