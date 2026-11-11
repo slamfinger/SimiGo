@@ -975,6 +975,41 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(try db.space(forRoot: "work-import")?.spaceID, space.spaceID)
     }
 
+    /// 同一个路径换了目录（挂载被替换 / bind mount / 换卷）：看不见文件
+    /// 不是删除。不许清账、不许标 missing、不许作废结算。
+    func testReplacedDirectoryDoesNotInvalidateSources() throws {
+        let (url, db) = try open("locator-inode")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("alpha", to: root, name: "a.md")
+        let first = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+        XCTAssertEqual(first.settled, 1)
+        XCTAssertFalse(first.locatorIdentityChanged)
+
+        // 整个目录换掉：同一个路径，另一个 inode。
+        try FileManager.default.removeItem(at: root)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try write("beta", to: root, name: "b.md")
+
+        let second = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+        XCTAssertTrue(second.locatorIdentityChanged, "同路径换了 inode = 不是同一个目录")
+        XCTAssertEqual(second.removed, 0, "不许把「看不到」当成删除")
+        XCTAssertEqual(
+            try rawText(url, "SELECT COALESCE(status,'-') FROM external_files WHERE relative_path='a.md';"),
+            "present", "旧文件的行不许被标 missing")
+        XCTAssertEqual(try db.count("settlement_validity_events"), 0,
+                       "不许因此作废任何结算")
+
+        // 人确认「还是同一个目录，只是换了挂载」之后，接上。
+        try db.adoptRootLocatorIdentity(rootID: "w")
+        let third = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+        XCTAssertFalse(third.locatorIdentityChanged)
+        XCTAssertEqual(third.removed, 1, "认了之后，旧清单才算数")
+    }
+
     /// VACUUM 失败必须留痕：写在库同目录的 simigo.maintenance.json，
     /// carrierReport 把它带出来，成功回收后文件消失。
     func testVacuumFailureIsRecordedNextToStore() throws {

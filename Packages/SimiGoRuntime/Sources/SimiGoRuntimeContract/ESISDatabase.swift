@@ -1471,6 +1471,24 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 33 {
+            try transaction {
+                // v33：root 所在目录的 inode。
+                //
+                // 路径只是名字。同一个名字可以是另一个目录——挂载被替换、
+                // bind mount、整个卷换掉——这时候「看不到文件」不是删除。
+                // MemPalace 的 source_identity.py 把这几种形状写全了，并且
+                // 解释为什么只能靠目录自己的 inode：st_dev 分不开 bind mount
+                // （两边同设备），而目录的 inode 属于文件系统结构。
+                // 取不到就存 NULL：没建立过身份，绝不当成「变了」。
+                if try !columnExists("roots", "locator_inode") {
+                    try Self.rawExec(
+                        handle, "ALTER TABLE roots ADD COLUMN locator_inode INTEGER;")
+                }
+                try recordMigrationRow(33, "simigo-root-locator-inode-v33")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1508,7 +1526,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 32
+    public static let currentSchemaVersion = 33
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -3490,6 +3508,11 @@ try apply(stmt)
         /// Bytes read from the filesystem to compute digests / validate text.
         /// These are read-only; `bytesAddressed` stays the copy measure.
         public let entityBytesRead: Int
+        /// The path still exists but answers with a different directory inode:
+        /// a mount was replaced, a bind mount appeared, or the volume changed.
+        /// Nothing was removed or invalidated on this pass — the inventory was
+        /// not trusted as evidence of absence.
+        public let locatorIdentityChanged: Bool
     }
 
     private struct FileContentState {
@@ -3558,6 +3581,10 @@ try apply(stmt)
         try upsertRoot(rootID: rootID, category: category,
                        displayName: scanRoot.path,
                        locatorType: "path", status: "present")
+        // 同一个路径换了目录：挂载被替换、bind mount、整个卷换掉，都会长这样。
+        // 这时「看不到文件」不是删除，后面的清账一步都不许做。
+        let locatorIdentityChanged = try noteLocatorIdentity(
+            rootID: rootID, path: scanRoot.path)
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
         SELECT relative_path, content_sha256, object_id FROM file_contents
@@ -3779,6 +3806,12 @@ try bind(externalStmt, 1, rootID)
             clearedPaths.insert(rel)
             removed += 1
         }
+        // 不是这个目录了：整份旧清单都不作数。不删 file_contents、不标
+        // missing、不作废结算，只把这件事报出去，等人确认。
+        if locatorIdentityChanged {
+            cleared.removeAll()
+            removed = 0
+        }
 
         var invalidated = Set<String>()
         var created = 0, deduplicated = 0, bytesAddressed = 0
@@ -3908,7 +3941,8 @@ try bind(externalStmt, 1, rootID)
             removed: removed, invalidatedSettlements: invalidated.count,
             objectsCreated: created, deduplicated: deduplicated,
             bytesAddressed: bytesAddressed,
-            indexOnly: !carryText, entityBytesRead: entityBytesRead)
+            indexOnly: !carryText, entityBytesRead: entityBytesRead,
+            locatorIdentityChanged: locatorIdentityChanged)
         }
     }
 
@@ -4779,6 +4813,54 @@ try bind(externalStmt, 1, rootID)
         else { return nil }
         let path = String(cString: c)
         return path.isEmpty ? nil : URL(fileURLWithPath: path).standardizedFileURL.path
+    }
+
+    /// 目录自己的 inode。取不到、或者报告 0（FAT/exFAT 一类），一律 nil——
+    /// 那不是身份，调用方当作「没建立过」，不当成不匹配。
+    static func directoryINode(atPath path: String) -> Int64? {
+        var info = stat()
+        // lstat, 不是 stat: 调用方给的是已解析（canonical）的路径，这里要的是
+        // 这个路径本身指向的目录。符号链接已经被解析掉了。
+        guard path.withCString({ Darwin.lstat($0, &info) }) == 0 else { return nil }
+        guard (info.st_mode & S_IFMT) == S_IFDIR else { return nil }
+        let inode = Int64(info.st_ino)
+        return inode == 0 ? nil : inode
+    }
+
+    /// 记下或比对 root 所在目录的 inode。返回 true 表示「还是这个路径，但
+    /// 不是这个目录了」。第一次见到就记下来；README 里那三种挂载形状都靠
+    /// 它分开。
+    @discardableResult
+    private func noteLocatorIdentity(rootID: String, path: String) throws -> Bool {
+        guard let current = Self.directoryINode(atPath: path) else { return false }
+        let stmt = try prepare("SELECT locator_inode FROM roots WHERE root_id=?;")
+        try bind(stmt, 1, rootID)
+        let found = try stepRowOrDone(stmt)
+        let stored: Int64? = found && sqlite3_column_type(stmt, 0) != SQLITE_NULL
+            ? sqlite3_column_int64(stmt, 0) : nil
+        sqlite3_finalize(stmt)
+        guard let stored else {
+            try execBinding("UPDATE roots SET locator_inode=? WHERE root_id=?;") { s in
+                try bind(s, 1, current)
+                try bind(s, 2, rootID)
+            }
+            return false
+        }
+        return stored != current
+    }
+
+    /// 人确认「还是同一个目录，只是换了挂载」之后调用：把当前 inode 收作它的。
+    public func adoptRootLocatorIdentity(rootID: String) throws {
+        guard let path = try rootLocatorPath(rootID),
+            let inode = Self.directoryINode(atPath: path)
+        else {
+            throw DatabaseError.sql(
+                "adoptRootLocatorIdentity: no directory behind \(rootID)")
+        }
+        try execBinding("UPDATE roots SET locator_inode=? WHERE root_id=?;") { stmt in
+            try bind(stmt, 1, inode)
+            try bind(stmt, 2, rootID)
+        }
     }
 
     // MARK: - 对话落库（Information Space：会话即信息）
@@ -7377,6 +7459,10 @@ try bind(externalStmt, 1, rootID)
             // 甲：加目录这个人的动作顺带定下空间的身份。已经有空间就不动——
             // 重新导入只复核路径与文件名，人改过的标题不会被覆盖。
             try ensureSpaceForRoot(rootID: rootID, folderName: root.lastPathComponent)
+            // 同一个路径换了目录（挂载被替换 / bind mount / 换卷）：这份
+            // 清单证明不了旧文件已经不在，不许据此标 missing。
+            let identityChanged = try noteLocatorIdentity(
+                rootID: rootID, path: root.path)
 
             var known: [String: String] = [:]
             let select = try prepare(
@@ -7422,18 +7508,21 @@ try bind(externalStmt, 1, rootID)
                 if previous == nil { inserted += 1 } else { refreshed += 1 }
             }
 
-            for relative in known.keys {
-                try execBinding("""
-                UPDATE external_files SET status='missing' WHERE root_id=? AND relative_path=?;
-                """) { stmt in
-                    try bind(stmt, 1, rootID)
-                    try bind(stmt, 2, relative)
+            if !identityChanged {
+                for relative in known.keys {
+                    try execBinding("""
+                    UPDATE external_files SET status='missing'
+                     WHERE root_id=? AND relative_path=?;
+                    """) { stmt in
+                        try bind(stmt, 1, rootID)
+                        try bind(stmt, 2, relative)
+                    }
                 }
             }
 
             return DirectoryNameImportReport(
                 files: entries.count, inserted: inserted, refreshed: refreshed,
-                missing: known.count)
+                missing: identityChanged ? 0 : known.count)
         }
     }
 
