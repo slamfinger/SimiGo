@@ -39,10 +39,10 @@ final class ISObjectFTSTests: XCTestCase {
             model: nil, createdAt: Date())
     }
 
-    func testSchemaIsTwentyEightAndTrigramIndexExists() throws {
+    func testSchemaIsTwentyNineAndTrigramIndexExists() throws {
         let db = try open()
-        XCTAssertEqual(try db.schemaVersion(), 28)
-        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 28)
+        XCTAssertEqual(try db.schemaVersion(), 29)
+        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 29)
     }
 
     func testThreeCharacterTermFindsSubstringThroughIndex() throws {

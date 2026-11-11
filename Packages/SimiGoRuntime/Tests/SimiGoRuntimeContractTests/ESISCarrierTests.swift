@@ -703,4 +703,37 @@ final class ESISCarrierTests: XCTestCase {
 
         XCTAssertTrue(try db.integrityCheck())
     }
+
+    /// v29：一次性清掉 demand-input 候选行，其他 reason 保留，append-only
+    /// 触发器装回去——清理是一次显式维护，不是把保护拆掉。
+    func testMigrationTwentyNineDropsOnlyDemandInputCandidates() throws {
+        let (url, db) = try open("v29-drop-candidates")
+        defer { cleanup(url) }
+        db.close()
+
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+        var message: UnsafeMutablePointer<CChar>?
+        let seed = """
+        INSERT INTO is_dependency_entries(
+            dependency_id, content_address, revision, reason, recorded_at)
+        VALUES('demand:d1 -> file:a', 'aa', 1, 'demand-input', '2026-11-11T00:00:00Z'),
+              ('demand:d1 -> file:b', 'bb', 1, 'demand-input', '2026-11-11T00:00:00Z'),
+              ('file:a', 'aa', 1, 'content-settle', '2026-11-11T00:00:00Z');
+        DELETE FROM schema_migrations WHERE version=29;
+        """
+        XCTAssertEqual(sqlite3_exec(handle, seed, nil, nil, &message), SQLITE_OK,
+                       message.map { String(cString: $0) } ?? "")
+        sqlite3_close(handle)
+
+        let reopened = try ESISDatabase(url: url)
+        defer { reopened.close() }
+        try reopened.runMigrations()
+        XCTAssertEqual(try reopened.count("is_dependency_entries"), 1,
+                       "只留 content-settle 那一条")
+        XCTAssertEqual(
+            try rawText(url, "SELECT reason FROM is_dependency_entries;"), "content-settle")
+        XCTAssertThrowsError(try rawExec(url, "DELETE FROM is_dependency_entries;"),
+                             "清理之后 append-only 触发器必须还在")
+    }
 }

@@ -1255,10 +1255,54 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 29 {
+            // 清理要绕过两层保护：append-only 触发器，和 authorizer 对受保护表
+            // 的 DELETE 拒绝。两者都只在这一次迁移里摘掉，跑完立刻装回。
+            _ = sqlite3_set_authorizer(handle, nil, nil)
+            do {
+                try transaction {
+                // v29：一次性清掉 demand-input 历史。
+                //
+                // v28 起不再写这类行，但库里已有 184,512 条——388 个 demand，
+                // 每个约 475 条候选，同一份候选清单被重复抄了一遍。它们不是
+                // 历史事实：query、时间、状态都在 information_demands 里，
+                // 依赖表里这些行只是检索过程的副本。
+                //
+                // append-only 触发器是给常规写入用的保护；这里是显式维护，
+                // 所以先把触发器摘掉、删完再装回去，并把删除行数写进迁移记录。
+                let candidates: Int = try {
+                    let stmt = try prepare(
+                        "SELECT COUNT(*) FROM is_dependency_entries WHERE reason='demand-input';")
+                    defer { sqlite3_finalize(stmt) }
+                    return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+                }()
+                try Self.rawExec(handle, """
+                DROP TRIGGER IF EXISTS is_dependency_entries_append_only_update;
+                DROP TRIGGER IF EXISTS is_dependency_entries_append_only_delete;
+                DELETE FROM is_dependency_entries WHERE reason='demand-input';
+                CREATE TRIGGER is_dependency_entries_append_only_update
+                    BEFORE UPDATE ON is_dependency_entries BEGIN
+                        SELECT RAISE(ABORT, 'is_dependency_entries is append-only');
+                    END;
+                CREATE TRIGGER is_dependency_entries_append_only_delete
+                    BEFORE DELETE ON is_dependency_entries BEGIN
+                        SELECT RAISE(ABORT, 'is_dependency_entries is append-only');
+                    END;
+                """)
+                    try recordMigrationRow(
+                        29, "simigo-drop-demand-input-candidates-v29: deleted \(candidates) rows")
+                }
+            } catch {
+                _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
+                throw error
+            }
+            _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
+        }
+
         // v28 把全表 trigram 索引换成只覆盖结算产物的索引：88 MB 的页进了
         // freelist，但文件不会自己变小。VACUUM 把页还给文件系统——只能在
         // 迁移事务之外跑。只在这次真的跨过 28 时做一次，之后每次打开不再重写。
-        if versionBeforeMigrating < 28, try schemaVersion() >= 28 {
+        if versionBeforeMigrating < 29, try schemaVersion() >= 29 {
             try Self.rawExec(handle, "VACUUM;")
         }
 
@@ -1275,7 +1319,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 28
+    public static let currentSchemaVersion = 29
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
