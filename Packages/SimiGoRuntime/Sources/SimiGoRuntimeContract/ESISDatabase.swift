@@ -3571,7 +3571,7 @@ try bind(externalStmt, 1, rootID)
             var finalInfo = stat()
             guard Darwin.fstat(fileFD, &finalInfo) == 0 else {
                 throw DatabaseError.sql(
-                    "readRootFileNoFollow: final fstat failed: \\(String(cString: strerror(errno)))")
+                    "readRootFileNoFollow: final fstat failed: \(String(cString: strerror(errno)))")
             }
             guard finalInfo.st_dev == initial.st_dev,
                   finalInfo.st_ino == initial.st_ino,
@@ -3595,7 +3595,7 @@ try bind(externalStmt, 1, rootID)
             var afterReread = stat()
             guard Darwin.fstat(fileFD, &afterReread) == 0 else {
                 throw DatabaseError.sql(
-                    "readRootFileNoFollow: post-reread fstat failed: \\(String(cString: strerror(errno)))")
+                    "readRootFileNoFollow: post-reread fstat failed: \(String(cString: strerror(errno)))")
             }
             guard afterReread.st_ctimespec.tv_sec == finalInfo.st_ctimespec.tv_sec,
                   afterReread.st_ctimespec.tv_nsec == finalInfo.st_ctimespec.tv_nsec else {
