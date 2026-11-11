@@ -1529,7 +1529,7 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(resolution.staleItemIDs, ["file:work/a.md"])
         XCTAssertEqual(try rawText(url, """
             SELECT COUNT(*) FROM settlement_bindings
-            WHERE settlement_id='\\(resolution.retrievalSettlementID)'
+            WHERE settlement_id='\(resolution.retrievalSettlementID)'
               AND source_root_id='work';
             """), "0", "the retry must not bind the stale source revision")
     }
