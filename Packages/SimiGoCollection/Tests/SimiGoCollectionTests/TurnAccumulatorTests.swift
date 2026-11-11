@@ -424,6 +424,42 @@ final class TurnAccumulatorTests: XCTestCase {
             Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
     }
 
+    func testOversizedIdentifiersAndPromptsFailClosedWithoutRetention() {
+        let limits = TurnAccumulator.RetentionLimits(
+            maxRetainedNodes: 8, maxSeenAnchorIDs: 4,
+            maxPendingMessages: 2, maxPendingTerminalTextBytes: 64,
+            maxIdentifierBytes: 32, maxPendingPromptBytes: 128)
+        let accumulator = TurnAccumulator(
+            context: Fixture.context(), retentionLimits: limits)
+        let oversized = String(repeating: "x", count: 1_024)
+        let lines = [
+            Fixture.userLine(uuid: oversized, text: oversized),
+            Fixture.assistantLine(
+                uuid: oversized + "-assistant", parent: oversized,
+                messageID: oversized, text: "answer"),
+        ]
+        _ = Fixture.feed(accumulator, lines)
+
+        XCTAssertTrue(accumulator.pendingHistoryTruncatedForTesting)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeCountForTesting, limits.maxRetainedNodes)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedAnchorIDCountForTesting, limits.maxSeenAnchorIDs)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingMessageCountForTesting, limits.maxPendingMessages)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingTerminalTextBytesForTesting,
+            limits.maxPendingTerminalTextBytes)
+
+        let closeEvents = Fixture.feed(
+            accumulator,
+            [Fixture.userLine(uuid: "u-2", text: "next")],
+            startingAt: lines.count + 1)
+        XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
+        XCTAssertEqual(
+            Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
+    }
+
     func testRepeatedTerminalUpdatesRetainOneTextAndDetectConflict() {
         let limits = TurnAccumulator.RetentionLimits(
             maxRetainedNodes: 64, maxSeenAnchorIDs: 32,
