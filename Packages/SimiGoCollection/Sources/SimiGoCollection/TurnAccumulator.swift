@@ -29,17 +29,23 @@ public final class TurnAccumulator {
         let maxSeenAnchorIDs: Int
         let maxPendingMessages: Int
         let maxPendingTerminalTextBytes: Int
+        let maxIdentifierBytes: Int
+        let maxPendingPromptBytes: Int
 
         init(
             maxRetainedNodes: Int = 100_000,
             maxSeenAnchorIDs: Int = 65_536,
             maxPendingMessages: Int = 256,
-            maxPendingTerminalTextBytes: Int = 8 * 1024 * 1024
+            maxPendingTerminalTextBytes: Int = 8 * 1024 * 1024,
+            maxIdentifierBytes: Int = 256,
+            maxPendingPromptBytes: Int = 4 * 1024 * 1024
         ) {
             self.maxRetainedNodes = max(1, maxRetainedNodes)
             self.maxSeenAnchorIDs = max(1, maxSeenAnchorIDs)
             self.maxPendingMessages = max(1, maxPendingMessages)
             self.maxPendingTerminalTextBytes = max(1, maxPendingTerminalTextBytes)
+            self.maxIdentifierBytes = max(1, maxIdentifierBytes)
+            self.maxPendingPromptBytes = max(1, maxPendingPromptBytes)
         }
 
         static let production = RetentionLimits()
@@ -289,9 +295,13 @@ public final class TurnAccumulator {
     ) -> [CollectionEvent] {
         registerNode(entry, line: line, kind: .assistant, anchorID: nil)
         var events: [CollectionEvent] = []
-        guard let message = entry.message, let messageID = message.id,
+        guard let message = entry.message, let rawMessageID = message.id,
             let uuid = entry.uuid
         else { return events }
+        let messageID = boundedIdentifier(rawMessageID)
+        let identifiersTooLong =
+            rawMessageID.utf8.count > retentionLimits.maxIdentifierBytes
+            || uuid.utf8.count > retentionLimits.maxIdentifierBytes
         guard var turn = pending else {
             if message.stopReason != nil || entry.isAPIMessageError {
                 events.append(
@@ -323,6 +333,7 @@ public final class TurnAccumulator {
             return events
         case .resolved(let relation):
             turn.lastLine = max(turn.lastLine, line)
+            if identifiersTooLong { turn.historyTruncated = true }
             let isTerminal =
                 message.stopReason == "end_turn" || message.stopReason == "tool_use"
                 || message.stopReason == "stop_sequence" || entry.isAPIMessageError
@@ -338,12 +349,12 @@ public final class TurnAccumulator {
                     return events
                 }
                 snapshot = Snapshot(
-                    messageID: messageID, model: message.model,
+                    messageID: messageID, model: boundedMetadata(message.model),
                     isSidechain: entry.isSidechain, lastTerminalLine: nil,
                     latestTerminal: nil, firstTerminalDigest: nil,
                     hasConflictingTerminals: false, relation: relation)
             }
-            snapshot.model = message.model ?? snapshot.model
+            snapshot.model = boundedMetadata(message.model) ?? snapshot.model
             snapshot.isSidechain = snapshot.isSidechain || entry.isSidechain
             snapshot.relation = conservativeRelation(snapshot.relation, relation)
             if isTerminal, snapshot.lastTerminalLine != line {
@@ -359,7 +370,7 @@ public final class TurnAccumulator {
                 let nextBytes = turn.retainedTerminalTextBytes - oldBytes + newBytes
                 if nextBytes <= retentionLimits.maxPendingTerminalTextBytes {
                     snapshot.latestTerminal = Terminal(
-                        line: line, timestamp: entry.timestamp, stop: message.stopReason,
+                        line: line, timestamp: boundedMetadata(entry.timestamp), stop: message.stopReason,
                         text: message.text, digest: digest,
                         apiError: entry.isAPIMessageError)
                     turn.retainedTerminalTextBytes = nextBytes
@@ -395,35 +406,75 @@ public final class TurnAccumulator {
         injectedPrefixes: [String], isSidechain: Bool, requestSetID: String?,
         events: inout [CollectionEvent]
     ) {
-        guard !seenAnchorIDs.contains(id) else { return }
+        let identifierTooLong = id.utf8.count > retentionLimits.maxIdentifierBytes
+        let storedID = boundedIdentifier(id)
+        guard !seenAnchorIDs.contains(storedID) else { return }
         finalizePending(boundary: .nextAnchor, events: &events)
         pruneNodes(before: line)
+
         let trimmedPrompt = promptText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefixBytes = injectedPrefixes.reduce(0) { total, prefix in
+            let (sum, overflow) = total.addingReportingOverflow(prefix.utf8.count)
+            return overflow ? Int.max : sum
+        }
+        let (promptAndTextBytes, firstOverflow) =
+            promptRaw.utf8.count.addingReportingOverflow(trimmedPrompt.utf8.count)
+        let (allPromptBytes, secondOverflow) =
+            promptAndTextBytes.addingReportingOverflow(prefixBytes)
+        let promptTooLarge = firstOverflow || secondOverflow
+            || allPromptBytes > retentionLimits.maxPendingPromptBytes
+            || injectedPrefixes.count > 32
+        let safeOriginKind = boundedMetadata(originKind)
+        let safeRequestSetID = boundedMetadata(requestSetID)
+        let metadataTooLarge =
+            (originKind != nil && safeOriginKind == nil)
+            || (requestSetID != nil && safeRequestSetID == nil)
         let anchor = Anchor(
-            id: id, kind: kind, line: line, timestamp: timestamp,
-            originKind: originKind, promptRaw: promptRaw, promptText: trimmedPrompt,
+            id: storedID, kind: kind, line: line, timestamp: boundedMetadata(timestamp),
+            originKind: safeOriginKind,
+            promptRaw: promptTooLarge ? "" : promptRaw,
+            promptText: promptTooLarge ? "" : trimmedPrompt,
             promptRawDigest: SourceDigest.sha256Hex(promptRaw),
             promptDigest: SourceDigest.sha256Hex(trimmedPrompt),
-            injectedPrefixes: injectedPrefixes, isSidechain: isSidechain,
-            requestSetID: requestSetID)
+            injectedPrefixes: promptTooLarge ? [] : injectedPrefixes,
+            isSidechain: isSidechain, requestSetID: safeRequestSetID)
         let canRememberAnchor = seenAnchorIDs.count < retentionLimits.maxSeenAnchorIDs
         pending = PendingTurn(
             anchor: anchor, messages: [:], messageCount: 0, terminalCount: 0,
             lastLine: line, retainedTerminalTextBytes: 0,
-            historyTruncated: !canRememberAnchor,
+            historyTruncated: identifierTooLong || metadataTooLarge || promptTooLarge
+                || !canRememberAnchor,
             interrupted: false, interruptLine: nil)
-        if canRememberAnchor { seenAnchorIDs.insert(id) }
+        if canRememberAnchor { seenAnchorIDs.insert(storedID) }
         _ = events
     }
 
     private func registerNode(
         _ entry: TranscriptEntry, line: Int64, kind: NodeKind, anchorID: String?
     ) {
-        guard let uuid = entry.uuid else { return }
+        guard let uuid = entry.uuid,
+            uuid.utf8.count <= retentionLimits.maxIdentifierBytes
+        else { return }
+        let parent = entry.parentUUID.flatMap {
+            $0.utf8.count <= retentionLimits.maxIdentifierBytes ? $0 : nil
+        }
+        let safeAnchorID = anchorID.map { boundedIdentifier($0) }
         nodes[uuid] = Node(
-            parent: entry.parentUUID, kind: kind, anchorID: anchorID, line: line)
+            parent: parent, kind: kind, anchorID: safeAnchorID, line: line)
         nodeOrder.append(NodeOrderEntry(id: uuid, line: line))
         enforceNodeLimit()
+    }
+
+    private func boundedIdentifier(_ value: String) -> String {
+        guard value.utf8.count > retentionLimits.maxIdentifierBytes else { return value }
+        return "oversized:" + SourceDigest.sha256Hex(value)
+    }
+
+    private func boundedMetadata(_ value: String?) -> String? {
+        guard let value,
+            value.utf8.count <= retentionLimits.maxIdentifierBytes
+        else { return nil }
+        return value
     }
 
     private func pruneNodes(before line: Int64) {
