@@ -1253,6 +1253,10 @@
       "output": "SimiGoTests/ManagedContinuationAdapterTests.swift"
     },
     {
+      "path": "SimiGoTests/ManualProbesTests.swift",
+      "output": "SimiGoTests/ManualProbesTests.swift"
+    },
+    {
       "path": "SimiGoTests/MemoryReliefRealModelTests.swift",
       "output": "SimiGoTests/MemoryReliefRealModelTests.swift"
     },

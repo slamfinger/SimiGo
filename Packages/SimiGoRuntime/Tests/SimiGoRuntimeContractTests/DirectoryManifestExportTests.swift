@@ -10,10 +10,6 @@ import XCTest
 /// 3. 编码是 UTF-8 with BOM + CRLF，隐藏项、Office 锁文件、软链、输出文件自己都不算。
 final class DirectoryManifestExportTests: XCTestCase {
 
-    private static let fixtures = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .appendingPathComponent("Fixtures/format-swap")
-
     private var scratch: [URL] = []
 
     override func tearDown() {
@@ -197,38 +193,6 @@ final class DirectoryManifestExportTests: XCTestCase {
 
     // MARK: - 真实样本
 
-    func testFormatSwapManifestGivesEveryFileATitle() throws {
-        guard FileManager.default.fileExists(atPath: Self.fixtures.path) else {
-            throw XCTSkip("format-swap 样本只在实验分支上，这里没有")
-        }
-        let db = try open()
-        let root = try makeRoot()
-        for name in try FileManager.default.contentsOfDirectory(atPath: Self.fixtures.path) {
-            try FileManager.default.copyItem(at: Self.fixtures.appendingPathComponent(name),
-                                             to: root.appendingPathComponent(name))
-        }
-
-        let (report, table, raw) = try export(db, root: root)
-        XCTAssertEqual(report.files, 11)
-        XCTAssertEqual(report.titled, 11)
-        XCTAssertEqual(report.mustFix, 0)
-        XCTAssertEqual(table.count, 12)                     // 表头 + 11 行
-        XCTAssertEqual(table[0].count, 8)
-
-        for row in table.dropFirst() {
-            XCTAssertEqual(row[3], (row[2] as NSString).deletingPathExtension,
-                           "\(row[2]) 的标题不是去后缀的文件名")
-        }
-
-        // Excel/WPS 直接可读的编码。
-        XCTAssertEqual(Array(raw.prefix(3)), [0xEF, 0xBB, 0xBF])
-        let text = String(decoding: raw, as: UTF8.self)
-        XCTAssertTrue(text.hasPrefix("\u{FEFF}root_id,relative_path,file_name,title,"))
-        XCTAssertEqual(text.components(separatedBy: "\n").count - 1,
-                       text.components(separatedBy: "\r\n").count - 1,
-                       "有裸 \\n，不是纯 CRLF")
-    }
-
     // MARK: - 扫的是目录，不是字节
 
     func testSkipsHiddenLockAndSymlinkAndTheOutputItself() throws {
@@ -288,23 +252,4 @@ final class DirectoryManifestExportTests: XCTestCase {
         XCTAssertEqual(raw.count > 0, true)
     }
 
-    /// 手动探针：`SIMIGO_MANIFEST_PROBE_DIR=<真实目录> [SIMIGO_MANIFEST_PROBE_OUT=<csv>] swift test --filter testProbeOnPickedFolder`
-    func testProbeOnPickedFolder() throws {
-        guard let path = ProcessInfo.processInfo.environment["SIMIGO_MANIFEST_PROBE_DIR"]
-        else { throw XCTSkip("未指定 SIMIGO_MANIFEST_PROBE_DIR") }
-        let root = URL(fileURLWithPath: path)
-        // 指定了输出路径就是给人留的，跑完不能删；没指定才落在临时目录里。
-        let explicit = ProcessInfo.processInfo.environment["SIMIGO_MANIFEST_PROBE_OUT"]
-        let csv = explicit.map { URL(fileURLWithPath: $0) }
-            ?? FileManager.default.temporaryDirectory
-                .appendingPathComponent("simigo-manifest-probe-\(UUID().uuidString).csv")
-        if explicit == nil { scratch.append(csv) }
-        let report = try open().exportDirectoryManifest(rootID: "probe", rootURL: root, to: csv)
-        let text = String(decoding: try Data(contentsOf: csv), as: UTF8.self)
-        print("MANIFEST_PROBE files=\(report.files) titled=\(report.titled) "
-              + "from_main=\(report.fromMainFile) must_fix=\(report.mustFix)")
-        for row in rows(text).dropFirst() where !row[7].isEmpty {
-            print("MANIFEST_PROBE must_fix \(row[1]) -> \(row[7])")
-        }
-    }
 }

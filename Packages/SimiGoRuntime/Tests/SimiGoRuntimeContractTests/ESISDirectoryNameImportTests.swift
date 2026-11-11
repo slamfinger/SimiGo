@@ -152,19 +152,4 @@ final class ESISDirectoryNameImportTests: XCTestCase {
             "关于强化商务管理的通知附件")
     }
 
-    /// 手动探针：把真实根目录复核进权威库（等同图形界面里「＋ 加外部目录」）。
-    /// `SIMIGO_IMPORT_MANAGED_ROOT=<目录> swift test --filter testProbeImportIntoManagedDatabase`
-    func testProbeImportIntoManagedDatabase() throws {
-        guard let path = ProcessInfo.processInfo.environment["SIMIGO_IMPORT_MANAGED_ROOT"]
-        else { throw XCTSkip("未指定 SIMIGO_IMPORT_MANAGED_ROOT") }
-        let db = try ESISDatabase(url: ManagedPaths.databaseURL)
-        try db.runMigrations()
-        guard let root = try db.listRoots(category: "work").first(where: {
-            $0.displayName == path
-        }) else { throw XCTSkip("库里没有这个根：\(path)") }
-        let report = try db.importDirectoryNames(
-            rootID: root.rootID, rootURL: URL(fileURLWithPath: path))
-        print("MANAGED_IMPORT \(root.rootID) files=\(report.files) inserted=\(report.inserted) "
-              + "refreshed=\(report.refreshed) missing=\(report.missing)")
-    }
 }
