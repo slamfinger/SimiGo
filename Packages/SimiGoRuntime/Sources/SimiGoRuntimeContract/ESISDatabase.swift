@@ -103,26 +103,28 @@ public final class ESISDatabase {
     }
 
     /// Open (and optionally create) the database at `url`, applying PRAGMAs.
-    public init(url: URL, createIfNeeded: Bool = true) throws {
+    public init(
+        url: URL, createIfNeeded: Bool = true, readOnly: Bool = false
+    ) throws {
         self.url = url
-        // First-run ordering: ensure the parent directory (the managed root) exists
-        // before opening. sqlite3_open does NOT create intermediate directories, so
-        // a brand-new install would otherwise fail-closed with an unwritable path.
-        if createIfNeeded {
-            try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
-                                                     withIntermediateDirectories: true)
+        guard !(readOnly && createIfNeeded) else {
+            throw DatabaseError.cannotOpen("read-only open cannot create a database")
         }
-        // The database leaf is part of the authoritative persistence boundary.
-        // SQLite must refuse a symlink here rather than following it to another store.
-        // Apple's SQLite rejects any path whose prefix traverses a symlink
-        // (/var and /tmp on macOS), so open through the canonical parent while
-        // keeping the original leaf name for the NOFOLLOW check itself.
-        var flags: Int32 = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOFOLLOW
+        // First-run ordering: ensure the parent directory exists before opening.
+        // sqlite3_open does NOT create intermediate directories.
+        if createIfNeeded {
+            try? FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        }
+        // NOFOLLOW judges the database leaf, not macOS aliases such as /var and
+        // /tmp. Resolve the parent only and keep the original leaf name.
+        let accessFlag = readOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE
+        var flags: Int32 = accessFlag | SQLITE_OPEN_NOFOLLOW
         if createIfNeeded { flags |= SQLITE_OPEN_CREATE }
         var db: OpaquePointer?
         let rc = sqlite3_open_v2(Self.canonicalLeafPath(for: url), &db, flags, nil)
         guard rc == SQLITE_OK, let db else {
-            let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \(rc)"
+            let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \\(rc)"
             if let db { sqlite3_close_v2(db) }
             throw DatabaseError.cannotOpen(msg)
         }
@@ -130,27 +132,26 @@ public final class ESISDatabase {
         // Install the busy handler before the first contended statement:
         // opening a WAL database whose last connection just closed triggers
         // recovery, and a concurrent opener contends on that recovery.
-        // Without a busy handler the loser fails `PRAGMA integrity_check`
-        // immediately with SQLITE_BUSY — an execution condition, not a
-        // corruption diagnostic (SQLITE_BUSY/SQLITE_LOCKED wait/retry is the
-        // busy handler's job; LOCKED is not covered by it and surfaces
-        // explicitly via executionFailure).
         try Self.rawExec(handle, "PRAGMA busy_timeout = 5000;")
-        // Fail closed if an existing file is not a usable database, before we
-        // touch journal mode (a non-database file otherwise surfaces a generic
-        // sql error). Only actual corruption diagnostics reach notADatabase;
-        // execution-level failures keep their SQLite result codes.
+        // Fail closed if an existing file is not a usable database. integrity_check
+        // is read-only and preserves execution failures separately from corruption.
         switch Self.integrityOutcome(handle) {
         case .ok:
             break
         case .corrupted(let detail):
             throw DatabaseError.notADatabase(
-                "integrity_check failed for \(url.lastPathComponent): \(detail)")
+                "integrity_check failed for \\(url.lastPathComponent): \\(detail)")
         case .executionError(let primary, let extended, let message):
             throw DatabaseError.executionFailure(
                 primary: primary, extended: extended, message: message)
         }
-        try Self.applyPragmas(handle)
+        if readOnly {
+            // Diagnostics must not switch journal mode or write the store.
+            try Self.rawExec(handle, "PRAGMA foreign_keys = ON;")
+            try Self.rawExec(handle, "PRAGMA query_only = ON;")
+        } else {
+            try Self.applyPragmas(handle)
+        }
         Self.installCarrierAuthorizer(handle)
     }
 
