@@ -361,7 +361,7 @@ final class TurnAccumulatorTests: XCTestCase {
         let closeEvents = Fixture.feed(
             accumulator,
             [Fixture.userLine(uuid: "u-2", parent: "a-11", text: "next")],
-            startingAt: lines.count + 1)
+            startingAt: Int64(lines.count + 1))
         XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
         XCTAssertEqual(
             Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
@@ -422,7 +422,7 @@ final class TurnAccumulatorTests: XCTestCase {
         let closeEvents = Fixture.feed(
             accumulator,
             [Fixture.userLine(uuid: "u-4", parent: "u-3", text: "four")],
-            startingAt: lines.count + 1)
+            startingAt: Int64(lines.count + 1))
         XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
         XCTAssertEqual(
             Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
@@ -464,7 +464,7 @@ final class TurnAccumulatorTests: XCTestCase {
         let closeEvents = Fixture.feed(
             accumulator,
             [Fixture.userLine(uuid: "u-2", text: "next")],
-            startingAt: lines.count + 1)
+            startingAt: Int64(lines.count + 1))
         XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
         XCTAssertEqual(
             Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
@@ -495,7 +495,7 @@ final class TurnAccumulatorTests: XCTestCase {
         let closeEvents = Fixture.feed(
             accumulator,
             [Fixture.userLine(uuid: "u-2", parent: "a-19", text: "next")],
-            startingAt: lines.count + 1)
+            startingAt: Int64(lines.count + 1))
         XCTAssertEqual(
             Fixture.closures(closeEvents).first?.reason, .ambiguousTerminal)
         XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
