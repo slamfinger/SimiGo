@@ -154,8 +154,10 @@ extension HTTPServer {
     /// wire, the session, or the content. `metadata.simigo_request_scope` (or
     /// the `X-SimiGo-Request-Scope` header) set to `internal` marks a client
     /// bookkeeping call — rollout analysis, title generation, memory extraction
-    /// — which is recorded for audit but never becomes ordinary conversation
-    /// memory or a settled result. Anything else stays an ordinary turn.
+    /// — which never becomes ordinary conversation memory or a settled result.
+    /// Such a call is not recorded as a turn at all: it is not a conversation,
+    /// and storing it produced fake question/answer pairs in the space.
+    /// Anything else stays an ordinary turn.
     static func turnEligibility(
         from json: [String: Any], headers: [String: String]
     ) -> ESISDatabase.ChatTurnEligibility {
@@ -245,6 +247,13 @@ extension HTTPServer {
             ?? resolveExplicitSession(from: json, headers: headers)
             ?? Self.informationScope(agentId: agentId, messages: messages)
         let eligibility = Self.turnEligibility(from: json, headers: headers)
+        // 内部动作不检索、也不落成会话。
+        //
+        // 轮次摘要、标题、记忆抽取问的不是「空间里有什么」，而是「这段文本
+        // 说了什么」。实测每次照样注入 7,550 B 上下文（≈2,500 tokens，约 7 s
+        // 冷预填）加 2 s 检索，全部与摘要无关；落成会话还会给每条摘要留一对
+        // 假问答（实测 394 行 info-* 会话就是这么来的）。
+        if eligibility == .internalOperation { return (messages, nil) }
         let declaration = Self.settlementDeclaration(from: json, headers: headers)
         Self.traceClientProvenance(headers: headers)
         let loop = InformationLoop(database: db)

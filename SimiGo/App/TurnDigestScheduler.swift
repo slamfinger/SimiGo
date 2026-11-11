@@ -50,9 +50,10 @@ enum TurnDigestScheduler {
     ///
     /// 每补完一轮就回报一次，调用方据此更新进度；补不上的留在缺口里。
     static func fillMissing(
+        limit: Int? = nil,
         progress: @escaping @Sendable (Int, Int) -> Void
     ) async -> (done: Int, failed: Int) {
-        let pending: [ESISDatabase.UndigestedTurn]
+        var pending: [ESISDatabase.UndigestedTurn]
         do {
             let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             defer { db.close() }
@@ -61,6 +62,7 @@ enum TurnDigestScheduler {
             NSLog("[digest] 读缺口失败：\(error)")
             return (0, 0)
         }
+        if let limit, limit < pending.count { pending = Array(pending.prefix(limit)) }
         var done = 0, failed = 0
         for (index, turn) in pending.enumerated() {
             do {
@@ -95,6 +97,10 @@ enum TurnDigestScheduler {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // 摘要只看这一段文本：声明成内部动作，服务端就不做检索、不注上下文、
+        // 也不把它落成会话。不声明的话每条摘要都要多付一次冷预填（实测
+        // 7,550 B 上下文 + 2 s 检索），还会在 chat_messages 里留一对假问答。
+        request.setValue("internal", forHTTPHeaderField: "X-SimiGo-Request-Scope")
         request.timeoutInterval = 600
         let body: [String: Any] = [
             "model": model,

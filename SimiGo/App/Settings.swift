@@ -157,6 +157,9 @@ struct Settings: View {
                             Button("刷新状态") { refreshInformationSpace() }
                             if missingDigests > 0 {
                                 Button("补摘要 \(missingDigests) 轮") { fillMissingDigests() }
+                                // 先小样再全量：一轮实测十几秒，2,600 轮是
+                                // 十几小时的量级，摘要质量得先看二十条。
+                                Button("小样 100 轮") { fillMissingDigests(limit: 100) }
                             }
                             Button("外部信息采集…") { openCollectionBridge() }
                                 .disabled(collectionBusy)
@@ -391,11 +394,11 @@ struct Settings: View {
 
     /// 补摘要：走和自动摘要同一条路（本地模型 + recordTurnDigest），
     /// 只是这里由人按下去。一轮补完报一次进度，补完刷新一遍状态。
-    private func fillMissingDigests() {
+    private func fillMissingDigests(limit: Int? = nil) {
         informationSpaceBusy = true
         digestProgress = "补摘要中…"
         Task.detached(priority: .utility) {
-            let result = await TurnDigestScheduler.fillMissing { done, total in
+            let result = await TurnDigestScheduler.fillMissing(limit: limit) { done, total in
                 Task { @MainActor in
                     digestProgress = "补摘要 \(done)/\(total)"
                 }
