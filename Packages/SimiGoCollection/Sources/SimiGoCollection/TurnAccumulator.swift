@@ -167,7 +167,20 @@ public final class TurnAccumulator {
     public var hasOpenTurn: Bool { pending != nil }
 
     var retainedNodeCountForTesting: Int { nodes.count }
+    var retainedNodeOrderCountForTesting: Int { nodeOrder.count }
     var retainedAnchorIDCountForTesting: Int { seenAnchorIDs.count }
+    var retainedIdentifiersForTesting: [String] {
+        var values = Array(nodes.keys)
+        values.append(contentsOf: nodeOrder.map(\\.id))
+        values.append(contentsOf: nodes.values.compactMap(\\.parent))
+        values.append(contentsOf: nodes.values.compactMap(\\.anchorID))
+        values.append(contentsOf: seenAnchorIDs)
+        if let pending {
+            values.append(pending.anchor.id)
+            values.append(contentsOf: pending.messages.keys)
+        }
+        return values
+    }
     var retainedPendingMessageCountForTesting: Int { pending?.messages.count ?? 0 }
     var retainedPendingTerminalCountForTesting: Int {
         pending?.messages.values.reduce(0) { $0 + ($1.latestTerminal == nil ? 0 : 1) } ?? 0
