@@ -1298,6 +1298,50 @@ public final class ESISDatabase {
             _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
         }
 
+        if try schemaVersion() < 30 {
+            try transaction {
+                // v30：settlement_summaries.query 只留问题开头，全文留在摘要对象里。
+                //
+                // 这一列原本是第二份全文：184 行 3.2 MB，而 96k 压测把同一份
+                // 384 KB 文本在对象、这一列、FTS 三处各存了一遍。摘要对象是
+                // 权威副本，每次读 summary 都要解开它并校验（verified(_:)），
+                // 所以这一列不必再存全文。
+                //
+                // query_truncated 记住这一行存的是前缀还是全文：读的时候全文
+                // 必须逐字相等、前缀必须 hasPrefix，校验通过再把对象里的全文
+                // 还给调用方——对外拿到的仍是完整问题，只有落盘的行变短了。
+                if try !columnExists("settlement_summaries", "query_truncated") {
+                    try Self.rawExec(
+                        handle,
+                        """
+                        ALTER TABLE settlement_summaries
+                        ADD COLUMN query_truncated INTEGER NOT NULL DEFAULT 0;
+                        """)
+                }
+                let limit = Int64(SettlementSummaryPolicy.queryExcerptCharacters)
+                let shortened: Int = try {
+                    let stmt = try prepare("""
+                    SELECT COUNT(*) FROM settlement_summaries WHERE LENGTH(query) > ?;
+                    """)
+                    defer { sqlite3_finalize(stmt) }
+                    try bind(stmt, 1, limit)
+                    return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+                }()
+                try execBinding("""
+                UPDATE settlement_summaries
+                   SET query = substr(query, 1, ?), query_truncated = 1
+                 WHERE LENGTH(query) > ?;
+                """) { stmt in
+                    try bind(stmt, 1, limit)
+                    try bind(stmt, 2, limit)
+                }
+                try recordMigrationRow(
+                    30,
+                    "simigo-settlement-query-excerpt-v30: shortened \(shortened) rows "
+                        + "to \(limit) chars")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1310,7 +1354,10 @@ public final class ESISDatabase {
             defer { sqlite3_finalize(stmt) }
             return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
         }()
-        if freedPages > 2000 { try? Self.rawExec(handle, "VACUUM;") }
+        // 门槛 400 页（1.6 MB）：v30 只把 query 列截短，实测释放 783 页。
+        // 门槛定在 2000 的话这次回收永远够不着，文件就停在原大小——和上面
+        // 那个「一次性判据」是同一类错。400 页以下不值得一次全库重写。
+        if freedPages > 400 { try? Self.rawExec(handle, "VACUUM;") }
 
         // The declared head and the applied head must agree. A migration gate
         // that was written but never reached, or a version bumped in the
@@ -1325,7 +1372,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 29
+    public static let currentSchemaVersion = 30
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
@@ -7642,7 +7689,13 @@ try bind(externalStmt, 1, rootID)
     public struct SettlementSummaryRecord: Equatable, Sendable {
         public let settlementID: String
         public let sessionID: String?
+        /// Only the head of the question (see
+        /// `SettlementSummaryPolicy.queryExcerptCharacters`); the full text is
+        /// in the summary object and is restored by `verified(_:)`.
         public let query: String
+        /// True when `query` is an excerpt. A non-excerpt row must match the
+        /// object byte for byte; an excerpt must be a prefix of it.
+        public let queryTruncated: Bool
         public let summary: String
         public let summarySHA256: String
         public let summaryObjectID: String
@@ -7723,15 +7776,18 @@ try bind(externalStmt, 1, rootID)
         let objectID = try ensureObject(bytes)
         let summarySHA = NativeSHA256.hexDigest(Data(text.utf8))
         let stamp = Self.stamp(settledAt)
+        let storedQuery = SettlementSummaryPolicy.queryExcerpt(query)
+        let queryTruncated = storedQuery != query
 
         try execBinding("""
         INSERT INTO settlement_summaries(
-            settlement_id, session_id, query, summary, summary_sha256,
+            settlement_id, session_id, query, query_truncated, summary, summary_sha256,
             summary_object_id, source_payload_digest, created_at,
             derivation_type, provenance_settlement_id)
-        VALUES(?,?,?,?,?,?,?,?,?,?)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(settlement_id) DO UPDATE SET
             session_id=excluded.session_id, query=excluded.query,
+            query_truncated=excluded.query_truncated,
             summary=excluded.summary, summary_sha256=excluded.summary_sha256,
             summary_object_id=excluded.summary_object_id,
             source_payload_digest=excluded.source_payload_digest,
@@ -7741,21 +7797,22 @@ try bind(externalStmt, 1, rootID)
         """) { stmt in
             try bind(stmt, 1, settlementID)
             try bind(stmt, 2, sessionID)
-            try bind(stmt, 3, query)
-            try bind(stmt, 4, text)
-            try bind(stmt, 5, summarySHA)
-            try bind(stmt, 6, objectID)
-            try bind(stmt, 7, payloadDigest)
-            try bind(stmt, 8, stamp)
-            try bind(stmt, 9, derived ? "DERIVED_CONSUMPTION" : nil)
-            try bind(stmt, 10, provenance)
+            try bind(stmt, 3, storedQuery)
+            try bind(stmt, 4, queryTruncated ? 1 : 0)
+            try bind(stmt, 5, text)
+            try bind(stmt, 6, summarySHA)
+            try bind(stmt, 7, objectID)
+            try bind(stmt, 8, payloadDigest)
+            try bind(stmt, 9, stamp)
+            try bind(stmt, 10, derived ? "DERIVED_CONSUMPTION" : nil)
+            try bind(stmt, 11, provenance)
         }
         _ = try appendIndexEntryInTransaction(
             identity: "settlement-summary:\(settlementID)", objectID: objectID)
 
         return SettlementSummaryRecord(
             settlementID: settlementID, sessionID: sessionID, query: query,
-            summary: text, summarySHA256: summarySHA,
+            queryTruncated: queryTruncated, summary: text, summarySHA256: summarySHA,
             summaryObjectID: objectID, sourcePayloadDigest: payloadDigest,
             createdAt: stamp,
             derivationType: derived ? "DERIVED_CONSUMPTION" : nil,
@@ -7765,7 +7822,7 @@ try bind(externalStmt, 1, rootID)
     /// Read one summary back with its object bytes verified against the address.
     public func settlementSummary(settlementID: String) throws -> SettlementSummaryRecord? {
         let stmt = try prepare("""
-        SELECT settlement_id, session_id, query, summary, summary_sha256,
+        SELECT settlement_id, session_id, query, query_truncated, summary, summary_sha256,
                summary_object_id, source_payload_digest, created_at,
                derivation_type, provenance_settlement_id
         FROM settlement_summaries WHERE settlement_id=?;
@@ -7779,11 +7836,12 @@ try bind(externalStmt, 1, rootID)
         let record = SettlementSummaryRecord(
             settlementID: text(0),
             sessionID: sqlite3_column_text(stmt, 1).map { String(cString: $0) },
-            query: text(2), summary: text(3), summarySHA256: text(4),
-            summaryObjectID: text(5), sourcePayloadDigest: text(6),
-            createdAt: text(7),
-            derivationType: sqlite3_column_text(stmt, 8).map { String(cString: $0) },
-            sourceSettlementID: sqlite3_column_text(stmt, 9).map { String(cString: $0) })
+            query: text(2), queryTruncated: sqlite3_column_int(stmt, 3) != 0,
+            summary: text(4), summarySHA256: text(5),
+            summaryObjectID: text(6), sourcePayloadDigest: text(7),
+            createdAt: text(8),
+            derivationType: sqlite3_column_text(stmt, 9).map { String(cString: $0) },
+            sourceSettlementID: sqlite3_column_text(stmt, 10).map { String(cString: $0) })
         return try verified(record)
     }
 
@@ -7800,7 +7858,8 @@ try bind(externalStmt, 1, rootID)
         sessionID: String?, limit: Int = 200
     ) throws -> [SettlementSummaryRecord] {
         let stmt = try prepare("""
-        SELECT m.settlement_id, m.session_id, m.query, m.summary, m.summary_sha256,
+        SELECT m.settlement_id, m.session_id, m.query, m.query_truncated,
+               m.summary, m.summary_sha256,
                m.summary_object_id, m.source_payload_digest, m.created_at,
                m.derivation_type, m.provenance_settlement_id
         FROM settlement_summaries m
@@ -7823,11 +7882,12 @@ try bind(externalStmt, 1, rootID)
             let record = SettlementSummaryRecord(
                 settlementID: text(0),
                 sessionID: sqlite3_column_text(stmt, 1).map { String(cString: $0) },
-                query: text(2), summary: text(3), summarySHA256: text(4),
-                summaryObjectID: text(5), sourcePayloadDigest: text(6),
-                createdAt: text(7),
-                derivationType: sqlite3_column_text(stmt, 8).map { String(cString: $0) },
-                sourceSettlementID: sqlite3_column_text(stmt, 9).map { String(cString: $0) })
+                query: text(2), queryTruncated: sqlite3_column_int(stmt, 3) != 0,
+                summary: text(4), summarySHA256: text(5),
+                summaryObjectID: text(6), sourcePayloadDigest: text(7),
+                createdAt: text(8),
+                derivationType: sqlite3_column_text(stmt, 9).map { String(cString: $0) },
+                sourceSettlementID: sqlite3_column_text(stmt, 10).map { String(cString: $0) })
             if let verified = try? verified(record) { out.append(verified) }
         }
         return out
@@ -7845,13 +7905,29 @@ try bind(externalStmt, 1, rootID)
         guard let sealed = try? JSONDecoder().decode(
             SettlementSummaryPolicy.Summary.self, from: data)
         else { return nil }
-        guard sealed.settlementID == record.settlementID,
+        // The column holds either the whole question or its head. Both are
+        // checked against the object, so a rewritten or swapped excerpt is
+        // refused instead of being cited as the question that was asked.
+        let queryIntact = record.queryTruncated
+            ? sealed.query.hasPrefix(record.query)
+            : sealed.query == record.query
+        guard queryIntact,
+            sealed.settlementID == record.settlementID,
             sealed.text == record.summary,
             sealed.sourcePayloadDigest == record.sourcePayloadDigest,
             sealed.derivationType == record.derivationType,
             sealed.sourceSettlementID == record.sourceSettlementID
         else { return nil }
-        return record
+        // Callers get the question in full; only the stored row is shortened.
+        guard record.queryTruncated else { return record }
+        return SettlementSummaryRecord(
+            settlementID: record.settlementID, sessionID: record.sessionID,
+            query: sealed.query, queryTruncated: true, summary: record.summary,
+            summarySHA256: record.summarySHA256,
+            summaryObjectID: record.summaryObjectID,
+            sourcePayloadDigest: record.sourcePayloadDigest,
+            createdAt: record.createdAt, derivationType: record.derivationType,
+            sourceSettlementID: record.sourceSettlementID)
     }
 
     /// The settlement a derived consumption record consumed. Used to stamp the

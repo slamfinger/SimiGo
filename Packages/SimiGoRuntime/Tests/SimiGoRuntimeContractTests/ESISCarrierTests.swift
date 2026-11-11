@@ -720,7 +720,7 @@ final class ESISCarrierTests: XCTestCase {
         VALUES('demand:d1 -> file:a', 'aa', 1, 'demand-input', '2026-11-11T00:00:00Z'),
               ('demand:d1 -> file:b', 'bb', 1, 'demand-input', '2026-11-11T00:00:00Z'),
               ('file:a', 'aa', 1, 'content-settle', '2026-11-11T00:00:00Z');
-        DELETE FROM schema_migrations WHERE version=29;
+        DELETE FROM schema_migrations WHERE version IN (29,30);
         """
         XCTAssertEqual(sqlite3_exec(handle, seed, nil, nil, &message), SQLITE_OK,
                        message.map { String(cString: $0) } ?? "")
@@ -735,5 +735,86 @@ final class ESISCarrierTests: XCTestCase {
             try rawText(url, "SELECT reason FROM is_dependency_entries;"), "content-settle")
         XCTAssertThrowsError(try rawExec(url, "DELETE FROM is_dependency_entries;"),
                              "清理之后 append-only 触发器必须还在")
+    }
+
+    /// v30：query 列只存问题开头（200 字），全文留在摘要对象里。
+    /// 落盘的行变短，读回来的仍是完整问题。
+    func testLongSummaryQueryIsShortenedOnDiskAndRestoredOnRead() throws {
+        let (url, db) = try open("v30-query-excerpt")
+        defer { db.close(); cleanup(url) }
+        let loop = InformationLoop(database: db)
+
+        let longQuery = String(repeating: "合同额与考核管理要逐条核对，", count: 40)
+        XCTAssertGreaterThan(longQuery.count, SettlementSummaryPolicy.queryExcerptCharacters)
+        let turn = try loop.settleTurn(
+            generatedText: "施工组织设计应覆盖关键线路与节点工期。",
+            resolution: nil,
+            stateID: "S-Q-1",
+            parentStateID: nil,
+            position: 0,
+            modelIdentity: "model-a",
+            identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-q",
+            summaryQuery: longQuery,
+            actions: ["chat.completion"])
+
+        // 落盘：200 字 + 截断标记。
+        XCTAssertEqual(
+            try rawText(url, "SELECT LENGTH(query) FROM settlement_summaries;"), "200")
+        XCTAssertEqual(
+            try rawText(url, "SELECT query_truncated FROM settlement_summaries;"), "1")
+        XCTAssertEqual(
+            try rawText(url, "SELECT substr(query,1,200) FROM settlement_summaries;"),
+            String(longQuery.prefix(SettlementSummaryPolicy.queryExcerptCharacters)))
+
+        // 读回：全文，且两条读路径一致。
+        let summary = try XCTUnwrap(
+            try db.settlementSummary(settlementID: turn.settlementID))
+        XCTAssertEqual(summary.query, longQuery)
+        XCTAssertTrue(summary.queryTruncated)
+        let cited = try db.citableSettlementSummaries(sessionID: "elsewhere")
+        XCTAssertEqual(cited.first?.query, longQuery)
+    }
+
+    /// v30 迁移：已有的长 query 被截短并标记，短的逐字不动。
+    func testMigrationThirtyShortensExistingQueryRows() throws {
+        let (url, db) = try open("v30-migrate")
+        defer { cleanup(url) }
+        db.close()
+
+        let long = String(repeating: "长问题", count: 300)
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+        var message: UnsafeMutablePointer<CChar>?
+        let seed = """
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at)
+        VALUES('s-long', 's', '\(long)', 'ok', 'h',
+               '\(String(repeating: "a", count: 64))', 'd', '2026-11-11T00:00:00Z'),
+              ('s-short', 's', '短问题', 'ok', 'h',
+               '\(String(repeating: "b", count: 64))', 'd', '2026-11-11T00:00:01Z');
+        DELETE FROM schema_migrations WHERE version=30;
+        """
+        XCTAssertEqual(sqlite3_exec(handle, seed, nil, nil, &message), SQLITE_OK,
+                       message.map { String(cString: $0) } ?? "")
+        sqlite3_close(handle)
+
+        let reopened = try ESISDatabase(url: url)
+        defer { reopened.close() }
+        try reopened.runMigrations()
+        XCTAssertEqual(
+            try rawText(url, "SELECT LENGTH(query) FROM settlement_summaries WHERE settlement_id='s-long';"),
+            "200")
+        XCTAssertEqual(
+            try rawText(url, "SELECT query_truncated FROM settlement_summaries WHERE settlement_id='s-long';"),
+            "1")
+        XCTAssertEqual(
+            try rawText(url, "SELECT query FROM settlement_summaries WHERE settlement_id='s-short';"),
+            "短问题",
+            "短问题不动，也不打标记")
+        XCTAssertEqual(
+            try rawText(url, "SELECT query_truncated FROM settlement_summaries WHERE settlement_id='s-short';"),
+            "0")
     }
 }

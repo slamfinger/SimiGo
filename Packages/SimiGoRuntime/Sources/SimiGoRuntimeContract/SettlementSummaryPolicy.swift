@@ -13,6 +13,15 @@ public enum SettlementSummaryPolicy {
     public static let schema = "simigo.settlement-summary/v1"
     public static let maxCharacters = 320
 
+    /// How much of the question `settlement_summaries.query` keeps.
+    ///
+    /// The full question is already inside the summary object, which every read
+    /// decodes and verifies; the column was a second full copy. At 184 rows it
+    /// held 3.2 MB, and the 96k benchmark blocks carried the same 384 KB text
+    /// in three places (object, column, FTS). 200 characters is enough for a
+    /// person to recognise which question a settlement answered.
+    public static let queryExcerptCharacters = 200
+
     public struct Summary: Codable, Equatable, Sendable {
         public let schema: String
         public let settlementID: String
@@ -77,5 +86,15 @@ public enum SettlementSummaryPolicy {
             if sentence.count >= min(60, limit) { return sentence }
         }
         return head.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// The head of a question, for the `query` column. A question at or under
+    /// the limit is returned unchanged so short rows stay byte-identical to
+    /// what the caller passed.
+    public static func queryExcerpt(
+        _ query: String, limit: Int = queryExcerptCharacters
+    ) -> String {
+        guard limit > 0, query.count > limit else { return query }
+        return String(query.prefix(limit))
     }
 }
