@@ -1247,8 +1247,19 @@ public final class ESISDatabase {
 
     /// `true` only when the stored bytes still hash to their address. A missing
     /// or corrupt object is `false`, never an empty success.
-    public func verifyObject(_ objectID: String) -> Bool {
-        (try? readObject(objectID)) != nil
+    /// Verify an object without confusing storage execution failures with corruption.
+    /// Missing or byte/address-mismatched objects are a negative verdict; SQLite
+    /// prepare/bind/step failures remain typed errors for the caller.
+    public func verifyObject(_ objectID: String) throws -> Bool {
+        do {
+            _ = try readObject(objectID)
+            return true
+        } catch let error as DatabaseError {
+            if case .executionFailure = error { throw error }
+            return false
+        } catch {
+            return false
+        }
     }
 
     /// Append an identity → object entry. History is never overwritten; callers
@@ -1409,7 +1420,14 @@ public final class ESISDatabase {
                 ids.append(String(cString: c))
             }
             for id in ids {
-                if (try? readObject(id)) == nil { corrupt += 1 }
+                do {
+                    _ = try readObject(id)
+                } catch let error as DatabaseError {
+                    if case .executionFailure = error { throw error }
+                    corrupt += 1
+                } catch {
+                    corrupt += 1
+                }
             }
         }
 
