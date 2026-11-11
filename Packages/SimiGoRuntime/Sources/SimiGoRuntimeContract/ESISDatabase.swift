@@ -71,6 +71,9 @@ public final class ESISDatabase {
         /// from a path that now leads somewhere else: a vanished source is
         /// drift the retrieval reports as stale, a redirected one is refused.
         case sourceGone(path: String)
+        /// A descriptor's bytes or read-stability metadata changed during a read.
+        /// Callers that can safely replay the complete read may retry a bounded number of times.
+        case sourceChangedWhileBeingRead(path: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
         /// SQLite API execution failure. Preserves primary and extended result
@@ -3566,13 +3569,16 @@ try bind(externalStmt, 1, rootID)
                 hook()
             }
             var finalInfo = stat()
-            guard Darwin.fstat(fileFD, &finalInfo) == 0,
-                  finalInfo.st_dev == initial.st_dev,
+            guard Darwin.fstat(fileFD, &finalInfo) == 0 else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: final fstat failed: \\(String(cString: strerror(errno)))")
+            }
+            guard finalInfo.st_dev == initial.st_dev,
                   finalInfo.st_ino == initial.st_ino,
                   finalInfo.st_size == initial.st_size,
                   finalInfo.st_mtimespec.tv_sec == initial.st_mtimespec.tv_sec,
                   finalInfo.st_mtimespec.tv_nsec == initial.st_mtimespec.tv_nsec else {
-                throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
+                throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
             let ctOK = finalInfo.st_ctimespec.tv_sec == initial.st_ctimespec.tv_sec
                 && finalInfo.st_ctimespec.tv_nsec == initial.st_ctimespec.tv_nsec
@@ -3584,13 +3590,16 @@ try bind(externalStmt, 1, rootID)
             // we indexed, then require ctime to have held across that re-read.
             guard let readBytes, let fresh = rereadWindow(
                 from: windowStart, byteCount: readBytes.count), fresh == readBytes else {
-                throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
+                throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
             var afterReread = stat()
-            guard Darwin.fstat(fileFD, &afterReread) == 0,
-                  afterReread.st_ctimespec.tv_sec == finalInfo.st_ctimespec.tv_sec,
+            guard Darwin.fstat(fileFD, &afterReread) == 0 else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: post-reread fstat failed: \\(String(cString: strerror(errno)))")
+            }
+            guard afterReread.st_ctimespec.tv_sec == finalInfo.st_ctimespec.tv_sec,
                   afterReread.st_ctimespec.tv_nsec == finalInfo.st_ctimespec.tv_nsec else {
-                throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
+                throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
         }
 
