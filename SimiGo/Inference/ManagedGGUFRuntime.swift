@@ -150,8 +150,10 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     // llama-server keeps the prefix cells internally and this
                     // runtime exports no representation, so it declares that
                     // instead of letting a client discover it by a failed call.
-                    // Settlement consumption and managed continuation are nil
-                    // here and therefore declared unsupported from the wiring.
+                    // Settlement consumption is nil here and therefore
+                    // unsupported from the wiring; managed continuation is
+                    // wired above on the value-injection path and never reuses
+                    // this engine's KV.
                     kvRepresentationAvailable: .unsupported,
                     informationTurnProducer: { producer },
                     requestAdmission: RequestAdmissionScheduler(limit: admissionLimit)
