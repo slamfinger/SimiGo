@@ -182,8 +182,8 @@ final class ESISDatabaseTests: XCTestCase {
             XCTAssertEqual(extended, SQLITE_TOOBIG)
         }
 
-        XCTAssertThrowsError(try db.verifyObject(objectID), assertSQLiteTooBig)
-        XCTAssertThrowsError(try db.carrierReport(deepVerify: true), assertSQLiteTooBig)
+        XCTAssertThrowsError(try db.verifyObject(objectID)) { assertSQLiteTooBig($0) }
+        XCTAssertThrowsError(try db.carrierReport(deepVerify: true)) { assertSQLiteTooBig($0) }
     }
 
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {

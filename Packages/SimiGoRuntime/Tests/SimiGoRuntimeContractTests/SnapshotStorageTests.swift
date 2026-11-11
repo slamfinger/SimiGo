@@ -102,7 +102,7 @@ final class SnapshotStorageTests: XCTestCase {
         XCTAssertNoThrow(try decoded.verify(against: Snapshot.Declared.decode(try db.readObject(declaredID))))
 
         // The declared object that never reached P2 is retained as an orphan.
-        XCTAssertTrue(db.verifyObject(declaredID))
+        XCTAssertTrue(try db.verifyObject(declaredID))
     }
 
     func testSettlementCannotReferenceAMissingSnapshotObject() throws {
