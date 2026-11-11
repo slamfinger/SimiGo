@@ -45,6 +45,52 @@ enum TurnDigestScheduler {
         }
     }
 
+    /// 把「轮号有、摘要没有」的全部补齐。一次一轮、串行——本地模型本来
+    /// 也是串行处理的，并发只会把预填挤在一起。
+    ///
+    /// 每补完一轮就回报一次，调用方据此更新进度；补不上的留在缺口里。
+    static func fillMissing(
+        progress: @escaping @Sendable (Int, Int) -> Void
+    ) async -> (done: Int, failed: Int) {
+        let pending: [ESISDatabase.UndigestedTurn]
+        do {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            defer { db.close() }
+            pending = try db.undigestedTurns()
+        } catch {
+            NSLog("[digest] 读缺口失败：\(error)")
+            return (0, 0)
+        }
+        var done = 0, failed = 0
+        for (index, turn) in pending.enumerated() {
+            do {
+                let raw = try await complete(TurnDigestText.prompt(
+                    question: turn.question, answer: turn.answer))
+                guard let parsed = TurnDigestText.parse(raw) else {
+                    failed += 1
+                    progress(index + 1, pending.count)
+                    continue
+                }
+                let db = try ESISDatabase(url: ManagedPaths.databaseURL,
+                                          createIfNeeded: true)
+                defer { db.close() }
+                try db.recordTurnDigest(
+                    sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                    questionMessageID: turn.questionMessageID,
+                    answerMessageID: turn.answerMessageID,
+                    digest: parsed.digest,
+                    keywords: parsed.keywords.joined(separator: " "),
+                    model: "local:\(model)")
+                done += 1
+            } catch {
+                failed += 1
+                NSLog("[digest] \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)")
+            }
+            progress(index + 1, pending.count)
+        }
+        return (done, failed)
+    }
+
     private static func complete(_ prompt: String) async throws -> String {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"

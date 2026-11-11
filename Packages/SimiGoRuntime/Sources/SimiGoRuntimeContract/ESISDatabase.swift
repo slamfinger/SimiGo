@@ -5407,6 +5407,62 @@ try bind(externalStmt, 1, rootID)
 
     /// 轮号有、摘要没有的轮次。和菜单栏的轮号缺口是同一份账：一处漏写，
     /// 另一处就能看见。
+    /// 补一轮摘要要的全部东西：轮号、那两行消息的 id、问题与回答的正文。
+    public struct UndigestedTurn: Sendable {
+        public let sessionID: String
+        public let turnIndex: Int
+        public let questionMessageID: Int64?
+        public let answerMessageID: Int64?
+        public let question: String
+        public let answer: String
+    }
+
+    /// 全库口径的「轮号有、摘要没有」。补摘要按这个跑，跑完再看
+    /// `carrierReport().turnsWithoutDigest` 是否归零。
+    public func undigestedTurns() throws -> [UndigestedTurn] {
+        let stmt = try prepare("""
+        SELECT l.session_id, l.turn_index,
+               (SELECT m.id FROM chat_messages m
+                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                   AND m.role='user' LIMIT 1),
+               (SELECT m.id FROM chat_messages m
+                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                   AND m.role='assistant' LIMIT 1),
+               (SELECT CAST(o.content AS TEXT) FROM chat_messages m
+                  JOIN is_objects o ON o.object_id=m.content_object_id
+                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                   AND m.role='user' LIMIT 1),
+               (SELECT CAST(o.content AS TEXT) FROM chat_messages m
+                  JOIN is_objects o ON o.object_id=m.content_object_id
+                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                   AND m.role='assistant' LIMIT 1)
+          FROM chat_turn_ledger l
+         WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+                            WHERE d.session_id=l.session_id
+                              AND d.turn_index=l.turn_index)
+         ORDER BY l.session_id, l.turn_index;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [UndigestedTurn] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            let question = text(4) ?? ""
+            let answer = text(5) ?? ""
+            if question.isEmpty && answer.isEmpty { continue }
+            rows.append(UndigestedTurn(
+                sessionID: text(0) ?? "",
+                turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+                questionMessageID: sqlite3_column_type(stmt, 2) == SQLITE_NULL
+                    ? nil : sqlite3_column_int64(stmt, 2),
+                answerMessageID: sqlite3_column_type(stmt, 3) == SQLITE_NULL
+                    ? nil : sqlite3_column_int64(stmt, 3),
+                question: question, answer: answer))
+        }
+        return rows
+    }
+
     public func turnsWithoutDigest(sessionID: String) throws -> [Int] {
         let stmt = try prepare("""
         SELECT l.turn_index FROM chat_turn_ledger l

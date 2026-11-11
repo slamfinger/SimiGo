@@ -57,6 +57,32 @@ final class TurnDigestSearchTests: XCTestCase {
         XCTAssertFalse(withoutChat.hits.contains { $0.kind == "turn" })
     }
 
+    /// 补摘要按钮的数据源：缺口里要带上轮号、问题和回答；补完就空。
+    func testUndigestedTurnsCarryTextsAndClearAfterWrite() throws {
+        let (url, db) = try open("gap")
+        defer { db.close(); cleanup(url) }
+
+        try db.recordExternalTurn(
+            sessionID: "s-g", provider: "local", requestID: "g1",
+            userText: "问：闸门什么时候开", model: nil, createdAt: Date())
+        try db.recordExternalResponse(
+            sessionID: "s-g", provider: "local", requestID: "g1",
+            assistantText: "答：汛前三天", model: nil, createdAt: Date())
+        try db.recordTurnIndex(
+            sessionID: "s-g", turnIndex: 1, requestID: "g1", at: Date())
+
+        let gap = try db.undigestedTurns()
+        XCTAssertEqual(gap.count, 1)
+        XCTAssertEqual(gap.first?.sessionID, "s-g")
+        XCTAssertEqual(gap.first?.turnIndex, 1)
+        XCTAssertEqual(gap.first?.question, "问：闸门什么时候开")
+        XCTAssertEqual(gap.first?.answer, "答：汛前三天")
+
+        try db.recordTurnDigest(
+            sessionID: "s-g", turnIndex: 1, digest: "定了开闸时点", keywords: "闸门")
+        XCTAssertTrue(try db.undigestedTurns().isEmpty)
+    }
+
     /// 两行输出解析：正常、缺行、多余标点。
     func testDigestParse() {
         let ok = TurnDigestText.parse(
