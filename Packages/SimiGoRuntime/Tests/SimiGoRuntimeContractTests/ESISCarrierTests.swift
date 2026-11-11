@@ -935,8 +935,8 @@ final class ESISCarrierTests: XCTestCase {
 
         try rawExec(url, """
         INSERT INTO roots(root_id, category, display_name, locator_type, status)
-            VALUES('work-a','work','/Users/x/Desktop/参考文件','path','present'),
-                  ('work-b','work','/Users/x/Desktop/26.秦沈项目','path','present');
+            VALUES('work-a','work','/srv/Desktop/参考文件','path','present'),
+                  ('work-b','work','/srv/Desktop/26.秦沈项目','path','present');
         DELETE FROM schema_migrations WHERE version >= 32;
         DROP TABLE spaces;
         """)

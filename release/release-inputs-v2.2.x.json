@@ -629,6 +629,10 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SnapshotContract.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/TurnDigest.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/TurnDigest.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/TaskRunOutcomeClassificationTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/TaskRunOutcomeClassificationTests.swift"
     },
@@ -683,6 +687,14 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISContextLedgerTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISContextLedgerTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISObjectFTSTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISObjectFTSTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ImportedTurnLedgerTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ImportedTurnLedgerTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/InformationCitationEdgeTests.swift",
@@ -743,6 +755,14 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotStorageTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotStorageTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnEligibilityContextTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnEligibilityContextTests.swift"
     },
     {
       "path": "README.md",
@@ -831,6 +851,10 @@
     {
       "path": "SimiGo/App/StatusBarCoordinator.swift",
       "output": "SimiGo/App/StatusBarCoordinator.swift"
+    },
+    {
+      "path": "SimiGo/App/TurnDigestScheduler.swift",
+      "output": "SimiGo/App/TurnDigestScheduler.swift"
     },
     {
       "path": "SimiGo/Headless/EnvBootstrapEntry.swift",
@@ -1395,6 +1419,10 @@
     {
       "path": "docs/AUDIT_BASELINE_20260928.md",
       "output": "docs/AUDIT_BASELINE_20260928.md"
+    },
+    {
+      "path": "docs/HANDOVER-turn-digest-backfill.md",
+      "output": "docs/HANDOVER-turn-digest-backfill.md"
     },
     {
       "path": "docs/README.md",
@@ -2459,6 +2487,10 @@
     {
       "path": "tools/agent_prefix_audit.py",
       "output": "tools/agent_prefix_audit.py"
+    },
+    {
+      "path": "tools/backfill_turn_digests.py",
+      "output": "tools/backfill_turn_digests.py"
     },
     {
       "path": "tools/check_trace_is_evidence_only.sh",
