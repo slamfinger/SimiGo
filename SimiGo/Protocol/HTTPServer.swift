@@ -2461,7 +2461,7 @@ public final class HTTPServer: @unchecked Sendable {
                     status: 404, on: context.connection, context: context)
                 return
             }
-            guard db.verifyObject(id) else {
+            guard try db.verifyObject(id) else {
                 sendJSON(
                     ["error": "OBJECT_CORRUPT", "detail": id],
                     status: 409, on: context.connection, context: context)
