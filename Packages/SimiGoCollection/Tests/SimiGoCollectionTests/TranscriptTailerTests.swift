@@ -618,6 +618,31 @@ final class TranscriptTailerTests: XCTestCase {
             Int64(try Data(contentsOf: file).count))
     }
 
+    func testDescriptorRelativeDirectoryOpenRejectsSymlinkComponents() throws {
+        let external = root.appendingPathComponent(
+            "external-directory-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: external, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: external) }
+
+        let projectDirectory = root.appendingPathComponent(
+            "descriptor-project", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: projectDirectory, withIntermediateDirectories: true)
+        let link = projectDirectory.appendingPathComponent(
+            "subagents", isDirectory: true)
+        try FileManager.default.createSymbolicLink(
+            at: link, withDestinationURL: external)
+
+        let rootFD = try TranscriptPathAccess.openDirectoryPathNoFollow(root.path)
+        defer { Darwin.close(rootFD) }
+        XCTAssertThrowsError(
+            try TranscriptPathAccess.openDirectory(
+                rootDirectoryFD: rootFD,
+                relativePath: "descriptor-project/subagents"),
+            "every component must be opened with O_NOFOLLOW")
+    }
+
     func testSymlinkedSubagentsDirectoryIsNotTraversed() throws {
         let sessionDirectory = project.appendingPathComponent(
             Fixture.sessionID, isDirectory: true)
