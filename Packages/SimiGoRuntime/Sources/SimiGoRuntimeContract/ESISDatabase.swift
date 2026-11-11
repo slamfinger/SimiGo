@@ -1489,6 +1489,52 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 34 {
+            // 受保护表的 ALTER 会被 authorizer 拒（is_dependency_entries 在
+            // 保护名单里）。和 v29 一样，只在这一次迁移里摘掉，跑完立刻装回。
+            //
+            // v34：依赖有了两个时钟。
+            //
+            //   valid_from / valid_to  世界时间——这份字节从哪里到什么时候为真
+            //   known_from / known_to  记录时间——ES 从哪里到哪里这么认为
+            //
+            // 只用一个时钟会出错：拿「上一版的 ES 时间」当 valid_to，而
+            // valid_from 用文件自己的修改时间，两个版本之间就会重叠（内容
+            // 早就变了，我们才在几小时后发现）。两个时钟分开，区间就不重叠，
+            // 也仍然答得出「那天这个文件是什么」。
+            _ = sqlite3_set_authorizer(handle, nil, nil)
+            do {
+                try transaction {
+                    if try !columnExists("is_dependency_entries", "source_time") {
+                        try Self.rawExec(handle, """
+                        ALTER TABLE is_dependency_entries ADD COLUMN source_time TEXT;
+                        """)
+                    }
+                    try Self.rawExec(handle, """
+                    DROP VIEW IF EXISTS is_dependency_intervals;
+                    CREATE VIEW is_dependency_intervals AS
+                    SELECT dependency_id,
+                           content_address,
+                           revision,
+                           recorded_at AS known_from,
+                           LEAD(recorded_at) OVER (
+                               PARTITION BY dependency_id ORDER BY revision) AS known_to,
+                           COALESCE(source_time, recorded_at) AS valid_from,
+                           LEAD(COALESCE(source_time, recorded_at)) OVER (
+                               PARTITION BY dependency_id ORDER BY revision) AS valid_to,
+                           CASE WHEN source_time IS NULL THEN 'es-time'
+                                ELSE 'source-time' END AS valid_from_source
+                      FROM is_dependency_entries;
+                    """)
+                    try recordMigrationRow(34, "simigo-dependency-intervals-v34")
+                }
+            } catch {
+                _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
+                throw error
+            }
+            _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1526,7 +1572,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 33
+    public static let currentSchemaVersion = 34
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -1729,6 +1775,72 @@ public final class ESISDatabase {
             identity: sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
             objectID: sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "",
             recordedAt: sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? "")
+    }
+
+    // MARK: - 依赖的区间（两个时钟）
+
+    /// 一条依赖的一段有效期。
+    ///
+    /// `validFrom/validTo` 是世界时间：这份字节从哪里到什么时候为真。
+    /// `knownFrom/knownTo` 是记录时间：ES 从哪里到哪里这么认为。两者分开，
+    /// 因为文件可能早就改了、我们几小时后才发现——合成一个时钟，区间就会重叠。
+    public struct DependencyInterval: Equatable, Sendable {
+        public let dependencyID: String
+        public let contentAddress: String
+        public let validFrom: String
+        public let validTo: String?
+        public let knownFrom: String
+        public let knownTo: String?
+        /// `false` 表示这一版的 validFrom 没有源时间可用，回落到 ES 时间
+        /// （v34 之前写下的行都是这样）。
+        public let validFromIsSourceTime: Bool
+    }
+
+    public func dependencyIntervals(dependencyID: String) throws -> [DependencyInterval] {
+        let stmt = try prepare("""
+        SELECT dependency_id, content_address, valid_from, valid_to,
+               known_from, known_to, valid_from_source
+          FROM is_dependency_intervals
+         WHERE dependency_id=? ORDER BY revision;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, dependencyID)
+        var rows: [DependencyInterval] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            rows.append(DependencyInterval(
+                dependencyID: text(0),
+                contentAddress: text(1),
+                validFrom: text(2),
+                validTo: sqlite3_column_type(stmt, 3) == SQLITE_NULL ? nil : text(3),
+                knownFrom: text(4),
+                knownTo: sqlite3_column_type(stmt, 5) == SQLITE_NULL ? nil : text(5),
+                validFromIsSourceTime: text(6) == "source-time"))
+        }
+        return rows
+    }
+
+    /// 某一时刻（世界时间）为真的地址。`nil` 表示那一刻没有记录在案的版本。
+    ///
+    /// 比较按数值走，不按文本：时间戳是 `%.17g`（`date.timeIntervalSinceReferenceDate`），
+    /// 文本序和数值序在 2001 年之前（负值）和 1e9 之后（位数变多）不一致。
+    public func dependencyAddress(dependencyID: String, validAt date: Date) throws -> String? {
+        let moment = Self.stamp(date)
+        let stmt = try prepare("""
+        SELECT content_address FROM is_dependency_intervals
+         WHERE dependency_id=?
+           AND CAST(valid_from AS REAL) <= CAST(? AS REAL)
+           AND (valid_to IS NULL OR CAST(valid_to AS REAL) > CAST(? AS REAL))
+         ORDER BY CAST(valid_from AS REAL) DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, dependencyID)
+        try bind(stmt, 2, moment)
+        try bind(stmt, 3, moment)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
     // MARK: - C-stage failure audit (append-only)
@@ -1973,7 +2085,8 @@ public final class ESISDatabase {
     }
 
     private func appendDependencyInTransaction(
-        dependencyID: String, contentAddress: String, reason: String
+        dependencyID: String, contentAddress: String, reason: String,
+        sourceTime: String? = nil
     ) throws -> Int {
         let revisionStmt = try prepare("""
         SELECT COALESCE(MAX(revision),0)+1 FROM is_dependency_entries WHERE dependency_id=?;
@@ -1989,14 +2102,15 @@ public final class ESISDatabase {
         try reset(revisionStmt)
         try execBinding("""
         INSERT INTO is_dependency_entries(
-            dependency_id, content_address, revision, reason, recorded_at)
-        VALUES(?,?,?,?,?);
+            dependency_id, content_address, revision, reason, recorded_at, source_time)
+        VALUES(?,?,?,?,?,?);
         """) { stmt in
             try bind(stmt, 1, dependencyID)
             try bind(stmt, 2, contentAddress)
             try bind(stmt, 3, Int64(revision))
             try bind(stmt, 4, reason)
             try bind(stmt, 5, Self.stamp(Date()))
+            try bind(stmt, 6, sourceTime)
         }
         return revision
     }
@@ -3527,6 +3641,9 @@ try apply(stmt)
         let digest: String
         let size: Int64
         let modified: String?
+        /// The source's own timestamp for this version. This is the world clock
+        /// the interval is expressed in; `recorded_at` is when ES saw it.
+        let modifiedDate: Date?
         let previous: FileContentState?
         /// Raw bytes read for a tail-window digest, before dropping a partial line.
         let tailWindowBytes: Int?
@@ -3778,7 +3895,8 @@ try bind(externalStmt, 1, rootID)
             }
             pending.append(PendingSettlement(
                 relativePath: relative, url: file, data: indexedData, digest: digest,
-                size: size, modified: modified, previous: previous[relative],
+                size: size, modified: modified, modifiedDate: read.modificationDate,
+                previous: previous[relative],
                 tailWindowBytes: read.isTail ? data.count : nil))
         }
 
@@ -3919,7 +4037,8 @@ try bind(externalStmt, 1, rootID)
                     identity: identity, objectID: indexObject.id)
                 _ = try appendDependencyInTransaction(
                     dependencyID: identity, contentAddress: indexObject.id,
-                    reason: item.previous == nil ? "content-settle" : "content-update")
+                    reason: item.previous == nil ? "content-settle" : "content-update",
+                    sourceTime: item.modifiedDate.map(Self.stamp))
             }
 
             for file in indexedFiles {

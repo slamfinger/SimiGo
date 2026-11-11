@@ -1010,6 +1010,52 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(third.removed, 1, "认了之后，旧清单才算数")
     }
 
+    /// v34：一条依赖两个时钟。valid_from 是这一版的诞生（文件自己的时间），
+    /// valid_to 是下一版的诞生；known_from / known_to 才是 ES 的执行时间。
+    func testDependencyIntervalsSeparateWorldClockFromRecordClock() throws {
+        let (url, db) = try open("dependency-intervals")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let file = root.appendingPathComponent("a.md")
+        let birth1 = Date(timeIntervalSince1970: 1_760_000_000)
+        let birth2 = birth1.addingTimeInterval(3600)
+
+        try write("第一版", to: root, name: "a.md")
+        try FileManager.default.setAttributes(
+            [.modificationDate: birth1], ofItemAtPath: file.path)
+        _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+
+        try write("第二版", to: root, name: "a.md")
+        try FileManager.default.setAttributes(
+            [.modificationDate: birth2], ofItemAtPath: file.path)
+        _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+
+        let intervals = try db.dependencyIntervals(dependencyID: "file:w/a.md")
+        XCTAssertEqual(intervals.count, 2)
+        XCTAssertNotEqual(intervals[0].contentAddress, intervals[1].contentAddress)
+        XCTAssertTrue(intervals[0].validFromIsSourceTime, "源时间在手就不用回落")
+        XCTAssertEqual(intervals[1].validTo, nil, "最新那一版没有终点")
+        XCTAssertEqual(intervals[0].validTo, intervals[1].validFrom,
+                       "世界时间是连续区间：下一版的诞生就是上一版的终点")
+
+        // 世界时间查询：那一刻为真的是哪一版。
+        XCTAssertEqual(
+            try db.dependencyAddress(
+                dependencyID: "file:w/a.md", validAt: birth1.addingTimeInterval(60)),
+            intervals[0].contentAddress)
+        XCTAssertEqual(
+            try db.dependencyAddress(
+                dependencyID: "file:w/a.md", validAt: birth2.addingTimeInterval(60)),
+            intervals[1].contentAddress)
+        XCTAssertNil(
+            try db.dependencyAddress(
+                dependencyID: "file:w/a.md", validAt: birth1.addingTimeInterval(-60)),
+            "还没出生那一刻，没有记录在案的版本")
+    }
+
     /// VACUUM 失败必须留痕：写在库同目录的 simigo.maintenance.json，
     /// carrierReport 把它带出来，成功回收后文件消失。
     func testVacuumFailureIsRecordedNextToStore() throws {
