@@ -47,6 +47,8 @@ public enum ClosureReason: String, Sendable, Equatable, Codable {
     case stopSequence = "stop_sequence"
     case toolOnly = "tool_only"
     case noAnswer = "no_answer"
+    /// The accumulator discarded attribution evidence after reaching a hard retention limit.
+    case historyLimitExceeded = "history_limit_exceeded"
 }
 
 public enum FinalizationBoundary: String, Sendable, Equatable, Codable {
