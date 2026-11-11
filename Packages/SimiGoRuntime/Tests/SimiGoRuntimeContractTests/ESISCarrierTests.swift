@@ -578,7 +578,7 @@ final class ESISCarrierTests: XCTestCase {
         """)
         XCTAssertThrowsError(try db.settlementReceipt(settlementID),
                              "a receipt must not carry bytes that fail hash verification")
-        XCTAssertFalse(db.verifyObject(objectID))
+        XCTAssertFalse(try db.verifyObject(objectID))
     }
 
     func testCarriedFileContentReadsBackAndVerifies() throws {
@@ -596,7 +596,7 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(String(data: content.content, encoding: .utf8), "read me")
         XCTAssertEqual(content.contentSHA256, NativeSHA256.hexDigest(content.content))
         XCTAssertEqual(content.status, "present")
-        XCTAssertTrue(db.verifyObject(try XCTUnwrap(content.objectID)))
+        XCTAssertTrue(try db.verifyObject(try XCTUnwrap(content.objectID)))
         XCTAssertNil(try db.carriedFileContent(rootID: "work", relativePath: "missing.md"))
     }
 
@@ -666,7 +666,7 @@ final class ESISCarrierTests: XCTestCase {
             db.carriedFileContent(rootID: "workA", relativePath: "B"))
         XCTAssertEqual(carriedB.content, Data("B-stable".utf8))
         XCTAssertEqual(carriedB.contentSHA256, NativeSHA256.hexDigest(carriedB.content))
-        XCTAssertTrue(db.verifyObject(bObjectBefore))
+        XCTAssertTrue(try db.verifyObject(bObjectBefore))
 
         // The stale result is refused, not reused: the retrieval settlement
         // citing the old A revision is invalidated and the demand re-executes.

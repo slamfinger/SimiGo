@@ -238,6 +238,33 @@ final class ESISDatabaseTests: XCTestCase {
         // journal-mode transition; it is not persisted database content.
     }
 
+    func testObjectVerificationPreservesSQLiteExecutionFailures() throws {
+        let url = tempURL("object-verification-execution-failure")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        let objectID = try db.writeObject(Data(repeating: 0x41, count: 1_024))
+        XCTAssertFalse(try db.verifyObject("missing-object"))
+
+        // Keep the 64-byte object address readable, but make the 1 KiB content
+        // row exceed SQLite's length limit when readObject steps its SELECT.
+        let previousLimit = db.setSQLiteLengthLimitForTesting(256)
+        defer { _ = db.setSQLiteLengthLimitForTesting(previousLimit) }
+
+        let assertSQLiteTooBig: (Error) -> Void = { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, _) = databaseError else {
+                return XCTFail("expected a typed SQLite execution failure, got: \\(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_TOOBIG)
+            XCTAssertEqual(extended, SQLITE_TOOBIG)
+        }
+
+        XCTAssertThrowsError(try db.verifyObject(objectID)) { assertSQLiteTooBig($0) }
+        XCTAssertThrowsError(try db.carrierReport(deepVerify: true)) { assertSQLiteTooBig($0) }
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try ESISDatabase(url: url)
