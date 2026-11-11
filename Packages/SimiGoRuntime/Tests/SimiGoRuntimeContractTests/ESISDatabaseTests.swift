@@ -159,6 +159,58 @@ final class ESISDatabaseTests: XCTestCase {
         }
     }
 
+    func testIndexOnlyCarriedContentDistinguishesMissingStaleAndSymlinkedSources() throws {
+        let (url, db) = try open("index-only-carried-source-errors")
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-carried-source-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let file = root.appendingPathComponent("source.txt")
+        try Data("original bytes".utf8).write(to: file)
+        let report = try db.settleWorkRootContents(
+            rootID: "carried-source", rootURL: root, carryText: false)
+        XCTAssertTrue(report.indexOnly)
+
+        // A genuinely gone source remains a missing result.
+        try FileManager.default.removeItem(at: file)
+        XCTAssertNil(try db.carriedFileContent(
+            rootID: "carried-source", relativePath: "source.txt"))
+
+        // A present but changed source is stale, not indistinguishable from
+        // a missing inventory row.
+        try Data("changed bytes".utf8).write(to: file)
+        XCTAssertThrowsError(try db.carriedFileContent(
+            rootID: "carried-source", relativePath: "source.txt")) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .staleExternalSource(let rootID, let relativePath) = databaseError else {
+                return XCTFail("expected a typed stale-source error, got: \\(error)")
+            }
+            XCTAssertEqual(rootID, "carried-source")
+            XCTAssertEqual(relativePath, "source.txt")
+        }
+
+        // A symlinked leaf is a verification failure and must not be reported
+        // as FILE_NOT_SETTLED by the HTTP layer.
+        let outside = root.deletingLastPathComponent()
+            .appendingPathComponent("simigo-carried-outside-\(UUID().uuidString).txt")
+        try Data("outside bytes".utf8).write(to: outside)
+        defer { try? FileManager.default.removeItem(at: outside) }
+        try FileManager.default.removeItem(at: file)
+        try FileManager.default.createSymbolicLink(at: file, withDestinationURL: outside)
+        XCTAssertThrowsError(try db.carriedFileContent(
+            rootID: "carried-source", relativePath: "source.txt")) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sql(let detail) = databaseError else {
+                return XCTFail("expected a path-verification error, got: \\(error)")
+            }
+            XCTAssertTrue(detail.contains("symlinked"), detail)
+        }
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try ESISDatabase(url: url)
