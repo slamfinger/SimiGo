@@ -5041,6 +5041,15 @@ try bind(externalStmt, 1, rootID)
     public enum ChatTurnEligibility: String, Sendable {
         case ordinary
         case internalOperation = "internal"
+
+        /// 记账类请求问的是「这段文本说了什么」，不是「空间里有什么」，所以
+        /// 不装配上下文（不检索、不注入、不结算、不记轮次），直接按它带来的
+        /// 文本作答。
+        ///
+        /// 只有 HTTP 会话路径看这个属性。同名的 standing 出现在导入路径上时
+        /// （`ExternalTurnSink`、`MultiFormatCollection`）只表示审计存档，那些
+        /// 行是直写库的，本来就不经过上下文装配——两处不要互相推断。
+        public var skipsContextAssembly: Bool { self == .internalOperation }
     }
 
     /// Who produced a chat line. Local turns are the app's own conversation;
