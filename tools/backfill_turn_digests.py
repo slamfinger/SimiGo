@@ -23,7 +23,11 @@ import urllib.request
 DB = os.path.expanduser("~/.simigo/simigo.sqlite3")
 ENDPOINT = "http://127.0.0.1:8000/v1/chat/completions"
 MODEL = "local"
-# 分层投喂：散文行全留，代码块只留首行和报错行，散文太薄才补声明行。
+# 记账调用：不带这个头，请求会走一遍检索并注入约 2,500 tokens 上下文，还会
+# 把摘要自己写成一对假问答（35e7ebc 之前实测 796 行）。摘要问的不是「空间里
+# 有什么」，是「这段文本说了什么」。
+SCOPE_HEADER = {"X-SimiGo-Request-Scope": "internal"}
+# 分层投喂：散文行全留，代码块只留前 6 行、声明行与报错行，散文太薄才补标题行。
 # 长回答里代码占 86%–97%，而语义全在散文里（2026-11-11 实测：纯散文那一路
 # 用 178 字写出比喂 3004 字更具体的摘要）。与 TurnDigestText 同一把尺子。
 MAX_QUESTION = 1200
@@ -190,7 +194,8 @@ def call_model(text, retry_note=""):
         "temperature": 0.2,
     }).encode()
     req = urllib.request.Request(
-        ENDPOINT, data=body, headers={"Content-Type": "application/json"})
+        ENDPOINT, data=body,
+        headers={"Content-Type": "application/json", **SCOPE_HEADER})
     with urllib.request.urlopen(req, timeout=600) as resp:
         data = json.loads(resp.read())
     return data["choices"][0]["message"]["content"].strip()
