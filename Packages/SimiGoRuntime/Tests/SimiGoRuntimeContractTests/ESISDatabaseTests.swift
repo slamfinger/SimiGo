@@ -211,6 +211,34 @@ final class ESISDatabaseTests: XCTestCase {
         }
     }
 
+    func testIndexOnlyCarriedOversizedTailUsesBoundedTailWindow() throws {
+        let databaseURL = tempURL("index-only-carried-tail")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-index-only-carried-tail-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        let source = Data(repeating: 0x78, count: 2 * 1024 * 1024)
+            + Data("\nneedle in tail\n".utf8)
+        try source.write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        let report = try db.settleWorkRootContents(
+            rootID: "index-only-carried-tail-root", rootURL: rootURL,
+            fileByteCap: 128, tailBytes: 256, maxTotalBytesRead: 512,
+            carryText: false)
+        XCTAssertTrue(report.indexOnly)
+        XCTAssertEqual(report.entityBytesRead, 256)
+
+        let carried = try XCTUnwrap(db.carriedFileContent(
+            rootID: "index-only-carried-tail-root", relativePath: "source.txt"))
+        XCTAssertNil(carried.objectID)
+        XCTAssertEqual(carried.content, Data("needle in tail\n".utf8))
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try ESISDatabase(url: url)
