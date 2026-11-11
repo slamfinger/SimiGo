@@ -2549,6 +2549,10 @@
       "output": "tools/agent_prefix_audit.py"
     },
     {
+      "path": "tools/assign_turn_spaces.py",
+      "output": "tools/assign_turn_spaces.py"
+    },
+    {
       "path": "tools/backfill_source_time.py",
       "output": "tools/backfill_source_time.py"
     },
