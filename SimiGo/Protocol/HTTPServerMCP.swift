@@ -504,6 +504,12 @@ extension HTTPServer {
                 "dangling_references": report.danglingReferences,
                 "corrupt_objects": report.corruptObjects,
                 "inline_legacy_payloads": report.inlineLegacyPayloads,
+                "spaces": report.spaces,
+                "dependency_intervals_open": report.dependencyIntervalsOpen,
+                "dependency_intervals_closed": report.dependencyIntervalsClosed,
+                "dependency_interval_breaks": report.dependencyIntervalBreaks,
+                "turn_digests": report.turnDigests,
+                "turns_without_digest": report.turnsWithoutDigest,
                 "vacuum_failure": report.vacuumFailure ?? "",
             ]
 

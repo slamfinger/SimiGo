@@ -353,6 +353,8 @@ struct Settings: View {
                 索引 \(report.indexEntries) · 依赖 \(report.dependencyEntries) · 未寻址 \(unaddressed) · \
                 内联旧载荷 \(report.inlineLegacyPayloads) · 悬空引用 \(report.danglingReferences) · \
                 损坏 \(report.corruptObjects)\(deep ? "（已逐对象校验）" : "")
+                空间 \(report.spaces) · 依赖区间 开 \(report.dependencyIntervalsOpen)／闭 \(report.dependencyIntervalsClosed)／断点 \(report.dependencyIntervalBreaks)
+                轮次摘要 \(report.turnDigests) 轮 · 缺摘要 \(report.turnsWithoutDigest) 轮
                 """
             } catch {
                 text = "读取失败：\(error)"

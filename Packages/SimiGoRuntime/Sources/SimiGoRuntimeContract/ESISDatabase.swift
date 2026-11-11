@@ -1656,6 +1656,16 @@ public final class ESISDatabase {
         public let corruptObjects: Int
         public let inlineLegacyPayloads: Int
         public let deepVerified: Bool
+        /// 空间（人给的分类）有几行。
+        public let spaces: Int
+        /// 依赖区间：闭合几段、还开着几段、世界时间轴上相邻两版接不上的有几处。
+        /// 断点正常应当恒为 0——不是 0 就说明有一版的诞生时间早于上一版。
+        public let dependencyIntervalsClosed: Int
+        public let dependencyIntervalsOpen: Int
+        public let dependencyIntervalBreaks: Int
+        /// 轮次摘要覆盖：有摘要几轮、账本里有、摘要里没有几轮。
+        public let turnDigests: Int
+        public let turnsWithoutDigest: Int
         /// Set when the last startup VACUUM failed and the space it would have
         /// reclaimed is still on disk. Nil when the last attempt succeeded or
         /// was not needed.
@@ -2024,6 +2034,24 @@ public final class ESISDatabase {
                      + (SELECT COUNT(*) FROM settlements WHERE length(payload)>0);
                 """),
             deepVerified: deepVerify,
+            spaces: try scalar("SELECT COUNT(*) FROM spaces;"),
+            dependencyIntervalsClosed: try scalar(
+                "SELECT COUNT(*) FROM is_dependency_intervals WHERE valid_to IS NOT NULL;"),
+            dependencyIntervalsOpen: try scalar(
+                "SELECT COUNT(*) FROM is_dependency_intervals WHERE valid_to IS NULL;"),
+            dependencyIntervalBreaks: try scalar("""
+                SELECT COUNT(*) FROM is_dependency_intervals a
+                  JOIN is_dependency_intervals b
+                    ON b.dependency_id=a.dependency_id AND b.revision=a.revision+1
+                 WHERE a.valid_to IS NOT b.valid_from;
+                """),
+            turnDigests: try scalar("SELECT COUNT(*) FROM turn_digests;"),
+            turnsWithoutDigest: try scalar("""
+                SELECT COUNT(*) FROM chat_turn_ledger l
+                 WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+                                    WHERE d.session_id=l.session_id
+                                      AND d.turn_index=l.turn_index);
+                """),
             vacuumFailure: lastVacuumFailure)
     }
 

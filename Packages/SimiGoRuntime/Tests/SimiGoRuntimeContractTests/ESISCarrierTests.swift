@@ -1056,6 +1056,37 @@ final class ESISCarrierTests: XCTestCase {
             "还没出生那一刻，没有记录在案的版本")
     }
 
+    /// 状态面板读的数要对：区间的开/闭/断点、摘要覆盖，都是面板上直接给人看的。
+    func testCarrierReportCountsIntervalsAndDigestCoverage() throws {
+        let (url, db) = try open("carrier-report-v34")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let birth1 = Date(timeIntervalSince1970: 1_760_000_000)
+
+        try write("第一版", to: root, name: "b.md")
+        try FileManager.default.setAttributes(
+            [.modificationDate: birth1], ofItemAtPath: root.appendingPathComponent("b.md").path)
+        _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+        try write("第二版", to: root, name: "b.md")
+        try FileManager.default.setAttributes(
+            [.modificationDate: birth1.addingTimeInterval(60)],
+            ofItemAtPath: root.appendingPathComponent("b.md").path)
+        _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+
+        let report = try db.carrierReport()
+        XCTAssertEqual(report.dependencyIntervalsClosed, 1, "两版之间那一段是闭合的")
+        XCTAssertEqual(report.dependencyIntervalsOpen, 1, "最新一版没有终点")
+        XCTAssertEqual(report.dependencyIntervalBreaks, 0, "世界时间轴上相邻两版必须首尾相接")
+        XCTAssertEqual(report.turnDigests, 0)
+
+        try db.recordTurnDigest(
+            sessionID: "s", turnIndex: 1, digest: "这一轮做了什么", keywords: "区间 双时钟")
+        XCTAssertEqual(try db.carrierReport().turnDigests, 1)
+    }
+
     /// VACUUM 失败必须留痕：写在库同目录的 simigo.maintenance.json，
     /// carrierReport 把它带出来，成功回收后文件消失。
     func testVacuumFailureIsRecordedNextToStore() throws {
