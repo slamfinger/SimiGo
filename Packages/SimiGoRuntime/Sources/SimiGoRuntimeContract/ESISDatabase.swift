@@ -1535,6 +1535,27 @@ public final class ESISDatabase {
             _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
         }
 
+        if try schemaVersion() < 35 {
+            try transaction {
+                // v35：轮次账要写清「谁的轮号」。
+                //
+                // chat_turn_ledger 原本只记 MCP 的 chat_round：轮号是调用方
+                // 自己选的，缺号就是漏写——这个判断只对调用方成立。
+                //
+                // 采集桥导入的历史没有调用方编号，轮序只能由到达序排出来。
+                // 这种行的轮号必然连续，「缺号」对它不成立。两种行混在一起
+                // 读，缺号会被当成漏写去补，所以 origin 写进行里，不靠
+                // session 前缀去猜。
+                if try !columnExists("chat_turn_ledger", "origin") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE chat_turn_ledger
+                      ADD COLUMN origin TEXT NOT NULL DEFAULT 'mcp';
+                    """)
+                }
+                try recordMigrationRow(35, "simigo-turn-ledger-origin-v35")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1572,7 +1593,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 34
+    public static let currentSchemaVersion = 35
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -5788,6 +5809,100 @@ try bind(externalStmt, 1, rootID)
         return TurnLedgerReport(
             sessionID: sessionID, turnIndex: turnIndex, entered: seen.count,
             highest: highest, missing: missing, conflict: nil)
+    }
+
+    /// 导入的会话补轮次账的结果。
+    public struct ImportedLedgerReport: Sendable, Equatable {
+        /// 这次补进去的会话数（有候选、补之前一行账都没有的）。
+        public let sessionsFilled: Int
+        /// 这次补进去的轮数。
+        public let turnsInserted: Int
+        /// 已经有轮号、整会话跳过的外部会话数。
+        public let sessionsKept: Int
+        /// 没有 request_id、这次补不了的会话数与消息数。
+        public let sessionsUnkeyed: Int
+        public let messagesUnkeyed: Int
+        /// 补完之后导入轮的总数（不只这次）。
+        public let importedTurnsTotal: Int
+    }
+
+    /// 采集桥导入的历史会话，按到达序补一本轮次账。
+    ///
+    /// 只补「一行账都没有」的外部会话。已经有轮号的会话整会话跳过：MCP 的
+    /// 轮号是调用方自己选的，导入的轮号是排出来的，两种编号混在一个 session
+    /// 里，缺号就不再表示漏写。这条规矩靠 origin 列写进数据，不靠前缀去猜。
+    ///
+    /// 轮号 = 同一 request_id 的首条消息按 (时间, id) 排出的序。写在事务里，
+    /// 重复调用是空操作。
+    @discardableResult
+    public func backfillImportedTurnLedger() throws -> ImportedLedgerReport {
+        try transactionResult {
+            func count(_ sql: String) throws -> Int {
+                let stmt = try prepare(sql)
+                defer { sqlite3_finalize(stmt) }
+                return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+            }
+            let kept = try count("""
+            SELECT COUNT(DISTINCT m.session_id) FROM chat_messages m
+             WHERE m.source_kind='external'
+               AND EXISTS (SELECT 1 FROM chat_turn_ledger l
+                            WHERE l.session_id=m.session_id);
+            """)
+            let unkeyedSessions = try count("""
+            SELECT COUNT(DISTINCT session_id) FROM chat_messages
+             WHERE request_id IS NULL
+               AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger);
+            """)
+            let unkeyedMessages = try count("""
+            SELECT COUNT(*) FROM chat_messages
+             WHERE request_id IS NULL
+               AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger);
+            """)
+            let fillable = try count("""
+            SELECT COUNT(DISTINCT session_id) FROM chat_messages
+             WHERE source_kind='external' AND request_id IS NOT NULL
+               AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger);
+            """)
+            try Self.rawExec(handle, """
+            INSERT INTO chat_turn_ledger(
+                session_id, turn_index, request_id, seen_at, origin)
+            SELECT b.session_id,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY b.session_id ORDER BY b.first_at, b.first_id),
+                   b.request_id,
+                   (SELECT m.created_at FROM chat_messages m WHERE m.id=b.first_id),
+                   'import'
+              FROM (SELECT session_id, request_id,
+                           MIN(CAST(created_at AS REAL)) AS first_at,
+                           MIN(id) AS first_id
+                      FROM chat_messages
+                     WHERE source_kind='external' AND request_id IS NOT NULL
+                       AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger)
+                     GROUP BY session_id, request_id) b;
+            """)
+            return ImportedLedgerReport(
+                sessionsFilled: fillable,
+                turnsInserted: Int(sqlite3_changes(handle)),
+                sessionsKept: kept,
+                sessionsUnkeyed: unkeyedSessions,
+                messagesUnkeyed: unkeyedMessages,
+                importedTurnsTotal: try count(
+                    "SELECT COUNT(*) FROM chat_turn_ledger WHERE origin='import';"))
+        }
+    }
+
+    /// 某轮在账上记的 request id。导入的轮和 MCP 的轮都从这里读，
+    /// 调用方不需要知道它是怎么排出来的。
+    public func turnLedgerRequestID(sessionID: String, turnIndex: Int) throws -> String? {
+        let stmt = try prepare("""
+        SELECT request_id FROM chat_turn_ledger
+         WHERE session_id=? AND turn_index=? LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else { return nil }
+        return String(cString: c)
     }
 
     /// The session whose round arrived most recently, for a status display.

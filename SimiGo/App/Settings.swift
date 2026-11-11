@@ -359,6 +359,10 @@ struct Settings: View {
                 let db = try ESISDatabase(
                     url: ManagedPaths.databaseURL, createIfNeeded: true)
                 try db.runMigrations()
+                // 刷新状态是人的干预点，也是导入历史的第一次衔接：采集桥写进来
+                // 的消息本来没有轮次账，没有账就没有摘要、没有关键词、没有房间。
+                // 这里补的只是「一行账都没有」的会话，重复点是空操作。
+                let imported = try db.backfillImportedTurnLedger()
                 let report = try db.carrierReport(deepVerify: true)
                 pending = report.turnsWithoutDigest
                 let unaddressed = report.unaddressedFileContents
@@ -371,7 +375,8 @@ struct Settings: View {
                 内联旧载荷 \(report.inlineLegacyPayloads) · 悬空引用 \(report.danglingReferences) · \
                 损坏 \(report.corruptObjects)（已逐对象校验）
                 空间 \(report.spaces) · 依赖区间 开 \(report.dependencyIntervalsOpen)／闭 \(report.dependencyIntervalsClosed)／断点 \(report.dependencyIntervalBreaks)
-                轮次摘要 \(report.turnDigests) 轮 · 缺摘要 \(report.turnsWithoutDigest) 轮
+                轮次摘要 \(report.turnDigests) 轮 · 缺摘要 \(report.turnsWithoutDigest) 轮 · \
+                导入轮 \(imported.importedTurnsTotal) 轮（本次补 \(imported.turnsInserted)，保留 \(imported.sessionsKept) 个会话的原有轮号）
                 """
             } catch {
                 text = "读取失败：\(error)"
