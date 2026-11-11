@@ -620,7 +620,7 @@ final class TranscriptTailerTests: XCTestCase {
 
     func testDescriptorRelativeDirectoryOpenRejectsSymlinkComponents() throws {
         let external = root.appendingPathComponent(
-            "external-directory-\\(UUID().uuidString)", isDirectory: true)
+            "external-directory-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
             at: external, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: external) }
