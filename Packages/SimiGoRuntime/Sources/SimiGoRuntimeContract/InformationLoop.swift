@@ -150,6 +150,16 @@ public struct InformationLoop {
             } catch let error as ESISDatabase.InformationDemandError {
                 guard case .sourceRevisionChanged = error, attempt < 2 else { throw error }
                 attempt += 1
+            } catch let error as ESISDatabase.DatabaseError {
+                // A source can be atomically replaced or edited while its bytes
+                // are being read. The database refuses that read; replay the
+                // complete demand against the new source, at most twice. If it
+                // remains unstable, surface the typed error rather than serving
+                // a partial or unverified result.
+                guard case .sourceChangedWhileBeingRead = error, attempt < 2 else {
+                    throw error
+                }
+                attempt += 1
             }
         }
     }

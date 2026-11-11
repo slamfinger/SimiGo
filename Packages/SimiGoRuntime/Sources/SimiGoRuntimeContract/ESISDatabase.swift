@@ -71,6 +71,9 @@ public final class ESISDatabase {
         /// from a path that now leads somewhere else: a vanished source is
         /// drift the retrieval reports as stale, a redirected one is refused.
         case sourceGone(path: String)
+        /// A descriptor's bytes or read-stability metadata changed during a read.
+        /// Callers that can safely replay the complete read may retry a bounded number of times.
+        case sourceChangedWhileBeingRead(path: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
         /// SQLite API execution failure. Preserves primary and extended result
@@ -81,6 +84,11 @@ public final class ESISDatabase {
 
     private let handle: OpaquePointer
     private let url: URL
+    private let closeLock = NSLock()
+    private var handleIsClosed = false
+
+    /// One-shot mutation hook for the deterministic same-inode read regression.
+    var beforeRootFileVerificationForTesting: (() -> Void)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -146,8 +154,19 @@ public final class ESISDatabase {
         Self.installCarrierAuthorizer(handle)
     }
 
-    public func close() { sqlite3_close_v2(handle) }
-    deinit { sqlite3_close_v2(handle) }
+    /// Explicit close and deinitialization share one serialized, one-shot close.
+    /// Keep the handle retryable if SQLite reports that closing did not succeed.
+    private func closeHandleIfNeeded() {
+        closeLock.lock()
+        defer { closeLock.unlock() }
+        guard !handleIsClosed else { return }
+        if sqlite3_close_v2(handle) == SQLITE_OK {
+            handleIsClosed = true
+        }
+    }
+
+    public func close() { closeHandleIfNeeded() }
+    deinit { closeHandleIfNeeded() }
 
     private static func applyPragmas(_ db: OpaquePointer) throws {
         for sql in [
@@ -4263,15 +4282,67 @@ try bind(externalStmt, 1, rootID)
                 + Double(initial.st_mtimespec.tv_nsec) / 1_000_000_000)
         let initialSize = Int64(initial.st_size)
 
-        func verifyUnchanged() throws {
+        func rereadWindow(
+            from offset: off_t, byteCount: Int) -> Data? {
+            var fresh = Data()
+            fresh.reserveCapacity(byteCount)
+            var buffer = [UInt8](repeating: 0, count: 64 * 1024)
+            while fresh.count < byteCount {
+                let requestCount = min(buffer.count, byteCount - fresh.count)
+                let amount = buffer.withUnsafeMutableBytes { raw -> Int in
+                    guard let base = raw.baseAddress else { return -1 }
+                    return Darwin.pread(fileFD, base, requestCount, offset + off_t(fresh.count))
+                }
+                if amount < 0 && errno == EINTR { continue }
+                guard amount > 0 else { return nil }
+                fresh.append(contentsOf: buffer.prefix(amount))
+            }
+            return fresh
+        }
+
+        func verifyUnchanged(
+            recheck readBytes: Data? = nil,
+            windowStart: off_t = 0) throws {
+            // 挂牌（过渡措施，非契约）：本校验只在「结算仍要读盘」时成立——它守的是
+            // 这次 read 的字节没被并发改写，不回答「这条值现在还可不可信」。等结算
+            // 不再读盘（内容进对象库、依赖按内容判同）时，verifyUnchanged 与
+            // rereadWindow 一并删除。见 #147。
+            if let hook = beforeRootFileVerificationForTesting {
+                beforeRootFileVerificationForTesting = nil
+                hook()
+            }
             var finalInfo = stat()
-            guard Darwin.fstat(fileFD, &finalInfo) == 0,
-                  finalInfo.st_dev == initial.st_dev,
+            guard Darwin.fstat(fileFD, &finalInfo) == 0 else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: final fstat failed: \(String(cString: strerror(errno)))")
+            }
+            guard finalInfo.st_dev == initial.st_dev,
                   finalInfo.st_ino == initial.st_ino,
                   finalInfo.st_size == initial.st_size,
                   finalInfo.st_mtimespec.tv_sec == initial.st_mtimespec.tv_sec,
                   finalInfo.st_mtimespec.tv_nsec == initial.st_mtimespec.tv_nsec else {
-                throw DatabaseError.sql("readRootFileNoFollow: source changed while being read")
+                throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
+            }
+            let ctOK = finalInfo.st_ctimespec.tv_sec == initial.st_ctimespec.tv_sec
+                && finalInfo.st_ctimespec.tv_nsec == initial.st_ctimespec.tv_nsec
+            if ctOK { return }
+            // ctime moves for metadata too — rename, link, chmod — so a bare
+            // ctime change cannot tell a same-size rewrite (mtime restored, the
+            // #146 case) from an untouched file whose inode was merely renamed.
+            // Decide on bytes: re-read this exact window and require the content
+            // we indexed, then require ctime to have held across that re-read.
+            guard let readBytes, let fresh = rereadWindow(
+                from: windowStart, byteCount: readBytes.count), fresh == readBytes else {
+                throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
+            }
+            var afterReread = stat()
+            guard Darwin.fstat(fileFD, &afterReread) == 0 else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: post-reread fstat failed: \(String(cString: strerror(errno)))")
+            }
+            guard afterReread.st_ctimespec.tv_sec == finalInfo.st_ctimespec.tv_sec,
+                  afterReread.st_ctimespec.tv_nsec == finalInfo.st_ctimespec.tv_nsec else {
+                throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
         }
 
@@ -4317,7 +4388,7 @@ try bind(externalStmt, 1, rootID)
                 }
                 tail.append(contentsOf: tailBuffer.prefix(amount))
             }
-            try verifyUnchanged()
+            try verifyUnchanged(recheck: tail, windowStart: off_t(start))
             guard tail.count == expectedByteCount else {
                 throw DatabaseError.sql(
                     "readRootFileNoFollow: short or inconsistent tail read")
@@ -4356,7 +4427,7 @@ try bind(externalStmt, 1, rootID)
             }
             data.append(contentsOf: buffer.prefix(amount))
         }
-        try verifyUnchanged()
+        try verifyUnchanged(recheck: data)
         guard Int64(data.count) == initialSize else {
             throw DatabaseError.sql("readRootFileNoFollow: short or inconsistent file read")
         }
