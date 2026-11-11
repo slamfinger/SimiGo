@@ -4028,12 +4028,10 @@ try bind(externalStmt, 1, rootID)
                 try invalidateRetrievalSettlementsInTransaction(
                     rootID: rootID, relativePath: item.relativePath,
                     oldDigest: item.previous.digest)
-                try execBinding("""
-                DELETE FROM file_contents WHERE root_id=? AND relative_path=?;
-                """) { stmt in
-                    try bind(stmt, 1, rootID)
-                    try bind(stmt, 2, item.relativePath)
-                }
+                // The carried content is kept on purpose: a cleared path means
+                // the source was not observed, not that the information never
+                // existed. Deleting it would erase the only read path retrieval
+                // has (see `reconcileRoot`).
                 try execBinding("""
                 UPDATE information_items SET state='STALE', updated_at=?
                 WHERE item_id=?;
@@ -8388,9 +8386,15 @@ try bind(externalStmt, 1, rootID)
     }
 
     /// Reconciliation for lost watcher events: mark indexed files under a root
-    /// that were NOT observed in the latest scan as 'missing', drop their content
-    /// references, and invalidate their dependency closures. Returns every
-    /// settlement invalidated by the sweep.
+    /// that were NOT observed in the latest scan as 'missing' and invalidate
+    /// their dependency closures. Returns every settlement invalidated by the
+    /// sweep.
+    ///
+    /// The carried content is deliberately kept. A vanished source makes the
+    /// original unreachable, not the information gone: `file_contents` is what
+    /// retrieval reads from, so deleting it would turn "temporarily unreachable"
+    /// into "no longer exists" and erase history the store is supposed to keep.
+    /// Only the file's status changes.
     @discardableResult
     public func reconcileRoot(rootID: String, seenRelativePaths: Set<String>) throws -> [String] {
         // Hold the write lock for both the inventory snapshot and the missing-path
@@ -8453,12 +8457,6 @@ try bind(externalStmt, 1, rootID)
                     rootID: rootID, relativePath: path))
                 try invalidateRetrievalSettlementsInTransaction(
                     rootID: rootID, relativePath: path, oldDigest: oldDigest)
-                try execBinding("""
-                DELETE FROM file_contents WHERE root_id=? AND relative_path=?;
-                """) { deleteStmt in
-                    try bind(deleteStmt, 1, rootID)
-                    try bind(deleteStmt, 2, path)
-                }
                 try execBinding("""
                 UPDATE external_files SET status='missing'
                 WHERE root_id=? AND relative_path=?;

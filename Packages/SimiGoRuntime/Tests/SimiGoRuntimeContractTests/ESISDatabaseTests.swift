@@ -1582,7 +1582,7 @@ extension ESISDatabaseTests {
             "A demand with an unreadable settled source must not be persisted")
     }
 
-    func testManualRootReconciliationMarksMissingOnceAndIsIdempotent() throws {
+    func testManualRootReconciliationMarksMissingOnceKeepsCarriedContentAndIsIdempotent() throws {
         let databaseURL = tempURL("manual-reconcile")
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-manual-reconcile-\(UUID().uuidString)", isDirectory: true)
@@ -1597,11 +1597,17 @@ extension ESISDatabaseTests {
         XCTAssertEqual(try db.count("file_contents"), 1)
 
         _ = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
-        XCTAssertEqual(try db.count("file_contents"), 0)
+        // A vanished source makes the original unreachable, not the information
+        // gone: the carried row is retrieval's read path, and deleting it would
+        // turn "temporarily unreachable" into "no longer exists".
+        XCTAssertEqual(try db.count("file_contents"), 1)
         XCTAssertEqual(
             try db.listExternalFiles(rootID: "manual-root")
                 .first(where: { $0.relativePath == "keep.txt" })?.status,
             "missing")
+        XCTAssertEqual(
+            try db.searchSettledContent(query: "settled", rootID: "manual-root").count, 1,
+            "the settled text stays retrievable after the source is gone")
 
         let second = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
         XCTAssertTrue(second.isEmpty)
@@ -1609,6 +1615,7 @@ extension ESISDatabaseTests {
             try db.listExternalFiles(rootID: "manual-root")
                 .first(where: { $0.relativePath == "keep.txt" })?.status,
             "missing")
+        XCTAssertEqual(try db.count("file_contents"), 1)
     }
 
 

@@ -233,7 +233,9 @@ final class ESISCarrierTests: XCTestCase {
         let files = try db.listExternalFiles(rootID: "work")
         XCTAssertEqual(Set(files.map { $0.relativePath }), ["keep.md", "change.md", "gone.md"])
         XCTAssertEqual(files.first { $0.relativePath == "gone.md" }?.status, "missing")
-        XCTAssertEqual(try db.count("file_contents"), 2, "removed content row is cleared")
+        XCTAssertEqual(
+            try db.count("file_contents"), 3,
+            "removed content is kept: a vanished source is unreachable, not gone")
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedFileContents, 0)
