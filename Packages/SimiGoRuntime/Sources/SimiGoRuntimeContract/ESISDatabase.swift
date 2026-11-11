@@ -6026,6 +6026,58 @@ try bind(externalStmt, 1, rootID)
             .replacingOccurrences(of: "_", with: "\\_")
     }
 
+    /// 一轮摘要的检索行。摘要是索引、不是原文：命中之后用来定位的是
+    /// `sessionID + turnIndex`，引用的字节仍是那一轮的原文对象
+    /// （`answerObjectID`），给人看的那一行是摘要本身。
+    struct TurnDigestIndexRow: Sendable {
+        let sessionID: String
+        let turnIndex: Int
+        let digest: String
+        let keywords: String
+        let answerObjectID: String?
+    }
+
+    /// 摘要与关键词都参与匹配。行数是个人的轮次量级（今天 382 行），
+    /// 所以走 LIKE，不另建索引——真上到十万轮再谈。
+    func turnDigestRows(matchingAny: [String]?) throws -> [TurnDigestIndexRow] {
+        let terms = (matchingAny ?? []).filter { !$0.isEmpty }
+        var sql = """
+        SELECT d.session_id, d.turn_index, d.digest, d.keywords, c.content_object_id
+        FROM turn_digests d
+        LEFT JOIN chat_messages c ON c.id = d.answer_message_id
+        """
+        var binds: [String] = []
+        if !terms.isEmpty {
+            var alternatives: [String] = []
+            for term in terms {
+                alternatives.append(
+                    "(d.digest LIKE ? ESCAPE '\\' OR d.keywords LIKE ? ESCAPE '\\')")
+                binds.append("%" + Self.likeEscaped(term) + "%")
+                binds.append("%" + Self.likeEscaped(term) + "%")
+            }
+            sql += " WHERE " + alternatives.joined(separator: " OR ")
+        }
+        sql += " ORDER BY d.session_id, d.turn_index;"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (idx, value) in binds.enumerated() {
+            try bind(stmt, Int32(idx + 1), value)
+        }
+        var rows: [TurnDigestIndexRow] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            rows.append(TurnDigestIndexRow(
+                sessionID: text(0) ?? "",
+                turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+                digest: text(2) ?? "",
+                keywords: text(3) ?? "",
+                answerObjectID: text(4)))
+        }
+        return rows
+    }
+
     func chatIndexRows(
         sessionIDs: [String]?, matchingAny: [String]? = nil
     ) throws -> [ChatIndexRow] {

@@ -302,6 +302,31 @@ public struct InformationLoop {
             }
         }
 
+        // Turn digests: one line per round saying what the round was for. They
+        // are an index over chat, so they follow the same switch: a caller that
+        // asked for no chat does not get chat digests either. The cited bytes
+        // stay the round's own text — the digest only decides that this round
+        // is worth opening.
+        if demand.includeChat {
+            for row in try database.turnDigestRows(matchingAny: keywords) {
+                let identity = "turn:\(row.sessionID)/\(row.turnIndex)"
+                guard !demand.excludeItemIDs.contains(identity) else { continue }
+                let digestSHA = NativeSHA256.hexDigest(Data(row.digest.utf8))
+                inputs.append("\(identity)=\(digestSHA)")
+                if let address = row.answerObjectID {
+                    addresses.append(.init(itemID: identity, contentAddress: address))
+                }
+                guard let snippet = Self.citationSnippet(
+                    in: row.digest[...], folded: foldedKeywords, keywords: keywords)
+                else { continue }
+                scored.append((Item(
+                    itemID: identity, kind: "turn",
+                    locator: "session:\(row.sessionID)#t\(row.turnIndex)",
+                    lineNo: 1, lineText: snippet.text,
+                    sourceSHA256: digestSHA), snippet.score))
+            }
+        }
+
         // Settled conclusions: the distilled summary of a still-valid settlement
         // is information in its own right. This is how a later execution state
         // reuses an earlier result without re-reading the sources it came from;

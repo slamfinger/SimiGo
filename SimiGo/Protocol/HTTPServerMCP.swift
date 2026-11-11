@@ -954,6 +954,11 @@ extension HTTPServer {
                 ]
                 NotificationCenter.default.post(
                     name: .simigoMCPTurnRecorded, object: nil)
+                // 摘要不在这条回复里等：轮次先落盘，摘要在后台补。补不上就
+                // 留在「缺摘要」的账上，面板看得见。
+                TurnDigestScheduler.schedule(
+                    sessionID: sessionID, turnIndex: turnIndex,
+                    question: userText, answer: storedText)
             }
             var response: [String: Any] = [
                 "session_id": sessionID,
