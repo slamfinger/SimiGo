@@ -7128,20 +7128,30 @@ try bind(externalStmt, 1, rootID)
     /// Current validity of a settlement ('valid' or 'invalid'), derived from the
     /// append-only validity ledger. The settlement row carries no mutable
     /// validity state of its own.
-    public func settlementValidity(_ settlementID: String) throws -> String {
+    /// Current validity when the settlement exists. A missing row is nil;
+    /// prepare/bind/step failures remain typed SQLite errors.
+    func settlementValidityIfPresent(_ settlementID: String) throws -> String? {
         let stmt = try prepare("""
         SELECT validity FROM settlement_current_validity WHERE settlement_id=?;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, settlementID)
         let rc = sqlite3_step(stmt)
-        if rc == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
-            return String(cString: c)
-        }
-        if rc != SQLITE_DONE {
+        if rc == SQLITE_DONE { return nil }
+        guard rc == SQLITE_ROW else {
             throw Self.sqliteFailure(handle, resultCode: rc)
         }
-        throw DatabaseError.sql("settlementValidity: unknown settlement \(settlementID)")
+        guard let c = sqlite3_column_text(stmt, 0) else {
+            throw DatabaseError.sql("settlementValidity: NULL validity for \(settlementID)")
+        }
+        return String(cString: c)
+    }
+
+    public func settlementValidity(_ settlementID: String) throws -> String {
+        guard let validity = try settlementValidityIfPresent(settlementID) else {
+            throw DatabaseError.sql("settlementValidity: unknown settlement \(settlementID)")
+        }
+        return validity
     }
 
     /// Number of MODEL-PRODUCED settlements currently valid. Derived
