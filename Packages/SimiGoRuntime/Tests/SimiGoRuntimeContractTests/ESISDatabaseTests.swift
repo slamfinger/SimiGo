@@ -16,6 +16,13 @@ final class ESISDatabaseTests: XCTestCase {
         }
     }
 
+    private func open(_ name: String) throws -> (URL, ESISDatabase) {
+        let url = tempURL(name)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        return (url, db)
+    }
+
     private func legacyGraphJSON(contractVersion: String = "v1.0-amended", checkpointStateID: String = "S-0001") -> Data {
         let json = """
         {
