@@ -157,10 +157,7 @@ public enum ISAdmission {
         }
         // 5. full upstream dependency closure: each member present and valid.
         for dependency in try db.upstreamDependencyClosure(ofSettlement: settlementID) {
-            let validity: String
-            do {
-                validity = try db.settlementValidity(dependency)
-            } catch {
+            guard let validity = try db.settlementValidityIfPresent(dependency) else {
                 throw Refusal.dependencyMissing(settlementID: settlementID, dependency: dependency)
             }
             if validity != "valid" {
