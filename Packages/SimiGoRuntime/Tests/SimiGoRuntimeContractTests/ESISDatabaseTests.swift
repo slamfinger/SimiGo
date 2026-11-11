@@ -159,6 +159,26 @@ final class ESISDatabaseTests: XCTestCase {
         }
     }
 
+    func testSettlementValidityLookupDistinguishesMissingFromSQLiteFailure() throws {
+        let url = tempURL("settlement-validity-lookup")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        XCTAssertNil(try db.settlementValidityIfPresent("missing-settlement"))
+
+        // Remove the derived view through a second SQLite connection. The next
+        // lookup must preserve the prepare error instead of returning nil.
+        try rawExec(url, "DROP VIEW settlement_current_validity;")
+        XCTAssertThrowsError(try db.settlementValidityIfPresent("missing-settlement")) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, _, _) = databaseError else {
+                return XCTFail("expected a typed SQLite execution failure, got: \(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_ERROR)
+        }
+    }
+
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {
         let url = tempURL("fresh")
         let db = try ESISDatabase(url: url)
