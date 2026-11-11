@@ -964,9 +964,17 @@ public final class EnvManager: ObservableObject {
             let settle = try db.settleWorkRootContents(
                 rootID: rootID, rootURL: URL(fileURLWithPath: standardized),
                 carryText: false)
+            // 注册即导入清单：目录里每个文件按（目录，文件名）落一行，标题取文件名。
+            // 二进制文件也落档（内容为空）——这是"目录内文件路径和文件名复核"。
+            let names = try db.importDirectoryNames(
+                rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
             NotificationCenter.default.post(name: Self.workRootsDidChange, object: nil)
             return [
                 "status": "registered", "root_id": rootID, "path": standardized,
+                "name_import": [
+                    "files": names.files, "inserted": names.inserted,
+                    "refreshed": names.refreshed, "missing": names.missing,
+                ],
                 "content_settle": [
                     "scanned": settle.scanned, "reused": settle.reused,
                     "settled": settle.settled, "skipped": settle.skippedBinaryOrLarge,

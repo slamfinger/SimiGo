@@ -13,6 +13,10 @@ struct Settings: View {
     @State private var workRootPendingRemoval: EnvManager.WorkRootEntry?
     @State private var informationSpaceStatus = ""
     @State private var informationSpaceBusy = false
+    /// 刷新时顺带读到的「轮号有、摘要没有」的轮数。它只决定「补摘要」这个
+    /// 按钮出不出现——刷新本身只读，不偷偷写。
+    @State private var missingDigests = 0
+    @State private var digestProgress = ""
 
     /// 版本脚注从 bundle 实读（CFBundleShortVersionString + CFBundleVersion），
     /// 随发版自动更新——硬编码 "SimiGo v1.3" 曾滞留四个大版本（2026-09-30）。
@@ -35,7 +39,15 @@ struct Settings: View {
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let r = EnvManager.shared.registerWorkRoot(url.path)
-        envMessage = "\(url.lastPathComponent): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))"
+        let imported = r["name_import"] as? [String: Any]
+        let detail = imported.map { import_ in
+            "文件 \(import_["files"] ?? 0) · 新增 \(import_["inserted"] ?? 0) · "
+                + "刷新 \(import_["refreshed"] ?? 0) · 缺失 \(import_["missing"] ?? 0)"
+        } ?? ""
+        envMessage = """
+        \(url.lastPathComponent): \(r["status"] ?? "?") \(r["root_id"] ?? (r["detail"] ?? ""))
+        \(detail)
+        """
         refreshWorkRoots()
     }
 
@@ -138,10 +150,17 @@ struct Settings: View {
                             Text(envMessage).font(.caption).foregroundStyle(.secondary)
                         }
                         Divider()
+                        // 只留两件：读状态（顺带逐对象校验，反正 9k 对象
+                        // 0.06 秒），和缺摘要时的补齐。对账不再放按钮上——
+                        // 它把「没扫到」写成 missing，语义与契约相反。
                         HStack {
-                            Button("刷新状态") { refreshInformationSpace(deep: false) }
-                            Button("深度校验") { refreshInformationSpace(deep: true) }
-                            Button("重新对账工作目录") { reconcileInformationSpace() }
+                            Button("刷新状态") { refreshInformationSpace() }
+                            if missingDigests > 0 {
+                                Button("补摘要 \(missingDigests) 轮") { fillMissingDigests() }
+                                // 先小样再全量：一轮实测十几秒，2,600 轮是
+                                // 十几小时的量级，摘要质量得先看二十条。
+                                Button("小样 100 轮") { fillMissingDigests(limit: 100) }
+                            }
                             Button("外部信息采集…") { openCollectionBridge() }
                                 .disabled(collectionBusy)
                             if informationSpaceBusy {
@@ -149,6 +168,11 @@ struct Settings: View {
                             }
                         }
                         .disabled(informationSpaceBusy)
+                        if !digestProgress.isEmpty {
+                            Text(digestProgress)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                         if !collectionReport.isEmpty {
                             Text(collectionReport)
                                 .font(.caption)
@@ -326,16 +350,24 @@ struct Settings: View {
 
     /// Carrier status is read off the main thread: deep verification re-hashes
     /// every object, and even the cheap report must not stall the settings UI.
-    private func refreshInformationSpace(deep: Bool) {
+    /// 读状态。逐对象校验一直开着：9,093 个对象 56 MB 实测 0.06 s，
+    /// 再分「浅」和「深」两个按钮，只会让人以为浅的那个也能证明字节没坏。
+    private func refreshInformationSpace() {
         informationSpaceBusy = true
         informationSpaceStatus = "读取中…"
         Task.detached(priority: .utility) {
             let text: String
+            var pending = 0
             do {
                 let db = try ESISDatabase(
                     url: ManagedPaths.databaseURL, createIfNeeded: true)
                 try db.runMigrations()
-                let report = try db.carrierReport(deepVerify: deep)
+                // 刷新状态是人的干预点，也是导入历史的第一次衔接：采集桥写进来
+                // 的消息本来没有轮次账，没有账就没有摘要、没有关键词、没有房间。
+                // 这里补的只是「一行账都没有」的会话，重复点是空操作。
+                let imported = try db.backfillImportedTurnLedger()
+                let report = try db.carrierReport(deepVerify: true)
+                pending = report.turnsWithoutDigest
                 let unaddressed = report.unaddressedFileContents
                     + report.unaddressedChatMessages
                     + report.unaddressedRetrievalResults
@@ -344,40 +376,38 @@ struct Settings: View {
                 schema v\(report.schemaVersion) · 对象 \(report.objectCount)（\(report.objectBytes) 字节）· \
                 索引 \(report.indexEntries) · 依赖 \(report.dependencyEntries) · 未寻址 \(unaddressed) · \
                 内联旧载荷 \(report.inlineLegacyPayloads) · 悬空引用 \(report.danglingReferences) · \
-                损坏 \(report.corruptObjects)\(deep ? "（已逐对象校验）" : "")
+                损坏 \(report.corruptObjects)（已逐对象校验）
+                空间 \(report.spaces) · 依赖区间 开 \(report.dependencyIntervalsOpen)／闭 \(report.dependencyIntervalsClosed)／断点 \(report.dependencyIntervalBreaks)
+                轮次摘要 \(report.turnDigests) 轮 · 缺摘要 \(report.turnsWithoutDigest) 轮 · \
+                导入轮 \(imported.importedTurnsTotal) 轮（本次补 \(imported.turnsInserted)，保留 \(imported.sessionsKept) 个会话的原有轮号）
                 """
             } catch {
                 text = "读取失败：\(error)"
             }
             await MainActor.run {
                 informationSpaceStatus = text
+                missingDigests = pending
                 informationSpaceBusy = false
             }
         }
     }
 
-    private func reconcileInformationSpace() {
+    /// 补摘要：走和自动摘要同一条路（本地模型 + recordTurnDigest），
+    /// 只是这里由人按下去。一轮补完报一次进度，补完刷新一遍状态。
+    private func fillMissingDigests(limit: Int? = nil) {
         informationSpaceBusy = true
-        informationSpaceStatus = "对账中…"
+        digestProgress = "补摘要中…"
         Task.detached(priority: .utility) {
-            let text: String
-            do {
-                let db = try ESISDatabase(
-                    url: ManagedPaths.databaseURL, createIfNeeded: true)
-                try db.runMigrations()
-                let result = try db.reconcileRegisteredRoots(category: "work")
-                text = """
-                对账完成：根 \(result.rootCount)（已结算 \(result.settledRoots) / 近期已扫 \(result.freshRoots)）· \
-                扫描 \(result.scanned) · 复用 \(result.reused) · 变更 \(result.changed) · 删除 \(result.removed) · \
-                失效结算 \(result.invalidatedSettlements) · 缺失 \(result.missingRoots) · 失败 \(result.failedRoots)
-                """
-            } catch {
-                text = "对账失败：\(error)"
+            let result = await TurnDigestScheduler.fillMissing(limit: limit) { done, total in
+                Task { @MainActor in
+                    digestProgress = "补摘要 \(done)/\(total)"
+                }
             }
             await MainActor.run {
-                informationSpaceStatus = text
+                digestProgress = "补摘要完成：成 \(result.done) 轮，失败 \(result.failed) 轮"
                 informationSpaceBusy = false
             }
+            refreshInformationSpace()
         }
     }
 

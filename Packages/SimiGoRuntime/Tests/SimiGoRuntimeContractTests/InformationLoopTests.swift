@@ -122,7 +122,16 @@ final class InformationLoopTests: XCTestCase {
         // A changed file no longer matches the settled digest and is not a hit.
         try write("different\n", to: root, name: "doc.md")
         XCTAssertTrue(try db.searchSettledContent(query: "needle", rootID: "work").isEmpty)
-        XCTAssertNil(try db.carriedFileContent(rootID: "work", relativePath: "doc.md"))
+        XCTAssertThrowsError(
+            try db.carriedFileContent(rootID: "work", relativePath: "doc.md")
+        ) { error in
+            guard case .staleExternalSource(let rootID, let relativePath)? =
+                    error as? ESISDatabase.DatabaseError else {
+                return XCTFail("expected staleExternalSource, got: \(error)")
+            }
+            XCTAssertEqual(rootID, "work")
+            XCTAssertEqual(relativePath, "doc.md")
+        }
     }
 
     // MARK: - Demand over physical and chat information

@@ -2146,6 +2146,46 @@ public final class HTTPServer: @unchecked Sendable {
         }
     }
 
+    struct SimigoDatabaseStatus: Equatable {
+        let exists: Bool
+        let available: Bool
+        let schemaVersion: Int?
+        let roots: [String]
+        let error: String?
+    }
+
+    /// Keep filesystem existence separate from SQLite readability. A corrupt or
+    /// partially migrated database is present but unavailable, never "missing".
+    static func simigoDatabaseStatus(at url: URL) -> SimigoDatabaseStatus {
+        let exists = FileManager.default.fileExists(atPath: url.path)
+        guard exists else {
+            return SimigoDatabaseStatus(
+                exists: false, available: false, schemaVersion: nil,
+                roots: [], error: nil)
+        }
+
+        var schemaVersion: Int?
+        do {
+            let database = try ESISDatabase(url: url, createIfNeeded: false, readOnly: true)
+            schemaVersion = try database.schemaVersion()
+            let roots = try database.listRoots().map(\.rootID)
+            return SimigoDatabaseStatus(
+                exists: true, available: true, schemaVersion: schemaVersion,
+                roots: roots, error: nil)
+        } catch {
+            return SimigoDatabaseStatus(
+                exists: true, available: false, schemaVersion: schemaVersion,
+                roots: [], error: String(describing: error))
+        }
+    }
+
+    /// Read registered roots without converting SQLite failures into an empty
+    /// successful registry. The caller owns the HTTP error mapping.
+    static func simigoRegisteredRoots(at url: URL) throws -> [ESISDatabase.RootRow] {
+        let database = try ESISDatabase(url: url, createIfNeeded: false, readOnly: true)
+        return try database.listRoots()
+    }
+
     /// GET /v1/simigo/env — generation-environment status: managed root,
     /// llama-server, hf, database, registered roots, LOCALB resolution.
     /// Read-only; every field is derived from the managed root at call time.
@@ -2160,15 +2200,18 @@ public final class HTTPServer: @unchecked Sendable {
         let hf = EnvManager.findTool("hf")
             ?? (fm.isExecutableFile(atPath: ManagedPaths.bin.appendingPathComponent("hf").path)
                 ? ManagedPaths.bin.appendingPathComponent("hf").path : nil)
-        var db: [String: Any] = ["path": ManagedPaths.databaseURL.path]
-        if let opened = try? ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: false),
-            let version = try? opened.schemaVersion()
-        {
-            db["exists"] = fm.fileExists(atPath: ManagedPaths.databaseURL.path)
+        let databaseStatus = Self.simigoDatabaseStatus(at: ManagedPaths.databaseURL)
+        var db: [String: Any] = [
+            "path": ManagedPaths.databaseURL.path,
+            "exists": databaseStatus.exists,
+            "available": databaseStatus.available,
+            "roots": databaseStatus.roots,
+        ]
+        if let version = databaseStatus.schemaVersion {
             db["schema_version"] = version
-            db["roots"] = (try? opened.listRoots().map(\ .rootID)) ?? []
-        } else {
-            db["exists"] = false
+        }
+        if let error = databaseStatus.error {
+            db["error"] = error
         }
         let localb: String
         switch try? LOCALBHostRuntime.resolveOperational(
@@ -2196,24 +2239,28 @@ public final class HTTPServer: @unchecked Sendable {
     private func handleSimigoRootsRequest(
         _ request: HTTPRequest, context: ConnectionContext
     ) async throws {
-        guard let db = try? ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: false)
-        else {
-            sendJSON(["error": "database unavailable"], status: 503, on: context.connection, context: context)
-            return
+        do {
+            let rows = try Self.simigoRegisteredRoots(at: ManagedPaths.databaseURL)
+            sendJSON(
+                ["roots": rows.map { [
+                    "root_id": $0.rootID,
+                    "category": $0.category,
+                    "display_name": $0.displayName,
+                    "locator_type": $0.locatorType,
+                    "status": $0.status,
+                ] }],
+                status: 200,
+                on: context.connection,
+                context: context
+            )
+        } catch {
+            sendJSON(
+                ["error": "DATABASE_READ_FAILED", "detail": String(describing: error)],
+                status: 503,
+                on: context.connection,
+                context: context
+            )
         }
-        let rows = (try? db.listRoots()) ?? []
-        sendJSON(
-            ["roots": rows.map { [
-                "root_id": $0.rootID,
-                "category": $0.category,
-                "display_name": $0.displayName,
-                "locator_type": $0.locatorType,
-                "status": $0.status,
-            ] }],
-            status: 200,
-            on: context.connection,
-            context: context
-        )
     }
 
     /// GET /v1/simigo/is/status[?deep=1] — physical Information-Space carrier
@@ -2254,6 +2301,13 @@ public final class HTTPServer: @unchecked Sendable {
                     "corrupt_objects": report.corruptObjects,
                     "inline_legacy_payloads": report.inlineLegacyPayloads,
                     "deep_verified": report.deepVerified,
+                    "spaces": report.spaces,
+                    "dependency_intervals_open": report.dependencyIntervalsOpen,
+                    "dependency_intervals_closed": report.dependencyIntervalsClosed,
+                    "dependency_interval_breaks": report.dependencyIntervalBreaks,
+                    "turn_digests": report.turnDigests,
+                    "turns_without_digest": report.turnsWithoutDigest,
+                    "vacuum_failure": report.vacuumFailure ?? "",
                 ],
                 status: 200, on: context.connection, context: context)
         } catch {
@@ -2461,7 +2515,7 @@ public final class HTTPServer: @unchecked Sendable {
                     status: 404, on: context.connection, context: context)
                 return
             }
-            guard db.verifyObject(id) else {
+            guard try db.verifyObject(id) else {
                 sendJSON(
                     ["error": "OBJECT_CORRUPT", "detail": id],
                     status: 409, on: context.connection, context: context)

@@ -17,6 +17,13 @@ final class ESISDatabaseTests: XCTestCase {
         }
     }
 
+    private func open(_ name: String) throws -> (URL, ESISDatabase) {
+        let url = tempURL(name)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        return (url, db)
+    }
+
     private func legacyGraphJSON(contractVersion: String = "v1.0-amended", checkpointStateID: String = "S-0001") -> Data {
         let json = """
         {
@@ -197,6 +204,152 @@ final class ESISDatabaseTests: XCTestCase {
             }
             XCTAssertEqual(primary, SQLITE_ERROR)
         }
+    }
+
+    func testReadOnlyOpenDoesNotChangeJournalModeOrAllowWrites() throws {
+        let url = tempURL("read-only-open")
+        defer { cleanup(url) }
+
+        do {
+            let writable = try ESISDatabase(url: url)
+            try writable.runMigrations()
+        }
+        try rawExec(url, "PRAGMA journal_mode=DELETE;")
+        XCTAssertEqual(try rawText(url, "PRAGMA journal_mode;"), "delete")
+        let databaseBytesBeforeReadOnly = try Data(contentsOf: url)
+
+        do {
+            let readOnly = try ESISDatabase(
+                url: url, createIfNeeded: false, readOnly: true)
+            XCTAssertEqual(
+                try readOnly.schemaVersion(), ESISDatabase.currentSchemaVersion)
+            XCTAssertThrowsError(
+                try readOnly.upsertRoot(
+                    rootID: "must-not-write", category: "work",
+                    displayName: nil, locatorType: "path", status: "present")
+            ) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, _, _) = databaseError else {
+                    return XCTFail("expected a read-only SQLite failure, got: \\(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_READONLY)
+            }
+        }
+
+        XCTAssertEqual(try rawText(url, "PRAGMA journal_mode;"), "delete")
+        XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM roots;"), "0")
+        XCTAssertEqual(try Data(contentsOf: url), databaseBytesBeforeReadOnly,
+                       "read-only diagnostics must not change the database file")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path + "-wal"))
+        // SQLite may leave a transient -shm coordination file even after a
+        // journal-mode transition; it is not persisted database content.
+    }
+
+    func testObjectVerificationPreservesSQLiteExecutionFailures() throws {
+        let url = tempURL("object-verification-execution-failure")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+
+        let objectID = try db.writeObject(Data(repeating: 0x41, count: 1_024))
+        XCTAssertFalse(try db.verifyObject("missing-object"))
+
+        // Keep the 64-byte object address readable, but make the 1 KiB content
+        // row exceed SQLite's length limit when readObject steps its SELECT.
+        let previousLimit = db.setSQLiteLengthLimitForTesting(256)
+        defer { _ = db.setSQLiteLengthLimitForTesting(previousLimit) }
+
+        let assertSQLiteTooBig: (Error) -> Void = { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, _) = databaseError else {
+                return XCTFail("expected a typed SQLite execution failure, got: \\(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_TOOBIG)
+            XCTAssertEqual(extended, SQLITE_TOOBIG)
+        }
+
+        XCTAssertThrowsError(try db.verifyObject(objectID)) { assertSQLiteTooBig($0) }
+        XCTAssertThrowsError(try db.carrierReport(deepVerify: true)) { assertSQLiteTooBig($0) }
+    }
+
+    func testIndexOnlyCarriedContentDistinguishesMissingStaleAndSymlinkedSources() throws {
+        let (url, db) = try open("index-only-carried-source-errors")
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-carried-source-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let file = root.appendingPathComponent("source.txt")
+        try Data("original bytes".utf8).write(to: file)
+        let report = try db.settleWorkRootContents(
+            rootID: "carried-source", rootURL: root, carryText: false)
+        XCTAssertTrue(report.indexOnly)
+
+        // A genuinely gone source remains a missing result.
+        try FileManager.default.removeItem(at: file)
+        XCTAssertNil(try db.carriedFileContent(
+            rootID: "carried-source", relativePath: "source.txt"))
+
+        // A present but changed source is stale, not indistinguishable from
+        // a missing inventory row.
+        try Data("changed bytes".utf8).write(to: file)
+        XCTAssertThrowsError(try db.carriedFileContent(
+            rootID: "carried-source", relativePath: "source.txt")) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .staleExternalSource(let rootID, let relativePath) = databaseError else {
+                return XCTFail("expected a typed stale-source error, got: \\(error)")
+            }
+            XCTAssertEqual(rootID, "carried-source")
+            XCTAssertEqual(relativePath, "source.txt")
+        }
+
+        // A symlinked leaf is a verification failure and must not be reported
+        // as FILE_NOT_SETTLED by the HTTP layer.
+        let outside = root.deletingLastPathComponent()
+            .appendingPathComponent("simigo-carried-outside-\(UUID().uuidString).txt")
+        try Data("outside bytes".utf8).write(to: outside)
+        defer { try? FileManager.default.removeItem(at: outside) }
+        try FileManager.default.removeItem(at: file)
+        try FileManager.default.createSymbolicLink(at: file, withDestinationURL: outside)
+        XCTAssertThrowsError(try db.carriedFileContent(
+            rootID: "carried-source", relativePath: "source.txt")) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sql(let detail) = databaseError else {
+                return XCTFail("expected a path-verification error, got: \\(error)")
+            }
+            XCTAssertTrue(detail.contains("symlinked"), detail)
+        }
+    }
+
+    func testIndexOnlyCarriedOversizedTailUsesBoundedTailWindow() throws {
+        let databaseURL = tempURL("index-only-carried-tail")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-index-only-carried-tail-\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        let source = Data(repeating: 0x78, count: 2 * 1024 * 1024)
+            + Data("\nneedle in tail\n".utf8)
+        try source.write(to: fileURL)
+        defer { try? fm.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        let report = try db.settleWorkRootContents(
+            rootID: "index-only-carried-tail-root", rootURL: rootURL,
+            fileByteCap: 128, tailBytes: 256, maxTotalBytesRead: 512,
+            carryText: false)
+        XCTAssertTrue(report.indexOnly)
+        XCTAssertEqual(report.entityBytesRead, 256)
+
+        let carried = try XCTUnwrap(db.carriedFileContent(
+            rootID: "index-only-carried-tail-root", relativePath: "source.txt"))
+        XCTAssertNil(carried.objectID)
+        XCTAssertEqual(carried.content, Data("needle in tail\n".utf8))
     }
 
     func testFreshDatabaseMigratesAndPassesIntegrity() throws {

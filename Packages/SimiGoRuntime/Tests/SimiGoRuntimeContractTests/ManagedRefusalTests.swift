@@ -183,7 +183,7 @@ final class ManagedRefusalTests: XCTestCase {
         XCTAssertEqual(result.failureClass, nil)
         let objectID = try XCTUnwrap(result.objectID)
         XCTAssertEqual(objectID.count, 64)
-        XCTAssertTrue(db.verifyObject(objectID))
+        XCTAssertTrue(try db.verifyObject(objectID))
 
         XCTAssertEqual(db.failureAudit(executionID: "exec-1"), original)
         XCTAssertEqual(try db.failureAuditHistory(executionID: "exec-1").count, 1)
@@ -204,7 +204,7 @@ final class ManagedRefusalTests: XCTestCase {
         XCTAssertEqual(history.count, 1, "the ledger must not gain a second entry")
         XCTAssertEqual(db.failureAudit(executionID: "exec-1"), first,
                        "the first terminal record is still the one on file")
-        XCTAssertFalse(db.verifyObject(SnapshotContract.sha256Hex(try Audit.encoded(second))),
+        XCTAssertFalse(try db.verifyObject(SnapshotContract.sha256Hex(try Audit.encoded(second))),
                        "a rejected duplicate must not leave an orphan object")
     }
 
