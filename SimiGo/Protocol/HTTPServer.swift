@@ -2254,6 +2254,7 @@ public final class HTTPServer: @unchecked Sendable {
                     "corrupt_objects": report.corruptObjects,
                     "inline_legacy_payloads": report.inlineLegacyPayloads,
                     "deep_verified": report.deepVerified,
+                    "vacuum_failure": report.vacuumFailure ?? "",
                 ],
                 status: 200, on: context.connection, context: context)
         } catch {

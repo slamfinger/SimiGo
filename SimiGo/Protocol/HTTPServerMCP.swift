@@ -504,6 +504,7 @@ extension HTTPServer {
                 "dangling_references": report.danglingReferences,
                 "corrupt_objects": report.corruptObjects,
                 "inline_legacy_payloads": report.inlineLegacyPayloads,
+                "vacuum_failure": report.vacuumFailure ?? "",
             ]
 
         case "simigo_roots_list":

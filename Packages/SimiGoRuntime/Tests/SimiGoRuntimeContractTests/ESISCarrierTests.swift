@@ -817,4 +817,32 @@ final class ESISCarrierTests: XCTestCase {
             try rawText(url, "SELECT query_truncated FROM settlement_summaries WHERE settlement_id='s-short';"),
             "0")
     }
+
+    /// VACUUM 失败必须留痕：写在库同目录的 simigo.maintenance.json，
+    /// carrierReport 把它带出来，成功回收后文件消失。
+    func testVacuumFailureIsRecordedNextToStore() throws {
+        let (url, db) = try open("vacuum-failure-note")
+        defer { db.close(); cleanup(url) }
+        let note = url.deletingLastPathComponent()
+            .appendingPathComponent("simigo.maintenance.json")
+        defer { try? FileManager.default.removeItem(at: note) }
+
+        XCTAssertNil(db.lastVacuumFailure, "没失败过就没这个文件")
+        XCTAssertNil(try db.carrierReport().vacuumFailure)
+
+        let payload: [String: Any] = [
+            "at": "2026-11-11T07:41:00Z",
+            "freedPages": 772,
+            "reason": "database is locked",
+        ]
+        try JSONSerialization.data(withJSONObject: payload)
+            .write(to: note, options: .atomic)
+
+        let reported = try XCTUnwrap(db.lastVacuumFailure)
+        XCTAssertTrue(reported.contains("772"), reported)
+        XCTAssertTrue(reported.contains("database is locked"), reported)
+        XCTAssertEqual(
+            try db.carrierReport().vacuumFailure, reported,
+            "状态接口要和文件说同一句话")
+    }
 }

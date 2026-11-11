@@ -1357,7 +1357,14 @@ public final class ESISDatabase {
         // 门槛 400 页（1.6 MB）：v30 只把 query 列截短，实测释放 783 页。
         // 门槛定在 2000 的话这次回收永远够不着，文件就停在原大小——和上面
         // 那个「一次性判据」是同一类错。400 页以下不值得一次全库重写。
-        if freedPages > 400 { try? Self.rawExec(handle, "VACUUM;") }
+        if freedPages > 400 {
+            do {
+                try Self.rawExec(handle, "VACUUM;")
+                clearVacuumFailure()
+            } catch {
+                recordVacuumFailure(freedPages: freedPages, error: "\(error)")
+            }
+        }
 
         // The declared head and the applied head must agree. A migration gate
         // that was written but never reached, or a version bumped in the
@@ -1373,6 +1380,50 @@ public final class ESISDatabase {
 
     /// The version `runMigrations` brings a store to.
     public static let currentSchemaVersion = 30
+
+    /// Last VACUUM failure, if the previous attempt left one behind.
+    ///
+    /// Two releases in a row hit this: v28/v29 freed 38,732 pages but the
+    /// threshold was 2,000 pages *of freelist at open* and the migration that
+    /// freed them committed before the threshold was ever consulted; v30 freed
+    /// 772 pages, crossed the new threshold, and then the VACUUM itself lost a
+    /// race with another connection. Both times `try?` swallowed it, the file
+    /// stayed at its old size, and the only way to notice was comparing
+    /// `freelist_count` by hand. A silent failure to reclaim space is not a
+    /// detail — it is the difference between a store that shrinks and one that
+    /// never does.
+    public var lastVacuumFailure: String? {
+        guard let data = try? Data(contentsOf: maintenanceURL),
+            let raw = try? JSONSerialization.jsonObject(with: data),
+            let object = raw as? [String: Any],
+            let reason = object["reason"] as? String
+        else { return nil }
+        let at = object["at"] as? String ?? "unknown time"
+        let pages = object["freedPages"] as? Int ?? 0
+        return "\(at) VACUUM failed, \(pages) pages unreclaimed: \(reason)"
+    }
+
+    /// Sits next to the store it describes, so a copy of the directory keeps
+    /// the diagnosis with the data.
+    private var maintenanceURL: URL {
+        url.deletingLastPathComponent().appendingPathComponent("simigo.maintenance.json")
+    }
+
+    private func recordVacuumFailure(freedPages: Int, error: String) {
+        let payload: [String: Any] = [
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "freedPages": freedPages,
+            "reason": error,
+        ]
+        guard let data = try? JSONSerialization.data(
+            withJSONObject: payload, options: [.sortedKeys])
+        else { return }
+        try? data.write(to: maintenanceURL, options: .atomic)
+    }
+
+    private func clearVacuumFailure() {
+        try? FileManager.default.removeItem(at: maintenanceURL)
+    }
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
@@ -1412,6 +1463,10 @@ public final class ESISDatabase {
         public let corruptObjects: Int
         public let inlineLegacyPayloads: Int
         public let deepVerified: Bool
+        /// Set when the last startup VACUUM failed and the space it would have
+        /// reclaimed is still on disk. Nil when the last attempt succeeded or
+        /// was not needed.
+        public let vacuumFailure: String?
     }
 
     public enum IndexResolutionPolicy: Sendable {
@@ -1709,7 +1764,8 @@ public final class ESISDatabase {
                      + (SELECT COUNT(*) FROM retrieval_settlements WHERE length(result_json)>0)
                      + (SELECT COUNT(*) FROM settlements WHERE length(payload)>0);
                 """),
-            deepVerified: deepVerify)
+            deepVerified: deepVerify,
+            vacuumFailure: lastVacuumFailure)
     }
 
     private func ensureObject(_ data: Data) throws -> String {
