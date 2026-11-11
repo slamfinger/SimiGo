@@ -336,7 +336,7 @@ final class TurnAccumulatorTests: XCTestCase {
     func testPendingTurnRetentionIsBoundedAndFailsClosed() {
         let limits = TurnAccumulator.RetentionLimits(
             maxRetainedNodes: 16, maxSeenAnchorIDs: 16,
-            maxPendingMessages: 3, maxPendingTerminalTextBytes: 64)
+            maxPendingMessages: 3, maxPendingTerminalTextBytes: 16)
         let accumulator = TurnAccumulator(
             context: Fixture.context(), retentionLimits: limits)
         var lines = [Fixture.userLine(uuid: "u-1", text: "hello")]
