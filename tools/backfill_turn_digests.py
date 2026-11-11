@@ -224,6 +224,78 @@ def parse(out):
     return digest[:DIGEST_LIMIT], terms
 
 
+def normalize_terms(keywords):
+    """关键词归一化。摘要谁写都一样，这里只认词。"""
+    terms, seen = [], set()
+    for raw in (keywords or "").replace("，", " ").replace("、", " ") \
+            .replace(",", " ").split():
+        term = raw.strip(" 　.。\"'“”()（）[]【】:：;；")
+        if term and term not in seen:
+            seen.add(term)
+            terms.append(term)
+            if len(terms) == MAX_KEYWORDS:
+                break
+    return terms
+
+
+def emit(todo, ro, path):
+    """把待补轮次连同分层后的投喂正文导出成 JSONL，交给别的模型写摘要。
+
+    只读，不写库。每行一轮：who（定位） + text（喂给模型的问题与回答）。
+    """
+    n = 0
+    with open(path, "w", encoding="utf-8") as out:
+        for session, turn, qobj, aobj, qid, aid in todo:
+            q = payload(ro, qobj)[:MAX_QUESTION]
+            a = payload(ro, aobj)
+            if not q and not a:
+                continue
+            fed, layered = layer_answer(a)
+            meta = code_meta(a)
+            if meta:
+                fed = f"{fed}\n\n{meta}"
+            out.write(json.dumps({
+                "session": session, "turn": turn,
+                "question": q, "answer_fed": fed,
+                "layered": layered, "answer_chars": len(a),
+            }, ensure_ascii=False) + "\n")
+            n += 1
+    return n
+
+
+def ingest(rw, path, model):
+    """读回写了摘要的 JSONL 并落库。一行失败不影响其它行。"""
+    done = failed = 0
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+                digest = (row.get("digest") or "").strip()
+                terms = normalize_terms(row.get("keywords"))
+                if not digest or not terms:
+                    raise ValueError("缺 digest 或 keywords")
+                ids = rw.execute("""
+                SELECT
+                  (SELECT id FROM chat_messages WHERE session_id=? AND request_id=(
+                     SELECT request_id FROM chat_turn_ledger WHERE session_id=? AND turn_index=?)
+                   AND role='user' LIMIT 1),
+                  (SELECT id FROM chat_messages WHERE session_id=? AND request_id=(
+                     SELECT request_id FROM chat_turn_ledger WHERE session_id=? AND turn_index=?)
+                   AND role='assistant' LIMIT 1)
+                """, (row["session"], row["session"], row["turn"],
+                      row["session"], row["session"], row["turn"])).fetchone()
+                store(rw, row["session"], row["turn"], ids[0], ids[1],
+                      digest[:DIGEST_LIMIT], terms, model)
+                done += 1
+            except Exception as exc:  # noqa: BLE001 - 一行失败不拖垮整批
+                failed += 1
+                print(f"[fail] {line[:60]!r} {type(exc).__name__}: {exc}", flush=True)
+    return done, failed
+
+
 def store(con, session, turn, qid, aid, digest, terms, model):
     # 和 `Self.stamp` 同一把尺子：%.17g 的「2001-01-01 起秒数」，不是 Unix 秒。
     now = f"{time.time() - 978307200:.17g}"
@@ -258,11 +330,26 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int)
     ap.add_argument("--session")
+    ap.add_argument("--emit", metavar="PATH",
+                    help="只导出待补轮次到 JSONL，不调模型、不写库")
+    ap.add_argument("--ingest", metavar="PATH",
+                    help="把写好摘要的 JSONL 落库（digest + keywords 字段）")
+    ap.add_argument("--model", default="local", help="写进 model 列的来源标记")
     args = ap.parse_args()
 
     ro = connect(DB, readonly=True)
     rw = connect(DB)
     todo = pending_turns(ro, args.limit, args.session)
+
+    if args.emit:
+        n = emit(todo, ro, args.emit)
+        print(f"导出 {n} 轮 → {args.emit}", flush=True)
+        return 0
+    if args.ingest:
+        done, failed = ingest(rw, args.ingest, args.model)
+        print(f"落库 {done} 轮，失败 {failed} 行", flush=True)
+        return 0 if failed == 0 else 1
+
     print(f"待补 {len(todo)} 轮", flush=True)
     done = failed = 0
     started = time.time()
