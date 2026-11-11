@@ -389,6 +389,8 @@ final class TurnAccumulatorTests: XCTestCase {
         let turns = Fixture.turns(events)
         XCTAssertLessThanOrEqual(
             accumulator.retainedNodeCountForTesting, limits.maxRetainedNodes)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeOrderCountForTesting, limits.maxRetainedNodes * 2)
         XCTAssertEqual(turns.count, 1)
         XCTAssertEqual(turns.first?.relation, .fileOrderNoChain)
         XCTAssertEqual(turns.first?.disposition, .requiresReview(.fileOrderNoChain))
@@ -413,6 +415,8 @@ final class TurnAccumulatorTests: XCTestCase {
         XCTAssertEqual(accumulator.retainedAnchorIDCountForTesting, 2)
         XCTAssertLessThanOrEqual(
             accumulator.retainedNodeCountForTesting, limits.maxRetainedNodes)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeOrderCountForTesting, limits.maxRetainedNodes * 2)
         XCTAssertTrue(accumulator.pendingHistoryTruncatedForTesting)
         XCTAssertTrue(Fixture.turns(events).allSatisfy { $0.disposition == .eligible })
         let closeEvents = Fixture.feed(
@@ -444,7 +448,13 @@ final class TurnAccumulatorTests: XCTestCase {
         XCTAssertLessThanOrEqual(
             accumulator.retainedNodeCountForTesting, limits.maxRetainedNodes)
         XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeOrderCountForTesting, limits.maxRetainedNodes * 2)
+        XCTAssertLessThanOrEqual(
             accumulator.retainedAnchorIDCountForTesting, limits.maxSeenAnchorIDs)
+        XCTAssertTrue(
+            accumulator.retainedIdentifiersForTesting.allSatisfy {
+                $0.utf8.count <= limits.maxIdentifierBytes
+            })
         XCTAssertLessThanOrEqual(
             accumulator.retainedPendingMessageCountForTesting, limits.maxPendingMessages)
         XCTAssertLessThanOrEqual(
