@@ -878,7 +878,7 @@ final class ESISCarrierTests: XCTestCase {
         INSERT INTO external_files(root_id, relative_path, title, status)
             VALUES('work','a.md','甲文件','present'),
                   ('work','b.md',NULL,'present');
-        DELETE FROM schema_migrations WHERE version=31;
+        DELETE FROM schema_migrations WHERE version >= 31;
         """)
 
         let reopened = try ESISDatabase(url: url)
@@ -893,6 +893,86 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(
             try rawText(url, "SELECT COALESCE(title_source,'-') FROM external_files WHERE relative_path='b.md';"),
             "-", "没标题的行不该被标成 filename")
+    }
+
+    /// v32：同一份字节挂在两个空间下结算，边的地址必须相同，只有标签不同。
+    /// 这条断言就是「依赖的是信息，不是来源」在代码里的样子。
+    func testSpaceNeverEntersDependencyAddress() throws {
+        let (url, db) = try open("space-address")
+        let rootA = try makeWorkRoot()
+        let rootB = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: rootA)
+            try? FileManager.default.removeItem(at: rootB)
+        }
+        try write("同一份内容", to: rootA, name: "a.md")
+        try write("同一份内容", to: rootB, name: "a.md")
+
+        _ = try db.settleWorkRootContents(rootID: "rootA", rootURL: rootA)
+        _ = try db.settleWorkRootContents(rootID: "rootB", rootURL: rootB)
+        let spaceA = try db.createSpace(
+            title: "参考文件", kind: "directory", titleSource: "human")
+        let spaceB = try db.createSpace(
+            title: "26.秦沈项目", kind: "directory", titleSource: "human")
+        try db.setRootSpace(rootID: "rootA", spaceID: spaceA.spaceID)
+        try db.setRootSpace(rootID: "rootB", spaceID: spaceB.spaceID)
+
+        let depA = try XCTUnwrap(try db.currentDependency("file:rootA/a.md"))
+        let depB = try XCTUnwrap(try db.currentDependency("file:rootB/a.md"))
+        XCTAssertEqual(depA.contentAddress, depB.contentAddress,
+                       "同一个字节串只有一个地址，跟它挂在哪个空间下无关")
+        XCTAssertEqual(try db.count("is_objects"), 1, "两个空间同一份内容只存一份")
+        XCTAssertNotEqual(spaceA.spaceID, spaceB.spaceID)
+        XCTAssertEqual(try db.space(forRoot: "rootA")?.title, "参考文件")
+    }
+
+    /// v32 迁移：现有每个 root 补一个空间，标题取路径最后一段，标成占位。
+    func testMigrationThirtyTwoBackfillsOneSpacePerRoot() throws {
+        let (url, db) = try open("v32-migrate")
+        defer { cleanup(url) }
+        db.close()
+
+        try rawExec(url, """
+        INSERT INTO roots(root_id, category, display_name, locator_type, status)
+            VALUES('work-a','work','/Users/x/Desktop/参考文件','path','present'),
+                  ('work-b','work','/Users/x/Desktop/26.秦沈项目','path','present');
+        DELETE FROM schema_migrations WHERE version >= 32;
+        DROP TABLE spaces;
+        """)
+
+        let reopened = try ESISDatabase(url: url)
+        defer { reopened.close() }
+        try reopened.runMigrations()
+        XCTAssertEqual(try reopened.schemaVersion(), ESISDatabase.currentSchemaVersion)
+        XCTAssertEqual(try reopened.count("spaces"), 2)
+        XCTAssertEqual(try reopened.listSpaces().map(\.title).sorted(),
+                       ["26.秦沈项目", "参考文件"])
+        let space = try XCTUnwrap(try reopened.space(forRoot: "work-a"))
+        XCTAssertEqual(space.titleSource, "filename", "占位标题，人还没改过")
+        XCTAssertEqual(space.kind, "directory")
+    }
+
+    /// 甲：加目录这个人的动作定空间身份，标题默认是文件夹名。
+    func testImportDirectoryNamesCreatesSpaceFromFolderName() throws {
+        let (url, db) = try open("space-import")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("x", to: root, name: "a.md")
+
+        _ = try db.importDirectoryNames(rootID: "work-import", rootURL: root)
+        let space = try XCTUnwrap(try db.space(forRoot: "work-import"))
+        XCTAssertEqual(space.title, root.lastPathComponent)
+        XCTAssertEqual(space.titleSource, "filename")
+        XCTAssertEqual(space.kind, "directory")
+
+        // 再导入一次：不新建空间，也不动已有标题。
+        _ = try db.importDirectoryNames(rootID: "work-import", rootURL: root)
+        XCTAssertEqual(try db.count("spaces"), 1)
+        XCTAssertEqual(try db.space(forRoot: "work-import")?.spaceID, space.spaceID)
     }
 
     /// VACUUM 失败必须留痕：写在库同目录的 simigo.maintenance.json，

@@ -1402,6 +1402,75 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 32 {
+            try transaction {
+                // v32：空间（归集键）。
+                //
+                // 身份和位置分开：space_id 是身份，root 是它今天落在哪个目录。
+                // 空间只做归集、只用来把检索范围先切小，绝不进 object_id、
+                // canonical_digest、dependency_id、复用判据——一旦进去，同一份
+                // 内容放在两个空间下就会被认成两条依赖，复用就失效了。
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS spaces(
+                    space_id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    title_source TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    parent_space_id TEXT REFERENCES spaces(space_id),
+                    created_at TEXT NOT NULL
+                );
+                """)
+                if try !columnExists("roots", "space_id") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE roots ADD COLUMN space_id TEXT REFERENCES spaces(space_id);
+                    ALTER TABLE agent_sessions ADD COLUMN space_id TEXT REFERENCES spaces(space_id);
+                    CREATE INDEX IF NOT EXISTS roots_space ON roots(space_id);
+                    CREATE INDEX IF NOT EXISTS agent_sessions_space
+                        ON agent_sessions(space_id);
+                    """)
+                }
+                // 回填：现有每个 root 一个空间，标题取路径最后一段，标成占位
+                // （'filename'），人改过就是 'human'。space_id 不从路径算：这几个
+                // 空间是此刻建的，跟它今天待在哪个目录无关，以后搬家也不变。
+                var pending: [(rootID: String, title: String, kind: String)] = []
+                let listing = try prepare("""
+                SELECT root_id, COALESCE(display_name,''), COALESCE(locator_type,'')
+                  FROM roots WHERE space_id IS NULL ORDER BY root_id;
+                """)
+                defer { sqlite3_finalize(listing) }
+                while try stepRowOrDone(listing) {
+                    let rootID = sqlite3_column_text(listing, 0).map { String(cString: $0) } ?? ""
+                    let display = sqlite3_column_text(listing, 1).map { String(cString: $0) } ?? ""
+                    let locator = sqlite3_column_text(listing, 2).map { String(cString: $0) } ?? ""
+                    let last = (display as NSString).lastPathComponent
+                    pending.append((
+                        rootID,
+                        last.isEmpty ? rootID : last,
+                        locator == "path" ? "directory" : "collection"))
+                }
+                let now = Self.stamp(Date())
+                for entry in pending {
+                    let spaceID = "space-" + UUID().uuidString.lowercased()
+                    try execBinding("""
+                    INSERT INTO spaces(space_id, title, title_source, kind,
+                                       parent_space_id, created_at)
+                    VALUES(?,?,'filename',?,NULL,?);
+                    """) { stmt in
+                        try bind(stmt, 1, spaceID)
+                        try bind(stmt, 2, entry.title)
+                        try bind(stmt, 3, entry.kind)
+                        try bind(stmt, 4, now)
+                    }
+                    try execBinding("UPDATE roots SET space_id=? WHERE root_id=?;") { stmt in
+                        try bind(stmt, 1, spaceID)
+                        try bind(stmt, 2, entry.rootID)
+                    }
+                }
+                try recordMigrationRow(
+                    32, "simigo-spaces-v32: \(pending.count) spaces")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1439,7 +1508,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 31
+    public static let currentSchemaVersion = 32
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -3303,6 +3372,102 @@ try apply(stmt)
                 rootID: col(0), category: col(1), displayName: col(2),
                 locatorType: col(3), status: col(4)))
         }
+        return rows
+    }
+
+    // MARK: - Spaces（归集键：只缩范围，不参与任何身份计算）
+
+    public struct SpaceRow: Equatable, Sendable {
+        public let spaceID: String
+        public let title: String
+        public let titleSource: String
+        public let kind: String
+        public let parentSpaceID: String?
+        public let createdAt: String
+    }
+
+    private static let spaceColumns =
+        "space_id, title, title_source, kind, parent_space_id, created_at"
+
+    private func spaceRow(_ stmt: OpaquePointer) -> SpaceRow {
+        func text(_ i: Int32) -> String {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        }
+        return SpaceRow(
+            spaceID: text(0), title: text(1), titleSource: text(2), kind: text(3),
+            parentSpaceID: sqlite3_column_type(stmt, 4) == SQLITE_NULL ? nil : text(4),
+            createdAt: text(5))
+    }
+
+    /// 建一个空间。`title` 就是身份，`titleSource` 记它是怎么来的：
+    /// 文件夹名占位（'filename'）、文内标题（'document'）、人写的（'human'）。
+    @discardableResult
+    public func createSpace(
+        title: String, kind: String = "collection", titleSource: String = "human",
+        parentSpaceID: String? = nil
+    ) throws -> SpaceRow {
+        let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else {
+            throw DatabaseError.sql("createSpace: empty title")
+        }
+        let spaceID = "space-" + UUID().uuidString.lowercased()
+        try execBinding("""
+        INSERT INTO spaces(space_id, title, title_source, kind, parent_space_id, created_at)
+        VALUES(?,?,?,?,?,?);
+        """) { stmt in
+            try bind(stmt, 1, spaceID)
+            try bind(stmt, 2, name)
+            try bind(stmt, 3, titleSource)
+            try bind(stmt, 4, kind)
+            try bind(stmt, 5, parentSpaceID)
+            try bind(stmt, 6, Self.stamp(Date()))
+        }
+        guard let row = try space(id: spaceID) else {
+            throw DatabaseError.sql("createSpace: row missing after write")
+        }
+        return row
+    }
+
+    public func space(id spaceID: String) throws -> SpaceRow? {
+        let stmt = try prepare("SELECT \(Self.spaceColumns) FROM spaces WHERE space_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, spaceID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return spaceRow(stmt)
+    }
+
+    /// 一个 root 今天挂在哪个空间下。
+    public func space(forRoot rootID: String) throws -> SpaceRow? {
+        let stmt = try prepare("""
+        SELECT s.space_id, s.title, s.title_source, s.kind,
+               s.parent_space_id, s.created_at
+          FROM roots r JOIN spaces s ON s.space_id = r.space_id
+         WHERE r.root_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, rootID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return spaceRow(stmt)
+    }
+
+    /// 把 root 挂到空间下。人确认「这是搬家」时用它——同一个空间换一个新
+    /// 目录，身份、标题、历史都留在原处。
+    public func setRootSpace(rootID: String, spaceID: String?) throws {
+        let changed = try execBinding("UPDATE roots SET space_id=? WHERE root_id=?;") { stmt in
+            try bind(stmt, 1, spaceID)
+            try bind(stmt, 2, rootID)
+        }
+        guard changed == 1 else {
+            throw DatabaseError.sql("setRootSpace: no root \(rootID)")
+        }
+    }
+
+    public func listSpaces() throws -> [SpaceRow] {
+        let stmt = try prepare(
+            "SELECT \(Self.spaceColumns) FROM spaces ORDER BY title, space_id;")
+        defer { sqlite3_finalize(stmt) }
+        var rows: [SpaceRow] = []
+        while try stepRowOrDone(stmt) { rows.append(spaceRow(stmt)) }
         return rows
     }
 
@@ -7209,6 +7374,9 @@ try bind(externalStmt, 1, rootID)
                 try upsertRoot(rootID: rootID, category: "work", displayName: root.path,
                                locatorType: "path", status: "registered")
             }
+            // 甲：加目录这个人的动作顺带定下空间的身份。已经有空间就不动——
+            // 重新导入只复核路径与文件名，人改过的标题不会被覆盖。
+            try ensureSpaceForRoot(rootID: rootID, folderName: root.lastPathComponent)
 
             var known: [String: String] = [:]
             let select = try prepare(
@@ -7267,6 +7435,21 @@ try bind(externalStmt, 1, rootID)
                 files: entries.count, inserted: inserted, refreshed: refreshed,
                 missing: known.count)
         }
+    }
+
+    /// 目录第一次进来时给它一个空间：标题取文件夹名，标成占位（'filename'）。
+    /// 已有空间就什么都不做——重新导入是复核路径，不是重新定身份。
+    private func ensureSpaceForRoot(rootID: String, folderName: String) throws {
+        guard !folderName.isEmpty else { return }
+        let probe = try prepare("SELECT space_id FROM roots WHERE root_id=?;")
+        try bind(probe, 1, rootID)
+        let found = try stepRowOrDone(probe)
+        let alreadySet = found && sqlite3_column_type(probe, 0) != SQLITE_NULL
+        sqlite3_finalize(probe)
+        guard found, !alreadySet else { return }
+        let space = try createSpace(
+            title: folderName, kind: "directory", titleSource: "filename")
+        try setRootSpace(rootID: rootID, spaceID: space.spaceID)
     }
 
     /// 人改标题：只改给人看的名字，不动唯一键（root_id + relative_path）。
