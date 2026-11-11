@@ -411,6 +411,8 @@ final class TurnAccumulatorTests: XCTestCase {
         ]
         let events = Fixture.feed(accumulator, lines)
         XCTAssertEqual(accumulator.retainedAnchorIDCountForTesting, 2)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedNodeCountForTesting, limits.maxRetainedNodes)
         XCTAssertTrue(accumulator.pendingHistoryTruncatedForTesting)
         XCTAssertTrue(Fixture.turns(events).allSatisfy { $0.disposition == .eligible })
         let closeEvents = Fixture.feed(
@@ -420,6 +422,37 @@ final class TurnAccumulatorTests: XCTestCase {
         XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
         XCTAssertEqual(
             Fixture.closures(closeEvents).first?.reason, .historyLimitExceeded)
+    }
+
+    func testRepeatedTerminalUpdatesRetainOneTextAndDetectConflict() {
+        let limits = TurnAccumulator.RetentionLimits(
+            maxRetainedNodes: 64, maxSeenAnchorIDs: 32,
+            maxPendingMessages: 2, maxPendingTerminalTextBytes: 64)
+        let accumulator = TurnAccumulator(
+            context: Fixture.context(), retentionLimits: limits)
+        var lines = [Fixture.userLine(uuid: "u-1", text: "hello")]
+        for index in 0..<20 {
+            let parent = index == 0 ? "u-1" : "a-\\(index - 1)"
+            lines.append(Fixture.assistantLine(
+                uuid: "a-\\(index)", parent: parent, messageID: "m-1",
+                text: "answer-\\(index)"))
+        }
+        _ = Fixture.feed(accumulator, lines)
+
+        XCTAssertEqual(accumulator.retainedPendingMessageCountForTesting, 1)
+        XCTAssertEqual(accumulator.retainedPendingTerminalCountForTesting, 1)
+        XCTAssertLessThanOrEqual(
+            accumulator.retainedPendingTerminalTextBytesForTesting,
+            limits.maxPendingTerminalTextBytes)
+        XCTAssertFalse(accumulator.pendingHistoryTruncatedForTesting)
+
+        let closeEvents = Fixture.feed(
+            accumulator,
+            [Fixture.userLine(uuid: "u-2", parent: "a-19", text: "next")],
+            startingAt: lines.count + 1)
+        XCTAssertEqual(
+            Fixture.closures(closeEvents).first?.reason, .ambiguousTerminal)
+        XCTAssertTrue(Fixture.turns(closeEvents).isEmpty)
     }
 
     func testFlushCurrentTurnUsesEndOfInputBoundary() {
