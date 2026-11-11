@@ -7685,17 +7685,30 @@ try bind(externalStmt, 1, rootID)
             let rootDirectoryFD: Int32
             do {
                 rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
-            } catch {
-                return nil
+            } catch let error as DatabaseError {
+                if case .sourceGone = error { return nil }
+                throw error
             }
             defer { Darwin.close(rootDirectoryFD) }
-            guard let read = try? readRootFileNoFollow(
-                rootDirectoryFD: rootDirectoryFD,
-                relativePath: relativePath,
-                maximumBytes: nil),
-                let data = read.data,
-                NativeSHA256.hexDigest(data) == digest
-            else { return nil }
+
+            let read: NoFollowFileRead
+            do {
+                read = try readRootFileNoFollow(
+                    rootDirectoryFD: rootDirectoryFD,
+                    relativePath: relativePath,
+                    maximumBytes: nil)
+            } catch let error as DatabaseError {
+                if case .sourceGone = error { return nil }
+                throw error
+            }
+            guard let data = read.data else {
+                throw DatabaseError.sql(
+                    "carriedFileContent: index-only source read returned no bytes")
+            }
+            guard NativeSHA256.hexDigest(data) == digest else {
+                throw DatabaseError.staleExternalSource(
+                    rootID: rootID, relativePath: relativePath)
+            }
             content = data
         }
         return CarriedFileContent(
