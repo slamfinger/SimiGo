@@ -432,10 +432,10 @@ final class TurnAccumulatorTests: XCTestCase {
             context: Fixture.context(), retentionLimits: limits)
         var lines = [Fixture.userLine(uuid: "u-1", text: "hello")]
         for index in 0..<20 {
-            let parent = index == 0 ? "u-1" : "a-\\(index - 1)"
+            let parent = index == 0 ? "u-1" : "a-\(index - 1)"
             lines.append(Fixture.assistantLine(
-                uuid: "a-\\(index)", parent: parent, messageID: "m-1",
-                text: "answer-\\(index)"))
+                uuid: "a-\(index)", parent: parent, messageID: "m-1",
+                text: "answer-\(index)"))
         }
         _ = Fixture.feed(accumulator, lines)
 
