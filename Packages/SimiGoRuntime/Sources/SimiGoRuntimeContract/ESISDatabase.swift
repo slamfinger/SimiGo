@@ -1132,6 +1132,474 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 26 {
+            try transaction {
+                // 标题只是给人看的名字，不进唯一键（键是 root_id + relative_path）。
+                // 默认值由文件名推导；人改过之后，重新导入不再覆盖。
+                if try !columnExists("external_files", "title") {
+                    try Self.rawExec(handle, "ALTER TABLE external_files ADD COLUMN title TEXT;")
+                }
+                try recordMigrationRow(26, "simigo-external-file-title-v26")
+            }
+        }
+
+        if try schemaVersion() < 27 {
+            try transaction {
+                // 检索索引。正文只在 is_objects 里存一份（47 MB，最大单条 1.6 MB），
+                // 按 LIKE 全扫是 0.21 s，关键词一多就线性叠上去；trigram 查询 < 0.01 s。
+                // trigram 是唯一能吃中文子串的分词器——unicode61 放中文进去是
+                // 0 命中且不报错，所以不能用默认分词。
+                //
+                // 用 external content：索引只存 3 字片段，不复制正文（复制一份
+                // 实测让 47 MB 变成 84 MB）。is_objects 是只增的内容寻址表：
+                // 全仓没有 UPDATE / DELETE，所以只需要一条 INSERT 触发器。
+                try Self.rawExec(handle, """
+                CREATE VIRTUAL TABLE IF NOT EXISTS is_objects_fts USING fts5(
+                    content,
+                    content='is_objects',
+                    content_rowid='rowid',
+                    tokenize='trigram'
+                );
+                CREATE TRIGGER IF NOT EXISTS is_objects_fts_ai
+                AFTER INSERT ON is_objects BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    VALUES (new.rowid, CAST(new.content AS TEXT));
+                END;
+                """)
+                // 已有对象一次性补进索引（建表时 INSERT 触发器还不存在）。
+                try Self.rawExec(handle,
+                    "INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');")
+                try recordMigrationRow(27, "simigo-object-fts-trigram-v27")
+            }
+        }
+
+        if try schemaVersion() < 28 {
+            try transaction {
+                // v28：索引只覆盖结算产物/摘要，不再覆盖全部正文。
+                //
+                // v27 对 is_objects 全表建 trigram（7,098 个对象 / 45 MB 正文），
+                // 索引 88 MB，比正文还大；其中绝大多数是从没进过结算的会话
+                // 正文与登记文件。结算真正引用过的对象只有 714 个 / 9 MB。
+                // 索引是派生物，不是历史：重建它不抹任何记录。
+                //
+                // 未进索引的行不丢：检索 SQL 对「不在索引里的行」回落 LIKE，
+                // 两条路的并集仍是原来的命中集合。
+                try Self.rawExec(handle, """
+                DROP TRIGGER IF EXISTS is_objects_fts_ai;
+                DROP TABLE IF EXISTS is_objects_fts;
+                DROP TABLE IF EXISTS is_search_indexed;
+                CREATE VIRTUAL TABLE is_objects_fts USING fts5(
+                    content,
+                    content='is_objects',
+                    content_rowid='rowid',
+                    tokenize='trigram'
+                );
+                -- FTS5 的 external content 表不能全表扫描（只能 MATCH 或按 rowid），
+                -- 所以「这行在不在索引里」用一张小登记表回答，检索时据此决定
+                -- 走索引还是回落 LIKE。
+                CREATE TABLE is_search_indexed(
+                    object_rowid INTEGER PRIMARY KEY,
+                    object_id TEXT NOT NULL
+                );
+                INSERT INTO is_objects_fts(rowid, content)
+                SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                WHERE o.object_id IN (
+                    SELECT payload_object_id FROM settlements
+                     WHERE payload_object_id IS NOT NULL
+                    UNION SELECT summary_object_id FROM settlement_summaries
+                    UNION SELECT result_object_id FROM retrieval_settlements
+                     WHERE result_object_id IS NOT NULL
+                );
+                INSERT INTO is_search_indexed(object_rowid, object_id)
+                SELECT rowid, object_id FROM is_objects
+                WHERE object_id IN (
+                    SELECT payload_object_id FROM settlements
+                     WHERE payload_object_id IS NOT NULL
+                    UNION SELECT summary_object_id FROM settlement_summaries
+                    UNION SELECT result_object_id FROM retrieval_settlements
+                     WHERE result_object_id IS NOT NULL
+                );
+                CREATE TRIGGER IF NOT EXISTS is_fts_settlements_ai
+                AFTER INSERT ON settlements BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id;
+                END;
+                CREATE TRIGGER IF NOT EXISTS is_fts_settlements_au
+                AFTER UPDATE OF payload_object_id ON settlements BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id;
+                END;
+                CREATE TRIGGER IF NOT EXISTS is_fts_summaries_ai
+                AFTER INSERT ON settlement_summaries BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.summary_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.summary_object_id;
+                END;
+                CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_ai
+                AFTER INSERT ON retrieval_settlements BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.result_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.result_object_id;
+                END;
+                CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_au
+                AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
+                    INSERT INTO is_objects_fts(rowid, content)
+                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+                     WHERE o.object_id = new.result_object_id
+                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.result_object_id;
+                END;
+                """)
+                try recordMigrationRow(28, "simigo-object-fts-settled-only-v28")
+            }
+        }
+
+        if try schemaVersion() < 29 {
+            // 清理要绕过两层保护：append-only 触发器，和 authorizer 对受保护表
+            // 的 DELETE 拒绝。两者都只在这一次迁移里摘掉，跑完立刻装回。
+            _ = sqlite3_set_authorizer(handle, nil, nil)
+            do {
+                try transaction {
+                // v29：一次性清掉 demand-input 历史。
+                //
+                // v28 起不再写这类行，但库里已有 184,512 条——388 个 demand，
+                // 每个约 475 条候选，同一份候选清单被重复抄了一遍。它们不是
+                // 历史事实：query、时间、状态都在 information_demands 里，
+                // 依赖表里这些行只是检索过程的副本。
+                //
+                // append-only 触发器是给常规写入用的保护；这里是显式维护，
+                // 所以先把触发器摘掉、删完再装回去，并把删除行数写进迁移记录。
+                let candidates: Int = try {
+                    let stmt = try prepare(
+                        "SELECT COUNT(*) FROM is_dependency_entries WHERE reason='demand-input';")
+                    defer { sqlite3_finalize(stmt) }
+                    return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+                }()
+                try Self.rawExec(handle, """
+                DROP TRIGGER IF EXISTS is_dependency_entries_append_only_update;
+                DROP TRIGGER IF EXISTS is_dependency_entries_append_only_delete;
+                DELETE FROM is_dependency_entries WHERE reason='demand-input';
+                CREATE TRIGGER is_dependency_entries_append_only_update
+                    BEFORE UPDATE ON is_dependency_entries BEGIN
+                        SELECT RAISE(ABORT, 'is_dependency_entries is append-only');
+                    END;
+                CREATE TRIGGER is_dependency_entries_append_only_delete
+                    BEFORE DELETE ON is_dependency_entries BEGIN
+                        SELECT RAISE(ABORT, 'is_dependency_entries is append-only');
+                    END;
+                """)
+                    try recordMigrationRow(
+                        29, "simigo-drop-demand-input-candidates-v29: deleted \(candidates) rows")
+                }
+            } catch {
+                _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
+                throw error
+            }
+            _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
+        }
+
+        if try schemaVersion() < 30 {
+            try transaction {
+                // v30：settlement_summaries.query 只留问题开头，全文留在摘要对象里。
+                //
+                // 这一列原本是第二份全文：184 行 3.2 MB，而 96k 压测把同一份
+                // 384 KB 文本在对象、这一列、FTS 三处各存了一遍。摘要对象是
+                // 权威副本，每次读 summary 都要解开它并校验（verified(_:)），
+                // 所以这一列不必再存全文。
+                //
+                // query_truncated 记住这一行存的是前缀还是全文：读的时候全文
+                // 必须逐字相等、前缀必须 hasPrefix，校验通过再把对象里的全文
+                // 还给调用方——对外拿到的仍是完整问题，只有落盘的行变短了。
+                if try !columnExists("settlement_summaries", "query_truncated") {
+                    try Self.rawExec(
+                        handle,
+                        """
+                        ALTER TABLE settlement_summaries
+                        ADD COLUMN query_truncated INTEGER NOT NULL DEFAULT 0;
+                        """)
+                }
+                let limit = Int64(SettlementSummaryPolicy.queryExcerptCharacters)
+                let shortened: Int = try {
+                    let stmt = try prepare("""
+                    SELECT COUNT(*) FROM settlement_summaries WHERE LENGTH(query) > ?;
+                    """)
+                    defer { sqlite3_finalize(stmt) }
+                    try bind(stmt, 1, limit)
+                    return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+                }()
+                try execBinding("""
+                UPDATE settlement_summaries
+                   SET query = substr(query, 1, ?), query_truncated = 1
+                 WHERE LENGTH(query) > ?;
+                """) { stmt in
+                    try bind(stmt, 1, limit)
+                    try bind(stmt, 2, limit)
+                }
+                try recordMigrationRow(
+                    30,
+                    "simigo-settlement-query-excerpt-v30: shortened \(shortened) rows "
+                        + "to \(limit) chars")
+            }
+        }
+
+        if try schemaVersion() < 31 {
+            try transaction {
+                // v31：轮次摘要 + 关键字索引，另加 external_files.title_source。
+                //
+                // 三张表都是辅助层：删掉整张表，ES/IS 照常工作——摘要对应的
+                // 问题与回答正文在 is_objects 里，经 chat_messages.content_object_id
+                // 取回，这里不再存第二份指针。v30 刚因为「同一事实存两处」把
+                // query 列截短，这张表不重犯。
+                //
+                // 主键用 (session_id, turn_index) 而不是 answer_message_id：
+                // turn_index 就是 chat_turn_ledger 的编号，「摘要缺哪轮」和
+                // 「轮号缺口」是同一件事，一次对齐即可核。同一轮再摘要一次
+                // 是覆盖（派生内容可重建），不是写第二行。
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS turn_digests(
+                    session_id TEXT NOT NULL,
+                    turn_index INTEGER NOT NULL,
+                    question_message_id INTEGER REFERENCES chat_messages(id) ON DELETE SET NULL,
+                    answer_message_id INTEGER REFERENCES chat_messages(id) ON DELETE SET NULL,
+                    digest TEXT NOT NULL,
+                    keywords TEXT NOT NULL,
+                    model TEXT,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY(session_id, turn_index)
+                );
+                CREATE INDEX IF NOT EXISTS turn_digests_answer
+                    ON turn_digests(answer_message_id);
+                CREATE TABLE IF NOT EXISTS keywords(
+                    keyword_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    term TEXT NOT NULL UNIQUE,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS turn_keywords(
+                    session_id TEXT NOT NULL,
+                    turn_index INTEGER NOT NULL,
+                    keyword_id INTEGER NOT NULL
+                        REFERENCES keywords(keyword_id) ON DELETE CASCADE,
+                    PRIMARY KEY(session_id, turn_index, keyword_id),
+                    FOREIGN KEY(session_id, turn_index)
+                        REFERENCES turn_digests(session_id, turn_index) ON DELETE CASCADE
+                );
+                """)
+                // 标题的来源。人整理文件时文件名常常就是标题，这种行标
+                // 'filename'；标题从文内读出的是 'document'，人改过的是
+                // 'human'。有了这一列，占位标题和真标题才分得开：以后文内
+                // 标题补上了，只换 'filename' 那些行，人定的不被覆盖。
+                //
+                // 目录不另建节点表：人按类别分文件夹，就是先定了粗身份，
+                // 那个身份就在 relative_path 的前缀里，derive 得出来。
+                if try !columnExists("external_files", "title_source") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE external_files ADD COLUMN title_source TEXT;
+                    UPDATE external_files SET title_source='filename'
+                     WHERE title IS NOT NULL AND title<>'';
+                    """)
+                }
+                try recordMigrationRow(31, "simigo-turn-digests-v31")
+            }
+        }
+
+        if try schemaVersion() < 32 {
+            try transaction {
+                // v32：空间（归集键）。
+                //
+                // 身份和位置分开：space_id 是身份，root 是它今天落在哪个目录。
+                // 空间只做归集、只用来把检索范围先切小，绝不进 object_id、
+                // canonical_digest、dependency_id、复用判据——一旦进去，同一份
+                // 内容放在两个空间下就会被认成两条依赖，复用就失效了。
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS spaces(
+                    space_id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    title_source TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    parent_space_id TEXT REFERENCES spaces(space_id),
+                    created_at TEXT NOT NULL
+                );
+                """)
+                if try !columnExists("roots", "space_id") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE roots ADD COLUMN space_id TEXT REFERENCES spaces(space_id);
+                    ALTER TABLE agent_sessions ADD COLUMN space_id TEXT REFERENCES spaces(space_id);
+                    CREATE INDEX IF NOT EXISTS roots_space ON roots(space_id);
+                    CREATE INDEX IF NOT EXISTS agent_sessions_space
+                        ON agent_sessions(space_id);
+                    """)
+                }
+                // 回填：现有每个 root 一个空间，标题取路径最后一段，标成占位
+                // （'filename'），人改过就是 'human'。space_id 不从路径算：这几个
+                // 空间是此刻建的，跟它今天待在哪个目录无关，以后搬家也不变。
+                var pending: [(rootID: String, title: String, kind: String)] = []
+                let listing = try prepare("""
+                SELECT root_id, COALESCE(display_name,''), COALESCE(locator_type,'')
+                  FROM roots WHERE space_id IS NULL ORDER BY root_id;
+                """)
+                defer { sqlite3_finalize(listing) }
+                while try stepRowOrDone(listing) {
+                    let rootID = sqlite3_column_text(listing, 0).map { String(cString: $0) } ?? ""
+                    let display = sqlite3_column_text(listing, 1).map { String(cString: $0) } ?? ""
+                    let locator = sqlite3_column_text(listing, 2).map { String(cString: $0) } ?? ""
+                    let last = (display as NSString).lastPathComponent
+                    pending.append((
+                        rootID,
+                        last.isEmpty ? rootID : last,
+                        locator == "path" ? "directory" : "collection"))
+                }
+                let now = Self.stamp(Date())
+                for entry in pending {
+                    let spaceID = "space-" + UUID().uuidString.lowercased()
+                    try execBinding("""
+                    INSERT INTO spaces(space_id, title, title_source, kind,
+                                       parent_space_id, created_at)
+                    VALUES(?,?,'filename',?,NULL,?);
+                    """) { stmt in
+                        try bind(stmt, 1, spaceID)
+                        try bind(stmt, 2, entry.title)
+                        try bind(stmt, 3, entry.kind)
+                        try bind(stmt, 4, now)
+                    }
+                    try execBinding("UPDATE roots SET space_id=? WHERE root_id=?;") { stmt in
+                        try bind(stmt, 1, spaceID)
+                        try bind(stmt, 2, entry.rootID)
+                    }
+                }
+                try recordMigrationRow(
+                    32, "simigo-spaces-v32: \(pending.count) spaces")
+            }
+        }
+
+        if try schemaVersion() < 33 {
+            try transaction {
+                // v33：root 所在目录的 inode。
+                //
+                // 路径只是名字。同一个名字可以是另一个目录——挂载被替换、
+                // bind mount、整个卷换掉——这时候「看不到文件」不是删除。
+                // MemPalace 的 source_identity.py 把这几种形状写全了，并且
+                // 解释为什么只能靠目录自己的 inode：st_dev 分不开 bind mount
+                // （两边同设备），而目录的 inode 属于文件系统结构。
+                // 取不到就存 NULL：没建立过身份，绝不当成「变了」。
+                if try !columnExists("roots", "locator_inode") {
+                    try Self.rawExec(
+                        handle, "ALTER TABLE roots ADD COLUMN locator_inode INTEGER;")
+                }
+                try recordMigrationRow(33, "simigo-root-locator-inode-v33")
+            }
+        }
+
+        if try schemaVersion() < 34 {
+            // 受保护表的 ALTER 会被 authorizer 拒（is_dependency_entries 在
+            // 保护名单里）。和 v29 一样，只在这一次迁移里摘掉，跑完立刻装回。
+            //
+            // v34：依赖有了两个时钟。
+            //
+            //   valid_from / valid_to  世界时间——这份字节从哪里到什么时候为真
+            //   known_from / known_to  记录时间——ES 从哪里到哪里这么认为
+            //
+            // 只用一个时钟会出错：拿「上一版的 ES 时间」当 valid_to，而
+            // valid_from 用文件自己的修改时间，两个版本之间就会重叠（内容
+            // 早就变了，我们才在几小时后发现）。两个时钟分开，区间就不重叠，
+            // 也仍然答得出「那天这个文件是什么」。
+            _ = sqlite3_set_authorizer(handle, nil, nil)
+            do {
+                try transaction {
+                    if try !columnExists("is_dependency_entries", "source_time") {
+                        try Self.rawExec(handle, """
+                        ALTER TABLE is_dependency_entries ADD COLUMN source_time TEXT;
+                        """)
+                    }
+                    try Self.rawExec(handle, """
+                    DROP VIEW IF EXISTS is_dependency_intervals;
+                    CREATE VIEW is_dependency_intervals AS
+                    SELECT dependency_id,
+                           content_address,
+                           revision,
+                           recorded_at AS known_from,
+                           LEAD(recorded_at) OVER (
+                               PARTITION BY dependency_id ORDER BY revision) AS known_to,
+                           COALESCE(source_time, recorded_at) AS valid_from,
+                           LEAD(COALESCE(source_time, recorded_at)) OVER (
+                               PARTITION BY dependency_id ORDER BY revision) AS valid_to,
+                           CASE WHEN source_time IS NULL THEN 'es-time'
+                                ELSE 'source-time' END AS valid_from_source
+                      FROM is_dependency_entries;
+                    """)
+                    try recordMigrationRow(34, "simigo-dependency-intervals-v34")
+                }
+            } catch {
+                _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
+                throw error
+            }
+            _ = sqlite3_set_authorizer(handle, simigoCarrierAuthorizer, nil)
+        }
+
+        if try schemaVersion() < 35 {
+            try transaction {
+                // v35：轮次账要写清「谁的轮号」。
+                //
+                // chat_turn_ledger 原本只记 MCP 的 chat_round：轮号是调用方
+                // 自己选的，缺号就是漏写——这个判断只对调用方成立。
+                //
+                // 采集桥导入的历史没有调用方编号，轮序只能由到达序排出来。
+                // 这种行的轮号必然连续，「缺号」对它不成立。两种行混在一起
+                // 读，缺号会被当成漏写去补，所以 origin 写进行里，不靠
+                // session 前缀去猜。
+                if try !columnExists("chat_turn_ledger", "origin") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE chat_turn_ledger
+                      ADD COLUMN origin TEXT NOT NULL DEFAULT 'mcp';
+                    """)
+                }
+                try recordMigrationRow(35, "simigo-turn-ledger-origin-v35")
+            }
+        }
+
+        // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
+        // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
+        //
+        // 不能写成「只在跨过某个版本时做一次」：真机上那次 VACUUM 撞上另一个
+        // 连接会失败，而迁移已经提交，于是文件永远停在 258 MB，再也没人回收。
+        // 所以判据是实际状态（freelist），不是版本号；失败也不阻断启动，
+        // 下次打开再试。
+        let freedPages: Int = try {
+            let stmt = try prepare("PRAGMA freelist_count;")
+            defer { sqlite3_finalize(stmt) }
+            return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+        }()
+        // 门槛 400 页（1.6 MB）：v30 只把 query 列截短，实测释放 783 页。
+        // 门槛定在 2000 的话这次回收永远够不着，文件就停在原大小——和上面
+        // 那个「一次性判据」是同一类错。400 页以下不值得一次全库重写。
+        if freedPages > 400 {
+            do {
+                try Self.rawExec(handle, "VACUUM;")
+                clearVacuumFailure()
+            } catch {
+                recordVacuumFailure(freedPages: freedPages, error: "\(error)")
+            }
+        }
+
         // The declared head and the applied head must agree. A migration gate
         // that was written but never reached, or a version bumped in the
         // constant but not in a gate, otherwise shows up as a store that is
@@ -1145,7 +1613,51 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 25
+    public static let currentSchemaVersion = 35
+
+    /// Last VACUUM failure, if the previous attempt left one behind.
+    ///
+    /// Two releases in a row hit this: v28/v29 freed 38,732 pages but the
+    /// threshold was 2,000 pages *of freelist at open* and the migration that
+    /// freed them committed before the threshold was ever consulted; v30 freed
+    /// 772 pages, crossed the new threshold, and then the VACUUM itself lost a
+    /// race with another connection. Both times `try?` swallowed it, the file
+    /// stayed at its old size, and the only way to notice was comparing
+    /// `freelist_count` by hand. A silent failure to reclaim space is not a
+    /// detail — it is the difference between a store that shrinks and one that
+    /// never does.
+    public var lastVacuumFailure: String? {
+        guard let data = try? Data(contentsOf: maintenanceURL),
+            let raw = try? JSONSerialization.jsonObject(with: data),
+            let object = raw as? [String: Any],
+            let reason = object["reason"] as? String
+        else { return nil }
+        let at = object["at"] as? String ?? "unknown time"
+        let pages = object["freedPages"] as? Int ?? 0
+        return "\(at) VACUUM failed, \(pages) pages unreclaimed: \(reason)"
+    }
+
+    /// Sits next to the store it describes, so a copy of the directory keeps
+    /// the diagnosis with the data.
+    private var maintenanceURL: URL {
+        url.deletingLastPathComponent().appendingPathComponent("simigo.maintenance.json")
+    }
+
+    private func recordVacuumFailure(freedPages: Int, error: String) {
+        let payload: [String: Any] = [
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "freedPages": freedPages,
+            "reason": error,
+        ]
+        guard let data = try? JSONSerialization.data(
+            withJSONObject: payload, options: [.sortedKeys])
+        else { return }
+        try? data.write(to: maintenanceURL, options: .atomic)
+    }
+
+    private func clearVacuumFailure() {
+        try? FileManager.default.removeItem(at: maintenanceURL)
+    }
 
     private func columnExists(_ table: String, _ column: String) throws -> Bool {
         let stmt = try prepare("PRAGMA table_info(\(table));")
@@ -1185,6 +1697,20 @@ public final class ESISDatabase {
         public let corruptObjects: Int
         public let inlineLegacyPayloads: Int
         public let deepVerified: Bool
+        /// 空间（人给的分类）有几行。
+        public let spaces: Int
+        /// 依赖区间：闭合几段、还开着几段、世界时间轴上相邻两版接不上的有几处。
+        /// 断点正常应当恒为 0——不是 0 就说明有一版的诞生时间早于上一版。
+        public let dependencyIntervalsClosed: Int
+        public let dependencyIntervalsOpen: Int
+        public let dependencyIntervalBreaks: Int
+        /// 轮次摘要覆盖：有摘要几轮、账本里有、摘要里没有几轮。
+        public let turnDigests: Int
+        public let turnsWithoutDigest: Int
+        /// Set when the last startup VACUUM failed and the space it would have
+        /// reclaimed is still on disk. Nil when the last attempt succeeded or
+        /// was not needed.
+        public let vacuumFailure: String?
     }
 
     public enum IndexResolutionPolicy: Sendable {
@@ -1311,6 +1837,72 @@ public final class ESISDatabase {
             identity: sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
             objectID: sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "",
             recordedAt: sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? "")
+    }
+
+    // MARK: - 依赖的区间（两个时钟）
+
+    /// 一条依赖的一段有效期。
+    ///
+    /// `validFrom/validTo` 是世界时间：这份字节从哪里到什么时候为真。
+    /// `knownFrom/knownTo` 是记录时间：ES 从哪里到哪里这么认为。两者分开，
+    /// 因为文件可能早就改了、我们几小时后才发现——合成一个时钟，区间就会重叠。
+    public struct DependencyInterval: Equatable, Sendable {
+        public let dependencyID: String
+        public let contentAddress: String
+        public let validFrom: String
+        public let validTo: String?
+        public let knownFrom: String
+        public let knownTo: String?
+        /// `false` 表示这一版的 validFrom 没有源时间可用，回落到 ES 时间
+        /// （v34 之前写下的行都是这样）。
+        public let validFromIsSourceTime: Bool
+    }
+
+    public func dependencyIntervals(dependencyID: String) throws -> [DependencyInterval] {
+        let stmt = try prepare("""
+        SELECT dependency_id, content_address, valid_from, valid_to,
+               known_from, known_to, valid_from_source
+          FROM is_dependency_intervals
+         WHERE dependency_id=? ORDER BY revision;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, dependencyID)
+        var rows: [DependencyInterval] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            rows.append(DependencyInterval(
+                dependencyID: text(0),
+                contentAddress: text(1),
+                validFrom: text(2),
+                validTo: sqlite3_column_type(stmt, 3) == SQLITE_NULL ? nil : text(3),
+                knownFrom: text(4),
+                knownTo: sqlite3_column_type(stmt, 5) == SQLITE_NULL ? nil : text(5),
+                validFromIsSourceTime: text(6) == "source-time"))
+        }
+        return rows
+    }
+
+    /// 某一时刻（世界时间）为真的地址。`nil` 表示那一刻没有记录在案的版本。
+    ///
+    /// 比较按数值走，不按文本：时间戳是 `%.17g`（`date.timeIntervalSinceReferenceDate`），
+    /// 文本序和数值序在 2001 年之前（负值）和 1e9 之后（位数变多）不一致。
+    public func dependencyAddress(dependencyID: String, validAt date: Date) throws -> String? {
+        let moment = Self.stamp(date)
+        let stmt = try prepare("""
+        SELECT content_address FROM is_dependency_intervals
+         WHERE dependency_id=?
+           AND CAST(valid_from AS REAL) <= CAST(? AS REAL)
+           AND (valid_to IS NULL OR CAST(valid_to AS REAL) > CAST(? AS REAL))
+         ORDER BY CAST(valid_from AS REAL) DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, dependencyID)
+        try bind(stmt, 2, moment)
+        try bind(stmt, 3, moment)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
     // MARK: - C-stage failure audit (append-only)
@@ -1500,7 +2092,26 @@ public final class ESISDatabase {
                      + (SELECT COUNT(*) FROM retrieval_settlements WHERE length(result_json)>0)
                      + (SELECT COUNT(*) FROM settlements WHERE length(payload)>0);
                 """),
-            deepVerified: deepVerify)
+            deepVerified: deepVerify,
+            spaces: try scalar("SELECT COUNT(*) FROM spaces;"),
+            dependencyIntervalsClosed: try scalar(
+                "SELECT COUNT(*) FROM is_dependency_intervals WHERE valid_to IS NOT NULL;"),
+            dependencyIntervalsOpen: try scalar(
+                "SELECT COUNT(*) FROM is_dependency_intervals WHERE valid_to IS NULL;"),
+            dependencyIntervalBreaks: try scalar("""
+                SELECT COUNT(*) FROM is_dependency_intervals a
+                  JOIN is_dependency_intervals b
+                    ON b.dependency_id=a.dependency_id AND b.revision=a.revision+1
+                 WHERE a.valid_to IS NOT b.valid_from;
+                """),
+            turnDigests: try scalar("SELECT COUNT(*) FROM turn_digests;"),
+            turnsWithoutDigest: try scalar("""
+                SELECT COUNT(*) FROM chat_turn_ledger l
+                 WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+                                    WHERE d.session_id=l.session_id
+                                      AND d.turn_index=l.turn_index);
+                """),
+            vacuumFailure: lastVacuumFailure)
     }
 
     private func ensureObject(_ data: Data) throws -> String {
@@ -1561,7 +2172,8 @@ public final class ESISDatabase {
     }
 
     private func appendDependencyInTransaction(
-        dependencyID: String, contentAddress: String, reason: String
+        dependencyID: String, contentAddress: String, reason: String,
+        sourceTime: String? = nil
     ) throws -> Int {
         let revisionStmt = try prepare("""
         SELECT COALESCE(MAX(revision),0)+1 FROM is_dependency_entries WHERE dependency_id=?;
@@ -1577,14 +2189,15 @@ public final class ESISDatabase {
         try reset(revisionStmt)
         try execBinding("""
         INSERT INTO is_dependency_entries(
-            dependency_id, content_address, revision, reason, recorded_at)
-        VALUES(?,?,?,?,?);
+            dependency_id, content_address, revision, reason, recorded_at, source_time)
+        VALUES(?,?,?,?,?,?);
         """) { stmt in
             try bind(stmt, 1, dependencyID)
             try bind(stmt, 2, contentAddress)
             try bind(stmt, 3, Int64(revision))
             try bind(stmt, 4, reason)
             try bind(stmt, 5, Self.stamp(Date()))
+            try bind(stmt, 6, sourceTime)
         }
         return revision
     }
@@ -2981,6 +3594,102 @@ try apply(stmt)
         return rows
     }
 
+    // MARK: - Spaces（归集键：只缩范围，不参与任何身份计算）
+
+    public struct SpaceRow: Equatable, Sendable {
+        public let spaceID: String
+        public let title: String
+        public let titleSource: String
+        public let kind: String
+        public let parentSpaceID: String?
+        public let createdAt: String
+    }
+
+    private static let spaceColumns =
+        "space_id, title, title_source, kind, parent_space_id, created_at"
+
+    private func spaceRow(_ stmt: OpaquePointer) -> SpaceRow {
+        func text(_ i: Int32) -> String {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+        }
+        return SpaceRow(
+            spaceID: text(0), title: text(1), titleSource: text(2), kind: text(3),
+            parentSpaceID: sqlite3_column_type(stmt, 4) == SQLITE_NULL ? nil : text(4),
+            createdAt: text(5))
+    }
+
+    /// 建一个空间。`title` 就是身份，`titleSource` 记它是怎么来的：
+    /// 文件夹名占位（'filename'）、文内标题（'document'）、人写的（'human'）。
+    @discardableResult
+    public func createSpace(
+        title: String, kind: String = "collection", titleSource: String = "human",
+        parentSpaceID: String? = nil
+    ) throws -> SpaceRow {
+        let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else {
+            throw DatabaseError.sql("createSpace: empty title")
+        }
+        let spaceID = "space-" + UUID().uuidString.lowercased()
+        try execBinding("""
+        INSERT INTO spaces(space_id, title, title_source, kind, parent_space_id, created_at)
+        VALUES(?,?,?,?,?,?);
+        """) { stmt in
+            try bind(stmt, 1, spaceID)
+            try bind(stmt, 2, name)
+            try bind(stmt, 3, titleSource)
+            try bind(stmt, 4, kind)
+            try bind(stmt, 5, parentSpaceID)
+            try bind(stmt, 6, Self.stamp(Date()))
+        }
+        guard let row = try space(id: spaceID) else {
+            throw DatabaseError.sql("createSpace: row missing after write")
+        }
+        return row
+    }
+
+    public func space(id spaceID: String) throws -> SpaceRow? {
+        let stmt = try prepare("SELECT \(Self.spaceColumns) FROM spaces WHERE space_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, spaceID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return spaceRow(stmt)
+    }
+
+    /// 一个 root 今天挂在哪个空间下。
+    public func space(forRoot rootID: String) throws -> SpaceRow? {
+        let stmt = try prepare("""
+        SELECT s.space_id, s.title, s.title_source, s.kind,
+               s.parent_space_id, s.created_at
+          FROM roots r JOIN spaces s ON s.space_id = r.space_id
+         WHERE r.root_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, rootID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return spaceRow(stmt)
+    }
+
+    /// 把 root 挂到空间下。人确认「这是搬家」时用它——同一个空间换一个新
+    /// 目录，身份、标题、历史都留在原处。
+    public func setRootSpace(rootID: String, spaceID: String?) throws {
+        let changed = try execBinding("UPDATE roots SET space_id=? WHERE root_id=?;") { stmt in
+            try bind(stmt, 1, spaceID)
+            try bind(stmt, 2, rootID)
+        }
+        guard changed == 1 else {
+            throw DatabaseError.sql("setRootSpace: no root \(rootID)")
+        }
+    }
+
+    public func listSpaces() throws -> [SpaceRow] {
+        let stmt = try prepare(
+            "SELECT \(Self.spaceColumns) FROM spaces ORDER BY title, space_id;")
+        defer { sqlite3_finalize(stmt) }
+        var rows: [SpaceRow] = []
+        while try stepRowOrDone(stmt) { rows.append(spaceRow(stmt)) }
+        return rows
+    }
+
     // MARK: - 工作目录内容结算（ES/IS：索引执行的结果落库，Δ 复用）
 
     public struct ContentSettleReport: Equatable, Sendable {
@@ -3000,6 +3709,11 @@ try apply(stmt)
         /// Bytes read from the filesystem to compute digests / validate text.
         /// These are read-only; `bytesAddressed` stays the copy measure.
         public let entityBytesRead: Int
+        /// The path still exists but answers with a different directory inode:
+        /// a mount was replaced, a bind mount appeared, or the volume changed.
+        /// Nothing was removed or invalidated on this pass — the inventory was
+        /// not trusted as evidence of absence.
+        public let locatorIdentityChanged: Bool
     }
 
     private struct FileContentState {
@@ -3014,6 +3728,9 @@ try apply(stmt)
         let digest: String
         let size: Int64
         let modified: String?
+        /// The source's own timestamp for this version. This is the world clock
+        /// the interval is expressed in; `recorded_at` is when ES saw it.
+        let modifiedDate: Date?
         let previous: FileContentState?
         /// Raw bytes read for a tail-window digest, before dropping a partial line.
         let tailWindowBytes: Int?
@@ -3068,6 +3785,10 @@ try apply(stmt)
         try upsertRoot(rootID: rootID, category: category,
                        displayName: scanRoot.path,
                        locatorType: "path", status: "present")
+        // 同一个路径换了目录：挂载被替换、bind mount、整个卷换掉，都会长这样。
+        // 这时「看不到文件」不是删除，后面的清账一步都不许做。
+        let locatorIdentityChanged = try noteLocatorIdentity(
+            rootID: rootID, path: scanRoot.path)
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
         SELECT relative_path, content_sha256, object_id FROM file_contents
@@ -3261,7 +3982,8 @@ try bind(externalStmt, 1, rootID)
             }
             pending.append(PendingSettlement(
                 relativePath: relative, url: file, data: indexedData, digest: digest,
-                size: size, modified: modified, previous: previous[relative],
+                size: size, modified: modified, modifiedDate: read.modificationDate,
+                previous: previous[relative],
                 tailWindowBytes: read.isTail ? data.count : nil))
         }
 
@@ -3288,6 +4010,12 @@ try bind(externalStmt, 1, rootID)
                 rel, FileContentState(digest: digest, objectID: nil), true))
             clearedPaths.insert(rel)
             removed += 1
+        }
+        // 不是这个目录了：整份旧清单都不作数。不删 file_contents、不标
+        // missing、不作废结算，只把这件事报出去，等人确认。
+        if locatorIdentityChanged {
+            cleared.removeAll()
+            removed = 0
         }
 
         var invalidated = Set<String>()
@@ -3396,7 +4124,8 @@ try bind(externalStmt, 1, rootID)
                     identity: identity, objectID: indexObject.id)
                 _ = try appendDependencyInTransaction(
                     dependencyID: identity, contentAddress: indexObject.id,
-                    reason: item.previous == nil ? "content-settle" : "content-update")
+                    reason: item.previous == nil ? "content-settle" : "content-update",
+                    sourceTime: item.modifiedDate.map(Self.stamp))
             }
 
             for file in indexedFiles {
@@ -3418,7 +4147,8 @@ try bind(externalStmt, 1, rootID)
             removed: removed, invalidatedSettlements: invalidated.count,
             objectsCreated: created, deduplicated: deduplicated,
             bytesAddressed: bytesAddressed,
-            indexOnly: !carryText, entityBytesRead: entityBytesRead)
+            indexOnly: !carryText, entityBytesRead: entityBytesRead,
+            locatorIdentityChanged: locatorIdentityChanged)
         }
     }
 
@@ -3945,24 +4675,18 @@ try bind(externalStmt, 1, rootID)
             // 1) 输入摘要：查询 + 相关根的已结算内容摘要（规范排序串联）
             let canonicalInput = try canonicalDemandInput(
                 query: query, rootIDs: rootID.map { [$0] })
-            var inputs: [(root: String, path: String, objectID: String)] = []
-            var unresolvedInputs: [(root: String, path: String)] = []
-            for entry in canonicalInput.entries {
-                if let objectID = entry.objectID {
-                    inputs.append((entry.rootID, entry.relativePath, objectID))
-                } else {
-                    // Index-only settlement: the address is the identity record's
-                    // metadata object, not a copy of the entity bytes.
-                    unresolvedInputs.append((entry.rootID, entry.relativePath))
-                }
-            }
-            for input in unresolvedInputs {
-                let identity = "file:\(input.root)/\(input.path)"
-                guard let address = try latestIndexObjectID(identity: identity) else {
+            // 候选文件的地址必须可解析，缺了就报错。但候选不等于依赖：
+            // 一次 demand 的 canonical input 是整个根的文件清单（实测一条
+            // demand 带回约 700 个候选），把它们逐条写成依赖边，184k 条
+            // 里 99% 都是候选清单，不是被引用的信息。
+            for entry in canonicalInput.entries where entry.objectID == nil {
+                // Index-only settlement: the address is the identity record's
+                // metadata object, not a copy of the entity bytes.
+                let identity = "file:\(entry.rootID)/\(entry.relativePath)"
+                guard try latestIndexObjectID(identity: identity) != nil else {
                     throw DatabaseError.sql(
                         "executeInformationDemand: missing metadata object address for \(identity)")
                 }
-                inputs.append((input.root, input.path, address))
             }
             let canonical = canonicalInput.canonical
             // The result limit and filename-index matches both change the
@@ -4062,12 +4786,6 @@ try bind(externalStmt, 1, rootID)
             }
             _ = try appendIndexEntryInTransaction(
                 identity: "demand:\(demandID)", objectID: objectID)
-            for input in inputs {
-                _ = try appendDependencyInTransaction(
-                    dependencyID: "demand:\(demandID) -> file:\(input.root)/\(input.path)",
-                    contentAddress: input.objectID,
-                    reason: "demand-input")
-            }
 
             return DemandRetrieval(
                 demandID: demandID, reused: false, hits: hits,
@@ -4355,6 +5073,54 @@ try bind(externalStmt, 1, rootID)
         return path.isEmpty ? nil : URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
+    /// 目录自己的 inode。取不到、或者报告 0（FAT/exFAT 一类），一律 nil——
+    /// 那不是身份，调用方当作「没建立过」，不当成不匹配。
+    static func directoryINode(atPath path: String) -> Int64? {
+        var info = stat()
+        // lstat, 不是 stat: 调用方给的是已解析（canonical）的路径，这里要的是
+        // 这个路径本身指向的目录。符号链接已经被解析掉了。
+        guard path.withCString({ Darwin.lstat($0, &info) }) == 0 else { return nil }
+        guard (info.st_mode & S_IFMT) == S_IFDIR else { return nil }
+        let inode = Int64(info.st_ino)
+        return inode == 0 ? nil : inode
+    }
+
+    /// 记下或比对 root 所在目录的 inode。返回 true 表示「还是这个路径，但
+    /// 不是这个目录了」。第一次见到就记下来；README 里那三种挂载形状都靠
+    /// 它分开。
+    @discardableResult
+    private func noteLocatorIdentity(rootID: String, path: String) throws -> Bool {
+        guard let current = Self.directoryINode(atPath: path) else { return false }
+        let stmt = try prepare("SELECT locator_inode FROM roots WHERE root_id=?;")
+        try bind(stmt, 1, rootID)
+        let found = try stepRowOrDone(stmt)
+        let stored: Int64? = found && sqlite3_column_type(stmt, 0) != SQLITE_NULL
+            ? sqlite3_column_int64(stmt, 0) : nil
+        sqlite3_finalize(stmt)
+        guard let stored else {
+            try execBinding("UPDATE roots SET locator_inode=? WHERE root_id=?;") { s in
+                try bind(s, 1, current)
+                try bind(s, 2, rootID)
+            }
+            return false
+        }
+        return stored != current
+    }
+
+    /// 人确认「还是同一个目录，只是换了挂载」之后调用：把当前 inode 收作它的。
+    public func adoptRootLocatorIdentity(rootID: String) throws {
+        guard let path = try rootLocatorPath(rootID),
+            let inode = Self.directoryINode(atPath: path)
+        else {
+            throw DatabaseError.sql(
+                "adoptRootLocatorIdentity: no directory behind \(rootID)")
+        }
+        try execBinding("UPDATE roots SET locator_inode=? WHERE root_id=?;") { stmt in
+            try bind(stmt, 1, inode)
+            try bind(stmt, 2, rootID)
+        }
+    }
+
     // MARK: - 对话落库（Information Space：会话即信息）
 
     /// Semantic standing of a chat turn. `ordinary` is the user's conversation;
@@ -4365,6 +5131,15 @@ try bind(externalStmt, 1, rootID)
     public enum ChatTurnEligibility: String, Sendable {
         case ordinary
         case internalOperation = "internal"
+
+        /// 记账类请求问的是「这段文本说了什么」，不是「空间里有什么」，所以
+        /// 不装配上下文（不检索、不注入、不结算、不记轮次），直接按它带来的
+        /// 文本作答。
+        ///
+        /// 只有 HTTP 会话路径看这个属性。同名的 standing 出现在导入路径上时
+        /// （`ExternalTurnSink`、`MultiFormatCollection`）只表示审计存档，那些
+        /// 行是直写库的，本来就不经过上下文装配——两处不要互相推断。
+        public var skipsContextAssembly: Bool { self == .internalOperation }
     }
 
     /// Who produced a chat line. Local turns are the app's own conversation;
@@ -4596,6 +5371,232 @@ try bind(externalStmt, 1, rootID)
             try bind(stmt, 6, Self.stamp(createdAt))
         }
         return rowID
+    }
+
+    // MARK: - Turn digests（每轮问了什么、答出什么，供以后直接读）
+
+    /// 一轮会话的精编结果。正文不在这里：问题与回答在 `is_objects` 里，
+    /// 经 `chat_messages.content_object_id` 取回。
+    public struct TurnDigestRecord: Equatable, Sendable {
+        public let sessionID: String
+        public let turnIndex: Int
+        public let questionMessageID: Int64?
+        public let answerMessageID: Int64?
+        public let digest: String
+        public let keywords: [String]
+        public let model: String?
+        public let createdAt: String
+    }
+
+    /// 写一轮摘要，同时把关键字拆进 `keywords` / `turn_keywords`。
+    ///
+    /// 同一轮重复写是覆盖，不是新增：摘要是派生内容（模型再跑一次结果不同），
+    /// 只留一行最新那次，才核得上 `chat_turn_ledger` 的轮号账。
+    @discardableResult
+    public func recordTurnDigest(
+        sessionID: String, turnIndex: Int,
+        questionMessageID: Int64? = nil, answerMessageID: Int64? = nil,
+        digest: String, keywords: String, model: String? = nil,
+        createdAt: Date = Date()
+    ) throws -> TurnDigestRecord {
+        let text = digest.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            throw DatabaseError.sql("recordTurnDigest: digest is empty")
+        }
+        var seen = Set<String>()
+        let terms = keywords.split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+        let now = Self.stamp(createdAt)
+
+        return try transactionResult {
+            try execBinding("""
+            INSERT INTO turn_digests(
+                session_id, turn_index, question_message_id, answer_message_id,
+                digest, keywords, model, created_at)
+            VALUES(?,?,?,?,?,?,?,?)
+            ON CONFLICT(session_id, turn_index) DO UPDATE SET
+                question_message_id=excluded.question_message_id,
+                answer_message_id=excluded.answer_message_id,
+                digest=excluded.digest, keywords=excluded.keywords,
+                model=COALESCE(excluded.model, turn_digests.model),
+                created_at=excluded.created_at;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+                try bind(stmt, 3, questionMessageID)
+                try bind(stmt, 4, answerMessageID)
+                try bind(stmt, 5, text)
+                try bind(stmt, 6, terms.joined(separator: " "))
+                try bind(stmt, 7, model)
+                try bind(stmt, 8, now)
+            }
+            // 这一轮的词换过一次，旧关联就得摘掉：否则改过摘要之后，旧词
+            // 还能把这一轮捞出来。
+            try execBinding("""
+            DELETE FROM turn_keywords WHERE session_id=? AND turn_index=?;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+            }
+            for term in terms {
+                try execBinding("""
+                INSERT INTO keywords(term, created_at) VALUES(?,?)
+                ON CONFLICT(term) DO NOTHING;
+                """) { stmt in
+                    try bind(stmt, 1, term)
+                    try bind(stmt, 2, now)
+                }
+                let keywordID: Int64 = try {
+                    let stmt = try prepare("SELECT keyword_id FROM keywords WHERE term=?;")
+                    defer { sqlite3_finalize(stmt) }
+                    try bind(stmt, 1, term)
+                    guard try stepRowOrDone(stmt) else {
+                        throw DatabaseError.sql("recordTurnDigest: keyword row missing")
+                    }
+                    return sqlite3_column_int64(stmt, 0)
+                }()
+                try execBinding("""
+                INSERT OR IGNORE INTO turn_keywords(session_id, turn_index, keyword_id)
+                VALUES(?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, sessionID)
+                    try bind(stmt, 2, Int64(turnIndex))
+                    try bind(stmt, 3, keywordID)
+                }
+            }
+            // 返回落盘的那一行，而不是入参：覆盖写之后调用方看到的应当
+            // 就是库里现在的内容。
+            guard let stored = try turnDigest(sessionID: sessionID, turnIndex: turnIndex)
+            else { throw DatabaseError.sql("recordTurnDigest: row missing after write") }
+            return stored
+        }
+    }
+
+    private static let turnDigestColumns = """
+    session_id, turn_index, question_message_id, answer_message_id,
+    digest, keywords, model, created_at
+    """
+
+    private func turnDigestRecord(_ stmt: OpaquePointer) -> TurnDigestRecord {
+        TurnDigestRecord(
+            sessionID: sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+            turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+            questionMessageID: sqlite3_column_type(stmt, 2) == SQLITE_NULL
+                ? nil : sqlite3_column_int64(stmt, 2),
+            answerMessageID: sqlite3_column_type(stmt, 3) == SQLITE_NULL
+                ? nil : sqlite3_column_int64(stmt, 3),
+            digest: sqlite3_column_text(stmt, 4).map { String(cString: $0) } ?? "",
+            keywords: (sqlite3_column_text(stmt, 5).map { String(cString: $0) } ?? "")
+                .split(whereSeparator: { $0.isWhitespace }).map(String.init),
+            model: sqlite3_column_text(stmt, 6).map { String(cString: $0) },
+            createdAt: sqlite3_column_text(stmt, 7).map { String(cString: $0) } ?? "")
+    }
+
+    public func turnDigest(sessionID: String, turnIndex: Int) throws -> TurnDigestRecord? {
+        let stmt = try prepare("""
+        SELECT \(Self.turnDigestColumns) FROM turn_digests
+         WHERE session_id=? AND turn_index=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        guard try stepRowOrDone(stmt) else { return nil }
+        return turnDigestRecord(stmt)
+    }
+
+    /// 最近的摘要，`sessionID` 传 nil 就是全库。按写入时间倒序：检索要的是
+    /// 最新那一版说法。
+    public func recentTurnDigests(sessionID: String? = nil, limit: Int = 50)
+        throws -> [TurnDigestRecord]
+    {
+        let stmt = try prepare("""
+        SELECT \(Self.turnDigestColumns) FROM turn_digests
+         WHERE (? IS NULL OR session_id = ?)
+         ORDER BY created_at DESC, session_id DESC, turn_index DESC
+         LIMIT ?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, sessionID)
+        try bind(stmt, 3, Int64(limit))
+        var rows: [TurnDigestRecord] = []
+        while try stepRowOrDone(stmt) { rows.append(turnDigestRecord(stmt)) }
+        return rows
+    }
+
+    /// 轮号有、摘要没有的轮次。和菜单栏的轮号缺口是同一份账：一处漏写，
+    /// 另一处就能看见。
+    /// 补一轮摘要要的全部东西：轮号、那两行消息的 id、问题与回答的正文。
+    public struct UndigestedTurn: Sendable {
+        public let sessionID: String
+        public let turnIndex: Int
+        public let questionMessageID: Int64?
+        public let answerMessageID: Int64?
+        public let question: String
+        public let answer: String
+    }
+
+    /// 全库口径的「轮号有、摘要没有」。补摘要按这个跑，跑完再看
+    /// `carrierReport().turnsWithoutDigest` 是否归零。
+    public func undigestedTurns() throws -> [UndigestedTurn] {
+        let stmt = try prepare("""
+        SELECT l.session_id, l.turn_index,
+               (SELECT m.id FROM chat_messages m
+                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                   AND m.role='user' LIMIT 1),
+               (SELECT m.id FROM chat_messages m
+                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                   AND m.role='assistant' LIMIT 1),
+               (SELECT CAST(o.content AS TEXT) FROM chat_messages m
+                  JOIN is_objects o ON o.object_id=m.content_object_id
+                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                   AND m.role='user' LIMIT 1),
+               (SELECT CAST(o.content AS TEXT) FROM chat_messages m
+                  JOIN is_objects o ON o.object_id=m.content_object_id
+                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                   AND m.role='assistant' LIMIT 1)
+          FROM chat_turn_ledger l
+         WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+                            WHERE d.session_id=l.session_id
+                              AND d.turn_index=l.turn_index)
+         ORDER BY l.session_id, l.turn_index;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [UndigestedTurn] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            let question = text(4) ?? ""
+            let answer = text(5) ?? ""
+            if question.isEmpty && answer.isEmpty { continue }
+            rows.append(UndigestedTurn(
+                sessionID: text(0) ?? "",
+                turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+                questionMessageID: sqlite3_column_type(stmt, 2) == SQLITE_NULL
+                    ? nil : sqlite3_column_int64(stmt, 2),
+                answerMessageID: sqlite3_column_type(stmt, 3) == SQLITE_NULL
+                    ? nil : sqlite3_column_int64(stmt, 3),
+                question: question, answer: answer))
+        }
+        return rows
+    }
+
+    public func turnsWithoutDigest(sessionID: String) throws -> [Int] {
+        let stmt = try prepare("""
+        SELECT l.turn_index FROM chat_turn_ledger l
+         WHERE l.session_id=?
+           AND NOT EXISTS (SELECT 1 FROM turn_digests d
+                            WHERE d.session_id=l.session_id
+                              AND d.turn_index=l.turn_index)
+         ORDER BY l.turn_index;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        var rows: [Int] = []
+        while try stepRowOrDone(stmt) { rows.append(Int(sqlite3_column_int64(stmt, 0))) }
+        return rows
     }
 
     // MARK: - External-provider turns (recorded → verified → retrievable)
@@ -4909,6 +5910,100 @@ try bind(externalStmt, 1, rootID)
             highest: highest, missing: missing, conflict: nil)
     }
 
+    /// 导入的会话补轮次账的结果。
+    public struct ImportedLedgerReport: Sendable, Equatable {
+        /// 这次补进去的会话数（有候选、补之前一行账都没有的）。
+        public let sessionsFilled: Int
+        /// 这次补进去的轮数。
+        public let turnsInserted: Int
+        /// 已经有轮号、整会话跳过的外部会话数。
+        public let sessionsKept: Int
+        /// 没有 request_id、这次补不了的会话数与消息数。
+        public let sessionsUnkeyed: Int
+        public let messagesUnkeyed: Int
+        /// 补完之后导入轮的总数（不只这次）。
+        public let importedTurnsTotal: Int
+    }
+
+    /// 采集桥导入的历史会话，按到达序补一本轮次账。
+    ///
+    /// 只补「一行账都没有」的外部会话。已经有轮号的会话整会话跳过：MCP 的
+    /// 轮号是调用方自己选的，导入的轮号是排出来的，两种编号混在一个 session
+    /// 里，缺号就不再表示漏写。这条规矩靠 origin 列写进数据，不靠前缀去猜。
+    ///
+    /// 轮号 = 同一 request_id 的首条消息按 (时间, id) 排出的序。写在事务里，
+    /// 重复调用是空操作。
+    @discardableResult
+    public func backfillImportedTurnLedger() throws -> ImportedLedgerReport {
+        try transactionResult {
+            func count(_ sql: String) throws -> Int {
+                let stmt = try prepare(sql)
+                defer { sqlite3_finalize(stmt) }
+                return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+            }
+            let kept = try count("""
+            SELECT COUNT(DISTINCT m.session_id) FROM chat_messages m
+             WHERE m.source_kind='external'
+               AND EXISTS (SELECT 1 FROM chat_turn_ledger l
+                            WHERE l.session_id=m.session_id);
+            """)
+            let unkeyedSessions = try count("""
+            SELECT COUNT(DISTINCT session_id) FROM chat_messages
+             WHERE request_id IS NULL
+               AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger);
+            """)
+            let unkeyedMessages = try count("""
+            SELECT COUNT(*) FROM chat_messages
+             WHERE request_id IS NULL
+               AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger);
+            """)
+            let fillable = try count("""
+            SELECT COUNT(DISTINCT session_id) FROM chat_messages
+             WHERE source_kind='external' AND request_id IS NOT NULL
+               AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger);
+            """)
+            try Self.rawExec(handle, """
+            INSERT INTO chat_turn_ledger(
+                session_id, turn_index, request_id, seen_at, origin)
+            SELECT b.session_id,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY b.session_id ORDER BY b.first_at, b.first_id),
+                   b.request_id,
+                   (SELECT m.created_at FROM chat_messages m WHERE m.id=b.first_id),
+                   'import'
+              FROM (SELECT session_id, request_id,
+                           MIN(CAST(created_at AS REAL)) AS first_at,
+                           MIN(id) AS first_id
+                      FROM chat_messages
+                     WHERE source_kind='external' AND request_id IS NOT NULL
+                       AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger)
+                     GROUP BY session_id, request_id) b;
+            """)
+            return ImportedLedgerReport(
+                sessionsFilled: fillable,
+                turnsInserted: Int(sqlite3_changes(handle)),
+                sessionsKept: kept,
+                sessionsUnkeyed: unkeyedSessions,
+                messagesUnkeyed: unkeyedMessages,
+                importedTurnsTotal: try count(
+                    "SELECT COUNT(*) FROM chat_turn_ledger WHERE origin='import';"))
+        }
+    }
+
+    /// 某轮在账上记的 request id。导入的轮和 MCP 的轮都从这里读，
+    /// 调用方不需要知道它是怎么排出来的。
+    public func turnLedgerRequestID(sessionID: String, turnIndex: Int) throws -> String? {
+        let stmt = try prepare("""
+        SELECT request_id FROM chat_turn_ledger
+         WHERE session_id=? AND turn_index=? LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else { return nil }
+        return String(cString: c)
+    }
+
     /// The session whose round arrived most recently, for a status display.
     public func latestTurnLedgerSessionID() throws -> String? {
         let stmt = try prepare("""
@@ -5177,6 +6272,82 @@ try bind(externalStmt, 1, rootID)
     /// into Swift strings to find a few hundred hits costs 0.85 s, and the same
     /// predicate in C costs 0.02 s — measured 2026-11-09, 6 keywords,
     /// set-equal to the byte scan on the live space.
+    ///
+    /// 3 字以上的词走 `is_objects_fts`（trigram）索引；1–2 字的词 trigram 建不出
+    /// 片段，回落原来的 LIKE 全扫。两条路的命中集合相同：索引只覆盖挂在
+    /// is_objects 上的行，没有对象的行仍走 LIKE，两者的并集就是原来的 LIKE 结果。
+    /// trigram 索引吃得下的关键词：至少 3 个字符（trigram 按 3 字片段建索引，
+    /// 「合同」两个字的片段根本不存在）。按 Character 计，一个汉字算一个字符。
+    static func isFTSEligible(_ term: String) -> Bool {
+        term.count >= 3
+    }
+
+    /// FTS5 的字符串字面量：整串加双引号 = 短语，内部双引号翻倍。
+    /// 加了引号，`%`、`_`、括号、冒号都只是普通字符，不会被当成查询语法。
+    static func ftsPhrase(_ term: String) -> String {
+        "\"" + term.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+
+    /// LIKE 的转义（配合 `ESCAPE '\'`）。通配符在这里只是字面量。
+    static func likeEscaped(_ term: String) -> String {
+        term
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
+    }
+
+    /// 一轮摘要的检索行。摘要是索引、不是原文：命中之后用来定位的是
+    /// `sessionID + turnIndex`，引用的字节仍是那一轮的原文对象
+    /// （`answerObjectID`），给人看的那一行是摘要本身。
+    struct TurnDigestIndexRow: Sendable {
+        let sessionID: String
+        let turnIndex: Int
+        let digest: String
+        let keywords: String
+        let answerObjectID: String?
+    }
+
+    /// 摘要与关键词都参与匹配。行数是个人的轮次量级（今天 382 行），
+    /// 所以走 LIKE，不另建索引——真上到十万轮再谈。
+    func turnDigestRows(matchingAny: [String]?) throws -> [TurnDigestIndexRow] {
+        let terms = (matchingAny ?? []).filter { !$0.isEmpty }
+        var sql = """
+        SELECT d.session_id, d.turn_index, d.digest, d.keywords, c.content_object_id
+        FROM turn_digests d
+        LEFT JOIN chat_messages c ON c.id = d.answer_message_id
+        """
+        var binds: [String] = []
+        if !terms.isEmpty {
+            var alternatives: [String] = []
+            for term in terms {
+                alternatives.append(
+                    "(d.digest LIKE ? ESCAPE '\\' OR d.keywords LIKE ? ESCAPE '\\')")
+                binds.append("%" + Self.likeEscaped(term) + "%")
+                binds.append("%" + Self.likeEscaped(term) + "%")
+            }
+            sql += " WHERE " + alternatives.joined(separator: " OR ")
+        }
+        sql += " ORDER BY d.session_id, d.turn_index;"
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (idx, value) in binds.enumerated() {
+            try bind(stmt, Int32(idx + 1), value)
+        }
+        var rows: [TurnDigestIndexRow] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            rows.append(TurnDigestIndexRow(
+                sessionID: text(0) ?? "",
+                turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+                digest: text(2) ?? "",
+                keywords: text(3) ?? "",
+                answerObjectID: text(4)))
+        }
+        return rows
+    }
+
     func chatIndexRows(
         sessionIDs: [String]?, matchingAny: [String]? = nil
     ) throws -> [ChatIndexRow] {
@@ -5190,21 +6361,35 @@ try bind(externalStmt, 1, rootID)
         """
         sql += sessionClause(sessionIDs)
         let terms = (matchingAny ?? []).filter { !$0.isEmpty }
+        var binds: [String] = []
         if !terms.isEmpty {
-            let alternatives = terms.map { _ in
-                "CAST(COALESCE(o.content, c.content) AS TEXT) LIKE ? ESCAPE '\\'"
+            var alternatives: [String] = []
+            for term in terms {
+                if Self.isFTSEligible(term) {
+                    // 索引命中的对象，加上没进索引的行（v28 起只索引结算产物，
+                    // 其余行——没有对象的、没被结算引用过的——回落 LIKE）。
+                    alternatives.append(
+                        "(o.rowid IN (SELECT rowid FROM is_objects_fts"
+                            + " WHERE is_objects_fts MATCH ?)"
+                            + " OR ((o.rowid IS NULL"
+                            + " OR o.rowid NOT IN (SELECT object_rowid FROM is_search_indexed))"
+                            + " AND CAST(COALESCE(o.content, c.content) AS TEXT)"
+                            + " LIKE ? ESCAPE '\\'))")
+                    binds.append(Self.ftsPhrase(term))
+                    binds.append("%" + Self.likeEscaped(term) + "%")
+                } else {
+                    alternatives.append(
+                        "CAST(COALESCE(o.content, c.content) AS TEXT) LIKE ? ESCAPE '\\'")
+                    binds.append("%" + Self.likeEscaped(term) + "%")
+                }
             }
             sql += " AND (" + alternatives.joined(separator: " OR ") + ")"
         }
         sql += " ORDER BY c.session_id, c.id;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (idx, term) in terms.enumerated() {
-            let escaped = term
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "%", with: "\\%")
-                .replacingOccurrences(of: "_", with: "\\_")
-            try bind(stmt, Int32(idx + 1), "%\(escaped)%")
+        for (idx, value) in binds.enumerated() {
+            try bind(stmt, Int32(idx + 1), value)
         }
         var rows: [ChatIndexRow] = []
         while try stepRowOrDone(stmt) {
@@ -5840,12 +7025,9 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 3, write.query)
                 try bind(stmt, 4, write.demandID)
             }
-            for input in write.inputs {
-                _ = try appendDependencyInTransaction(
-                    dependencyID: "demand:\(write.demandID) -> \(input.itemID)",
-                    contentAddress: input.contentAddress,
-                    reason: "demand-input")
-            }
+            // 候选不写依赖表：write.inputs 是这次检索的候选集，不是结果依赖的
+            // 信息。依赖边由 settlement_bindings 与 content-settle 那条路记，
+            // 这里再记一遍只会让每次检索多出几百行路径。
             // Sources and cited settlements are part of the same atomic claim
             // as the result itself. Writing them after COMMIT left a window in
             // which the source update could invalidate the (empty) closure and
@@ -6717,6 +7899,143 @@ try bind(externalStmt, 1, rootID)
         }
     }
 
+    /// 目录导入（复核）：把选定目录里每个文件按（目录，文件名）落一行，标题从文件名推。
+    ///
+    /// 这就是「目录内文件路径和文件名复核」：磁盘上有的都有一行（二进制也一样，
+    /// 内容为空、只落档）；库里有的、磁盘上没了，标 `missing`，**不删**——来源消失
+    /// 不改历史。人改过的标题不覆盖：标题是显示名，重新导入只复核路径与文件名。
+    ///
+    /// 幂等：同名同路径重复导入只是刷新 size / modified / last_seen_at。
+    @discardableResult
+    public func importDirectoryNames(
+        rootID: String, rootURL: URL, maxDepth: Int = 64
+    ) throws -> DirectoryNameImportReport {
+        let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
+        let entries = Self.manifestWalk(root: root, maxDepth: maxDepth, skipping: nil)
+        let mainStems = Self.mainStemsByDirectory(entries)
+        let stamp = Self.manifestFormatter()
+
+        return try transactionResult {
+            // 根不存在就补一条（外键约束），已存在则不动它的分类与显示名。
+            let probe = try prepare("SELECT 1 FROM roots WHERE root_id=?;")
+            try bind(probe, 1, rootID)
+            let rootExists = try stepRowOrDone(probe)
+            sqlite3_finalize(probe)
+            if !rootExists {
+                try upsertRoot(rootID: rootID, category: "work", displayName: root.path,
+                               locatorType: "path", status: "registered")
+            }
+            // 甲：加目录这个人的动作顺带定下空间的身份。已经有空间就不动——
+            // 重新导入只复核路径与文件名，人改过的标题不会被覆盖。
+            try ensureSpaceForRoot(rootID: rootID, folderName: root.lastPathComponent)
+            // 同一个路径换了目录（挂载被替换 / bind mount / 换卷）：这份
+            // 清单证明不了旧文件已经不在，不许据此标 missing。
+            let identityChanged = try noteLocatorIdentity(
+                rootID: rootID, path: root.path)
+
+            var known: [String: String] = [:]
+            let select = try prepare(
+                "SELECT relative_path, COALESCE(title,'') FROM external_files WHERE root_id=?;")
+            defer { sqlite3_finalize(select) }
+            try bind(select, 1, rootID)
+            while try stepRowOrDone(select) {
+                let path = sqlite3_column_text(select, 0).map { String(cString: $0) } ?? ""
+                let title = sqlite3_column_text(select, 1).map { String(cString: $0) } ?? ""
+                known[path] = title
+            }
+
+            var inserted = 0
+            var refreshed = 0
+            for (relative, url) in entries {
+                let directory = (relative as NSString).deletingLastPathComponent
+                let (derived, _) = Self.manifestTitle(
+                    ofFile: url.lastPathComponent, mainStem: mainStems[directory])
+                let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+                let size = (attributes?[.size] as? NSNumber)?.int64Value
+                let modified = (attributes?[.modificationDate] as? Date)
+                    .map { stamp.string(from: $0) }
+                let previous = known.removeValue(forKey: relative)
+                let title = (previous?.isEmpty == false) ? previous! : derived
+                let now = Self.stamp(Date())
+                try execBinding("""
+                INSERT INTO external_files(root_id, relative_path, kind, size, modified_at,
+                    content_digest, indexed_at, last_seen_at, status, title, title_source)
+                VALUES(?,?,NULL,?,?,NULL,?,?,'present',?,'filename')
+                ON CONFLICT(root_id, relative_path) DO UPDATE SET
+                    size=excluded.size, modified_at=excluded.modified_at,
+                    last_seen_at=excluded.last_seen_at, status='present',
+                    title=excluded.title;
+                """) { stmt in
+                    try bind(stmt, 1, rootID)
+                    try bind(stmt, 2, relative)
+                    try bind(stmt, 3, size)
+                    try bind(stmt, 4, modified)
+                    try bind(stmt, 5, now)
+                    try bind(stmt, 6, now)
+                    try bind(stmt, 7, title)
+                }
+                if previous == nil { inserted += 1 } else { refreshed += 1 }
+            }
+
+            if !identityChanged {
+                for relative in known.keys {
+                    try execBinding("""
+                    UPDATE external_files SET status='missing'
+                     WHERE root_id=? AND relative_path=?;
+                    """) { stmt in
+                        try bind(stmt, 1, rootID)
+                        try bind(stmt, 2, relative)
+                    }
+                }
+            }
+
+            return DirectoryNameImportReport(
+                files: entries.count, inserted: inserted, refreshed: refreshed,
+                missing: identityChanged ? 0 : known.count)
+        }
+    }
+
+    /// 目录第一次进来时给它一个空间：标题取文件夹名，标成占位（'filename'）。
+    /// 已有空间就什么都不做——重新导入是复核路径，不是重新定身份。
+    private func ensureSpaceForRoot(rootID: String, folderName: String) throws {
+        guard !folderName.isEmpty else { return }
+        let probe = try prepare("SELECT space_id FROM roots WHERE root_id=?;")
+        try bind(probe, 1, rootID)
+        let found = try stepRowOrDone(probe)
+        let alreadySet = found && sqlite3_column_type(probe, 0) != SQLITE_NULL
+        sqlite3_finalize(probe)
+        guard found, !alreadySet else { return }
+        let space = try createSpace(
+            title: folderName, kind: "directory", titleSource: "filename")
+        try setRootSpace(rootID: rootID, spaceID: space.spaceID)
+    }
+
+    /// 人改标题：只改给人看的名字，不动唯一键（root_id + relative_path）。
+    /// 改过之后重新导入目录不会覆盖它。
+    public func updateExternalFileTitle(
+        rootID: String, relativePath: String, title: String
+    ) throws {
+        try execBinding("""
+        UPDATE external_files SET title=?, title_source='human'
+         WHERE root_id=? AND relative_path=?;
+        """) { stmt in
+            try bind(stmt, 1, title)
+            try bind(stmt, 2, rootID)
+            try bind(stmt, 3, relativePath)
+        }
+    }
+
+    /// 读一行的标题（复核用）。
+    public func externalFileTitle(rootID: String, relativePath: String) throws -> String? {
+        let stmt = try prepare(
+            "SELECT title FROM external_files WHERE root_id=? AND relative_path=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, rootID)
+        try bind(stmt, 2, relativePath)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else { return nil }
+        return String(cString: c)
+    }
+
     /// Index an agent session, referencing its source root by id only.
     public func indexAgentSession(sessionID: String, adapterID: String?,
                                   sourceRootID: String?, metadataDigest: String?,
@@ -7408,7 +8727,13 @@ try bind(externalStmt, 1, rootID)
     public struct SettlementSummaryRecord: Equatable, Sendable {
         public let settlementID: String
         public let sessionID: String?
+        /// Only the head of the question (see
+        /// `SettlementSummaryPolicy.queryExcerptCharacters`); the full text is
+        /// in the summary object and is restored by `verified(_:)`.
         public let query: String
+        /// True when `query` is an excerpt. A non-excerpt row must match the
+        /// object byte for byte; an excerpt must be a prefix of it.
+        public let queryTruncated: Bool
         public let summary: String
         public let summarySHA256: String
         public let summaryObjectID: String
@@ -7489,15 +8814,18 @@ try bind(externalStmt, 1, rootID)
         let objectID = try ensureObject(bytes)
         let summarySHA = NativeSHA256.hexDigest(Data(text.utf8))
         let stamp = Self.stamp(settledAt)
+        let storedQuery = SettlementSummaryPolicy.queryExcerpt(query)
+        let queryTruncated = storedQuery != query
 
         try execBinding("""
         INSERT INTO settlement_summaries(
-            settlement_id, session_id, query, summary, summary_sha256,
+            settlement_id, session_id, query, query_truncated, summary, summary_sha256,
             summary_object_id, source_payload_digest, created_at,
             derivation_type, provenance_settlement_id)
-        VALUES(?,?,?,?,?,?,?,?,?,?)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(settlement_id) DO UPDATE SET
             session_id=excluded.session_id, query=excluded.query,
+            query_truncated=excluded.query_truncated,
             summary=excluded.summary, summary_sha256=excluded.summary_sha256,
             summary_object_id=excluded.summary_object_id,
             source_payload_digest=excluded.source_payload_digest,
@@ -7507,21 +8835,22 @@ try bind(externalStmt, 1, rootID)
         """) { stmt in
             try bind(stmt, 1, settlementID)
             try bind(stmt, 2, sessionID)
-            try bind(stmt, 3, query)
-            try bind(stmt, 4, text)
-            try bind(stmt, 5, summarySHA)
-            try bind(stmt, 6, objectID)
-            try bind(stmt, 7, payloadDigest)
-            try bind(stmt, 8, stamp)
-            try bind(stmt, 9, derived ? "DERIVED_CONSUMPTION" : nil)
-            try bind(stmt, 10, provenance)
+            try bind(stmt, 3, storedQuery)
+            try bind(stmt, 4, queryTruncated ? 1 : 0)
+            try bind(stmt, 5, text)
+            try bind(stmt, 6, summarySHA)
+            try bind(stmt, 7, objectID)
+            try bind(stmt, 8, payloadDigest)
+            try bind(stmt, 9, stamp)
+            try bind(stmt, 10, derived ? "DERIVED_CONSUMPTION" : nil)
+            try bind(stmt, 11, provenance)
         }
         _ = try appendIndexEntryInTransaction(
             identity: "settlement-summary:\(settlementID)", objectID: objectID)
 
         return SettlementSummaryRecord(
             settlementID: settlementID, sessionID: sessionID, query: query,
-            summary: text, summarySHA256: summarySHA,
+            queryTruncated: queryTruncated, summary: text, summarySHA256: summarySHA,
             summaryObjectID: objectID, sourcePayloadDigest: payloadDigest,
             createdAt: stamp,
             derivationType: derived ? "DERIVED_CONSUMPTION" : nil,
@@ -7531,7 +8860,7 @@ try bind(externalStmt, 1, rootID)
     /// Read one summary back with its object bytes verified against the address.
     public func settlementSummary(settlementID: String) throws -> SettlementSummaryRecord? {
         let stmt = try prepare("""
-        SELECT settlement_id, session_id, query, summary, summary_sha256,
+        SELECT settlement_id, session_id, query, query_truncated, summary, summary_sha256,
                summary_object_id, source_payload_digest, created_at,
                derivation_type, provenance_settlement_id
         FROM settlement_summaries WHERE settlement_id=?;
@@ -7545,11 +8874,12 @@ try bind(externalStmt, 1, rootID)
         let record = SettlementSummaryRecord(
             settlementID: text(0),
             sessionID: sqlite3_column_text(stmt, 1).map { String(cString: $0) },
-            query: text(2), summary: text(3), summarySHA256: text(4),
-            summaryObjectID: text(5), sourcePayloadDigest: text(6),
-            createdAt: text(7),
-            derivationType: sqlite3_column_text(stmt, 8).map { String(cString: $0) },
-            sourceSettlementID: sqlite3_column_text(stmt, 9).map { String(cString: $0) })
+            query: text(2), queryTruncated: sqlite3_column_int(stmt, 3) != 0,
+            summary: text(4), summarySHA256: text(5),
+            summaryObjectID: text(6), sourcePayloadDigest: text(7),
+            createdAt: text(8),
+            derivationType: sqlite3_column_text(stmt, 9).map { String(cString: $0) },
+            sourceSettlementID: sqlite3_column_text(stmt, 10).map { String(cString: $0) })
         return try verified(record)
     }
 
@@ -7566,7 +8896,8 @@ try bind(externalStmt, 1, rootID)
         sessionID: String?, limit: Int = 200
     ) throws -> [SettlementSummaryRecord] {
         let stmt = try prepare("""
-        SELECT m.settlement_id, m.session_id, m.query, m.summary, m.summary_sha256,
+        SELECT m.settlement_id, m.session_id, m.query, m.query_truncated,
+               m.summary, m.summary_sha256,
                m.summary_object_id, m.source_payload_digest, m.created_at,
                m.derivation_type, m.provenance_settlement_id
         FROM settlement_summaries m
@@ -7589,11 +8920,12 @@ try bind(externalStmt, 1, rootID)
             let record = SettlementSummaryRecord(
                 settlementID: text(0),
                 sessionID: sqlite3_column_text(stmt, 1).map { String(cString: $0) },
-                query: text(2), summary: text(3), summarySHA256: text(4),
-                summaryObjectID: text(5), sourcePayloadDigest: text(6),
-                createdAt: text(7),
-                derivationType: sqlite3_column_text(stmt, 8).map { String(cString: $0) },
-                sourceSettlementID: sqlite3_column_text(stmt, 9).map { String(cString: $0) })
+                query: text(2), queryTruncated: sqlite3_column_int(stmt, 3) != 0,
+                summary: text(4), summarySHA256: text(5),
+                summaryObjectID: text(6), sourcePayloadDigest: text(7),
+                createdAt: text(8),
+                derivationType: sqlite3_column_text(stmt, 9).map { String(cString: $0) },
+                sourceSettlementID: sqlite3_column_text(stmt, 10).map { String(cString: $0) })
             if let verified = try? verified(record) { out.append(verified) }
         }
         return out
@@ -7611,13 +8943,29 @@ try bind(externalStmt, 1, rootID)
         guard let sealed = try? JSONDecoder().decode(
             SettlementSummaryPolicy.Summary.self, from: data)
         else { return nil }
-        guard sealed.settlementID == record.settlementID,
+        // The column holds either the whole question or its head. Both are
+        // checked against the object, so a rewritten or swapped excerpt is
+        // refused instead of being cited as the question that was asked.
+        let queryIntact = record.queryTruncated
+            ? sealed.query.hasPrefix(record.query)
+            : sealed.query == record.query
+        guard queryIntact,
+            sealed.settlementID == record.settlementID,
             sealed.text == record.summary,
             sealed.sourcePayloadDigest == record.sourcePayloadDigest,
             sealed.derivationType == record.derivationType,
             sealed.sourceSettlementID == record.sourceSettlementID
         else { return nil }
-        return record
+        // Callers get the question in full; only the stored row is shortened.
+        guard record.queryTruncated else { return record }
+        return SettlementSummaryRecord(
+            settlementID: record.settlementID, sessionID: record.sessionID,
+            query: sealed.query, queryTruncated: true, summary: record.summary,
+            summarySHA256: record.summarySHA256,
+            summaryObjectID: record.summaryObjectID,
+            sourcePayloadDigest: record.sourcePayloadDigest,
+            createdAt: record.createdAt, derivationType: record.derivationType,
+            sourceSettlementID: record.sourceSettlementID)
     }
 
     /// The settlement a derived consumption record consumed. Used to stamp the

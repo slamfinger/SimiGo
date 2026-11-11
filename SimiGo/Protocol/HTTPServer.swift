@@ -2301,6 +2301,13 @@ public final class HTTPServer: @unchecked Sendable {
                     "corrupt_objects": report.corruptObjects,
                     "inline_legacy_payloads": report.inlineLegacyPayloads,
                     "deep_verified": report.deepVerified,
+                    "spaces": report.spaces,
+                    "dependency_intervals_open": report.dependencyIntervalsOpen,
+                    "dependency_intervals_closed": report.dependencyIntervalsClosed,
+                    "dependency_interval_breaks": report.dependencyIntervalBreaks,
+                    "turn_digests": report.turnDigests,
+                    "turns_without_digest": report.turnsWithoutDigest,
+                    "vacuum_failure": report.vacuumFailure ?? "",
                 ],
                 status: 200, on: context.connection, context: context)
         } catch {

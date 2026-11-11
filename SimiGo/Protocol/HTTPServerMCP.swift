@@ -456,6 +456,11 @@ extension HTTPServer {
                 "result_sha256": resolution.resultSHA256,
                 "retrieval_settlement_id": resolution.retrievalSettlementID,
                 "stale_items": resolution.staleItemIDs,
+                // 路况：1–2 字的关键词走不了 trigram 索引，回落 LIKE 全扫。
+                // 放在返回里，是为了让"这次快/慢"有据可查，而不是靠感觉。
+                "index": resolution.unindexedTerms.isEmpty
+                    ? "fts5-trigram" : "partial-scan",
+                "unindexed_terms": resolution.unindexedTerms,
                 "items": resolution.hits.map { hit -> [String: Any] in
                     [
                         "item_id": hit.itemID,
@@ -499,6 +504,13 @@ extension HTTPServer {
                 "dangling_references": report.danglingReferences,
                 "corrupt_objects": report.corruptObjects,
                 "inline_legacy_payloads": report.inlineLegacyPayloads,
+                "spaces": report.spaces,
+                "dependency_intervals_open": report.dependencyIntervalsOpen,
+                "dependency_intervals_closed": report.dependencyIntervalsClosed,
+                "dependency_interval_breaks": report.dependencyIntervalBreaks,
+                "turn_digests": report.turnDigests,
+                "turns_without_digest": report.turnsWithoutDigest,
+                "vacuum_failure": report.vacuumFailure ?? "",
             ]
 
         case "simigo_roots_list":
@@ -537,10 +549,18 @@ extension HTTPServer {
             let settle = try db.settleWorkRootContents(
                 rootID: rootID, rootURL: URL(fileURLWithPath: standardized),
                 carryText: false)
+            let names = try db.importDirectoryNames(
+                rootID: rootID, rootURL: URL(fileURLWithPath: standardized))
             return [
                 "root_id": rootID,
                 "path": standardized,
                 "registered": true,
+                "name_import": [
+                    "files": names.files,
+                    "inserted": names.inserted,
+                    "refreshed": names.refreshed,
+                    "missing": names.missing,
+                ],
                 "content_settle": [
                     "scanned": settle.scanned,
                     "reused": settle.reused,
@@ -934,6 +954,11 @@ extension HTTPServer {
                 ]
                 NotificationCenter.default.post(
                     name: .simigoMCPTurnRecorded, object: nil)
+                // 摘要不在这条回复里等：轮次先落盘，摘要在后台补。补不上就
+                // 留在「缺摘要」的账上，面板看得见。
+                TurnDigestScheduler.schedule(
+                    sessionID: sessionID, turnIndex: turnIndex,
+                    question: userText, answer: storedText)
             }
             var response: [String: Any] = [
                 "session_id": sessionID,

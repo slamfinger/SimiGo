@@ -411,11 +411,10 @@ final class ESISCarrierTests: XCTestCase {
         let entry = try XCTUnwrap(db.resolveIndexIdentity("demand:\(first.demandID)"))
         let resultData = try db.readObject(entry.objectID)
         XCTAssertEqual(NativeSHA256.hexDigest(resultData), first.resultSHA256)
-        let fileEntry = try XCTUnwrap(db.resolveIndexIdentity("file:work/doc.md"))
-        let input = try XCTUnwrap(
-            db.currentDependency("demand:\(first.demandID) -> file:work/doc.md"))
-        XCTAssertEqual(input.contentAddress, fileEntry.objectID)
-        XCTAssertEqual(input.reason, "demand-input")
+        // 候选不写依赖表：一条 demand 的 canonical input 是整个根的文件清单
+        // （实测约 700 条），把它们写进依赖边，184k 条里 99% 都是候选清单。
+        XCTAssertNil(
+            try db.currentDependency("demand:\(first.demandID) -> file:work/doc.md"))
 
         let report = try db.carrierReport(deepVerify: true)
         XCTAssertEqual(report.unaddressedRetrievalResults, 0)
@@ -703,5 +702,416 @@ final class ESISCarrierTests: XCTestCase {
                       "the stale bytes are not cited as a valid settlement")
 
         XCTAssertTrue(try db.integrityCheck())
+    }
+
+    /// v29：一次性清掉 demand-input 候选行，其他 reason 保留，append-only
+    /// 触发器装回去——清理是一次显式维护，不是把保护拆掉。
+    func testMigrationTwentyNineDropsOnlyDemandInputCandidates() throws {
+        let (url, db) = try open("v29-drop-candidates")
+        defer { cleanup(url) }
+        db.close()
+
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+        var message: UnsafeMutablePointer<CChar>?
+        let seed = """
+        INSERT INTO is_dependency_entries(
+            dependency_id, content_address, revision, reason, recorded_at)
+        VALUES('demand:d1 -> file:a', 'aa', 1, 'demand-input', '2026-11-11T00:00:00Z'),
+              ('demand:d1 -> file:b', 'bb', 1, 'demand-input', '2026-11-11T00:00:00Z'),
+              ('file:a', 'aa', 1, 'content-settle', '2026-11-11T00:00:00Z');
+        DELETE FROM schema_migrations WHERE version >= 29;
+        """
+        XCTAssertEqual(sqlite3_exec(handle, seed, nil, nil, &message), SQLITE_OK,
+                       message.map { String(cString: $0) } ?? "")
+        sqlite3_close(handle)
+
+        let reopened = try ESISDatabase(url: url)
+        defer { reopened.close() }
+        try reopened.runMigrations()
+        XCTAssertEqual(try reopened.count("is_dependency_entries"), 1,
+                       "只留 content-settle 那一条")
+        XCTAssertEqual(
+            try rawText(url, "SELECT reason FROM is_dependency_entries;"), "content-settle")
+        XCTAssertThrowsError(try rawExec(url, "DELETE FROM is_dependency_entries;"),
+                             "清理之后 append-only 触发器必须还在")
+    }
+
+    /// v30：query 列只存问题开头（200 字），全文留在摘要对象里。
+    /// 落盘的行变短，读回来的仍是完整问题。
+    func testLongSummaryQueryIsShortenedOnDiskAndRestoredOnRead() throws {
+        let (url, db) = try open("v30-query-excerpt")
+        defer { db.close(); cleanup(url) }
+        let loop = InformationLoop(database: db)
+
+        let longQuery = String(repeating: "合同额与考核管理要逐条核对，", count: 40)
+        XCTAssertGreaterThan(longQuery.count, SettlementSummaryPolicy.queryExcerptCharacters)
+        let turn = try loop.settleTurn(
+            generatedText: "施工组织设计应覆盖关键线路与节点工期。",
+            resolution: nil,
+            stateID: "S-Q-1",
+            parentStateID: nil,
+            position: 0,
+            modelIdentity: "model-a",
+            identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-q",
+            summaryQuery: longQuery,
+            actions: ["chat.completion"])
+
+        // 落盘：200 字 + 截断标记。
+        XCTAssertEqual(
+            try rawText(url, "SELECT LENGTH(query) FROM settlement_summaries;"), "200")
+        XCTAssertEqual(
+            try rawText(url, "SELECT query_truncated FROM settlement_summaries;"), "1")
+        XCTAssertEqual(
+            try rawText(url, "SELECT substr(query,1,200) FROM settlement_summaries;"),
+            String(longQuery.prefix(SettlementSummaryPolicy.queryExcerptCharacters)))
+
+        // 读回：全文，且两条读路径一致。
+        let summary = try XCTUnwrap(
+            try db.settlementSummary(settlementID: turn.settlementID))
+        XCTAssertEqual(summary.query, longQuery)
+        XCTAssertTrue(summary.queryTruncated)
+        let cited = try db.citableSettlementSummaries(sessionID: "elsewhere")
+        XCTAssertEqual(cited.first?.query, longQuery)
+    }
+
+    /// v30 迁移：已有的长 query 被截短并标记，短的逐字不动。
+    func testMigrationThirtyShortensExistingQueryRows() throws {
+        let (url, db) = try open("v30-migrate")
+        defer { cleanup(url) }
+        db.close()
+
+        let long = String(repeating: "长问题", count: 300)
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+        var message: UnsafeMutablePointer<CChar>?
+        let seed = """
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at)
+        VALUES('s-long', 's', '\(long)', 'ok', 'h',
+               '\(String(repeating: "a", count: 64))', 'd', '2026-11-11T00:00:00Z'),
+              ('s-short', 's', '短问题', 'ok', 'h',
+               '\(String(repeating: "b", count: 64))', 'd', '2026-11-11T00:00:01Z');
+        DELETE FROM schema_migrations WHERE version >= 30;
+        """
+        XCTAssertEqual(sqlite3_exec(handle, seed, nil, nil, &message), SQLITE_OK,
+                       message.map { String(cString: $0) } ?? "")
+        sqlite3_close(handle)
+
+        let reopened = try ESISDatabase(url: url)
+        defer { reopened.close() }
+        try reopened.runMigrations()
+        XCTAssertEqual(
+            try rawText(url, "SELECT LENGTH(query) FROM settlement_summaries WHERE settlement_id='s-long';"),
+            "200")
+        XCTAssertEqual(
+            try rawText(url, "SELECT query_truncated FROM settlement_summaries WHERE settlement_id='s-long';"),
+            "1")
+        XCTAssertEqual(
+            try rawText(url, "SELECT query FROM settlement_summaries WHERE settlement_id='s-short';"),
+            "短问题",
+            "短问题不动，也不打标记")
+        XCTAssertEqual(
+            try rawText(url, "SELECT query_truncated FROM settlement_summaries WHERE settlement_id='s-short';"),
+            "0")
+    }
+
+    /// v31：一轮摘要落一行摘要 + 一组词；同一轮重写是覆盖，不是写第二行；
+    /// 有轮号没摘要的轮次一眼能数出来。
+    func testRecordTurnDigestKeepsOneRowPerTurn() throws {
+        let (url, db) = try open("turn-digest")
+        defer { db.close(); cleanup(url) }
+
+        try rawExec(url, """
+        INSERT INTO chat_turn_ledger(session_id, turn_index, request_id, seen_at)
+            VALUES('s',1,'t1','2026-11-11T00:00:00Z'),
+                  ('s',2,'t2','2026-11-11T00:00:01Z'),
+                  ('s',3,'t3','2026-11-11T00:00:02Z');
+        """)
+
+        let first = try db.recordTurnDigest(
+            sessionID: "s", turnIndex: 1,
+            digest: "  用户问前台为什么没有输出，结论是模型卡在工具调用死循环  ",
+            keywords: "日志分析 工具调用死循环 日志分析", model: "gemma-4-12b")
+        XCTAssertEqual(first.digest, "用户问前台为什么没有输出，结论是模型卡在工具调用死循环")
+        XCTAssertEqual(first.keywords, ["日志分析", "工具调用死循环"], "同一轮重复的词只留一次")
+        XCTAssertEqual(try db.count("keywords"), 2)
+        XCTAssertEqual(try db.count("turn_keywords"), 2)
+
+        // 同一轮重写：覆盖那一行；这一轮只挂当前的词，旧词解绑，词表本身
+        // 全库共用、不删。
+        try db.recordTurnDigest(
+            sessionID: "s", turnIndex: 1,
+            digest: "用户问前台为什么没有输出，结论是工具调用死循环导致上下文膨胀。",
+            keywords: "工具调用死循环 上下文膨胀")
+        XCTAssertEqual(try db.count("turn_digests"), 1)
+        XCTAssertEqual(try db.count("keywords"), 3)
+        XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM turn_keywords;"), "2")
+
+        let reread = try XCTUnwrap(try db.turnDigest(sessionID: "s", turnIndex: 1))
+        XCTAssertEqual(reread.keywords, ["工具调用死循环", "上下文膨胀"])
+        XCTAssertEqual(reread.model, "gemma-4-12b", "重写没带 model 时不把原来的擦掉")
+
+        XCTAssertEqual(try db.turnsWithoutDigest(sessionID: "s"), [2, 3])
+        XCTAssertEqual(try db.recentTurnDigests(sessionID: "s").count, 1)
+        XCTAssertThrowsError(
+            try db.recordTurnDigest(sessionID: "s", turnIndex: 2, digest: "   ", keywords: "x"),
+            "空摘要不许落库")
+    }
+
+    /// v31 迁移：三张辅助表建起来；已有标题的行标成 filename，
+    /// 没标题的行不标（占位标题和真标题要分得开）。
+    func testMigrationThirtyOneCreatesTurnDigestTables() throws {
+        let (url, db) = try open("v31-migrate")
+        defer { cleanup(url) }
+        db.close()
+
+        try rawExec(url, """
+        DROP TABLE IF EXISTS turn_keywords;
+        DROP TABLE IF EXISTS keywords;
+        DROP TABLE IF EXISTS turn_digests;
+        ALTER TABLE external_files DROP COLUMN title_source;
+        INSERT INTO roots(root_id, category, display_name, locator_type, status)
+            VALUES('work','work',NULL,'path','present');
+        INSERT INTO external_files(root_id, relative_path, title, status)
+            VALUES('work','a.md','甲文件','present'),
+                  ('work','b.md',NULL,'present');
+        DELETE FROM schema_migrations WHERE version >= 31;
+        """)
+
+        let reopened = try ESISDatabase(url: url)
+        defer { reopened.close() }
+        try reopened.runMigrations()
+        XCTAssertEqual(try reopened.schemaVersion(), ESISDatabase.currentSchemaVersion)
+        XCTAssertEqual(try reopened.count("turn_digests"), 0)
+        XCTAssertEqual(try reopened.count("keywords"), 0)
+        XCTAssertEqual(
+            try rawText(url, "SELECT title_source FROM external_files WHERE relative_path='a.md';"),
+            "filename")
+        XCTAssertEqual(
+            try rawText(url, "SELECT COALESCE(title_source,'-') FROM external_files WHERE relative_path='b.md';"),
+            "-", "没标题的行不该被标成 filename")
+    }
+
+    /// v32：同一份字节挂在两个空间下结算，边的地址必须相同，只有标签不同。
+    /// 这条断言就是「依赖的是信息，不是来源」在代码里的样子。
+    func testSpaceNeverEntersDependencyAddress() throws {
+        let (url, db) = try open("space-address")
+        let rootA = try makeWorkRoot()
+        let rootB = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: rootA)
+            try? FileManager.default.removeItem(at: rootB)
+        }
+        try write("同一份内容", to: rootA, name: "a.md")
+        try write("同一份内容", to: rootB, name: "a.md")
+
+        _ = try db.settleWorkRootContents(rootID: "rootA", rootURL: rootA)
+        _ = try db.settleWorkRootContents(rootID: "rootB", rootURL: rootB)
+        let spaceA = try db.createSpace(
+            title: "参考文件", kind: "directory", titleSource: "human")
+        let spaceB = try db.createSpace(
+            title: "26.秦沈项目", kind: "directory", titleSource: "human")
+        try db.setRootSpace(rootID: "rootA", spaceID: spaceA.spaceID)
+        try db.setRootSpace(rootID: "rootB", spaceID: spaceB.spaceID)
+
+        let depA = try XCTUnwrap(try db.currentDependency("file:rootA/a.md"))
+        let depB = try XCTUnwrap(try db.currentDependency("file:rootB/a.md"))
+        XCTAssertEqual(depA.contentAddress, depB.contentAddress,
+                       "同一个字节串只有一个地址，跟它挂在哪个空间下无关")
+        XCTAssertEqual(try db.count("is_objects"), 1, "两个空间同一份内容只存一份")
+        XCTAssertNotEqual(spaceA.spaceID, spaceB.spaceID)
+        XCTAssertEqual(try db.space(forRoot: "rootA")?.title, "参考文件")
+    }
+
+    /// v32 迁移：现有每个 root 补一个空间，标题取路径最后一段，标成占位。
+    func testMigrationThirtyTwoBackfillsOneSpacePerRoot() throws {
+        let (url, db) = try open("v32-migrate")
+        defer { cleanup(url) }
+        db.close()
+
+        try rawExec(url, """
+        INSERT INTO roots(root_id, category, display_name, locator_type, status)
+            VALUES('work-a','work','/srv/Desktop/参考文件','path','present'),
+                  ('work-b','work','/srv/Desktop/26.秦沈项目','path','present');
+        DELETE FROM schema_migrations WHERE version >= 32;
+        DROP TABLE spaces;
+        """)
+
+        let reopened = try ESISDatabase(url: url)
+        defer { reopened.close() }
+        try reopened.runMigrations()
+        XCTAssertEqual(try reopened.schemaVersion(), ESISDatabase.currentSchemaVersion)
+        XCTAssertEqual(try reopened.count("spaces"), 2)
+        XCTAssertEqual(try reopened.listSpaces().map(\.title).sorted(),
+                       ["26.秦沈项目", "参考文件"])
+        let space = try XCTUnwrap(try reopened.space(forRoot: "work-a"))
+        XCTAssertEqual(space.titleSource, "filename", "占位标题，人还没改过")
+        XCTAssertEqual(space.kind, "directory")
+    }
+
+    /// 甲：加目录这个人的动作定空间身份，标题默认是文件夹名。
+    func testImportDirectoryNamesCreatesSpaceFromFolderName() throws {
+        let (url, db) = try open("space-import")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("x", to: root, name: "a.md")
+
+        _ = try db.importDirectoryNames(rootID: "work-import", rootURL: root)
+        let space = try XCTUnwrap(try db.space(forRoot: "work-import"))
+        XCTAssertEqual(space.title, root.lastPathComponent)
+        XCTAssertEqual(space.titleSource, "filename")
+        XCTAssertEqual(space.kind, "directory")
+
+        // 再导入一次：不新建空间，也不动已有标题。
+        _ = try db.importDirectoryNames(rootID: "work-import", rootURL: root)
+        XCTAssertEqual(try db.count("spaces"), 1)
+        XCTAssertEqual(try db.space(forRoot: "work-import")?.spaceID, space.spaceID)
+    }
+
+    /// 同一个路径换了目录（挂载被替换 / bind mount / 换卷）：看不见文件
+    /// 不是删除。不许清账、不许标 missing、不许作废结算。
+    func testReplacedDirectoryDoesNotInvalidateSources() throws {
+        let (url, db) = try open("locator-inode")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("alpha", to: root, name: "a.md")
+        let first = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+        XCTAssertEqual(first.settled, 1)
+        XCTAssertFalse(first.locatorIdentityChanged)
+
+        // 整个目录换掉：同一个路径，另一个 inode。
+        try FileManager.default.removeItem(at: root)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try write("beta", to: root, name: "b.md")
+
+        let second = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+        XCTAssertTrue(second.locatorIdentityChanged, "同路径换了 inode = 不是同一个目录")
+        XCTAssertEqual(second.removed, 0, "不许把「看不到」当成删除")
+        XCTAssertEqual(
+            try rawText(url, "SELECT COALESCE(status,'-') FROM external_files WHERE relative_path='a.md';"),
+            "present", "旧文件的行不许被标 missing")
+        XCTAssertEqual(try db.count("settlement_validity_events"), 0,
+                       "不许因此作废任何结算")
+
+        // 人确认「还是同一个目录，只是换了挂载」之后，接上。
+        try db.adoptRootLocatorIdentity(rootID: "w")
+        let third = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+        XCTAssertFalse(third.locatorIdentityChanged)
+        XCTAssertEqual(third.removed, 1, "认了之后，旧清单才算数")
+    }
+
+    /// v34：一条依赖两个时钟。valid_from 是这一版的诞生（文件自己的时间），
+    /// valid_to 是下一版的诞生；known_from / known_to 才是 ES 的执行时间。
+    func testDependencyIntervalsSeparateWorldClockFromRecordClock() throws {
+        let (url, db) = try open("dependency-intervals")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let file = root.appendingPathComponent("a.md")
+        let birth1 = Date(timeIntervalSince1970: 1_760_000_000)
+        let birth2 = birth1.addingTimeInterval(3600)
+
+        try write("第一版", to: root, name: "a.md")
+        try FileManager.default.setAttributes(
+            [.modificationDate: birth1], ofItemAtPath: file.path)
+        _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+
+        try write("第二版", to: root, name: "a.md")
+        try FileManager.default.setAttributes(
+            [.modificationDate: birth2], ofItemAtPath: file.path)
+        _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+
+        let intervals = try db.dependencyIntervals(dependencyID: "file:w/a.md")
+        XCTAssertEqual(intervals.count, 2)
+        XCTAssertNotEqual(intervals[0].contentAddress, intervals[1].contentAddress)
+        XCTAssertTrue(intervals[0].validFromIsSourceTime, "源时间在手就不用回落")
+        XCTAssertEqual(intervals[1].validTo, nil, "最新那一版没有终点")
+        XCTAssertEqual(intervals[0].validTo, intervals[1].validFrom,
+                       "世界时间是连续区间：下一版的诞生就是上一版的终点")
+
+        // 世界时间查询：那一刻为真的是哪一版。
+        XCTAssertEqual(
+            try db.dependencyAddress(
+                dependencyID: "file:w/a.md", validAt: birth1.addingTimeInterval(60)),
+            intervals[0].contentAddress)
+        XCTAssertEqual(
+            try db.dependencyAddress(
+                dependencyID: "file:w/a.md", validAt: birth2.addingTimeInterval(60)),
+            intervals[1].contentAddress)
+        XCTAssertNil(
+            try db.dependencyAddress(
+                dependencyID: "file:w/a.md", validAt: birth1.addingTimeInterval(-60)),
+            "还没出生那一刻，没有记录在案的版本")
+    }
+
+    /// 状态面板读的数要对：区间的开/闭/断点、摘要覆盖，都是面板上直接给人看的。
+    func testCarrierReportCountsIntervalsAndDigestCoverage() throws {
+        let (url, db) = try open("carrier-report-v34")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let birth1 = Date(timeIntervalSince1970: 1_760_000_000)
+
+        try write("第一版", to: root, name: "b.md")
+        try FileManager.default.setAttributes(
+            [.modificationDate: birth1], ofItemAtPath: root.appendingPathComponent("b.md").path)
+        _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+        try write("第二版", to: root, name: "b.md")
+        try FileManager.default.setAttributes(
+            [.modificationDate: birth1.addingTimeInterval(60)],
+            ofItemAtPath: root.appendingPathComponent("b.md").path)
+        _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
+
+        let report = try db.carrierReport()
+        XCTAssertEqual(report.dependencyIntervalsClosed, 1, "两版之间那一段是闭合的")
+        XCTAssertEqual(report.dependencyIntervalsOpen, 1, "最新一版没有终点")
+        XCTAssertEqual(report.dependencyIntervalBreaks, 0, "世界时间轴上相邻两版必须首尾相接")
+        XCTAssertEqual(report.turnDigests, 0)
+
+        try db.recordTurnDigest(
+            sessionID: "s", turnIndex: 1, digest: "这一轮做了什么", keywords: "区间 双时钟")
+        XCTAssertEqual(try db.carrierReport().turnDigests, 1)
+    }
+
+    /// VACUUM 失败必须留痕：写在库同目录的 simigo.maintenance.json，
+    /// carrierReport 把它带出来，成功回收后文件消失。
+    func testVacuumFailureIsRecordedNextToStore() throws {
+        let (url, db) = try open("vacuum-failure-note")
+        defer { db.close(); cleanup(url) }
+        let note = url.deletingLastPathComponent()
+            .appendingPathComponent("simigo.maintenance.json")
+        defer { try? FileManager.default.removeItem(at: note) }
+
+        XCTAssertNil(db.lastVacuumFailure, "没失败过就没这个文件")
+        XCTAssertNil(try db.carrierReport().vacuumFailure)
+
+        let payload: [String: Any] = [
+            "at": "2026-11-11T07:41:00Z",
+            "freedPages": 772,
+            "reason": "database is locked",
+        ]
+        try JSONSerialization.data(withJSONObject: payload)
+            .write(to: note, options: .atomic)
+
+        let reported = try XCTUnwrap(db.lastVacuumFailure)
+        XCTAssertTrue(reported.contains("772"), reported)
+        XCTAssertTrue(reported.contains("database is locked"), reported)
+        XCTAssertEqual(
+            try db.carrierReport().vacuumFailure, reported,
+            "状态接口要和文件说同一句话")
     }
 }
