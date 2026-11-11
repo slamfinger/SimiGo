@@ -171,9 +171,9 @@ public final class TurnAccumulator {
     var retainedAnchorIDCountForTesting: Int { seenAnchorIDs.count }
     var retainedIdentifiersForTesting: [String] {
         var values = Array(nodes.keys)
-        values.append(contentsOf: nodeOrder.map(\\.id))
-        values.append(contentsOf: nodes.values.compactMap(\\.parent))
-        values.append(contentsOf: nodes.values.compactMap(\\.anchorID))
+        values.append(contentsOf: nodeOrder.map(\.id))
+        values.append(contentsOf: nodes.values.compactMap(\.parent))
+        values.append(contentsOf: nodes.values.compactMap(\.anchorID))
         values.append(contentsOf: seenAnchorIDs)
         if let pending {
             values.append(pending.anchor.id)
