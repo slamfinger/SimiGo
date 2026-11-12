@@ -3814,6 +3814,69 @@ try apply(stmt)
         }
     }
 
+    /// 改房间名。房间是标签，改名就是改标签；`titleSource` 跟着标成人写的，
+    /// 免得以后自动命名再把它盖掉。
+    public func renameSpace(_ spaceID: String, title: String, titleSource: String = "human")
+        throws
+    {
+        let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else {
+            throw DatabaseError.sql("renameSpace: empty title")
+        }
+        let changed = try execBinding(
+            "UPDATE spaces SET title=?, title_source=? WHERE space_id=?;"
+        ) {
+            try bind($0, 1, name)
+            try bind($0, 2, titleSource)
+            try bind($0, 3, spaceID)
+        }
+        guard changed == 1 else {
+            throw DatabaseError.sql("renameSpace: no space \(spaceID)")
+        }
+    }
+
+    /// 删掉一个房间名之前，谁接管它的归属。
+    ///
+    /// 顺序是「已有的名字」优先：同轴房间（库里标过 axis 时）→「其他」→ 成员最多
+    /// 的那个。都不合适就返回 nil——界面据此提示「新建房间」或「这个名字留着改个名」，
+    /// 而不是把归属悬在半空。
+    public func spaceDeletionTarget(for spaceID: String) throws -> SpaceRow? {
+        let others = try listSpaces().filter { $0.spaceID != spaceID }
+        guard !others.isEmpty else { return nil }
+
+        // 同轴：axis 是外部归类工具加的列，没有这一列时这一步自然跳过。
+        if try columnExists("spaces", "axis"), let axis = try spaceAxis(spaceID),
+            !axis.isEmpty
+        {
+            for candidate in others where (try? spaceAxis(candidate.spaceID)) == axis {
+                return candidate
+            }
+        }
+        if let fallback = others.first(where: { $0.spaceID == "space-room-other" }) {
+            return fallback
+        }
+        var best: (row: SpaceRow, total: Int)?
+        for candidate in others {
+            let total = try spaceOccupancy(candidate.spaceID).total
+            if best == nil || total > best!.total {
+                best = (candidate, total)
+            }
+        }
+        // 全员皆空时也要给一个：名字总得落在一个房间上，选名单里的第一个。
+        return best?.row ?? others.first
+    }
+
+    /// `spaces.axis` 的当前取值。列不存在（外部归类工具还没跑过）时返回 nil。
+    public func spaceAxis(_ spaceID: String) throws -> String? {
+        guard try columnExists("spaces", "axis") else { return nil }
+        let stmt = try prepare("SELECT axis FROM spaces WHERE space_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, spaceID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        guard sqlite3_column_type(stmt, 0) != SQLITE_NULL else { return nil }
+        return String(cString: sqlite3_column_text(stmt, 0))
+    }
+
     public struct SpaceMergeReport: Equatable, Sendable {
         public let movedRoots: Int
         public let movedTurns: Int

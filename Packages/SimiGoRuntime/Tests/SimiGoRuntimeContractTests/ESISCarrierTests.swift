@@ -1035,6 +1035,67 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(try db.spaceOccupancy(source.spaceID).total, 0)
     }
 
+    /// 改名只动 `spaces.title`：归属、轮次、对象一个都不碰；来源标成 human，
+    /// 免得以后自动命名再把它盖掉。失败不留半截。
+    func testRenameSpaceKeepsMembershipAndMarksHuman() throws {
+        let (url, db) = try open("space-rename")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("x", to: root, name: "a.md")
+        _ = try db.settleWorkRootContents(rootID: "rootA", rootURL: root)
+
+        let room = try db.createSpace(title: "旧名", kind: "session", titleSource: "auto")
+        try db.setRootSpace(rootID: "rootA", spaceID: room.spaceID)
+        let occupancyBefore = try db.spaceOccupancy(room.spaceID)
+        let objectsBefore = try db.count("is_objects")
+
+        try db.renameSpace(room.spaceID, title: "  新名  ")
+
+        let renamed = try XCTUnwrap(try db.space(id: room.spaceID))
+        XCTAssertEqual(renamed.title, "新名", "两侧空白要修掉")
+        XCTAssertEqual(renamed.titleSource, "human")
+        XCTAssertEqual(try db.spaceOccupancy(room.spaceID), occupancyBefore, "改名不动归属")
+        XCTAssertEqual(try db.count("is_objects"), objectsBefore, "改名不碰对象")
+        XCTAssertEqual(try db.space(forRoot: "rootA")?.spaceID, room.spaceID)
+
+        XCTAssertThrowsError(try db.renameSpace(room.spaceID, title: "   "))
+        XCTAssertThrowsError(try db.renameSpace("space-nope", title: "x"))
+        XCTAssertEqual(try db.space(id: room.spaceID)?.title, "新名", "失败不能改掉已有的名字")
+    }
+
+    /// 删名前找接管：同轴优先，其次「其他」，再次名单里靠前的；一个都不剩
+    /// 就返回 nil——界面据此提示「新建」或「改名保留」，不让归属悬空。
+    func testSpaceDeletionTargetPrefersAxisThenOther() throws {
+        let (url, db) = try open("space-delete-target")
+        defer { db.close(); cleanup(url) }
+
+        let only = try db.createSpace(title: "唯一", kind: "session")
+        XCTAssertNil(try db.spaceDeletionTarget(for: only.spaceID), "只剩一个房间就没有接管者")
+
+        let dropped = try db.createSpace(title: "待删", kind: "session")
+        XCTAssertEqual(try db.spaceDeletionTarget(for: dropped.spaceID)?.spaceID, only.spaceID)
+
+        // axis 是外部归类工具加的列。补上这一列后，同轴要压过「其他」。
+        try rawExec(url, "ALTER TABLE spaces ADD COLUMN axis TEXT;")
+        try rawExec(url, """
+        UPDATE spaces SET axis='project' WHERE space_id='\(dropped.spaceID)';
+        INSERT INTO spaces(space_id, title, title_source, kind, created_at)
+            VALUES('space-room-other','其他','human','collection','2026-11-13T00:00:00Z');
+        """)
+        let sameAxis = try db.createSpace(title: "同轴", kind: "session")
+        try rawExec(url, "UPDATE spaces SET axis='project' WHERE space_id='\(sameAxis.spaceID)';")
+        XCTAssertEqual(try db.spaceDeletionTarget(for: dropped.spaceID)?.spaceID,
+                       sameAxis.spaceID, "同轴的房间优先")
+
+        // 没有同轴可归时，落到「其他」。
+        try rawExec(url, "UPDATE spaces SET axis='nature' WHERE space_id='\(dropped.spaceID)';")
+        XCTAssertEqual(try db.spaceDeletionTarget(for: dropped.spaceID)?.spaceID,
+                       "space-room-other")
+    }
+
     /// 「修关键词」的计数版与挑选版必须同口径：计数只读 keywords 列，
     /// 挑选还要 join 正文，但两者判定边界要一致，否则按钮上的数字会撒谎。
     func testThinKeywordCountMatchesTheRepairSelector() throws {
