@@ -179,16 +179,19 @@ public enum TurnDigestText {
 
     /// 只问关键词。摘要正文不动——已经有摘要的轮次缺的是检索入口，不是再写一遍。
     ///
-    /// 词必须是原文里出现过的字面：检索走 `digest LIKE ? OR keywords LIKE ?`，
-    /// 词表就是查询入口，编出来的词谁也不会搜到，白占一格。
+    /// 不要求词是原文里的字面：检索走 `digest LIKE ? OR keywords LIKE ?`，
+    /// 摘要本身已经覆盖了字面，词表多出来的那部分入口正是「原文里没有、
+    /// 讲的是这件事」的说法（2026-11-12 实测：只留原文里有的词，别名查询
+    /// 召回 177/177 → 54/177）。
     public static func keywordPrompt(question: String, answer: String) -> String {
         let (fed, _) = feed(answer)
         return """
         下面是一轮会话的问题和回答。只给这一轮的关键词，不要摘要。
 
-        只输出一行，不要任何解释：
-        关键词：<5 到 8 个词，空格分隔。每个词 2 到 8 个字，必须是原文里出现过的字面，\
-        因为以后要拿它去原文里查。不要标点，不要整句>
+        只输出一行词，不要标签、不要解释：
+        <5 到 8 个词，空格分隔，每个词 2 到 8 个字。既可以是原文里的字面，\
+        也可以是这一轮真正在讲的东西（术语、同义说法）——这些词以后就是检索入口。\
+        不要标点，不要整句>
 
         问题：
         \(String(question.prefix(maxQuestion)))
@@ -198,16 +201,40 @@ public enum TurnDigestText {
         """
     }
 
-    /// 只认关键词那一行。没有这一行就是 nil——调用方不猜、不兜底。
+    /// 只认关键词。有标签按标签取；没有标签按最后一行取——问的就是一行词，
+    /// 不能因为少了「关键词」四个字就判成失败（本机模型单行提问时 10/10
+    /// 不带标签，2026-11-12 实测）。两行都认不出就是 nil，调用方不猜。
     public static func parseKeywords(_ raw: String) -> [String]? {
+        var lines: [String] = []
         for line in raw.split(separator: "\n", omittingEmptySubsequences: false) {
             let trimmed = stripNoise(String(line))
-            guard let label = ["关键词：", "关键词:"].first(where: { trimmed.hasPrefix($0) })
-            else { continue }
-            let terms = splitTerms(String(trimmed.dropFirst(label.count)))
-            return terms.isEmpty ? nil : terms
+            if !trimmed.isEmpty { lines.append(trimmed) }
         }
-        return nil
+        for line in lines {
+            guard let label = ["关键词：", "关键词:"].first(where: { line.hasPrefix($0) })
+            else { continue }
+            let terms = splitTerms(String(line.dropFirst(label.count)))
+            if !terms.isEmpty { return terms }
+        }
+        // 兜底只吃「一整行词」：带冒号的说明是别的字段（摘要 / 解释），不猜。
+        guard let last = lines.last, !last.contains("："), !last.contains(":") else { return nil }
+        let terms = splitTerms(last)
+        return terms.isEmpty ? nil : terms
+    }
+
+    /// 合并已有的词与新要来的词：已有顺序不动，新增只去重、截到上限。
+    ///
+    /// 这里**不**按「是否出现在原文」筛。原文里没有的字面恰恰是关键词层比
+    /// 摘要多出来的入口；把它筛掉，词表就退化成摘要的副本（同一次实测：
+    /// 别名查询召回 177/177 → 54/177）。
+    public static func mergeKeywords(_ existing: [String], _ proposed: [String]) -> [String] {
+        var seen = Set(existing)
+        var out = existing
+        for term in proposed where seen.insert(term).inserted {
+            out.append(term)
+            if out.count == maxKeywords { break }
+        }
+        return out
     }
 
     /// 模型爱在行首行尾加星号、项目符号：先剥掉再认标签，认完再剥一次值。

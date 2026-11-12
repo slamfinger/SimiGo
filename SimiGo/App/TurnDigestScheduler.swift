@@ -97,8 +97,8 @@ enum TurnDigestScheduler {
     ///
     /// 已有的词留着——它们是这一轮被捞出来的入口，删掉就是把口子堵上
     /// （2026-11-12 实测：按「原文里搜不到」删词，别名查询的召回从 177/177
-    /// 掉到 54/177）。只补不够的：向本地模型要词，再按原文筛一遍——
-    /// 词表是检索入口，原文里没有的字面搜不到，也不该白占一格。
+    /// 掉到 54/177）。补进来的词也不再按「原文里有没有」筛：原文里没有、
+    /// 讲的却是这件事的说法，正是词表比摘要多出来的入口。
     static func repairKeywords(
         limit: Int? = nil,
         progress: @escaping @Sendable (Int, Int) -> Void
@@ -122,15 +122,8 @@ enum TurnDigestScheduler {
                     progress(index + 1, pending.count)
                     continue
                 }
-                let text = turn.question + "\n" + turn.answer
-                var merged = turn.keywords
-                var seen = Set(merged)
-                for term in fresh
-                where text.contains(term) && seen.insert(term).inserted {
-                    merged.append(term)
-                    if merged.count == TurnDigestText.maxKeywords { break }
-                }
-                // 一个能落地的词都没拿到：这一轮算没修成，不写空写。
+                let merged = TurnDigestText.mergeKeywords(turn.keywords, fresh)
+                // 模型一个词都没补进来：这一轮算没修成，不写空写。
                 guard merged.count > turn.keywords.count else {
                     failed += 1
                     progress(index + 1, pending.count)
