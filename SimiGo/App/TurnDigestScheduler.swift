@@ -25,18 +25,49 @@ enum TurnDigestScheduler {
         let question: String
         let answer: String
         var key: String { "\(sessionID)#\(turnIndex)" }
+        var bytes: Int { question.utf8.count + answer.utf8.count }
     }
 
     private enum Digestion: Error {
         /// 有人要用引擎，这一轮让位，等空窗重来。
         case yielded
+        /// 人按了停止。等空窗、生成中都能停。
+        case stopped
         case badFormat
+    }
+
+    /// 停止开关。写在主线程、读在后台，所以状态必须过锁——`@unchecked Sendable`
+    /// 只豁免编译检查，不提供同步。所有生成路径共用同一个判据：等空窗时轮询它，
+    /// 生成时每 300 ms 轮询它，看见就取消这次 HTTP 请求（服务端断连即停生成）。
+    final class DigestStop: @unchecked Sendable {
+        private let lock = NSLock()
+        private var cancelled = false
+
+        var isCancelled: Bool {
+            lock.lock(); defer { lock.unlock() }
+            return cancelled
+        }
+
+        func cancel() {
+            lock.lock(); cancelled = true; lock.unlock()
+        }
+
+        func reset() {
+            lock.lock(); cancelled = false; lock.unlock()
+        }
     }
 
     private static let state = DispatchQueue(label: "simigo.turn-digest")
     private static var pending: [Job] = []
     private static var queued = Set<String>()
     private static var working = false
+    private static var pendingBytes = 0
+
+    /// 队列上限。持续用引擎、一直等不到空窗时，队里攒的是整段问答原文；
+    /// 没有上限就是无界内存。满了就放弃这一轮——缺口还在账上，下次补录能捞回来，
+    /// 比悄悄吃满内存好。
+    private static let maxPending = 64
+    private static let maxPendingBytes = 1 << 20
 
     /// 记下这一轮要补的东西就走。调用方在这条路上不等模型。
     static func schedule(
@@ -45,8 +76,15 @@ enum TurnDigestScheduler {
         let job = Job(sessionID: sessionID, turnIndex: turnIndex,
                       question: question, answer: answer)
         let start: Bool = state.sync {
+            guard pending.count < maxPending,
+                  pendingBytes + job.bytes <= maxPendingBytes else {
+                NSLog("[digest] 队列已满（\(pending.count) 轮 / \(pendingBytes) B），"
+                      + "\(job.key) 留缺口")
+                return false
+            }
             guard queued.insert(job.key).inserted else { return false }
             pending.append(job)
+            pendingBytes += job.bytes
             guard !working else { return false }
             working = true
             return true
@@ -67,13 +105,10 @@ enum TurnDigestScheduler {
             }
             guard let job else { return }
 
-            guard await waitForIdle() else {
-                state.sync { working = false }
-                return
-            }
             do {
-                let raw = try await completeYielding(
-                    TurnDigestText.prompt(question: job.question, answer: job.answer))
+                let raw = try await generate(
+                    TurnDigestText.prompt(question: job.question, answer: job.answer),
+                    stop: nil)
                 guard let parsed = TurnDigestText.parse(raw) else {
                     NSLog("[digest] \(job.key) 输出不合格式，留缺口")
                     finish(job)
@@ -81,9 +116,10 @@ enum TurnDigestScheduler {
                 }
                 try write(job, parsed)
                 finish(job)
-            } catch Digestion.yielded {
-                // 让位：留在队里，空下来再试。不记失败——这不是这一轮的错。
-                try? await Task.sleep(nanoseconds: 1_500_000_000)
+            } catch Digestion.stopped {
+                // 任务被取消：把 working 放掉，免得后面没人再起 drain。
+                state.sync { working = false }
+                return
             } catch {
                 NSLog("[digest] \(job.key) 失败：\(error)")
                 finish(job)
@@ -95,6 +131,7 @@ enum TurnDigestScheduler {
         state.sync {
             if let index = pending.firstIndex(of: job) { pending.remove(at: index) }
             queued.remove(job.key)
+            pendingBytes = max(0, pendingBytes - job.bytes)
         }
     }
 
@@ -118,9 +155,11 @@ enum TurnDigestScheduler {
 
     /// 等一个干净的空窗：没人跑、没人等，并且安静满 1.5 秒。
     /// 不设上限——排队本身是常态，等到就是等到；进程退出时随 Task 一起走。
-    private static func waitForIdle() async -> Bool {
+    /// 返回 false 只有两种：任务被取消，或者人按了停止。
+    private static func waitForIdle(_ stop: DigestStop?) async -> Bool {
         var quietSince: Date?
         while !Task.isCancelled {
+            if stop?.isCancelled == true { return false }
             let live = RuntimeStateReporter.shared.admissionLiveness()
             if live.active == 0 && live.waiting == 0 {
                 if let since = quietSince {
@@ -143,12 +182,15 @@ enum TurnDigestScheduler {
     ///
     /// 判据是「active>1 或 waiting>0」。自己占一格，所以超过一格就是别人；
     /// 只看 waiting 会漏掉并发槽位大于一时直接放行的请求。
-    private static func completeYielding(_ prompt: String) async throws -> String {
+    private static func completeYielding(_ prompt: String,
+                                         stop: DigestStop?) async throws -> String {
         try await withThrowingTaskGroup(of: String?.self) { group in
             group.addTask { try await complete(prompt) }
             group.addTask {
                 while true {
                     try await Task.sleep(nanoseconds: 300_000_000)
+                    // 停止优先于让位：被取消的请求不再重排。
+                    if stop?.isCancelled == true { return nil }
                     let live = RuntimeStateReporter.shared.admissionLiveness()
                     // 占着的那一格是我们自己，所以 active>1 或有人排队，都是别人要用。
                     if live.active > 1 || live.waiting > 0 { return nil }
@@ -156,10 +198,30 @@ enum TurnDigestScheduler {
             }
             for try await first in group {
                 group.cancelAll()
-                guard let raw = first else { throw Digestion.yielded }
+                guard let raw = first else {
+                    throw stop?.isCancelled == true ? Digestion.stopped : Digestion.yielded
+                }
                 return raw
             }
             throw Digestion.badFormat
+        }
+    }
+
+    /// 三条生成路径唯一的入口：等空窗 → 生成 → 有人要用引擎就让位重来。
+    /// 让位不是失败，这一轮留在原地等下一个空窗；停止才是终止。
+    private static func generate(_ prompt: String,
+                                 stop: DigestStop?) async throws -> String {
+        while true {
+            if Task.isCancelled || stop?.isCancelled == true { throw Digestion.stopped }
+            guard await waitForIdle(stop) else { throw Digestion.stopped }
+            // 等待结束后再查一次：等的时候人可能刚按了停止。
+            if stop?.isCancelled == true { throw Digestion.stopped }
+            do {
+                return try await completeYielding(prompt, stop: stop)
+            } catch Digestion.yielded {
+                // 让位：不记失败——这不是这一轮的错。
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+            }
         }
     }
 
@@ -169,7 +231,7 @@ enum TurnDigestScheduler {
     /// 每补完一轮就回报一次，调用方据此更新进度；补不上的留在缺口里。
     static func fillMissing(
         limit: Int? = nil,
-        shouldStop: @Sendable () -> Bool = { false },
+        stop: DigestStop? = nil,
         progress: @escaping @Sendable (Int, Int) -> Void
     ) async -> (done: Int, failed: Int) {
         var pending: [ESISDatabase.UndigestedTurn]
@@ -184,13 +246,11 @@ enum TurnDigestScheduler {
         if let limit, limit < pending.count { pending = Array(pending.prefix(limit)) }
         var done = 0, failed = 0
         for (index, turn) in pending.enumerated() {
-            if shouldStop() { break }
-            // 一轮跑完再看引擎空不空：补录可以慢，但不能把人的下一轮挤在后面。
-            // 人一直不停手，补录就一直停着——这批活本来就是等人不在时做的。
-            _ = await waitForIdle()
+            if stop?.isCancelled == true { break }
             do {
-                let raw = try await complete(TurnDigestText.prompt(
-                    question: turn.question, answer: turn.answer))
+                // 和增量摘要走同一个入口：等空窗、生成中让人、停止能打断。
+                let raw = try await generate(TurnDigestText.prompt(
+                    question: turn.question, answer: turn.answer), stop: stop)
                 guard let parsed = TurnDigestText.parse(raw) else {
                     failed += 1
                     progress(index + 1, pending.count)
@@ -207,6 +267,8 @@ enum TurnDigestScheduler {
                     keywords: parsed.keywords.joined(separator: " "),
                     model: "local:\(model)")
                 done += 1
+            } catch Digestion.stopped {
+                break
             } catch {
                 failed += 1
                 NSLog("[digest] \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)")
@@ -224,7 +286,7 @@ enum TurnDigestScheduler {
     /// 讲的却是这件事的说法，正是词表比摘要多出来的入口。
     static func repairKeywords(
         limit: Int? = nil,
-        shouldStop: @Sendable () -> Bool = { false },
+        stop: DigestStop? = nil,
         progress: @escaping @Sendable (Int, Int) -> Void
     ) async -> (done: Int, failed: Int) {
         var pending: [ESISDatabase.DigestTurnText]
@@ -238,11 +300,11 @@ enum TurnDigestScheduler {
         }
         var done = 0, failed = 0
         for (index, turn) in pending.enumerated() {
-            if shouldStop() { break }
-            _ = await waitForIdle()
+            if stop?.isCancelled == true { break }
             do {
-                let raw = try await complete(TurnDigestText.keywordPrompt(
-                    question: turn.question, answer: turn.answer))
+                // 与摘要同一条调度：生成中有人来就取消这次请求，等空窗重来。
+                let raw = try await generate(TurnDigestText.keywordPrompt(
+                    question: turn.question, answer: turn.answer), stop: stop)
                 guard let fresh = TurnDigestText.parseKeywords(raw) else {
                     failed += 1
                     progress(index + 1, pending.count)
@@ -261,6 +323,8 @@ enum TurnDigestScheduler {
                     sessionID: turn.sessionID, turnIndex: turn.turnIndex,
                     keywords: merged)
                 done += 1
+            } catch Digestion.stopped {
+                break
             } catch {
                 failed += 1
                 NSLog("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)")

@@ -1177,6 +1177,51 @@ final class ESISCarrierTests: XCTestCase {
             "2")
     }
 
+    /// 人工归属是排他的：同一轴上已经有人的行，自动判据一行都不写。
+    /// 主键 (session, turn, space) 拦不住同一轴挂两个房间，所以排他只能由
+    /// 写入路径守——增量与全量必须是同一条规则。
+    func testHumanRoomOwnsItsAxisInBothWrites() throws {
+        let (url, db) = try open("space-human-axis")
+        defer { db.close(); cleanup(url) }
+
+        // 先建 schema（`spaces.axis` 由 ensureRoomSchema 补上），再建人建房。
+        _ = try db.assignTurnSpaces(dryRun: true)
+        let humanRoom = try db.createSpace(title: "手工项目房", kind: "session")
+        try rawExec(url, """
+        UPDATE spaces SET axis='project' WHERE space_id='\(humanRoom.spaceID)';
+        """)
+
+        // 这一轮的词同时命中项目轴（SimiGo）和性质轴（信息空间）。
+        _ = try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 1, digest: "d1", keywords: "simigo 检索")
+        // 人先把这一轮指定到项目轴的自建房。
+        try rawExec(url, """
+        INSERT INTO space_turns(session_id, turn_index, space_id, assigned_by, assigned_at)
+        VALUES('s1', 1, '\(humanRoom.spaceID)', 'human', '2026-11-13T00:00:00Z');
+        """)
+
+        func projectIDs() throws -> String? {
+            try firstValue(url, """
+            SELECT group_concat(st.space_id) FROM space_turns st
+              JOIN spaces s ON s.space_id=st.space_id
+             WHERE st.session_id='s1' AND st.turn_index=1 AND s.axis='project';
+            """)
+        }
+
+        let incremental = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        XCTAssertNil(incremental["project"], "项目轴归人，自动不再写")
+        XCTAssertEqual(incremental["nature"], "space-room-is", "没被占的性质轴照常判")
+        XCTAssertEqual(try projectIDs(), humanRoom.spaceID, "项目轴只剩人那一行")
+
+        let report = try db.assignTurnSpaces()
+        XCTAssertEqual(report.humanRowsKept, 1)
+        XCTAssertEqual(report.rowsWritten, 1, "全量也只写性质轴那一行")
+        XCTAssertEqual(try projectIDs(), humanRoom.spaceID, "全量不能往人占的轴再写")
+        XCTAssertEqual(
+            try firstValue(url, "SELECT COUNT(*) FROM space_turns WHERE session_id='s1';"),
+            "2", "人工一行 + 性质轴一行")
+    }
+
     /// 来源时间只写 `source_time`：能从 id 认出来的按 id，认不出的按 Core Data 兜底。
     func testBackfillSourceTimesFromSessionIdentity() throws {
         let (url, db) = try open("source-time")

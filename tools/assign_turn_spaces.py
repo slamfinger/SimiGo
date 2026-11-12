@@ -153,6 +153,18 @@ def main():
         if not per_axis:
             per_axis["fallback"] = (OTHER[0], "other")
 
+    # 人工归属是排他的：那条轴已经有人的行，自动结果一行都不写。
+    # 主键 (session_id, turn_index, space_id) 拦不住同一轴挂两个房间。
+    human_axes = {}
+    for s, t, axis in con.execute(
+            "SELECT st.session_id, st.turn_index, s.axis FROM space_turns st"
+            " JOIN spaces s ON s.space_id=st.space_id"
+            " WHERE st.assigned_by='human' AND s.axis IS NOT NULL"):
+        human_axes.setdefault((s, t), set()).add(axis)
+    for key, axes in human_axes.items():
+        for axis in axes:
+            chosen.get(key, {}).pop(axis, None)
+
     if dry:
         dist = Counter(room for per_axis in chosen.values() for room, _ in per_axis.values())
         by = Counter(by for per_axis in chosen.values() for _, by in per_axis.values())

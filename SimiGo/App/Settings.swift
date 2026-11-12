@@ -19,13 +19,9 @@ struct Settings: View {
     /// 缺口那一行默认不露脸：点过「状态刷新」才出现，出现后右边才长出开始/停止。
     @State private var gapsRevealed = false
     /// 长任务（补摘要）的停止开关。人已经证明会直接杀进程，那就给一个按钮。
-    @State private var repairStop = RepairStop()
-
-    /// 补摘要一轮十几秒，几千轮就是几小时。停止要做成可传递的旗子，
-    /// 而不是靠「杀掉窗口」。
-    final class RepairStop: @unchecked Sendable {
-        var stopped = false
-    }
+    /// 状态与轮询都在 `TurnDigestScheduler.DigestStop` 里（锁保护，且能打断
+    /// 正在跑的生成），界面只负责按一下。
+    @State private var repairStop = TurnDigestScheduler.DigestStop()
     /// 库内房间。目录房间在上面的工作目录行里已经露过脸，这里只列没有目录的
     /// 内部房间（SimiGo / 信息空间 / 本地推理 / 其他），并把每个目录挂在哪个
     /// 房间记在 `rootRoomTitles` 里贴回目录行。
@@ -364,9 +360,9 @@ struct Settings: View {
                 defer { db.close() }
                 try db.runMigrations()
                 let r = try db.assignTurnSpaces()
-                message = "房间：\\(r.rowsWritten) 行归属（自动判定）"
+                message = "房间：\(r.rowsWritten) 行归属（自动判定）"
             } catch {
-                message = "房间归属失败：\\(error)"
+                message = "房间归属失败：\(error)"
             }
             await MainActor.run {
                 collectionReport += "\n" + message
@@ -882,7 +878,7 @@ struct Settings: View {
             }
             Spacer()
             if informationSpaceBusy {
-                Button("停止") { repairStop.stopped = true }
+                Button("停止") { repairStop.cancel() }
             } else if (gaps?.total ?? 0) > 0 {
                 Button("开始") { runRepair() }
             }
@@ -916,7 +912,7 @@ struct Settings: View {
     private func runRepair() {
         guard !informationSpaceBusy else { return }
         informationSpaceBusy = true
-        repairStop.stopped = false
+        repairStop.reset()
         let stop = repairStop
         let exportDir = Self.sourceTimeExportDirectory
         digestProgress = "1/4：补轮账"
@@ -943,7 +939,7 @@ struct Settings: View {
             }
 
             // 2 时间
-            if !stop.stopped {
+            if !stop.isCancelled {
                 await MainActor.run { digestProgress = "2/4：补时间" }
                 act { db in
                     let r = try db.backfillSourceTimes(
@@ -965,10 +961,10 @@ struct Settings: View {
             }
 
             // 3 摘要
-            if !stop.stopped {
+            if !stop.isCancelled {
                 await MainActor.run { digestProgress = "3/4：补摘要" }
                 let result = await TurnDigestScheduler.fillMissing(
-                    shouldStop: { stop.stopped }
+                    stop: stop
                 ) { done, total in
                     Task { @MainActor in digestProgress = "补摘要 \(done)/\(total)" }
                 }
@@ -976,10 +972,10 @@ struct Settings: View {
             }
 
             // 4 关键词
-            if !stop.stopped {
+            if !stop.isCancelled {
                 await MainActor.run { digestProgress = "4/4：补关键词" }
                 let result = await TurnDigestScheduler.repairKeywords(
-                    shouldStop: { stop.stopped }
+                    stop: stop
                 ) { done, total in
                     Task { @MainActor in digestProgress = "补关键词 \(done)/\(total)" }
                 }
@@ -987,7 +983,7 @@ struct Settings: View {
             }
 
             // 收尾：房间归属。词补完了才判得准。
-            if !stop.stopped {
+            if !stop.isCancelled {
                 await MainActor.run { digestProgress = "收尾：补房间" }
                 act { db in
                     let r = try db.assignTurnSpaces()
@@ -996,7 +992,7 @@ struct Settings: View {
                 }
                 await MainActor.run { refreshRooms() }
             }
-            await finish(lines, stop: stop.stopped)
+            await finish(lines, stop: stop.isCancelled)
         }
     }
 

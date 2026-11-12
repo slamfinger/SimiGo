@@ -4186,6 +4186,39 @@ try apply(stmt)
         return String(cString: c)
     }
 
+    /// 这一轮已被人工指定到哪些轴。人工归属是**排他**的：那条轴上的自动
+    /// 结果一行都不写。主键 (session, turn, space) 拦不住同一轴挂两个房间，
+    /// 所以排他只能由写入方守住——增量与全量走同一条判据。
+    private func humanRoomAxes(sessionID: String? = nil,
+                               turnIndex: Int? = nil) throws -> [TurnKey: Set<String>] {
+        guard try tableExists("space_turns") else { return [:] }
+        var sql = """
+        SELECT st.session_id, st.turn_index, s.axis FROM space_turns st
+          JOIN spaces s ON s.space_id=st.space_id
+         WHERE st.assigned_by='human' AND s.axis IS NOT NULL
+        """
+        if sessionID != nil { sql += " AND st.session_id=?" }
+        if turnIndex != nil { sql += " AND st.turn_index=?" }
+        let stmt = try prepare(sql + ";")
+        defer { sqlite3_finalize(stmt) }
+        var index: Int32 = 1
+        if let sessionID {
+            try bind(stmt, index, sessionID); index += 1
+        }
+        if let turnIndex {
+            try bind(stmt, index, Int64(turnIndex))
+        }
+        var out: [TurnKey: Set<String>] = [:]
+        while try stepRowOrDone(stmt) {
+            guard let session = sqlite3_column_text(stmt, 0),
+                  let axis = sqlite3_column_text(stmt, 2) else { continue }
+            let key = TurnKey(session: String(cString: session),
+                              turn: Int(sqlite3_column_int64(stmt, 1)))
+            out[key, default: []].insert(String(cString: axis))
+        }
+        return out
+    }
+
     /// 增量：一轮刚写下摘要与关键词，立刻把它放进房间。
     ///
     /// 新轮次不归属，等于素材进来了但没人认识它——下一轮检索就找不到它。
@@ -4195,24 +4228,29 @@ try apply(stmt)
     public func assignTurnSpace(sessionID: String, turnIndex: Int) throws -> [String: String] {
         try ensureRoomSchema()
         let (rules, _) = try roomRules()
+        // 人指定的轴不参与自动选择：同一轴只留人的那一行。
+        let human = try humanRoomAxes(
+            sessionID: sessionID, turnIndex: turnIndex
+        )[TurnKey(session: sessionID, turn: turnIndex)] ?? []
         let picks = bestRooms(for: try turnKeywords(sessionID: sessionID,
                                                     turnIndex: turnIndex),
                               rules: rules)
         var chosen: [String: String] = [:]
         var resolved: [String: String] = [:]
-        for (axis, rule) in picks {
+        for (axis, rule) in picks where !human.contains(axis) {
             if resolved[rule.id] == nil {
                 resolved[rule.id] = try resolveRoom(
                     id: rule.id, title: rule.title, axis: rule.axis)
             }
             chosen[axis] = resolved[rule.id]
         }
-        for axis in ["project", "nature"] where chosen[axis] == nil {
+        for axis in ["project", "nature"]
+        where chosen[axis] == nil && !human.contains(axis) {
             if let room = try sessionRoom(sessionID: sessionID, axis: axis) {
                 chosen[axis] = room
             }
         }
-        if chosen.isEmpty {
+        if chosen.isEmpty && human.isEmpty {
             if resolved["space-room-other"] == nil {
                 resolved["space-room-other"] = try resolveRoom(
                     id: "space-room-other", title: "其他", axis: "fallback")
@@ -4346,6 +4384,12 @@ try apply(stmt)
                 perAxis["fallback"] = ("space-room-other", "other")
             }
             chosen[key] = perAxis
+        }
+
+        // 人工归属排他：这条轴已有人的行，自动结果一行都不写。
+        // 增量路径（assignTurnSpace）用同一条判据，两边不能各算一套。
+        for (key, axes) in try humanRoomAxes() {
+            chosen[key] = chosen[key]?.filter { !axes.contains($0.key) }
         }
 
         func tally() -> (rooms: [String: Int], sources: [String: Int]) {
