@@ -902,6 +902,7 @@ struct Settings: View {
             Spacer()
             if informationSpaceBusy {
                 Button("停止") { repairStop.cancel() }
+                    .help("停止补录：当前数据库步骤完成后停止；模型生成期间会取消当前请求")
             } else if (gaps?.total ?? 0) > 0 {
                 Button("开始") { runRepair() }
             }
@@ -957,11 +958,13 @@ struct Settings: View {
                 }
             }
 
-            // 1 轮账
-            act { db in
-                let r = try db.backfillImportedTurnLedger()
-                return "轮账：导入 \(r.importedTurnsTotal) 轮（本次补 \(r.turnsInserted)，"
-                    + "保留 \(r.sessionsKept) 个会话原轮号）"
+            // 1 轮账。若任务启动后立刻按停止，不再开启数据库工作。
+            if !stop.isCancelled {
+                act { db in
+                    let r = try db.backfillImportedTurnLedger()
+                    return "轮账：导入 \(r.importedTurnsTotal) 轮（本次补 \(r.turnsInserted)，"
+                        + "保留 \(r.sessionsKept) 个会话原轮号）"
+                }
             }
 
             // 2 时间

@@ -132,9 +132,6 @@ actor SessionGenerationGate {
     private var activeKeys: Set<AgentExecutionKey> = []
     private var waiters: [AgentExecutionKey: [Waiter]] = [:]
     private var isShuttingDown = false
-    // Synchronous observer of authoritative scheduler state. The callback must
-    // be nonblocking and must not call back into this scheduler.
-    private var snapshotObserver: (@Sendable (Snapshot) -> Void)?
     private var drainContinuations: [CheckedContinuation<Void, Never>] = []
 
     func withExclusive<T: Sendable>(
@@ -376,6 +373,9 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
     private var waiters: [Waiter] = []
     private var nextSequence: UInt64 = 0
     private var isShuttingDown = false
+    // Synchronous observer of authoritative scheduler state. The callback must
+    // be nonblocking and must not call back into this scheduler.
+    private var snapshotObserver: (@Sendable (Snapshot) -> Void)?
 
     init(limit: Int, queueCapacity: Int? = nil) {
         precondition(limit > 0, "request admission limit must be positive")
