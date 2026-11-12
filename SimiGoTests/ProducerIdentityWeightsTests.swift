@@ -86,7 +86,7 @@ final class ProducerIdentityWeightsTests: XCTestCase {
 
     func testSameSizeRewriteWithRestoredModificationDateChangesIdentity() throws {
         let path = try makeModel(
-            "rewrite/model", tokenizer: "{\\"vocab\\":1}", weights: Data("same-size-A".utf8))
+            "rewrite/model", tokenizer: "{\"vocab\":1}", weights: Data("same-size-A".utf8))
         let weight = URL(fileURLWithPath: path).appendingPathComponent("model.safetensors")
         // Set a whole-second timestamp first. APFS can expose subsecond values
         // through stat but FileManager.setAttributes may round them when
