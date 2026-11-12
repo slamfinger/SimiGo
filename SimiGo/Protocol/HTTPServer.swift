@@ -497,6 +497,13 @@ public final class HTTPServer: @unchecked Sendable {
         /// 统一终止入口：defer 中无法 await，以独立 Task 汇入协调器（幂等）。
         /// 失败路径必须给出 P0-1 分类 reason；未显式分类时按连接状态回落。
         func finishLifecycle(success: Bool, failureReason: String? = nil) {
+            // A-2 grant lifetime is this request, not a table size. Every
+            // endpoint funnels its completion, failure and cancellation here,
+            // so the KV bind authority registered on admission is dropped at
+            // the only moment nothing can bind it any more.
+            if let child = continuationBinding?.childESStateID {
+                ISKVBindAuthority.shared.release(esStateID: child)
+            }
             Task {
                 let reason = success
                     ? "completed"

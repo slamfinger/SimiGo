@@ -27,20 +27,29 @@ enum ProducerIdentity {
     /// revision, root id), never the filesystem path, so relocating a snapshot
     /// does not change identity while a different model or revision does.
     static func modelBindingFingerprint(_ identity: [String: Any]) -> String {
-        canonicalFingerprint([
+        var fields: [String: Any] = [
             "model_repo_id": identity["model_repo_id"] ?? NSNull(),
             "model_revision": identity["model_revision"] ?? NSNull(),
             "model_root_id": identity["model_root_id"] ?? NSNull(),
-        ])
+        ]
+        // A hub-named snapshot is already pinned by repo + revision (the
+        // revision IS the snapshot hash). An unnamed directory has none of the
+        // three, so without this field its fingerprint is the digest of three
+        // nulls — the same value for every such model on the machine. The bytes
+        // of the weight files are the identity that was missing.
+        if let weights = identity["model_weights_identity"] {
+            fields["model_weights_identity"] = weights
+        }
+        return canonicalFingerprint(fields)
     }
 
     /// Resolve durable model identity (repoID + revision=snapshot hash) via the
     /// PRODUCTION ModelDiscovery, matching the resolved weight file under
     /// the given snapshot path. Records model instance + revision, not a path.
-    static func modelIdentity(fromPath path: String) -> [String: Any] {
+    static func modelIdentity(fromPath path: String, hubs: [URL]? = nil) -> [String: Any] {
         let url = URL(fileURLWithPath: path).standardizedFileURL
-        let match = ModelDiscovery.discover().first {
-            $0.fileURL.standardizedFileURL.path.hasPrefix(url.path)
+        let match = ModelDiscovery.discover(hubs: hubs).first {
+            isWithin($0.fileURL.standardizedFileURL.path, url.path)
         }
         var out: [String: Any] = ["model_path": path]
         if let m = match {
@@ -49,8 +58,70 @@ enum ProducerIdentity {
             out["model_root_id"] = m.rootID
         } else {
             out["model_repo_id"] = NSNull(); out["model_revision"] = NSNull()
+            // Outside the hub layout there is no repo/revision to name the
+            // model. Fall back to the only thing that actually distinguishes
+            // two local directories: the content of their weight files.
+            if let weights = weightsIdentity(fromPath: path) {
+                out["model_weights_identity"] = weights
+            }
         }
         return out
+    }
+
+    /// Weight-file content identity for a directory the hub layout cannot name.
+    ///
+    /// Returns nil when the directory holds no readable weight file. nil means
+    /// "cannot be named", never "the same as every other unnamed directory":
+    /// the caller turns it into `.absent`, which every identity-gated reuse
+    /// refuses.
+    ///
+    /// Digests use GGUFModelIdentity's file-version cache: device, inode, size,
+    /// nanosecond mtime and ctime are checked around a descriptor-based read.
+    /// A same-size in-place rewrite with a restored mtime therefore cannot reuse
+    /// a stale digest.
+    static func weightsIdentity(fromPath path: String) -> [[String: Any]]? {
+        let dir = URL(fileURLWithPath: path).standardizedFileURL
+        let files = weightFiles(in: dir)
+        guard !files.isEmpty else { return nil }
+        var out: [[String: Any]] = []
+        for file in files {
+            guard let digest = cachedContentDigest(of: file) else { return nil }
+            out.append([
+                "file": file.path.hasPrefix(dir.path + "/")
+                    ? String(file.path.dropFirst(dir.path.count + 1))
+                    : file.lastPathComponent,
+                "size": byteCount(of: file.path),
+                "sha256": digest,
+            ])
+        }
+        return out
+    }
+
+    private static let weightExtensions: Set<String> = [
+        "safetensors", "npz", "bin", "gguf", "ckpt", "pt", "pth", "weights",
+    ]
+
+    private static func weightFiles(in dir: URL) -> [URL] {
+        guard let walker = FileManager.default.enumerator(
+            at: dir, includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles])
+        else { return [] }
+        var out: [URL] = []
+        for case let url as URL in walker {
+            guard weightExtensions.contains(url.pathExtension.lowercased()),
+                (try? url.resourceValues(forKeys: [.isRegularFileKey]))?
+                    .isRegularFile == true
+            else { continue }
+            out.append(url)
+        }
+        return out.sorted { $0.path < $1.path }
+    }
+
+    private static func cachedContentDigest(of file: URL) -> String? {
+        // Reuse the resolver's descriptor-verified identity cache rather than
+        // keying by path/size/mtime alone. That weaker stamp can collide when a
+        // file is rewritten in place and its old mtime is restored.
+        try? GGUFModelIdentity.resolve(path: file.path).contentSHA256
     }
 
     /// Tokenizer identity: content SHA-256 (production digest) of each tokenizer
@@ -128,7 +199,18 @@ enum ProducerIdentity {
                     tokenizer: GGUFModelIdentity.tokenizerFingerprint(
                         modelContentSHA256: marker)))
         }
-        let model = modelBindingFingerprint(modelIdentity(fromPath: path))
+        let fields = modelIdentity(fromPath: path)
+        // A directory the hub cannot name AND whose weights cannot be hashed has
+        // no identity. Fingerprinting the three nulls here is exactly what let
+        // two different MLX models share a producer; `.absent` refuses every
+        // identity-gated reuse (physical KV restore, identity-bound
+        // consumption) instead of silently admitting it.
+        guard fields["model_repo_id"] as? String != nil
+            || fields["model_weights_identity"] != nil
+        else {
+            return ("", SettlementIdentityBinding.Identity.absent)
+        }
+        let model = modelBindingFingerprint(fields)
         return (
             model,
             SettlementIdentityBinding.Identity(
@@ -153,6 +235,10 @@ enum ProducerIdentity {
     /// bytes cannot be read.
     static func ggufModelIdentity(fromPath path: String) -> GGUFModelIdentity? {
         try? GGUFModelIdentity.resolve(path: path)
+    }
+
+    private static func isWithin(_ path: String, _ root: String) -> Bool {
+        path == root || path.hasPrefix(root.hasSuffix("/") ? root : root + "/")
     }
 
     private static func isRegularFile(_ path: String) -> Bool {

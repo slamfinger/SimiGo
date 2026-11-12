@@ -1345,6 +1345,10 @@
       "output": "SimiGoTests/PrefixPoolNamespaceRecencyTests.swift"
     },
     {
+      "path": "SimiGoTests/ProducerIdentityWeightsTests.swift",
+      "output": "SimiGoTests/ProducerIdentityWeightsTests.swift"
+    },
+    {
       "path": "SimiGoTests/RealModelStreamingCancelRetryE2ETests.swift",
       "output": "SimiGoTests/RealModelStreamingCancelRetryE2ETests.swift"
     },

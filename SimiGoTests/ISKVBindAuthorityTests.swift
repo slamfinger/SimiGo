@@ -57,6 +57,14 @@ final class ISKVBindAuthorityTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try Data(#"{"model_type":"a2-kv-binding-stand-in"}"#.utf8).write(
             to: dir.appendingPathComponent("tokenizer.adapter.json"))
+        // Post-#171: a directory the hub layout cannot name derives its model
+        // identity from its weight bytes. The old stand-in carried a tokenizer
+        // and nothing else, so it now resolves `.absent` — which every identity
+        // gate refuses, exactly as intended. Give it weight bytes so it resolves
+        // a real identity the way a local model directory does; the physical
+        // gate tests then compare two real identities instead of two absences.
+        try Data("a2-stand-in-weights".utf8).write(
+            to: dir.appendingPathComponent("model.safetensors"))
         modelPath = dir.path
     }
 
@@ -395,32 +403,42 @@ final class ISKVBindAuthorityTests: XCTestCase {
             .verdict(.unauthorized(reason: "revoked")))
     }
 
-    /// The bound table is bounded: an old unconsumed grant is evicted rather
-    /// than growing forever. Eviction tombstones the grant — the evicted ES
-    /// stays governed and must be refused at the bind site, never downgraded
-    /// to an ungoverned everyday turn.
+    /// Lifetime is the request, not a table size: nothing is evicted while a
+    /// request is in flight, and `release` is what empties the table when the
+    /// request ends. This is the property the old bounded-tombstone design could
+    /// not hold — its ring could be walked past by unrelated registrations.
     @MainActor
-    func testGateTableStaysBoundedUnderChurn() {
+    func testGrantsLiveUntilTheirRequestReleases() {
         ISKVBindAuthority.shared.reset()
         let ids = (0..<80).map { _ in "es-" + UUID().uuidString.lowercased() }
         for id in ids {
             ISKVBindAuthority.shared.register(esStateID: id, verdict: .unauthorized(reason: "x"))
         }
-        XCTAssertLessThanOrEqual(ISKVBindAuthority.shared.count, 64,
-                                "the grant table must stay bounded")
-        // The oldest entries were tombstoned, not forgotten.
-        XCTAssertEqual(
-            ISKVBindAuthority.shared.peek(esStateID: ids.first!),
-            .verdict(.unauthorized(reason: "kv_authority_evicted")))
+        XCTAssertEqual(ISKVBindAuthority.shared.count, ids.count,
+                       "no registration may evict another in-flight grant")
+        XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids.first!).isGoverned, true)
         XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids.last!).isGoverned, true)
+
+        for id in ids {
+            ISKVBindAuthority.shared.release(esStateID: id)
+        }
+        XCTAssertEqual(ISKVBindAuthority.shared.count, 0,
+                       "every grant leaves the table when its request ends")
+        XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids.first!), .notGoverned)
+
+        // Releasing an id that was never registered, or releasing twice, is a
+        // no-op — completions and failures both funnel through it.
+        ISKVBindAuthority.shared.release(esStateID: "es-never-\(UUID().uuidString)")
+        XCTAssertEqual(ISKVBindAuthority.shared.count, 0)
         ISKVBindAuthority.shared.reset()
     }
 
-    /// An in-flight governed continuation whose grant was evicted must fail
-    /// closed at the bind site (cold prefill); a never-registered everyday turn
-    /// keeps the pre-A-2 behaviour; re-registration replaces the tombstone.
+    /// A grant survives arbitrary unrelated churn and still gates its own bind;
+    /// the never-registered everyday turn keeps the pre-A-2 behaviour; and a
+    /// released grant is not governed any more. Together these are the whole
+    /// contract: governed-and-paid, governed-and-refused, ungoverned, finished.
     @MainActor
-    func testEvictedInFlightGrantFailsClosedAtBind() {
+    func testGrantSurvivesChurnThenEndsWithItsRequest() {
         ISKVBindAuthority.shared.reset()
         let ns = namespace()
         let settledRepresentation = representation(in: ns)
@@ -429,20 +447,20 @@ final class ISKVBindAuthorityTests: XCTestCase {
 
         let inFlight = "es-" + UUID().uuidString.lowercased()
         ISKVBindAuthority.shared.register(esStateID: inFlight, verdict: .authorized(recorded))
-        // Churn past capacity before the in-flight request reaches its bind site.
-        for _ in 0..<64 {
-            ISKVBindAuthority.shared.register(
-                esStateID: "es-" + UUID().uuidString.lowercased(),
-                verdict: .unauthorized(reason: "churn"))
+        // Churn well past the old 64-entry window before the in-flight request
+        // reaches its bind site.
+        let churn = (0..<200).map { _ in "es-" + UUID().uuidString.lowercased() }
+        for id in churn {
+            ISKVBindAuthority.shared.register(esStateID: id, verdict: .unauthorized(reason: "churn"))
         }
         let decision = NativeMLXPrefixPool.bindVerdict(
             ISKVBindAuthority.shared.consume(esStateID: inFlight),
             namespace: ns, tokenCount: settledRepresentation.tokenCount,
             boundaryHash: settledRepresentation.boundaryHash,
             engineIdentity: gateIdentity)
-        XCTAssertEqual(decision, .rejected(reason: "kv_authority_evicted"))
-        XCTAssertFalse(decision.permitsBind,
-                       "an evicted in-flight grant must not restore pooled KV")
+        XCTAssertEqual(decision, .allowed,
+                       "unrelated traffic must not downgrade an in-flight governed grant")
+        for id in churn { ISKVBindAuthority.shared.release(esStateID: id) }
 
         // The everyday path is unchanged: never registered = not governed.
         let everyday = NativeMLXPrefixPool.bindVerdict(
@@ -453,47 +471,13 @@ final class ISKVBindAuthorityTests: XCTestCase {
         XCTAssertEqual(everyday, .notGoverned)
         XCTAssertTrue(everyday.permitsBind)
 
-        // Re-registration replaces the tombstone with a fresh grant.
-        ISKVBindAuthority.shared.register(esStateID: inFlight, verdict: .authorized(recorded))
-        XCTAssertEqual(
-            NativeMLXPrefixPool.bindVerdict(
-                ISKVBindAuthority.shared.consume(esStateID: inFlight),
-                namespace: ns, tokenCount: settledRepresentation.tokenCount,
-                boundaryHash: settledRepresentation.boundaryHash,
-                engineIdentity: gateIdentity),
-            .allowed)
-        ISKVBindAuthority.shared.reset()
-    }
-
-    /// The tombstone ledger is itself bounded: live grants stay within capacity,
-    /// recently evicted ids stay fail-closed, and an id pushed out of the ledger
-    /// reverts to the ordinary ungoverned path. This forces the bounded-window
-    /// invariant instead of assuming an evicted request is always already gone.
-    @MainActor
-    func testTombstoneLedgerIsBoundedAndWindowExpires() {
-        ISKVBindAuthority.shared.reset()
-        // 64 live + 64 tombstone ring + 5 pushed out of the ring = 133.
-        let ids = (0..<133).map { "es-\($0)" }
-        for id in ids {
-            ISKVBindAuthority.shared.register(esStateID: id, verdict: .unauthorized(reason: "x"))
-        }
-        XCTAssertLessThanOrEqual(ISKVBindAuthority.shared.count, 64,
-                                "live grants must stay bounded under churn")
-        // Newest 64 (indices 69...132) are live.
-        XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids[69]).isGoverned, true)
-        XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids[132]).isGoverned, true)
-        // Retained tombstones (indices 5...68) stay fail-closed.
-        XCTAssertEqual(
-            ISKVBindAuthority.shared.peek(esStateID: ids[5]),
-            .verdict(.unauthorized(reason: "kv_authority_evicted")))
-        XCTAssertEqual(
-            ISKVBindAuthority.shared.peek(esStateID: ids[68]),
-            .verdict(.unauthorized(reason: "kv_authority_evicted")))
-        // The 5 oldest were pushed out of the bounded ring: ordinary again.
-        for i in 0..<5 {
-            XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: ids[i]), .notGoverned,
-                           "an id evicted from the bounded ledger reverts to ungoverned")
-        }
+        // A request that ends without ever binding leaves nothing behind, and
+        // its id is an ordinary turn afterwards — the request is over.
+        let unbound = "es-" + UUID().uuidString.lowercased()
+        ISKVBindAuthority.shared.register(esStateID: unbound, verdict: .authorized(recorded))
+        ISKVBindAuthority.shared.release(esStateID: unbound)
+        XCTAssertEqual(ISKVBindAuthority.shared.peek(esStateID: unbound), .notGoverned)
+        XCTAssertEqual(ISKVBindAuthority.shared.count, 0)
         ISKVBindAuthority.shared.reset()
     }
 }
