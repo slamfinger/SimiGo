@@ -46,10 +46,10 @@ enum ProducerIdentity {
     /// Resolve durable model identity (repoID + revision=snapshot hash) via the
     /// PRODUCTION ModelDiscovery, matching the resolved weight file under
     /// the given snapshot path. Records model instance + revision, not a path.
-    static func modelIdentity(fromPath path: String) -> [String: Any] {
+    static func modelIdentity(fromPath path: String, hubs: [URL]? = nil) -> [String: Any] {
         let url = URL(fileURLWithPath: path).standardizedFileURL
-        let match = ModelDiscovery.discover().first {
-            $0.fileURL.standardizedFileURL.path.hasPrefix(url.path)
+        let match = ModelDiscovery.discover(hubs: hubs).first {
+            isWithin($0.fileURL.standardizedFileURL.path, url.path)
         }
         var out: [String: Any] = ["model_path": path]
         if let m = match {
@@ -75,9 +75,10 @@ enum ProducerIdentity {
     /// the caller turns it into `.absent`, which every identity-gated reuse
     /// refuses.
     ///
-    /// Digests are cached per file stamp (path + size + mtime), so an 8 GB
-    /// snapshot is hashed once per process rather than once per settlement,
-    /// and any change to a shard re-hashes it.
+    /// Digests use GGUFModelIdentity's file-version cache: device, inode, size,
+    /// nanosecond mtime and ctime are checked around a descriptor-based read.
+    /// A same-size in-place rewrite with a restored mtime therefore cannot reuse
+    /// a stale digest.
     static func weightsIdentity(fromPath path: String) -> [[String: Any]]? {
         let dir = URL(fileURLWithPath: path).standardizedFileURL
         let files = weightFiles(in: dir)
@@ -95,9 +96,6 @@ enum ProducerIdentity {
         }
         return out
     }
-
-    private static let weightsCacheLock = NSLock()
-    private static var weightsCache: [String: String] = [:]
 
     private static let weightExtensions: Set<String> = [
         "safetensors", "npz", "bin", "gguf", "ckpt", "pt", "pth", "weights",
@@ -120,21 +118,10 @@ enum ProducerIdentity {
     }
 
     private static func cachedContentDigest(of file: URL) -> String? {
-        let attributes = try? FileManager.default.attributesOfItem(atPath: file.path)
-        let size = (attributes?[.size] as? NSNumber)?.int64Value ?? 0
-        let stamp = (attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-        let key = "\(file.path)|\(size)|\(stamp)"
-        weightsCacheLock.lock()
-        let cached = weightsCache[key]
-        weightsCacheLock.unlock()
-        if let cached { return cached }
-        guard let digest = try? GGUFModelIdentity.streamingSHA256(of: file) else {
-            return nil
-        }
-        weightsCacheLock.lock()
-        weightsCache[key] = digest
-        weightsCacheLock.unlock()
-        return digest
+        // Reuse the resolver's descriptor-verified identity cache rather than
+        // keying by path/size/mtime alone. That weaker stamp can collide when a
+        // file is rewritten in place and its old mtime is restored.
+        try? GGUFModelIdentity.resolve(path: file.path).contentSHA256
     }
 
     /// Tokenizer identity: content SHA-256 (production digest) of each tokenizer
@@ -248,6 +235,10 @@ enum ProducerIdentity {
     /// bytes cannot be read.
     static func ggufModelIdentity(fromPath path: String) -> GGUFModelIdentity? {
         try? GGUFModelIdentity.resolve(path: path)
+    }
+
+    private static func isWithin(_ path: String, _ root: String) -> Bool {
+        path == root || path.hasPrefix(root.hasSuffix("/") ? root : root + "/")
     }
 
     private static func isRegularFile(_ path: String) -> Bool {

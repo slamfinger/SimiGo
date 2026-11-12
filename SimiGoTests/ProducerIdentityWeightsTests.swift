@@ -84,6 +84,52 @@ final class ProducerIdentityWeightsTests: XCTestCase {
                           "a single shard byte change must move the identity")
     }
 
+    func testSameSizeRewriteWithRestoredModificationDateChangesIdentity() throws {
+        let path = try makeModel(
+            "rewrite/model", tokenizer: "{\\"vocab\\":1}", weights: Data("same-size-A".utf8))
+        let weight = URL(fileURLWithPath: path).appendingPathComponent("model.safetensors")
+        let originalIdentity = ProducerIdentity.identity(fromPath: path)
+        let before = try FileManager.default.attributesOfItem(atPath: weight.path)
+        let originalModificationDate = try XCTUnwrap(before[.modificationDate] as? Date)
+        let originalSize = try XCTUnwrap(before[.size] as? NSNumber).int64Value
+
+        let handle = try FileHandle(forWritingTo: weight)
+        try handle.truncate(atOffset: 0)
+        try handle.write(contentsOf: Data("same-size-B".utf8))
+        try handle.synchronize()
+        try handle.close()
+        try FileManager.default.setAttributes(
+            [.modificationDate: originalModificationDate], ofItemAtPath: weight.path)
+
+        let after = try FileManager.default.attributesOfItem(atPath: weight.path)
+        XCTAssertEqual(try XCTUnwrap(after[.size] as? NSNumber).int64Value, originalSize)
+        XCTAssertEqual(after[.modificationDate] as? Date, originalModificationDate)
+
+        let rewrittenIdentity = ProducerIdentity.identity(fromPath: path)
+        XCTAssertNotEqual(
+            originalIdentity.model, rewrittenIdentity.model,
+            "same path, size and restored mtime must not preserve a stale weight digest")
+    }
+
+    func testModelDiscoveryDoesNotMatchSiblingWithSharedPathPrefix() throws {
+        let hub = root.appendingPathComponent("hub", isDirectory: true)
+        let requestedRepo = hub.appendingPathComponent("models--org--demo", isDirectory: true)
+        let siblingSnapshot = hub.appendingPathComponent(
+            "models--org--demolition/snapshots/rev-1", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: requestedRepo, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: siblingSnapshot, withIntermediateDirectories: true)
+        try Data("sibling-weights".utf8).write(
+            to: siblingSnapshot.appendingPathComponent("model.safetensors"))
+
+        let fields = ProducerIdentity.modelIdentity(fromPath: requestedRepo.path, hubs: [hub])
+        XCTAssertNil(fields["model_repo_id"] as? String,
+                     "a sibling whose path merely shares the directory prefix is not inside this model")
+        XCTAssertNil(fields["model_weights_identity"],
+                     "the requested directory has no local weight files")
+    }
+
     func testDirectoryWithoutWeightsHasNoIdentity() throws {
         let dir = root.appendingPathComponent("tokenizer-only", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

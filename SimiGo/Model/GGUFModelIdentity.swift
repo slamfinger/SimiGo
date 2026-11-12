@@ -41,6 +41,7 @@ struct GGUFModelIdentity: Equatable, Sendable {
     /// unbounded memory or trust a symlinked/non-owned file.
     static let maximumBlobLedgerBytes = 8 * 1024 * 1024
     static let maximumBlobLedgerEntries = 4_096
+    static let maximumResolvedCacheEntries = 4_096
 
     enum ContentSource: String, Equatable, Sendable {
         /// A Hugging Face cache blob: a file inside `models--<repo>/blobs/` whose
@@ -71,6 +72,7 @@ struct GGUFModelIdentity: Equatable, Sendable {
     private final class ResolvedCache: @unchecked Sendable {
         private let lock = NSLock()
         private var entries: [String: GGUFModelIdentity] = [:]
+        private var insertionOrder: [String] = []
 
         func value(for key: String) -> GGUFModelIdentity? {
             lock.lock()
@@ -81,7 +83,13 @@ struct GGUFModelIdentity: Equatable, Sendable {
         func store(_ identity: GGUFModelIdentity, for key: String) {
             lock.lock()
             defer { lock.unlock() }
+            insertionOrder.removeAll { $0 == key }
+            insertionOrder.append(key)
             entries[key] = identity
+            while insertionOrder.count > GGUFModelIdentity.maximumResolvedCacheEntries {
+                let oldest = insertionOrder.removeFirst()
+                entries[oldest] = nil
+            }
         }
     }
 
