@@ -1156,6 +1156,27 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(try db.count("space_turns"), 3)
     }
 
+    /// 增量：一轮刚有词就当场判房间；本轮没命中时沿用同会话已有的房间。
+    func testAssignTurnSpaceHandsNewTurnItsRoom() throws {
+        let (url, db) = try open("space-incremental")
+        defer { db.close(); cleanup(url) }
+
+        _ = try db.recordTurnDigest(
+            sessionID: "s9", turnIndex: 1, digest: "d1",
+            keywords: "simigo HTTPServer McpClient")
+        let first = try db.assignTurnSpace(sessionID: "s9", turnIndex: 1)
+        XCTAssertEqual(first["project"], "space-room-simigo")
+        XCTAssertNil(first["nature"], "没命中的轴不硬塞")
+
+        _ = try db.recordTurnDigest(
+            sessionID: "s9", turnIndex: 2, digest: "d2", keywords: "天气")
+        let second = try db.assignTurnSpace(sessionID: "s9", turnIndex: 2)
+        XCTAssertEqual(second["project"], "space-room-simigo", "沿用同会话已有的房间")
+        XCTAssertEqual(
+            try firstValue(url, "SELECT COUNT(*) FROM space_turns WHERE session_id='s9';"),
+            "2")
+    }
+
     /// 来源时间只写 `source_time`：能从 id 认出来的按 id，认不出的按 Core Data 兜底。
     func testBackfillSourceTimesFromSessionIdentity() throws {
         let (url, db) = try open("source-time")

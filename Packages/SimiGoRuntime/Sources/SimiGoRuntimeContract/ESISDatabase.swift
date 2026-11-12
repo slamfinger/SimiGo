@@ -3965,7 +3965,8 @@ try apply(stmt)
     //
     // 这两件事原来是 tools/assign_turn_spaces.py 与 tools/backfill_source_time.py
     // 手工跑的。规则写在脚本里，App 就做不到——「刷新状态」按下去只能摊手。
-    // 规则搬进这里之后脚本退役：同一件事只有一份实现，不会两种语言各漂一半。
+    // 脚本没退役：`tools/` 下那两个仍然能用，云端代理那条路就靠它们跑。
+    // 这里这一份是 App 自己跑的路——人不在终端前面时，按钮得有人接。
     //
     // 边界：这里补的是**历史**（一次性收口）。新轮次进库时由
     // `TurnDigestScheduler.schedule` 当场补摘要与关键词，那是增量，不走这条路。
@@ -4098,8 +4099,9 @@ try apply(stmt)
     /// 「项目」轴和「性质」轴各挂一个，这是平铺加轴，不是单路径嵌套。
     ///
     /// 只重写 `assigned_by<>'human'` 的行：人手工指定的归属不会被一次刷新抹掉。
-    @discardableResult
-    public func assignTurnSpaces(dryRun: Bool = false) throws -> TurnSpaceReport {
+    /// `space_turns` 与 `spaces.axis` 原本都归外部脚本管。判据现在也住在这里，
+    /// 表和列一起归这里建；脚本那边是 `CREATE IF NOT EXISTS`，两边都跑不打架。
+    private func ensureRoomSchema() throws {
         try Self.rawExec(handle, """
         CREATE TABLE IF NOT EXISTS space_turns(
             session_id TEXT NOT NULL,
@@ -4111,11 +4113,13 @@ try apply(stmt)
         CREATE INDEX IF NOT EXISTS idx_space_turns_space
             ON space_turns(space_id, session_id, turn_index);
         """)
-        // `axis` 原本是外部脚本加的列。判据现在住在这里，列也归这里管。
         if try !columnExists("spaces", "axis") {
             try Self.rawExec(handle, "ALTER TABLE spaces ADD COLUMN axis TEXT;")
         }
+    }
 
+    /// 当前该用哪几条判据：产品自己的轴 + 库里标了轴的目录房间。
+    private func roomRules() throws -> (rules: [RoomRule], titles: [String: String]) {
         var rules: [RoomRule] = []
         var titles: [String: String] = [:]
         for r in Self.contentRoomRules {
@@ -4130,6 +4134,132 @@ try apply(stmt)
             titles[room.id] = room.title
         }
         titles["space-room-other"] = "其他"
+        return (rules, titles)
+    }
+
+    /// 一轮的关键词，一条一个词。
+    private func turnKeywords(sessionID: String, turnIndex: Int) throws -> [String] {
+        guard try tableExists("turn_keywords") else { return [] }
+        let stmt = try prepare("""
+        SELECT k.term FROM turn_keywords tk JOIN keywords k USING(keyword_id)
+         WHERE tk.session_id=? AND tk.turn_index=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        var terms: [String] = []
+        while try stepRowOrDone(stmt) {
+            if let c = sqlite3_column_text(stmt, 0) { terms.append(String(cString: c)) }
+        }
+        return terms
+    }
+
+    /// 每轴挑一个赢家：命中条数最多者。一条都没命中的轴不返回。
+    private func bestRooms(
+        for terms: [String], rules: [RoomRule]
+    ) -> [String: RoomRule] {
+        var perAxis: [String: (n: Int, rule: RoomRule)] = [:]
+        for rule in rules {
+            var n = 0
+            for term in terms where Self.ruleMatches(rule.regex, term) { n += 1 }
+            guard n > 0 else { continue }
+            if let best = perAxis[rule.axis], best.n >= n { continue }
+            perAxis[rule.axis] = (n, rule)
+        }
+        return perAxis.mapValues { $0.rule }
+    }
+
+    /// 这个会话在这一轴已经挂在哪：给「本轮没命中」的轮次沿用。
+    private func sessionRoom(sessionID: String, axis: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT st.space_id FROM space_turns st
+          JOIN spaces s ON s.space_id=st.space_id
+         WHERE st.session_id=? AND s.axis=?
+         GROUP BY st.space_id ORDER BY COUNT(*) DESC, st.space_id LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, axis)
+        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else {
+            return nil
+        }
+        return String(cString: c)
+    }
+
+    /// 增量：一轮刚写下摘要与关键词，立刻把它放进房间。
+    ///
+    /// 新轮次不归属，等于素材进来了但没人认识它——下一轮检索就找不到它。
+    /// 判据与全量同一套；本轮一条都没命中时，沿用这个会话在该轴已有的房间，
+    /// 再没有才落「其他」。返回 axis → space_id。
+    @discardableResult
+    public func assignTurnSpace(sessionID: String, turnIndex: Int) throws -> [String: String] {
+        try ensureRoomSchema()
+        let (rules, _) = try roomRules()
+        let picks = bestRooms(for: try turnKeywords(sessionID: sessionID,
+                                                    turnIndex: turnIndex),
+                              rules: rules)
+        var chosen: [String: String] = [:]
+        var resolved: [String: String] = [:]
+        for (axis, rule) in picks {
+            if resolved[rule.id] == nil {
+                resolved[rule.id] = try resolveRoom(
+                    id: rule.id, title: rule.title, axis: rule.axis)
+            }
+            chosen[axis] = resolved[rule.id]
+        }
+        for axis in ["project", "nature"] where chosen[axis] == nil {
+            if let room = try sessionRoom(sessionID: sessionID, axis: axis) {
+                chosen[axis] = room
+            }
+        }
+        if chosen.isEmpty {
+            if resolved["space-room-other"] == nil {
+                resolved["space-room-other"] = try resolveRoom(
+                    id: "space-room-other", title: "其他", axis: "fallback")
+            }
+            chosen["fallback"] = resolved["space-room-other"]
+        }
+
+        // 落表。先把这一轮的非人工归属清掉：词后来补过，房间就可能换，
+        // 留着旧房间等于同一轮在同一轴挂着两个。人工指定的一律不动。
+        let stamp = Self.stamp(Date())
+        try transaction {
+            _ = try execBinding("""
+            DELETE FROM space_turns WHERE session_id=? AND turn_index=?
+              AND assigned_by<>'human';
+            """) {
+                try bind($0, 1, sessionID)
+                try bind($0, 2, Int64(turnIndex))
+            }
+            let insert = try prepare("""
+            INSERT INTO space_turns(
+                session_id, turn_index, space_id, assigned_by, assigned_at)
+            VALUES(?,?,?,'content',?)
+            ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
+                assigned_at=excluded.assigned_at
+            WHERE space_turns.assigned_by<>'human';
+            """)
+            for spaceID in Set(chosen.values) {
+                sqlite3_reset(insert)
+                sqlite3_clear_bindings(insert)
+                try bind(insert, 1, sessionID)
+                try bind(insert, 2, Int64(turnIndex))
+                try bind(insert, 3, spaceID)
+                try bind(insert, 4, stamp)
+                guard sqlite3_step(insert) == SQLITE_DONE else {
+                    sqlite3_finalize(insert)
+                    throw DatabaseError.sql("assignTurnSpace: INSERT 未完成")
+                }
+            }
+            sqlite3_finalize(insert)
+        }
+        return chosen
+    }
+
+    @discardableResult
+    public func assignTurnSpaces(dryRun: Bool = false) throws -> TurnSpaceReport {
+        try ensureRoomSchema()
+        let (rules, titles) = try roomRules()
 
         var keywords: [TurnKey: [String]] = [:]
         if try tableExists("turn_keywords") {
